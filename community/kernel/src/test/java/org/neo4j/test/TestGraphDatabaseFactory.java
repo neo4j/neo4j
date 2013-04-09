@@ -32,10 +32,12 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 /**
  * Test factory for graph databases
  */
-public class TestGraphDatabaseFactory
-    extends GraphDatabaseFactory
+public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
-    private boolean systemOutLogging;
+    public TestGraphDatabaseFactory()
+    {
+       super( new TestGraphDatabaseFactoryState() );
+    }
 
     public GraphDatabaseService newImpermanentDatabase()
     {
@@ -51,30 +53,72 @@ public class TestGraphDatabaseFactory
     {
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
-    
+
+    @Override
+    protected TestGraphDatabaseFactoryState getCurrentState()
+    {
+        return (TestGraphDatabaseFactoryState) super.getCurrentState();
+    }
+
+    @Override
+    protected TestGraphDatabaseFactoryState getStateCopy()
+    {
+        return new TestGraphDatabaseFactoryState( getCurrentState() );
+    }
+
+    public FileSystemAbstraction getFileSystem()
+    {
+        return getCurrentState().getFileSystem();
+    }
+
+    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
+    {
+        getCurrentState().setFileSystem( fileSystem );
+        return this;
+    }
+
+    public boolean isSystemOutLogging()
+    {
+        return getCurrentState().isSystemOutLogging();
+    }
+
+    public TestGraphDatabaseFactory setSystemOutLogging( boolean systemOutLogging )
+    {
+        getCurrentState().setSystemOutLogging( systemOutLogging );
+        return this;
+    }
+
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
     {
+        final TestGraphDatabaseFactoryState state = getStateCopy();
         return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase( storeDir, config, indexProviders, kernelExtensions,
-                        cacheProviders, txInterceptorProviders )
+                return new ImpermanentGraphDatabase( storeDir, config,
+                        state.getIndexProviders(),
+                        state.getKernelExtension(),
+                        state.getCacheProviders(),
+                        state.getTransactionInterceptorProviders() )
                 {
+
+
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {
-                        if ( TestGraphDatabaseFactory.this.fileSystem != null )
-                            return TestGraphDatabaseFactory.this.fileSystem;
+                        FileSystemAbstraction fs = state.getFileSystem();
+                        if ( fs != null )
+                            return fs;
                         else
                             return super.createFileSystemAbstraction();
                     }
-                    
+
                     @Override
                     protected Logging createLogging()
                     {
-                        if ( TestGraphDatabaseFactory.this.systemOutLogging )
+                        boolean systemOutLogging = state.isSystemOutLogging();
+                        if ( systemOutLogging )
                             return new SingleLoggingService( StringLogger.SYSTEM );
                         else
                             return super.createLogging();
@@ -82,17 +126,5 @@ public class TestGraphDatabaseFactory
                 };
             }
         } );
-    }
-    
-    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
-    {
-        this.fileSystem = fileSystem;
-        return this;
-    }
-    
-    public TestGraphDatabaseFactory useSystemOutLogging()
-    {
-        systemOutLogging = true;
-        return this;
     }
 }

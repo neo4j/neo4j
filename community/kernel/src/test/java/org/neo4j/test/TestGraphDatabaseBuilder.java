@@ -24,8 +24,6 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {
-    protected EphemeralFileSystemAbstraction fileSystem;
-    
     public TestGraphDatabaseBuilder( DatabaseCreator creator )
     {
         super( creator );

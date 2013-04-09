@@ -87,6 +87,6 @@ public class DoubleLatch
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[Start[" + startSignal + "], Finish[" + finishSignal + "]]";
+        return super.toString() + "[Start[" + startSignal.getCount() + "], Finish[" + finishSignal.getCount() + "]]";
     }
 }

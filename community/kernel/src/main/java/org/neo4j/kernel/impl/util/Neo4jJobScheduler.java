@@ -32,6 +32,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private final StringLogger log;
+    private final String id;
 
     private ExecutorService executor;
     private Timer timer; // Note, we may want a pool of these in the future, to minimize contention.
@@ -39,12 +40,19 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public Neo4jJobScheduler( StringLogger log )
     {
         this.log = log;
+        this.id = getClass().getSimpleName();
+    }
+
+    public Neo4jJobScheduler( String id, StringLogger log )
+    {
+        this.log = log;
+        this.id = id;
     }
 
     @Override
     public void start()
     {
-        this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + getClass().getSimpleName()));
+        this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + id));
         this.timer = new Timer( "Neo4j Recurring Job Runner", /* daemon= */true );
     }
 

@@ -210,7 +210,7 @@ public class AbstractSubProcessTestBase
         protected GraphDatabaseService startup()
         {
             return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( dbConfiguration )
-                    .newGraphDatabase();
+                   .newGraphDatabase();
         }
 
         protected void shutdown( GraphDatabaseService graphdb, boolean normal )

@@ -22,8 +22,8 @@ package org.neo4j.test;
 import java.io.IOException;
 
 import org.junit.rules.TemporaryFolder;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 
 /**
  * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
@@ -39,7 +39,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
     
     @Override
-    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+    protected GraphDatabaseBuilder newBuilder(GraphDatabaseFactory factory )
     {
         return factory.newEmbeddedDatabaseBuilder( temp.getRoot().getAbsolutePath() );
     }

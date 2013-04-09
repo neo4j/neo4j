@@ -111,8 +111,10 @@ public class StoreRecoverer
         // used
         // as a component of the database, rather than something that is bolted
         // on outside it like this.
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dataDir.getCanonicalPath() )
-                .setConfig( params ).newGraphDatabase();
+
+        GraphDatabaseService db =
+                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dataDir.getCanonicalPath() )
+                    .setConfig( params ).newGraphDatabase();
 
         db.shutdown();
     }

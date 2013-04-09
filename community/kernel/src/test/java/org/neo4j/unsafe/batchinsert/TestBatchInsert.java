@@ -231,7 +231,9 @@ public class TestBatchInsert
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
-        return new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( inserter.getStoreDir() );
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fs.get() );
+        return factory.newImpermanentDatabase( inserter.getStoreDir() );
     }
 
     @Test

@@ -89,7 +89,8 @@ public class StoreMigrationTool
 
         neoStore.close();
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( targetStoreDirectoryFile.getPath() );
+        GraphDatabaseService database =
+                new GraphDatabaseFactory().newEmbeddedDatabase( targetStoreDirectoryFile.getPath() );
         database.shutdown();
     }
 }

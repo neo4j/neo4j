@@ -1,0 +1,62 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.test;
+
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
+{
+    private FileSystemAbstraction fileSystem;
+    private boolean systemOutLogging;
+
+    public TestGraphDatabaseFactoryState( )
+    {
+        fileSystem = null;
+        systemOutLogging = false;
+    }
+
+    public TestGraphDatabaseFactoryState( TestGraphDatabaseFactoryState previous )
+    {
+        super( previous );
+        fileSystem = previous.fileSystem;
+        systemOutLogging = previous.systemOutLogging;
+    }
+
+    public FileSystemAbstraction getFileSystem()
+    {
+        return fileSystem;
+    }
+
+    public void setFileSystem( FileSystemAbstraction fileSystem )
+    {
+        this.fileSystem = fileSystem;
+    }
+
+    public void setSystemOutLogging( boolean systemOutLogging )
+    {
+        this.systemOutLogging = systemOutLogging;
+    }
+
+    public boolean isSystemOutLogging()
+    {
+        return systemOutLogging;
+    }
+}

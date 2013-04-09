@@ -108,13 +108,17 @@ public class SchemaIndexHaIT
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
         ManagedCluster cluster = startCluster( clusterOfSize( 3 ), dbFactory );
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
+
         // where the master gets some data created as well as an index
         Map<Object, Node> data = createSomeData( firstMaster );
         createIndex( firstMaster );
+        //dbFactory.awaitPopulationStarted( firstMaster );
         dbFactory.triggerFinish( firstMaster );
+
         // Pick a slave, pull the data and the index
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
         aSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+
         // and await the index population to start. It will actually block as long as we want it to
         dbFactory.awaitPopulationStarted( aSlave );
 
@@ -271,7 +275,7 @@ public class SchemaIndexHaIT
     private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
         private final SchemaIndexProvider inMemoryDelegate = new InMemoryIndexProvider();
-        volatile DoubleLatch latch = new DoubleLatch();
+        private final DoubleLatch latch = new DoubleLatch();
         
         public ControlledSchemaIndexProvider()
         {
@@ -307,14 +311,15 @@ public class SchemaIndexHaIT
         {
             ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider();
             KernelExtensionFactory<?> factory = singleInstanceSchemaIndexProviderFactory( "controlled", provider );
-            setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
+            getCurrentState().setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
             return dbReferenceCapturingBuilder( perDbIndexProvider, provider,
                     super.newHighlyAvailableDatabaseBuilder( path ) );
         }
         
         void awaitPopulationStarted( GraphDatabaseService db )
         {
-            perDbIndexProvider.get( db ).latch.awaitStart();
+            DoubleLatch latch = perDbIndexProvider.get( db ).latch;
+            latch.awaitStart();
         }
 
         void triggerFinish( GraphDatabaseService db )
