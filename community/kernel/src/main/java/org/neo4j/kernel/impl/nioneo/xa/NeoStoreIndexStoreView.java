@@ -33,9 +33,10 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -44,8 +45,9 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
 
-public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
+public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
@@ -78,48 +80,106 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
         }, propertyStore.getPropertyRecordChain( firstPropertyId ).iterator());
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
-    public StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor, Visitor<Pair<Long, Object>> visitor )
+    public StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor,
+            Visitor<NodePropertyUpdate> visitor )
+    {
+        return visitNodes( singleLongPredicate( descriptor.getPropertyKeyId() ),
+                singleLongPredicate( descriptor.getLabelId() ), visitor );
+    }
+    
+    @Override
+    public StoreScan visitNodes( long[] labelIds, long[] propertyKeyIds, Visitor<NodePropertyUpdate> visitor )
+    {
+        return visitNodes( multipleLongPredicate( propertyKeyIds ), multipleLongPredicate( labelIds ), visitor );
+    }
+
+    private StoreScan visitNodes( PrimitiveLongPredicate propertyKeyPredicate, PrimitiveLongPredicate labelPredicate,
+            Visitor<NodePropertyUpdate> visitor )
     {
         // Create a processor that for each accepted node (containing the desired label) looks through its properties,
         // getting the desired one (if any) and feeds to the index manipulator.
-        long propertyKeyId = descriptor.getPropertyKeyId();
-        final RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyId, visitor );
+        LabelsReference labelsReference = new LabelsReference();
+        final RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyPredicate,
+                labelsReference, visitor );
 
         // Run the processor for the nodes containing the given label.
         // TODO When we've got a decent way of getting nodes with a label, use that instead.
-        long labelId = descriptor.getLabelId();
-        final Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore, labelId );
+        final Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore, labelPredicate,
+                labelsReference );
 
         // Run the processor
-        return new StoreScan()
+        return new ProcessStoreScan( processor, predicate );
+    }
+    
+    /**
+     * Used for sharing the extracted labels from the last processed node between the label and property key filter.
+     * First the label predicate will be run (which will set the labels).
+     * Then the property key filtering in the processor will be run (which will get the labels).
+     * 
+     * All this to prevent extracting the label set two times per processed node.
+     */
+    private static class LabelsReference
+    {
+        private long[] labels;
+        
+        long[] get()
+        {
+            return this.labels;
+        }
+        
+        void set( long[] labels )
+        {
+            this.labels = labels;
+        }
+    }
+    
+    private static interface PrimitiveLongPredicate
+    {
+        boolean accept( long value );
+    }
+    
+    private static PrimitiveLongPredicate singleLongPredicate( final long acceptedValue )
+    {
+        return new PrimitiveLongPredicate()
         {
             @Override
-            public void run()
+            public boolean accept( long value )
             {
-                processor.applyFiltered( nodeStore, predicate );
-            }
-            
-            @Override
-            public void stop()
-            {
-                processor.stopScanning();
+                return value == acceptedValue;
             }
         };
     }
 
+    private static PrimitiveLongPredicate multipleLongPredicate( final long... acceptedValues )
+    {
+        return new PrimitiveLongPredicate()
+        {
+            @Override
+            public boolean accept( long value )
+            {
+                for ( int i = 0; i < acceptedValues.length; i++ )
+                    if ( value == acceptedValues[i] )
+                        return true;
+                return false;
+            }
+        };
+    }
+    
     private class NodeIndexingProcessor extends RecordStore.Processor
     {
         private final PropertyStore propertyStore;
-        private final long propertyKeyId;
-        private final Visitor<Pair<Long, Object>> visitor;
+        private final Visitor<NodePropertyUpdate> visitor;
+        private final PrimitiveLongPredicate propertyKeyPredicate;
+        private final LabelsReference labelsReference;
 
-        public NodeIndexingProcessor( PropertyStore propertyStore, long propertyKeyId, Visitor<Pair<Long, Object>>
-                visitor )
+        public NodeIndexingProcessor( PropertyStore propertyStore,
+                PrimitiveLongPredicate propertyKeyPredicate, LabelsReference labelsReference,
+                Visitor<NodePropertyUpdate> visitor )
         {
             this.propertyStore = propertyStore;
-            this.propertyKeyId = propertyKeyId;
+            this.propertyKeyPredicate = propertyKeyPredicate;
+            this.labelsReference = labelsReference;
             this.visitor = visitor;
         }
 
@@ -127,7 +187,6 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
         public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node )
         {
             // TODO check cache if that property is in cache and use it, instead of loading it from the store.
-
             long firstPropertyId = node.getCommittedNextProp();
             if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
                 return;
@@ -138,13 +197,15 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
             {
                 for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
                 {
-                    if ( property.getKeyIndexId() == propertyKeyId )
+                    long propertyKeyId = property.getKeyIndexId();
+                    if ( propertyKeyPredicate.accept( propertyKeyId ) )
                     {
                         // Make sure the value is loaded, even if it's of a "heavy" kind.
                         propertyStore.ensureHeavy( property );
                         Object propertyValue = property.getType().getValue( property, propertyStore );
 
-                        visitor.visit( Pair.of( node.getId(), propertyValue ) );
+                        visitor.visit( NodePropertyUpdate.add( node.getId(), propertyKeyId, propertyValue,
+                                labelsReference.get() ) );
                     }
                 }
             }
@@ -186,21 +247,51 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
     private class NodeLabelFilterPredicate implements Predicate<NodeRecord>
     {
         private final NodeStore nodeStore;
-        private final long labelId;
+        private final PrimitiveLongPredicate labelPredicate;
+        private final LabelsReference labelsReference;
 
-        public NodeLabelFilterPredicate( NodeStore nodeStore, long labelId )
+        public NodeLabelFilterPredicate( NodeStore nodeStore, PrimitiveLongPredicate labelPredicate,
+                LabelsReference labelsReference )
         {
             this.nodeStore = nodeStore;
-            this.labelId = labelId;
+            this.labelPredicate = labelPredicate;
+            this.labelsReference = labelsReference;
         }
 
         @Override
         public boolean accept( NodeRecord node )
         {
-            for ( long nodeLabelId : nodeStore.getLabelsForNode( node ) )
-                if ( nodeLabelId == labelId )
+            long[] labelsForNode = nodeStore.getLabelsForNode( node );
+            labelsReference.set( labelsForNode ); // Make these available for the processor for this node
+            for ( long nodeLabelId : labelsForNode )
+                if ( labelPredicate.accept( nodeLabelId ) )
                     return true;
             return false;
+        }
+    }
+    
+    private class ProcessStoreScan implements StoreScan
+    {
+        private final Processor processor;
+        private final Predicate<NodeRecord> predicate;
+
+        public ProcessStoreScan( Processor processor, Predicate<NodeRecord> predicate )
+        {
+            this.processor = processor;
+            this.predicate = predicate;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public void run()
+        {
+            processor.applyFiltered( nodeStore, predicate );
+        }
+        
+        @Override
+        public void stop()
+        {
+            processor.stopScanning();
         }
     }
 }

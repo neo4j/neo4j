@@ -26,12 +26,12 @@ import java.util.Collections;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-public class BatchIndexDefinitionImpl implements IndexDefinition
+public class BatchIndexDefinition implements IndexDefinition
 {
     private final Label label;
     private final Collection<String> propertyKeys;
 
-    public BatchIndexDefinitionImpl( Label label, String... propertyKeys )
+    public BatchIndexDefinition( Label label, String... propertyKeys )
     {
         this.label = label;
         this.propertyKeys = new ArrayList<String>( );
