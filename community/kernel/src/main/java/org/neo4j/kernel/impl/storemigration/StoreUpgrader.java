@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -50,18 +49,16 @@ public class StoreUpgrader
     private final UpgradableDatabase upgradableDatabase;
     private final StoreMigrator storeMigrator;
     private final DatabaseFiles databaseFiles;
-    private final StringLogger msgLog;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystem;
 
-    public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
+    public StoreUpgrader( Config originalConfig, UpgradeConfiguration upgradeConfiguration,
                           UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
                           DatabaseFiles databaseFiles, IdGeneratorFactory idGeneratorFactory,
-                          FileSystemAbstraction fileSystemAbstraction )
+                          FileSystemAbstraction fileSystem )
     {
-        this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.fileSystem = fileSystem;
         this.originalConfig = originalConfig;
         this.upgradeConfiguration = upgradeConfiguration;
         this.upgradableDatabase = upgradableDatabase;
@@ -89,8 +86,11 @@ public class StoreUpgrader
     {
         try
         {
-            fileSystemAbstraction.copyFile( new File( workingDirectory, StringLogger.DEFAULT_NAME ),
-                    new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
+            File originalLog = new File( workingDirectory, StringLogger.DEFAULT_NAME );
+            if ( fileSystem.fileExists( originalLog ))
+            {
+                fileSystem.copyFile( originalLog, new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
+            }
         }
         catch ( IOException e )
         {
@@ -103,14 +103,15 @@ public class StoreUpgrader
         if (upgradeDirectory.exists()) {
             try
             {
-                FileUtils.deleteRecursively( upgradeDirectory );
+                fileSystem.deleteRecursively( upgradeDirectory );
             }
             catch ( IOException e )
             {
                 throw new UnableToUpgradeException( e );
             }
         }
-        fileSystemAbstraction.mkdir( upgradeDirectory );
+
+        fileSystem.mkdir( upgradeDirectory );
 
         File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
@@ -119,10 +120,10 @@ public class StoreUpgrader
         Config upgradeConfiguration = new Config( upgradeConfig );
         
         NeoStore neoStore = new StoreFactory( upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
+                fileSystem, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
         try
         {
-            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName ),
+            storeMigrator.migrate( new LegacyStore( fileSystem, storageFileName ),
                     neoStore );
         }
         catch ( IOException e )

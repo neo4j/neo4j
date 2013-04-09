@@ -189,8 +189,8 @@ public class StoreUpgraderTestIT
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase( fs.get() ), migrator,
-                files, new DefaultIdGeneratorFactory(), fs.get() );
+        return new StoreUpgrader( defaultConfig(), config, new UpgradableDatabase(fileSystem), migrator,
+                files, new DefaultIdGeneratorFactory(), fileSystem );
     }
 
     @Before
