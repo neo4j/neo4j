@@ -80,7 +80,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         record = getNodeStore().forceGetRaw( record );
         if ( record.inUse() )
         {
-            markProperty( record.getNextProp() );
+            markProperty( record.getNextProp(), record.getId(), -1 );
             markRelationship( record.getNextRel() );
         }
     }
@@ -94,7 +94,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         {
             getNodeStore().markDirty( record.getFirstNode() );
             getNodeStore().markDirty( record.getSecondNode() );
-            markProperty( record.getNextProp() );
+            markProperty( record.getNextProp(), -1, record.getId() );
             markRelationship( record.getFirstNextRel() );
             markRelationship( record.getFirstPrevRel() );
             markRelationship( record.getSecondNextRel() );
@@ -107,9 +107,22 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         if ( !Record.NO_NEXT_RELATIONSHIP.is( rel ) ) getRelationshipStore().markDirty( rel );
     }
 
-    private void markProperty( long prop )
+    private void markProperty( long prop, long nodeId, long relId )
     {
-        if ( !Record.NO_NEXT_PROPERTY.is( prop ) ) getPropertyStore().markDirty( prop );
+        if ( !Record.NO_NEXT_PROPERTY.is( prop ) )
+        {
+            DiffRecordStore<PropertyRecord> store = getPropertyStore();
+            PropertyRecord record = store.forceGetRaw( prop );
+            if ( nodeId != -1 )
+            {
+                record.setNodeId( nodeId );
+            }
+            else if ( relId != -1 )
+            {
+                record.setRelId( relId );
+            }
+            store.updateRecord( record );
+        }
     }
 
     @Override
@@ -121,8 +134,8 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         updateDynamic( record );
         if ( record.inUse() )
         {
-            markProperty( record.getNextProp() );
-            markProperty( record.getPrevProp() );
+            markProperty( record.getNextProp(), record.getNodeId(), record.getRelId() );
+            markProperty( record.getPrevProp(), record.getNodeId(), record.getRelId() );
         }
     }
 
