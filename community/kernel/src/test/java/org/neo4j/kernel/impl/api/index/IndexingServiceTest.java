@@ -49,7 +49,7 @@ public class IndexingServiceTest
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
                 providerMap,
-                mock( IndexingService.IndexStoreView.class ),
+                mock( IndexStoreView.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
@@ -83,7 +83,7 @@ public class IndexingServiceTest
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
                 providerMap,
-                mock( IndexingService.IndexStoreView.class ),
+                mock( IndexStoreView.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 

@@ -117,6 +117,12 @@ public class TestBatchInsert
     {
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap() );
     }
+    
+    private BatchInserter newBatchInserter( KernelExtensionFactory<?> provider )
+    {
+        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+    }
 
     private GraphDatabaseService newBatchGraphDatabase()
     {
@@ -128,13 +134,14 @@ public class TestBatchInsert
         return newGraphDatabase( Predicates.<TestGraphDatabaseFactory>notNull() );
     }
     
-    private GraphDatabaseService newGraphDatabase( final Iterable<KernelExtensionFactory<?>> extensions )
+    private GraphDatabaseService newGraphDatabase( final KernelExtensionFactory<?> provider )
     {
         return newGraphDatabase( new Predicate<TestGraphDatabaseFactory>()
         {
             @Override
             public boolean accept( TestGraphDatabaseFactory item )
             {
+                List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
                 item.setKernelExtensions( extensions );
                 return true;
             }
@@ -220,8 +227,6 @@ public class TestBatchInsert
         String value = "Something";
         String key = "name";
         inserter.setNodeProperty( node, key, value );
-        
-        System.out.println( "///////////" );
         
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
         assertEquals( value, db.getNodeById( node ).getProperty( key ) );
@@ -808,8 +813,7 @@ public class TestBatchInsert
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        IndexCreator creator = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" );
-        IndexDefinition definition = creator.create();
+        IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
@@ -823,10 +827,9 @@ public class TestBatchInsert
         Label hackerLabel = label( "Hacker" );
         InMemoryIndexProvider provider = new InMemoryIndexProvider();
         InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( providerFactory );
 
         // GIVEN: CREATED INDEX
-        GraphDatabaseService gdb = newGraphDatabase( extensions );
+        GraphDatabaseService gdb = newGraphDatabase( providerFactory );
         Transaction tx = gdb.beginTx();
         IndexDefinition definition = createIndex( gdb, hackerLabel, "handle" );
         tx.success();
@@ -842,13 +845,77 @@ public class TestBatchInsert
         gdb.shutdown();
 
         // GIVEN: BATCH INSERTER
-        BatchInserter inserter = BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+        BatchInserter inserter = newBatchInserter( providerFactory );
 
         // WHEN
         ResourceIterable<Long> result = inserter.findNodesByLabelAndProperty( label( "Hacker" ), "handle", "count0" );
 
         // THEN
         assertEquals( asSet( node.getId() ), asSet( result ));
+    }
+    
+    @Test
+    public void shouldHaveDeferredIndexComeOnline() throws Exception
+    {
+        // GIVEN
+        InMemoryIndexProvider provider = new InMemoryIndexProvider();
+        InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
+        BatchInserter inserter = newBatchInserter( providerFactory );
+        long node = inserter.createNode( map( "name", "The Node" ), Labels.FIRST );
+        inserter.createDeferredSchemaIndex( Labels.FIRST ).on( "name" ).create();
+
+        // WHEN
+        inserter.ensureSchemaIndexesOnline();
+
+        // THEN
+        assertEquals(
+                asSet( node ),
+                asSet( inserter.findNodesByLabelAndProperty( Labels.FIRST, "name", "The Node" ) ) );
+    }
+    
+    @Test
+    public void shouldHaveMultipleDeferredIndexesComeOnlineAtTheSameTime() throws Exception
+    {
+        // GIVEN
+        InMemoryIndexProvider provider = new InMemoryIndexProvider();
+        InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
+        BatchInserter inserter = newBatchInserter( providerFactory );
+        long firstNode = inserter.createNode( map( "name", "The Node" ), Labels.FIRST );
+        long secondNode = inserter.createNode( map( "role", "Chosen One" ), Labels.SECOND );
+        inserter.createDeferredSchemaIndex( Labels.FIRST ).on( "name" ).create();
+        inserter.createDeferredSchemaIndex( Labels.SECOND ).on( "role" ).create();
+
+        // WHEN
+        inserter.ensureSchemaIndexesOnline();
+
+        // THEN
+        assertEquals(
+                asSet( firstNode ),
+                asSet( inserter.findNodesByLabelAndProperty( Labels.FIRST, "name", "The Node" ) ) );
+        assertEquals(
+                asSet( secondNode ),
+                asSet( inserter.findNodesByLabelAndProperty( Labels.SECOND, "role", "Chosen One" ) ) );
+    }
+    
+    @Test
+    public void shouldHaveDeferredIndexesCreatedInPreviousSessionComeOnline() throws Exception
+    {
+        // GIVEN
+        InMemoryIndexProvider provider = new InMemoryIndexProvider();
+        InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
+        BatchInserter inserter = newBatchInserter( providerFactory );
+        long node = inserter.createNode( map( "name", "The Node" ), Labels.FIRST );
+        inserter.createDeferredSchemaIndex( Labels.FIRST ).on( "name" ).create();
+        
+        // WHEN
+        inserter.shutdown();
+        inserter = newBatchInserter( providerFactory );
+        inserter.ensureSchemaIndexesOnline();
+
+        // THEN
+        assertEquals(
+                asSet( node ),
+                asSet( inserter.findNodesByLabelAndProperty( Labels.FIRST, "name", "The Node" ) ) );
     }
 
     private IndexDefinition createIndex( GraphDatabaseService gdb,  Label label, String propertyKey )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
@@ -282,10 +283,11 @@ public interface BatchInserter
      *
      * Note that you can call this method multiple times, each time will only populate the
      * indexes that were created since the previous call.
+     * @throws IOException 
      *
      * @see #createDeferredSchemaIndex(Label)
      */
-    public void ensureSchemaIndexesOnline();
+    public void ensureSchemaIndexesOnline() throws IOException;
 
     /**
      * Returns all nodes having the label, and the wanted property value. If an online
