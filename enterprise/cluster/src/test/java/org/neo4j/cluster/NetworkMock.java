@@ -70,21 +70,21 @@ public class NetworkMock
         logger = logging.getLogger( NetworkMock.class );
     }
 
-    public TestProtocolServer addServer( URI serverId )
+    public TestProtocolServer addServer( int serverId, URI serverUri )
     {
-        TestProtocolServer server = newTestProtocolServer( serverId );
+        TestProtocolServer server = newTestProtocolServer( serverId, serverUri );
 
-        debug( serverId.toString(), "joins network" );
+        debug( serverUri.toString(), "joins network" );
 
-        participants.put( serverId.toString(), server );
+        participants.put( serverUri.toString(), server );
 
         return server;
     }
 
-    protected TestProtocolServer newTestProtocolServer( URI serverId )
+    protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
         LoggerContext loggerContext = new LoggerContext();
-        loggerContext.putProperty( "host", serverId.toString() );
+        loggerContext.putProperty( "host", serverUri.toString() );
 
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext( loggerContext );
@@ -99,13 +99,13 @@ public class NetworkMock
 
         Logging logging = new LogbackService( null, loggerContext );
 
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration(
-                "default" ), logging );
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory(
+                new ClusterConfiguration( "default" ), logging );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
-        electionCredentialsProvider.listeningAt( serverId );
-        TestProtocolServer protocolServer = new TestProtocolServer( timeoutStrategy, protocolServerFactory, serverId,
-                new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
+        electionCredentialsProvider.listeningAt( serverUri );
+        TestProtocolServer protocolServer = new TestProtocolServer( timeoutStrategy, protocolServerFactory, serverUri,
+                new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
         protocolServer.addStateTransitionListener( new StateTransitionLogger( logging ) );
         return protocolServer;
     }
@@ -135,7 +135,7 @@ public class NetworkMock
             if ( messageDelivery.getMessageDeliveryTime() <= now )
             {
                 long delay = strategy.messageDelay( messageDelivery.getMessage(),
-                        messageDelivery.getServer().toString() );
+                        messageDelivery.getServer().getServer().boundAt().toString() );
                 if ( delay != NetworkLatencyStrategy.LOST )
                 {
                     messageDelivery.getServer().process( messageDelivery.getMessage() );

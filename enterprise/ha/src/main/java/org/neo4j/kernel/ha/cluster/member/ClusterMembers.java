@@ -23,8 +23,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cluster.com.BindingNotifier;
-import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -51,9 +50,9 @@ public class ClusterMembers
         }
     };
 
-    private URI clusterUri;
+    private final InstanceId me;
 
-    public static Predicate<ClusterMember> inRole( final String role)
+    public static Predicate<ClusterMember> inRole( final String role )
     {
         return new Predicate<ClusterMember>()
         {
@@ -65,17 +64,17 @@ public class ClusterMembers
         };
     }
 
-    private final Map<URI, ClusterMember> members = new CopyOnWriteHashMap<URI, ClusterMember>();
+    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
 
-    public ClusterMembers( Cluster cluster, BindingNotifier binding, Heartbeat heartbeat,
-                           ClusterMemberEvents clusterMemberEvents )
+    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents,
+                           InstanceId me )
     {
+        this.me = me;
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
         clusterMemberEvents.addClusterMemberListener( new HAMClusterMemberListener() );
-        binding.addBindingListener( new HAMBindingListener() );
     }
-    
+
     public Iterable<ClusterMember> getMembers()
     {
         return members.values();
@@ -85,7 +84,7 @@ public class ClusterMembers
     {
         for ( ClusterMember clusterMember : getMembers() )
         {
-            if ( clusterMember.getClusterUri().equals( clusterUri ) )
+            if ( clusterMember.getMemberId().equals( me ) )
             {
                 return clusterMember;
             }
@@ -93,7 +92,7 @@ public class ClusterMembers
         return null;
     }
 
-    private ClusterMember getMember( URI server )
+    private ClusterMember getMember( InstanceId server )
     {
         ClusterMember clusterMember = members.get( server );
         if ( clusterMember == null )
@@ -106,8 +105,8 @@ public class ClusterMembers
         @Override
         public void enteredCluster( ClusterConfiguration configuration )
         {
-            Map<URI, ClusterMember> newMembers = new HashMap<URI, ClusterMember>();
-            for ( URI memberClusterUri : configuration.getMembers() )
+            Map<InstanceId, ClusterMember> newMembers = new HashMap<InstanceId, ClusterMember>();
+            for ( InstanceId memberClusterUri : configuration.getMembers().keySet() )
                 newMembers.put( memberClusterUri, new ClusterMember( memberClusterUri ) );
             members.clear();
             members.putAll( newMembers );
@@ -120,13 +119,13 @@ public class ClusterMembers
         }
 
         @Override
-        public void joinedCluster( URI member )
+        public void joinedCluster( InstanceId member, URI memberUri )
         {
             members.put( member, new ClusterMember( member ) );
         }
 
         @Override
-        public void leftCluster( URI member )
+        public void leftCluster( InstanceId member )
         {
             members.remove( member );
         }
@@ -134,18 +133,18 @@ public class ClusterMembers
 
     private class HAMClusterMemberListener extends ClusterMemberListener.Adapter
     {
-        private URI masterURI = null;
+        private InstanceId masterId = null;
 
         @Override
-        public void masterIsElected( URI masterUri )
+        public void coordinatorIsElected( InstanceId coordinatorId )
         {
-            if ( masterUri.equals( this.masterURI ) )
+            if ( coordinatorId.equals( this.masterId ) )
             {
                 return;
             }
-            this.masterURI = masterUri;
-            Map<URI, ClusterMember> newMembers = new CopyOnWriteHashMap<URI, ClusterMember>();
-            for ( Map.Entry<URI, ClusterMember> memberEntry : members.entrySet() )
+            this.masterId = coordinatorId;
+            Map<InstanceId, ClusterMember> newMembers = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
+            for ( Map.Entry<InstanceId, ClusterMember> memberEntry : members.entrySet() )
             {
                 newMembers.put( memberEntry.getKey(), memberEntry.getValue().unavailableAs(
                         HighAvailabilityModeSwitcher.MASTER ).unavailableAs( HighAvailabilityModeSwitcher.SLAVE ) );
@@ -155,19 +154,19 @@ public class ClusterMembers
         }
 
         @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        public void memberIsAvailable( String role, InstanceId instanceId, URI roleUri )
         {
-            members.put( instanceClusterUri, getMember( instanceClusterUri ).availableAs( role, roleUri ) );
+            members.put( instanceId, getMember( instanceId ).availableAs( role, roleUri ) );
         }
 
         @Override
-        public void memberIsUnavailable( String role, URI instanceClusterUri )
+        public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
             ClusterMember member = null;
             try
             {
-                member = getMember( instanceClusterUri );
-                members.put( instanceClusterUri, member.unavailableAs( role ) );
+                member = getMember( unavailableId );
+                members.put( unavailableId, member.unavailableAs( role ) );
             }
             catch ( IllegalStateException e )
             {
@@ -179,24 +178,15 @@ public class ClusterMembers
     private class HAMHeartbeatListener extends HeartbeatListener.Adapter
     {
         @Override
-        public void failed( URI server )
+        public void failed( InstanceId server )
         {
             members.put( server, getMember( server ).failed() );
         }
 
         @Override
-        public void alive( URI server )
+        public void alive( InstanceId server )
         {
             members.put( server, getMember( server ).alive() );
-        }
-    }
-
-    private class HAMBindingListener implements BindingListener
-    {
-        @Override
-        public void listeningAt( URI me )
-        {
-            clusterUri = me;
         }
     }
 }

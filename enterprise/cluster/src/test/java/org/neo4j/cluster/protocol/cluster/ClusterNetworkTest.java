@@ -47,6 +47,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -174,7 +175,8 @@ public class ClusterNetworkTest
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(
                     new Config( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                            uri.getHost() + ":" + uri.getPort() ) ),
+                            uri.getHost() + ":" + uri.getPort(),
+                            ClusterSettings.server_id.name(), ""+i ) ),
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );
@@ -253,23 +255,23 @@ public class ClusterNetworkTest
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMembers() );
+                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
                 config.set( new ClusterConfiguration( clusterConfiguration ) );
                 in.add( cluster );
             }
 
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( InstanceId instanceId, URI member )
             {
-                logger.getLogger().debug( uri + " sees a join:" + member.toString() );
-                config.get().joined( member );
+                logger.getLogger().debug( uri + " sees a join from " + instanceId + " at URI " + member.toString() );
+                config.get().joined( instanceId, member );
             }
 
             @Override
-            public void leftCluster( URI member )
+            public void leftCluster( InstanceId instanceId )
             {
-                logger.getLogger().debug( uri + " sees a leave:" + member.toString() );
-                config.get().left( member );
+                logger.getLogger().debug( uri + " sees a leave:" + instanceId );
+                config.get().left( instanceId );
             }
 
             @Override
@@ -280,9 +282,17 @@ public class ClusterNetworkTest
             }
 
             @Override
-            public void elected( String role, URI electedMember )
+            public void elected( String role, InstanceId instanceId, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an election:" + electedMember + " as " + role );
+                logger.getLogger().debug( uri + " sees an election:" + instanceId +
+                        "was elected as " + role + " on URI " + electedMember );
+            }
+
+            @Override
+            public void unelected( String role, InstanceId instanceId, URI electedMember )
+            {
+                logger.getLogger().debug( uri + " sees an unelection:" + instanceId +
+                        "was removed from " + role + " on URI " + electedMember );
             }
         } );
         return config;
@@ -298,12 +308,12 @@ public class ClusterNetworkTest
             {
                 if ( nodes == null )
                 {
-                    nodes = configurationAtomicReference.get().getMembers();
+                    nodes = configurationAtomicReference.get().getMemberURIs();
                 }
                 else
                 {
                     assertEquals( "Config for server" + (j + 1) + " is wrong", nodes,
-                            configurationAtomicReference.get().getMembers() );
+                            configurationAtomicReference.get().getMemberURIs() );
                 }
 
             }
@@ -396,9 +406,15 @@ public class ClusterNetworkTest
                                         }
                                         catch ( Exception e )
                                         {
-                                            logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
-                                                    .getMessage() );
-                                            cluster.create( "default" );
+                                            if ( !(e.getCause() instanceof IllegalStateException ))
+                                            {
+                                                cluster.create( "default" );
+                                            }
+                                            else
+                                            {
+                                                logger.getLogger().debug( "*** Incorrectly configured cluster? "
+                                                        + e.getCause().getMessage() );
+                                            }
                                         }
                                     }
                                 } );

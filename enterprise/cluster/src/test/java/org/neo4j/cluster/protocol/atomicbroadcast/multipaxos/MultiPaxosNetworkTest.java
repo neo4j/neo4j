@@ -29,11 +29,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.MultiPaxosServerFactory;
-import org.neo4j.cluster.NetworkedServerFactory;
-import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.*;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -126,7 +123,7 @@ public class MultiPaxosNetworkTest
             @Override
             public void listeningAt( URI me )
             {
-                server2.newClient( Cluster.class ).join( "default", server1.getServerId() );
+                server2.newClient( Cluster.class ).join( "default", me );
             }
         } );
 
@@ -135,7 +132,7 @@ public class MultiPaxosNetworkTest
             @Override
             public void listeningAt( URI me )
             {
-                server3.newClient( Cluster.class ).join( "default", server1.getServerId() );
+                server3.newClient( Cluster.class ).join( "default", me );
             }
         } );
 
@@ -165,9 +162,9 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( InstanceId instanceId, URI member )
             {
-                logger.info( "1 sees join by " + member );
+                logger.info( "1 sees join by " + instanceId + " at URI " + member );
             }
         } );
 
@@ -180,9 +177,9 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( InstanceId instanceId, URI member )
             {
-                logger.info( "2 sees join by " + member );
+                logger.info( "2 sees join by " + instanceId + " at URI " + member );
             }
         } );
 
@@ -195,9 +192,9 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( org.neo4j.cluster.InstanceId instanceId, URI member )
             {
-                logger.info( "3 sees join by " + member );
+                logger.info( "3 sees join by " + instanceId + " at URI " + member );
             }
         } );
 

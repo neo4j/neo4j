@@ -19,8 +19,7 @@
  */
 package org.neo4j.cluster.protocol.snapshot;
 
-import java.net.URI;
-
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -60,12 +59,14 @@ public enum SnapshotState
                             }
                             else
                             {
-                                URI coordinator = context.getClusterContext().getConfiguration().getElected(
+                                InstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
                                         ClusterConfiguration.COORDINATOR );
                                 if ( coordinator != null )
                                 {
                                     // there is a coordinator - ask from that
-                                    outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                    outgoing.offer( Message.to( SnapshotMessage.sendSnapshot,
+                                            context.getClusterContext().getConfiguration().getUriForId(
+                                                    coordinator ) ) );
                                     return refreshing;
                                 }
                                 else
@@ -130,12 +131,14 @@ public enum SnapshotState
                              }
                              else
                              {
-                                 URI coordinator = context.getClusterContext().getConfiguration().getElected(
+                                 InstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
                                          ClusterConfiguration.COORDINATOR );
                                  if ( coordinator != null )
                                  {
                                      // coordinator exists, ask for the snapshot
-                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot,
+                                             context.getClusterContext().getConfiguration().getUriForId(
+                                                     coordinator )  ) );
                                      return refreshing;
                                  }
                                  else

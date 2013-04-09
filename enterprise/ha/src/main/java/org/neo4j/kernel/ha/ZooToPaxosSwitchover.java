@@ -74,7 +74,7 @@ public class ZooToPaxosSwitchover implements Switchover
                 lifecycle.shutdown();
             }
         }
-        catch (Throwable t)
+        catch ( Throwable t )
         {
             throw new RuntimeException( t );
         }

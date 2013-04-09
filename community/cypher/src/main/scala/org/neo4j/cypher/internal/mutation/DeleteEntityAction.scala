@@ -56,7 +56,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
     }
   }
 
-  def identifiers: Seq[(String, CypherType)] = Seq.empty
+  def identifiers: Seq[(String, CypherType)] = Nil
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
 

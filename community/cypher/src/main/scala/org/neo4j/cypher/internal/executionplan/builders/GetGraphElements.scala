@@ -33,12 +33,12 @@ object GetGraphElements {
     }
 
     data match {
-      case result: Int                   => Iterator(getElement(result))
-      case result: Long                  => Iterator(getElement(result))
+      case result: Int                   => Iterator.single(getElement(result))
+      case result: Long                  => Iterator.single(getElement(result))
       case result: java.util.Iterator[_] => result.asScala.map(castElement)
       case result: java.lang.Iterable[_] => result.asScala.view.map(castElement).iterator
       case result: Seq[_]                => result.view.map(castElement).iterator
-      case element: PropertyContainer    => Iterator(element.asInstanceOf[T])
+      case element: PropertyContainer    => Iterator.single(element.asInstanceOf[T])
       case x                             => throw new ParameterWrongTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
     }
   }

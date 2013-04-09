@@ -60,13 +60,13 @@ public class CreateSimpleGraph
             throws URISyntaxException
     {
         // START SNIPPET: traversalDesc
-        // TraversalDescription turns into JSON to send to the Server
-        TraversalDescription t = new TraversalDescription();
-        t.setOrder( TraversalDescription.DEPTH_FIRST );
-        t.setUniqueness( TraversalDescription.NODE );
+        // TraversalDefinition turns into JSON to send to the Server
+        TraversalDefinition t = new TraversalDefinition();
+        t.setOrder( TraversalDefinition.DEPTH_FIRST );
+        t.setUniqueness( TraversalDefinition.NODE );
         t.setMaxDepth( 10 );
-        t.setReturnFilter( TraversalDescription.ALL );
-        t.setRelationships( new Relationship( "singer", Relationship.OUT ) );
+        t.setReturnFilter( TraversalDefinition.ALL );
+        t.setRelationships( new Relation( "singer", Relation.OUT ) );
         // END SNIPPET: traversalDesc
 
         // START SNIPPET: traverse

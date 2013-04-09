@@ -20,6 +20,7 @@
 package org.neo4j.cluster.com.message;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,12 +43,12 @@ public class Message<MESSAGETYPE extends MessageType>
         return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, BROADCAST );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, Object to )
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to )
     {
         return to( messageType, to, null );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, Object to,
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to,
                                                                              Object payload )
     {
         return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, to.toString() );

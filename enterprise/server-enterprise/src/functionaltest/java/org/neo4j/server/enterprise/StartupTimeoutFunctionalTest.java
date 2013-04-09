@@ -29,7 +29,7 @@ import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Test;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
@@ -149,7 +149,7 @@ public class StartupTimeoutFunctionalTest {
 
         Properties databaseProperties = new Properties();
         String databasePropertiesFileName = target.file( "conf/neo4j.properties" ).getAbsolutePath();
-        databaseProperties.setProperty(HaSettings.server_id.name(), "1");
+        databaseProperties.setProperty( ClusterSettings.server_id.name(), "1");
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();

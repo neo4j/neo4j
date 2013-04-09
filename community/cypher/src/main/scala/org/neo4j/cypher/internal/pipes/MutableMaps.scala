@@ -19,20 +19,19 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import collection.JavaConverters._
-
 object MutableMaps {
-  def empty = collection.mutable.Map[String, Any]()
 
-  def create(size: Int) = new java.util.HashMap[String, Any](size).asScala
+  def create(size: Int) : collection.mutable.Map[String, Any] = new collection.mutable.OpenHashMap[String, Any](if (size < 16) 16 else size)
 
-  def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
+  def empty : collection.mutable.Map[String, Any] = create(16)
 
-  def create(input: (String, Any)*) = {
-    val m: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]()
-    input.foreach {
-      case (k, v) => m.put(k, v)
-    }
-    m.asScala
+  def create(input: scala.collection.Map[String, Any]) : collection.mutable.Map[String, Any] = {
+    val m = create(input.size)
+    input.foreach( (kv) => m.put(kv._1,kv._2))
+    m
+  }
+
+  def create(input: (String, Any)*) : collection.mutable.Map[String, Any] = {
+     collection.mutable.OpenHashMap(input:_*)
   }
 }

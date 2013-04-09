@@ -47,7 +47,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 
-  def identifiers = Seq.empty
+  def identifiers = Nil
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType

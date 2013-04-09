@@ -37,8 +37,8 @@ class PathImplTest extends Spec {
     assert(path.length() === 0)
     assert(path.startNode() === node)
     assert(path.endNode() === node)
-    assert(path.nodes().asScala === Seq(node))
-    assert(path.relationships().asScala === Seq())
+    assert(path.nodes().asScala.toList == List(node))
+    assert(path.relationships().asScala.toList == List())
     assert(path.toSeq === Seq(node))
   }
 
@@ -51,8 +51,8 @@ class PathImplTest extends Spec {
     assert(path.length() === 1)
     assert(path.startNode() === nodA)
     assert(path.endNode() === nodB)
-    assert(path.nodes().asScala === Seq(nodA, nodB))
-    assert(path.relationships().asScala === Seq(rel))
+    assert(path.nodes().asScala.toList == List(nodA, nodB))
+    assert(path.relationships().asScala.toList == List(rel))
     assert(path.toSeq === Seq(nodA, rel, nodB))
   }
 

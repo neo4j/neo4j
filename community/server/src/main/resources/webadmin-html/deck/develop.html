@@ -1,0 +1,148 @@
+
+<!-- Begin slides. Just make elements with a class of slide.-->
+<section class="slide">
+    <h1>Develop a Graph</h1>
+    <p class="hint">From whiteboard to world stage, Neo4j works the way you think.</p>
+</section>
+<section class="slide">
+    <h2>There are Three APIs...</h2><img src="/webadmin/deck/img/api-trio.png">
+    <p class="summary">
+        Neo4j has a trio of programming interfaces, focused on different kinds of interaction.
+    </p>
+    <ul>
+        <li><em>Work</em> with the Cypher query language over HTTP</li>
+        <li><em>Discover</em> raw graph primitives over REST</li>
+        <li><em>Customize</em> the database with plugins (for special cases)</li>
+    </ul>
+    <p class="hint">As always, pick the right tool for the job.</p>
+</section>
+<section class="slide">
+    <h2>Work with the Cypher language</h2>
+    <p>
+        Neo4j's Cypher language is purpose built for working with graph data. Inspired
+        by SQL syntax, embracing pattern matching for describing paths, Cypher is
+        the primary tool for building graph applications.
+    </p>
+    <p>
+        Let's use Cypher to generate the graph described in the 
+        <a class="deck-url" href="/webadmin/deck/learn.html">Learn Guide</a>. Starting with Emil:
+    </p>
+    <pre>CREATE (ee { name: &quot;Emil&quot;, from: &quot;Sweden&quot; }) RETURN ee;</pre>
+    <ul>
+        <li><code>CREATE</code> clause to create data</li>
+        <li><code>()</code> parenthesis to indicate a node</li>
+        <li><code>{}</code> brackets to add properties to the node</li>
+        <li><code>RETURN</code> clause indicates what data to return</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Cypher, finding nodes</h2>
+    <p>
+        Now find the node representing Emil:
+    </p>
+    <pre>START ee=node(*) WHERE ee.name! = &quot;Emil&quot; RETURN ee;</pre>
+    <ul>
+        <li><code>START</code> clause to begin a query</li>
+        <li><code>ee=node(*)</code> to search through all nodes</li>
+        <li><code>WHERE</code> clause to constrain the results</li>
+        <li><code>ee.name! </code> indicates the name property must exist</li>
+        <li><code>= &quot;Emil&quot;</code> compares an existing name to the value Emil</li>
+        <li><code>RETURN</code> clause requests particular results</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Cypher, create nodes and relationships</h2>
+    <p>
+        <code>CREATE</code> clauses can create many nodes and relationships at once.
+    </p>
+    <pre>CREATE (ee { name: &quot;Emil&quot;, from: &quot;Sweden&quot;, klout: 99 }),
+(js { name: &quot;Johan&quot;, from: &quot;Sweden&quot;, learn: &quot;surfing&quot; }),
+(ir { name: &quot;Ian&quot;, from: &quot;England&quot;, title: &quot;author&quot; }),
+(rvb { name: &quot;Rik&quot;, from: &quot;Belgium&quot;, pet: &quot;Orval&quot; }),
+(ally { name: &quot;Allison&quot;, from: &quot;California&quot;, hobby: &quot;surfing&quot; }),
+(ee)-[:KNOWS {since: 2001}]->(js),(ee)-[:KNOWS {rating: 5}]->(ir),
+(js)-[:KNOWS]->(ir),(js)-[:KNOWS]->(rvb),
+(ir)-[:KNOWS]->(js),(ir)-[:KNOWS]->(ally),
+(rvb)[:KNOWS]->(ally);</pre>
+</section>
+<section class="slide">
+    <h2>Cypher pattern matching</h2>
+    <p class="summary">
+        Cypher uses patterns to describe how to find things in the graph. 
+        For instance, to find Emil's friends:
+    </p>
+    <pre>START ee=node(*) MATCH (ee)-[:KNOWS]->(friends) 
+WHERE n.name! = &quot;Emil&quot; RETURN friends;</pre>
+    <ul>
+        <li><code>MATCH</code> clause to describe the pattern from known Nodes to found Nodes</li>
+        <li><code>(ee)</code> starts the pattern with Emil</li>
+        <li><code>-[:KNOWS]-></code> matches outgoing "KNOWS" relationships</li>
+        <li><code>(friends)</code> will be bound to Emil's friends</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Cypher recommendations</h2>
+    <p class="summary">
+        Pattern matching can be used to make recommendations. Johan is learning to surf, so he may want to find
+        a new friend who already does:
+    </p>
+    <pre>START js=node(*) 
+MATCH (js)-[:KNOWS]->()-[:KNOWS]->(surfer) 
+WHERE js.name! = &quot;Johan&quot; AND surfer.hobby! = "surfing"
+RETURN surfer;</pre>
+    <ul>
+        <li><code>()</code> empty parenthesis to ignore these nodes</li>
+        <li><code>surfer</code> will contain Allison, a friend of a friend who surfs</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Discover with REST</h2>
+    <img src="/webadmin/deck/img/api-rest.png">
+    <p class="summary">
+        Once you've created a graph with Cypher, the REST interface can be useful for
+        interactively walking the graph in a hypermedia way. This interface is also
+        useful for checking system statistics and settings. 
+    </p>
+    <ul>
+        <li>work with raw graph primitives</li>
+        <li>basic monitoring</li>
+        <li>not recommended for high-load access</li>
+    </ul>
+    <p class="hint">The web is a graph. Why not navigate a graph like browsing the web.</p>
+</section>
+<section class="slide">
+    <h2>Customize with Plugins</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <p>
+        Cypher is an expressive and powerful language, intended to cover the
+        vast majority of operations. When you have specialized needs, plugins
+        allow you to "get under the hood."
+    </p>
+    <ul>
+        <li>raw access to the database</li>
+        <li>your choice of JVM language</li>
+        <li><em>note</em>: for advanced users with special needs</li>
+    </ul>
+    <p class="hint">With great power comes great responsibility.</p>
+</section>
+<section class="slide">
+    <h2>Summary</h2>
+    <p>
+        Start your application using Cypher to create and query graph data. Use the REST API
+        to monitor the database. In special cases, consider a plugin. 
+    </p>
+    <p>Now, go get started on your own application.</p>
+    <p>Next steps:</p>
+    <ul>
+        <li> <a class="external" href="http://www.neo4j.org/develop/drivers" target="_blank">Download </a>a driver for your language of choice</li>
+        <li> <a class="external" href="http://www.neo4j.org/learn/cypher" target="_blank">Learn </a>more about Cypher</li>
+        <li> <a class="external" href="http://docs.neo4j.org/chunked/@@neo4j.version@@/" target="_blank">Read </a>the Neo4j manual for details</li>
+    </ul>
+    <p class="hint">Or, see <a class="deck-url" href="/webadmin/deck/guide.html">other guides</a>.</p>
+</section>
+<!-- End slides.-->
+<!-- Begin extension snippets. Add or remove as needed.-->
+<!-- deck.navigation snippet-->
+<a href="#" title="Previous" class="deck-prev-link">←</a>
+<a href="#" title="Next" class="deck-next-link">→</a>
+<!-- End extension snippets.-->

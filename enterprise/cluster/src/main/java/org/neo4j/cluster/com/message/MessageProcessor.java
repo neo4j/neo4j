@@ -25,5 +25,5 @@ package org.neo4j.cluster.com.message;
  */
 public interface MessageProcessor
 {
-    void process( Message<? extends MessageType> message );
+    boolean process( Message<? extends MessageType> message );
 }

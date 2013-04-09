@@ -22,11 +22,13 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * State machine for Paxos Proposer
@@ -68,27 +70,7 @@ public enum ProposerState
                     {
                         case propose:
                         {
-                            Object payload = message.getPayload();
-
-                            if ( payload instanceof ClusterMessage.ConfigurationChangeState )
-                            {
-                                ClusterMessage.ConfigurationChangeState state = message.getPayload();
-                                List<URI> acceptors = context.getAcceptors();
-
-                                // Never include node that is leaving
-                                if ( state.getLeave() != null )
-                                {
-                                    acceptors = new ArrayList<URI>( acceptors );
-                                    acceptors.remove( state.getLeave() );
-                                }
-
-                                propose( context, message, outgoing, acceptors );
-                            }
-                            else
-                            {
-                                propose( context, message, outgoing, context.getAcceptors() );
-                            }
-
+                            propose( context, message, outgoing, determineAcceptorSet( message, context ) );
                             break;
                         }
 
@@ -98,6 +80,11 @@ public enum ProposerState
                             ProposerMessage.RejectPrepare rejectPropose = message.getPayload();
                             InstanceId instanceId = new InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
+                            context.clusterContext.getLogger( ProposerState.class ).debug(
+                                    "Propose for instance " + instanceId + " at ballot " + instance.ballot
+                                            + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
+                                            + rejectPropose.getBallot() );
+
                             if ( instance.isState( PaxosInstance.State.p1_pending ) )
                             {
                                 long ballot = instance.ballot;
@@ -106,20 +93,17 @@ public enum ProposerState
                                     ballot += 1000; // Make sure we win next time
                                 }
 
-                                instance.phase1Timeout( ballot, context.getAcceptors() );
+                                instance.phase1Timeout( ballot );
+                                context.clusterContext.getLogger( ProposerState.class ).debug(
+                                        "Reproposing instance " + instanceId + " at ballot " + instance.ballot
+                                                + " after rejectPrepare");
                                 for ( URI acceptor : instance.getAcceptors() )
                                 {
-                                    if ( acceptor.equals( context.clusterContext.getMe() ) )
-                                    {
-
-                                    }
-                                    else
-                                    {
-                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
-                                                acceptor, new AcceptorMessage.PrepareState( ballot ) ),
-                                                InstanceId.INSTANCE ) );
-                                    }
+                                    outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                            acceptor, new AcceptorMessage.PrepareState( ballot ) ),
+                                            InstanceId.INSTANCE ) );
                                 }
+                                // This will reset the phase1Timeout if existing
                                 context.timeouts.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
                                         ProposerMessage
                                                 .phase1Timeout, message ), InstanceId.INSTANCE ) );
@@ -143,12 +127,13 @@ public enum ProposerState
                                     outgoing.offer( originalMessage.copyHeadersTo(
                                             Message.internal( AtomicBroadcastMessage.failed,
                                                     originalMessage.getPayload() ) ) );
+                                    context.timeouts.cancelTimeout( instanceId );
                                 }
                                 else
                                 {
                                     long ballot = instance.ballot + 1000;
 
-                                    instance.phase1Timeout( ballot, context.getAcceptors() );
+                                    instance.phase1Timeout( ballot );
 
                                     for ( URI acceptor : instance.getAcceptors() )
                                     {
@@ -267,7 +252,9 @@ public enum ProposerState
 
                                     if ( instance.clientValue )
                                     {
-                                        propose( context, message, outgoing, instance.getAcceptors() );
+                                        Message copyWithValue = Message.internal( ProposerMessage.propose, instance.value_2 );
+                                        message.copyHeadersTo( copyWithValue );
+                                        propose( context, copyWithValue, outgoing, instance.getAcceptors() );
                                     }
                                 }
                             }
@@ -316,15 +303,22 @@ public enum ProposerState
                                     // Might have to extra-tell myself if not yet officially part of cluster
                                     if ( instance.value_2 instanceof ClusterMessage.ConfigurationChangeState )
                                     {
+                                        patchBookedInstances( (ClusterMessage.ConfigurationChangeState) instance.value_2,
+                                                context.proposerContext.bookedInstances, context.getPaxosInstances(),
+                                                context.clusterContext.getConfiguration().getMembers(),
+                                                context.clusterContext.getLogger( ProposerState.class ) );
+
                                         ClusterMessage.ConfigurationChangeState state = (ClusterMessage
                                                 .ConfigurationChangeState) instance.value_2;
                                         // TODO getLearners might return wrong list if another join happens at the
                                         // same time
                                         // Proper fix is to wait with this learn until we have learned all previous
                                         // configuration changes
+
+                                        // TODO Fix this to use InstanceId instead of URI
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            if ( learner.equals( context.clusterContext.getMe() ))
+                                            if ( learner.equals( context.clusterContext.boundAt() ) )
                                             {
                                                 outgoing.offer( message.copyHeadersTo( Message.internal( LearnerMessage
                                                         .learn, new LearnerMessage.LearnState( instance.value_2 ) ),
@@ -343,7 +337,7 @@ public enum ProposerState
                                         if ( state.getJoin() != null )
                                         {
                                             outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
-                                                    .learn, state.getJoin(),
+                                                    .learn, state.getJoinUri(),
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
                                         }
@@ -366,11 +360,11 @@ public enum ProposerState
                                     if ( !context.proposerContext.pendingValues.isEmpty() && context.proposerContext
                                             .bookedInstances.size() < MAX_CONCURRENT_INSTANCES )
                                     {
-                                        Object value = context.proposerContext.pendingValues.remove();
+                                        Message proposeMessage = context.proposerContext.pendingValues.remove();
                                         context.clusterContext.getLogger( ProposerState.class ).debug( "Restarting "
-                                                + value + " booked:"
+                                                + proposeMessage + " booked:"
                                                 + context.proposerContext.bookedInstances.size() );
-                                        outgoing.offer( Message.internal( ProposerMessage.propose, value ) );
+                                        outgoing.offer( proposeMessage );
                                     }
                                 }
                                 else
@@ -393,19 +387,83 @@ public enum ProposerState
 
             };
 
+    /**
+     * This patches the booked instances that are pending in case the configuration of the cluster changes. This
+     * should be called only when we learn a ConfigurationChangeState i.e. when we receive an accepted for
+     * such a message. This won't "learn" the message, as in applying it on the cluster configuration, but will
+     * just update properly the set of acceptors for pending instances.
+     */
+    private static void patchBookedInstances( ClusterMessage.ConfigurationChangeState value_2,
+                                              Map<InstanceId, Message> bookedInstances,
+                                              PaxosInstanceStore paxosInstances,
+                                              Map<org.neo4j.cluster.InstanceId, URI> members,
+                                              StringLogger logger )
+    {
+        if ( value_2.getJoin() != null )
+        {
+            for ( InstanceId instanceId : bookedInstances.keySet() )
+            {
+                PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
+                if ( instance.getAcceptors() != null)
+                {
+                    instance.getAcceptors().remove( members.get( value_2.getJoin() ) );
+
+                    logger.debug( "For booked instance " + instance + " removed gone member "
+                            + members.get( value_2.getJoin() ) + " added joining member "+ value_2.getJoinUri() );
+
+                    if ( !instance.getAcceptors().contains(  value_2.getJoinUri() ) )
+                    {
+                        instance.getAcceptors().add( value_2.getJoinUri() );
+                    }
+                }
+            }
+        }
+        else if ( value_2.getLeave() != null )
+        {
+            for ( InstanceId instanceId : bookedInstances.keySet() )
+            {
+                PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
+                if ( instance.getAcceptors() != null )
+                {
+                    logger.debug( "For booked instance " + instance + " removed leaving member "
+                            + value_2.getLeave() + " (at URI " + members.get( value_2.getLeave() ) + ")" );
+                    instance.getAcceptors().remove( members.get( value_2.getLeave() ) );
+                }
+            }
+        }
+    }
+
     public final int MAX_CONCURRENT_INSTANCES = 10;
 
     private static void propose( MultiPaxosContext context, Message message, MessageHolder outgoing,
                                  List<URI> acceptors )
     {
-        InstanceId instanceId = context.proposerContext.newInstanceId( context.learnerContext
-                .getLastKnownLearnedInstanceInCluster() );
+        InstanceId instanceId;
+        if ( message.hasHeader( InstanceId.INSTANCE ) )
+        {
+            instanceId = new InstanceId( message );
+        }
+        else
+        {
+            instanceId = context.proposerContext.newInstanceId( context.learnerContext
+                    .getLastKnownLearnedInstanceInCluster() );
 
-        context.proposerContext.bookedInstances.put( instanceId, message );
+            message.setHeader( InstanceId.INSTANCE, instanceId.toString() );
+            context.proposerContext.bookedInstances.put( instanceId, message );
+        }
 
         long ballot = 1000 + context.getServerId(); // First server will have first ballot id be 1001
 
         PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
+
+        /*
+         * If the instance already has an acceptor set, use that. This ensures that patched acceptor sets, for example,
+         * are respected.
+         */
+        if ( instance.getAcceptors() != null )
+        {
+            acceptors = instance.getAcceptors();
+        }
 
         if ( !(instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance.State.delivered )) )
         {
@@ -424,6 +482,40 @@ public enum ProposerState
         {
             // Wait with this value - we have our hands full right now
             context.proposerContext.pendingValues.offerFirst( message );
+        }
+    }
+
+    private static List<URI> determineAcceptorSet( Message<ProposerMessage> message, MultiPaxosContext context )
+    {
+        Object payload = message.getPayload();
+
+        if ( payload instanceof ClusterMessage.ConfigurationChangeState )
+        {
+            ClusterMessage.ConfigurationChangeState state = message.getPayload();
+            List<URI> acceptors = context.getAcceptors();
+
+            Map<org.neo4j.cluster.InstanceId, URI> currentMembers = context.getMembers();
+
+            // Never include node that is leaving
+            if ( state.getLeave() != null )
+            {
+                acceptors = new ArrayList<URI>( acceptors );
+                acceptors.remove( state.getLeave() );
+            }
+
+            if ( state.getJoin() != null && currentMembers.containsKey( state.getJoin() ))
+            {
+                acceptors.remove( currentMembers.get( state.getJoin() ) );
+                if ( !acceptors.contains( state.getJoinUri() ) )
+                {
+                    acceptors.add( state.getJoinUri() );
+                }
+            }
+            return acceptors;
+        }
+        else
+        {
+            return context.getAcceptors();
         }
     }
 }

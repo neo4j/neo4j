@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,31 +34,45 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
 
 public class StoreLockerTest
 {
-    private static final File SOME_DIRECTORY = new File( "target/StoreLockerTest/unused" );
+    private static final TargetDirectory target = TargetDirectory.forTest( StoreLockerTest.class );
 
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, true );
-        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
+        try
+        {
+            storeLocker.checkLock( target.directory( "unused", true ) );
 
-        assertThat( locked, is( true ) );
+            // Ok
+        }
+        catch ( StoreLockException e )
+        {
+            fail();
+        }
     }
 
     @Test
     public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true );
-        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
-
-        assertThat( locked, is( true ) );
+        try
+        {
+            storeLocker.checkLock( target.directory( "unused", true ) );
+            // Ok
+        }
+        catch ( StoreLockException e )
+        {
+            fail();
+        }
     }
 
     @Test
@@ -64,11 +80,19 @@ public class StoreLockerTest
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false,
                 new IOException( "store dir could not be created" ), null, true );
-        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
+        File storeDir = target.directory( "unused", true );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
-
-        assertThat( locked, is( false ) );
+        try
+        {
+            storeLocker.checkLock( storeDir );
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            String msg = format( "Unable to create path for store dir: %s", storeDir );
+            assertThat( e.getMessage(), is( msg ) );
+        }
     }
 
     @Test
@@ -77,11 +101,18 @@ public class StoreLockerTest
         Map<String, String> inputParams = new HashMap<String, String>();
         inputParams.put( GraphDatabaseSettings.read_only.name(), "true" );
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true );
-        StoreLocker storeLocker = new StoreLocker( new Config( inputParams ), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config( inputParams ), fileSystemAbstraction );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
-
-        assertThat( locked, is( false ) );
+        try
+        {
+            storeLocker.checkLock( target.directory( "unused", true ) );
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            String msg = "Unable to lock store as store dir does not exist and instance is in read-only mode";
+            assertThat( e.getMessage(), is( msg ) );
+        }
     }
 
     @Test
@@ -89,21 +120,36 @@ public class StoreLockerTest
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null,
                 new IOException( "cannot open lock file" ), true );
-        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
+        File storeDir = target.directory( "unused", true );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
-
-        assertThat( locked, is( false ) );
+        try
+        {
+            storeLocker.checkLock( storeDir );
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            String msg = format( "Unable to obtain lock on store lock file: %s", new File( storeDir,
+                    STORE_LOCK_FILENAME ) );
+            assertThat( e.getMessage(), is( msg ) );
+        }
     }
 
     @Test
     public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, false );
-        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction, DEV_NULL );
+        StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
-        boolean locked = storeLocker.lock( SOME_DIRECTORY );
-
-        assertThat( locked, is( false ) );
+        try
+        {
+            storeLocker.checkLock( target.directory( "unused", true ) );
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            assertThat( e.getMessage(), is( "Could not create lock file" ) );
+        }
     }
 }

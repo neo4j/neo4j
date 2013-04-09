@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -61,7 +60,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
 
     class ThreadRunner implements Runnable
     {
-        public static final int NUM_USERS = 10;
+        static final int NUM_USERS = 10;
         final GetOrCreate impl;
 
         ThreadRunner( GetOrCreate impl )
@@ -88,56 +87,44 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         public void run()
         {
             final Node lockNode = createNode();
-            final List<List<Node>> results = new ArrayList<List<Node>>();
-            final List<Thread> threads = new ArrayList<Thread>();
-            final AtomicReference<RuntimeException> failure = new AtomicReference<RuntimeException>();
-            for ( int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++ )
+            final List<GetOrCreateTask> threads = new ArrayList<GetOrCreateTask>();
+            int numThreads = Runtime.getRuntime().availableProcessors()*2;
+            for ( int i = 0; i < numThreads; i++ )
             {
-                threads.add( new Thread( GetOrCreateDocIT.class.getSimpleName() + " thread " + i )
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            List<Node> subresult = new ArrayList<Node>();
-                            for ( int j = 0; j < NUM_USERS; j++ )
-                            {
-                                subresult.add( impl.getOrCreateUser( getUsername( j ), graphdb(), lockNode ) );
-                            }
-                            results.add( subresult );
-                        }
-                        catch ( RuntimeException e )
-                        {
-                            failure.compareAndSet( null, e );
-                            throw e;
-                        }
-                    }
-                } );
+                threads.add( new GetOrCreateTask( db, lockNode, NUM_USERS, impl,
+                        GetOrCreateDocIT.class.getSimpleName() + " thread " + i ) );
             }
             for ( Thread thread : threads )
             {
                 thread.start();
             }
-            for ( Thread thread : threads )
+            
+            RuntimeException failure = null;
+            List<List<Node>> results = new ArrayList<List<Node>>();
+            for ( GetOrCreateTask thread : threads )
             {
                 try
                 {
                     thread.join();
+                    if ( failure == null )
+                        failure = thread.failure;
+                    
+                    results.add( thread.result );
                 }
                 catch ( InterruptedException e )
                 {
                     e.printStackTrace();
                 }
             }
+            
+            if ( failure != null )
+                throw failure;
 
-            if ( failure.get() != null )
-                throw failure.get();
-
-            List<Node> first = results.remove( 0 );
+            assertEquals( numThreads, results.size() );
+            List<Node> firstResult = results.remove( 0 );
             for ( List<Node> subresult : results )
             {
-                assertEquals( first, subresult );
+                assertEquals( firstResult, subresult );
             }
             for ( int i = 0; i < NUM_USERS; i++ )
             {
@@ -145,11 +132,6 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
                 impl.getOrCreateUser( username, graphdb(), lockNode );
                 assertUserExistsUniquely( username );
             }
-        }
-
-        private String getUsername( int j )
-        {
-            return "User" + j;
         }
 
         private void assertUserExistsUniquely( String username )
@@ -162,6 +144,49 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             catch ( NoSuchElementException e )
             {
                 throw new RuntimeException( "User '" + username + "' not created uniquely.", e );
+            }
+        }
+    }
+    
+    private static String getUsername( int j )
+    {
+        return "User" + j;
+    }
+    
+    private static class GetOrCreateTask extends Thread
+    {
+        private final GraphDatabaseService db;
+        private final Node lockNode;
+        private final int numUsers;
+        private final GetOrCreate impl;
+        volatile List<Node> result;
+        volatile RuntimeException failure;
+        
+        GetOrCreateTask( GraphDatabaseService db, Node lockNode, int numUsers, GetOrCreate impl, String name )
+        {
+            super( name );
+            this.db = db;
+            this.lockNode = lockNode;
+            this.numUsers = numUsers;
+            this.impl = impl;
+        }
+        
+        @Override
+        public void run()
+        {
+            try
+            {
+                List<Node> subresult = new ArrayList<Node>();
+                for ( int j = 0; j < numUsers; j++ )
+                {
+                    subresult.add( impl.getOrCreateUser( getUsername( j ), db, lockNode ) );
+                }
+                this.result = subresult;
+            }
+            catch ( RuntimeException e )
+            {
+                failure = e;
+                throw e;
             }
         }
     }

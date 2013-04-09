@@ -37,6 +37,8 @@ abstract class Trail {
 
   def end: String
 
+  def isEndPoint: Boolean
+
   def size: Int
 
   def toSteps(id: Int): Option[ExpanderStep]

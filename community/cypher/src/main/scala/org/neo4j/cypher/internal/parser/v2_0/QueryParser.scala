@@ -52,7 +52,7 @@ trait QueryParser
       }
   }
 
-  def body: Parser[Body] = implicitWith | bodyWith | bodyReturn |  noBody | failure("expected valid query body")
+  def body: Parser[Body] = implicitWith | bodyWith | bodyReturn | noBody | failure("expected valid query body")
 
   def implicitWith: Parser[Body] = atLeastOneUpdateCommand ~ body ^^ {
     case updateCmds ~ nextQ => {
@@ -121,11 +121,6 @@ trait QueryParser
       val (startItems, namedPaths) = extractItemsAndPaths(starts)
       QueryStart(startItems, namedPaths, Seq.empty, Seq.empty, updates.toSeq.flatten, True())
   }
-
-//  private def updatesAfterWith = updates ^^ {
-//    case updates =>
-//      QueryStart(Seq.empty, Seq.empty, Seq.empty, Seq.empty, updates, True())
-//  }
 
   private def slice = opt(skip) ~ opt(limit) ^^ {
     case None ~ None => None

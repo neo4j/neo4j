@@ -137,7 +137,6 @@ public class StoreUpgraderTestIT
                 "StringPropertyStore v0.9.9" );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
-
         try
         {
             newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ),
@@ -190,8 +189,8 @@ public class StoreUpgraderTestIT
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase(fileSystem), migrator,
-                files, new DefaultIdGeneratorFactory(), fileSystem );
+        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase( fs.get() ), migrator,
+                files, new DefaultIdGeneratorFactory(), fs.get() );
     }
 
     @Before

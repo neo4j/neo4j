@@ -47,8 +47,8 @@ public class TestProtocolServer
     protected ProtocolServer server;
     private final DelayedDirectExecutor stateMachineExecutor;
 
-    public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverId,
-                               AcceptorInstanceStore acceptorInstanceStore,
+    public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
+                               InstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
                                ElectionCredentialsProvider electionCredentialsProvider )
     {
         this.receiver = new TestMessageSource();
@@ -56,10 +56,10 @@ public class TestProtocolServer
 
         stateMachineExecutor = new DelayedDirectExecutor();
 
-        server = factory.newProtocolServer( timeoutStrategy, receiver, sender, acceptorInstanceStore,
+        server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
                 electionCredentialsProvider, stateMachineExecutor );
 
-        server.listeningAt( serverId );
+        server.listeningAt( serverUri );
     }
 
     public ProtocolServer getServer()
@@ -73,10 +73,9 @@ public class TestProtocolServer
     }
 
     @Override
-    public void process( Message message )
+    public boolean process( Message message )
     {
-        receiver.process( message );
-
+        return receiver.process( message );
     }
 
     public void sendMessages( List<Message> output )
@@ -123,9 +122,10 @@ public class TestProtocolServer
         }
 
         @Override
-        public void process( Message<? extends MessageType> message )
+        public boolean process( Message<? extends MessageType> message )
         {
             messages.add( message );
+            return true;
         }
 
         public List<Message> getMessages()
@@ -152,12 +152,16 @@ public class TestProtocolServer
         }
 
         @Override
-        public void process( Message<? extends MessageType> message )
+        public boolean process( Message<? extends MessageType> message )
         {
             for ( MessageProcessor listener : listeners )
             {
-                listener.process( message );
+                if ( !listener.process( message ) )
+                {
+                    return false;
+                }
             }
+            return true;
         }
     }
 }

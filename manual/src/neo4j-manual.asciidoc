@@ -43,10 +43,6 @@ include::community/index.asciidoc[]
 
 include::manpages.asciidoc[]
 
-:leveloffset: 0
-
-include::qanda/index.asciidoc[]
-
 ////
 :leveloffset: 0
 include::glossary.asciidoc[]

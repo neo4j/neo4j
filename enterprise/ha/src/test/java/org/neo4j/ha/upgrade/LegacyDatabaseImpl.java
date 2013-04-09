@@ -63,7 +63,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     
     private GraphDatabaseService db;
     private String storeDir;
-    
+
     public LegacyDatabaseImpl( String storeDir, GraphDatabaseService db ) throws RemoteException
     {
         super();

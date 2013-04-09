@@ -25,8 +25,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class StoreLockerLifecycleAdapter extends LifecycleAdapter
 {
-    public static final String DATABASE_LOCKED_ERROR_MESSAGE = "Database locked.";
-
     private final StoreLocker storeLocker;
     private final File storeDir;
 
@@ -39,7 +37,7 @@ public class StoreLockerLifecycleAdapter extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        if (! storeLocker.lock( storeDir )) throw new IllegalStateException( DATABASE_LOCKED_ERROR_MESSAGE );
+        storeLocker.checkLock( storeDir );
     }
 
     @Override

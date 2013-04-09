@@ -300,9 +300,18 @@ public abstract class InternalAbstractGraphDatabase
                 throw txManager.getRecoveryError();
             }
         }
-        catch ( Throwable throwable )
+        catch ( final Throwable throwable )
         {
-            msgLog.logMessage( "Startup failed", throwable );
+            StringBuilder msg = new StringBuilder(  );
+            msg.append( "Startup failed" );
+            Throwable temporaryThrowable = throwable;
+            while (temporaryThrowable != null)
+            {
+                msg.append( ": " ).append( temporaryThrowable.getMessage() );
+                temporaryThrowable = temporaryThrowable.getCause();
+            }
+
+            msgLog.logMessage( msg.toString() );
 
             shutdown();
 
@@ -368,7 +377,7 @@ public abstract class InternalAbstractGraphDatabase
         config.setLogger( msgLog );
 
         this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
-                new StoreLocker( config, fileSystem, msgLog ), storeDir ));
+                new StoreLocker( config, fileSystem ), storeDir ));
 
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 

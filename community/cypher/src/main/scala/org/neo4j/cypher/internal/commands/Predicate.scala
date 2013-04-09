@@ -208,7 +208,7 @@ case class True() extends Predicate {
   override def toString(): String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
-  def children = Seq.empty
+  def children = Nil
   def assertInnerTypes(symbols: SymbolTable) {}
   def symbolTableDependencies = Set()
 }

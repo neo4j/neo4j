@@ -19,23 +19,19 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import java.io.Serializable;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
+import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
+import org.neo4j.cluster.TestProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
-import org.neo4j.cluster.protocol.cluster.ClusterRule;
-import org.neo4j.cluster.protocol.snapshot.Snapshot;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 
@@ -44,6 +40,7 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
  */
 public class MultiPaxosTest
 {
+    /*
     private NetworkMock network = new NetworkMock( 50,
             new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 0 ) ),
             new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
@@ -55,6 +52,7 @@ public class MultiPaxosTest
     public void testDecision()
             throws ExecutionException, InterruptedException, URISyntaxException
     {
+
         Map<String, String> map1 = new AtomicBroadcastMap<String, String>( cluster.getNodes().get( 0 ).newClient(
                 AtomicBroadcast.class ), cluster.getNodes().get( 0 ).newClient( Snapshot.class ) );
         Map<String, String> map2 = new AtomicBroadcastMap<String, String>( cluster.getNodes().get( 1 ).newClient(
@@ -81,4 +79,50 @@ public class MultiPaxosTest
         foo = map2.get( "foo" );
         Assert.assertThat( foo, CoreMatchers.nullValue() );
     }
+*/
+    @Test
+    public void testFailure() throws Exception
+    {
+        ScriptableNetworkFailureLatencyStrategy networkLatency = new ScriptableNetworkFailureLatencyStrategy();
+        NetworkMock network = new NetworkMock( 50,
+                new MultipleFailureLatencyStrategy( networkLatency ),
+                new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
+
+        List<TestProtocolServer> nodes = new ArrayList<TestProtocolServer>();
+
+        TestProtocolServer server = network.addServer( 1, URI.create( "cluster://server1" ) );
+        server.newClient( Cluster.class ).create( "default" );
+        network.tickUntilDone();
+        nodes.add( server );
+
+        for ( int i = 1; i < 3; i++ )
+        {
+            TestProtocolServer protocolServer = network.addServer( i + 1, new URI( "cluster://server" + (i + 1) ) );
+            protocolServer.newClient( Cluster.class ).join( "default", new URI( "cluster://server1" ) );
+            network.tick( 10 );
+            nodes.add( protocolServer );
+        }
+
+        final AtomicBroadcast atomicBroadcast = nodes.get( 0 ).newClient( AtomicBroadcast.class );
+        final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+        atomicBroadcast.broadcast( serializer.broadcast( new DaPayload() ) );
+
+        networkLatency.nodeIsDown( "cluster://server2" );
+        networkLatency.nodeIsDown( "cluster://server3" );
+
+        atomicBroadcast.broadcast( serializer.broadcast( new DaPayload() ) );
+        network.tick( 100 );
+        networkLatency.nodeIsUp( "cluster://server3" );
+        network.tick( 1000 );
+
+        for ( TestProtocolServer node : nodes )
+        {
+            node.newClient( Cluster.class ).leave();
+            network.tick( 10 );
+        }
+
+    }
+
+    private static final class DaPayload implements Serializable
+    {}
 }

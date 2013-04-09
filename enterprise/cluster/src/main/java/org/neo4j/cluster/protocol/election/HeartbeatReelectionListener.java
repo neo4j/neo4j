@@ -19,8 +19,7 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import java.net.URI;
-
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 
 /**
@@ -38,14 +37,14 @@ public class HeartbeatReelectionListener
     }
 
     @Override
-    public void failed( URI server )
+    public void failed( InstanceId server )
     {
         // Suggest reelection for all roles of this node
         election.demote( server );
     }
 
     @Override
-    public void alive( URI server )
+    public void alive( InstanceId server )
     {
         election.performRoleElections();
     }

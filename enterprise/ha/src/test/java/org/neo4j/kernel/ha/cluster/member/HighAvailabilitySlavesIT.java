@@ -43,7 +43,7 @@ public class HighAvailabilitySlavesIT
     @After
     public void after() throws Throwable
     {
-        clusterManager.shutdown();
+        clusterManager.stop();
     }
     
     @Test

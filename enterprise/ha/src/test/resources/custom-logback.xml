@@ -20,11 +20,10 @@
 
 -->
 <included>
-  <!--
   <logger name="neo4j.diagnostics" level="debug">
   </logger>
 
-  <logger name="org.neo4j.cluster" level="debug">
+  <logger name="org.neo4j.cluster.protocol" level="debug">
   </logger>
 
   <logger name="org.neo4j.cluster.NetworkMock" level="warn">
@@ -33,9 +32,10 @@
   <logger name="org.neo4j.kernel.ha" level="debug">
   </logger>
 
-  <root level="debug">
+  <root level="info">
+    <appender-ref ref="CONSOLE"/>
   </root>
+
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
   </logger>
-  -->
 </included>

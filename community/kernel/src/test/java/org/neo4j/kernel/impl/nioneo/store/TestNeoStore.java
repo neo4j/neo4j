@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestNeoStore
@@ -90,7 +91,8 @@ public class TestNeoStore
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final String path = "dir";
+    private TargetDirectory targetDirectory;
+    private File path;
 
     private File file( String name )
     {
@@ -100,10 +102,12 @@ public class TestNeoStore
     @Before
     public void setUpNeoStore() throws Exception
     {
+        targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
+        path = targetDirectory.directory( "dir", true );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fs.get(), StringLogger.SYSTEM, null );
-        sf.createNeoStore( file( "neo" ) ).close();
+        sf.createNeoStore( file( NeoStore.DEFAULT_NAME ) ).close();
     }
 
     private static class MyPropertyIndex extends
@@ -152,7 +156,7 @@ public class TestNeoStore
         LockManager lockManager = new LockManagerImpl( new RagManager() );
 
         final Config config = new Config( MapUtil.stringMap(
-                InternalAbstractGraphDatabase.Configuration.store_dir.name(), path,
+                InternalAbstractGraphDatabase.Configuration.store_dir.name(), path.getPath(),
                 InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo",
                 InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
                 GraphDatabaseSettings.class );
@@ -1073,7 +1077,7 @@ public class TestNeoStore
     @Test
     public void testSetBlockSize() throws Exception
     {
-        tearDownNeoStore();
+        targetDirectory.cleanup();
 
         Config config = new Config( MapUtil.stringMap( "string_block_size", "62", "array_block_size", "302" ),
                 GraphDatabaseSettings.class );

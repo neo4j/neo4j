@@ -29,7 +29,7 @@ class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
       input.next()
     }
 
-    Iterator()
+    Iterator.empty
   }
 
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")

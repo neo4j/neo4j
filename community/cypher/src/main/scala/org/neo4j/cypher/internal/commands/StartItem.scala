@@ -34,7 +34,9 @@ extends TypeSafe with AstNode[StartItem] {
 
 trait ReadOnlyStartItem extends StartItem {
   def mutating = false
-  def children:Seq[AstNode[_]] = Seq.empty
+
+  def children:Seq[AstNode[_]] = Nil
+
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
   def symbolTableDependencies = Set.empty
   def rewrite(f: (Expression) => Expression) = this

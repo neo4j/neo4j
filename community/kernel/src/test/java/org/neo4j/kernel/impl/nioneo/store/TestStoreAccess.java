@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -47,10 +45,6 @@ public class TestStoreAccess
         snapshot.deleteFile( messages );
         
         new StoreAccess( snapshot, storeDir.getPath(), stringMap() ).close();
-        String data = readFrom( snapshot, messages, 0 );
-        // This doesn't actually check for recovery, it checks for startup of the DB (by
-        // looking in the log) and we assume that recovery would happen during DB startup.
-        assertFalse( "should not have started GraphDatabase", data.contains( "STARTED" ) );
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
     
@@ -70,22 +64,6 @@ public class TestStoreAccess
     {
         char chr = activeLog( fileSystem, storeDir );
         return chr == '1' || chr == '2';
-    }
-
-    private String readFrom( FileSystemAbstraction fileSystem, File file, long start ) throws IOException
-    {
-        FileChannel input = fileSystem.open( file, "r" );
-        try
-        {
-            byte[] data = new byte[(int) ( input.size() - start )];
-            input.position( start );
-            assertEquals( data.length, input.read( ByteBuffer.wrap( data ) ) );
-            return new String( data );
-        }
-        finally
-        {
-            input.close();
-        }
     }
 
     private char activeLog( FileSystemAbstraction fileSystem, File directory ) throws IOException

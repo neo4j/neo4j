@@ -57,7 +57,7 @@ case class BreakingExpression() extends Expression {
 
   def rewrite(f: (Expression) => Expression) = null
 
-  def children = Seq.empty
+  def children = Nil
 
   def calculateType(symbols: SymbolTable): CypherType = AnyType()
 

@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
 
@@ -99,7 +99,7 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
                 String machineId = null;
                 try
                 {
-                    machineId = getSinglePropertyFromCandidates( dbTuning, HaSettings.server_id.name(),
+                    machineId = getSinglePropertyFromCandidates( dbTuning, ClusterSettings.server_id.name(),
                             CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
                     if ( Integer.parseInt( machineId ) < 0 )
                     {
@@ -109,7 +109,7 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
                 catch ( NumberFormatException e )
                 {
                     failureMessage = String.format( "%s in %s needs to be a non-negative integer, not %s",
-                            HaSettings.server_id.name(), dbTuningFilename, machineId );
+                            ClusterSettings.server_id.name(), dbTuningFilename, machineId );
                     return false;
                 }
                 catch ( IllegalArgumentException e )

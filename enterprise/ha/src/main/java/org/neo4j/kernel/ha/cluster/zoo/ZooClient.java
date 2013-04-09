@@ -38,7 +38,7 @@ package org.neo4j.kernel.ha.cluster.zoo;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import static org.neo4j.kernel.ha.HaSettings.server_id;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 
 import java.io.File;
 import java.io.IOException;

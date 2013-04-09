@@ -58,7 +58,7 @@ Thank you, the Neo4j Team.
     case start ~ body => {
       val q: Query = expandQuery(start._1, start._2, Seq(), body)
 
-      if (q.returns == Return(List()) &&
+      if (q.returns == Return(List.empty) &&
         !q.start.forall(_.mutating)) {
         throw new SyntaxException("Non-mutating queries must return data")
       }
@@ -124,7 +124,7 @@ Thank you, the Neo4j Team.
       Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
     }
     case NoBody() => {
-      Query(Return(List()), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
+      Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
     }
   }
 

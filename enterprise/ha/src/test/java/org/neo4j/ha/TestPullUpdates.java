@@ -83,9 +83,9 @@ public class TestPullUpdates
     }
 
     @Test
-    public void pullupdatesShellAppPullsUpdates() throws Throwable
+    public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "pullupdatesShellAppPullsUpdates" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates" );
         Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
         for (int i = 1; i <= 2; i++)
         {

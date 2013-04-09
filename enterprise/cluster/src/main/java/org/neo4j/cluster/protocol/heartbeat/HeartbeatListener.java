@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import java.net.URI;
+import org.neo4j.cluster.InstanceId;
 
 /**
  * Listener interface for heart beat. Implementations will receive
@@ -27,19 +27,19 @@ import java.net.URI;
  */
 public interface HeartbeatListener
 {
-    void failed(URI server);
+    void failed( InstanceId server );
 
-    void alive(URI server);
+    void alive( InstanceId server );
     
     public static class Adapter implements HeartbeatListener
     {
         @Override
-        public void failed( URI server )
+        public void failed( InstanceId server )
         {
         }
 
         @Override
-        public void alive( URI server )
+        public void alive( InstanceId server )
         {
         }
     }

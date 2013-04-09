@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 abstract class History {
   val seen : Set[MatchingPair]
 
-  def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => matches(r))
+  def filter(relationships: Set[PatternRelationship], includeOptionals : Boolean): Set[PatternRelationship] = relationships.filterNot(r => includeOptionals == false && r.optional == true || matches(r))
 
   def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match {
     case SingleGraphRelationship(r) => matches(r)
@@ -51,7 +51,7 @@ abstract class History {
 }
 
 class InitialHistory(source : ExecutionContext) extends History {
-  lazy val seen = Set[MatchingPair]()
+  val seen = Set.empty[MatchingPair]
 
   def matches(p: Any) = false
 

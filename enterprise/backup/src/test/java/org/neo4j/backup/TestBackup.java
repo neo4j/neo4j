@@ -19,12 +19,11 @@
  */
 package org.neo4j.backup;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -46,6 +45,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -507,8 +507,9 @@ public class TestBackup
         }
         catch ( RuntimeException ex )
         {
-            assertThat( ex.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE) );
+            assertThat( ex.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
+
         StartupChecker proc = new LockProcess().start( path );
         try
         {
@@ -552,7 +553,7 @@ public class TestBackup
             }
             catch ( RuntimeException ex )
             {
-                if (DATABASE_LOCKED_ERROR_MESSAGE.equals( ex.getCause().getCause().getMessage() ) )
+                if (ex.getCause().getCause() instanceof StoreLockException )
                 {
                     state = ex;
                     return;

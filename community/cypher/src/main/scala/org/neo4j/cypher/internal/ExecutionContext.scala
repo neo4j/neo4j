@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal
 
 import mutation.UpdateAction
 import pipes.{QueryState, MutableMaps}
-import scala.Predef.String
+import scala.Predef._
 import org.neo4j.cypher.ParameterNotFoundException
-import collection.Iterator
+import collection.{immutable, Iterator}
 import collection.mutable.{Queue, Map => MutableMap}
 
 object ExecutionContext {
@@ -56,6 +56,8 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
     m -= key
     this
   }
+
+  override def toMap[T, U](implicit ev: (String, Any) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
   def newWith(newEntries: Seq[(String, Any)]) =
     createWithNewMap(MutableMaps.create(this.m) ++= newEntries)

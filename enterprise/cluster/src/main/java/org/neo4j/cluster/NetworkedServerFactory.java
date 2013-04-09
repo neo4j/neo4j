@@ -68,6 +68,12 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server );
             }
+
+            @Override
+            public int defaultPort()
+            {
+                return 5001;
+            }
         }, logging );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
@@ -79,7 +85,8 @@ public class NetworkedServerFactory
             }
         } );
 
-        final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer( timeoutStrategy, node, node,
+        final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer(
+                new InstanceId( config.get( ClusterSettings.server_id ) ), timeoutStrategy, node, node,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
         node.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {

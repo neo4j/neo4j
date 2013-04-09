@@ -11,7 +11,6 @@ With it, you can:
 - view raw data management objects (JMX MBeans)
 
 The tool is available at http://127.0.0.1:7474/ after you have installed the <<server,Neo4j Server>>.
-To use it together with an embedded database, see <<server-embedded>>.
 
 [[webadmin-dashboard]]
 == Dashboard tab ==

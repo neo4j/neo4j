@@ -540,4 +540,15 @@ public class TestApps extends AbstractShellTest
                 "commit"
         );
     }
+
+    @Test
+    public void commentsAreIgnored() throws Exception
+    {
+        executeCommand(
+                "eval\n" +
+                "// This comment should be ignored\n" +
+                "node = db.createNode()\n" +
+                "node.setProperty( \"name\", \"Mattias\" )\n" +
+                "node.getProperty( \"name\" )\n", "Mattias" );
+    }
 }

@@ -24,6 +24,7 @@ import static org.neo4j.helpers.collection.Iterables.toList;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -58,29 +59,22 @@ public class MultiPaxosContext
 
     public int getServerId()
     {
-/*
-        int i = clusterContext.getMe().hashCode();
-        i = i % 100;
-        return i;
-*/
-
-        int i = clusterContext.getConfiguration().getMembers().indexOf( clusterContext.getMe() );
-        if ( i == -1 )
-        {
-            i = 800 + clusterContext.getMe().hashCode() % 200;
-        }
-
-        return i;
+       return clusterContext.getMyId().toIntegerIndex();
     }
 
     public List<URI> getAcceptors()
     {
         // Only use 2f+1 acceptors
         return toList( limit( clusterContext.getConfiguration()
-                .getAllowedFailures() * 2 + 1, clusterContext.getConfiguration().getMembers() ) );
+                .getAllowedFailures() * 2 + 1, clusterContext.getConfiguration().getMemberURIs() ) );
     }
 
     public Iterable<URI> getLearners()
+    {
+        return clusterContext.getConfiguration().getMemberURIs();
+    }
+
+    public Map<org.neo4j.cluster.InstanceId, URI> getMembers()
     {
         return clusterContext.getConfiguration().getMembers();
     }

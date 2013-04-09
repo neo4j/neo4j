@@ -24,4 +24,4 @@
   </logger>
 
   <include resource="custom-logback.xml"/>
-</configuration>
+</configuration>  

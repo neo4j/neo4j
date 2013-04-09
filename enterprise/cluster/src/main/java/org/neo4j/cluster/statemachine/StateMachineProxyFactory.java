@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ConnectedStateMachines;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
@@ -47,14 +47,14 @@ import org.slf4j.LoggerFactory;
 public class StateMachineProxyFactory
         implements MessageProcessor, BindingListener
 {
-    private ConnectedStateMachines stateMachines;
+    private StateMachines stateMachines;
     private StateMachineConversations conversations;
     private volatile URI serverId;
 
     private Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
 
-    public StateMachineProxyFactory( ConnectedStateMachines stateMachines, StateMachineConversations conversations )
+    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations )
     {
         this.stateMachines = stateMachines;
         this.conversations = conversations;
@@ -125,7 +125,7 @@ public class StateMachineProxyFactory
     }
 
     @Override
-    public void process( Message message )
+    public boolean process( Message message )
     {
         if ( !responseFutureMap.isEmpty() )
         {
@@ -142,6 +142,7 @@ public class StateMachineProxyFactory
                 }
             }
         }
+        return true;
     }
 
     private StateMachine getStateMachine( Class<?> proxyInterface )
@@ -254,7 +255,7 @@ public class StateMachineProxyFactory
             }
 
             while (response == null)
-                this.wait();
+                this.wait( 50 );
 
             return getResult();
         }

@@ -1,3 +1,13 @@
+1.9.RC1 (????-??-??)
+--------------------
+o Removes URL discovery mechanism for clustering
+o Moves from URI as an instance id to integers - they must be specified manually. The new setting is
+  ClusterSettings.server_id
+o Instances can now be replaced if they have marked as fail if a new instance with the same id joins the cluster
+o For a cluster to be formed now a majority of instances as configured in initial_hosts must be available
+o Fixes around cluster formation from instances concurrently starting up
+o Explicit join denial is now possible if an instance tries to join using a server_id already in use
+
 1.9.M05 (2013-03-05)
 --------------------
 o Election happens for all roles when an instance comes online
@@ -16,9 +26,9 @@ o Logging cleanup
 
 1.9.M02 (2012-11-30)
 --------------------
-o Moved shared logic, commonly refered to as cluster client into a ClusterClient class.
+o Moved shared logic, commonly referred to as cluster client into a ClusterClient class.
 o Reduced amount of threads used by Paxos by using fixed size thread pools
-o Paxos cluster membership management imporoved by introducing memberIsUnavailable and cleanup of roles
+o Paxos cluster membership management improved by introducing memberIsUnavailable and cleanup of roles
 o allow_init_cluster setting is now respected
 
 1.9.M01 (2012-10-23)

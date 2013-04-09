@@ -75,7 +75,7 @@ public class TestIdGenerator
     {
         String path = AbstractNeo4jTestCase.getStorePath( "xatest" );
         File file = new File( path );
-        file.mkdirs();
+        fs.mkdirs( file );
         return file;
     }
 

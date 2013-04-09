@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol.heartbeat;
 
 import static org.neo4j.cluster.com.message.Message.timeout;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -45,9 +45,9 @@ public class HeartbeatContext
     private ClusterContext clusterContext;
     private LearnerContext learnerContext;
     private Executor executor;
-    List<URI> failed = new ArrayList<URI>();
+    Set<InstanceId> failed = new HashSet<InstanceId>();
 
-    Map<URI, Set<URI>> nodeSuspicions = new HashMap<URI, Set<URI>>();
+    Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<InstanceId, Set<InstanceId>>();
 
     Iterable<HeartbeatListener> listeners = Listeners.newListeners();
 
@@ -63,9 +63,12 @@ public class HeartbeatContext
         failed.clear();
     }
 
-    public boolean alive( final URI node )
+    /**
+     * @return True iff the node was suspected
+     */
+    public boolean alive( final InstanceId node )
     {
-        Set<URI> serverSuspicions = getSuspicionsFor( clusterContext.getMe() );
+        Set<InstanceId> serverSuspicions = getSuspicionsFor( clusterContext.getMyId() );
         boolean suspected = serverSuspicions.remove( node );
 
         if ( !isFailed( node ) && failed.remove( node ) )
@@ -83,9 +86,9 @@ public class HeartbeatContext
         return suspected;
     }
 
-    public void suspect( final URI node )
+    public void suspect( final InstanceId node )
     {
-        Set<URI> serverSuspicions = getSuspicionsFor( clusterContext.getMe() );
+        Set<InstanceId> serverSuspicions = getSuspicionsFor( clusterContext.getMyId() );
         serverSuspicions.add( node );
 
         if ( isFailed( node ) && !failed.contains( node ) )
@@ -102,13 +105,13 @@ public class HeartbeatContext
         }
     }
 
-    public void suspicions( URI from, Set<URI> suspicions )
+    public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
-        Set<URI> serverSuspicions = getSuspicionsFor( from );
+        Set<InstanceId> serverSuspicions = getSuspicionsFor( from );
         serverSuspicions.clear();
         serverSuspicions.addAll( suspicions );
 
-        for ( final URI node : suspicions )
+        for ( final InstanceId node : suspicions )
         {
             if ( isFailed( node ) && !failed.contains( node ) )
             {
@@ -125,21 +128,21 @@ public class HeartbeatContext
         }
     }
 
-    public List<URI> getFailed()
+    public Set<InstanceId> getFailed()
     {
         return failed;
     }
 
-    public Iterable<URI> getAlive()
+    public Iterable<InstanceId> getAlive()
     {
-        return Iterables.filter( new Predicate<URI>()
+        return Iterables.filter( new Predicate<InstanceId>()
         {
             @Override
-            public boolean accept( URI item )
+            public boolean accept( InstanceId item )
             {
                 return !isFailed( item );
             }
-        }, clusterContext.getConfiguration().getMembers() );
+        }, clusterContext.getConfiguration().getMemberIds() );
     }
 
     public ClusterContext getClusterContext()
@@ -165,7 +168,7 @@ public class HeartbeatContext
     public void startHeartbeatTimers( Message<?> message )
     {
         // Start timers for sending and receiving heartbeats
-        for ( URI server : clusterContext.getConfiguration().getMembers() )
+        for ( InstanceId server : clusterContext.getConfiguration().getMemberIds() )
         {
             if ( !clusterContext.isMe( server ) )
             {
@@ -177,28 +180,41 @@ public class HeartbeatContext
         }
     }
 
-    public void serverLeftCluster( URI node )
+    public void serverLeftCluster( InstanceId node )
     {
         failed.remove( node );
-        for ( Set<URI> uris : nodeSuspicions.values() )
+        for ( Set<InstanceId> uris : nodeSuspicions.values() )
         {
             uris.remove( node );
         }
     }
 
-    public boolean isFailed( URI node )
+    public boolean isFailed( InstanceId node )
     {
-        List<URI> suspicions = getSuspicionsOf( node );
+        List<InstanceId> suspicions = getSuspicionsOf( node );
 
-        return suspicions.size() > (clusterContext.getConfiguration().getMembers().size() - failed.size()) / 2;
+        /*
+         * This looks weird but trust me, there is a reason for it.
+         * See below in the test, where we subtract the failed size() from the total cluster size? If the instance
+         * under question is already in the failed set then that's it, as expected. But if it is not in the failed set
+         * then we must not take it's opinion under consideration (which we implicitly don't for every member of the
+         * failed set). That's what the adjust represents - the node's opinion on whether it is alive or not. Run a
+         * 3 cluster simulation in your head with 2 instances failed and one coming back online and you'll see why.
+         */
+        int adjust = failed.contains( node ) ? 0 : 1;
+
+        // If more than half suspect this node, fail it
+        return suspicions.size() >
+                ( clusterContext.getConfiguration().getMembers().size() - failed.size() - adjust ) / 2;
     }
 
-    public List<URI> getSuspicionsOf( URI uri )
+    public List<InstanceId> getSuspicionsOf( InstanceId server )
     {
-        List<URI> suspicions = new ArrayList<URI>();
-        for ( Map.Entry<URI, Set<URI>> uriSetEntry : nodeSuspicions.entrySet() )
+        List<InstanceId> suspicions = new ArrayList<InstanceId>();
+        for ( Map.Entry<InstanceId, Set<InstanceId>> uriSetEntry : nodeSuspicions.entrySet() )
         {
-            if ( uriSetEntry.getValue().contains( uri ) )
+            if ( !failed.contains( uriSetEntry.getKey() )
+                    && uriSetEntry.getValue().contains( server ) )
             {
                 suspicions.add( uriSetEntry.getKey() );
             }
@@ -207,12 +223,12 @@ public class HeartbeatContext
         return suspicions;
     }
 
-    public Set<URI> getSuspicionsFor( URI uri )
+    public Set<InstanceId> getSuspicionsFor( InstanceId uri )
     {
-        Set<URI> serverSuspicions = nodeSuspicions.get( uri );
+        Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
         if ( serverSuspicions == null )
         {
-            serverSuspicions = new HashSet<URI>();
+            serverSuspicions = new HashSet<InstanceId>();
             nodeSuspicions.put( uri, serverSuspicions );
         }
         return serverSuspicions;

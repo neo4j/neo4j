@@ -80,6 +80,8 @@ public class NetworkInstance
     public interface Configuration
     {
         HostnamePort clusterServer();
+
+        int defaultPort();
     }
 
     public interface NetworkChannelsListener
@@ -96,7 +98,6 @@ public class NetworkInstance
     private ChannelGroup channels;
 
     // Receiving
-    private ExecutorService receiveExecutor;
     private ExecutorService sendExecutor;
     private ServerBootstrap serverBootstrap;
     private ServerSocketChannelFactory nioChannelFactory;
@@ -130,7 +131,6 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        receiveExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Receiver" ) );
         sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
@@ -169,12 +169,6 @@ public class NetworkInstance
         channels.close().awaitUninterruptibly();
         nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
-
-        receiveExecutor.shutdown();
-        if ( !receiveExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
-        {
-            msgLog.warn( "Could not shut down receive executor" );
-        }
     }
 
     @Override
@@ -228,11 +222,14 @@ public class NetworkInstance
 
     public void receive( Message message )
     {
-        for ( MessageProcessor listener : processors )
+        for ( MessageProcessor processor : processors )
         {
             try
             {
-                listener.process( message );
+                if ( !processor.process( message ) )
+                {
+                    break;
+                }
             }
             catch ( Exception e )
             {
@@ -258,7 +255,7 @@ public class NetworkInstance
                     }
                     catch ( Exception e )
                     {
-                        msgLog.warn( "Error sending message " + message, e );
+                        msgLog.warn( "Error sending message " + message + "(" + e.getMessage() + ")" );
                     }
                 }
             }
@@ -266,7 +263,7 @@ public class NetworkInstance
     }
 
     @Override
-    public void process( Message<? extends MessageType> message )
+    public boolean process( Message<? extends MessageType> message )
     {
         if ( message.hasHeader( Message.TO ) )
         {
@@ -290,6 +287,7 @@ public class NetworkInstance
             // Internal message
             receive( message );
         }
+        return true;
     }
 
 
@@ -351,7 +349,7 @@ public class NetworkInstance
         }
         catch ( Exception e )
         {
-            msgLog.debug( "Could not connect to:" + to, e );
+            msgLog.debug( "Could not connect to:" + to );
             return;
         }
 
@@ -431,7 +429,7 @@ public class NetworkInstance
 
     private Channel openChannel( URI clusterUri )
     {
-        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() );
+        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config.defaultPort() : clusterUri.getPort() );
 
         ChannelFuture channelFuture = clientBootstrap.connect( address );
 //            channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
@@ -494,15 +492,11 @@ public class NetworkInstance
         {
             final Message message = (Message) event.getMessage();
             msgLog.debug("Received:" + message);
-//            receive( message );
-            receiveExecutor.submit( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    receive( message );
-                }
-            } );
+//            StringBuilder uri = new StringBuilder( "cluster://" ).append( ((InetSocketAddress) event.getRemoteAddress()).getAddress() )
+//                    .append( ":" ).append( ((InetSocketAddress) event.getRemoteAddress()).getPort() );
+//            message.setHeader( Message.FROM, uri.toString() );
+              receive( message );
+
         }
 
         @Override

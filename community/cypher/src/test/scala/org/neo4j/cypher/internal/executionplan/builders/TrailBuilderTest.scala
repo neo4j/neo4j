@@ -143,7 +143,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     val first = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
     val expectedTrail = Some(LongestTrail("a", None, first))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2, CtoD), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2, CtoD), Seq("a"), Nil)
     assert(foundTrail === expectedTrail)
   }
 
@@ -154,7 +154,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     val first = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val expectedTrail = Some(LongestTrail("b", None, first))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE), Seq("b"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE), Seq("b"), Nil)
     assert(foundTrail === expectedTrail)
   }
 
@@ -166,7 +166,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     val first = SingleStepTrail(last, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
     val expected = Some(LongestTrail("a", None, first))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE), Seq("a"), Nil)
     assert(foundTrail === expected)
   }
 
@@ -177,7 +177,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     val trail = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val expected = Some(LongestTrail("b", None, trail))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE, EtoF), Seq("b", "f"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE, EtoF), Seq("b", "f"), Nil)
     assert(foundTrail === expected)
   }
 
@@ -199,7 +199,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
 
     val expected = Some(LongestTrail("a", None, trail))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Nil)
     assert(foundTrail === expected)
   }
 
@@ -218,7 +218,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
 
     val expected = Some(LongestTrail("a", None, trail))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoF), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoF), Seq("a"), Nil)
     assert(foundTrail === expected)
   }
 
@@ -237,7 +237,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
 
     val expected = Some(LongestTrail("a", None, trail))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoG), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoG), Seq("a"), Nil)
     assert(foundTrail === expected)
   }
 
@@ -259,7 +259,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
 
     val expected = Some(LongestTrail("a", None, trail))
 
-    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Seq.empty)
+    val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Nil)
     assert(foundTrail === expected)
   }
 

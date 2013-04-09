@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.spi.{UpdateCountingQueryContext, QueryContext}
+import org.neo4j.cypher.internal.spi.UpdateCountingQueryContext
+import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.ParameterNotFoundException
 
@@ -29,7 +29,10 @@ case class QueryState(db: GraphDatabaseService,
                       inner: QueryContext,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
-                      var transaction: Option[Transaction] = None) {
+                      var transaction: Option[Transaction] = None,
+                      timeReader: TimeReader = new TimeReader) {
+  def readTimeStamp(): Long = timeReader.getTime
+
 
   private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
   val query: QueryContext = updateTrackingQryCtx
@@ -44,4 +47,8 @@ case class QueryState(db: GraphDatabaseService,
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def getStatistics = updateTrackingQryCtx.getStatistics
+}
+
+class TimeReader {
+  lazy val getTime = System.currentTimeMillis()
 }

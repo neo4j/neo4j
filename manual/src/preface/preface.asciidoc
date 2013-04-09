@@ -14,7 +14,6 @@ The main parts of the manual are:
 * <<tools>> -- guides on tools.
 * <<community>> -- getting help from, contributing to.
 * <<manpages>> -- command line documentation.
-* <<questions>> -- common questions.
 
 The material is practical, technical, and focused on answering specific questions. 
 It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment.

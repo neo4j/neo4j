@@ -242,7 +242,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """Returns all relationships in a path.""",
       queryText = """match p=a-->b-->c where a.name='Alice' and c.name='Eskil' return RELATIONSHIPS(p)""",
       returns = """All the relationships in the path `p` are returned.""",
-      assertions = (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
+      assertions = (p) => assert(2 === p.columnAs[Seq[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
     )
   }
 
@@ -515,6 +515,25 @@ END as result""",
 END as result""",
       returns = "A string.",
       assertions = (p) => assert(List(Map("result" -> 3), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toList)
+    )
+  }
+
+  @Test def now() {
+    testThis(
+      title = "TIMESTAMP",
+      syntax = "TIMESTAMP()",
+      arguments = List.empty,
+      text = "`TIMESTAMP` returns the difference, measured in milliseconds, between the current time and midnight, " +
+        "January 1, 1970 UTC. It will return the same value during the whole one query, even if the query is a long " +
+        "running one.",
+      queryText = "start n=node(1) return timestamp()",
+      returns = "The time in milliseconds.",
+      assertions = (p) => assert(
+        p.toList.head("timestamp()") match {
+          // this should pass unless your machine is really slow
+          case x: Long => System.currentTimeMillis - x < 100000
+          case _       => false
+        })
     )
   }
 

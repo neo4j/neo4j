@@ -27,7 +27,6 @@ import java.io.File;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
@@ -42,52 +41,49 @@ public class ConflictingServerIdIT
         HighlyAvailableGraphDatabase master = null, dbWithId21 = null, dbWithId22 = null;
         try
         {
+
             GraphDatabaseBuilder masterBuilder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( 1 ) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 1 ) )
-                .setConfig( HaSettings.server_id, "" + 1 )
+                .setConfig( ClusterSettings.server_id, "" + 1 )
                 .setConfig( HaSettings.ha_server, ":" + ( 8001 + 1 ) )
                 .setConfig( HaSettings.tx_push_factor, "0" );
             master = (HighlyAvailableGraphDatabase) masterBuilder.newGraphDatabase();
 
             GraphDatabaseBuilder db21Builder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( path( 2 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 2 ) )
-                    .setConfig( HaSettings.server_id, "" + 2 )
+                    .setConfig( ClusterSettings.server_id, "" + 2 )
                     .setConfig( HaSettings.ha_server, ":" + ( 8001 + 2 ) )
                     .setConfig( HaSettings.tx_push_factor, "0" );
             dbWithId21 = (HighlyAvailableGraphDatabase) db21Builder.newGraphDatabase();
 
             GraphDatabaseBuilder db22Builder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( path( 3 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + 3) )
-                    .setConfig( HaSettings.server_id, "" + 2 ) // Conflicting with the above
+                    .setConfig( ClusterSettings.server_id, "" + 2 ) // Conflicting with the above
                     .setConfig( HaSettings.ha_server, ":" + ( 8001 + 3 ) )
                     .setConfig( HaSettings.tx_push_factor, "0" );
-            dbWithId22 = (HighlyAvailableGraphDatabase) db22Builder.newGraphDatabase();
+
+            try
+            {
+                dbWithId22 = (HighlyAvailableGraphDatabase) db22Builder.newGraphDatabase();
+                fail("Should not be able to startup when a cluster already has my id");
+            }
+            catch ( Exception e )
+            {
+                // awesome
+            }
 
             assertTrue( master.isMaster() );
             assertTrue( !dbWithId21.isMaster() );
-            assertTrue( !dbWithId22.isMaster() );
 
             Transaction tx1 = dbWithId21.beginTx(  );
             tx1.success();
             tx1.finish();
-
-            try
-            {
-                Transaction tx = dbWithId22.beginTx(  );
-                tx.success();
-                tx.finish();
-                fail( "Should not be able to do txs on instance with conflicting serverId" );
-            }
-            catch ( TransactionFailureException e )
-            {
-                // happy happy happy
-            }
         }
         finally
         {

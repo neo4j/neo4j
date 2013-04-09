@@ -2809,4 +2809,24 @@ RETURN x0.name?
     //THEN
     assert(result.toList === List(Map("p" -> PathImpl(n))))
   }
+
+  @Test
+  def should_handle_multiple_aggregates_on_the_same_node() {
+    //WHEN
+    val result = parseAndExecute("start n=node(*) return count(n), collect(n)")
+
+    //THEN
+    assert(result.toList === List(Map("count(n)" -> 1, "collect(n)" -> Seq(refNode))))
+  }
+
+  def shouldBeAbleToCallNowMS() {
+    val result = engine.execute("START n=node(*) RETURN now('ms')")
+
+    val ts:Long = result.toList.head("now('ms')") match {
+      case x:Long => x
+      case _ => 0L
+    }
+    assert(ts != 0L)
+    assert(ts <= System.currentTimeMillis)
+  }
 }

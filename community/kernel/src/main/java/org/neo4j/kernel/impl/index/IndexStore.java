@@ -109,7 +109,7 @@ public class IndexStore extends LifecycleAdapter
     }
     
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         read();
     }

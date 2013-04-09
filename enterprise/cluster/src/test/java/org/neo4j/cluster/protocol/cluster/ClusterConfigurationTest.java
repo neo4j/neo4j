@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.cluster;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.IterableMatcher.matchesIterable;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Created with IntelliJ IDEA.
@@ -39,13 +42,15 @@ import org.junit.Test;
  */
 public class ClusterConfigurationTest
 {
-    public static URI NEO4J_SERVER1;
+    public static URI NEO4J_SERVER1_URI;
+    public static InstanceId NEO4J_SERVER_ID;
 
     static
     {
         try
         {
-            NEO4J_SERVER1 = new URI( "neo4j://server1" );
+            NEO4J_SERVER1_URI = new URI( "neo4j://server1" );
+            NEO4J_SERVER_ID = new InstanceId( 1 );
         }
         catch ( URISyntaxException e )
         {
@@ -58,38 +63,46 @@ public class ClusterConfigurationTest
     @Test
     public void givenEmptyClusterWhenNodeAddedThenNodeWasAdded()
     {
-        configuration.joined( NEO4J_SERVER1 );
+        configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMembers(), equalTo( Arrays.asList( NEO4J_SERVER1 ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
+        assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
 
     @Test
     public void givenEmptyClusterWhenNodeIsAddedTwiceThenNodeWasAddedOnce()
     {
-        configuration.joined( NEO4J_SERVER1 );
-        configuration.joined( NEO4J_SERVER1 );
+        configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
+        configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMembers(), equalTo( Arrays.asList( NEO4J_SERVER1 ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
+        assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
 
     @Test
     public void givenClusterWithOneNodeWhenNodeIsRemovedThenClusterIsEmpty()
     {
-        configuration.joined( NEO4J_SERVER1 );
-        configuration.left( NEO4J_SERVER1 );
+        configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
+        configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMembers(), equalTo( Collections.<URI>emptyList() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
+        assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 
     }
 
     @Test
     public void givenClusterWithOneNodeWhenNodeIsRemovedTwiceThenClusterIsEmpty()
     {
-        configuration.joined( NEO4J_SERVER1 );
-        configuration.left( NEO4J_SERVER1 );
-        configuration.left( NEO4J_SERVER1 );
+        configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
+        configuration.left( NEO4J_SERVER_ID );
+        configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMembers(), equalTo( Collections.<URI>emptyList() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
+        assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 
     }
 }

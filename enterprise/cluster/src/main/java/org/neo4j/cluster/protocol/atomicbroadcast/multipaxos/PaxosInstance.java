@@ -49,6 +49,7 @@ public class PaxosInstance
     Object value_1;
     long phase1Ballot = 0;
     Object value_2;
+    // This is true iff the acceptors did not already have a value for this instance
     boolean clientValue = false;
     String conversationIdHeader;
 
@@ -70,11 +71,10 @@ public class PaxosInstance
         this.ballot = ballot;
     }
 
-    public void phase1Timeout( long ballot, List<URI> newAcceptors )
+    public void phase1Timeout( long ballot )
     {
         this.ballot = ballot;
         promises.clear();
-        this.acceptors = newAcceptors;
     }
 
     public void promise( ProposerMessage.PromiseState promiseState )

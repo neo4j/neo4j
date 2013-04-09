@@ -21,9 +21,9 @@ package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.File;
@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.InMemoryAppender;
@@ -118,7 +119,7 @@ public class TestCommunityDatabase
         catch ( RuntimeException e )
         {
             // Wrapped in a lifecycle exception, needs to be dug out
-            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
     }
 

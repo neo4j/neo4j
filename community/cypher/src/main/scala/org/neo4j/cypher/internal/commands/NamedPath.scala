@@ -42,10 +42,10 @@ trait PathExtractor {
 
     val firstNode: String = getFirstNode
 
-    val p: Seq[PropertyContainer] = pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
-      case SingleNode(name)                         => Seq(get(name))
-      case RelatedTo(_, right, relName, _, _, _) => soFar ++ Seq(get(relName), get(right))
-      case path: PathPattern => getPath(ctx, path.pathName, soFar)
+    val p: Seq[PropertyContainer] = pathPattern.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
+      case SingleNode(name)                      => get(name) :: Nil
+      case RelatedTo(_, right, relName, _, _, _) => soFar :+ get(relName) :+ get(right)
+      case path: PathPattern                     => getPath(ctx, path.pathName, soFar)
     })
 
     buildPath(p)
@@ -65,13 +65,13 @@ trait PathExtractor {
       new PathImpl(pieces: _*)
 
   //WARNING: This method can return NULL
-  private def getPath(m: Map[String, Any], key: String, soFar: Seq[PropertyContainer]): Seq[PropertyContainer] = {
+  private def getPath(m: Map[String, Any], key: String, soFar: List[PropertyContainer]): List[PropertyContainer] = {
     val m1 = m(key)
 
     if (m1 == null)
-      return Seq(null)
+      return null::Nil
 
-    val path = m1.asInstanceOf[Path].iterator().asScala.toSeq
+    val path = m1.asInstanceOf[Path].iterator().asScala.toList
     val pathTail = if (path.head == soFar.last) {
       path.tail
     } else {

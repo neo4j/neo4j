@@ -19,7 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
 
 /**
  * TODO
@@ -43,7 +43,7 @@ public class ClusterHeartbeatTest
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
-                verifyConfigurations( 1000 ).
+                verifyConfigurations( 3000 ).
                 leave( 0, 1 ).
                 leave( 200, 2 ).
                 leave( 200, 3 ) );
@@ -54,12 +54,13 @@ public class ClusterHeartbeatTest
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 250 ).
+                rounds( 1000 ).
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
+                verifyConfigurations( 3000 ).
                 message( 100, "*** All nodes up and ok" ).
-                down( 500, 3 ).
+                down( 100, 3 ).
                 message( 1000, "*** Should have seen failure by now" ).
                 up( 0, 3 ).
                 message( 200, "*** Should have recovered by now" ).
@@ -75,10 +76,10 @@ public class ClusterHeartbeatTest
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
-                join( 100, 1 ).
-                join( 100, 2 ).
-                join( 100, 3 ).
-                message( 100, "*** All nodes up and ok" ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
+                message( 3000, "*** All nodes up and ok" ).
                 down( 500, 1 ).
                 message( 1000, "*** Should have seen failure by now" ).
                 up( 0, 1 ).
@@ -93,22 +94,22 @@ public class ClusterHeartbeatTest
                 leave( 300, 2 ).
                 leave( 300, 3 ) );
     }
-    
+
     @Test
     public void threeNodesJoinAndThenCoordinatorDiesForReal()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
-        final Map<String, URI> roles = new HashMap<String, URI>();
-        
+        final Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
-                join( 100, 1 ).
-                join( 100, 2 ).
-                join( 100, 3 ).
-                message( 100, "*** All nodes up and ok" ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
+                message( 3000, "*** All nodes up and ok" ).
                 getRoles( 0, roles ).
-                down( 500, 1 ).
-                message( 1000, "*** Should have seen failure by now" ).
+                down( 800, 1 ).
+                message( 2000, "*** Should have seen failure by now" ).
                 verifyCoordinatorRoleSwitched( roles ).
                 leave( 0, 1 ).
                 leave( 300, 2 ).

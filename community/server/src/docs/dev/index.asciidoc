@@ -10,8 +10,6 @@ include::server-configuration.asciidoc[]
 
 include::server-debugging.asciidoc[]
 
-include::server-embedded.asciidoc[]
-
 include::server-performance.asciidoc[]
 
 include::server-cloud.asciidoc[]

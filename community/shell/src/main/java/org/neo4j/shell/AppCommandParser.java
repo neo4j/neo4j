@@ -62,7 +62,22 @@ public class AppCommandParser
 	
 	private String prepareLine( String line )
     {
-	    return line.trim().replaceAll( "\n", " " );
+        // Replace \n with space, and remove comments
+        line = line.trim();
+        String[] lines = line.split( "\n" );
+        StringBuilder builder = new StringBuilder(  );
+        for ( String singleLine : lines )
+        {
+            if (singleLine.startsWith( "//" ))
+                continue; // Skip comments
+
+            if (builder.length() > 0)
+                builder.append( ' ' );
+
+            builder.append( singleLine );
+        }
+
+        return builder.toString();
     }
 
     private void parse( String line ) throws Exception

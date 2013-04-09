@@ -132,10 +132,13 @@ public enum AtomicBroadcastState
                         case broadcast:
                         case failed:
                         {
-                            URI coordinator = context.getCoordinator();
+                            org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
                             if ( coordinator != null )
                             {
-                                outgoing.offer( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
+                                URI coordinatorUri = context.getClusterContext().getConfiguration().getUriForId(
+                                        coordinator );
+                                outgoing.offer( message.copyHeadersTo(
+                                        to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
                                 Timeouts timeouts = context.getClusterContext().timeouts;
                                 timeouts.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
                                         timeout( AtomicBroadcastMessage.broadcastTimeout, message,
@@ -144,7 +147,7 @@ public enum AtomicBroadcastState
                             else
                             {
                                 outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
-                                        message.getPayload() ), Message.CONVERSATION_ID ) );
+                                        message.getPayload() ), Message.CONVERSATION_ID, InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -171,7 +174,12 @@ public enum AtomicBroadcastState
 
                         case broadcastTimeout:
                         {
-                            outgoing.offer( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
+                            /*
+                             * There is never the need to rebroadcast on broadcast timeout. The propose message always
+                             * circulates on the wire until it is accepted - it comes back here when it fails just to
+                             * check if the coordinator changed (look at "failed/broadcast" handling above).
+                             */
+//                            outgoing.offer( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
                             break;
                         }
 

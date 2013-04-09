@@ -19,14 +19,19 @@
  */
 package org.neo4j.test.ha;
 
+import static org.junit.Assert.fail;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -51,7 +56,7 @@ public class ClusterTest
         clusterManager.stop();
     }
 
-    @Test
+//    @Test
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
@@ -67,38 +72,105 @@ public class ClusterTest
         clusterManager.stop();
     }
 
-    @Test(expected = RuntimeException.class)
-    public void testInstancesWithConflictingPorts() throws Throwable
+    @Test
+    public void testInstancesWithConflictingClusterPorts() throws Throwable
     {
-        ClusterManager clusterManager = null;
+        HighlyAvailableGraphDatabase first = null;
         try
         {
-            clusterManager = new ClusterManager(
-                    fromXml( getClass().getResource( "/threeinstancesconflictingports.xml" ).toURI() ),
-                    TargetDirectory.forTest( getClass() ).directory( "testClusterConflictingPorts", true ),
-                    MapUtil.stringMap() );
-            clusterManager.start();
+            String storeDir =
+                    TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPorts", true ).getAbsolutePath();
+            first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( storeDir )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                    .newGraphDatabase();
+
+            try
+            {
+                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                        newHighlyAvailableDatabaseBuilder( storeDir )
+                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                        .setConfig( ClusterSettings.server_id, "2" )
+                        .setConfig( HaSettings.ha_server, "127.0.0.1:6667" )
+                        .newGraphDatabase();
+                failed.shutdown();
+                fail("Should not start when ports conflict");
+            }
+            catch ( Exception e )
+            {
+                // good
+            }
         }
         finally
         {
-            clusterManager.stop();
+            if ( first != null )
+            {
+                first.shutdown();
+            }
         }
     }
 
     @Test
-    public void given4instanceclusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
+    public void testInstancesWithConflictingHaPorts() throws Throwable
+    {
+        HighlyAvailableGraphDatabase first = null;
+        try
+        {
+            String storeDir =
+                    TargetDirectory.forTest( getClass() ).directory( "testConflictingHaPorts", true ).getAbsolutePath();
+             first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( storeDir )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                    .newGraphDatabase();
+
+            try
+            {
+                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                        newHighlyAvailableDatabaseBuilder( storeDir )
+                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" )
+                        .setConfig( ClusterSettings.server_id, "2" )
+                        .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                        .newGraphDatabase();
+                failed.shutdown();
+                fail( "Should not start when ports conflict" );
+            }
+            catch ( Exception e )
+            {
+                // good
+            }
+        }
+        finally
+        {
+            if ( first != null )
+            {
+                first.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
         clusterManager.start();
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
         logging.getLogger().info( "STOPPING MASTER" );
-        clusterManager.getDefaultCluster().getMaster().stop();
+        cluster.shutdown( cluster.getMaster() );
         logging.getLogger().info( "STOPPED MASTER" );
 
-        Thread.sleep( 30000 ); // OMG!!!! My Eyes!!!! It Burns Us!!!!
+        cluster.await( ClusterManager.masterAvailable() );
 
-        GraphDatabaseService master = clusterManager.getCluster( "neo4j.ha" ).getMaster();
+        GraphDatabaseService master = cluster.getMaster();
         logging.getLogger().info( "CREATE NODE" );
         Transaction tx = master.beginTx();
         master.createNode();

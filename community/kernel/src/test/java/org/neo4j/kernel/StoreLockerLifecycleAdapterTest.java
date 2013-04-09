@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -81,7 +80,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
         finally
         {
@@ -104,7 +103,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
         finally
         {

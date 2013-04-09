@@ -26,7 +26,7 @@ import java.io.IOException;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 
@@ -61,7 +61,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
         ServerTestUtils.writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
                 dbTuningFile.getAbsolutePath(), serverPropertyFile );
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HaSettings.server_id.name(), "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( ClusterSettings.server_id.name(), "1", dbTuningFile );
 
         assertRulePass( serverPropertyFile );
 
@@ -97,7 +97,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
                 dbTuningFile.getAbsolutePath(), serverPropertyFile );
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
         ServerTestUtils.writePropertyToFile( CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HaSettings.server_id.name(), "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( ClusterSettings.server_id.name(), "1", dbTuningFile );
 
         assertRuleFail( serverPropertyFile );
 

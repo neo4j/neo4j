@@ -42,7 +42,7 @@ public class AtomicBroadcastSerializer
         return payload;
     }
 
-    public Object receive(Payload payload)
+    public Object receive( Payload payload )
         throws IOException, ClassNotFoundException
     {
         ByteArrayInputStream in = new ByteArrayInputStream( payload.getBuf(), 0, payload.getLen() );

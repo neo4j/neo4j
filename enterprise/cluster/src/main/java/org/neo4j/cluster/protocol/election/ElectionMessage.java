@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.election;
 
 import java.io.Serializable;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -36,17 +37,24 @@ public enum ElectionMessage
         implements Serializable
     {
         private String role;
+        private InstanceId instanceId;
         private Comparable<Object> voteCredentials;
 
-        public VotedData( String role, Comparable<Object> voteCredentials )
+        public VotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials )
         {
             this.role = role;
+            this.instanceId = instanceId;
             this.voteCredentials = voteCredentials;
         }
 
         public String getRole()
         {
             return role;
+        }
+
+        public InstanceId getInstanceId()
+        {
+            return instanceId;
         }
 
         public Comparable<Object> getVoteCredentials()

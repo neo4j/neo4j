@@ -21,6 +21,8 @@ package org.neo4j.cluster.member;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
+
 /**
  * A HighAvailabilityListener is listening for events from elections and availability state.
  * <p/>
@@ -29,41 +31,59 @@ import java.net.URI;
 public interface ClusterMemberListener
 {
     /**
-     * Called when new master has been elected. The new master may not be available a.t.m.
-     * A call to {@link #memberIsAvailable} will confirm that the master given in
-     * the most recent {@link #masterIsElected(java.net.URI)} call is up and running as master.
+     * Called when new coordinator has been elected.
      *
-     * @param masterUri the connection information to the master.
+     * @param coordinatorId the Id of the coordinator
      */
-    void masterIsElected( URI masterUri );
+    void coordinatorIsElected( InstanceId coordinatorId );
 
     /**
      * Called when a member announces that it is available to play a particular role, e.g. master or slave.
      * After this it can be assumed that the member is ready to consume messages related to that role.
      *
      * @param role
-     * @param instanceClusterUri
-     * @param roleUri
+     * @param availableId the role connection information for the new role holder
+     * @param atUri the URI at which the instance is available at
      */
-    void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri );
+    void memberIsAvailable( String role, InstanceId availableId, URI atUri );
 
-    void memberIsUnavailable(String role, URI instanceClusterUri);
+    /**
+     * Called when a member is no longer available for fulfilling a particular role.
+     *
+     * @param role The role for which the member is unavailable
+     * @param unavailableId The id of the member which became unavailable for that role
+     */
+    void memberIsUnavailable( String role, InstanceId unavailableId );
+
+    void memberIsFailed( InstanceId instanceId );
+
+    void memberIsAlive( InstanceId instanceId );
 
     public abstract class Adapter
             implements ClusterMemberListener
     {
         @Override
-        public void masterIsElected( URI masterUri )
+        public void coordinatorIsElected( InstanceId coordinatorId )
         {
         }
 
         @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        public void memberIsAvailable( String role, InstanceId availableId, URI atURI )
         {
         }
 
         @Override
-        public void memberIsUnavailable( String role, URI instanceClusterUri )
+        public void memberIsUnavailable( String role, InstanceId unavailableId )
+        {
+        }
+
+        @Override
+        public void memberIsFailed( InstanceId instanceId )
+        {
+        }
+
+        @Override
+        public void memberIsAlive( InstanceId instanceId )
         {
         }
     }

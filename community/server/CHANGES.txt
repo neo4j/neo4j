@@ -3,6 +3,10 @@
 o Added support for labels
 o Added support for the new label-based indexes
 
+1.9.RC1 (????-??-??)
+--------------------
+o Introduces new slash screen containing a guide to Neo4j. Several small aesthetic improvements
+
 1.9.M05 (2013-03-05)
 --------------------
 o Added support for X-Forwarded-Host and X-Forwarded-Proto headers to allow parameterising of 

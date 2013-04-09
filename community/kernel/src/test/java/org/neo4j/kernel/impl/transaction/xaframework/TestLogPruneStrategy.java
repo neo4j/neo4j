@@ -41,17 +41,20 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestLogPruneStrategy
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction FS;
+    private File directory;
     
     @Before
     public void before()
     {
         FS = fs.get();
+        directory = TargetDirectory.forTest( FS, getClass() ).directory( "prune", true );
     }
     
     @Test
@@ -290,7 +293,7 @@ public class TestLogPruneStrategy
             this.logSize = logSize;
             this.pruning = pruning;
             activeBuffer = ByteBuffer.allocate( logSize*10 );
-            baseFile = new File( "target/test-data/", "log" );
+            baseFile = new File( directory, "log" );
             clearAndWriteHeader();
         }
         

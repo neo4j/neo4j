@@ -21,8 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.com.BindingNotifier;
+import org.neo4j.cluster.InstanceId;
 
 /**
  * Context used by the {@link HighAvailabilityMemberStateMachine}. Keeps track of what elections and previously
@@ -30,36 +29,29 @@ import org.neo4j.cluster.com.BindingNotifier;
  */
 public class SimpleHighAvailabilityMemberContext implements HighAvailabilityMemberContext
 {
-    private URI electedMasterId;
+    private InstanceId electedMasterId;
     private URI availableHaMasterId;
-    private URI myId;
+    private final InstanceId myId;
 
-    public SimpleHighAvailabilityMemberContext( BindingNotifier clusterClient )
+    public SimpleHighAvailabilityMemberContext( InstanceId myId )
     {
-        clusterClient.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                myId = me;
-            }
-        } );
+        this.myId = myId;
     }
 
     @Override
-    public URI getMyId()
+    public InstanceId getMyId()
     {
         return myId;
     }
 
     @Override
-    public URI getElectedMasterId()
+    public InstanceId getElectedMasterId()
     {
         return electedMasterId;
     }
 
     @Override
-    public void setElectedMasterId( URI electedMasterId )
+    public void setElectedMasterId( InstanceId electedMasterId )
     {
         this.electedMasterId = electedMasterId;
     }

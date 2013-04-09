@@ -52,6 +52,8 @@ include::head.asciidoc[]
 
 include::last.asciidoc[]
 
+include::timestamp.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-collection]]

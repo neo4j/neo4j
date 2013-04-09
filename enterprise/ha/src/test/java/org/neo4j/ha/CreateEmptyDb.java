@@ -24,7 +24,7 @@ import java.io.File;
 import org.junit.Ignore;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-@Ignore
+@Ignore("Not a test")
 public class CreateEmptyDb
 {
     public static void main( String[] args )

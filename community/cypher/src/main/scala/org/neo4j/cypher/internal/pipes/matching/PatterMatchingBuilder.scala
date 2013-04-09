@@ -69,7 +69,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
   }
 
   private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext = {
-    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
+    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toStream
     matchedGraph.newWith(m)
   }
 
@@ -118,13 +118,13 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
 
               Seq(t1, t2, t3)
             }
-            case None         => Seq()
+            case None         => Nil
           }
         }
       }
 
 
-    case _ => Seq()
+    case _ => Nil
   }
 }
 

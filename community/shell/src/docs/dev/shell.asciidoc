@@ -167,6 +167,13 @@ It has some of the same commands, like +cd+ and +ls+.
 When you first start the shell (see instructions above), you will get a list of all the available commands.
 Use +man <command>+ to get more info about a particular command. Some notes:
 
+[[comments]]
+=== Comments ===
+Single line comments, which will be ignored, can be made by using the prefix "//". Example:
+----
+// This is a comment
+----
+
 [[shell-current-pos]]
 === Current node/relationship and path ===
 You have a current node/relationship and a "current path" (like a current working directory in bash) that you've traversed so far.

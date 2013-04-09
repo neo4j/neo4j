@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.ha.HaSettings.server_id;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -51,7 +52,7 @@ public class TestEnterpriseCacheType
         // GIVEN
         // -- an HA graph database with default cache type config
         db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( storeDir )
-                .setConfig( server_id, "1" ).newGraphDatabase();
+                .setConfig( server_id, "1" ).setConfig( ClusterSettings.initial_hosts, ":5001" ).newGraphDatabase();
 
         // THEN
         // -- the selected cache type should be GCR

@@ -29,24 +29,21 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreLocker
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final Config configuration;
-    private final StringLogger logger;
     private final FileSystemAbstraction fileSystemAbstraction;
 
     private FileLock storeLockFileLock;
     private FileChannel storeLockFileChannel;
 
-    public StoreLocker( Config configuration, FileSystemAbstraction fileSystemAbstraction, StringLogger logger )
+    public StoreLocker( Config configuration, FileSystemAbstraction fileSystemAbstraction )
     {
         this.configuration = configuration;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.logger = logger;
     }
 
     /**
@@ -54,9 +51,9 @@ public class StoreLocker
      * <p/>
      * Creates store dir if necessary, creates store lock file if necessary
      *
-     * @return true if lock was successfully obtained, false otherwise
+     * @throws StoreLockException if lock could not be acquired
      */
-    public boolean lock( File storeDir )
+    public void checkLock( File storeDir ) throws StoreLockException
     {
         File storeLockFile = new File( storeDir, STORE_LOCK_FILENAME );
 
@@ -66,8 +63,8 @@ public class StoreLocker
             {
                 if ( configuration.get( read_only ) )
                 {
-                    logger.warn( "Unable to lock store as store dir does not exist and instance is in read-only mode" );
-                    return false;
+                    String msg = "Unable to lock store as store dir does not exist and instance is in read-only mode";
+                    throw new StoreLockException( msg );
                 }
 
                 fileSystemAbstraction.mkdirs( storeLockFile.getParentFile() );
@@ -75,36 +72,37 @@ public class StoreLocker
         }
         catch ( IOException e )
         {
-            logger.warn( "Unable to create path for store dir: " + storeDir, e );
-            return false;
+            throw new StoreLockException( "Unable to create path for store dir: " + storeDir, e );
         }
 
         try
         {
             storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
             storeLockFileLock = fileSystemAbstraction.tryLock( storeLockFile, storeLockFileChannel );
-            return storeLockFileLock != null;
+
+            if ( storeLockFileLock == null )
+            {
+                throw new StoreLockException( "Could not create lock file" );
+            }
         }
         catch ( OverlappingFileLockException e )
         {
-            logger.warn( "Unable to obtain lock on store lock file: " + storeLockFile, e );
-            return false;
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
         }
         catch ( IOException e )
         {
-            logger.warn( "Unable to obtain lock on store lock file: " + storeLockFile, e );
-            return false;
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
         }
     }
 
     public void release() throws IOException
     {
-        if (storeLockFileLock != null)
+        if ( storeLockFileLock != null )
         {
             storeLockFileLock.release();
             storeLockFileLock = null;
         }
-        if (storeLockFileChannel != null)
+        if ( storeLockFileChannel != null )
         {
             storeLockFileChannel.close();
             storeLockFileChannel = null;

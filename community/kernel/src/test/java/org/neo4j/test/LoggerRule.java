@@ -38,8 +38,7 @@ public class LoggerRule
     protected void before()
             throws Throwable
     {
-        logger = LoggerFactory.getLogger( "test" );
-        logger.debug( "Begin test:" + testName );
+        logger.info( "Begin test:" + testName );
         super.before();
     }
 
@@ -47,13 +46,14 @@ public class LoggerRule
     protected void after()
     {
         super.after();
-        logger.debug( "Finished test:" + testName );
+        logger.info( "Finished test:" + testName );
     }
 
     @Override
     public Statement apply( Statement base, Description description )
     {
         testName = description.getDisplayName();
+        logger = LoggerFactory.getLogger( description.getTestClass() );
         return super.apply( base, description );
     }
 

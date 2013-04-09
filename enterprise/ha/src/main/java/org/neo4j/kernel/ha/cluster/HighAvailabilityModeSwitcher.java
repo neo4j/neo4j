@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
@@ -236,7 +237,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
-        msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to master" );
+        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
         try
         {
             MasterImpl masterImpl = new MasterImpl( graphDb, logging, config );
@@ -258,9 +259,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
             URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
                     masterServer.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( HaSettings.server_id ) );
+                    config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
-            msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
+            msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
         }
         catch ( Throwable e )
@@ -278,7 +279,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 URI masterUri = availableMasterId;
 
-                msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to slave for master " +
+                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
                         masterUri );
 
                 assert masterUri != null; // since we are here it must already have been set from outside
@@ -301,7 +302,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     if ( !startHaCommunication( xaDataSourceManager, nioneoDataSource, masterUri ) )
                         continue; // to the outer loop for a retry
 
-                    msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
+                    msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                             ", successfully moved to slave for master " + masterUri );
                     break; // from the retry loop
                 }
@@ -333,7 +334,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
             URI haUri = URI.create( "ha://" + server.getSocketAddress().getHostName() + ":" +
                     server.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( HaSettings.server_id ) );
+                    config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
             return true;
         }
@@ -593,7 +594,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
                 && !myMaster.equals( mastersMaster ) )
         {
-            String msg = "Branched data, I (machineId:" + config.get( HaSettings.server_id ) + ") think machineId for" +
+            String msg = "Branched data, I (machineId:" + config.get( ClusterSettings.server_id ) + ") think machineId for" +
                     " txId (" +
                     myLastCommittedTx + ") is " + myMaster + ", but master (machineId:" +
                     getServerId( availableMasterId ) + ") says that it's " + mastersMaster;

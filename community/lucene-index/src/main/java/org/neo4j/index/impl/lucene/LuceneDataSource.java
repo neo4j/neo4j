@@ -216,7 +216,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         File storeDir = config.get( Configuration.store_dir );
-        this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( new File( storeDir, "index" ));
+        this.baseStorePath =
+                this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction, new File( storeDir, "index" ));
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
@@ -971,7 +972,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     }
 
                     @Override
-                    File ensureDirectoryExists( File dir )
+                    File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
                     {
                         if ( !dir.exists() )
                         {
@@ -1000,15 +1001,23 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     }
 
                     @Override
-                    File ensureDirectoryExists( File path )
+                    File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path )
                     {
+                        try
+                        {
+                            fileSystem.mkdirs( path );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
                         return path;
                     }
                 };
 
         abstract Directory getDirectory( File baseStorePath, IndexIdentifier identifier ) throws IOException;
 
-        abstract File ensureDirectoryExists( File path );
+        abstract File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path );
 
         abstract void cleanWriteLocks( File path );
     }

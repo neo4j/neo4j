@@ -21,12 +21,7 @@ package org.neo4j.cypher
 
 import internal.commands.AbstractQuery
 import internal.helpers.GraphIcing
-import internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.junit.Before
-import org.neo4j.graphdb.{DynamicLabel, Node}
-import org.neo4j.graphdb.DynamicLabel.label
-import collection.JavaConverters._
-import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 

@@ -57,7 +57,7 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
         @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager",
                 method = "applyCommittedTransaction", on = BreakPoint.Event.ENTRY)})
 @RunWith(SubProcessTestRunner.class)
-@Ignore
+@Ignore("Never passed")
 public class TestPartialPullUpdates
 {
     private HighlyAvailableGraphDatabase master;
@@ -70,7 +70,7 @@ public class TestPartialPullUpdates
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
                         "master", true ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" ).
-                setConfig( HaSettings.server_id, "1" ).
+                setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( HaSettings.tx_push_factor, "0" ).
                 newGraphDatabase();
         Transaction tx = master.beginTx();
@@ -85,7 +85,7 @@ public class TestPartialPullUpdates
                         "slave1", true ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
                 setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
-                setConfig( HaSettings.server_id, "2" ).
+                setConfig( ClusterSettings.server_id, "2" ).
                 setConfig( HaSettings.ha_server, "localhost:6362" ).
                 setConfig( HaSettings.pull_interval, "0" ).
                 newGraphDatabase();

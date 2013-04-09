@@ -24,7 +24,6 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -35,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
@@ -85,7 +85,7 @@ public class TestPullUpdatesApplied
                 newHighlyAvailableDatabaseBuilder( dir.directory( "" + i, clear ).getAbsolutePath() )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( HaSettings.server_id, "" + i )
+                .setConfig( ClusterSettings.server_id, "" + i )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .newGraphDatabase();
@@ -118,7 +118,7 @@ public class TestPullUpdatesApplied
                 new ClusterListener.Adapter()
         {
             @Override
-            public void leftCluster( URI member )
+            public void leftCluster( InstanceId member )
             {
                 latch1.countDown();
                 masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeClusterListener( this );
@@ -143,7 +143,7 @@ public class TestPullUpdatesApplied
                 new HeartbeatListener.Adapter()
         {
             @Override
-            public void failed( URI server )
+            public void failed( InstanceId server )
             {
                 latch2.countDown();
                 masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeHeartbeatListener( this );
@@ -164,7 +164,7 @@ public class TestPullUpdatesApplied
         int i = Integer.parseInt( args[1] );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( args[0] )
-                .setConfig( HaSettings.server_id, "" + i )
+                .setConfig( ClusterSettings.server_id, "" + i )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) + "" )

@@ -25,6 +25,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
+
 /**
  * This message is broadcast when a member of the cluster declares that
  * it is not ready to serve a particular role for the cluster.
@@ -33,21 +35,28 @@ public class MemberIsUnavailable
         implements Externalizable
 {
     private String role;
+    private InstanceId instanceId;
     private URI clusterUri;
 
     public MemberIsUnavailable()
     {
     }
 
-    public MemberIsUnavailable( String role, URI clusterUri)
+    public MemberIsUnavailable( String role, InstanceId instanceId, URI clusterUri)
     {
         this.role = role;
+        this.instanceId = instanceId;
         this.clusterUri = clusterUri;
     }
 
     public String getRole()
     {
         return role;
+    }
+
+    public InstanceId getInstanceId()
+    {
+        return instanceId;
     }
 
     public URI getClusterUri()
@@ -59,6 +68,7 @@ public class MemberIsUnavailable
     public void writeExternal( ObjectOutput out ) throws IOException
     {
         out.writeUTF( role );
+        out.writeObject( instanceId );
         out.writeUTF( clusterUri.toString() );
     }
 
@@ -66,6 +76,8 @@ public class MemberIsUnavailable
     public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
     {
         role = in.readUTF();
+        instanceId = (InstanceId) in.readObject();
         clusterUri = URI.create( in.readUTF() );
     }
+
 }

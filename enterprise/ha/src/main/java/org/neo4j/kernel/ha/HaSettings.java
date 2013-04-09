@@ -24,7 +24,6 @@ import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.MANDATORY;
 import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
@@ -64,9 +63,6 @@ public class HaSettings
     @Description( "Maximum number of connections a slave can have to the master" )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
             setting( "ha.max_concurrent_channels_per_slave", INTEGER, "20", min( 1 ) );
-
-    @Description( "Id for a cluster instance. Must be unique within the cluster" )
-    public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
 
     @Description( "Where to bind High Availability protocol server" )
     public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6361-6371" );

@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = input.map(ctx => {
-    ctx.put(path.pathName, path.getPath(ctx))
-    ctx
+    ctx += (path.pathName -> path.getPath(ctx))
   })
 
   val symbols = source.symbols.add(path.pathName, PathType())

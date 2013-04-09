@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.EagerAggregationPipe
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{CachedExpression, AggregationExpression, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.ReturnItem
+import java.util.UUID
 
 
 /*
@@ -54,7 +55,8 @@ class AggregationBuilder extends LegacyPlanBuilder  {
 
     // Get the aggregate expressions to calculate, and their named key expressions
     val expressions = getExpressions(planToAggregate)
-    val namedAggregates = expressions.aggregates.map( exp => "  INTERNAL_AGGREGATE" + exp.hashCode -> exp ).toMap
+    val seq = expressions.aggregates.map(exp => "  INTERNAL_AGGREGATE" + UUID.randomUUID() -> exp).toList
+    val namedAggregates = seq.toMap
 
     val resultPipe = new EagerAggregationPipe(planToAggregate.pipe, expressions.keys, namedAggregates)
 
