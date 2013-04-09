@@ -89,8 +89,11 @@ public class StoreUpgrader
     {
         try
         {
-            fileSystemAbstraction.copyFile( new File( workingDirectory, StringLogger.DEFAULT_NAME ),
-                    new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
+            File originalLog = new File( workingDirectory, StringLogger.DEFAULT_NAME );
+            if ( fileSystemAbstraction.fileExists( originalLog ))
+            {
+                fileSystemAbstraction.copyFile( originalLog, new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
+            }
         }
         catch ( IOException e )
         {

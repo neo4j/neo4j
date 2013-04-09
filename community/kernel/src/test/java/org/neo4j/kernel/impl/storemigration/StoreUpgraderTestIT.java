@@ -80,6 +80,22 @@ public class StoreUpgraderTestIT
     }
 
     @Test
+    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing() throws IOException
+    {
+        // given
+        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+
+        // when
+        newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles( fileSystem ) )
+                .attemptUpgrade( new File( dbDirectory, NeoStore.DEFAULT_NAME ) );
+
+        // then
+        File backupDirectory = new File( dbDirectory, "upgrade_backup" );
+        assertFalse( fileSystem.fileExists( new File( dbDirectory, StringLogger.DEFAULT_NAME ) ) );
+        assertFalse( fileSystem.fileExists( new File( backupDirectory, StringLogger.DEFAULT_NAME ) ) );
+    }
+
+    @Test
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
