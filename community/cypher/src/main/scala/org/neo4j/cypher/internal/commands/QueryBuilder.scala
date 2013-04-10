@@ -67,12 +67,20 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     skip = Some(ParameterExpression(skipTo))
   }
 
+  def skip(skipTo: Expression): QueryBuilder = store {
+    skip = Some(skipTo)
+  }
+
   def limit(limitTo: Int): QueryBuilder = store {
     limit = Some(Literal(limitTo))
   }
 
   def limit(limitTo: String): QueryBuilder = store {
     limit = Some(ParameterExpression(limitTo))
+  }
+
+  def limit(limitTo: Expression): QueryBuilder = store {
+    limit = Some(limitTo)
   }
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store {
