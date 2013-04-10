@@ -31,11 +31,11 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
-public class TimeoutEvictingTransactionRegistryTest
+public class TimeoutEvictingTransactionRegistryIT
 {
 
     @Test
-    public void shouldSuspendTransationWhenPut() throws Exception
+    public void shouldSuspendTransactionWhenPut() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
@@ -50,7 +50,7 @@ public class TimeoutEvictingTransactionRegistryTest
     }
 
     @Test
-    public void shouldSuspendAndResumeTransationWhenPutAndPulled() throws Exception
+    public void shouldSuspendAndResumeTransactionWhenPutAndPulled() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
@@ -89,7 +89,7 @@ public class TimeoutEvictingTransactionRegistryTest
     }
 
     @Test
-    public void poppingANonExistantTxShouldThrowError() throws Exception
+    public void poppingANonExistentTxShouldThrowError() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();

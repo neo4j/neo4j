@@ -46,7 +46,7 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.LABEL;
 import org.neo4j.test.GraphDescription.NODE;
 
-public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
+public class LabelsDocIT extends AbstractRestFunctionalTestBase
 {
 
     /**

@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
-public class TransactionTimeoutFunctionalTest extends ExclusiveServerTestBase
+public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
 {
 
     private CommunityNeoServer server;

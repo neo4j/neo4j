@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 
-public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
+public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * Create schema index.

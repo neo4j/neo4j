@@ -44,7 +44,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
-public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
+public class TransactionDocIT extends AbstractRestFunctionalTestBase
 {
 
     /**
