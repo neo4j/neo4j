@@ -6,7 +6,10 @@
 * Cypher has the concept of identifiers which denote named, bound elements and parameters. 
 * Cypher can create, update, and remove nodes, relationships, and properties. 
 
-You can try cypher snippets live in the Neo4j Console at http://console.neo4j.org.
+++++
+<div class="paragraph"><p>You can try cypher snippets live in the Neo4j Console at 
+<a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>.</p></div>
+++++
 
 == Syntax ==
 

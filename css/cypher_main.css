@@ -392,6 +392,10 @@ td p {
   margin-bottom: 0.1em;
 }
 
+ul {
+  padding-left: 15px;
+}
+
 #page_1, #page_2, #page_3, #page_4 {
   /*border: 1px solid red;*/
   overflow: auto;
