@@ -22,20 +22,24 @@ package org.neo4j.server.rest.transactional;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
 {
     private final AtomicLong idGenerator = new AtomicLong( 0l );
-    private final ConcurrentHashMap<Long, RegisteredTransaction> registry = new ConcurrentHashMap<Long, RegisteredTransaction>(50);
+    private final ConcurrentHashMap<Long, TransactionMarker> registry =
+            new ConcurrentHashMap<Long, TransactionMarker>( 64 );
 
     private final Clock clock;
     private final StringLogger log;
@@ -46,73 +50,189 @@ public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
         this.log = log;
     }
 
-    private class RegisteredTransaction
+    private static abstract class TransactionMarker
     {
-        final TransitionalTxManagementTransactionContext ctx;
-        final long storedAtTimestamp;
+        abstract SuspendedTransaction getTransaction() throws ConcurrentTransactionAccessError;
 
-        private RegisteredTransaction( TransitionalTxManagementTransactionContext ctx, long currentTime )
+        abstract boolean isSuspended();
+    }
+
+    private static class ActiveTransaction extends TransactionMarker
+    {
+        public static final ActiveTransaction INSTANCE = new ActiveTransaction();
+
+        @Override
+        SuspendedTransaction getTransaction() throws ConcurrentTransactionAccessError
         {
-            this.ctx = ctx;
-            this.storedAtTimestamp = currentTime;
+            throw new ConcurrentTransactionAccessError(
+                    "The transaction you wanted to access is being used concurrently by another request. " +
+                            "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+        }
+
+        boolean isSuspended()
+        {
+            return false;
+        }
+    }
+
+    private class SuspendedTransaction extends TransactionMarker
+    {
+        final TransitionalTxManagementTransactionContext context;
+        final long lastActiveTimestamp;
+
+        private SuspendedTransaction( TransitionalTxManagementTransactionContext context )
+        {
+            this.context = context;
+            this.lastActiveTimestamp = clock.currentTimeInMilliseconds();
+        }
+
+        @Override
+        SuspendedTransaction getTransaction() throws ConcurrentTransactionAccessError
+        {
+            return this;
+        }
+
+        boolean isSuspended()
+        {
+            return true;
+        }
+    }
+
+    public long begin()
+    {
+        long id = idGenerator.incrementAndGet();
+        if ( null == registry.putIfAbsent( id, ActiveTransaction.INSTANCE ) )
+        {
+            return id;
+        }
+        else
+        {
+            throw new IllegalStateException( "Attempt to begin transaction for id that was already registered" );
+        }
+    }
+
+    public void suspend( long id, TransactionContext txContext )
+    {
+        TransactionMarker marker = registry.get( id );
+
+        if ( null == marker )
+        {
+            throw new IllegalStateException( "Trying to suspend unregistered transaction" );
+        }
+
+        if ( marker.isSuspended() )
+        {
+            throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
+        }
+
+        TransitionalTxManagementTransactionContext transitionalContext = transitionalContext( txContext );
+        transitionalContext.suspendSinceTransactionsAreStillThreadBound();
+        SuspendedTransaction transaction = new SuspendedTransaction( transitionalContext );
+        if ( !registry.replace( id, marker, transaction ) )
+        {
+            throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
+        }
+    }
+
+    public TransactionContext resume( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError
+    {
+        TransactionMarker marker = registry.get( id );
+
+        if ( null == marker )
+        {
+            throw new InvalidTransactionIdError( "The transaction you asked for cannot be found. "
+                    + "This could also be because the transaction has timed out and has been rolled back." );
+        }
+
+        if ( !marker.isSuspended() )
+        {
+            throw new ConcurrentTransactionAccessError(
+                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+        }
+
+        SuspendedTransaction transaction = marker.getTransaction();
+        if ( registry.replace( id, marker, ActiveTransaction.INSTANCE ) )
+        {
+            transaction.context.resumeSinceTransactionsAreStillThreadBound();
+            return transaction.context;
+        }
+        else
+        {
+            throw new ConcurrentTransactionAccessError(
+                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+        }
+    }
+
+    public void finish( long id )
+    {
+        TransactionMarker marker = registry.get( id );
+
+        if ( null == marker )
+        {
+            throw new IllegalStateException( "Could not finish unregistered transaction" );
+        }
+
+        if ( marker.isSuspended() )
+        {
+            throw new IllegalStateException( "Cannot finish suspended registered transaction" );
+        }
+
+        if ( !registry.remove( id, marker ) )
+        {
+            throw new IllegalStateException(
+                    "Trying to finish transaction that has been concurrently finished or suspended" );
         }
     }
 
     @Override
-    public long newId() throws Neo4jError
+    public void rollbackAllSuspendedTransactions()
     {
-        return idGenerator.incrementAndGet();
+        rollbackSuspended( Predicates.<TransactionMarker>TRUE() );
     }
 
-    /**
-     * The only time a transaction is put into the registry is when either:
-     *  * The user has asked to perform operations on it, in which case it will have been popped from the registry first
-     *  * The user has asked for a new transaction, in which case we will have generated a guaranteed-to-be-unused id
-     * Meaning:
-     *    The architecture guarantees, and we depend on, the assumption that we will never be asked to put
-     *    a transaction in here that already exists in the registry.
-     */
-    @Override
-    public void put( long id, TransactionContext ctx ) throws Neo4jError
+    public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
     {
-        assert ctx instanceof TransitionalTxManagementTransactionContext :
-                "During transition to kernel API, only TransitionalTxManagementTransactionContext are allowed.";
-
-        TransitionalTxManagementTransactionContext castCtx = (TransitionalTxManagementTransactionContext) ctx;
-
-        castCtx.suspendSinceTransactionsAreStillThreadBound();
-
-        RegisteredTransaction item = new RegisteredTransaction( castCtx, clock.currentTimeInMilliseconds() );
-        RegisteredTransaction preExisting = registry.putIfAbsent( id, item );
-
-        assert preExisting == null : "Contract violation: " + id + " is already a registered transaction.";
-    }
-
-    @Override
-    public TransactionContext pop( long id ) throws InvalidTransactionIdError
-    {
-        RegisteredTransaction item = registry.remove( id );
-        if(item == null)
+        rollbackSuspended( new Predicate<TransactionMarker>()
         {
-            throw new InvalidTransactionIdError(
-                    "The transaction you asked for cannot be found. " +
-                    "Please ensure that you are not concurrently using the same transaction elsewhere. " +
-                    "This could also be because the transaction has timed out and has been rolled back.", null);
-        }
-        item.ctx.resumeSinceTransactionsAreStillThreadBound();
-        return item.ctx;
+            @Override
+            public boolean accept( TransactionMarker item )
+            {
+                try
+                {
+                    return item.getTransaction().lastActiveTimestamp < oldestLastActiveTime;
+                }
+                catch ( ConcurrentTransactionAccessError concurrentTransactionAccessError )
+                {
+                    throw new RuntimeException( concurrentTransactionAccessError );
+                }
+            }
+        } );
+
     }
 
-    @Override
-    public synchronized void evictAll()
+    private void rollbackSuspended( Predicate<TransactionMarker> predicate )
     {
-        for ( Long key : registry.keySet() )
+        Iterator<Map.Entry<Long,TransactionMarker>> entries = registry.entrySet().iterator();
+        while ( entries.hasNext() )
         {
+            Map.Entry<Long, TransactionMarker> entry = entries.next();
+            TransactionMarker marker = entry.getValue();
             try
             {
-                pop( key ).rollback();
+                if ( predicate.accept( marker ) && marker.isSuspended() )
+                {
+                    TransitionalTxManagementTransactionContext context = marker.getTransaction().context;
+                    context.resumeSinceTransactionsAreStillThreadBound();
+                    context.rollback();
+                    entries.remove();
+
+                    long idleSeconds = MILLISECONDS.toSeconds( clock.currentTimeInMilliseconds() -
+                            marker.getTransaction().lastActiveTimestamp );
+                    log.info( format( "Transaction with id %d has been idle for %d seconds, and has been " +
+                            "automatically rolled back.", entry.getKey(), idleSeconds ) );
+                }
             }
-            catch ( InvalidTransactionIdError neo4jError )
+            catch ( ConcurrentTransactionAccessError concurrentTransactionAccessError )
             {
                 // Allow this - someone snatched the transaction from under our feet,
                 // indicating someone is concurrently modifying transactions in the registry, which is allowed.
@@ -120,30 +240,10 @@ public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
         }
     }
 
-    /**
-     * Used to evict old transactions.
-     */
-    public void evictAllIdleSince( long maxAgeInMilliseconds )
+    private TransitionalTxManagementTransactionContext transitionalContext( TransactionContext txContext )
     {
-        for ( Map.Entry<Long, RegisteredTransaction> entry : registry.entrySet() )
-        {
-            long storedAtTimestamp = entry.getValue().storedAtTimestamp;
-            if( storedAtTimestamp < maxAgeInMilliseconds )
-            {
-                try
-                {
-                    pop( entry.getKey() ).rollback();
-
-                    long idleSeconds = MILLISECONDS.toSeconds( clock.currentTimeInMilliseconds() - storedAtTimestamp );
-                    log.info( format( "Transaction with id %d has been idle for %d seconds, and has been " +
-                            "automatically rolled back.", entry.getKey(), idleSeconds ) );
-                }
-                catch ( InvalidTransactionIdError neo4jError )
-                {
-                    // Allow this - someone snatched the transaction from under our feet,
-                    // indicating someone is concurrently modifying transactions in the registry, which is allowed.
-                }
-            }
-        }
+        assert txContext instanceof TransitionalTxManagementTransactionContext :
+                "During transition to kernel API, only TransitionalTxManagementTransactionContext are allowed.";
+        return (TransitionalTxManagementTransactionContext) txContext;
     }
 }

@@ -23,8 +23,8 @@ public class UnknownCommitError extends Neo4jError
 {
     public UnknownCommitError( RuntimeException e )
     {
-        super(Code.UNKNOWN_COMMIT_ERROR,
+        super( Code.UNKNOWN_COMMIT_ERROR,
                 "It was not possible to commit your transaction. " +
-                "Please refer to the database logs for details.", e);
+                        "Please refer to the database logs for details.", e );
     }
 }

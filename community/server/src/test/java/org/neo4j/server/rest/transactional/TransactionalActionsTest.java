@@ -22,22 +22,25 @@ package org.neo4j.server.rest.transactional;
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Matchers.anyMap;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyMapOf;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.transactional.TransactionalActionsTest.TestStatementDeserializer.failingRequest;
 import static org.neo4j.server.rest.transactional.TransactionalActionsTest.TestStatementDeserializer.request;
 import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.INVALID_REQUEST;
-import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.INVALID_TRANSACTION_ID;
 import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.UNKNOWN_COMMIT_ERROR;
 import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.UNKNOWN_ROLLBACK_ERROR;
 import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.UNKNOWN_STATEMENT_ERROR;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +51,6 @@ import org.junit.Test;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.InvalidRequestError;
@@ -57,11 +59,9 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 public class TransactionalActionsTest
 {
-
     private TransactionRegistry registry;
     private TransitionalPeriodTransactionMessContainer mess;
     private TransactionContext ctx;
-    private StatementContext stmtCtx;
     private ExecutionEngine engine;
     private ExecutionResult result;
     private long txId = 1337l;
@@ -69,41 +69,46 @@ public class TransactionalActionsTest
 
     static class TestResultHandler implements TransactionalActions.ResultHandler
     {
-
         // Used to validate that the contract of this interface is never violated.
         private enum State
         {
-            BEFORE_BEGIN,
-            RUNNING,
-            FINISHED;
+            BEFORE_PROLOGUE,
+            AFTER_PROLOGUE,
+            AFTER_EPILOGUE
         }
 
         List<ExecutionResult> results = new ArrayList<ExecutionResult>();
         long txId;
         List<Neo4jError> errors = new ArrayList<Neo4jError>();
 
-        private State state = State.BEFORE_BEGIN;
+        private State state = State.BEFORE_PROLOGUE;
 
         @Override
-        public void begin( long txId )
+        public void prologue( long txId )
         {
-            assertEquals( state, State.BEFORE_BEGIN );
-            this.state = State.RUNNING;
+            prologue();
             this.txId = txId;
+        }
+
+        @Override
+        public void prologue()
+        {
+            assertEquals( state, State.BEFORE_PROLOGUE );
+            this.state = State.AFTER_PROLOGUE;
         }
 
         @Override
         public void visitStatementResult( ExecutionResult result ) throws Neo4jError
         {
-            assertEquals( state, State.RUNNING );
+            assertEquals( state, State.AFTER_PROLOGUE );
             results.add( result );
         }
 
         @Override
-        public void finish( Iterator<Neo4jError> errors )
+        public void epilogue( Iterator<Neo4jError> errors )
         {
-            assertEquals( state, State.RUNNING );
-            state = State.FINISHED;
+            assertEquals( state, State.AFTER_PROLOGUE );
+            state = State.AFTER_EPILOGUE;
 
             while ( errors.hasNext() )
             {
@@ -118,18 +123,17 @@ public class TransactionalActionsTest
         private final Iterator<Statement> statements;
         private final Iterator<Neo4jError> errors;
 
-        static TestStatementDeserializer request( Statement... statements ) throws UnsupportedEncodingException
+        static TestStatementDeserializer request( Statement... statements )
         {
             return new TestStatementDeserializer( IteratorUtil.<Neo4jError>emptyIterator(), iterator( statements ) );
         }
 
-        static TestStatementDeserializer failingRequest( Neo4jError... errors ) throws UnsupportedEncodingException
+        static TestStatementDeserializer failingRequest( Neo4jError... errors )
         {
             return new TestStatementDeserializer( iterator( errors ), IteratorUtil.<Statement>emptyIterator() );
         }
 
-        public TestStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements ) throws
-                UnsupportedEncodingException
+        public TestStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements )
         {
             super( new ByteArrayInputStream( new byte[]{} ) );
             this.statements = statements;
@@ -161,19 +165,16 @@ public class TransactionalActionsTest
         logger = new TestLogger();
         result = mock( ExecutionResult.class );
         engine = mock( ExecutionEngine.class );
-        when( engine.execute( anyString(), anyMap() ) ).thenReturn( result );
-
-        stmtCtx = mock( StatementContext.class );
+        when( engine.execute( anyString(), anyMapOf( String.class, Object.class ) ) ).thenReturn( result );
 
         ctx = mock( TransactionContext.class );
-        when( ctx.newStatementContext() ).thenReturn( stmtCtx );
 
         mess = mock( TransitionalPeriodTransactionMessContainer.class );
         when( mess.newTransactionContext() ).thenReturn( ctx );
 
         registry = mock( TransactionRegistry.class );
-        when( registry.newId() ).thenReturn( txId );
-        when( registry.pop( txId ) ).thenReturn( ctx );
+        when( registry.begin() ).thenReturn( txId );
+        when( registry.resume( txId ) ).thenReturn( ctx );
     }
 
     @Test
@@ -185,18 +186,17 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), results );
+        actions.newTransaction().commit( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.get( 0 ), equalTo( result ) );
-        assertThat( results.txId, equalTo( -1l ) );
 
         verify( mess ).newTransactionContext();
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
-        verify( stmtCtx ).close();
+        verify( registry ).begin();
+        verify( registry ).finish( txId );
         verify( ctx ).commit();
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -208,7 +208,7 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.executeInNewTransaction( request( new Statement( "My Cypher Query", parameters ) ), txId, results );
+        actions.newTransaction().execute( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.get( 0 ), equalTo( result ) );
@@ -216,10 +216,9 @@ public class TransactionalActionsTest
 
         verify( mess ).newTransactionContext();
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
-        verify( stmtCtx ).close();
-        verify( registry ).put( txId, ctx );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).begin();
+        verify( registry ).suspend( txId, ctx );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -231,19 +230,16 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.executeInExistingTransaction( request( new Statement( "My Cypher Query", parameters ) ), txId,
-                results );
+        actions.findTransaction( txId ).execute( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.get( 0 ), equalTo( result ) );
         assertThat( results.txId, equalTo( txId ) );
 
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
-        verify( stmtCtx ).close();
-        verify( registry ).pop( txId );
-        verify( registry ).put( txId, ctx );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).suspend( txId, ctx );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -255,18 +251,16 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), txId, results );
+        actions.findTransaction( txId ).commit( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.get( 0 ), equalTo( result ) );
-        assertThat( results.txId, equalTo( txId ) );
 
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
         verify( ctx ).commit();
-        verify( stmtCtx ).close();
-        verify( registry ).pop( txId );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -277,46 +271,40 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.rollback( txId, results );
+        actions.findTransaction( txId ).rollback( results );
 
         // Then
-        assertThat( results.txId, equalTo( txId ) );
         assertThat( results.results.size(), equalTo( 0 ) );
 
-        verify( registry ).pop( txId );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
         verify( ctx ).rollback();
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
-
-    //
-    // Test Failure Scenarios
-    //
 
     @Test
     public void shouldRollbackIfStatementFailsDuringCommit() throws Exception
     {
         // Given
         Throwable exception = new RuntimeException( "HA!" );
-        when( engine.execute( anyString(), anyMap() ) ).thenThrow( exception );
+        when( engine.execute( anyString(), anyMapOf( String.class, Object.class ) ) ).thenThrow( exception );
 
         TransactionalActions actions = new TransactionalActions( mess, engine, registry, logger );
         Map<String, Object> parameters = map();
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), txId, results );
+        actions.findTransaction( txId ).commit( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.size(), equalTo( 0 ) );
-        assertThat( results.txId, equalTo( txId ) );
         assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( UNKNOWN_STATEMENT_ERROR ) );
 
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
         verify( ctx ).rollback();
-        verify( stmtCtx ).close();
-        verify( registry ).pop( txId );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -324,15 +312,14 @@ public class TransactionalActionsTest
     {
         // Given
         Throwable exception = new RuntimeException( "HA!" );
-        when( engine.execute( anyString(), anyMap() ) ).thenThrow( exception );
+        when( engine.execute( anyString(), anyMapOf( String.class, Object.class ) ) ).thenThrow( exception );
 
         TransactionalActions actions = new TransactionalActions( mess, engine, registry, logger );
         Map<String, Object> parameters = map();
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.executeInExistingTransaction( request( new Statement( "My Cypher Query", parameters ) ), txId,
-                results );
+        actions.findTransaction( txId ).execute( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.size(), equalTo( 0 ) );
@@ -340,11 +327,10 @@ public class TransactionalActionsTest
         assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( UNKNOWN_STATEMENT_ERROR ) );
 
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
         verify( ctx ).rollback();
-        verify( stmtCtx ).close();
-        verify( registry ).pop( txId );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
     }
 
     @Test
@@ -359,19 +345,17 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), txId, results );
+        actions.findTransaction( txId ).commit( request( new Statement( "My Cypher Query", parameters ) ), results );
 
         // Then
         assertThat( results.results.get( 0 ), equalTo( result ) );
-        assertThat( results.txId, equalTo( txId ) );
         assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( UNKNOWN_COMMIT_ERROR ) );
 
         verify( engine ).execute( "My Cypher Query", parameters );
-        verify( ctx ).newStatementContext();
         verify( ctx ).commit();
-        verify( stmtCtx ).close();
-        verify( registry ).pop( txId );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
         logger.assertExactly( error( "Failed to commit transaction.", exc ) );
     }
 
@@ -386,16 +370,16 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.rollback( txId, results );
+        actions.findTransaction( txId ).rollback( results );
 
         // Then
         assertThat( results.results.size(), equalTo( 0 ) );
-        assertThat( results.txId, equalTo( txId ) );
         assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( UNKNOWN_ROLLBACK_ERROR ) );
 
         verify( ctx ).rollback();
-        verify( registry ).pop( txId );
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
         logger.assertExactly( error( "Failed to rollback transaction.", exc ) );
     }
 
@@ -407,20 +391,18 @@ public class TransactionalActionsTest
         when( mess.newTransactionContext() ).thenThrow( exc );
 
         TransactionalActions actions = new TransactionalActions( mess, engine, registry, logger );
-        Map<String, Object> parameters = map();
 
         // When
-        TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), results );
-
-        // Then
-        assertThat( results.results.size(), equalTo( 0 ) );
-        assertThat( results.txId, equalTo( -1l ) );
-        assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( Neo4jError.Code.UNABLE_TO_START_TRANSACTION ) );
-
-        verify( mess ).newTransactionContext();
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
-        logger.assertExactly( error( "Failed to start transaction.", exc ) );
+        try
+        {
+            actions.newTransaction();
+            fail( "should have thrown exception" );
+        }
+        catch ( Neo4jError neo4jError )
+        {
+            // Then
+            assertEquals( Neo4jError.Code.UNABLE_TO_START_TRANSACTION, neo4jError.getErrorCode() );
+        }
     }
 
     @Test
@@ -428,23 +410,20 @@ public class TransactionalActionsTest
     {
         // Given
         TransactionalActions actions = new TransactionalActions( mess, engine, registry, logger );
-        Map<String, Object> parameters = map();
         long txIdThatDoesNotExist = 7331l;
-        when( registry.pop( txIdThatDoesNotExist ) ).thenThrow( new InvalidTransactionIdError( "", null ) );
+        when( registry.resume( txIdThatDoesNotExist ) ).thenThrow( new InvalidTransactionIdError( "" ) );
 
         // When
-        TestResultHandler results = new TestResultHandler();
-        actions.commit( request( new Statement( "My Cypher Query", parameters ) ), txIdThatDoesNotExist, results );
-
-        // Then
-        assertThat( results.results.size(), equalTo( 0 ) );
-        assertThat( results.txId, equalTo( txIdThatDoesNotExist ) );
-        assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( INVALID_TRANSACTION_ID ) );
-
-        verify( registry ).pop( txIdThatDoesNotExist );
-
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
-        logger.assertNoLoggingOccurred();
+        try
+        {
+            actions.findTransaction( txIdThatDoesNotExist );
+            fail( "should have thrown exception" );
+        }
+        catch ( Neo4jError neo4jError )
+        {
+            // Then
+            assertEquals( Neo4jError.Code.INVALID_TRANSACTION_ID, neo4jError.getErrorCode() );
+        }
     }
 
     @Test
@@ -455,17 +434,17 @@ public class TransactionalActionsTest
 
         // When
         TestResultHandler results = new TestResultHandler();
-        actions.commit( failingRequest( new InvalidRequestError( "Lolwut" ) ), txId, results );
+        actions.findTransaction( txId ).commit( failingRequest( new InvalidRequestError( "Lolwut" ) ), results );
 
         // Then
         assertThat( results.results.size(), equalTo( 0 ) );
-        assertThat( results.txId, equalTo( txId ) );
         assertThat( results.errors.get( 0 ).getErrorCode(), equalTo( INVALID_REQUEST ) );
 
-        verify( registry ).pop( txId );
+        verify( registry ).resume( txId );
+        verify( registry ).finish( txId );
         verify( ctx ).rollback();
 
-        verifyNoMoreInteractions( mess, registry, engine, ctx, stmtCtx );
+        verifyNoMoreInteractions( mess, registry, engine, ctx );
         logger.assertNoLoggingOccurred();
     }
 }

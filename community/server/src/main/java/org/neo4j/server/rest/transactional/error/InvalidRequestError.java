@@ -23,6 +23,6 @@ public class InvalidRequestError extends Neo4jError
 {
     public InvalidRequestError( String message )
     {
-        super( Code.INVALID_REQUEST, message, null);
+        super( Code.INVALID_REQUEST, message, null );
     }
 }

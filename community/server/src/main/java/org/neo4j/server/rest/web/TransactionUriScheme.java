@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional.error;
+package org.neo4j.server.rest.web;
 
-public class UnknownRollbackError extends Neo4jError
+import java.net.URI;
+
+public interface TransactionUriScheme
 {
-    public UnknownRollbackError( RuntimeException cause )
-    {
-        super( Code.UNKNOWN_ROLLBACK_ERROR,
-                "Unable to roll back transaction, and unable to determine cause of failure. " +
-                        "Please refer to the logs for details.", cause );
-    }
+    URI txUri( long id );
+
+    URI txCommitUri( long id );
 }

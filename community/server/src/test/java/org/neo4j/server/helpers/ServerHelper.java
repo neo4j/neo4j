@@ -175,6 +175,6 @@ public class ServerHelper
 
     private static void rollbackAllOpenTransactions(NeoServer server)
     {
-        server.getTransactionRegistry().evictAll();
+        server.getTransactionRegistry().rollbackAllSuspendedTransactions();
     }
 }

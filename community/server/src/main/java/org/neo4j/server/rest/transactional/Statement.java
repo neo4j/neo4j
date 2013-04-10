@@ -26,7 +26,7 @@ public class Statement
     private final String statement;
     private final Map<String, Object> parameters;
 
-    public Statement(String statement, Map<String, Object> parameters)
+    public Statement( String statement, Map<String, Object> parameters )
     {
         this.statement = statement;
         this.parameters = parameters;

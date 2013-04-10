@@ -20,7 +20,8 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
+import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
 /**
  * Stores transaction contexts for the server, including handling concurrency safe ways to acquire
@@ -29,10 +30,13 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  */
 public interface TransactionRegistry
 {
-    public long newId() throws Neo4jError;
+    public long begin();
 
-    public void put(long id, TransactionContext ctx) throws Neo4jError;
-    public TransactionContext pop(long id)           throws Neo4jError;
+    public void suspend( long id, TransactionContext txContext );
 
-    public void evictAll();
+    public TransactionContext resume( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError;
+
+    public void finish( long id );
+
+    public void rollbackAllSuspendedTransactions();
 }

@@ -21,8 +21,8 @@ package org.neo4j.server.rest.transactional.error;
 
 public class InvalidTransactionIdError extends Neo4jError
 {
-    public InvalidTransactionIdError(String message, Throwable cause)
+    public InvalidTransactionIdError( String message )
     {
-        super(Code.INVALID_TRANSACTION_ID, message, cause);
+        super( Code.INVALID_TRANSACTION_ID, message, null );
     }
 }

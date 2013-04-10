@@ -83,24 +83,27 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
     {
         try
         {
-            if(errors != null)
+            if ( errors != null )
             {
                 return null;
             }
 
-            switch(state)
+            switch ( state )
             {
                 case BEFORE_OUTER_ARRAY:
-                    parseAndDiscard( START_ARRAY );
+                    if ( !discardStartArray() )
+                    {
+                        return null;
+                    }
                     state = State.IN_BODY;
                 case IN_BODY:
                     String statement = null;
                     Map<String, Object> parameters = null;
                     JsonToken tok;
 
-                    while((tok = input.nextToken()) != null && tok != END_OBJECT)
+                    while ( (tok = input.nextToken()) != null && tok != END_OBJECT )
                     {
-                        if(tok == END_ARRAY)
+                        if ( tok == END_ARRAY )
                         {
                             // No more statements
                             state = State.FINISHED;
@@ -109,21 +112,21 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                         input.nextToken();
                         String currentName = input.getCurrentName();
-                        if(currentName == "statement")
+                        if ( "statement".equals( currentName ) )
                         {
                             statement = input.nextTextValue();
                         }
-                        else if(currentName == "parameters")
+                        else if ( "parameters".equals( currentName ) )
                         {
-                            parameters = input.readValueAs( Map.class);
+                            parameters = readMap( input );
                         }
                     }
 
-                    if(statement == null)
+                    if ( statement == null )
                     {
-                        throw new InvalidRequestError("No statement provided.");
+                        throw new InvalidRequestError( "No statement provided." );
                     }
-                    return new Statement(statement, parameters == null ? NO_PARAMETERS : parameters);
+                    return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters );
 
 
                 case FINISHED:
@@ -131,14 +134,14 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             }
             return null;
         }
-        catch (JsonParseException e)
+        catch ( JsonParseException e )
         {
             addError( new InvalidRequestError( "Unable to deserialize request: " + e.getMessage() ) );
             return null;
         }
         catch ( IOException e )
         {
-            addError(new ClientCommunicationError( "Input error while deserializing request.", e ));
+            addError( new ClientCommunicationError( "Input error while deserializing request.", e ) );
             return null;
         }
         catch ( Neo4jError error )
@@ -148,21 +151,33 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> readMap( JsonParser input ) throws IOException
+    {
+        return input.readValueAs( Map.class );
+    }
+
     private void addError( Neo4jError error )
     {
-        if(errors == null)
+        if ( errors == null )
         {
             errors = new LinkedList<Neo4jError>();
         }
         errors.add( error );
     }
 
-    private void parseAndDiscard(JsonToken type) throws Neo4jError, IOException
+    private boolean discardStartArray() throws Neo4jError, IOException
     {
-        JsonToken tok = input.nextToken();
-        if(tok != type)
+        JsonToken token = input.nextToken();
+        if ( token == null )
         {
-            throw new InvalidRequestError("Unable to deserialize request, expected "+type+", found "+ tok +".");
+            return false;
         }
+        if ( token != START_ARRAY )
+        {
+            throw new InvalidRequestError( "Unable to deserialize request, expected " + START_ARRAY + ", " +
+                    "found " + token + "." );
+        }
+        return true;
     }
 }

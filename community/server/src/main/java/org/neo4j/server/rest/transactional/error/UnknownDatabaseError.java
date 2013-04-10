@@ -21,13 +21,14 @@ package org.neo4j.server.rest.transactional.error;
 
 public class UnknownDatabaseError extends Neo4jError
 {
-    public UnknownDatabaseError(Throwable cause)
+    public UnknownDatabaseError( Throwable cause )
     {
-        this("Something went wrong, and the database was unable to accurately tell what it was. Please refer to the database logs for details.", cause);
+        this( "Something went wrong, and the database was unable to accurately tell what it was. Please refer to the " +
+                "database logs for details.", cause );
     }
 
-    public UnknownDatabaseError(String message, Throwable cause)
+    public UnknownDatabaseError( String message, Throwable cause )
     {
-        super(Code.UNKNOWN_DATABASE_ERROR, message, cause);
+        super( Code.UNKNOWN_DATABASE_ERROR, message, cause );
     }
 }

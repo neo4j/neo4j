@@ -21,9 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.Object;
-import java.lang.RuntimeException;
-import java.lang.String;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -32,15 +29,18 @@ import org.codehaus.jackson.JsonGenerator;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.UnknownStatementError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class ExecutionResultSerializer implements TransactionalActions.ResultHandler
 {
     private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
 
     private final JsonGenerator out;
+    private final TransactionUriScheme scheme;
 
-    public ExecutionResultSerializer( OutputStream output )
+    public ExecutionResultSerializer( OutputStream output, TransactionUriScheme scheme )
     {
+        this.scheme = scheme;
         JsonGenerator generator = null;
         try
         {
@@ -54,12 +54,12 @@ public class ExecutionResultSerializer implements TransactionalActions.ResultHan
     }
 
     @Override
-    public void begin( long txId )
+    public void prologue( long txId )
     {
         try
         {
             out.writeStartObject();
-            out.writeNumberField( "txId", txId );
+            out.writeStringField( "commit", scheme.txCommitUri( txId ).toString() );
             out.writeArrayFieldStart( "results" );
         }
         catch ( IOException e )
@@ -69,54 +69,42 @@ public class ExecutionResultSerializer implements TransactionalActions.ResultHan
     }
 
     @Override
+    public void prologue( )
+    {
+        prologue( true );
+    }
+
+
+    private void prologue( boolean writeResults )
+    {
+        try
+        {
+            out.writeStartObject();
+            if ( writeResults )
+                out.writeArrayFieldStart( "results" );
+        }
+        catch ( IOException e )
+        {
+            handleIOException( e );
+        }
+    }
+
+
+    @Override
     public void visitStatementResult( ExecutionResult result ) throws Neo4jError
     {
         try
         {
-            Iterable<String> columns = result.columns();
-            Iterator<Map<String, Object>> data = result.iterator();
-
             try
             {
                 out.writeStartObject();
 
-                try
-                {
-                    out.writeArrayFieldStart( "columns" );
-                    for ( String key : columns )
-                    {
-                        out.writeString( key );
-                    }
-                } finally
-                {
-                    out.writeEndArray(); // </columns>
-                }
+                Iterable<String> columns = result.columns();
 
-                try
-                {
-                    out.writeArrayFieldStart( "data" );
-                    while(data.hasNext())
-                    {
-                        Map<String, Object> row = nextRow( data );
-                        try
-                        {
-                            out.writeStartArray();
-                            for ( String key : columns )
-                            {
-                                Object val = row.get( key );
-                                out.writeObject( val );
-                            }
-                        } finally
-                        {
-                            out.writeEndArray();
-                        }
-                    }
-                } finally
-                {
-                    out.writeEndArray(); // </data>
-                }
-
-            } finally
+                writeColumns( columns );
+                writeRows( columns, result.iterator() );
+            }
+            finally
             {
                 out.writeEndObject(); // </result>
             }
@@ -127,16 +115,68 @@ public class ExecutionResultSerializer implements TransactionalActions.ResultHan
         }
     }
 
-    @Override
-    public void finish( Iterator<Neo4jError> errors )
+    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data ) throws IOException,
+            UnknownStatementError
     {
         try
         {
-            out.writeEndArray(); // </results>
+            out.writeArrayFieldStart( "data" );
+            while ( data.hasNext() )
+            {
+                Map<String, Object> row = nextRow( data );
+                try
+                {
+                    out.writeStartArray();
+                    for ( String key : columns )
+                    {
+                        Object val = row.get( key );
+                        out.writeObject( val );
+                    }
+                }
+                finally
+                {
+                    out.writeEndArray();
+                }
+            }
+        }
+        finally
+        {
+            out.writeEndArray(); // </data>
+        }
+    }
+
+    private void writeColumns( Iterable<String> columns ) throws IOException
+    {
+        try
+        {
+            out.writeArrayFieldStart( "columns" );
+            for ( String key : columns )
+            {
+                out.writeString( key );
+            }
+        }
+        finally
+        {
+            out.writeEndArray(); // </columns>
+        }
+    }
+
+    @Override
+    public void epilogue( Iterator<Neo4jError> errors )
+    {
+        epilogue( errors, /* writeEndArray */ true );
+    }
+
+    private void epilogue( Iterator<Neo4jError> errors, boolean writeEndArray )
+    {
+        try
+        {
+            if ( writeEndArray )
+                out.writeEndArray(); // </results>
             try
             {
                 out.writeArrayFieldStart( "errors" );
-                while(errors.hasNext())
+                while ( errors.hasNext() )
                 {
                     Neo4jError error = errors.next();
                     try
@@ -144,14 +184,16 @@ public class ExecutionResultSerializer implements TransactionalActions.ResultHan
                         out.writeStartObject();
                         out.writeObjectField( "code", error.getErrorCode().getCode() );
                         out.writeObjectField( "message", error.getMessage() );
-                    } finally
+                    }
+                    finally
                     {
                         out.writeEndObject();
                     }
                 }
-            } finally
-            {
                 out.writeEndArray();  // </errors>
+            }
+            finally
+            {
                 out.writeEndObject(); // </result>
                 out.flush();
             }
@@ -162,12 +204,19 @@ public class ExecutionResultSerializer implements TransactionalActions.ResultHan
         }
     }
 
+    public void errorsOnly( Iterator<Neo4jError> errors )
+    {
+        prologue( /* writeResults */ false );
+        epilogue( errors, /* writeEndArray */ false );
+    }
+
     private Map<String, Object> nextRow( Iterator<Map<String, Object>> data ) throws UnknownStatementError
     {
         try
         {
             return data.next();
-        } catch(RuntimeException e)
+        }
+        catch ( RuntimeException e )
         {
 
             throw new UnknownStatementError( "Executing statement failed.", e );

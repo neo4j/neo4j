@@ -32,7 +32,7 @@ public class TransitionalPeriodTransactionMessContainer implements KernelAPI
     private final GraphDatabaseAPI db;
     private final TxManager txManager;
 
-    public TransitionalPeriodTransactionMessContainer(GraphDatabaseAPI db)
+    public TransitionalPeriodTransactionMessContainer( GraphDatabaseAPI db )
     {
         this.db = db;
         this.kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
@@ -42,11 +42,12 @@ public class TransitionalPeriodTransactionMessContainer implements KernelAPI
     public TransactionContext newTransactionContext()
     {
         db.beginTx();
-        return new TransitionalTxManagementTransactionContext(kernel.newTransactionContext(), txManager);
+        return new TransitionalTxManagementTransactionContext( kernel.newTransactionContext(), txManager );
     }
 
     @Override
-    public StatementContext newReadOnlyStatementContext() {
+    public StatementContext newReadOnlyStatementContext()
+    {
         throw new UnsupportedOperationException();
     }
 }

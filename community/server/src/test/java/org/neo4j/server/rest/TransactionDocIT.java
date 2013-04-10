@@ -21,259 +21,297 @@ package org.neo4j.server.rest;
 
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.set;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
+import static org.neo4j.test.server.HTTP.Response;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.graphdb.Node;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TransactionDocIT extends AbstractRestFunctionalTestBase
 {
+    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
 
-    /**
-     * Create a transaction
-     *
-     * You create a new transaction by posting zero or more cypher statements
-     * to the transaction endpoint. The server will respond with the result of
-     * your statements, as well as the location of your running transaction.
-     */
-    @Test
-    @Documented
-    public void starting_a_transaction() throws PropertyValueException
-    {
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 201 )
-                .payload( createJsonFrom( set( map(
-                        "statement", "CREATE (n {props}) RETURN n",
-                        "parameters", map( "props", map( "name", "My Node" ) ) ) ) ) )
-                .post( getDataUri() + "transaction" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors( result );
-        Map<String, Object> node = resultCell( result, 0, 0 );
-        assertThat( (String)node.get( "name" ), equalTo( "My Node" ) );
-    }
-
-    /**
-     * Execute statements in running transaction
-     *
-     * Given that you have a running transaction, you can post any number of statements to it.
-     */
-    @Test
-    @Documented
-    public void execute_statements_in_running_transaction() throws PropertyValueException
-    {
-        // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
-
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN n" ) ) ) )
-                .post( location );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors( result );
-    }
-
-    /**
-     * Commit a running transaction
-     */
-    @Test
-    @Documented
-    public void commit_a_running_transaction() throws PropertyValueException
-    {
-        // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
-
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN id(n)" ) ) ) )
-                .post( location + "/commit" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors(result);
-
-        Integer id = resultCell(result, 0, 0);
-        assertThat(GET(getNodeUri(id)).status(), is(200));
-    }
-
-    /**
-     * Create and commit a transaction in one request
-     *
-     * This is similar to how the old cypher endpoint behaves.
-     */
-    @Test
-    @Documented
-    public void create_and_commit_a_transaction_in_one_request() throws PropertyValueException
-    {
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN id(n)" ) ) ) )
-                .post( getDataUri() + "transaction/commit" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors(result);
-
-        Integer id = resultCell(result, 0, 0);
-        assertThat(GET(getNodeUri(id)).status(), is(200));
-    }
-
-    /**
-     * Rollback a running transaction
-     */
-    @Test
-    @Documented
-    public void rollback_a_running_transaction() throws PropertyValueException
-    {
-        // Given
-        HTTP.Response firstReq = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n RETURN id(n)" ) ) );
-        String location = firstReq.location();
-
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .delete( location + "" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors(result);
-
-        Integer id = resultCell(firstReq, 0, 0);
-        assertThat(GET(getNodeUri(id)).status(), is(404));
-    }
-
-    /**
-     * Handling errors
-     *
-     * The result of any operation against the transaction resource is streamed back to the client,
-     * which means that the server does not know ahead of time if the request will be successful or not.
-     *
-     * Because of that, all operations against the transactional resource returns 200 or 201 statuses, always.
-     * In order to verify that a request was successful, at the end of each result will be a field called
-     * "errors". If this is empty, the operation completed successfully.
-     *
-     * If it is not empty, any related transaction will have been rolled back.
-     *
-     * In this example, we send the server an invalid statement.
-     */
-    @Test
-    @Documented
-    public void handling_errors() throws PropertyValueException
-    {
-        // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
-
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "This is not a valid Cypher Statement." ) ) ) )
-                .post( location + "/commit" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertErrors( result, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
-    }
-
-    //
-    // -- Integration tests that are not part of the documentation
-    //
+    // TODO: currently we send a list of statements, however we agreed to push the list down to a property on a top level object
 
     @Test
-    public void invalidRequestShouldContainErrorAndHaveNoEffect() throws Exception
+    public void begin__execute__commit() throws Exception
     {
-        // Given I've started a transaction
-        HTTP.Response response = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n RETURN id(n)" ) ) );
-        Integer nodeId = resultCell(response, 0, 0);
-        String txLocation = response.location();
+        long nodesInDatabaseBeforeTransaction = countNodes();
 
-        // When
-        response = POST( txLocation + "/commit", set( map( "statement", "CREATE ;;' RETURN id(n)" ) ) );
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
 
-        // Then
-        assertThat(GET(getNodeUri(nodeId)).status(), is(404));
-        assertThat( response.status(), is( 200 ) ); // <-- Because error will happen after streaming starts
-        assertErrors( response, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+
+        String commitResource = begin.stringFromContent( "commit" );
+        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
+
+        // execute
+        Response execute = http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        assertThat( execute.status(), equalTo( 200 ) );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
 
     @Test
-    public void invalidJsonInRequestShouldContainErrorAndHaveNoEffect() throws Exception
+    public void begin__execute__rollback() throws Exception
     {
-        // Given I've started a transaction
-        HTTP.Response response = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n RETURN id(n)" ) ) );
-        Integer nodeId = resultCell(response, 0, 0);
-        String txLocation = response.location();
+        long nodesInDatabaseBeforeTransaction = countNodes();
 
-        // When
-        response = POST( txLocation + "/commit", rawPayload( "[{asd,::}]" ));
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
 
-        // Then
-        assertThat(GET(getNodeUri(nodeId)).status(), is(404));
-        assertThat( response.status(), is( 200 ) ); // <-- Because error will happen after streaming starts
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+
+        // execute
+        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        // rollback
+        Response commit = http.DELETE( begin.location() );
+
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+    }
+
+    @Test
+    public void begin__execute_and_commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.location(), containsString( "/db/data/transaction" ) );
+
+        String commitResource = begin.stringFromContent( "commit" );
+        assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
+
+        // execute and commit
+        Response commit = http.POST( commitResource, set( map( "statement", "CREATE n" ) ) );
+        assertNoErrors( (Map<String, Object>) commit.content() );
+
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+    }
+
+    @Test
+    public void begin_and_execute__commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin and execute
+        Response begin = http.POST( "/db/data/transaction", set( map( "statement", "CREATE n" ) ) );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+    }
+
+    @Test
+    public void begin__execute__commit__execute() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // execute
+        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        // commit
+        http.POST( commitResource );
+
+        // execute
+        Response execute = http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        assertThat( execute.status(), equalTo( 404 ) );
+        assertErrors( execute, Neo4jError.Code.INVALID_TRANSACTION_ID );
+    }
+
+    @Test
+    public void begin_and_execute_and_commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin and execute and commit
+        Response begin = http.POST( "/db/data/transaction/commit", set( map( "statement", "CREATE n" ) ) );
+
+        assertThat( begin.status(), equalTo( 200 ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+    }
+
+    @Test
+    public void begin__execute_multiple__commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // execute
+        http.POST( begin.location(), iterator(
+                map( "statement", "CREATE n" ),
+                map( "statement", "CREATE n" ) ) );
+
+        // commit
+        assertNoErrors( http.POST( commitResource ) );
+
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
+    }
+
+    @Test
+    public void begin__execute__execute__commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // execute
+        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        // execute
+        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+
+        // commit
+        http.POST( commitResource );
+
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
+    }
+
+    @Test
+    public void begin__commit_with_invalid_cypher() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n" ) ) );
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit with invalid cypher
+        begin = POST( commitResource, set( map( "statement", "CREATE ;;' RETURN id(n)" ) ) );
+
+        assertThat( begin.status(), is( 200 ) );
+        assertErrors( begin, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
+
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+    }
+
+    @Test
+    public void begin__commit_with_malformed_json() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n" ) ) );
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit with malformed json
+        Response response = POST( commitResource, rawPayload( "[{asd,::}]" ) );
+
+        assertThat( response.status(), is( 200 ) );
         assertErrors( response, Neo4jError.Code.INVALID_REQUEST );
+
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+    }
+
+    private void assertNoErrors( Response response )
+    {
+        assertErrors( response.<Map<String, Object>>content() );
     }
 
     private void assertNoErrors( Map<String, Object> response )
     {
-        assertErrors( response, new Neo4jError.Code[]{} );
+        assertErrors( response );
     }
 
-    private void assertErrors( HTTP.Response response, Neo4jError.Code ... expectedErrors )
+    private void assertErrors( Response response, Neo4jError.Code... expectedErrors )
     {
         assertErrors( response.<Map<String, Object>>content(), expectedErrors );
     }
 
-    private void assertErrors( Map<String, Object> response, Neo4jError.Code ... expectedErrors )
+    @SuppressWarnings("unchecked")
+    private void assertErrors( Map<String, Object> response, Neo4jError.Code... expectedErrors )
     {
-        Iterator<Map<String,Object>> errors = ((List<Map<String, Object>>)response.get( "errors" )).iterator();
+        Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
         Iterator<Neo4jError.Code> expected = iterator( expectedErrors );
 
-        while(expected.hasNext())
+        while ( expected.hasNext() )
         {
-            assertTrue(errors.hasNext());
-            assertThat( Long.valueOf( (Integer)errors.next().get( "code" )), equalTo( expected.next().getCode() ) );
+            assertTrue( errors.hasNext() );
+            assertThat( Long.valueOf( (Integer) errors.next().get( "code" ) ), equalTo( expected.next().getCode() ) );
         }
-        if(errors.hasNext())
+        if ( errors.hasNext() )
         {
             Map<String, Object> error = errors.next();
-            fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get("message") + "'.");
+            fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get( "message" ) + "'." );
         }
     }
 
-    private <T> T resultCell(HTTP.Response response, int row, int column)
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    private long countNodes()
     {
-        return resultCell( response.<Map<String,Object>>content(), row, column );
+        long count = 0;
+        Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
+        while ( allNodes.hasNext() )
+        {
+            allNodes.next();
+            count++;
+        }
+        return count;
     }
 
-    private <T> T resultCell(Map<String, Object> response, int row, int column)
+    private static Matcher<String> matches( final String pattern )
     {
-        Map<String,Object> result = ((List<Map<String, Object>>)response.get( "results" )).get( 0 );
-        List<List> data = (List<List>) result.get( "data" );
-        return (T) data.get( row ).get(column);
-    }
+        final Pattern regex = Pattern.compile( pattern );
 
+        return new TypeSafeMatcher<String>()
+        {
+            @Override
+            protected boolean matchesSafely( String item )
+            {
+                return regex.matcher( item ).matches();
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "matching regex" ).appendValue( pattern );
+            }
+        };
+    }
 }

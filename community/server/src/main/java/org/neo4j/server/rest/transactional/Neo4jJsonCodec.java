@@ -31,17 +31,17 @@ public class Neo4jJsonCodec extends ObjectMapper
 {
 
     @Override
-    public void writeValue(JsonGenerator out, Object value) throws IOException
+    public void writeValue( JsonGenerator out, Object value ) throws IOException
     {
-        if(value instanceof PropertyContainer )
+        if ( value instanceof PropertyContainer )
         {
             writePropertyContainer( out, (PropertyContainer) value );
         }
-        else if(value instanceof Path )
+        else if ( value instanceof Path )
         {
-            writePath( out, ((Path)value).iterator() );
+            writePath( out, ((Path) value).iterator() );
         }
-        else if(value instanceof byte[])
+        else if ( value instanceof byte[] )
         {
             writeByteArray( out, (byte[]) value );
         }
@@ -54,7 +54,7 @@ public class Neo4jJsonCodec extends ObjectMapper
     private void writePath( JsonGenerator out, Iterator<PropertyContainer> value ) throws IOException
     {
         out.writeStartArray();
-        while(value.hasNext())
+        while ( value.hasNext() )
         {
             writePropertyContainer( out, value.next() );
         }
@@ -76,7 +76,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         out.writeStartArray();
         for ( byte b : bytes )
         {
-            out.writeNumber( (int)b );
+            out.writeNumber( (int) b );
         }
         out.writeEndArray();
     }

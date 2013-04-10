@@ -22,11 +22,11 @@ package org.neo4j.server.rest.transactional.error;
 /**
  * This is an initial move towards unified errors - it should not live here in the server, but should probably
  * exist in the kernel or similar, where it can be shared across surfaces other than the server.
- *
+ * <p/>
  * It's put in place here in order to enforce that the {@link org.neo4j.server.rest.web.TransactionalService}
  * is strictly tied down towards what errors it handles and returns to the client, to create a waterproof abstraction
  * between the runtime-exception landscape that lives below, and the errors we send to the user.
- *
+ * <p/>
  * This way, we make it easy to transition this service over to a unified error code based error scheme.
  */
 public abstract class Neo4jError extends Exception
@@ -44,30 +44,32 @@ public abstract class Neo4jError extends Exception
     public enum Code
     {
         // 00000-09999 : User errors - Invalid syntax, impossible statements
-        INVALID_REQUEST             (   100 ),
+        INVALID_REQUEST( 100 ),
 
-        STATEMENT_MISSING_PARAMETER (  1001 ),
+        STATEMENT_MISSING_PARAMETER( 1001 ),
 
         // 10000-19999 : Data errors - constraint violations, resources not found
-        INVALID_TRANSACTION_ID      ( 10010 ),
+        INVALID_TRANSACTION_ID( 10010 ),
+        CONCURRENT_TRANSACTION_ACCESS( 10011 ),
 
         // 20000-29999 : Database errors - Database shut down, unable to tell what went wrong
-        UNKNOWN_DATABASE_ERROR      ( 20000 ),
-        UNKNOWN_COMMIT_ERROR        ( 20001 ),
-        UNKNOWN_ROLLBACK_ERROR      ( 20002 ),
+        UNKNOWN_DATABASE_ERROR( 20000 ),
+        UNKNOWN_COMMIT_ERROR( 20001 ),
+        UNKNOWN_ROLLBACK_ERROR( 20002 ),
 
-        UNABLE_TO_START_TRANSACTION ( 20010 ),
+        UNABLE_TO_START_TRANSACTION( 20010 ),
 
-        UNKNOWN_STATEMENT_ERROR     ( 20100 ),
+        UNKNOWN_STATEMENT_ERROR( 20100 ),
 
         // 30000-39999 : Cluster errors - Election fraud, unable to join cluster, remote locks timed out
 
         // 40000-49999 : Infrastructure errors - Network failures, memory issues, disk space et cetera
-        CLIENT_COMMUNICATION_ERROR  ( 40100 );
+        CLIENT_COMMUNICATION_ERROR( 40100 );
 
         private final long code;
 
-        private Code(long code) {
+        private Code( long code )
+        {
             this.code = code;
         }
 
@@ -79,13 +81,14 @@ public abstract class Neo4jError extends Exception
 
     private final Code errorCode;
 
-    public Neo4jError(Code errorCode, String message, Throwable cause)
+    public Neo4jError( Code errorCode, String message, Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
         this.errorCode = errorCode;
     }
 
-    public Code getErrorCode() {
+    public Code getErrorCode()
+    {
         return errorCode;
     }
 

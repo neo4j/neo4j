@@ -793,7 +793,13 @@ public abstract class IteratorUtil
     {
         return asIterator(items);
     }
-    
+
+    @SuppressWarnings("unchecked")
+    public static <T> Iterator<T> singletonIterator( T item )
+    {
+        return asIterator(item);
+    }
+
     @SuppressWarnings( "rawtypes" )
     private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
     {

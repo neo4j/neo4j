@@ -41,7 +41,7 @@ final class ServerHolder extends Thread
     {
         if ( server == null ) return;
         if ( server != ServerHolder.server )
-            throw new AssertionError( "trying to release a server not allocated from here" );
+            throw new AssertionError( "trying to suspend a server not allocated from here" );
         if ( allocation == null ) throw new AssertionError( "releasing the server although it is not allocated" );
         allocation = null;
     }

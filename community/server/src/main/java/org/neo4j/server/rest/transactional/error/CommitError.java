@@ -21,7 +21,8 @@ package org.neo4j.server.rest.transactional.error;
 
 public class CommitError extends Neo4jError
 {
-    public CommitError(String message, Throwable cause) {
-        super(Code.UNKNOWN_COMMIT_ERROR, message, cause);
+    public CommitError( String message, Throwable cause )
+    {
+        super( Code.UNKNOWN_COMMIT_ERROR, message, cause );
     }
 }

@@ -42,133 +42,171 @@ import org.neo4j.server.rest.domain.JsonParseException;
 public class HTTP
 {
 
-    private static final Builder BUILDER = new Builder().withHeaders("Accept", "application/json");
+    private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
     private static final Client CLIENT = new Client();
 
-    public static Builder withHeaders(Map<String, String> headers) {
-        return BUILDER.withHeaders(headers);
+    public static Builder withHeaders( Map<String, String> headers )
+    {
+        return BUILDER.withHeaders( headers );
     }
 
-    public static Builder withHeaders(String ... kvPairs) {
-        return BUILDER.withHeaders(kvPairs);
+    public static Builder withHeaders( String... kvPairs )
+    {
+        return BUILDER.withHeaders( kvPairs );
     }
 
-    public static Response POST(String uri) {
-        return BUILDER.POST(uri);
+    public static Builder withBaseUri( String baseUri )
+    {
+        return BUILDER.withBaseUri( baseUri );
     }
 
-    public static Response POST(String uri, Object payload) {
-        return BUILDER.POST(uri, payload);
+    public static Response POST( String uri )
+    {
+        return BUILDER.POST( uri );
     }
 
-    public static Response POST(String uri, RawPayload payload) {
-        return BUILDER.POST(uri, payload);
+    public static Response POST( String uri, Object payload )
+    {
+        return BUILDER.POST( uri, payload );
     }
 
-    public static Response PUT(String uri) {
-        return BUILDER.PUT(uri);
+    public static Response POST( String uri, RawPayload payload )
+    {
+        return BUILDER.POST( uri, payload );
     }
 
-    public static Response PUT(String uri, Object payload) {
-        return BUILDER.PUT(uri, payload);
+    public static Response PUT( String uri )
+    {
+        return BUILDER.PUT( uri );
     }
 
-    public static Response PUT(String uri, RawPayload payload) {
-        return BUILDER.PUT(uri, payload);
+    public static Response PUT( String uri, Object payload )
+    {
+        return BUILDER.PUT( uri, payload );
     }
 
-    public static Response DELETE(String uri) {
-        return BUILDER.DELETE(uri);
+    public static Response PUT( String uri, RawPayload payload )
+    {
+        return BUILDER.PUT( uri, payload );
     }
 
-    public static Response GET(String uri) {
-        return BUILDER.GET(uri);
+    public static Response DELETE( String uri )
+    {
+        return BUILDER.DELETE( uri );
+    }
+
+    public static Response GET( String uri )
+    {
+        return BUILDER.GET( uri );
     }
 
     public static class Builder
     {
         private final Map<String, String> headers;
+        private final String baseUri;
 
         private Builder()
         {
-            this(Collections.<String, String>emptyMap());
+            this( Collections.<String, String>emptyMap(), "" );
         }
 
-        private Builder(Map<String, String> headers)
+        private Builder( Map<String, String> headers, String baseUri )
         {
-            this.headers = unmodifiableMap(headers);
+            this.baseUri = baseUri;
+            this.headers = unmodifiableMap( headers );
         }
 
-        public Builder withHeaders(String ... kvPairs)
+        public Builder withHeaders( String... kvPairs )
         {
-            return withHeaders(stringMap(kvPairs));
+            return withHeaders( stringMap( kvPairs ) );
         }
 
-        public Builder withHeaders(Map<String, String> newHeaders)
+        public Builder withHeaders( Map<String, String> newHeaders )
         {
             HashMap<String, String> combined = new HashMap<String, String>();
-            combined.putAll(newHeaders);
-            combined.putAll(headers);
-            return new Builder(combined);
+            combined.putAll( newHeaders );
+            combined.putAll( headers );
+            return new Builder( combined, baseUri );
         }
 
-        public Response POST(String uri)
+        public Builder withBaseUri( String baseUri )
         {
-            return exec("POST", uri);
+            return new Builder( headers, baseUri );
         }
 
-        public Response POST(String uri, Object payload)
+        public Response POST( String uri )
         {
-            return exec("POST", uri, payload);
+            return exec( "POST", uri );
         }
 
-        public Response POST(String uri, RawPayload payload)
+        public Response POST( String uri, Object payload )
         {
-            return exec("POST", uri, payload);
+            return exec( "POST", uri, payload );
         }
 
-        public Response PUT(String uri)
+        public Response POST( String uri, RawPayload payload )
         {
-            return exec("PUT", uri);
+            return exec( "POST", uri, payload );
         }
 
-        public Response PUT(String uri, Object payload)
+        public Response PUT( String uri )
         {
-            return exec("PUT", uri);
+            return exec( "PUT", uri );
         }
 
-        public Response PUT(String uri, RawPayload payload)
+        public Response PUT( String uri, Object payload )
         {
-            return exec("PUT", uri);
+            return exec( "PUT", uri );
         }
 
-        public Response DELETE(String uri)
+        public Response PUT( String uri, RawPayload payload )
         {
-            return exec("DELETE", uri);
+            return exec( "PUT", uri );
         }
 
-        public Response GET(String uri)
+        public Response DELETE( String uri )
         {
-            return exec("GET", uri);
+            return exec( "DELETE", uri );
         }
 
-        public Response exec(String method, String uri)
+        public Response GET( String uri )
         {
-            return new Response(CLIENT.handle(build().build(URI.create(uri), method)));
+            return exec( "GET", uri );
         }
 
-        public Response exec(String method, String uri, Object payload)
+        public Response exec( String method, String uri )
         {
-            String jsonPayload = payload instanceof RawPayload ? ((RawPayload)payload).get() : createJsonFrom(payload);
-            ClientRequest.Builder lastBuilder = build().entity(jsonPayload, MediaType.APPLICATION_JSON_TYPE);
-            return new Response(CLIENT.handle(lastBuilder.build(URI.create(uri), method)));
+            return new Response( CLIENT.handle( build().build( buildUri( uri ), method ) ) );
+        }
+
+        public Response exec( String method, String uri, Object payload )
+        {
+            String jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom(
+                    payload );
+            ClientRequest.Builder lastBuilder = build().entity( jsonPayload, MediaType.APPLICATION_JSON_TYPE );
+
+            return new Response( CLIENT.handle( lastBuilder.build( buildUri( uri ), method ) ) );
+        }
+
+        private URI buildUri( String uri )
+        {
+            URI unprefixedUri = URI.create( uri );
+            if ( unprefixedUri.isAbsolute() )
+            {
+                return unprefixedUri;
+            }
+            else
+            {
+                return URI.create( baseUri + uri );
+            }
         }
 
         private ClientRequest.Builder build()
         {
             ClientRequest.Builder builder = ClientRequest.create();
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                builder = builder.header(header.getKey(), header.getValue());
+            for ( Map.Entry<String, String> header : headers.entrySet() )
+            {
+                builder = builder.header( header.getKey(), header.getValue() );
             }
 
             return builder;
@@ -178,32 +216,44 @@ public class HTTP
     public static class Response
     {
         private final ClientResponse response;
+        private final String entity;
 
-        public Response(ClientResponse response)
+        public Response( ClientResponse response )
         {
             this.response = response;
+            this.entity = response.getEntity( String.class );
         }
 
-        public int status() {
+        public int status()
+        {
             return response.getStatus();
+        }
+
+        public String location()
+        {
+            if ( response.getLocation() != null )
+            {
+                return response.getLocation().toString();
+            }
+            throw new RuntimeException( "The request did not contain a location header, " +
+                    "unable to provide location. Status code was: " + status() );
         }
 
         public <T> T content()
         {
-            String entity = response.getEntity(String.class);
-            try {
-                return (T) JsonHelper.readJson(entity);
-            } catch (JsonParseException e) {
-                throw new RuntimeException("Unable to deserialize: " + entity, e);
+            try
+            {
+                return (T) JsonHelper.readJson( entity );
+            }
+            catch ( JsonParseException e )
+            {
+                throw new RuntimeException( "Unable to deserialize: " + entity, e );
             }
         }
 
-        public String location() {
-            if(response.getLocation() != null)
-            {
-                return response.getLocation().toString();
-            }
-            throw new RuntimeException("The request did not contain a location header, unable to provide location. Status code was: " + status());
+        public String stringFromContent( String key )
+        {
+            return (String) ((Map<String, Object>) content()).get( key );
         }
     }
 

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownRollbackError extends Neo4jError
+public class ConcurrentTransactionAccessError extends Neo4jError
 {
-    public UnknownRollbackError( RuntimeException cause )
+    public ConcurrentTransactionAccessError( String message )
     {
-        super( Code.UNKNOWN_ROLLBACK_ERROR,
-                "Unable to roll back transaction, and unable to determine cause of failure. " +
-                        "Please refer to the logs for details.", cause );
+        super( Code.CONCURRENT_TRANSACTION_ACCESS, message , null );
     }
 }

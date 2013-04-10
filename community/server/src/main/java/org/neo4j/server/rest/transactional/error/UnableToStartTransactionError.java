@@ -23,8 +23,8 @@ public class UnableToStartTransactionError extends Neo4jError
 {
     public UnableToStartTransactionError( RuntimeException cause )
     {
-        super(Code.UNABLE_TO_START_TRANSACTION,
+        super( Code.UNABLE_TO_START_TRANSACTION,
                 "It was not possible to start a new transaction. " +
-                "Please refer to the database logs for details.", cause);
+                        "Please refer to the database logs for details.", cause );
     }
 }

@@ -21,45 +21,50 @@ package org.neo4j.server.rest.transactional;
 
 import static junit.framework.Assert.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 import org.junit.Test;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
 public class TimeoutEvictingTransactionRegistryIT
 {
-
     @Test
-    public void shouldSuspendTransactionWhenPut() throws Exception
+    public void shouldSuspendTransaction() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
-        TimeoutEvictingTransactionRegistry registry = new TimeoutEvictingTransactionRegistry( new FakeClock(), log);
-        TransitionalTxManagementTransactionContext ctx = mock(TransitionalTxManagementTransactionContext.class);
+        TimeoutEvictingTransactionRegistry registry = new TimeoutEvictingTransactionRegistry( new FakeClock(), log );
+        TransitionalTxManagementTransactionContext ctx = mock( TransitionalTxManagementTransactionContext.class );
+
+        long txId = registry.begin();
 
         // When
-        registry.put( 1337l, ctx );
+        registry.suspend( txId, ctx );
 
         // Then
         verify( ctx ).suspendSinceTransactionsAreStillThreadBound();
     }
 
     @Test
-    public void shouldSuspendAndResumeTransactionWhenPutAndPulled() throws Exception
+    public void shouldSuspendAndResumeTransaction() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
         TimeoutEvictingTransactionRegistry registry = new TimeoutEvictingTransactionRegistry( new FakeClock(), log );
-        TransitionalTxManagementTransactionContext ctx = mock(TransitionalTxManagementTransactionContext.class);
+        TransitionalTxManagementTransactionContext ctx = mock( TransitionalTxManagementTransactionContext.class );
+
+        long txId = registry.begin();
 
         // When
-        registry.put( 1337l, ctx );
-        registry.pop( 1337l );
+        registry.suspend( txId, ctx );
+        registry.resume( txId );
 
         // Then
         verify( ctx ).suspendSinceTransactionsAreStillThreadBound();
@@ -67,39 +72,47 @@ public class TimeoutEvictingTransactionRegistryIT
     }
 
     @Test
-    public void poppingATxTwiceShouldLeadToNoSuchTransactionError() throws Exception
+    public void resumingATxTwiceShouldLeadToNoSuchTransactionError() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
         TimeoutEvictingTransactionRegistry registry = new TimeoutEvictingTransactionRegistry( new FakeClock(), log );
-        TransitionalTxManagementTransactionContext ctx = mock(TransitionalTxManagementTransactionContext.class);
+        TransitionalTxManagementTransactionContext ctx = mock( TransitionalTxManagementTransactionContext.class );
+
+        long txId = registry.begin();
 
         // And Given
-        registry.put( 1337l, ctx );
-        registry.pop( 1337l );
+        registry.suspend( txId, ctx );
+        registry.resume( txId );
 
         // When
-        try {
-            registry.pop( 1337l );
-            fail("Should have thrown exception");
-        } catch(InvalidTransactionIdError exc)
+        try
+        {
+            registry.resume( txId );
+            fail( "Should have thrown exception" );
+        }
+        catch ( ConcurrentTransactionAccessError exc )
         {
             // ok
         }
     }
 
     @Test
-    public void poppingANonExistentTxShouldThrowError() throws Exception
+    public void resumingANonExistentTxShouldThrowError() throws Exception
     {
         // Given
         TestLogger log = new TestLogger();
         TimeoutEvictingTransactionRegistry registry = new TimeoutEvictingTransactionRegistry( new FakeClock(), log );
 
+        long txId = registry.begin();
+
         // When
-        try {
-            registry.pop( 1337l );
-            fail("Should have thrown exception");
-        } catch(InvalidTransactionIdError exc)
+        try
+        {
+            registry.resume( txId );
+            fail( "Should have thrown exception" );
+        }
+        catch ( ConcurrentTransactionAccessError exc )
         {
             // ok
         }
@@ -115,22 +128,27 @@ public class TimeoutEvictingTransactionRegistryIT
         TransactionContext oldTx = mock( TransitionalTxManagementTransactionContext.class );
         TransactionContext newTx = mock( TransitionalTxManagementTransactionContext.class );
 
+        long txId1 = registry.begin();
+        long txId2 = registry.begin();
+
         // And given one transaction was stored one minute ago, and another was stored just now
-        registry.put( 1l, oldTx );
+        registry.suspend( txId1, oldTx );
         clock.forwardMinutes( 1 );
-        registry.put( 2l, newTx );
+        registry.suspend( txId2, newTx );
 
         // When
-        registry.evictAllIdleSince( clock.currentTimeInMilliseconds() - 1000 );
+        registry.rollbackSuspendedTransactionsIdleSince( clock.currentTimeInMilliseconds() - 1000 );
 
         // Then
-        assertThat( registry.pop( 2l ), equalTo( newTx ) );
+        assertThat( registry.resume( txId2 ), equalTo( newTx ) );
 
         // And then the other should have been evicted
-        try {
-            registry.pop( 1l );
+        try
+        {
+            registry.resume( txId1 );
             fail( "Should have thrown exception" );
-        } catch(InvalidTransactionIdError exc)
+        }
+        catch ( InvalidTransactionIdError exc )
         {
             // ok
         }

@@ -23,6 +23,6 @@ public class UnknownStatementError extends Neo4jError
 {
     public UnknownStatementError( String statement, RuntimeException e )
     {
-        super(Code.UNKNOWN_STATEMENT_ERROR, "Failed to execute '" + statement + "'.", e);
+        super( Code.UNKNOWN_STATEMENT_ERROR, "Failed to execute '" + statement + "'.", e );
     }
 }

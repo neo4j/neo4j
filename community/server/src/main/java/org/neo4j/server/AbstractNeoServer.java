@@ -215,7 +215,7 @@ public abstract class AbstractNeoServer implements NeoServer
             public void run()
             {
                 long maxAge = clock.currentTimeInMilliseconds() - (1000 * timeout);
-                transactionRegistry.evictAllIdleSince( maxAge );
+                transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
             }
         }, round( timeout / 2.0 ), SECONDS );
 

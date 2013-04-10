@@ -39,7 +39,6 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 public class StatementDeserializerTest
 {
-
     @Test
     public void shouldDeserializeSingleStatement() throws Exception
     {
@@ -60,12 +59,26 @@ public class StatementDeserializerTest
     }
 
     @Test
+    public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
+    {
+        // Given
+        byte[] json = new byte[0];
+
+        // When
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json ) );
+
+        // Then
+        assertFalse( de.hasNext() );
+        assertFalse( de.errors().hasNext() );
+    }
+
+    @Test
     public void shouldDeserializeMultipleStatements() throws Exception
     {
         // Given
         String json = createJsonFrom( asList(
-                map( "statement", "Blah blah", "parameters", map( "one", 12 )),
-                map( "statement", "Blah bluh", "parameters", map( "asd", asList("one, two") ))));
+                map( "statement", "Blah blah", "parameters", map( "one", 12 ) ),
+                map( "statement", "Blah bluh", "parameters", map( "asd", asList( "one, two" ) ) ) ) );
 
         // When
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
@@ -81,7 +94,7 @@ public class StatementDeserializerTest
         Statement stmt2 = de.next();
 
         assertThat( stmt2.statement(), equalTo( "Blah bluh" ) );
-        assertThat( stmt2.parameters(), equalTo( map( "asd", asList("one, two") ) ) );
+        assertThat( stmt2.parameters(), equalTo( map( "asd", asList( "one, two" ) ) ) );
 
         assertThat( de.hasNext(), equalTo( false ) );
     }
@@ -90,28 +103,33 @@ public class StatementDeserializerTest
     public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
     {
         assertYieldsErrors( "{}", Arrays.<Neo4jError>asList(
-                new InvalidRequestError( "Unable to deserialize request, expected START_ARRAY, found START_OBJECT." )));
+                new InvalidRequestError( "Unable to deserialize request, expected START_ARRAY, " +
+                        "found START_OBJECT." ) ) );
         assertYieldsErrors( "[{]}", Arrays.<Neo4jError>asList(
                 new InvalidRequestError(
                         "Unable to deserialize request: Unexpected close marker ']': expected '}' " +
-                        "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
-                        "at [Source: TestInputStream; line: 1, column: 4]" )));
+                                "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
+                                "at [Source: TestInputStream; line: 1, column: 4]" ) ) );
     }
 
     private void assertYieldsErrors( String json, List<Neo4jError> expectedList ) throws UnsupportedEncodingException
     {
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) {
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) )
+        {
             @Override
             public String toString()
             {
                 return "TestInputStream";
             }
-        });
-        while(de.hasNext()) de.next();
+        } );
+        while ( de.hasNext() )
+        {
+            de.next();
+        }
 
         Iterator<Neo4jError> actual = de.errors();
         Iterator<Neo4jError> expected = expectedList.iterator();
-        while(actual.hasNext())
+        while ( actual.hasNext() )
         {
             assertTrue( expected.hasNext() );
             Neo4jError error = actual.next();

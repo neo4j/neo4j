@@ -25,6 +25,6 @@ public class MissingParameterError extends Neo4jError
 {
     public MissingParameterError( String message, ParameterNotFoundException cause )
     {
-        super(Code.STATEMENT_MISSING_PARAMETER, message, cause);
+        super( Code.STATEMENT_MISSING_PARAMETER, message, cause );
     }
 }

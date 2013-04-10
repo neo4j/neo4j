@@ -94,8 +94,8 @@ class TransitionalTxManagementTransactionContext implements TransactionContext
     {
         try
         {
-            assert suspendedTransaction != null : "Can't resume the transaction if it has not first been suspended.";
-            txManager.resume(suspendedTransaction);
+            assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
+            txManager.resume( suspendedTransaction );
             suspendedTransaction = null;
         }
         catch ( SystemException e )
