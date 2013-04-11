@@ -27,10 +27,10 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService)
-  extends PipeExecutionResult(result, columns) {
+  extends PipeExecutionResult(result, columns, state) {
 
-  val (eagerResult,timeTaken) = super.createTimedResults
-  lazy val inner = eagerResult.iterator
+  override val data = result.toList
+  val inner = data.iterator
 
   override def next() = inner.next().toMap
   override def hasNext = inner.hasNext
@@ -43,6 +43,4 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
       deletedNodes = state.deletedNodes.count,
       deletedRelationships = state.deletedRelationships.count)
   }
-
-  override def createTimedResults = (eagerResult,timeTaken)
 }

@@ -28,7 +28,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
   @Test def columnOrderIsPreserved() {
     val columns = List("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
 
-    columns.foreach(createNode);
+    columns.foreach(createNode)
 
     val q="start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
       "return one, two, three, four, five, six, seven, eight, nine, ten"
@@ -39,6 +39,9 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val regex = "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten"
     val pattern = Pattern.compile(regex)
 
-    assertTrue( "Columns did not apperar in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() );
+    val textOutput = result.dumpToString()
+    assertTrue( "Columns did not apperar in the expected order: \n" + textOutput, pattern.matcher(textOutput).find() )
+
+    assertTrue( "Timing didn't appear in the result: \n"+textOutput, Pattern.compile("\\d{3,} ms").matcher(textOutput).find())
   }
 }

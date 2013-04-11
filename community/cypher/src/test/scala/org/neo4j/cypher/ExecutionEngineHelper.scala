@@ -41,7 +41,7 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)
     
-    plan.execute(params.toMap)
+    plan.execute(params.toMap,System.currentTimeMillis()-100)
   }
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
