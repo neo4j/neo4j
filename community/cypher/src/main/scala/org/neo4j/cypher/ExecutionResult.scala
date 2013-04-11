@@ -46,7 +46,8 @@ case class QueryStatistics(nodesCreated: Int = 0,
                            deletedNodes: Int = 0,
                            deletedRelationships: Int = 0,
                            addedLabels: Int = 0,
-                           removedLabels: Int = 0) {
+                           removedLabels: Int = 0,
+                           timeTaken: Int = 0) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||
@@ -65,6 +66,7 @@ case class QueryStatistics(nodesCreated: Int = 0,
     includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
     includeIfNonZero(builder, "Labels added: ", addedLabels)
     includeIfNonZero(builder, "Labels removed: ", removedLabels)
+    includeIfNonZero(builder, "Time taken: ", timeTaken)
 
     builder.toString()
   }

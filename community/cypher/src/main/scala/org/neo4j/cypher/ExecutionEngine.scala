@@ -76,8 +76,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .resolveDependency(classOf[ThreadToStatementContextBridge])
     .getCtxForWriting
 
-  private def createQueryContext(tx: Transaction, ctx: StatementContext) = {
-    new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx)
+  private def createQueryContext(tx: Transaction, ctx: StatementContext, start : Long) = {
+    new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx, start)
   }
 
   @throws(classOf[SyntaxException])
@@ -85,6 +85,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
+    val start = System.currentTimeMillis()
     // parse query
     val cachedQuery = queryCache.getOrElseUpdate(query, () => {
       val parsedQuery = parser.parse(query)
@@ -101,7 +102,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val tx = graph.beginTx()
       val plan = try {
         statementContext = getStatementContext
-        queryContext = createQueryContext(tx, statementContext)
+        queryContext = createQueryContext(tx, statementContext, start)
 
         // fetch plan cache
         val planCache =
@@ -143,11 +144,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   }
 
   def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
+    val start = System.currentTimeMillis()
     val tx = graph.beginTx()
     try {
       verify(query)
       val statementContext = getStatementContext
-      val queryContext = createQueryContext(tx, statementContext)
+      val queryContext = createQueryContext(tx, statementContext, start)
       val planContext = new TransactionBoundPlanContext(statementContext, graph)
       planBuilder.build(planContext, query).execute(queryContext, params)
     }

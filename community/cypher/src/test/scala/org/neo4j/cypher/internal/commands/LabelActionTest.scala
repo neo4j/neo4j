@@ -66,7 +66,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
 }
 
 class SnitchingQueryContext extends QueryContext {
-
+  val start: Long = 0
   var node: Long = -666
   var ids: Seq[Long] = null
 

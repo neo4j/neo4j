@@ -35,7 +35,7 @@ import org.neo4j.cypher.ExecutionPlan
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext {
+trait QueryContext extends Timed {
 
   def nodeOps: Operations[Node]
 
@@ -106,4 +106,10 @@ trait Operations[T <: PropertyContainer] {
   def indexQuery(name: String, query: Any): Iterator[T]
 
   def all : Iterator[T]
+}
+
+trait Timed {
+  def start : Long
+
+  def timeTaken : Int = (System.currentTimeMillis() - start).toInt
 }

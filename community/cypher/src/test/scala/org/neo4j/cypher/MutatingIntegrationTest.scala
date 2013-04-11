@@ -528,7 +528,7 @@ return distinct center""")
     val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO", "BAR"))
-    assertStats(result, nodesCreated = 1, addedLabels = 2);
+    assertStats(result, nodesCreated = 1, addedLabels = 2)
   }
   
   @Test
@@ -537,7 +537,7 @@ return distinct center""")
     val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO"))
-    assertStats(result, addedLabels = 1);
+    assertStats(result, addedLabels = 1)
   }
 }
 
@@ -552,7 +552,7 @@ trait StatisticsChecker extends Assertions {
                   removedLabels: Int = 0) {
     val statistics = result.queryStatistics()
     assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes,
-                                deletedRelationships, addedLabels, removedLabels)
+                                deletedRelationships, addedLabels, removedLabels,statistics.timeTaken)
     )
   }
 }

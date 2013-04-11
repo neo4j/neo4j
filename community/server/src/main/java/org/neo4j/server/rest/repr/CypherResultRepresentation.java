@@ -68,6 +68,7 @@ public class CypherResultRepresentation extends MappingRepresentation
                 serializer.putNumber( "relationship_deleted", stats.getDeletedRelationships() );
                 serializer.putNumber( "labels_added", stats.getAddedLabels() );
                 serializer.putNumber( "labels_removed", stats.getRemovedLabels() );
+                serializer.putNumber( "time_taken", stats.timeTaken() );
             }
         };
     }

@@ -21,8 +21,6 @@ package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
 import internal.pipes.QueryState
-import internal.StringExtras
-import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
@@ -33,9 +31,8 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
                           val columns: List[String], state: QueryState,
                           executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
-  with StringExtras
   with CollectionSupport
-  with StringHelper {
+  with ResultPrinter {
 
   def executionPlanDescription(): PlanDescription = executionPlanBuilder()
 
@@ -59,68 +56,11 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
     m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
   }).toIterator.asJava
 
-  private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
-
-    result.foreach((m) => {
-      m.foreach((kv) => {
-        val length = text(kv._2, state.query).size
-        if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
-          columnSizes.put(kv._1, length)
-        }
-      })
-    })
-    columnSizes.toMap
-  }
-
-  protected def createTimedResults: (List[Map[String, Any]], String) = {
-    val start = System.currentTimeMillis()
-    val eagerResult = result.toList
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
-  }
-
   def dumpToString(writer: PrintWriter) {
-    val (eagerResult, timeTaken) = createTimedResults
-
-    val columnSizes = calculateColumnSizes(eagerResult)
-
-    if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
-      val headerLine: String = createString(columns, columnSizes, headers)
-      val lineWidth: Int = headerLine.length - 2
-      val --- = "+" + repeat("-", lineWidth) + "+"
-
-      val row = if (eagerResult.size > 1) "rows" else "row"
-      val footer = "%d %s".format(eagerResult.size, row)
-
-      writer.println(---)
-      writer.println(headerLine)
-      writer.println(---)
-
-      eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
-
-      writer.println(---)
-      writer.println(footer)
-      if (queryStatistics.containsUpdates) {
-        writer.print(queryStatistics.toString)
-      }
-    } else {
-      if (queryStatistics.containsUpdates) {
-        writer.println("+-------------------+")
-        writer.println("| No data returned. |")
-        writer.println("+-------------------+")
-        writer.print(queryStatistics.toString)
-      } else {
-        writer.println("+--------------------------------------------+")
-        writer.println("| No data returned, and nothing was changed. |")
-        writer.println("+--------------------------------------------+")
-      }
-    }
-
-    writer.println("%s ms".format(timeTaken))
+    dumpToString(writer,columns,data,state.query.timeTaken,queryStatistics)
   }
+
+  def data = result.toList
 
   lazy val dumpToString: String = {
     val stringWriter = new StringWriter()
@@ -130,19 +70,13 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
     stringWriter.getBuffer.toString
   }
 
-  private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
-    columns.map(c => {
-      val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, state.query)
-      val value = makeSize(txt, length)
-      value
-    }).mkString("| ", " | ", " |")
-  }
 
   def hasNext: Boolean = result.hasNext
 
   def next(): ImmutableMap[String, Any] = result.next().toMap
 
-  def queryStatistics = QueryStatistics()
+  def queryStatistics = state.getStatistics
+
+  def text(x : Any) : String = text(x, state.query)
 }
 

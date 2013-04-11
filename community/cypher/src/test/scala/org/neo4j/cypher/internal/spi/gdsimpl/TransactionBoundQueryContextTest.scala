@@ -44,7 +44,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
   @Test def should_mark_transaction_successful_if_successful() {
     // GIVEN
     Mockito.when(outerTx.failure()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext)
+    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext,0)
 
     // WHEN
     context.close(success = true)
@@ -58,7 +58,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
   @Test def should_mark_transaction_failed_if_not_successful() {
     // GIVEN
     Mockito.when(outerTx.success()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext)
+    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext,0)
 
     // WHEN
     context.close(success = false)

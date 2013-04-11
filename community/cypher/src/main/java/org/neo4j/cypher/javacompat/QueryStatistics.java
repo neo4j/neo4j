@@ -100,4 +100,8 @@ public class QueryStatistics
     {
         return inner.containsUpdates();
     }
+
+    public int timeTaken() {
+        return inner.timeTaken();
+    }
 }

@@ -41,7 +41,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     deletedNodes = deletedNodes.count,
     addedLabels = addedLabels.count,
     removedLabels = removedLabels.count,
-    deletedRelationships = deletedRelationships.count)
+    deletedRelationships = deletedRelationships.count,
+    timeTaken = timeTaken)
 
   override def createNode() = {
     createdNodes.increase()

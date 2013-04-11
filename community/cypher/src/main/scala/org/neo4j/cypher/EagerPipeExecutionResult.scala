@@ -29,13 +29,10 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                planDescriptor: () => PlanDescription)
   extends PipeExecutionResult(result, columns, state, planDescriptor) {
 
-  val (eagerResult,timeTaken) = super.createTimedResults
-  lazy val inner = eagerResult.iterator
+  override val data = result.toList
+
+  lazy val inner = data.iterator
 
   override def next() = inner.next().toMap
   override def hasNext = inner.hasNext
-
-  override def queryStatistics = state.getStatistics
-
-  override def createTimedResults = (eagerResult,timeTaken)
 }
