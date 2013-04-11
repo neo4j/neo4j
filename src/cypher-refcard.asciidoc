@@ -22,9 +22,9 @@
 2+| Operators
 | Mathematical       | `+`, `-`, `*`, `/`, `%`
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
-| Boolean            | `AND`, `OR` 
+| Boolean            | `AND`, `OR`, `NOT`
 | String             | `+`
-| Collection         | `+`
+| Collection         | `+`, `IN`
 | Regular Expression | `=~`
 | Property           | `?`, `!`
 |===
@@ -78,4 +78,14 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-uniq
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicate-functions.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/scalar-functions.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-functions.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/mathematical-functions.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-functions.asciidoc[]
 

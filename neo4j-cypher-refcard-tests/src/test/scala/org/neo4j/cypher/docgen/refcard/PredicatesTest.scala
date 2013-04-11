@@ -37,6 +37,12 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
       case "returns-two" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 2)
+      case "returns-three" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 3)
+      case "returns-four" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 4)
     }
   }
 
@@ -44,14 +50,18 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=aname" =>
         Map("value" -> "Bob")
+      case "parameters=regex" =>
+        Map("regex" -> "Tob.*")
+      case "parameters=names" =>
+        Map("value1" -> "Peter", "value2" -> "Tobias")
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> 10),
-    "B" -> Map("propertyName" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("propertyName" -> "Andrés"),
+    "B" -> Map("propertyName" -> "Tobias"),
+    "C" -> Map("propertyName" -> "Chris"))
 
   def text = """.Predicates
 [refcard]
@@ -79,6 +89,16 @@ RETURN n,m###
 Use boolean operators to combine predicates.
 
 
+###assertion=returns-three
+START n=node(*)
+WHERE
+
+HAS(n.propertyName)
+
+RETURN n###
+
+Use functions.
+
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
 MATCH (n)-[identifier?]->(m)
@@ -90,7 +110,7 @@ RETURN n,m###
 
 Check if something is `null`.
 
-###assertion=returns-two parameters=aname
+###assertion=returns-one parameters=aname
 START n=node(*)
 WHERE
 
@@ -109,6 +129,36 @@ n.propertyName! = {value}
 RETURN n###
 
 Defaults to `false` if the property does not exist.
+
+###assertion=returns-one parameters=regex
+START n=node(*)
+WHERE HAS(n.propertyName) AND
+
+n.propertyName =~ {regex}
+
+RETURN n###
+
+Regular expression.
+
+###assertion=returns-four
+START n=node(*), m=node(*)
+WHERE
+
+(n)-[:KNOWS]->(m)
+
+RETURN n###
+
+Make sure the pattern has at least one match.
+
+###assertion=returns-one parameters=names
+START n=node(*)
+WHERE HAS(n.propertyName) AND
+
+n.propertyName IN [{value1}, {value2}]
+
+RETURN n###
+
+Check if an element exists in a collection.
 ----
 """
 }
