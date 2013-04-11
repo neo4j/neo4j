@@ -20,10 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -37,11 +34,14 @@ import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class KernelIT
@@ -147,7 +147,15 @@ public class KernelIT
 
         // THEN
         statement = statementContextProvider.getCtxForReading();
-        assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
+        try
+        {
+            statement.isLabelSetOnNode( labelId, node.getId() );
+            fail( "should have thrown exception" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // Yay!
+        }
     }
 
     @Test
@@ -167,7 +175,15 @@ public class KernelIT
 
         // THEN
         statement = statementContextProvider.getCtxForReading();
-        assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
+        try
+        {
+            statement.isLabelSetOnNode( labelId, node.getId() );
+            fail( "should have thrown exception" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // Yay!
+        }
     }
 
     @Test
@@ -243,6 +259,38 @@ public class KernelIT
         statement.close();
         tx.success();
         tx.finish();
+    }
+
+    @Test
+    public void labelShouldBeRemovedAfterCommit() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        Node node = db.createNode();
+        long labelId1 = statement.getOrCreateLabelId( "labello1" );
+        statement.addLabelToNode( labelId1, node.getId() );
+        statement.close();
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        statement.removeLabelFromNode( labelId1, node.getId() );
+        statement.close();
+        tx.success();
+        tx.finish();
+
+        // THEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        Iterator<Long> labels = statement.getLabelsForNode( node.getId() );
+        statement.close();
+        tx.success();
+        tx.finish();
+
+        assertThat( asSet( labels ), equalTo( Collections.<Long>emptySet() ) );
     }
 
     @Test
@@ -390,6 +438,58 @@ public class KernelIT
 
         // THEN
         assertThat( nodeSet, equalTo( Collections.<Long>emptySet() ) );
+    }
+
+    @Test
+    public void schemaStateShouldBeEvictedOnSchemaChanges() throws Exception
+    {
+        // WHEN
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        statement.getOrCreateFromSchemaState( "my key", new Function<String, String>(){
+            @Override
+            public String apply( String s )
+            {
+                return "my state";
+            }
+        });
+        IndexRule idx = statement.addIndexRule( statement.getOrCreateLabelId( "hello" ),
+                statement.getOrCreatePropertyKeyId( "hepp" ) );
+
+        tx.success();
+        tx.finish();
+
+        // THEN
+        String state = getSchemaState("my key", "state that should not be set");
+        assertThat( state, equalTo( "my state" ) );
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        statement.dropIndexRule( idx );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        state = getSchemaState("my key", "state that should be set");
+        assertThat( state, equalTo( "state that should be set" ) );
+    }
+
+    private String getSchemaState(String key, final String maybeSetThisState)
+    {
+        Transaction tx;StatementContext statement;
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        String state = statement.getOrCreateFromSchemaState( key, new Function<String, String>(){
+            @Override
+            public String apply( String s )
+            {
+                return maybeSetThisState;
+            }
+        });
+        tx.success();
+        tx.finish();
+        return state;
     }
 
     private GraphDatabaseAPI db;

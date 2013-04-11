@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
-* Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,6 +46,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -55,59 +56,46 @@ public class CachingStatementContext extends CompositeStatementContext
 {
     private static final Function<? super SchemaRule, IndexRule> TO_INDEX_RULE =
             new Function<SchemaRule, IndexRule>()
-    {
-        @Override
-        public IndexRule apply( SchemaRule from )
-        {
-            return (IndexRule) from;
-        }
-    };
+            {
+                @Override
+                public IndexRule apply( SchemaRule from )
+                {
+                    return (IndexRule) from;
+                }
+            };
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final StatementContext delegate;
 
-    public CachingStatementContext( StatementContext actual, PersistenceCache persistenceCache, SchemaCache schemaCache )
+    public CachingStatementContext( StatementContext actual, PersistenceCache persistenceCache,
+                                    SchemaCache schemaCache )
     {
         super( actual );
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
         this.delegate = actual;
     }
-    
+
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
+    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
-        Set<Long> cachedLabels = persistenceCache.getLabels( nodeId );
-        if ( cachedLabels != null && cachedLabels.contains( labelId ) )
-            return false;
-        return delegate.addLabelToNode( labelId, nodeId );
+        Set<Long> labels = persistenceCache.getLabels( nodeId );
+        if ( labels != null )
+        {
+            return labels.contains( labelId );
+        }
+        return delegate.isLabelSetOnNode( labelId, nodeId );
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
     {
         Set<Long> labels = persistenceCache.getLabels( nodeId );
         if ( labels != null )
-            return labels.contains( labelId );
-        return delegate.isLabelSetOnNode( labelId, nodeId );
-    }
-    
-    @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
-    {
-        Set<Long> labels = persistenceCache.getLabels( nodeId );
-        if ( labels != null )
+        {
             return labels.iterator();
+        }
         return delegate.getLabelsForNode( nodeId );
-    }
-    
-    @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
-    {
-        Set<Long> cachedLabels = persistenceCache.getLabels( nodeId );
-        if ( cachedLabels != null && !cachedLabels.contains( labelId ) )
-            return false;
-        return delegate.removeLabelFromNode( labelId, nodeId );
     }
 
     @Override

@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateStatementContext extends CompositeStatementContext
@@ -60,11 +59,6 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         this.schemaOperations = schemaOperations;
     }
 
-    public TransactionStateStatementContext( StatementContext actual, TxState state )
-    {
-        this( actual, actual, state );
-    }
-
     @Override
     public Object getNodePropertyValue( long nodeId, long propertyId )
             throws PropertyNotFoundException, PropertyKeyIdNotFoundException
@@ -79,13 +73,19 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         if ( state.hasChanges() )
         {
-            if ( state.nodeIsRemoved( nodeId ) )
+            if ( state.nodeIsDeletedInThisTx( nodeId ) )
             {
                 return false;
+            }
+
+            if ( state.nodeIsAddedInThisTx( nodeId ) )
+            {
+                Boolean labelState = state.getLabelState( nodeId, labelId );
+                return labelState != null ? labelState.booleanValue() : false;
             }
 
             Boolean labelState = state.getLabelState( nodeId, labelId );
@@ -99,18 +99,24 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
     {
-        if ( state.nodeIsRemoved( nodeId ) )
+        if ( state.nodeIsDeletedInThisTx( nodeId ) )
         {
             return IteratorUtil.emptyIterator();
         }
+
+        if ( state.nodeIsAddedInThisTx( nodeId ) )
+        {
+            return state.getNodeStateLabelDiffSets( nodeId ).getAdded().iterator();
+        }
+
         Iterator<Long> committed = delegate.getLabelsForNode( nodeId );
         return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         if ( isLabelSetOnNode( labelId, nodeId ) )
         {
@@ -123,7 +129,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         if ( !isLabelSetOnNode( labelId, nodeId ) )
         {
@@ -285,7 +291,14 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         @Override
         public boolean accept( Long nodeId )
         {
-            return isLabelSetOnNode( labelId, nodeId );
+            try
+            {
+                return isLabelSetOnNode( labelId, nodeId );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                return false;
+            }
         }
     }
 }

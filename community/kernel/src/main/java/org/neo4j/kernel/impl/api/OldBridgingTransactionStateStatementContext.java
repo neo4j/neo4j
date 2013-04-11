@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -55,7 +56,7 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         if ( oldTransactionState.nodeIsDeleted( nodeId ) )
             return false;
@@ -63,7 +64,7 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
     }
     
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
     {
         if ( oldTransactionState.nodeIsDeleted( nodeId ) )
             return IteratorUtil.emptyIterator();

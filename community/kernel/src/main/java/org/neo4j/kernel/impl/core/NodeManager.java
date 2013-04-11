@@ -239,6 +239,7 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
+            transactionState.createNode( id );
             if ( labels != null )
             {
                 for ( int i = 0; i < labels.length; i++ )
@@ -248,7 +249,6 @@ public class NodeManager
             }
 
             nodeCache.put( node );
-            transactionState.createNode( id );
             success = true;
             return proxy;
         }

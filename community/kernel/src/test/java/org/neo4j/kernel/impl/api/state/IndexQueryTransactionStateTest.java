@@ -21,13 +21,9 @@ package org.neo4j.kernel.impl.api.state;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
@@ -44,15 +40,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.TransactionStateStatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -275,7 +271,8 @@ public class IndexQueryTransactionStateTest
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ), new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ) );
 
-        txContext = new TransactionStateStatementContext( store, state );
+        txContext = new TransactionStateStatementContext( store, mock( SchemaOperations.class),
+                state );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
@@ -307,7 +304,7 @@ public class IndexQueryTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels )
+    private void commitLabels( Labels... labels ) throws EntityNotFoundException
     {
         Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
         for ( Labels nodeLabels : labels )
@@ -333,25 +330,6 @@ public class IndexQueryTransactionStateTest
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.getNodesWithLabel( entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
-        }
-    }
-
-    private void commitNoLabels()
-    {
-        commitLabels( new Long[0] );
-    }
-
-    private void commitLabels( Long... labels )
-    {
-        commitLabels( labels( nodeId, labels ) );
-    }
-
-    private void assertLabels( Long... labels )
-    {
-        assertEquals( asSet( labels ), asSet( txContext.getLabelsForNode( nodeId ) ) );
-        for ( long label : labels )
-        {
-            assertTrue( "Expected labels not found on node", txContext.isLabelSetOnNode( label, nodeId ) );
         }
     }
 }

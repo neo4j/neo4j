@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.util.Collections;
@@ -33,9 +32,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.CompositeStatementContext;
 import org.neo4j.kernel.impl.api.TransactionStateStatementContext;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class StateHandlingStatementContextTest
@@ -63,7 +62,7 @@ public class StateHandlingStatementContextTest
         };
 
         TransactionStateStatementContext ctx = new TransactionStateStatementContext( hatesWritesCtx,
-                mock( TxState.class ) );
+                mock( SchemaOperations.class ), mock( TxState.class ) );
 
         // When
         ctx.addIndexRule( 0l, 0l );

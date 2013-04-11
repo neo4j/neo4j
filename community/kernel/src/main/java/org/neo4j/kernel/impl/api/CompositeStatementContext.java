@@ -202,7 +202,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -215,7 +215,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -363,7 +363,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -376,7 +376,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();

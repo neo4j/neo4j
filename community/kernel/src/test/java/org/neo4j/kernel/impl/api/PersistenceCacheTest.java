@@ -19,80 +19,88 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.helpers.collection.IteratorUtil.set;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
-import org.neo4j.kernel.impl.api.state.NodeState;
-import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 
 public class PersistenceCacheTest
 {
+
     @Test
-    public void shouldAddLabelsFromTxState() throws Exception
+    public void shouldEvictNodeWhenITellItTo() throws Exception
     {
+        // Given
         when( loader.loadById( nodeId ) ).thenReturn( new CachedNodeEntity( nodeId ) );
-        Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
-        @SuppressWarnings("unchecked")
-        DiffSets<Long> diff = mock( DiffSets.class );
-        when( diff.getAdded() ).thenReturn( labels );
-        when( state.getNodeStateLabelDiffSets( nodeId ) ).thenReturn( diff );
-        nodeState.getLabelDiffSets().addAll( labels.iterator() );
-        when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
 
-        // WHEN
-        cache.apply( state );
+        // When
+        cache.evictNode( nodeId );
 
-        // THEN
-        assertEquals( labels, cache.getLabels( nodeId ) );
+        // Then
+        cache.getLabels( nodeId );
+        verify( loader, times( 2 ) ).loadById( nodeId );
     }
 
     @Test
-    public void shouldRemoveLabelsFromTxState() throws Exception
+    public void shouldLoadAndCacheLabelsWhenIAskForStuff() throws Exception
     {
-        CachedNodeEntity cachedNode = new CachedNodeEntity( nodeId );
-        Set<Long> initialLabels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
-        cachedNode.addLabels( initialLabels );
-        when( loader.loadById( nodeId ) ).thenReturn( cachedNode );
-        @SuppressWarnings("unchecked")
-        DiffSets<Long> diff = mock( DiffSets.class );
-        when( diff.getAdded() ).thenReturn( initialLabels );
-        when( state.getNodeStateLabelDiffSets( nodeId ) ).thenReturn( diff );
-        Set<Long> removedLabels = new HashSet<Long>( asList( 2L ) );
-        nodeState.getLabelDiffSets().removeAll( removedLabels.iterator() );
-        when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
-        cache.getLabels( nodeId );
+        // Given
+        CachedNodeEntity node = new CachedNodeEntity( nodeId );
+        Set<Long> labels = set( 1l, 2l, 3l );
+        node.addLabels( labels );
+        when( loader.loadById( nodeId ) ).thenReturn( node );
 
-        // WHEN
-        cache.apply( state );
+        // When
+        Set<Long> l1 = cache.getLabels( nodeId );
+        Set<Long> l2 = cache.getLabels( nodeId );
+        Set<Long> l3 = cache.getLabels( nodeId );
 
-        // THEN
-        Set<Long> expectedLabels = new HashSet<Long>( initialLabels );
-        expectedLabels.removeAll( removedLabels );
-        assertEquals( expectedLabels, cache.getLabels( nodeId ) );
+        // Then
+        verify( loader, times( 1 ) ).loadById( nodeId );
+
+        assertThat( l1, equalTo(labels) );
+        assertThat( l2, equalTo(labels) );
+        assertThat( l3, equalTo(labels) );
+    }
+
+    @Test
+    public void shouldHandleNodeNotExistingAtAll() throws Exception
+    {
+        // Given
+        when( loader.loadById( nodeId ) ).thenReturn( null );
+
+        // When
+        try
+        {
+            cache.getLabels( nodeId );
+            fail( "Expected exception" );
+        }
+        catch(EntityNotFoundException e)
+        {
+            // Yay!
+        }
+
+        // Then
+        verify( loader, times( 1 ) ).loadById( nodeId );
     }
 
     private final long nodeId = 5;
     private LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader;
     private PersistenceCache cache;
-    private TxState state;
-    private NodeState nodeState;
 
     @Before
     public void before() throws Exception
     {
         loader = mock( LockStripedCache.Loader.class );
         cache = new PersistenceCache( loader );
-        state = mock( TxState.class );
-        nodeState = new NodeState( nodeId );
     }
 }

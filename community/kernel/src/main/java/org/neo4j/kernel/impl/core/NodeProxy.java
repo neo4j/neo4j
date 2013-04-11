@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.core;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 
+import java.util.Iterator;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,6 +42,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -301,6 +304,10 @@ public class NodeProxy implements Node
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "No node with id " + getId() + " found.", e );
+        }
         finally
         {
             ctx.close();
@@ -318,6 +325,10 @@ public class NodeProxy implements Node
         catch ( LabelNotFoundKernelException e )
         {
             // OK, no such label... cool
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
         finally
         {
@@ -337,6 +348,10 @@ public class NodeProxy implements Node
         {
             return false;
         }
+        catch ( EntityNotFoundException e )
+        {
+            return false;
+        }
         finally
         {
             ctx.close();
@@ -353,6 +368,18 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 final StatementContext ctx = statementCtxProvider.getCtxForReading();
+                Iterator<Long> labels;
+
+                try
+                {
+                    labels = ctx.getLabelsForNode( getId() );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    ctx.close();
+                    throw new NotFoundException( "No node with id " + getId() + " found.", e );
+                }
+
                 return nodeLookup.getCleanupService().resourceIterator( map( new Function<Long, Label>()
                 {
                     @Override
@@ -368,7 +395,7 @@ public class NodeProxy implements Node
                                     ", but the returned label " + labelId + " doesn't exist anymore" );
                         }
                     }
-                }, ctx.getLabelsForNode( getId() ) ), ctx );
+                }, labels), ctx );
             }
         };
     }

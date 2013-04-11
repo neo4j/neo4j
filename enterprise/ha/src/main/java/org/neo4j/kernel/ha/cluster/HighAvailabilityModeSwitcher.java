@@ -63,7 +63,6 @@ import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -446,9 +445,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( StringLogger.class ),
                         resolver.resolveDependency( XaFactory.class ),
                         resolver.resolveDependency( TransactionStateFactory.class ),
-                        resolver.resolveDependency( CacheAccessBackDoor.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver.resolveDependency( JobScheduler.class ), logging, updateableSchemaState, resolver );
+                        resolver.resolveDependency( JobScheduler.class ),
+                        logging,
+                        updateableSchemaState,
+                        resolver.resolveDependency( NodeManager.class ),
+                        resolver );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
             }
             catch ( IOException e )

@@ -50,6 +50,13 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
+/**
+ * This class currently has multiple responsibilities, and a very complex set of interrelationships with the world
+ * around it. It is being refactored, such that this will become a pure cache object, and be renamed eg. CachedNode.
+ *
+ * Responsibilities inside this class are slowly being moved over to {@link org.neo4j.kernel.impl.api.Kernel} and its
+ * friends.
+ */
 public class NodeImpl extends ArrayBasedPrimitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];

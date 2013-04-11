@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 
 public interface LabelOperations
@@ -49,7 +50,7 @@ public interface LabelOperations
      * If the node already had that label nothing will happen. Label ids
      * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
      */
-    boolean addLabelToNode( long labelId, long nodeId );
+    boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException;
 
     /**
      * Checks if a node is labeled with a certain label or not. Returns
@@ -57,19 +58,19 @@ public interface LabelOperations
      * Label ids are retrieved from {@link #getOrCreateLabelId(String)} or
      * {@link #getLabelId(String)}.
      */
-    boolean isLabelSetOnNode( long labelId, long nodeId );
+    boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException;
 
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
-    Iterator<Long> getLabelsForNode( long nodeId );
+    Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException;
 
     /**
      * Removes a label with the corresponding id from a node.
      * If the node doesn't have that label nothing will happen. Label ids
      * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
      */
-    boolean removeLabelFromNode( long labelId, long nodeId );
+    boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException;
 
 }

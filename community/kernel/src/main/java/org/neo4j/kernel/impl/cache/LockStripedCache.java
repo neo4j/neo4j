@@ -30,6 +30,9 @@ public class LockStripedCache<E extends EntityWithSize> implements Cache<E>
 
     public interface Loader<E>
     {
+        /**
+         * Load the entity, or null if no entity exists.
+         */
         E loadById( long id );
     }
 

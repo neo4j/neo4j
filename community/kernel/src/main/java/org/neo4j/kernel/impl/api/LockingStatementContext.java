@@ -42,14 +42,14 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         lockHolder.acquireNodeWriteLock( nodeId );
         return delegate.addLabelToNode( labelId, nodeId );
     }
 
     @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
     {
         lockHolder.acquireNodeWriteLock( nodeId );
         return delegate.removeLabelFromNode( labelId, nodeId );

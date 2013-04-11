@@ -106,7 +106,7 @@ public class TxState
 
     public boolean hasChanges()
     {
-        return !nodeStates.isEmpty() || !labelStates.isEmpty() || !nodes.isEmpty();
+        return !nodeStates.isEmpty() || !labelStates.isEmpty() || !nodes.isEmpty() || legacyState.hasChanges();
     }
 
     public Iterable<NodeState> getNodeStates()
@@ -130,9 +130,14 @@ public class TxState
         nodes.remove( nodeId );
     }
 
-    public boolean nodeIsRemoved( long nodeId )
+    public boolean nodeIsDeletedInThisTx( long nodeId )
     {
         return nodes.isRemoved( nodeId );
+    }
+
+    public boolean nodeIsAddedInThisTx( long nodeId )
+    {
+        return legacyState.nodeIsAddedInThisTx(nodeId);
     }
 
     public void addLabelToNode( long labelId, long nodeId )
@@ -234,7 +239,7 @@ public class TxState
         return nodes;
     }
 
-    public boolean haveIndexesBeenDropped()
+    public boolean hasSchemaChanges()
     {
         return !getIndexRuleDiffSets().getRemoved().isEmpty();
     }

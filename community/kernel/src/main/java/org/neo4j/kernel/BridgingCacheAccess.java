@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -29,17 +31,23 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
 {
     private final NodeManager nodeManager;
     private final SchemaCache schemaCache;
+    private final SchemaState schemaState;
+    private final PersistenceCache persistenceCache;
 
-    public BridgingCacheAccess( NodeManager nodeManager, SchemaCache schemaCache )
+    public BridgingCacheAccess( NodeManager nodeManager, SchemaCache schemaCache, SchemaState schemaState,
+                                PersistenceCache persistenceCache )
     {
         this.nodeManager = nodeManager;
         this.schemaCache = schemaCache;
+        this.schemaState = schemaState;
+        this.persistenceCache = persistenceCache;
     }
     
     @Override
     public void removeNodeFromCache( long nodeId )
     {
         nodeManager.removeNodeFromCache( nodeId );
+        persistenceCache.evictNode( nodeId );
     }
 
     @Override
@@ -70,6 +78,7 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     public void removeSchemaRuleFromCache( long id )
     {
         schemaCache.removeSchemaRule( id );
+        schemaState.flush();
     }
 
     @Override

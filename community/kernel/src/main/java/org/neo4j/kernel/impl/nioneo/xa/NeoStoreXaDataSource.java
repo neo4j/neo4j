@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -46,13 +47,17 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.PersistenceCache;
+import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -135,8 +140,12 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final StringLogger msgLog;
     private final TransactionStateFactory stateFactory;
-    private final CacheAccessBackDoor cacheAccess;
+    private CacheAccessBackDoor cacheAccess;
+    private PersistenceCache persistenceCache;
+    private SchemaCache schemaCache;
+
     private final Logging logging;
+    private final NodeManager nodeManager;
     private final DependencyResolver dependencyResolver;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
@@ -223,16 +232,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 CacheAccessBackDoor cacheAccess, TransactionInterceptorProviders providers,
+                                 TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
-                                 UpdateableSchemaState updateableSchemaState,
+                                 UpdateableSchemaState updateableSchemaState, NodeManager nodeManager,
                                  DependencyResolver dependencyResolver )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
         this.stateFactory = stateFactory;
-        this.cacheAccess = cacheAccess;
+        this.nodeManager = nodeManager;
         this.dependencyResolver = dependencyResolver;
         this.providers = providers;
         this.scheduler = scheduler;
@@ -272,6 +281,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             tf = new TransactionFactory();
         }
         neoStore = storeFactory.newNeoStore( store );
+
+        persistenceCache = new PersistenceCache( new NodeCacheLoader( neoStore.getNodeStore() ) );
+        schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
+
+        cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
 
         final SchemaIndexProvider indexProvider =
             dependencyResolver.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
@@ -350,6 +364,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public DefaultSchemaIndexProviderMap getProviderMap()
     {
         return providerMap;
+    }
+
+    public PersistenceCache getPersistenceCache()
+    {
+        return persistenceCache;
+    }
+
+    public SchemaCache getSchemaCache()
+    {
+        return schemaCache;
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.cache.EntityWithSize;
@@ -48,6 +49,20 @@ public class PersistenceCache
                 32, nodeLoader );
     }
 
+    public Set<Long> getLabels( long nodeId ) throws EntityNotFoundException
+    {
+        CachedNodeEntity node = nodeCache.get( nodeId );
+
+        if( node != null )
+        {
+            return node.getLabels();
+        }
+        else
+        {
+            throw new EntityNotFoundException( "No node with id " + nodeId + " found." );
+        }
+    }
+
     public void apply( TxState state )
     {
         for ( NodeState stateEntity : state.getNodeStates() )
@@ -63,10 +78,9 @@ public class PersistenceCache
         }
     }
 
-    public Set<Long> getLabels( long nodeId )
+    public void evictNode( long nodeId )
     {
-        CachedNodeEntity node = nodeCache.get( nodeId );
-        return node != null ? node.getLabels() : null;
+        nodeCache.remove( nodeId );
     }
 
     public static class CachedNodeEntity implements EntityWithSize

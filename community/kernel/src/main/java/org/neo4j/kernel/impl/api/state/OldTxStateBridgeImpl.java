@@ -114,4 +114,16 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
             }
         }
     }
+
+    @Override
+    public boolean nodeIsAddedInThisTx( long nodeId )
+    {
+        return state.getCreatedNodes().contains( nodeId );
+    }
+
+    @Override
+    public boolean hasChanges()
+    {
+        return state.hasChanges();
+    }
 }

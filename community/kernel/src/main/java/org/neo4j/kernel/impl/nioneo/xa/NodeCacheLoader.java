@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.nioneo.xa;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 
-class NodeCacheLoader implements LockStripedCache.Loader<CachedNodeEntity>
+public class NodeCacheLoader implements LockStripedCache.Loader<CachedNodeEntity>
 {
     private final NodeStore nodeStore;
 

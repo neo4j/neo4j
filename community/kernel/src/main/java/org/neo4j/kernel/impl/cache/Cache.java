@@ -72,16 +72,6 @@ public interface Cache<E extends EntityWithSize>
      */
     public long size();
 
-    // void elementCleaned( V value );
-
-    // public int maxSize();
-
-    // public void resize( int newSize );
-
-    // public boolean isAdaptive();
-
-    // public void setAdaptiveStatus( boolean status );
-
     public void putAll( Collection<E> values );
 
     public long hitCount();

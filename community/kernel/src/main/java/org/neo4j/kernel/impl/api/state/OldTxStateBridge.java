@@ -33,4 +33,8 @@ public interface OldTxStateBridge
     DiffSets<Long> getNodesWithChangedProperty( long propertyKey, Object value );
 
     void deleteNode( long nodeId );
+
+    boolean nodeIsAddedInThisTx( long nodeId );
+
+    boolean hasChanges();
 }

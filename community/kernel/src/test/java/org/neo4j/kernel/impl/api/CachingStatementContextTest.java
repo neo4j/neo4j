@@ -20,11 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 import java.util.HashSet;
@@ -32,12 +29,13 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class CachingStatementContextTest
 {
     @Test
-    public void shouldGetCachedLabelsIfCached()
+    public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException
     {
         // GIVEN
         long nodeId = 3;
@@ -52,43 +50,5 @@ public class CachingStatementContextTest
         
         // THEN
         assertEquals( labels, addToCollection(receivedLabels, new HashSet<Long>() ) );
-    }
-    
-    @Test
-    public void shouldAnswerAddLabelItselfIfNodeAlreadyHasLabel() throws Exception
-    {
-        // GIVEN
-        long nodeId = 3;
-        Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
-        PersistenceCache cache = mock( PersistenceCache.class );
-        when( cache.getLabels( nodeId ) ).thenReturn( labels );
-        StatementContext actual = mock( StatementContext.class );
-        StatementContext context = new CachingStatementContext( actual, cache, null );
-
-        // WHEN
-        boolean added = context.addLabelToNode( 2L, nodeId );
-
-        // THEN
-        assertFalse( added );
-        verifyZeroInteractions( actual );
-    }
-
-    @Test
-    public void shouldAnswerRemoveLabelItselfIfNodeAlreadyHasLabel() throws Exception
-    {
-        // GIVEN
-        long nodeId = 3;
-        Set<Long> labels = new HashSet<Long>( asList( 1L, 3L ) );
-        PersistenceCache cache = mock( PersistenceCache.class );
-        when( cache.getLabels( nodeId ) ).thenReturn( labels );
-        StatementContext actual = mock( StatementContext.class );
-        StatementContext context = new CachingStatementContext( actual, cache, null );
-
-        // WHEN
-        boolean removed = context.removeLabelFromNode( 2L, nodeId );
-
-        // THEN
-        assertFalse( removed );
-        verifyZeroInteractions( actual );
     }
 }
