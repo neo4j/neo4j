@@ -36,6 +36,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class ShellTest
 {
+    private final static String NL = System.getProperty( "line.separator" );
+
     private AppCommandParser parse( final String line ) throws Exception
     {
         return new AppCommandParser( new GraphDatabaseShellServer( null ), line );
@@ -146,10 +148,14 @@ public class ShellTest
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "database dump", server );
-        doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
-        doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type " +
-                "LIKES, create the end node with the node properties specified." );
-        doc.add( "dump", "(_1 {`name`:\"Neo\"})", "Export the whole database" );
+        doc.add( "create index on :Person(name);", "", "create an index" );
+        doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
+        doc.add( "dump", "begin" +
+                NL +"create index on :`Person`(`name`);" +
+                NL +"create (_1:`Person`:`Hacker` {`name`:\"Mattias\"})" +
+                NL +"create _1-[:`KNOWS`]->_1" +
+                NL +";" +
+                NL +"commit", "Export the whole database including indexes" );
         doc.run();
         server.shutdown();
         db.shutdown();

@@ -1,0 +1,231 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.export;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+
+import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
+public class SubGraphExporter
+{
+    private final SubGraph graph;
+
+    public SubGraphExporter(SubGraph graph)
+    {
+        this.graph = graph;
+    }
+
+    public void export( PrintWriter out ) 
+    {
+        init(out); // todo remove with reference node
+        appendNodes(out);
+        appendRelationships(out);
+    }
+
+    public Collection<String> exportIndexes() {
+        Collection<String> result=new ArrayList<String>();
+        for (IndexDefinition index : graph.indexes()) {
+            StringBuilder keys=new StringBuilder();
+            for (String key : index.getPropertyKeys()) {
+                if (keys.length()>0) keys.append(", ");
+                keys.append(quote(key));
+            }
+            result.add("create index on :" + quote(index.getLabel().name()) + "(" + keys + ")");
+        }
+        return result;
+    }
+
+    public String quote(String id) {
+        return "`"+id+"`";
+    }
+
+    private void init( PrintWriter out )
+    {
+        final Node node = getReferenceNode();
+        if ( node != null && (node.hasRelationship() || hasProperties(node)))
+        {
+            String id = identifier(node);
+            out.println( "start "+id+" = node("+node.getId()+") with "+id+" " );
+            String labels = labelString(node);
+            if (!labels.isEmpty())
+            {
+                out.print("set " + identifier(node) + " " + labels + " ");
+            }
+            appendPropertySetters( out, node );
+        }
+    }
+
+    private boolean hasProperties(Node node) {
+        return node.getPropertyKeys().iterator().hasNext();
+    }
+
+    private String labelString(Node node) {
+        ResourceIterator<Label> labels = node.getLabels().iterator();
+        if (!labels.hasNext()) return "";
+
+        StringBuilder result=new StringBuilder();
+        while (labels.hasNext()) {
+            Label next = labels.next();
+            result.append(":").append(quote(next.name()));
+        }
+        return result.toString();
+    }
+
+    private String identifier(Node node) {
+        return "_"+node.getId();
+    }
+
+    private void appendPropertySetters( PrintWriter out, Node node ) 
+    {
+        for ( String prop : node.getPropertyKeys() )
+        {
+            out.println( "set "+identifier(node)+"." + quote(prop) + "=" + toString(node.getProperty(prop)) );
+        }
+    }
+
+    private Node getReferenceNode()
+    {
+        try
+        {
+            return graph.getReferenceNode();
+        } catch ( NotFoundException nfe )
+        {
+            return null;
+        }
+    }
+
+    private void appendRelationships( PrintWriter out ) 
+    {
+        for ( Node node : graph.getNodes() )
+        {
+            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
+            {
+                appendRelationship( out, rel );
+            }
+        }
+    }
+
+    private void appendRelationship( PrintWriter out, Relationship rel ) 
+    {
+        out.print( "create " );
+        out.print(identifier(rel.getStartNode()));
+        out.print( "-[:" );
+        out.print( quote(rel.getType().name()) );
+        formatProperties( out, rel );
+        out.print( "]->" );
+        out.print(identifier(rel.getEndNode()));
+        out.println();
+    }
+
+    private void appendNodes( PrintWriter out ) 
+    {
+        for ( Node node : graph.getNodes() )
+        {
+            if ( isReferenceNode( node ) )
+            {
+                continue;
+            }
+            appendNode( out, node );
+        }
+    }
+
+    private void appendNode( PrintWriter out, Node node ) 
+    {
+        out.print( "create (" );
+        out.print(identifier(node));
+        String labels = labelString(node);
+        if (!labels.isEmpty()) {
+            out.print(labels);
+        }
+        formatProperties(out, node);
+        out.println( ")" );
+    }
+
+    private boolean isReferenceNode( Node node )
+    {
+        return node.getId() == 0;
+    }
+
+    private void formatProperties( PrintWriter out, PropertyContainer pc )
+    {
+        if (!pc.getPropertyKeys().iterator().hasNext()) return;
+        out.print( " " );
+        final String propertyString = formatProperties( pc );
+        out.print( propertyString );
+    }
+
+    private String formatProperties( PropertyContainer pc )
+    {
+        StringBuilder result=new StringBuilder();
+        for (String prop : pc.getPropertyKeys()) {
+            if (result.length()>0) result.append(", ");
+            result.append(quote(prop)).append(":");
+            Object value = pc.getProperty(prop);
+            result.append(toString(value));
+        }
+        return "{"+ result +"}";
+    }
+
+    private String toString(Iterator<?> iterator) {
+        StringBuilder result=new StringBuilder();
+        while (iterator.hasNext()) {
+            if (result.length()>0) result.append(", ");
+            Object value = iterator.next();
+            result.append(toString(value));
+        }
+        return "["+result+"]";
+    }
+
+    private String arrayToString(Object value) {
+        StringBuilder result=new StringBuilder();
+        int length = Array.getLength(value);
+        for (int i=0;i<length;i++) {
+            if (i>0) result.append(", ");
+            result.append(toString(Array.get(value,i)));
+        }
+        return "["+result+"]";
+    }
+
+    private String toString(Object value) {
+        if (value==null) return "null";
+        if (value instanceof String) return "\""+value+"\"";
+        if (value instanceof Iterator) {
+            return toString(((Iterator)value));
+        }
+        if (value instanceof Iterable) {
+            return toString(((Iterable)value).iterator());
+        }
+        if (value.getClass().isArray()) {
+            return arrayToString(value);
+        }
+        return value.toString();
+    }
+}
