@@ -20,8 +20,13 @@
 package org.neo4j.cypher.internal.executionplan
 
 import builders._
-import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
+import internal.helpers.Time
+import internal.pipes.NullDecorator
+import internal.pipes.ParameterPipe
+import internal.pipes.Pipe
+import internal.pipes.PipeDecorator
+import internal.pipes.QueryState
 import internal.profiler.Profiler
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
@@ -30,18 +35,18 @@ import internal.spi.gdsimpl.GDSBackedQueryContext
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
-import javacompat.{PlanDescription => JPlanDescription}
+import scala.Some
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
-  val executionPlan: (Boolean, Map[String, Any]) => ExecutionResult = prepareExecutionPlan()
+  val executionPlan: (Boolean, Map[String, Any], Time) => ExecutionResult = prepareExecutionPlan()
 
-  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(false, params)
+  def execute(params: Map[String, Any], time: Time): ExecutionResult = executionPlan(false, params, time)
 
-  def profile(params: Map[String, Any]): ExecutionResult = executionPlan(true, params)
+  def profile(params: Map[String, Any], time: Time): ExecutionResult = executionPlan(true, params, time)
 
   lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
 
-  private def prepareExecutionPlan(): (Boolean, Map[String, Any]) => ExecutionResult = {
+  private def prepareExecutionPlan(): (Boolean, Map[String, Any], Time) => ExecutionResult = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
     checkFirstQueryPattern(planInProgress)
@@ -126,16 +131,16 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any]) => ExecutionResult =
-    (profile: Boolean, params: Map[String, Any]) => {
-      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any], Time) => ExecutionResult =
+    (profile: Boolean, params: Map[String, Any], time: Time) => {
+      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile, time)
 
       new PipeExecutionResult(results, columns, state, planDescriptor)
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any]) => ExecutionResult = {
-    val func = (profile: Boolean, params: Map[String, Any]) => {
-      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile)
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any], Time) => ExecutionResult = {
+    val func = (profile: Boolean, params: Map[String, Any], time: Time) => {
+      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile, time)
 
       new EagerPipeExecutionResult(results, columns, state, graph, planDescriptor)
     }
@@ -143,7 +148,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     func
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean, time: Time): (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
     val tx = graph.beginTx()
 
 
@@ -151,7 +156,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       val gdsContext = new GDSBackedQueryContext(graph)
 
       val decorator: PipeDecorator = if (profile) new Profiler() else NullDecorator
-      val state = new QueryState(graph, gdsContext, params, decorator)
+      val state = new QueryState(graph, gdsContext, params, decorator, None, time=time)
       val results = pipe.createResults(state)
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
       val descriptor = () => decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)

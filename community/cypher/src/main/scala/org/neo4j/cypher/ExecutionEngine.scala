@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import internal.commands._
 import internal.executionplan.ExecutionPlanImpl
+import internal.helpers.TimeSource
 import internal.LRUCache
 import scala.collection.JavaConverters._
 import java.lang.Error
@@ -32,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 
 
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) extends TimeSource {
 
   checkScalaVersion()
 
@@ -53,7 +54,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).profile(params)
+    val start = createTime
+    prepare(query).profile(params, start)
   }
 
   @throws(classOf[SyntaxException])
@@ -69,7 +71,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).execute(params)
+    val start = createTime
+    prepare(query).execute(params,start)
   }
 
   @throws(classOf[SyntaxException])
@@ -92,7 +95,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = {
+    val start = createTime
+    new ExecutionPlanImpl(query, graph).execute(params,start)
+  }
 
   private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
