@@ -535,7 +535,7 @@ public class TestApps extends AbstractShellTest
                 "begin",
                 "start _0 = node\\(0\\) with _0 ",
                 "set _0.`f o o`=\"bar\"",
-                "create \\(_1 \\{`flags`:\\[true,false,true\\]\\}\\)",
+                "create \\(_1 \\{`flags`:\\[true, false, true\\]\\}\\)",
                 "_0-\\[:`KNOWS` \\{`since`:2010\\}\\]->_1",
                 "commit"
         );

@@ -17,11 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps.cypher;
+package org.neo4j.cypher.export;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
@@ -32,7 +35,8 @@ public class DatabaseSubGraph implements SubGraph {
 
     private final GraphDatabaseService gdb;
 
-    public DatabaseSubGraph(GraphDatabaseService gdb) {
+    public DatabaseSubGraph( GraphDatabaseService gdb )
+    {
         this.gdb = gdb;
     }
 
@@ -61,5 +65,10 @@ public class DatabaseSubGraph implements SubGraph {
     @Override
     public boolean contains(Relationship relationship) {
         return relationship.getGraphDatabase().equals(gdb);
+    }
+
+    @Override
+    public Iterable<IndexDefinition> indexes() {
+        return gdb.schema().getIndexes();
     }
 }

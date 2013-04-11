@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps.cypher;
+package org.neo4j.cypher.export;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -153,5 +155,10 @@ public class CypherResultSubGraph implements SubGraph
     public boolean contains( Relationship relationship )
     {
         return relationships.containsKey( relationship.getId() );
+    }
+
+    @Override
+    public Iterable<IndexDefinition> indexes() {
+        return Collections.emptyList();
     }
 }

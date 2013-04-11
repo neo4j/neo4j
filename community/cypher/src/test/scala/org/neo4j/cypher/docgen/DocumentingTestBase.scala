@@ -22,10 +22,9 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.{Before, After}
 import scala.collection.JavaConverters._
-import java.io.{PrintWriter, File}
+import java.io.{StringWriter, PrintWriter, File, ByteArrayOutputStream}
 import org.neo4j.graphdb._
 import factory.{GraphDatabaseSetting, GraphDatabaseSettings}
-import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -33,11 +32,11 @@ import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
-import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.{GraphDatabaseAPI, AbstractGraphDatabase}
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.export.{SubGraphExporter, DatabaseSubGraph}
 
 
 trait DocumentationHelper {
@@ -105,7 +104,9 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     var consoleData: String = ""
     if (generateConsole) {
       if (generateInitialGraphForConsole) {
-        consoleData = new GeoffService(db).toGeoff
+        val out = new StringWriter()
+        new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+        consoleData = out.toString
       }
       if (consoleData.isEmpty()) {
         consoleData = "(0)"
