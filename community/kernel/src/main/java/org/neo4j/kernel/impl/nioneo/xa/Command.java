@@ -232,7 +232,8 @@ public abstract class Command extends XaCommand
         }
 
         DynamicRecord record = new DynamicRecord( id );
-        record.setInUse( inUse, type );
+        record.setType( type );
+        record.setInUse( inUse );
         if ( inUse )
         {
             buffer.clear();

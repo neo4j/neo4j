@@ -72,9 +72,10 @@ public class JsonHelper
 
         }
 
-        if ( jsonObject instanceof String ||
-             jsonObject instanceof Number ||
-             jsonObject instanceof Boolean )
+        if ( jsonObject instanceof String  ||
+             jsonObject instanceof Number  ||
+             jsonObject instanceof Boolean ||
+             jsonObject instanceof Map)
         {
         }
         else

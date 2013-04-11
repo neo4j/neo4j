@@ -121,7 +121,7 @@ public enum PropertyType
         {
             return Long.valueOf( getLongValue( block ) );
         }
-        
+
         private long getLongValue( PropertyBlock block )
         {
             long firstBlock = block.getSingleValueBlock();
@@ -135,7 +135,7 @@ public enum PropertyType
         {
             return PropertyDatas.forLong( block.getKeyIndexId(), propertyId, getLongValue( block ) );
         }
-        
+
         private boolean valueIsInlined( long firstBlock )
         {
             // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
@@ -212,11 +212,11 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
         }
-        
+
         @Override
         byte[] readDynamicRecordHeader( byte[] recordBytes )
         {
-            return new byte[0];
+            return HEADER_STUB;
         }
     },
     ARRAY( 10 )
@@ -235,7 +235,7 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
         }
-        
+
         @Override
         byte[] readDynamicRecordHeader( byte[] recordBytes )
         {
@@ -291,11 +291,34 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, getValue( block, null ) );
         }
-        
+
         @Override
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
             return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    },
+    COMPOUND( 13 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            if ( store == null ) return null;
+            return store.getCompoundFor( block );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            return PropertyDatas.forCompound( block.getKeyIndexId(),
+                    propertyId, extractedValue );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return 2;
         }
     };
 
@@ -303,6 +326,8 @@ public enum PropertyType
 
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
+
+    private static final byte[] HEADER_STUB = new byte[0];
 
     PropertyType( int type )
     {
@@ -366,12 +391,14 @@ public enum PropertyType
             return SHORT_STRING;
         case 12:
             return SHORT_ARRAY;
+        case 13:
+            return COMPOUND;
         default: if (nullOnIllegal) return null;
             throw new InvalidRecordException( "Unknown property type for type "
                                               + type );
         }
     }
-    
+
     // TODO In wait of a better place
     public static int getPayloadSize()
     {
@@ -398,7 +425,7 @@ public enum PropertyType
     {
         return 1;
     }
-    
+
     byte[] readDynamicRecordHeader( byte[] recordBytes )
     {
         throw new UnsupportedOperationException();

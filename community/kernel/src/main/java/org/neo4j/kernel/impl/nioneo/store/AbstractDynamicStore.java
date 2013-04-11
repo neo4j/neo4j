@@ -170,6 +170,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
     public static final int BLOCK_HEADER_SIZE = 1 + 3 + 4; // = 8
 
+    @Override
     public void updateRecord( DynamicRecord record )
     {
         long blockId = record.getId();

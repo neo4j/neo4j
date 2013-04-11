@@ -20,6 +20,7 @@
 package org.neo4j.server.webadmin.rest.representations;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import javax.management.openmbean.CompositeData;
 
@@ -76,6 +77,13 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
     protected Representation dispatchStringProperty( String property, String param )
     {
         return ValueRepresentation.string( property );
+    }
+
+    @Override
+    protected Representation dispatchMapProperty( Map property, String param )
+    {
+        // property may also implement CompositeData, so dispatching as other property
+        return dispatchOtherProperty( property, param );
     }
 
     @Override

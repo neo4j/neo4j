@@ -20,12 +20,16 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
+import org.neo4j.kernel.impl.nioneo.store.Compound;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -52,15 +56,15 @@ abstract class Primitive
     }
 
     public abstract long getId();
-    
+
     protected abstract void setEmptyProperties();
-    
+
     protected abstract PropertyData[] allProperties();
 
     protected abstract PropertyData getPropertyForIndex( int keyId );
-    
+
     protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager );
-    
+
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
             ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager );
@@ -150,7 +154,7 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        
+
         TransactionState tx = nodeManager.getTransactionState();
         ArrayMap<Integer,PropertyData> skipMap = null, addMap = null;
         if ( tx.hasChanges() )
@@ -427,6 +431,13 @@ abstract class Primitive
             {
                 index = nodeManager.createPropertyIndex( key );
             }
+
+            if ( value instanceof Map )
+            {
+                Map<String, Object> m = (Map<String, Object>)value;
+                value = Compound.create( m, resolveCompoundKeys( nodeManager, tx, m ) );
+            }
+
             if ( property != null && !foundInSkipMap )
             {
                 property = changeProperty( nodeManager, property, value, tx );
@@ -571,6 +582,12 @@ abstract class Primitive
             value = nodeManager.loadPropertyValue( property );
             property.setNewValue( value );
         }
+
+        if ( value instanceof Compound )
+        {
+            Compound c = (Compound)value;
+            value = Compound.toMap( c, resolveCompoundNames( nodeManager, nodeManager.getTransactionState(), c ) );
+        }
         return value;
     }
 
@@ -606,6 +623,39 @@ abstract class Primitive
         }
     }
 
+    private Map<String, Integer> resolveCompoundKeys( NodeManager nodeManager, TransactionState tx, Map<String, Object> value )
+    {
+        Set<String> keys = Compound.collectPropertyNames( value );
+        Map<String, Integer> result = new HashMap<String, Integer>( keys.size() );
+        for ( String k : keys )
+        {
+            PropertyIndex index;
+            PropertyIndex[] cached = nodeManager.index( k, tx );
+            if ( cached.length > 0 )
+            {
+                index = cached[0];
+            }
+            else
+            {
+                index = nodeManager.createPropertyIndex( k );
+            }
+            result.put( k, index.getKeyId() );
+        }
+        return result;
+    }
+
+    private Map<Integer, String> resolveCompoundNames( NodeManager nodeManager, TransactionState tx, Compound c )
+    {
+        Set<Integer> keys = Compound.collectPropertyKeys( c );
+        Map<Integer, String> result = new HashMap<Integer, String>( keys.size() );
+        for ( Integer k : keys )
+        {
+            String name = nodeManager.getIndexFor( k, tx ).getKey();
+            result.put( k, name );
+        }
+        return result;
+    }
+
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager, TransactionState tx )
     {
         ensureFullLightProperties( nodeManager );
@@ -638,8 +688,8 @@ abstract class Primitive
         }
         return null;
     }
-    
+
     public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
-    
+
     abstract PropertyContainer asProxy( NodeManager nm );
 }

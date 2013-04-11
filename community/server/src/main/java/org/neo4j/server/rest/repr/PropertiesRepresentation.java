@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.Map;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
@@ -119,6 +120,20 @@ public final class PropertiesRepresentation extends MappingRepresentation
         protected Void dispatchStringProperty( String property, String param )
         {
             writer.writeString( param, property );
+            return null;
+        }
+
+        @Override
+        protected Void dispatchMapProperty( Map property, String param )
+        {
+            MappingWriter map = writer.newMapping( RepresentationType.MAP, param );
+            Consumer consumer = new Consumer( map );
+            for ( Object key : property.keySet() )
+            {
+                Object val = property.get( key );
+                consumer.dispatch( val, key.toString() );
+            }
+            map.done();
             return null;
         }
 

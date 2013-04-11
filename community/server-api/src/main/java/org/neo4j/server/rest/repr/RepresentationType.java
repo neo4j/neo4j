@@ -74,10 +74,10 @@ public final class RepresentationType
             FLOAT = new RepresentationType( "float", "floats", float.class ),//
             DOUBLE = new RepresentationType( "double", "doubles", double.class ),//
             BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),//
-            NOTHING = new RepresentationType( "void", null ),//
+            NOTHING = new RepresentationType( "void", null ),
+            MAP = new RepresentationType( "map", null, Map.class ),//
             // System
-            EXCEPTION = new RepresentationType( "exception" ),
-            MAP = new RepresentationType( "map", null, Map.class );
+            EXCEPTION = new RepresentationType( "exception" );
 
     final String valueName;
     final String listName;

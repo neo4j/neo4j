@@ -65,6 +65,11 @@ public class PropertyBlock
         valueRecords.add( record );
     }
 
+    public void addValueRecords( List<DynamicRecord> records )
+    {
+        valueRecords.addAll( records );
+    }
+
     public List<DynamicRecord> getValueRecords()
     {
         return valueRecords;
@@ -172,6 +177,7 @@ public class PropertyBlock
         {
         case STRING:
         case ARRAY:
+        case COMPOUND:
             result.append( ",firstDynamic=" ).append( getSingleValueLong() );
             break;
         default:

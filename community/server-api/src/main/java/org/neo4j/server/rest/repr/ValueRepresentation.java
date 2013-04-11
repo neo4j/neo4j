@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.util.Map;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -195,6 +196,23 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchStringProperty( String property, Void param )
         {
             return string( property );
+        }
+
+        @Override
+        protected Representation dispatchMapProperty( final Map property, Void param )
+        {
+            return new MappingRepresentation( RepresentationType.MAP )
+            {
+                @Override
+                protected void serialize( MappingSerializer serializer )
+                {
+                    for ( Object key : property.keySet() )
+                    {
+                        Object val = property.get( key );
+                        property( val ).putTo( serializer, key.toString() );
+                    }
+                }
+            };
         }
 
         @Override

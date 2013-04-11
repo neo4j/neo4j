@@ -39,6 +39,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -54,9 +56,9 @@ public abstract class AbstractNeo4jTestCase
     {
         boolean value() default true;
     }
-    
+
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
-    
+
     public static final @ClassRule TestRule START_GRAPHDB = new TestRule()
     {
         @Override
@@ -92,7 +94,7 @@ public abstract class AbstractNeo4jTestCase
                 throw new RuntimeException( e );
             }
         }
-        
+
         graphDb = (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
                                       new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
                                       new TestGraphDatabaseFactory().newImpermanentDatabase());
@@ -231,30 +233,35 @@ public abstract class AbstractNeo4jTestCase
         return propertyStore().getNumberOfIdsInUse();
     }
 
+    protected long nameRecordsInUse()
+    {
+        return getNumberOfIdsInUse( "propertyIndexStore" );
+    }
+
     protected long dynamicStringRecordsInUse()
     {
-        return dynamicRecordsInUse( "stringPropertyStore" );
+        return getNumberOfIdsInUse( "stringPropertyStore" );
     }
 
     protected long dynamicArrayRecordsInUse()
     {
-        return dynamicRecordsInUse( "arrayPropertyStore" );
+        return getNumberOfIdsInUse( "arrayPropertyStore" );
     }
-    
-    private long dynamicRecordsInUse( String fieldName )
+
+    private long getNumberOfIdsInUse( String fieldName )
     {
         try
         {
             Field storeField = PropertyStore.class.getDeclaredField( fieldName );
             storeField.setAccessible( true );
-            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
+            return ( (CommonAbstractStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
         }
         catch ( Exception e )
         {
             throw new RuntimeException( e );
         }
     }
-    
+
     protected PropertyStore propertyStore()
     {
         XaDataSourceManager dsMgr = graphDb.getXaDataSourceManager();

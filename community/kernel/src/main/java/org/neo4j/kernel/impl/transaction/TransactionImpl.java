@@ -96,12 +96,12 @@ class TransactionImpl implements Transaction
     {
         return globalId;
     }
-    
+
     boolean hasChanges()
     {
         return hasChanges;
     }
-    
+
     public TransactionState getState()
     {
         return state;
@@ -682,7 +682,7 @@ class TransactionImpl implements Transaction
         }
         active = false;
     }
-    
+
     public ForceMode getForceMode()
     {
         return forceMode;

@@ -68,12 +68,6 @@ public class DynamicRecord extends Abstract64BitRecord
         }
     }
 
-    public void setInUse( boolean inUse, int type )
-    {
-        this.type = type;
-        this.setInUse( inUse );
-    }
-
     public void setData( byte[] data )
     {
         isLight = false;
