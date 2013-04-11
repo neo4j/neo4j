@@ -62,7 +62,7 @@ public class BufferingLogger extends StringLogger
     @Override
     public void logMessage( String msg )
     {
-        logMessage( msg, null );
+        logMessage( msg, null, false );
     }
 
     @Override
@@ -75,6 +75,12 @@ public class BufferingLogger extends StringLogger
     public void logMessage( String msg, boolean flush )
     {
         logMessage( msg, null, flush );
+    }
+
+    @Override
+    public void logMessage( String msg, LogMarker marker )
+    {
+        logMessage( msg );
     }
 
     @Override

@@ -19,22 +19,63 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import java.util.Iterator;
 
-public class DevNullLoggingService
-        extends LifecycleAdapter
-        implements Logging
+import org.slf4j.Marker;
+
+public class Slf4jMarkerAdapter implements Marker
 {
-    @Override
-    public StringLogger getLogger( Class loggingClass )
+    private final String name;
+
+    public Slf4jMarkerAdapter( String name )
     {
-        return StringLogger.DEV_NULL;
+        this.name = name;
     }
 
     @Override
-    public ConsoleLogger getConsoleLog( Class loggingClass )
+    public String getName()
     {
-        return new ConsoleLogger( StringLogger.DEV_NULL );
+        return name;
+    }
+
+    @Override
+    public void add( Marker reference )
+    {
+    }
+
+    @Override
+    public boolean remove( Marker reference )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean hasChildren()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean hasReferences()
+    {
+        return false;
+    }
+
+    @Override
+    public Iterator iterator()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean contains( Marker other )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean contains( String name )
+    {
+        return false;
     }
 }

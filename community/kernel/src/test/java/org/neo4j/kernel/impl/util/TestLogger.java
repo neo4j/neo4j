@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.logging.LogMarker;
 
 /**
  * A string logger implementation for testing that components log things correctly.
@@ -284,6 +285,12 @@ public class TestLogger extends StringLogger
     public void logMessage( String msg, boolean flush )
     {
         logMessage( msg, null, flush );
+    }
+
+    @Override
+    public void logMessage( String msg, LogMarker marker )
+    {
+        logMessage( msg, null, false );
     }
 
     @Override

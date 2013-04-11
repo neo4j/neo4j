@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 
-/**
- * Logging service that is used for creating loggers with specific names.
- */
-public interface Logging
+public class ConsoleLoggingFilter extends Filter<ILoggingEvent>
 {
-    StringLogger getLogger( Class loggingClass );
-
-    ConsoleLogger getConsoleLog( Class loggingClass );
+    @Override
+    public FilterReply decide( ILoggingEvent event )
+    {
+        if ( event.getMarker() != null && LogMarker.CONSOLE.equals( event.getMarker().getName() ) )
+        {
+            return FilterReply.ACCEPT;
+        }
+        return FilterReply.DENY;
+    }
 }
