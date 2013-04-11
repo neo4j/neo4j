@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps.cypher;
+package org.neo4j.cypher.export;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 public interface SubGraph
 {
@@ -32,4 +33,6 @@ public interface SubGraph
     Node getReferenceNode();
 
     boolean contains( Relationship relationship );
+
+    Iterable<IndexDefinition> indexes();
 }

@@ -22,13 +22,14 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
-import java.io.{File, PrintWriter}
+import java.io.{StringWriter, File, PrintWriter}
 import org.neo4j.graphdb._
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{GeoffService, ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
+import export.{DatabaseSubGraph, SubGraphExporter}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 
@@ -145,7 +146,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   private def consoleSnippet(query: String, empty: Boolean): String = {
     if (generateConsole) {
-      val create = if (!empty) new GeoffService(db).toGeoff.trim else "start n=node(*) match n-[r?]->() delete n, r;"
+      val create = if (!empty) {
+        val out = new StringWriter()
+        new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+        out.toString
+      } else "start n=node(*) match n-[r?]->() delete n, r;"
       """[console]
 ----
 %s
