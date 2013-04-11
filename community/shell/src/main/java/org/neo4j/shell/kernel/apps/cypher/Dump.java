@@ -23,6 +23,9 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.cypher.export.CypherResultSubGraph;
+import org.neo4j.cypher.export.DatabaseSubGraph;
+import org.neo4j.cypher.export.SubGraph;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -51,7 +54,7 @@ public class Dump extends Start
     {
         if ( parser.arguments().isEmpty() )
         {
-            final SubGraph graph = DatabaseSubGraph.from( getServer().getDb() );
+            final SubGraph graph = DatabaseSubGraph.from(getServer().getDb());
             export( graph, out);
             return Continuation.INPUT_COMPLETE;
         }
@@ -82,13 +85,13 @@ public class Dump extends Start
 
     private void export(SubGraph subGraph, Output out) throws RemoteException, ShellException
     {
-        new SubGraphExporter( subGraph ).export( out );
+        new Exporter( subGraph ).export( out );
     }
 
     @Override
     protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
     {
-        final SubGraph subGraph = CypherResultSubGraph.from( result, false );
+        final SubGraph subGraph = CypherResultSubGraph.from(result, false);
         export( subGraph, out);
     }
 }
