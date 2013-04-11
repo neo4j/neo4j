@@ -107,6 +107,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( (Integer)stats.get( "properties_set" ), is(0) );
         assertThat( (Integer)stats.get( "relationships_created" ), is(0) );
         assertThat( (Integer)stats.get( "relationship_deleted" ), is(0) );
+        assertThat( (Integer)stats.get( "time_taken" ), isNot(0) );
     }
 
     /**

@@ -34,7 +34,7 @@ object QueryStateHelper {
       .resolveDependency(classOf[ThreadToStatementContextBridge])
       .getCtxForWriting
 
-    new QueryState(db, new TransactionBoundQueryContext(db, tx, ctx), Map.empty, NullDecorator, None)
+    new QueryState(db, new TransactionBoundQueryContext(db, tx, ctx,System.currentTimeMillis()), Map.empty, NullDecorator, None)
   }
 }
 

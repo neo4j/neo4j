@@ -25,7 +25,6 @@ import org.neo4j.cypher.QueryStatistics
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{Relationship, Node}
 import org.mockito.Mockito.when
-import org.mockito.Mockito
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
@@ -34,62 +33,62 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Test def create_node() {
     context.createNode()
 
-    assert(context.getStatistics === QueryStatistics(nodesCreated = 1))
+    assertStats(context.getStatistics,nodesCreated=1)
   }
 
   @Test def delete_node() {
     context.nodeOps.delete(nodeA)
 
-    assert(context.getStatistics === QueryStatistics(deletedNodes = 1))
+    assertStats(context.getStatistics,deletedNodes = 1)
   }
 
   @Test def create_relationship() {
     context.createRelationship(nodeA, nodeB, "FOO")
 
-    assert(context.getStatistics === QueryStatistics(relationshipsCreated = 1))
+    assertStats(context.getStatistics,relationshipsCreated = 1)
   }
 
   @Test def delete_relationship() {
     context.relationshipOps.delete(rel)
 
-    assert(context.getStatistics === QueryStatistics(deletedRelationships = 1))
+    assertStats(context.getStatistics,deletedRelationships = 1)
   }
 
   @Test def set_property() {
     context.nodeOps.setProperty(nodeA, "key", "value")
 
-    assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
+    assertStats(context.getStatistics,propertiesSet = 1)
   }
 
   @Test def remove_property() {
     context.nodeOps.removeProperty(nodeA, "key")
 
-    assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
+    assertStats(context.getStatistics,propertiesSet = 1)
   }
 
   @Test def set_property_relationship() {
     context.relationshipOps.setProperty(rel, "key", "value")
 
-    assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
+    assertStats(context.getStatistics,propertiesSet = 1)
   }
 
   @Test def remove_property_relationship() {
     context.relationshipOps.removeProperty(rel, "key")
 
-    assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
+    assertStats(context.getStatistics,propertiesSet = 1)
   }
 
   @Test def add_label() {
 //    when( inner.addLabelsToNode(Matchers.anyLong(), Matchers.any()) ).thenAnswer(answer)
     context.setLabelsOnNode(0, Seq(1,2,3))
     
-    assert(context.getStatistics === QueryStatistics(addedLabels = 3))
+    assertStats(context.getStatistics,addedLabels = 3)
   }
 
   @Test def remove_label() {
     context.removeLabelsFromNode(0, Seq(1,2,3))
 
-    assert(context.getStatistics === QueryStatistics(removedLabels = 3))
+    assertStats(context.getStatistics,removedLabels = 3)
   }
 
   val inner = mock[QueryContext]
@@ -117,5 +116,18 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
       }
     } )
     context = new UpdateCountingQueryContext(inner)
+  }
+
+  def assertStats(statistics: QueryStatistics,
+                  nodesCreated: Int = 0,
+                  relationshipsCreated: Int = 0,
+                  propertiesSet: Int = 0,
+                  deletedNodes: Int = 0,
+                  deletedRelationships: Int = 0,
+                  addedLabels: Int = 0,
+                  removedLabels: Int = 0) {
+    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes,
+                                deletedRelationships, addedLabels, removedLabels,statistics.timeTaken)
+    )
   }
 }
