@@ -24,4 +24,6 @@ include::upgrade-guide.asciidoc[]
 
 include::ha-setup-tutorial.asciidoc[]
 
+include::ha-rest-info.asciidoc[]
+
 include::haproxy.asciidoc[]
