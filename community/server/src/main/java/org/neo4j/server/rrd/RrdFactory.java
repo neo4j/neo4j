@@ -115,6 +115,7 @@ public class RrdFactory
         File tempFile = File.createTempFile( "neo4j", "rrd" );
         tempFile.delete();
         tempFile.mkdir();
+        tempFile.deleteOnExit();
 
         return tempFile.getAbsolutePath();
     }

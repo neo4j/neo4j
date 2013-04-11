@@ -139,6 +139,7 @@ public class TestBufferedFileChannel
     private File createBigTempFile( int mb ) throws IOException
     {
         File file = File.createTempFile( "neo4j", "temp" );
+        file.deleteOnExit();
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
         byte[] bytes = newStripedBytes( 1000 );
         ByteBuffer buffer = ByteBuffer.wrap( bytes );

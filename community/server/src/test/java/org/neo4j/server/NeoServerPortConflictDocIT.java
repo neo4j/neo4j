@@ -44,6 +44,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
         CommunityNeoServer server = ServerBuilder.server()
                 .onPort( contestedPort )
                 .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 

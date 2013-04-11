@@ -33,6 +33,7 @@ public class PreflightTasksDocIT extends ExclusiveServerTestBase
     public void shouldExitWhenFailedStartupHealthCheck() throws Throwable
     {
         server = ServerBuilder.server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withFailingPreflightTasks()
                 .build();
         server.start();

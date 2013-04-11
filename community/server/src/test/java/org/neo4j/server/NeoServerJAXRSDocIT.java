@@ -76,6 +76,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
         server = ServerBuilder.server()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 

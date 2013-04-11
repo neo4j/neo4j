@@ -27,15 +27,20 @@ import static org.junit.Assert.assertThat;
 import java.io.File;
 import java.io.IOException;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.logging.InMemoryAppender;
 
 public class PropertyFileConfiguratorTest
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder(  );
+
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
     {
-        File emptyPropertyFile = PropertyFileBuilder.builder()
+        File emptyPropertyFile = PropertyFileBuilder.builder(folder.newFile())
                 .build();
         DatabaseTuningPropertyFileBuilder.builder()
                 .inDirectory( emptyPropertyFile.getParentFile() )
@@ -56,7 +61,7 @@ public class PropertyFileConfiguratorTest
         File databaseTuningPropertyFileWeWantToUse = DatabaseTuningPropertyFileBuilder.builder()
                 .mappedMemory( unlikelyDefaultMemoryMappedValue )
                 .build();
-        File emptyPropertyFile = PropertyFileBuilder.builder()
+        File emptyPropertyFile = PropertyFileBuilder.builder(folder.newFile())
                 .withDbTuningPropertyFile( databaseTuningPropertyFileWeWantToUse )
                 .build();
         // The tuning properties we want to ignore, in the same dir as the neo
@@ -78,7 +83,7 @@ public class PropertyFileConfiguratorTest
     public void shouldLogInfoWhenDefaultingToTuningPropertiesFileInTheSameDirectoryAsTheNeoServerPropertiesFile()
             throws IOException
     {
-        File emptyPropertyFile = PropertyFileBuilder.builder()
+        File emptyPropertyFile = PropertyFileBuilder.builder(folder.newFile())
                 .build();
         File tuningPropertiesFile = DatabaseTuningPropertyFileBuilder.builder()
                 .inDirectory( emptyPropertyFile.getParentFile() )

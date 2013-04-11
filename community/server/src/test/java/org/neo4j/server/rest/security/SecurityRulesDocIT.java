@@ -84,7 +84,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
             throws Exception
     {
         server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
-                PermanentlyFailingSecurityRule.class.getCanonicalName()).build();
+                PermanentlyFailingSecurityRule.class.getCanonicalName())
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         gen.get().addSnippet(
                 "config",
@@ -107,7 +109,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName(),
-                PermanentlyFailingSecurityRule.class.getCanonicalName()).build();
+                PermanentlyFailingSecurityRule.class.getCanonicalName())
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
 
@@ -124,7 +128,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
             throws Exception
     {
         server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
-                PermanentlyPassingSecurityRule.class.getCanonicalName()).build();
+                PermanentlyPassingSecurityRule.class.getCanonicalName())
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
 
@@ -166,6 +172,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                                                           mountPoint)
                               .withSecurityRules(
                                       PermanentlyFailingSecurityRuleWithWildcardPath.class.getCanonicalName())
+                              .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                               .build();
         server.start();
 
@@ -215,6 +222,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                                                           mountPoint)
                               .withSecurityRules(
                                       PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName())
+                              .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                               .build();
         server.start();
         gen.get().addSnippet(

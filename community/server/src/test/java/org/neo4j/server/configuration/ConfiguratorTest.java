@@ -30,28 +30,31 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
 
 public class ConfiguratorTest
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
     public void shouldProvideAConfiguration() throws IOException
     {
-        File configFile = PropertyFileBuilder.builder()
+        File configFile = PropertyFileBuilder.builder(folder.newFile())
                 .build();
         Configuration config = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
         assertNotNull( config );
-        configFile.delete();
     }
 
     @Test
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
 
-        File configFile = PropertyFileBuilder.builder()
+        File configFile = PropertyFileBuilder.builder(folder.newFile())
                 .withNameValue( "foo", "bar" )
                 .build();
 
@@ -59,14 +62,12 @@ public class ConfiguratorTest
 
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
-
-        configFile.delete();
     }
 
     @Test
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
-        File configFile = PropertyFileBuilder.builder()
+        File configFile = PropertyFileBuilder.builder(folder.newFile())
                 .withNameValue( "foo", "bar" )
                 .withNameValue( "foo", "bar" )
                 .build();
@@ -77,8 +78,6 @@ public class ConfiguratorTest
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
-
-        configFile.delete();
     }
 
     @Test
@@ -87,7 +86,7 @@ public class ConfiguratorTest
         File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder()
                 .build();
 
-        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder()
+        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder(folder.newFile())
                 .withDbTuningPropertyFile( databaseTuningPropertyFile )
                 .build();
 
@@ -96,15 +95,13 @@ public class ConfiguratorTest
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull( databaseTuningProperties );
         assertEquals( 5, databaseTuningProperties.size() );
-
-        propertyFileWithDbTuningProperty.delete();
     }
 
     @Test
     public void shouldFindThirdPartyJaxRsClasses() throws IOException
     {
 
-        File file = ServerTestUtils.createTempPropertyFile();
+        File file = ServerTestUtils.createTempPropertyFile(folder.getRoot());
 
         FileWriter fstream = new FileWriter( file, true );
         BufferedWriter out = new BufferedWriter( fstream );
@@ -121,7 +118,5 @@ public class ConfiguratorTest
         Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
         assertNotNull( thirdpartyJaxRsClasses );
         assertEquals( 3, thirdpartyJaxRsClasses.size() );
-
-        file.delete();
     }
 }

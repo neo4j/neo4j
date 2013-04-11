@@ -51,7 +51,9 @@ public class HttpsEnabledDocIT extends ExclusiveServerTestBase {
     
     @Test
     public void serverShouldSupportSsl() throws Exception {
-        server = server().withHttpsEnabled().build();
+        server = server().withHttpsEnabled()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         
         assertThat(server.getHttpsEnabled(), is(true));
@@ -66,7 +68,9 @@ public class HttpsEnabledDocIT extends ExclusiveServerTestBase {
     
     @Test
     public void webadminShouldBeRetrievableViaSsl() throws Exception {
-        server = server().withHttpsEnabled().build();
+        server = server().withHttpsEnabled()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         
         assertThat(server.getHttpsEnabled(), is(true));

@@ -33,8 +33,10 @@ import javax.ws.rs.core.MediaType;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -64,6 +66,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     private static final int SHORT_LIST_LENGTH = 33;
     private static final int LONG_LIST_LENGTH = 444;
 
+    @ClassRule
+    public static TemporaryFolder staticFolder = new TemporaryFolder(  );
+
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static FakeClock clock;
@@ -78,6 +83,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     {
         clock = new FakeClock();
         server = ServerBuilder.server()
+        .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
         .withClock( clock )
         .build();
 
