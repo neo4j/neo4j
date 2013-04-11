@@ -40,21 +40,6 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     assertFails("[:foo, :bar]")
   }
 
-  @Test def label_literal_choice_parsing() {
-    implicit val parserToTest = labelChoiceForm
-
-    parsing(":FOO") shouldGive
-      LabelSet(LabelSupport.labelCollection("FOO"))
-
-    parsing(":FOO|:BAZ") shouldGive
-      LabelChoice(LabelSet(LabelSupport.labelCollection("FOO")), LabelSet(LabelSupport.labelCollection("BAZ")))
-
-    parsing(":Sun:Day|:Night:Moon") shouldGive
-      LabelChoice(LabelSet(LabelSupport.labelCollection("Sun", "Day")), LabelSet(LabelSupport.labelCollection("Night", "Moon")))
-
-    assertFails("[:foo, :bar]")
-  }
-
   @Test def node_forms() {
     implicit val parserToTest = node
 

@@ -100,27 +100,6 @@ Or that it should have multiple labels:
 
 +`a:User:Admin-->b`+
 
-== Labels OR syntax ==
-
-For usage in +MATCH+ and expressions, there is a shorthand +OR+ syntax available.
-For instance, a match with this syntax:
-
-+`MATCH a:User|:Admin-->b`+
-
-Is equivalent to:
-
-+`MATCH a-->b WHERE a:User OR a:Admin`+
-
-This can be combined with the shorthand +AND+ syntax:
-
-+`MATCH a:User:Manager|:Admin-->b`+
-
-Is equivalent to:
-
-+`MATCH a-->b WHERE (a:User AND a:Manager) OR a:Admin`+
-
-The shorthand OR syntax is not available in +CREATE+ or +CREATE+ +UNIQUE+ statements.
-
 == Working with relationships ==
 
 If you need to work with the relationship between two nodes, you can name it.

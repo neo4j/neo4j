@@ -33,14 +33,6 @@ trait Labels extends Base {
     case optSpec => optSpec.getOrElse(LabelSet.empty)
   }
 
-  def labelChoiceForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
-    case labelSets => LabelChoice(labelSets: _*).simplify
-  }
-
-  def optLabelChoiceForm: Parser[LabelSpec] = opt(labelChoiceForm) ^^ {
-    case optSpec => optSpec.getOrElse(LabelSet.empty)
-  }
-
   def expression: Parser[Expression]
 }
 

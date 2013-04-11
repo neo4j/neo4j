@@ -88,7 +88,7 @@ trait ParserPattern extends Base with Labels {
 
   private def values = (("="|VALUES) ~> curlyMapWithExpression) | curlyMap
 
-  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(values) ^^ {
+  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelShortForm ~ opt(values) ^^ {
     case labelSpec ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
       val bare = labelSpec.bare && optMap.isEmpty

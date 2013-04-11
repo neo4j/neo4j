@@ -57,9 +57,6 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
       HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"))),
       HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo")))
     )
-
-    parsing("a-->(:Bar|:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), orPred)
   }
 
   @Test
