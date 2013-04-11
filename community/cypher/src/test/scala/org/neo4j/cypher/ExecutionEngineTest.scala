@@ -1806,7 +1806,7 @@ RETURN x0.name?
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.7").asJava)
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.9").asJava)
     val engine = new ExecutionEngine(db)
 
     try {
