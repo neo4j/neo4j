@@ -44,7 +44,10 @@
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <executions>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+         <executions>
           <execution>
             <id>check-licenses</id>
             <phase>none</phase>
