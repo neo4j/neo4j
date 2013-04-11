@@ -26,7 +26,6 @@ class CypherParser(version: String) {
 
   val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 
-  val v18 = new internal.parser.v1_8.CypherParserImpl
   val v19 = new internal.parser.v1_9.CypherParserImpl
   val v20 = new internal.parser.v2_0.CypherParserImpl
 
@@ -39,10 +38,9 @@ class CypherParser(version: String) {
     }
 
     v match {
-      case "1.8" => v18.parse(q)
       case "1.9" => v19.parse(q)
       case "2.0" => v20.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.8, 1.9 and 2.0")
+      case _ => throw new SyntaxException("Versions supported are 1.9 and 2.0")
     }
   }
 }

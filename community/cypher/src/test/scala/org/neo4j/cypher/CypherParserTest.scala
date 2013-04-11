@@ -2604,10 +2604,6 @@ create a-[r:REL]->b
     testQuery(Some("1.9"), query, expectedQuery)
   }
 
-  def test1_8(query: String, expectedQuery: AbstractQuery) {
-    testQuery(Some("1.8"), query, expectedQuery)
-  }
-
   def testFrom1_9(query: String, expectedQuery: AbstractQuery) {
     test1_9(query, expectedQuery)
     test2_0(query, expectedQuery)
@@ -2625,11 +2621,9 @@ create a-[r:REL]->b
   def testAll(query: String, expectedQuery: AbstractQuery) {
     test2_0(query, expectedQuery)
     test1_9(query, expectedQuery)
-    test1_8(query, expectedQuery)
   }
 
   def testPre2_0(query: String, expectedQuery: AbstractQuery) {
-    test1_8(query, expectedQuery)
     test1_9(query, expectedQuery)
   }
 
