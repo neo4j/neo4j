@@ -2451,54 +2451,6 @@ create a-[r:REL]->b
     testFrom2_0(query, expected)
   }
 
-  @Test def match_left_with_label_choice() {
-    val query    = "start a = NODE(1) match a:foo:bar|:baz -[r:MARRIED]-> () return a"
-    val pred     = Or(
-      HasLabel(Identifier("a"), Seq(LabelName("foo"), LabelName("bar"))),
-      HasLabel(Identifier("a"), Seq(LabelName("baz"))))
-    val expected =
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED55", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
-        where(pred).
-        returns(ReturnItem(Identifier("a"), "a"))
-
-    testFrom2_0(query, expected)
-  }
-
-  @Test def match_right_with_label_choice() {
-    val query    = "start a = NODE(1) match () -[r:MARRIED]-> a:foo:bar|:baz return a"
-    val pred     = Or(
-      HasLabel(Identifier("a"), Seq(LabelName("foo"), LabelName("bar"))),
-      HasLabel(Identifier("a"), Seq(LabelName("baz"))))
-    val expected =
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED25", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
-        where(pred).
-        returns(ReturnItem(Identifier("a"), "a"))
-
-    testFrom2_0(query, expected)
-  }
-
-  @Test def match_both_with_label_choice() {
-    val query    = "start a = NODE(1) match b:foo|:red -[r:MARRIED]-> a:bar|:blue return a"
-    val pred     = And(Or(
-                        HasLabel(Identifier("b"), Seq(LabelName("foo"))),
-                        HasLabel(Identifier("b"), Seq(LabelName("red")))),
-                       Or(
-                         HasLabel(Identifier("a"), Seq(LabelName("bar"))),
-                         HasLabel(Identifier("a"), Seq(LabelName("blue")))))
-    val expected =
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
-        where(pred).
-        returns(ReturnItem(Identifier("a"), "a"))
-
-    testFrom2_0(query, expected)
-  }
-
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
     val parser = new CypherParser()

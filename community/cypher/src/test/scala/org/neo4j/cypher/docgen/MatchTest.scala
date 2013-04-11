@@ -306,13 +306,4 @@ Cypher will try to match the relationship where the connected nodes switch sides
     )
   }
 
-  @Test def match_with_labels_or() {
-    testQuery(
-      title = "Match with either one or another label",
-      text = "The logical OR between two labels are expressed using the +|+ symbol",
-      queryText = "match charlie:Person-->x:Movie|:Person where charlie.name='Charlie Sheen' return x",
-      returns = "Return any nodes connected with Charlie that are labeled :Movie of labeled :Person",
-      assertions = p => assertEquals(List(node("WallStreet"), node("Martin")), p.columnAs[Node]("x").toList)
-    )
-  }
 }
