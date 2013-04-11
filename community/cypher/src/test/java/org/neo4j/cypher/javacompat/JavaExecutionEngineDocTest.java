@@ -191,15 +191,14 @@ public class JavaExecutionEngineDocTest
     }
 
     @Test
-    public void exampleWithParametersForIndexKeyAndValue() throws Exception
+    public void exampleWithParameterForIndexValue() throws Exception
     {
-        // START SNIPPET: exampleWithParametersForIndexKeyAndValue
+        // START SNIPPET: exampleWithParameterForIndexValue
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put( "key", "name" );
         params.put( "value", "Michaela" );
         ExecutionResult result =
-                engine.execute( "start n=node:people({key} = {value}) return n", params );
-        // END SNIPPET: exampleWithParametersForIndexKeyAndValue
+                engine.execute( "start n=node:people(name = {value}) return n", params );
+        // END SNIPPET: exampleWithParameterForIndexValue
 
         assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
     }

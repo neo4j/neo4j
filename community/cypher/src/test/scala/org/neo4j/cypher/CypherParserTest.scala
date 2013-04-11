@@ -1048,7 +1048,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def testParamForIndexKey() {
-    testAll(
+    testPre2_0(
       """start pA = node:idx({key} = "Value") return pA""",
       Query.
         start(NodeByIndex("pA", "idx", ParameterExpression("key"), Literal("Value"))).
