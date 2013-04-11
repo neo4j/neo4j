@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -117,6 +118,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final Config config;
     private LifeSupport life;
     private final StringLogger msgLog;
+    private final ConsoleLogger console;
+
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
 
@@ -134,6 +137,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.msgLog = logging.getLogger( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
+
+        this.console = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -273,8 +278,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 URI masterUri = availableMasterId;
 
-                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
-                        masterUri );
+                console.log( "ServerId " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
+                        masterUri  );
 
                 assert masterUri != null; // since we are here it must already have been set from outside
                 DependencyResolver resolver = graphDb.getDependencyResolver();
@@ -296,7 +301,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     if ( !startHaCommunication( xaDataSourceManager, nioneoDataSource, masterUri ) )
                         continue; // to the outer loop for a retry
 
-                    msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
+                    console.log( "ServerId " + config.get( ClusterSettings.server_id ) +
                             ", successfully moved to slave for master " + masterUri );
                     break; // from the retry loop
                 }
@@ -318,7 +323,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
                     new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
                             graphDb.getDependencyResolver() ), xaDataSourceManager );
-            
+
             SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
             delegateHandler.setDelegate( master );
             life.add( master );
@@ -384,11 +389,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     logging, nioneoDataSource.getStoreId(), config );
             checkConsistencyLife.add( checkConsistencyMaster );
             checkConsistencyLife.start();
+            console.log( "Checking store consistency with master" );
             checkDataConsistencyWithMaster( checkConsistencyMaster, nioneoDataSource );
+            console.log( "Store is consistent" );
             return true;
         }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
+            console.log( "The store is inconsistent. Will treat it as branched and fetch a new one from the master" );
             msgLog.warn( "Current store is unable to participate in the cluster; fetching new store from master", upe );
             try
             {
@@ -403,6 +411,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         catch ( MismatchingStoreIdException e )
         {
+            console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
             if ( nioneoDataSource.getNeoStore().getLastCommittedTx() == 1 )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
@@ -468,11 +477,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.start();
 
             // This will move the copied db to the graphdb location
-            msgLog.logMessage( "Copying store from master" );
-            new SlaveStoreWriter( config ).copyStore( copyMaster );
+            console.log( "Copying store from master" );
+            new SlaveStoreWriter( config, console ).copyStore( copyMaster );
 
             startServicesAgain();
-            msgLog.logMessage( "Finished copying store from master" );
+            console.log( "Finished copying store from master" );
             return true;
         }
         catch ( Throwable e )
