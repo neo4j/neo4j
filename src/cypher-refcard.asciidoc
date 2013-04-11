@@ -89,3 +89,5 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/mathematica
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-functions.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
+
