@@ -350,7 +350,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
         
         // Ensure nothing was borked.
-        assertThat(returnedValue, is(complicatedString));
+        assertThat("Expected twisted unicode case to work, but response was: " + entity,
+                returnedValue, is(complicatedString));
     }
 
     @Test
