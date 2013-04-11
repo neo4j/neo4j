@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.SchemaOperations;
-import org.neo4j.kernel.impl.api.TransactionStateStatementContext;
+import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -301,7 +301,7 @@ public class LabelTransactionStateTest
     private StatementContext store;
     private OldTxStateBridge oldTxState;
     private TxState state;
-    private TransactionStateStatementContext txContext;
+    private StateHandlingStatementContext txContext;
 
     @Before
     public void before() throws Exception
@@ -327,7 +327,7 @@ public class LabelTransactionStateTest
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ), new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ) );
 
-        txContext = new TransactionStateStatementContext( store, mock( SchemaOperations.class), state );
+        txContext = new StateHandlingStatementContext( store, mock( SchemaOperations.class), state );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Iterator;
 
@@ -44,6 +45,7 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -196,7 +198,29 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        return nodeLookup.lookup( nodeId ).getPropertyKeys( nodeLookup.getNodeManager() );
+        final StatementContext context = statementCtxProvider.getCtxForReading();
+        try
+        {
+            return asSet( map( new Function<Long, String>() {
+                @Override
+                public String apply( Long aLong )
+                {
+                    try
+                    {
+                        return context.getPropertyKeyName( aLong );
+                    }
+                    catch ( PropertyKeyIdNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError( "Jake",
+                                "Property key retrieved through kernel API should exist." );
+                    }
+                }
+            }, context.listNodePropertyKeys( getId())));
+        }
+        finally
+        {
+            context.close();
+        }
     }
 
     @Override

@@ -43,20 +43,20 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class TransactionStateStatementContext extends CompositeStatementContext
+public class StateHandlingStatementContext extends CompositeStatementContext
 {
     private final TxState state;
     private final StatementContext delegate;
-    private final SchemaOperations schemaOperations;
 
-    public TransactionStateStatementContext( StatementContext actual,
-                                             SchemaOperations schemaOperations,
-                                             TxState state )
+    public StateHandlingStatementContext( StatementContext actual,
+                                          SchemaOperations schemaOperations,
+                                          TxState state )
     {
+        // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
+        // and so having it here along with transactional state makes little sense to me. Reconsider and refactor.
         super( actual, schemaOperations );
         this.state = state;
         this.delegate = actual;
-        this.schemaOperations = schemaOperations;
     }
 
     @Override
@@ -173,7 +173,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         Iterable<IndexRule> committedRules;
         try
         {
-            committedRules = option( schemaOperations.getIndexRule( labelId, propertyKey ) );
+            committedRules = option( delegate.getIndexRule( labelId, propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {

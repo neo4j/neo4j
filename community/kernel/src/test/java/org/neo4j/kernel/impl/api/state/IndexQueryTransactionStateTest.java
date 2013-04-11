@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.api.TransactionStateStatementContext;
+import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -245,7 +245,7 @@ public class IndexQueryTransactionStateTest
     private StatementContext store;
     private OldTxStateBridge oldTxState;
     private TxState state;
-    private TransactionStateStatementContext txContext;
+    private StateHandlingStatementContext txContext;
 
     @Before
     public void before() throws Exception
@@ -271,7 +271,7 @@ public class IndexQueryTransactionStateTest
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ), new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ) );
 
-        txContext = new TransactionStateStatementContext( store, mock( SchemaOperations.class),
+        txContext = new StateHandlingStatementContext( store, mock( SchemaOperations.class),
                 state );
     }
 

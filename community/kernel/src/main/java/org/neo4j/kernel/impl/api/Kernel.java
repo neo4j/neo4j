@@ -49,25 +49,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
-<<<<<<< HEAD
- * consumption by
- * both the Beans API, Cypher, and any other components that want to interface with the underlying database.
- * <p/>
- * This is currently in an intermediate phase, where for many features you still have to use the beans API. To use this
- * implementation together with the beans API (eg. perform operations within the same transactions), then you should
- * use the beans API to start transactions, and use the Beans2KernelTransition class to get an {@link StatementContext}
- * that is hooked into that transaction.
- * <p/>
- * The cake:
- * <p/>
- * <ol>
- * <li>Locking</li>
- * <li>Constraint evaluation</li>
- * <li>Transaction state</li>
- * <li>Caching</li>
- * <li>Store</li>
- * </ol>
-=======
  * consumption by both the Core API, Cypher, and any other components that want to interface with the
  * underlying database.
  *
@@ -85,7 +66,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * {@link LockingStatementContext}, which will grab locks and delegate to {@link StateHandlingStatementContext} which
  * will store the change in the transaction state, to be applied later if the transaction is committed.
  *
- * A read will, similarily, pass through {@link LockingStatementContext}, which should (but does not currently) grab
+ * A read will, similarly, pass through {@link LockingStatementContext}, which should (but does not currently) grab
  * read locks. It then reaches {@link StateHandlingStatementContext}, which includes any changes that exist in the
  * current transaction, and then finally {@link StoreStatementContext} will read the current committed state from the
  * stores or caches.
@@ -99,7 +80,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * Another pain is transaction state, where lots of legacy code still rules supreme. Please refer to {@link TxState}
  * for details about the work in this area.
  *
- * Cache invalidation is similarily problematic, where cache invalidation really should be done when changes are applied
+ * Cache invalidation is similarly problematic, where cache invalidation really should be done when changes are applied
  * to the store, through the logical log. However, this is mostly not the case, cache invalidation is done as we work
  * through the Core API. Only in HA mode is cache invalidation done through log application, and then only through
  * evicting whole entities from the cache whenever they change, leading to large performance hits on writes. This area
@@ -107,7 +88,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * change, and the implementation of that API is responsible for keeping caches in sync.
  *
  * Please expand and update this as you learn things or find errors in the text above.
->>>>>>> 135a897... Moved schema state flushing into logical log application.
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
@@ -146,8 +126,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void start() throws Throwable
     {
-        // TODO: This is a huge smell. This is basically a massive workaround for the fact that the disk-accessing
-        // parts of the database being instantiated after components that depend on it are.
+        // TODO: This is a huge smell. See the refactoring section in the javadoc of this class for thoughts about
+        // the interplay between Kernel and NeoStoreXaDataSource
 
         nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
 
@@ -203,7 +183,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore,
                 indexService );
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, newTxState(), transactionManager.getTransactionState(),
+        result = new StateHandlingTransactionContext( result, newTxState(),
                 persistenceCache, schemaCache, schemaState);
         // + Constraint evaluation
         result = new ConstraintEvaluatingTransactionContext( result );

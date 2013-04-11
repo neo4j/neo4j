@@ -287,7 +287,7 @@ public class NodeManager
         }
         long id = idGenerator.nextId( Relationship.class );
         RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, true );
-        RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups );
+        RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
         boolean success = false;
@@ -362,7 +362,7 @@ public class NodeManager
 
     public RelationshipProxy newRelationshipProxyById( long id )
     {
-        return new RelationshipProxy( id, relationshipLookups );
+        return new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
     }
 
     @SuppressWarnings("unchecked")
@@ -485,7 +485,7 @@ public class NodeManager
     protected Relationship getRelationshipByIdOrNull( long relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
-        return relationship != null ? new RelationshipProxy( relId, relationshipLookups ) : null;
+        return relationship != null ? new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) : null;
     }
 
     public Relationship getRelationshipById( long id ) throws NotFoundException
@@ -608,7 +608,8 @@ public class NodeManager
     {
         if ( lock != null )
         {
-            lock.acquire( getTransactionState(), new RelationshipProxy( relId, relationshipLookups ) );
+            lock.acquire( getTransactionState(),
+                    new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) );
         }
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )

@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.integrationtest;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -28,24 +29,22 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class KernelIT
+public class KernelIT extends KernelIntegrationTest
 {
+    // TODO: Split this into area-specific tests, see PropertyIT.
+
     /**
      * While we transition ownership from the Beans API to the Kernel API for core database
      * interactions, there will be a bit of a mess. Our first goal is an architecture like this:
@@ -441,41 +440,55 @@ public class KernelIT
     }
 
     @Test
-    public void schemaStateShouldBeEvictedOnSchemaChanges() throws Exception
+    public void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
-        // WHEN
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-        statement.getOrCreateFromSchemaState( "my key", new Function<String, String>(){
-            @Override
-            public String apply( String s )
-            {
-                return "my state";
-            }
-        });
-        IndexRule idx = statement.addIndexRule( statement.getOrCreateLabelId( "hello" ),
-                statement.getOrCreatePropertyKeyId( "hepp" ) );
-
-        tx.success();
-        tx.finish();
-
-        // THEN
-        String state = getSchemaState("my key", "state that should not be set");
-        assertThat( state, equalTo( "my state" ) );
+        // GIVEN
+        newTransaction();
+        getOrCreateSchemaState( "my key", "my state" );
+        commit();
 
         // WHEN
-        tx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
-        statement.dropIndexRule( idx );
-        tx.success();
-        tx.finish();
+        newTransaction();
+        createIndex( );
+        commit();
+
+        newTransaction();
+        db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+        commit();
 
         // THEN
-        state = getSchemaState("my key", "state that should be set");
-        assertThat( state, equalTo( "state that should be set" ) );
+        assertFalse( schemaStateContains("my key") );
     }
 
-    private String getSchemaState(String key, final String maybeSetThisState)
+    @Test
+    public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        IndexRule idx = createIndex( );
+        commit();
+
+        newTransaction();
+        db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+        getOrCreateSchemaState( "my key", "some state" );
+        commit();
+
+        // WHEN
+        newTransaction();
+        statement.dropIndexRule( idx );
+        commit();
+
+        // THEN
+        assertFalse( schemaStateContains("my key") );
+    }
+
+    private IndexRule createIndex( ) throws ConstraintViolationKernelException
+    {
+        return statement.addIndexRule( statement.getOrCreateLabelId( "hello" ),
+                    statement.getOrCreatePropertyKeyId( "hepp" ) );
+    }
+
+    private String getOrCreateSchemaState( String key, final String maybeSetThisState )
     {
         Transaction tx;StatementContext statement;
         tx = db.beginTx();
@@ -492,20 +505,14 @@ public class KernelIT
         return state;
     }
 
-    private GraphDatabaseAPI db;
-    private ThreadToStatementContextBridge statementContextProvider;
-
-    @Before
-    public void before() throws Exception
+    private boolean schemaStateContains( String key )
     {
-        db = new ImpermanentGraphDatabase();
-        statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        db.shutdown();
+        Transaction tx;StatementContext statement;
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        boolean state = statement.schemaStateContains( key );
+        tx.success();
+        tx.finish();
+        return state;
     }
 }

@@ -19,11 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.LockType;
 
 public class RelationshipProxy implements Relationship
@@ -40,11 +48,14 @@ public class RelationshipProxy implements Relationship
     
     private final long relId;
     private final RelationshipLookups relationshipLookups;
+    private final ThreadToStatementContextBridge statementCtxProvider;
 
-    RelationshipProxy( long relId, RelationshipLookups relationshipLookups )
+    RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
+                       ThreadToStatementContextBridge statementCtxProvider )
     {
         this.relId = relId;
         this.relationshipLookups = relationshipLookups;
+        this.statementCtxProvider = statementCtxProvider;
     }
 
     public long getId()
@@ -108,7 +119,29 @@ public class RelationshipProxy implements Relationship
 
     public Iterable<String> getPropertyKeys()
     {
-        return relationshipLookups.lookupRelationship( relId ).getPropertyKeys( relationshipLookups.getNodeManager() );
+        final StatementContext context = statementCtxProvider.getCtxForReading();
+        try
+        {
+            return asSet( map( new Function<Long, String>() {
+                @Override
+                public String apply( Long aLong )
+                {
+                    try
+                    {
+                        return context.getPropertyKeyName( aLong );
+                    }
+                    catch ( PropertyKeyIdNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError( "Jake",
+                                "Property key retrieved through kernel API should exist." );
+                    }
+                }
+            }, context.listRelationshipPropertyKeys( getId() )));
+        }
+        finally
+        {
+            context.close();
+        }
     }
 
     public Iterable<Object> getPropertyValues()

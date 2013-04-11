@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -49,4 +51,14 @@ public interface PropertyOperations
      */
     Object getNodePropertyValue( long nodeId, long propertyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
+
+    /**
+     * Return all property keys associated with a node.
+     */
+    Iterator<Long> listNodePropertyKeys( long nodeId );
+
+    /**
+     * Return all property keys associated with a relationship.
+     */
+    Iterator<Long> listRelationshipPropertyKeys( long relationshipId );
 }

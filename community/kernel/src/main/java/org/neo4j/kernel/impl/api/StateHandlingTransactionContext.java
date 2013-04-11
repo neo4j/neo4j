@@ -21,9 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.core.TransactionState;
 
 public class StateHandlingTransactionContext extends DelegatingTransactionContext
 {
@@ -31,22 +29,15 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private final TxState state;
     private final SchemaCache schemaCache;
 
-    /**
-     * This is tech debt and coupled with {@link OldBridgingTransactionStateStatementContext}
-     */
-    @Deprecated
-    private final TransactionState oldTransactionState;
     private final UpdateableSchemaState schemaState;
 
     public StateHandlingTransactionContext( TransactionContext actual, TxState state,
-                                            TransactionState oldTransactionState,
                                             PersistenceCache persistenceCache,
                                             SchemaCache schemaCache,
                                             UpdateableSchemaState schemaState )
     {
         super( actual );
         this.persistenceCache = persistenceCache;
-        this.oldTransactionState = oldTransactionState;
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
         this.state = state;
@@ -59,12 +50,8 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         StatementContext result = super.newStatementContext();
         // + Caching
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
-        // + SchemaState handling
-        SchemaOperations schemaStateFlushing = new SchemaStateOperations( result, schemaState );
         // + Transaction-local state awareness
-        result = new TransactionStateStatementContext( result, schemaStateFlushing, state );
-        // + Old transaction state bridge
-        result = new OldBridgingTransactionStateStatementContext( result, oldTransactionState );
+        result = new StateHandlingStatementContext( result, new SchemaStateOperations( result, schemaState ), state );
         // done
         return result;
     }
@@ -78,11 +65,5 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         // - commit changes from tx state to the cache
         // TODO: This should be done by log application, not by this level of the stack.
         persistenceCache.apply( state );
-
-        // - discard and/or update schema state
-//        if ( state.hasSchemaChanges() )
-//        {
-//            schemaState.flush();
-//        }
     }
 }

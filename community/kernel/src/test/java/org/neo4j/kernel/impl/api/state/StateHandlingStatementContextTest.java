@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.CompositeStatementContext;
-import org.neo4j.kernel.impl.api.TransactionStateStatementContext;
+import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class StateHandlingStatementContextTest
@@ -61,7 +61,7 @@ public class StateHandlingStatementContextTest
             }
         };
 
-        TransactionStateStatementContext ctx = new TransactionStateStatementContext( hatesWritesCtx,
+        StateHandlingStatementContext ctx = new StateHandlingStatementContext( hatesWritesCtx,
                 mock( SchemaOperations.class ), mock( TxState.class ) );
 
         // When

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
@@ -73,6 +74,21 @@ public class StoreStatementContext extends CompositeStatementContext
     private final IndexingService indexService;
     private final IndexReaderFactory indexReaderFactory;
     private final NodeStore nodeStore;
+    private final Function<String,Long> propertyStringToId = new Function<String, Long>()
+    {
+        @Override
+        public Long apply( String s )
+        {
+            try
+            {
+                return getPropertyKeyId( s );
+            }
+            catch ( PropertyKeyNotFoundException e )
+            {
+                throw new ThisShouldNotHappenError( "Jake", "Property key id stored in store should exist." );
+            }
+        }
+    };;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
             NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
@@ -314,6 +330,24 @@ public class StoreStatementContext extends CompositeStatementContext
         {
             throw new PropertyKeyIdNotFoundException( propertyId, e );
         }
+    }
+
+    @Override
+    public Iterator<Long> listNodePropertyKeys( long nodeId )
+    {
+        // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
+        // a first step to move it into the kernel.
+        return map( propertyStringToId,
+                    nodeManager.getNodeForProxy( nodeId, null ).getPropertyKeys( nodeManager ).iterator());
+    }
+
+    @Override
+    public Iterator<Long> listRelationshipPropertyKeys( long relId )
+    {
+        // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
+        // a first step to move it into the kernel.
+        return map( propertyStringToId,
+                    nodeManager.getRelationshipForProxy( relId, null ).getPropertyKeys( nodeManager ).iterator());
     }
 
     @Override

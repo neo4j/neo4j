@@ -24,6 +24,13 @@ package org.neo4j.kernel.api;
  * Actual changes are made in the {@link #newStatementContext() statements}
  * created from this transaction context. Changes made within a transaction
  * are visible to all operations within it.
+ *
+ * The reason for the separation between transactions and statements is isolation levels. While Neo4j is read-committed
+ * isolation, a read can potentially involve multiple operations (think of a cypher statement). Within that read, or
+ * statement if you will, the isolation level should be repeatable read, not read committed.
+ *
+ * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
+ * type of isolation requirements.
  */
 public interface TransactionContext
 {

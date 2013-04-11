@@ -268,6 +268,32 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<Long> listNodePropertyKeys( long nodeId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Long> result = propertyOperations.listNodePropertyKeys( nodeId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<Long> listRelationshipPropertyKeys( long relationshipId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Long> result = propertyOperations.listRelationshipPropertyKeys( relationshipId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
     public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
         beforeOperation();
