@@ -147,14 +147,14 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique {
     ":" ~> identity ~ parens(idxQueries) ^^ {
       case a ~ b => (a, b._1, b._2)
     } |
-      ":" ~> identity ~> "(" ~> (id | parameter) ~> failure("`=` expected")
+      ":" ~> identity ~> "(" ~> id ~> failure("`=` expected")
 
   def idxQueries: Parser[(Expression, Expression)] = idxQuery
 
   def indexValue = parameter | stringLit | failure("string literal or parameter expected")
 
   def idxQuery: Parser[(Expression, Expression)] =
-    ((id | parameter) ~ "=" ~ indexValue ^^ {
+    (id ~ "=" ~ indexValue ^^ {
       case k ~ "=" ~ v => (k, v)
     }
       | "=" ~> failure("Need index key"))
