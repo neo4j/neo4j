@@ -12,6 +12,10 @@ The mathematical operators are `+`, `-`, `*`, `/` and `%`.
 
 The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`.
 
+[[query-operators-boolean]]
+== Boolean operators ==
+The boolean operators are `AND, `OR`, `NOT`.
+
 [[query-operators-string]]
 == String operators ==
 
