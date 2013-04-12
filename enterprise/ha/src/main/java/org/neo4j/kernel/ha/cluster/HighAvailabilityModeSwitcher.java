@@ -134,7 +134,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.logging = logging;
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
 

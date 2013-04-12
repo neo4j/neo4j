@@ -114,7 +114,7 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
-        public StringLogger getLogger( Class loggingClass )
+        public StringLogger getMessagesLog( Class loggingClass )
         {
             if ( loggingClass.equals( DiagnosticsManager.class ) )
             {

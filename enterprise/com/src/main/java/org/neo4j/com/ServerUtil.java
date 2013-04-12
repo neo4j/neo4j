@@ -116,7 +116,7 @@ public class ServerUtil
             catch ( IOException e )
             {
                 // TODO: what about error message?
-                graphDb.getDependencyResolver().resolveDependency( Logging.class ).getLogger( ServerUtil.class ).logMessage(
+                graphDb.getDependencyResolver().resolveDependency( Logging.class ).getMessagesLog( ServerUtil.class ).logMessage(
                         "Unable to rotate log for " + ds, e );
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.

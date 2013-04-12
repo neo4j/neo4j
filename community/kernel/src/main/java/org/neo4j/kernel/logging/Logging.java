@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public interface Logging
 {
-    StringLogger getLogger( Class loggingClass );
+    StringLogger getMessagesLog( Class loggingClass );
 
     ConsoleLogger getConsoleLog( Class loggingClass );
 }

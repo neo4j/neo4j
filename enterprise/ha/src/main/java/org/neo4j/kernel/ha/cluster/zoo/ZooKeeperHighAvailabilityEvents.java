@@ -63,7 +63,7 @@ public class ZooKeeperHighAvailabilityEvents
     @Override
     public void init() throws Throwable
     {
-        client = new ZooClient( logger.getLogger( ZooClient.class ), config );
+        client = new ZooClient( logger.getMessagesLog( ZooClient.class ), config );
         life.add( client );
         client.addZooListener( new ZooHaEventListener() );
         client.addCompatibilityModeListener( new ZooCompatibilityModeListener() );
@@ -123,7 +123,7 @@ public class ZooKeeperHighAvailabilityEvents
             @Override
             public void notify( ClusterMemberListener listener )
             {
-                logger.getLogger( getClass() ).logMessage( "got member is available for me: "+ client.getClusterServer() );
+                logger.getMessagesLog( getClass() ).logMessage( "got member is available for me: "+ client.getClusterServer() );
                 listener.memberIsAvailable( role, new InstanceId( client.getMyMachineId() ), roleUri );
             }
         } );
@@ -168,7 +168,7 @@ public class ZooKeeperHighAvailabilityEvents
         @Override
         public void newMasterRequired()
         {
-            logger.getLogger( getClass() ).logMessage( "Refreshing master from zk, got "+
+            logger.getMessagesLog( getClass() ).logMessage( "Refreshing master from zk, got "+
                     client.refreshMasterFromZooKeeper() );
         }
 
@@ -189,7 +189,7 @@ public class ZooKeeperHighAvailabilityEvents
         @Override
         public void masterNotify()
         {
-            logger.getLogger( getClass() ).logMessage( "Got master notify" );
+            logger.getMessagesLog( getClass() ).logMessage( "Got master notify" );
             Listeners.notifyListeners( haListeners, new Listeners.Notification<ClusterMemberListener>()
             {
                 @Override
@@ -203,7 +203,7 @@ public class ZooKeeperHighAvailabilityEvents
         @Override
         public void masterRebound()
         {
-            logger.getLogger( getClass() ).logMessage( "Got master rebound" );
+            logger.getMessagesLog( getClass() ).logMessage( "Got master rebound" );
             Listeners.notifyListeners( haListeners, new Listeners.Notification<ClusterMemberListener>()
             {
                 @Override

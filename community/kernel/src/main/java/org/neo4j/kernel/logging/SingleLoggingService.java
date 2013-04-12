@@ -34,7 +34,7 @@ public class SingleLoggingService extends LifecycleAdapter implements Logging
     }
     
     @Override
-    public StringLogger getLogger( Class loggingClass )
+    public StringLogger getMessagesLog( Class loggingClass )
     {
         return logger;
     }

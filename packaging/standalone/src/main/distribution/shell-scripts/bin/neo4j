@@ -181,13 +181,15 @@ startit() {
     checkclasspath
     checkandrepairenv
 
+    CONSOLE_LOG="$NEO4J_LOG/console.log"
+
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties=\"${NEO4J_CONFIG}/neo4j-server.properties\" \
         -Djava.util.logging.config.file=\"${NEO4J_CONFIG}/logging.properties\" \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> \"$NEO4J_LOG/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
+        org.neo4j.server.Bootstrapper >> ${CONSOLE_LOG} 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
@@ -196,17 +198,17 @@ startit() {
         -Djava.util.logging.config.file="${NEO4J_CONFIG}/logging.properties" \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> "${NEO4J_LOG}/console.log" 2>&1 & echo $! > "${PID_FILE}"
+        org.neo4j.server.Bootstrapper >> ${CONSOLE_LOG} 2>&1 & echo $! > "${PID_FILE}"
     fi
 
     STARTED_PID=$( cat "$PID_FILE" )
 
     if [ "$org_neo4j_server_database_mode" = "HA" ] ; then
       if kill -0 $STARTED_PID 2>/dev/null ; then
-        echo "HA instance started in process [$STARTED_PID]. Will be operational once connected to peers. See console log for status."
+        echo "HA instance started in process [$STARTED_PID]. Will be operational once connected to peers. See ${CONSOLE_LOG} for current status."
         exit 0
       else
-        echo "HA instance was unable to start. Please see console log "
+        echo "HA instance was unable to start. See ${CONSOLE_LOG}."
         rm "$PID_FILE"
         exit 1
       fi

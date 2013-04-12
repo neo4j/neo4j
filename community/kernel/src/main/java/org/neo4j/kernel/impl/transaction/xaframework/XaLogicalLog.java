@@ -128,7 +128,7 @@ public class XaLogicalLog implements LogLoader
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
-        msgLog = logging.getLogger( getClass() );
+        msgLog = logging.getMessagesLog( getClass() );
 
         this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap );
     }

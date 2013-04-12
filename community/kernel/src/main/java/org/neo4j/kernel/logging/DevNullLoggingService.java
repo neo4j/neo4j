@@ -27,7 +27,7 @@ public class DevNullLoggingService
         implements Logging
 {
     @Override
-    public StringLogger getLogger( Class loggingClass )
+    public StringLogger getMessagesLog( Class loggingClass )
     {
         return StringLogger.DEV_NULL;
     }

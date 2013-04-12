@@ -134,7 +134,7 @@ public class LogbackService
     }
 
     @Override
-    public StringLogger getLogger( Class loggingClass )
+    public StringLogger getMessagesLog( Class loggingClass )
     {
         return new Slf4jToStringLoggerAdapter( loggerContext.getLogger( loggingClass ) );
     }

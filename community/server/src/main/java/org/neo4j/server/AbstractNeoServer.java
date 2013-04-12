@@ -164,7 +164,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             databaseActions = createDatabaseActions();
 
-            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CypherExecutor.class ) );
+            cypherExecutor = new CypherExecutor( database, getLogging().getMessagesLog( CypherExecutor.class ) );
 
             configureWebServer();
 

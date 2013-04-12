@@ -117,7 +117,7 @@ public class NetworkInstance
     public NetworkInstance( Configuration config, Logging logging )
     {
         this.config = config;
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
     }
 
     @Override

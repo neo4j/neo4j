@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.client;
 
+import static java.lang.String.format;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -71,7 +73,7 @@ public class ClusterJoin
     {
         this.config = config;
         this.protocolServer = protocolServer;
-        this.logger = logger.getLogger( getClass() );
+        this.logger = logger.getMessagesLog( getClass() );
         this.console = logger.getConsoleLog( getClass() );
     }
 
@@ -193,7 +195,8 @@ public class ClusterJoin
                 }
                 catch ( InterruptedException e )
                 {
-                    e.printStackTrace();
+                    console.log( "Could not join cluster, interrupted. Retrying..." );
+                    continue;
                 }
                 catch ( ExecutionException e )
                 {
@@ -202,16 +205,18 @@ public class ClusterJoin
                     {
                         throw ((IllegalStateException) e.getCause());
                     }
-                }
 
-                if ( config.isAllowedToCreateCluster() )
-                {
-                    // Failed to join cluster, create new one
-                    cluster.create( config.getClusterName() );
-                    break;
-                }
+                    if ( config.isAllowedToCreateCluster() )
+                    {
+                        // Failed to join cluster, create new one
+                        console.log( "Could not join cluster of " + hosts.toString() );
+                        console.log( format( "Creating new cluster with name [%s]...", config.getClusterName() ) );
+                        cluster.create( config.getClusterName() );
+                        break;
+                    }
 
-                console.log( "Could not join cluster, timeout happened." );
+                    console.log( "Could not join cluster, timed out. Retrying..." );
+                }
             }
         }
     }

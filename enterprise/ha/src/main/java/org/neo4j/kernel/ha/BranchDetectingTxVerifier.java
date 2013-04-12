@@ -42,7 +42,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
          * proper db, merely the HA graph db which is a layer around a not-yet-started db
          * Rickards restructuring will of course fix this */
         this.db = db;
-        this.logger = db.getDependencyResolver().resolveDependency( Logging.class ).getLogger( getClass() );
+        this.logger = db.getDependencyResolver().resolveDependency( Logging.class ).getMessagesLog( getClass() );
     }
     
     @Override
