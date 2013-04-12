@@ -136,6 +136,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     
     protected SchemaIndexProvider( Descriptor descriptor, int priority )
     {
+        assert descriptor != null;
         this.priority = priority;
         this.providerDescriptor = descriptor;
     }
@@ -168,7 +169,33 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     {
         return this.priority - o.priority;
     }
-    
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        SchemaIndexProvider other = (SchemaIndexProvider) o;
+
+        return priority == other.priority &&
+               providerDescriptor.equals( other.providerDescriptor );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = priority;
+        result = 31 * result + (providerDescriptor != null ? providerDescriptor.hashCode() : 0);
+        return result;
+    }
+
     protected File getRootDirectory( Config config, String key )
     {
         return new File( new File( new File( config.get( store_dir ), "schema" ), "index" ), key );

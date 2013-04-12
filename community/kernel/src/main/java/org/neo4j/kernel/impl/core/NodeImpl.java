@@ -119,7 +119,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     public boolean equals( Object obj )
     {
-        return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
+        return this == obj || obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId();
     }
 
     @Override
@@ -251,7 +251,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                 continue;
             }
 
-            result[actualLength++] = getRelationshipsIterator( nodeManager, direction,
+            result[actualLength++] = getRelationshipsIterator( direction,
                     addMap != null ? addMap.get( typeId ) : null,
                     skipMap != null ? skipMap.get( typeId ) : null, typeId );
         }
@@ -269,20 +269,18 @@ public class NodeImpl extends ArrayBasedPrimitive
         return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
     }
 
-    private RelIdIterator getRelationshipsIterator( NodeManager nodeManager, DirectionWrapper direction,
-                                                    RelIdArray add, Collection<Long> remove, int type )
+    private RelIdIterator getRelationshipsIterator( DirectionWrapper direction, RelIdArray add,
+                                                    Collection<Long> remove, int type )
     {
         RelIdArray src = getRelIdArray( type );
-        RelIdIterator iterator = null;
         if ( add != null || remove != null )
         {
-            iterator = new CombinedRelIdIterator( type, direction, src, add, remove );
+            return new CombinedRelIdIterator( type, direction, src, add, remove );
         }
         else
         {
-            iterator = src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
+            return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
         }
-        return iterator;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )

@@ -209,7 +209,7 @@ public abstract class Service
     }
 
     /**
-     * Load the Service implementation with the specified key.
+     * Load the Service implementation with the specified key. This method should never return null.
      *
      * @param <T>  the type of the Service
      * @param type the type of the Service to load

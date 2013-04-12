@@ -28,7 +28,6 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     private final int recordSize;
     private final long position;
     private Buffer buffer = null;
-    private final int totalSize;
     private final int windowSize;
 
     AbstractPersistenceWindow( long position, int recordSize, int totalSize, 
@@ -42,10 +41,8 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         
         this.position = position;
         this.recordSize = recordSize;
-        this.totalSize = totalSize;
         this.windowSize = totalSize / recordSize;
         this.buffer = new Buffer( this, byteBuffer );
-        // this.buffer.setByteBuffer( byteBuffer );
     }
 
     @Override

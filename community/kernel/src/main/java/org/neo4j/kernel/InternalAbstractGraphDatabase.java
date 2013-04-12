@@ -424,11 +424,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 TransactionManagerProvider provider;
                 provider = Service.load( TransactionManagerProvider.class, serviceName );
-                if ( provider == null )
-                {
-                    throw new IllegalStateException( "Unknown transaction manager implementation: "
-                            + serviceName );
-                }
                 txManager = provider.loadTransactionManager( this.storeDir.getPath(), xaDataSourceManager,
                         kernelPanicEventGenerator, txHook, logging.getLogger( AbstractTransactionManager.class ),
                         fileSystem, stateFactory );
@@ -1162,7 +1157,7 @@ public abstract class InternalAbstractGraphDatabase
         return storeDir.hashCode();
     }
 
-    protected class DefaultKernelData extends KernelData implements Lifecycle
+    protected final class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final GraphDatabaseAPI graphDb;
 
@@ -1373,34 +1368,6 @@ public abstract class InternalAbstractGraphDatabase
             
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
-        }
-    }
-
-    class DatabaseStartup
-            implements Lifecycle
-    {
-        @Override
-        public void init()
-                throws Throwable
-        {
-        }
-
-        @Override
-        public void start()
-                throws Throwable
-        {
-        }
-
-        @Override
-        public void stop()
-                throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown()
-                throws Throwable
-        {
         }
     }
 

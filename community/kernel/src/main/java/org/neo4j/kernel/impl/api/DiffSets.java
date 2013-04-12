@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -162,7 +161,7 @@ public class DiffSets<T>
 
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
-        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
+        Iterable<T> newAdded = filter( addedFilter, getAdded() );
         Set<T> newRemoved = getRemoved();
         return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
     }
