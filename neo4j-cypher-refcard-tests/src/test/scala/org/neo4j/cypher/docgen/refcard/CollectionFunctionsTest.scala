@@ -34,6 +34,9 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
+      case "friends" =>
+        assertStats(result, nodesCreated = 0, propertiesSet = 2)
+        assert(result.toList.size === 0)
     }
   }
 
@@ -117,7 +120,7 @@ RETURN
 RANGE({begin}, {end}, {step})
 ###
 
-Numerical values in the range.
+Create a range of numbers.
 The `step` argument is optional.
 
 ###assertion=returns-one parameters=range
@@ -130,6 +133,17 @@ REDUCE(str = "", n IN collection : str + n.propertyName )
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
+
+###assertion=friends
+//
+START begin = node(%A%), end = node(%B%)
+MATCH path = begin -[*]-> end
+WITH nodes(path) AS collection
+
+FOREACH (n IN collection : SET n.marked = true)
+###
+
+Execute a mutating operation for each element in a collection.
 ----
 """
 }

@@ -9,7 +9,13 @@
 ++++
 <div class="paragraph"><p>You can try cypher snippets live in the Neo4j Console at 
 <a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>.</p></div>
+<div class="paragraph"><p>Read the full Cypher documentation at 
+<a href="http://docs.neo4j.org" target="_blank">docs.neo4j.org</a>.</p></div>
 ++++
+
+Note: When `{value}` and similar appears in the text, this is placeholders for values.
+For ad hoc queries, substitute them with literals.
+In applications you should use parameters, which happen to look like that.
 
 == Syntax ==
 
@@ -90,4 +96,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/mathematica
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
+
 

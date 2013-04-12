@@ -37,13 +37,28 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
       case "unique" =>
         assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
         assert(result.toList.size === 1)
+      case "skip" =>
+        assertStats(result, deletedNodes = 0)
+        assert(result.toList.size === 3)
+      case "skiplimit" =>
+        assertStats(result, deletedNodes = 0)
+        assert(result.toList.size === 2)
     }
   }
 
+  override def parameters(name: String): Map[String, Any] =
+    name match {
+      case "parameters=limits" =>
+        Map("limit_number" -> 2, "skip_number" -> 1)
+      case "" =>
+        Map()
+    }
+
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "ROOT" -> Map("propertyName" -> 0),
+    "A" -> Map("propertyName" -> 10),
+    "B" -> Map("propertyName" -> 20),
+    "C" -> Map("propertyName" -> 30))
 
   def text = """.RETURN
 [refcard]
@@ -71,6 +86,56 @@ WHERE n.name = "B"
 RETURN DISTINCT n###
 
 Return unique rows.
+
+###assertion=all-nodes
+//
+START n=node(*)
+RETURN *
+
+ORDER BY n.propertyName
+###
+
+Sort the result.
+
+###assertion=all-nodes
+//
+START n=node(*)
+RETURN *
+
+ORDER BY n.propertyName DESC
+###
+
+Sort the result in descending order.
+
+###assertion=skip parameters=limits
+//
+START n=node(*)
+RETURN *
+
+SKIP {skip_number}
+###
+
+Skip a number of results.
+
+###assertion=skiplimit parameters=limits
+//
+START n=node(*)
+RETURN *
+
+LIMIT {limit_number}
+###
+
+Limit the number of results.
+
+###assertion=skiplimit parameters=limits
+//
+START n=node(*)
+RETURN *
+
+SKIP {skip_number} LIMIT {limit_number}
+###
+
+Skip results at the top and limit the number of results.
 ----
 """
 }
