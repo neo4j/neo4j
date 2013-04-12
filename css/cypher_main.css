@@ -207,6 +207,7 @@ html, body {
   table {
     border: solid 1px #e5e5e5 !important;
     border-collapse: collapse !important;
+    page-break-inside: avoid;
   }
   
   th {
