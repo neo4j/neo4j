@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
 
 public class TestMasterCommittingAtSlave
@@ -372,6 +373,12 @@ public class TestMasterCommittingAtSlave
 
         @Override
         public void logMessage( String msg, boolean flush )
+        {
+            addError( msg );
+        }
+
+        @Override
+        public void logMessage( String msg, LogMarker marker )
         {
             addError( msg );
         }

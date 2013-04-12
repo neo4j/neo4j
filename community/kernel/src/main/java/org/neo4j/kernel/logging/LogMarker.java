@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
-/**
- * Logging service that is used for creating loggers with specific names.
- */
-public interface Logging
+public class LogMarker
 {
-    StringLogger getLogger( Class loggingClass );
+    private final String name;
 
-    ConsoleLogger getConsoleLog( Class loggingClass );
+    public LogMarker( String name )
+    {
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public static final String CONSOLE = "console";
+
+    public static final LogMarker CONSOLE_MARK = new LogMarker( CONSOLE );
 }

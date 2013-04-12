@@ -28,11 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ProtocolServer;
@@ -45,6 +40,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -67,25 +63,21 @@ public class ClusterJoin
     private final Configuration config;
     private final ProtocolServer protocolServer;
     private final StringLogger logger;
-    private URI clustersUri;
-    private Clusters clusters;
+    private final ConsoleLogger console;
     private Cluster cluster;
     private URI serverUri;
-    private DocumentBuilder builder;
-    private Transformer transformer;
 
     public ClusterJoin( Configuration config, ProtocolServer protocolServer, Logging logger )
     {
         this.config = config;
         this.protocolServer = protocolServer;
         this.logger = logger.getLogger( getClass() );
+        this.console = logger.getConsoleLog( getClass() );
     }
 
     @Override
     public void init() throws Throwable
     {
-        builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        transformer = TransformerFactory.newInstance().newTransformer();
         cluster = protocolServer.newClient( Cluster.class );
     }
 
@@ -166,7 +158,7 @@ public class ClusterJoin
 
         if ( hosts == null || hosts.size() == 0 )
         {
-            logger.info( "No cluster hosts specified. Creating cluster " + config.getClusterName() );
+            console.log( "No cluster hosts specified. Creating cluster " + config.getClusterName() );
             cluster.create( config.getClusterName() );
         }
         else
@@ -191,12 +183,12 @@ public class ClusterJoin
 
             while( true )
             {
-                logger.debug( "Attempting to join " + hosts.toString() );
+                console.log( "Attempting to join cluster of " + hosts.toString() );
                 Future<ClusterConfiguration> clusterConfig =
                         cluster.join( this.config.getClusterName(), memberURIs );
                 try
                 {
-                    logger.debug( "Joined cluster:" + clusterConfig.get() );
+                    console.log( "Joined cluster:" + clusterConfig.get() );
                     return;
                 }
                 catch ( InterruptedException e )
@@ -218,6 +210,8 @@ public class ClusterJoin
                     cluster.create( config.getClusterName() );
                     break;
                 }
+
+                console.log( "Could not join cluster, timeout happened." );
             }
         }
     }
