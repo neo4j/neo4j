@@ -37,7 +37,6 @@ import org.neo4j.test.server.HTTP;
 
 public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
 {
-
     private CommunityNeoServer server;
 
     @After
@@ -50,7 +49,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
     public void shouldHonorReallyLowSessionTimeout() throws Exception
     {
         // Given
-        server = server().withProperty(TRANSACTION_TIMEOUT, "1").build();
+        server = server().withProperty( TRANSACTION_TIMEOUT, "1" ).build();
         server.start();
 
         String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE n" ) ) ).location();
@@ -61,12 +60,10 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
 
         // Then
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat((String)errors.get( 0 ).get( "message" ), equalTo(
-                           "The transaction you asked for cannot be found. Please ensure that you are not concurrently " +
-                           "using the same transaction elsewhere. This could also be because the transaction has " +
-                           "timed out and has been rolled back."));
+        assertThat( (String) errors.get( 0 ).get( "message" ), equalTo( "The transaction you asked for cannot be " +
+                "found. This could also be because the transaction has timed out and has been rolled back." ) );
 
-        assertThat(((Number)errors.get( 0 ).get( "code" )).longValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ));
+        assertThat( ((Number) errors.get( 0 ).get( "code" )).longValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
     }
 
     private String txURI()
