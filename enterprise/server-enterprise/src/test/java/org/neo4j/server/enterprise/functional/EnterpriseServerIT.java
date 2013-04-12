@@ -28,7 +28,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
@@ -38,6 +40,9 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 public class EnterpriseServerIT
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @Test
     public void shouldBeAbleToStartInHAMode() throws Throwable
     {
@@ -45,6 +50,7 @@ public class EnterpriseServerIT
         File tuningFile = createNeo4jProperties();
 
         NeoServer server = EnterpriseServerBuilder.server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( Configurator.DB_MODE_KEY, "HA" )
                 .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
                 .persistent()
@@ -67,7 +73,7 @@ public class EnterpriseServerIT
     private File createNeo4jProperties() throws IOException,
             FileNotFoundException
     {
-        File tuningFile = File.createTempFile( "neo4j-test", "properties" );
+        File tuningFile = folder.newFile( "neo4j-test.properties" );
         FileOutputStream fos = new FileOutputStream( tuningFile );
         try
         {

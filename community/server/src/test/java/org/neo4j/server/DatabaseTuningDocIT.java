@@ -40,6 +40,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
         CommunityNeoServer server = ServerBuilder.server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
         server.start();
@@ -68,6 +69,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
         InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
 
         NeoServer server = ServerBuilder.server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withNonResolvableTuningFile()
                 .build();
         server.start();

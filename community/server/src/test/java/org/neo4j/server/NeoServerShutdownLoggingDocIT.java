@@ -38,7 +38,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     @Before
     public void setupServer() throws IOException
     {
-        server = ServerHelper.createPersistentServer();
+        server = ServerHelper.createPersistentServer(folder.getRoot());
         ServerHelper.cleanTheDatabase( server );
     }
 

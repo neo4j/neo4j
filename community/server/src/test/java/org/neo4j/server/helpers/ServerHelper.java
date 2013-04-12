@@ -144,20 +144,22 @@ public class ServerHelper
 
     public static NeoServer createNonPersistentServer() throws IOException
     {
-        return createServer( false );
+        return createServer( false, null );
     }
 
-    public static NeoServer createPersistentServer() throws IOException
+    public static NeoServer createPersistentServer(File path) throws IOException
     {
-        return createServer( true );
+        return createServer( true, path );
     }
 
-    private static NeoServer createServer( boolean persistent ) throws IOException
+    private static NeoServer createServer( boolean persistent, File path ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
         configureHostname( builder );
         if ( persistent ) builder = builder.persistent();
-        NeoServer server = builder.build();
+        NeoServer server = builder
+                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null)
+                .build();
         server.start();
         return server;
     }

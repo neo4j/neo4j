@@ -53,6 +53,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         final int NON_DEFAULT_PORT = 4321;
 
         server = server().onPort(NON_DEFAULT_PORT)
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 
@@ -71,6 +72,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
                 .build();
         server.start();
@@ -86,7 +88,9 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
-        server = server().withProperty( Configurator.WADL_ENABLED, "true" ).build();
+        server = server().withProperty( Configurator.WADL_ENABLED, "true" )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
 
@@ -99,7 +103,9 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
     {
-        server = server().build();
+        server = server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
 
@@ -109,7 +115,9 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
-        server = server().withProperty( Configurator.WADL_ENABLED, "false").build();
+        server = server().withProperty( Configurator.WADL_ENABLED, "false")
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
 
@@ -120,7 +128,9 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldHaveSandboxingEnabledByDefault() throws Exception
     {
         // Given
-        server = server().build();
+        server = server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
 
         // When
@@ -163,7 +173,9 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         // and all other tests depend on it being sandboxed.
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
-        server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false").build();
+        server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false")
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
 
         // When
         server.start();
