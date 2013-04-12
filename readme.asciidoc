@@ -20,9 +20,8 @@ The result will be available in the 'target/html5' directory.
 
 There's also an experimental version optimized for printing.
 You can enable it by appending `-Dprint` to the command line.
-The result will be available in the 'target/html5-print' directory.
+The result will be available in the 'target/html5/print' directory.
 In essence, it shuts off the dynamic layout magic.
-Might actually not be a good solution -- we'll see.
 
 Please create issues on GitHub for errors or to request additions.
 Pull requests are very welcome.
@@ -30,4 +29,12 @@ Pull requests are very welcome.
 [NOTE]
 We need a http://docs.neo4j.org/chunked/milestone/cla.html[CLA] from you in order 
 to process any pull requests!
+
+=== How it works ===
+
+The main file for the content is 'src/cypher-refcard.asciidoc'.
+It loads include files created from executing tests against Neo4j.
+That's done in the Scala project in the 'neo4j-cypher-refcard-tests' directory,
+The tests are located in 'neo4j-cypher-refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard'
+
 

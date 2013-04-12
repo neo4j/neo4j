@@ -197,7 +197,7 @@ html, body {
 @media print {
 
   html, body {
-    font-size: 9pt;
+    font-size: 8pt;
   }  
   
   footer div.mid {
