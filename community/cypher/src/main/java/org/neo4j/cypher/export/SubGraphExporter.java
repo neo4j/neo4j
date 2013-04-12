@@ -27,12 +27,15 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 public class SubGraphExporter
 {
@@ -43,7 +46,7 @@ public class SubGraphExporter
         this.graph = graph;
     }
 
-    public void export( PrintWriter out ) 
+    public void export( PrintWriter out )
     {
         init(out); // todo remove with reference node
         appendNodes(out);
@@ -103,7 +106,7 @@ public class SubGraphExporter
         return "_"+node.getId();
     }
 
-    private void appendPropertySetters( PrintWriter out, Node node ) 
+    private void appendPropertySetters( PrintWriter out, Node node )
     {
         for ( String prop : node.getPropertyKeys() )
         {
@@ -122,7 +125,7 @@ public class SubGraphExporter
         }
     }
 
-    private void appendRelationships( PrintWriter out ) 
+    private void appendRelationships( PrintWriter out )
     {
         for ( Node node : graph.getNodes() )
         {
@@ -133,7 +136,7 @@ public class SubGraphExporter
         }
     }
 
-    private void appendRelationship( PrintWriter out, Relationship rel ) 
+    private void appendRelationship( PrintWriter out, Relationship rel )
     {
         out.print( "create " );
         out.print(identifier(rel.getStartNode()));
@@ -145,7 +148,7 @@ public class SubGraphExporter
         out.println();
     }
 
-    private void appendNodes( PrintWriter out ) 
+    private void appendNodes( PrintWriter out )
     {
         for ( Node node : graph.getNodes() )
         {
@@ -157,7 +160,7 @@ public class SubGraphExporter
         }
     }
 
-    private void appendNode( PrintWriter out, Node node ) 
+    private void appendNode( PrintWriter out, Node node )
     {
         out.print( "create (" );
         out.print(identifier(node));
@@ -184,14 +187,20 @@ public class SubGraphExporter
 
     private String formatProperties( PropertyContainer pc )
     {
-        StringBuilder result=new StringBuilder();
-        for (String prop : pc.getPropertyKeys()) {
-            if (result.length()>0) result.append(", ");
-            result.append(quote(prop)).append(":");
-            Object value = pc.getProperty(prop);
-            result.append(toString(value));
+        StringBuilder result = new StringBuilder();
+        List<String> keys = Iterables.toList( pc.getPropertyKeys() );
+        Collections.sort( keys );
+        for ( String prop : keys )
+        {
+            if ( result.length() > 0 )
+            {
+                result.append( ", " );
+            }
+            result.append( quote( prop ) ).append( ":" );
+            Object value = pc.getProperty( prop );
+            result.append( toString( value ) );
         }
-        return "{"+ result +"}";
+        return "{" + result + "}";
     }
 
     private String toString(Iterator<?> iterator) {

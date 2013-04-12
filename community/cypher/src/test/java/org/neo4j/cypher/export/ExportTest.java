@@ -103,7 +103,7 @@ public class ExportTest {
         n.setProperty("age",42);
         final ExecutionResult result = result("node", n);
         final SubGraph graph = CypherResultSubGraph.from(result,false);
-        assertEquals("create (_" + n.getId()+" {`name`:\"Node1\", `age`:42})"+NL, doExportGraph(graph));
+        assertEquals("create (_" + n.getId()+" {`age`:42, `name`:\"Node1\"})"+NL, doExportGraph(graph));
     }
     @Test
     public void testSingleNodeWithArrayProperties() throws Exception {
@@ -112,7 +112,7 @@ public class ExportTest {
         n.setProperty("age",new int[]{1,2});
         final ExecutionResult result = result("node", n);
         final SubGraph graph = CypherResultSubGraph.from(result,false);
-        assertEquals("create (_" + n.getId()+" {`name`:[\"a\", \"b\"], `age`:[1, 2]})"+NL, doExportGraph(graph));
+        assertEquals("create (_" + n.getId()+" {`age`:[1, 2], `name`:[\"a\", \"b\"]})"+NL, doExportGraph(graph));
     }
 
     @Test
