@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.Base
 import org.scalatest.Assertions
 import util.parsing.input.CharSequenceReader
+import scala.util.parsing.combinator.JavaTokenParsers
 
 
-trait ParserTest extends Base with Assertions {
+trait ParserTest extends JavaTokenParsers with Assertions {
 
   class ResultCheck[T](val actuals: Seq[T], text: String) {
 
@@ -48,7 +48,7 @@ trait ParserTest extends Base with Assertions {
     }
   }
 
-  private def parsePhrase[T](parser: Parser[T], text: String): ParserTest.this.type#ParseResult[T] = {
+  private def parsePhrase[T](parser: Parser[T], text: String): ParseResult[T] = {
     //wrap the parser in the phrase parse to make sure all input is consumed
     val phraseParser = phrase(parser)
     //we need to wrap the string in a reader so our parser can digest it

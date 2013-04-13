@@ -1888,7 +1888,7 @@ create a-[r:REL]->b
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testAll("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
+    testAll_Except_Experimental("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
   @Test def single_relate_with_empty_parenthesis() {
@@ -1906,8 +1906,8 @@ create a-[r:REL]->b
     }
 
     tests(string, query,
-      ("  UNNAMED1", "  UNNAMED2")->testPre2_0,
-      ("  UNNAMED58", "  UNNAMED44")->testFrom2_0)
+      ("  UNNAMED1", "  UNNAMED2") -> testPre2_0,
+      ("  UNNAMED58", "  UNNAMED44") -> testFrom2_0)
   }
 
   @Test def two_relates() {
@@ -2021,7 +2021,7 @@ create a-[r:REL]->b
 
     val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
 
-    testAll(
+    testAll_Except_Experimental(
       "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x",
       q
     )
@@ -2537,7 +2537,18 @@ create a-[r:REL]->b
     testQuery(None, query + ";", expectedQuery)
   }
 
+  def testExperimental(query:String, expectedQuery: AbstractQuery) {
+    testQuery(Some("experimental"), query, expectedQuery)
+    testQuery(Some("experimental"), query + ";", expectedQuery)
+  }
+
+
   def testAll(query: String, expectedQuery: AbstractQuery) {
+    testAll_Except_Experimental(query, expectedQuery)
+    testExperimental(query, expectedQuery)
+  }
+
+  def testAll_Except_Experimental(query: String, expectedQuery: AbstractQuery) {
     test2_0(query, expectedQuery)
     test1_9(query, expectedQuery)
   }

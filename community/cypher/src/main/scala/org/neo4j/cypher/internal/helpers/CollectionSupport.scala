@@ -38,6 +38,21 @@ object IsCollection extends CollectionSupport {
 
 trait CollectionSupport {
 
+  def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
+    var used = false
+    def hasNext: Boolean = in.hasNext
+
+    def next(): T = {
+      if(used) {
+        throw or
+      }
+
+      used = true
+
+      in.next()
+    }
+  }
+
   class NoValidValuesExceptions extends Exception
 
   def isCollection(x: Any) = castToIterable.isDefinedAt(x)
@@ -66,17 +81,17 @@ trait CollectionSupport {
   def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
     castToIterable(z)
   } else {
-    List(z)
+    Iterable(z)
   }
 
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
-    case x: Array[_] => x
-    case x: Map[_, _] => List(x)
-    case x: JavaMap[_, _] => List(x.asScala)
-    case x: Traversable[_] => x.toList
+    case x: Array[_]        => x
+    case x: Map[_, _]       => Iterable(x)
+    case x: JavaMap[_, _]   => Iterable(x.asScala)
+    case x: Traversable[_]  => x.toIterable
     case x: JavaIterable[_] => x.asScala.map {
       case y: JavaMap[_, _] => y.asScala
-      case y => y
+      case y                => y
     }
   }
 }

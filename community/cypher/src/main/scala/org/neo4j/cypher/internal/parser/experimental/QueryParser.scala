@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.experimental
 
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.AllIdentifiers
 import org.neo4j.cypher.internal.commands.Slice
 import org.neo4j.cypher.internal.commands.Return
-import org.neo4j.cypher.SyntaxException
 
 
 trait QueryParser
@@ -136,6 +139,7 @@ trait QueryParser
     body match {
       case b: BodyWith =>
         checkForAggregates(start.predicate)
+
         val next = expandQuery(b.nextStart, b.next)
         Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.namedPaths, Some(next))
 

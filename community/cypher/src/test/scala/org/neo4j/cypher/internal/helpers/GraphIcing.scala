@@ -53,6 +53,15 @@ trait GraphIcing {
       graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
     }
 
-
+    def inTx[T](f:  => T):T = {
+      val tx = graph.beginTx()
+      try {
+        val result = f
+        tx.success()
+        result
+      } finally {
+        tx.finish()
+      }
+    }
   }
 }

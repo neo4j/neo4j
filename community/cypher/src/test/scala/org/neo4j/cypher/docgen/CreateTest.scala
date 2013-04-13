@@ -20,7 +20,6 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
 import org.neo4j.cypher.StatisticsChecker
 
@@ -77,16 +76,14 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     )
   }
 
-  def createTwoNodes: (Long, Long) = {
-    db.inTx(() => {
-      val a = db.createNode(DynamicLabel.label("Person"))
-      val b = db.createNode(DynamicLabel.label("Person"))
+  def createTwoNodes: (Long, Long) = db.inTx {
+    val a = db.createNode(DynamicLabel.label("Person"))
+    val b = db.createNode(DynamicLabel.label("Person"))
 
-      a.setProperty("name", "Node A")
-      b.setProperty("name", "Node B")
+    a.setProperty("name", "Node A")
+    b.setProperty("name", "Node B")
 
-      (a.getId, b.getId)
-    })
+    (a.getId, b.getId)
   }
 
   @Test def connect_two_nodes_with_a_relationship() {
@@ -121,13 +118,13 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
   }
 
   @Test def set_property_to_a_collection() {
-    db.inTx(() => {
+    db.inTx{
       val a = db.createNode()
       val b = db.createNode()
 
       a.setProperty("name", "Andres")
       b.setProperty("name", "Michael")
-    })
+    }
 
     testQuery(
       title = "Set a property to an array",

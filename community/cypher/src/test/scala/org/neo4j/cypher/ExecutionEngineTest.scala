@@ -27,12 +27,9 @@ import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
 import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
-import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
-import schema.Schema.IndexState
 import util.Random
 import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
-import org.neo4j.graphdb.DynamicLabel.label
 
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
@@ -1219,23 +1216,6 @@ start a  = node(1)
 return count(*) as OneLove""")
 
     assert(List(1) === result.columnAs[Node]("OneLove").toList)
-  }
-
-  @Ignore("Should be supported, but doesn't work")
-  @Test def shouldBeAbleToQueryNumericIndexes() {
-    val a = createNode("x" -> 5)
-
-    inTx(() => {
-      val idx = graph.index().forNodes("numericIndex")
-      idx.add(a, "number", ValueContext.numeric(13))
-    })
-
-
-    val result = parseAndExecute( """
-start a  = node:numericIndex(number = 13)
-return a""")
-
-    assert(List(a) === result.columnAs[Node]("a").toList)
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {

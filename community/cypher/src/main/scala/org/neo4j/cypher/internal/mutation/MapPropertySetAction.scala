@@ -78,7 +78,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         throw new CypherTypeException("Expected %s to be a map, but it was :`%s`".format(element, x))
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
 

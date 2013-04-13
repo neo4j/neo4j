@@ -100,6 +100,10 @@ case class CreateUniqueStartItem(inner: CreateUniqueAction) extends UpdatingStar
   override def rewrite(f: (Expression) => Expression) = CreateUniqueStartItem(inner.rewrite(f))
 }
 
+case class MergeNodeStartItem(inner: MergeNodeAction) extends UpdatingStartItem(inner, inner.identifier)  {
+  override def rewrite(f: (Expression) => Expression) = MergeNodeStartItem(inner.rewrite(f))
+}
+
 object NodeById {
   def apply(varName: String, id: Long*) = new NodeById(varName, Literal(id))
 }

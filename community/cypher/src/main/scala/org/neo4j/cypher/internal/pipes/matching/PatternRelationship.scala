@@ -23,9 +23,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
-import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
-import scala.Some
 import org.neo4j.cypher.internal.symbols.RelationshipType
 import org.neo4j.cypher.internal.spi.QueryContext
 

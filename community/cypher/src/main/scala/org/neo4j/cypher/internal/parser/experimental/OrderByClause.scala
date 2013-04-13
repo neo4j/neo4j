@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.mutation
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.scalatest.Assertions
-import org.neo4j.cypher.ExecutionEngineHelper
-import org.junit.Test
-import org.neo4j.cypher.internal.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.SortItem
 
-class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
-  @Test def mixed_types_are_not_ok() {
-    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
+trait OrderByClause extends Base with Expressions  {
 
-    graph.inTx {
-      action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph)).size
-    }
-
-    val n = graph.createdNodes.dequeue()
-
-    assert(n.getProperty("name") === "Andres")
-    assert(n.getProperty("age") === 37)
+  def ascOrDesc: Parser[Boolean] = opt(ASC | DESC) ^^ {
+    case None => true
+    case Some(txt) => txt.toLowerCase.startsWith("a")
   }
+
+  def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
+
+  def order: Parser[Seq[SortItem]] =
+    (ORDER ~> BY ~> commaList(sortItem)
+      | ORDER ~> failure("expected by"))
 }
+
+
+
+
 

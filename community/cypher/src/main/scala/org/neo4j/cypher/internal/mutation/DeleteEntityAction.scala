@@ -39,7 +39,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
       case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {

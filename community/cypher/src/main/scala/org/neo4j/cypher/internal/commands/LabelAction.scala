@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{CastSupport, CollectionSupport}
 import values.LabelValue
 
 
@@ -52,7 +52,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[LabelVa
       case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds)
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
   def identifiers = Seq.empty
