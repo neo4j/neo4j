@@ -769,7 +769,7 @@ public class RestfulGraphDatabase
                 Map<String, Object> entityBody = input.readMap( postBody, "key", "value" );
                 Pair<IndexedEntityRepresentation, Boolean> result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
                        String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
+                return result.other() ? output.created( result.first() ) : output.ok( result.first() );
             }
             else
             {

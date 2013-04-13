@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -728,6 +729,31 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
         assertEquals( value, data.get( key ) );
         assertEquals( 1, data.get( "sequence" ) );
+    }
+
+    @Test
+    public void get_or_create_node_with_array_properties() throws Exception
+    {
+        final String index = "people", key = "name", value = "Tobias";
+        helper.createNodeIndex( index );
+        ResponseEntity response = gen()
+                                     .expectedStatus( 201 /* created */)
+                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
+                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
+                                                       + "\", \"array\": [1,2,3]}}" )
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+
+        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
+        String location = headers.getFirst("Location");
+        assertEquals( result.get( "indexed" ), location);
+        Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
+        assertEquals( value, data.get( key ) );
+        assertEquals(Arrays.asList( 1, 2, 3), data.get( "array" ) );
+        Node node = graphdb().index().forNodes(index).get(key, value).getSingle();
+        assertEquals(value, node.getProperty(key));
+        assertArrayEquals(new int[]{1, 2, 3}, (int[]) node.getProperty("array"));
     }
 
     /**

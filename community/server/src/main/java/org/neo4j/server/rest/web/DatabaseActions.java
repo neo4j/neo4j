@@ -1043,10 +1043,18 @@ public class DatabaseActions
                 }
                 Node node = node(nodeOrNull);
                 result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
-                if ( ( created = ( result == null ) ) == true ) result = node;
+                created = result == null;
+                if (created) result = node;
             }
             else
             {
+                if ( properties != null )
+                {
+                    for ( Map.Entry<String, Object> entry : properties.entrySet() )
+                    {
+                        entry.setValue( property( entry.getValue() ));
+                    }
+                }
                 UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
                 result = factory.getOrCreate( key, value );
                 created = factory.created;
