@@ -33,10 +33,8 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     engine = new ExecutionEngine(graph)
   }
 
-  def execute(query: AbstractQuery, params:(String,Any)*) = {
-    val result = engine.execute(query, params.toMap)
-    result
-  }
+  def execute(query: AbstractQuery, params:(String,Any)*) =
+    engine.execute(query, params.toMap)
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)

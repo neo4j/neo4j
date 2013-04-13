@@ -28,7 +28,6 @@ import factory.{GraphDatabaseSetting, GraphDatabaseSettings}
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
@@ -39,7 +38,7 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.export.{SubGraphExporter, DatabaseSubGraph}
 
 
-trait DocumentationHelper {
+trait DocumentationHelper extends GraphIcing {
   def generateConsole:Boolean
   def db: GraphDatabaseService
 
@@ -174,7 +173,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     var query = queryText
     val tx = db.beginTx()
     try {
-      nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+      val keySet = nodes.keySet
+      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = engine.execute(query)
       assertions.foreach(_.apply(result))
       tx.failure()
@@ -230,7 +230,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
-    db.inTx(() => {
+    db.inTx {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -248,7 +248,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       asNodeMap(properties) foreach { case (n: Node, seq: Map[String, Any]) =>
           seq foreach { case (k, v) => n.setProperty(k, v) }
       }
-    })
+    }
   }
 
   private def asNodeMap[T : Manifest](m: Map[String, T]): Map[Node, T] =

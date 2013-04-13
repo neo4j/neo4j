@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.ExecutionContext
@@ -42,7 +42,7 @@ case class PropertySetAction(prop: Property, e: Expression)
       case (_, n: Node)            => state.query.nodeOps.setProperty(n, propertyKey, value)
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
   def identifiers = Nil

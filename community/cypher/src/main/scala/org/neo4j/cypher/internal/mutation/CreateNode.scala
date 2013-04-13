@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
-import org.neo4j.cypher.internal.helpers.{LabelSupport, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
@@ -34,7 +34,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
 
 
-  def exec(context: ExecutionContext, state: QueryState) = {
+  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
       case (k, v:Any) => (k -> Literal(v))
     }
@@ -65,9 +65,9 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     if (isParametersMap(properties)) {
       val singleMapExpression: Expression = properties.head._2
 
-      val maps: Iterable[Any] = makeTraversable(singleMapExpression(context)(state))
+      val maps = makeTraversable(singleMapExpression(context)(state))
 
-      maps.map {
+      maps.toIterator.map {
         case untyped: Map[_, _] => {
           //We want to use the same code to actually create nodes and properties as a normal expression would, so we
           //encode the incoming Map[String,Any] to a Map[String, Literal] wrapping the values.
@@ -77,7 +77,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
         }
       }
     } else {
-      Stream(createNodeWithPropertiesAndLabels(properties))
+      Iterator(createNodeWithPropertiesAndLabels(properties))
     }
   }
 

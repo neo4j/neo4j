@@ -17,28 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.mutation
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.scalatest.Assertions
-import org.neo4j.cypher.ExecutionEngineHelper
-import org.junit.Test
-import org.neo4j.cypher.internal.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 
-class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
+trait SkipLimitClause extends Base {
+  def skip: Parser[Expression] = SKIP ~> numberOrParam ^^ (x => x)
 
-  @Test def mixed_types_are_not_ok() {
-    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
+  def limit: Parser[Expression] = LIMIT ~> numberOrParam ^^ (x => x)
 
-    graph.inTx {
-      action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph)).size
-    }
-
-    val n = graph.createdNodes.dequeue()
-
-    assert(n.getProperty("name") === "Andres")
-    assert(n.getProperty("age") === 37)
-  }
+  private def numberOrParam: Parser[Expression] =
+    (positiveNumber ^^ (x => Literal(x.toInt))
+      | parameter ^^ (x => x)
+      | failure("expected positive integer or parameter"))
 }
+
+
+
+
 

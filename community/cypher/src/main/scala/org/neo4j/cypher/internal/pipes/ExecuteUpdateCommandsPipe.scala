@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.mutation._
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
-import scala.Some
 import org.neo4j.cypher.internal.mutation.CreateNode
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Identifier}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
-  extends PipeWithSource(source) {
+  extends PipeWithSource(source) with CollectionSupport {
 
   assertNothingIsCreatedWhenItShouldNot()
 
@@ -41,9 +41,9 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   private def executeMutationCommands(ctx: ExecutionContext,
                                       state: QueryState,
-                                      singleCommand: Boolean): Traversable[ExecutionContext] =
+                                      singleCommand: Boolean): Iterator[ExecutionContext] =
     try {
-      commands.foldLeft(Traversable(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
+      commands.foldLeft(Iterator(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
     } catch {
       case e: NotInTransactionException => throw new InternalException("Expected to be in a transaction at this point", e)
     }
@@ -51,24 +51,25 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   private def exec(cmd: UpdateAction,
                    ctx: ExecutionContext,
                    state: QueryState,
-                   singleCommand: Boolean): Traversable[ExecutionContext] = {
-    val result = cmd.exec(ctx, state)
-    if (result.size > 1 && !singleCommand)
-      throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each.")
-    result
+                   singleCommand: Boolean): Iterator[ExecutionContext] = {
+
+    val result: Iterator[ExecutionContext] = cmd.exec(ctx, state)
+
+    if(!singleCommand) {
+      singleOr(result, new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
+    } else {
+      result
+    }
   }
 
 
-  private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match
-  {
-    case CreateNode(key, props, labels, bare) =>
-      Seq(NamedExpectation(key, props, labels, bare))
-    case CreateRelationship(key, from, to, _, props) =>
-      Seq(NamedExpectation(key, props, Seq.empty, bare = true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
-    case CreateUniqueAction(links@_*) =>
-      links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case _ =>
-      Seq()
+  private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match {
+    case CreateNode(key, props, labels, bare)        => Seq(NamedExpectation(key, props, labels, bare))
+    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props, Seq.empty, bare = true)) ++
+                                                            extractIfEntity(from) ++
+                                                            extractIfEntity(to)
+    case CreateUniqueAction(links@_*)                => links.flatMap(l => Seq(l.start, l.end, l.rel))
+    case _                                           => Seq()
   }
 
 

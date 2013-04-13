@@ -28,6 +28,7 @@ class CypherParser(version: String) {
 
   val v19 = new internal.parser.v1_9.CypherParserImpl
   val v20 = new internal.parser.v2_0.CypherParserImpl
+  val experimental = new internal.parser.experimental.CypherParserImpl
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): AbstractQuery = {
@@ -38,9 +39,10 @@ class CypherParser(version: String) {
     }
 
     v match {
-      case "1.9" => v19.parse(q)
-      case "2.0" => v20.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.9 and 2.0")
+      case "1.9"          => v19.parse(q)
+      case "2.0"          => v20.parse(q)
+      case "experimental" => experimental.parse(q)
+      case _              => throw new SyntaxException("Versions supported are 1.9 and 2.0")
     }
   }
 }

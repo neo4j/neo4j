@@ -17,27 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.graphdb._
+import scala.Predef._
+import org.neo4j.cypher.internal.commands.DropIndex
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.CreateIndex
 
-object CuteGraphDatabaseService {
-  implicit def gds2cuteGds(inner: GraphDatabaseService) = new CuteGraphDatabaseService(inner)
-}
 
-class CuteGraphDatabaseService(inner: GraphDatabaseService) {
-  def inTx[U](f: () => U): U = {
-    val tx = inner.beginTx()
-    try {
-      val x = f()
-      tx.success()
-      x
-    } finally {
-      tx.finish()
-    }
+trait Index extends Base with Labels {
+  def createIndex = CREATE ~> indexOps ^^ {
+    case (label, properties) => CreateIndex(label, properties)
+  }
+
+  def dropIndex = DROP ~> indexOps ^^ {
+    case (label, properties) => DropIndex(label, properties)
+  }
+
+  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
+    case LabelName(labelName) ~ property => (labelName, List(property))
   }
 }
-
-
-
-

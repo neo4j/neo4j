@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import collection.Map
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
@@ -66,7 +66,7 @@ extends UpdateAction
     val relationship = state.query.createRelationship(f, t, typ)
     setProperties(relationship, props, context, state)
     context.put(key, relationship)
-    Stream(context)
+    Iterator(context)
   }
 
   def identifiers = Seq(key-> RelationshipType())

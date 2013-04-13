@@ -85,18 +85,7 @@ object PartiallySolvedQuery {
  * is either building up necessary parts to create a projection (RETURN/WITH), or
  * it has done the projection and is doing post-projection  work (ORDER BY/LIMIT/SKIP)
  *
- * @param returns
- * @param start
- * @param updates
- * @param patterns
- * @param where
- * @param aggregation
- * @param sort
- * @param slice
- * @param namedPaths
- * @param aggregateQuery
  * @param extracted shows whether the query has created a projection or not
- * @param tail
  */
 case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 start: Seq[QueryToken[StartItem]],
@@ -208,12 +197,6 @@ trait PatternGraphBuilder {
   def buildPatternGraph(patterns: Seq[Pattern]): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
-
-//    symbols.identifiers.
-//      filter(_._2 == NodeType()). //Find all bound nodes...
-//      foreach(id => patternNodeMap(id._1) = new PatternNode(id._1)) //...and create patternNodes for them
-
-    // TODO: How the hell do you differntiate between bound things and random things?
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {

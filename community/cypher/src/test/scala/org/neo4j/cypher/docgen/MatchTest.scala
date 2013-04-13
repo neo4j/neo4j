@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Assert._
 import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.junit.Test
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.JavaConverters._
@@ -136,11 +135,11 @@ class MatchTest extends DocumentingTestBase {
   }
 
   @Test def relationshipsByTypeWithSpace() {
-    db.inTx(() => {
+    db.inTx {
       val a = node("Rob")
       val b = node("Charlie")
       a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE THAT HAS SPACE IN IT"))
-    })
+    }
     testQuery(
       title = "Relationship types with uncommon characters",
       text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use +`+ (backtick) to quote these.",

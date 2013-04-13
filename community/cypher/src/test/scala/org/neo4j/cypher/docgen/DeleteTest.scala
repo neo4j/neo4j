@@ -20,9 +20,6 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.graphdb.NotFoundException
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
-import org.junit.Assert._
 
 class DeleteTest extends DocumentingTestBase {
   def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
@@ -36,11 +33,11 @@ class DeleteTest extends DocumentingTestBase {
   def section = "Delete"
 
   @Test def delete_single_node() {
-    val id = db.inTx(() => {
+    val id = db.inTx {
       val a = db.createNode()
       a.setProperty("name", "Danny")
       a.getId
-    })
+    }
 
     testQuery(
       title = "Delete single node",

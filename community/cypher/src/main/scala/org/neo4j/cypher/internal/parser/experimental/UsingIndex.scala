@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_9
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.cypher.internal.commands.expressions.Nullable
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.internal.commands.SchemaIndex
 
-class ConsoleCypherParser extends CypherParserImpl with ActualParser {
-  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
+
+trait UsingIndex extends Expressions {
+  def indexHints: Parser[Seq[SchemaIndex]] = rep(indexHint)
+
+  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
+    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
+  }
 }

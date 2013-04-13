@@ -30,7 +30,6 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers._
 import org.neo4j.cypher.PlanDescription
 import org.neo4j.cypher.internal.commands.SchemaIndex
-import scala.Some
 import org.neo4j.cypher.internal.commands.NodeByIndex
 
 

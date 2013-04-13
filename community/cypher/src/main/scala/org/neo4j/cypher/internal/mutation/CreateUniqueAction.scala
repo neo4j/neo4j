@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
-  def exec(incomingExecContext: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
+  def exec(incomingExecContext: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
     var executionContext = incomingExecContext
     while (linksToDo.nonEmpty) {
@@ -39,7 +39,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
       val traversals = extractTraversals(results)
 
       if (results.isEmpty) {
-        Stream(executionContext) //We're done
+        Iterator(executionContext) //We're done
       } else if (canNotAdvanced(results)) {
         throw new Exception("Unbound pattern!") //None of the patterns can advance. Fail.
       } else if (traversals.nonEmpty) {
@@ -58,7 +58,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
       }
     }
 
-    Stream(executionContext)
+    Iterator(executionContext)
   }
 
   override def addsToRow(): Seq[String] = Seq()
@@ -135,13 +135,14 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
       context = current.foldLeft(context) {
         case (currentContext, updateCommand) => {
-          val result = updateCommand.cmd.exec(currentContext, state)
-          if (result.size != 1) {
+          val iterator = updateCommand.cmd.exec(currentContext, state)
+          val result = iterator.next()
+
+          if (iterator.nonEmpty) {
             throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
-          } else {
-            result.head
           }
 
+          result
         }
       }
     }

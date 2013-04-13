@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.cypher.internal.commands.expressions.Nullable
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.internal.commands.Predicate
 
-class ConsoleCypherParser extends CypherParserImpl with ActualParser {
-  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
+
+trait WhereClause extends Base with Expressions {
+  def where: Parser[Predicate] = WHERE ~> predicate
 }
+
+
+
+
+
+
+
+
+
+
+

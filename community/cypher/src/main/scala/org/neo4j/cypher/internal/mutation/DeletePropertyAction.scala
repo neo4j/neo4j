@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, MapType}
 import org.neo4j.cypher.internal.commands.expressions.Expression
@@ -42,7 +42,7 @@ case class DeletePropertyAction(element: Expression, property: String)
       case _ => throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
   def identifiers = Nil

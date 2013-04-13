@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.data.SimpleVal._
+import org.neo4j.cypher.internal.data.SimpleVal
 
 class EntityProducerFactory {
 
-  private def asProducer[T <: PropertyContainer](startItem: StartItem)
+    private def asProducer[T <: PropertyContainer](startItem: StartItem)
                                                 (f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
@@ -40,11 +41,13 @@ class EntityProducerFactory {
       def description = startItem.args.mapValues(fromStr).toSeq
     }
 
-  def nodeStartItems = nodeById orElse
-    nodeByIndex orElse
-    nodeByIndexQuery orElse
-    nodeByIndexHint orElse
-    nodeByLabel
+  def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+    nodeById orElse
+      nodeByIndex orElse
+      nodeByIndexQuery orElse
+      nodeByIndexHint orElse
+      nodeByLabel orElse
+      nodesAll
 
   val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ NodeByIndex(varName, idxName, key, value)) =>
@@ -78,6 +81,9 @@ class EntityProducerFactory {
       val labelId:Long = planContext.getLabelId(label).get
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId) }
+
+    //The label does not exist, so we simply let the execution plan always return an empty result
+    case (planContext, NodeByLabel(_, label)) => NO_NODES
   }
 
   val nodesAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
@@ -132,5 +138,13 @@ class EntityProducerFactory {
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Relationship](ids(m)(state), varName, state.query.relationshipOps.getById)
       }
+  }
+
+  private val NO_NODES = new EntityProducer[Node] {
+    def description: Seq[(String, SimpleVal)] = Seq.empty
+
+    def name: String = "No nodes"
+
+    def apply(v1: ExecutionContext, v2: QueryState) = Iterator.empty
   }
 }

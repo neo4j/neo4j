@@ -46,7 +46,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     //THEN
     assert(queryContext.node === n.getId)
     assert(queryContext.ids === Seq(12))
-    assert(result === Stream(ctx))
+    assert(result.toList === List(ctx))
   }
 
   @Test
@@ -61,7 +61,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     //THEN
     assert(queryContext.node === n.getId)
     assert(queryContext.ids === Seq(12, 42))
-    assert(result === Stream(ctx))
+    assert(result.toList === List(ctx))
   }
 }
 

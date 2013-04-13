@@ -23,8 +23,7 @@ import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 
-trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T])
-{
+trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T]) {
   def name: String
   def description: Seq[(String, SimpleVal)]
 }
