@@ -43,7 +43,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
 - Return the id of the center node.""",
       queryText = """CREATE center
 foreach( x in range(1,6) : 
-   CREATE leaf={count:x}, center-[:X]->leaf
+   CREATE (leaf {count:x}), center-[:X]->leaf
 )
 ==== center ====
 MATCH large_leaf<--center-->small_leaf

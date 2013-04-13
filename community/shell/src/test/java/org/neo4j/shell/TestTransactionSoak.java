@@ -163,7 +163,7 @@ public class TestTransactionSoak
         protected void doStuff() throws Exception
         {
             execute( "begin transaction" );
-            execute( "create a={name:'a'}, b={name:'b'}, a-[:LIKES]->b;" );
+            execute( "create (a {name:'a'}), (b {name:'b'}), a-[:LIKES]->b;" );
             execute( "commit" );
             count = count + 1;
         }
@@ -175,7 +175,7 @@ public class TestTransactionSoak
         protected void doStuff() throws Exception
         {
             execute( "begin transaction" );
-            execute( "create a={name:'a'}, b={name:'b'}, a-[:LIKES]->b;" );
+            execute( "create (a {name:'a'}), (b {name:'b'}), a-[:LIKES]->b;" );
             execute( "rollback" );
         }
     }

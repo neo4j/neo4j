@@ -85,10 +85,7 @@ trait ParserPattern extends Base with Labels {
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
 
-
-  private def values = (("="|VALUES) ~> curlyMapWithExpression) | curlyMap
-
-  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(values) ^^ {
+  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(curlyMap) ^^ {
     case labelSpec ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
       val bare = labelSpec.bare && optMap.isEmpty
@@ -206,9 +203,6 @@ trait ParserPattern extends Base with Labels {
 
   private def curlyMap =
     expressionAsMap(parameter) | literalMap
-
-  private def curlyMapWithExpression =
-    expressionAsMap(expression) | literalMap
 
   private def literalMap = "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
 
