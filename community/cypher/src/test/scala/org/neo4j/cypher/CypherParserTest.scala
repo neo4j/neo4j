@@ -1501,40 +1501,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Seq.empty, bare))).
         returns()
     tests(string, query,
-      true -> testPre2_0,
-      false -> testFrom2_0)
-  }
-
-  @Test def create_node_using_the_VALUES_keyword() {
-    testFrom2_0("create a VALUES {name : 'Andres'}",
-      Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Seq.empty, false))).
-        returns()
-    )
-  }
-
-  @Test def create_node_using_LABEL_keyword_and_EQ() {
-    testFrom2_0("create a:fii = {name : 'Andres'}",
-      Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
-        returns()
-    )
-  }
-
-  @Test def create_node_using_LABEL_and_VALUES_keyword() {
-    testFrom2_0("create a :fii VALUES {name : 'Andres'}",
-      Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
-        returns()
-    )
-  }
-
-  @Test def create_node_using_LABEL_and_VALUES_keyword2() {
-    testFrom2_0("create a:fii VALUES {name : 'Andres'}",
-      Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
-        returns()
-    )
+      true -> testPre2_0)
   }
 
   @Test def create_node_with_a_property_and_return_it() {

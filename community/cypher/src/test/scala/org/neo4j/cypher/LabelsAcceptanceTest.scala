@@ -28,19 +28,19 @@ import org.neo4j.graphdb.Node
 class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
   @Test def Adding_single_literal_label() {
-    assertThat("create n = {} set n:FOO", List("FOO"))
-    assertThat("create n = {} set n :FOO", List("FOO"))
+    assertThat("create (n {}) set n:FOO", List("FOO"))
+    assertThat("create (n {}) set n :FOO", List("FOO"))
   }
 
   @Test def Adding_multiple_literal_labels() {
-    assertThat("create n = {} set n:FOO:BAR", List("FOO", "BAR"))
-    assertThat("create n = {} set n :FOO :BAR", List("FOO", "BAR"))
-    assertThat("create n = {} set n :FOO:BAR", List("FOO", "BAR"))
+    assertThat("create (n {}) set n:FOO:BAR", List("FOO", "BAR"))
+    assertThat("create (n {}) set n :FOO :BAR", List("FOO", "BAR"))
+    assertThat("create (n {}) set n :FOO:BAR", List("FOO", "BAR"))
   }
 
   @Test def Creating_nodes_with_literal_labels() {
     assertThat("CREATE node :FOO:BAR {name: 'Stefan'}", List("FOO", "BAR"))
-    assertThat("CREATE node:FOO:BAR VALUES {name: 'Mattias'}", List("FOO", "BAR"))
+    assertThat("CREATE (node:FOO:BAR {name: 'Mattias'})", List("FOO", "BAR"))
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }
 

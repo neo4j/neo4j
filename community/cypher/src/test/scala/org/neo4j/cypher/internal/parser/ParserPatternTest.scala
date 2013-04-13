@@ -51,9 +51,6 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
     parsing("n {name:'Andres'}") shouldGive
       ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
-
-    parsing("n VALUES {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???

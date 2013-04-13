@@ -186,7 +186,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def create_with_identifier_already_existing() {
     expectError(
-      "START a=node(0) CREATE a = {name:'foo'} RETURN a",
+      "START a=node(0) CREATE (a {name:'foo'}) RETURN a",
       "Can't create `a` with properties here. It already exists in this context")
   }
 

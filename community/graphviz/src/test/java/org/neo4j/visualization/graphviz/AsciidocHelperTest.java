@@ -43,12 +43,11 @@ public class AsciidocHelperTest
     }
 
     @Test
-    public void testUpcasingLabelsAndValues() {
-        String queryString  = "create n label :Person values {} on tail";
+    public void testUpcasingLabels() {
+        String queryString  = "create n label :Person {} on tail";
         String snippet = AsciidocHelper.createCypherSnippet( queryString );
 
         assertTrue( snippet.contains( "LABEL" ) );
-        assertTrue( snippet.contains( "VALUES" ) );
         assertTrue( snippet.contains( "ON" ) );
         assertFalse( snippet.contains( ":PersON" ) );
     }

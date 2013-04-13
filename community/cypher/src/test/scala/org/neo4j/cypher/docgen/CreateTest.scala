@@ -33,7 +33,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create single node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create n",
+      queryText = "create (n)",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {})
   }
@@ -43,7 +43,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create single node and set properties",
       text = "The values for the properties can be any scalar expressions.",
-      queryText = "create n VALUES {name : 'Andres', title : 'Developer'}",
+      queryText = "create (n {name : 'Andres', title : 'Developer'})",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
@@ -53,7 +53,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create node and add labels",
       text = "To add labels to the newly created node, you can either use +LABEL+ followed by an expression," +
         "or you can use the labels short form syntax.",
-      queryText = "create n:Person",
+      queryText = "create (n:Person)",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, addedLabels = 1))
   }
@@ -62,7 +62,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create node and add labels and properties",
       text = "When creating a new node with labels, you can add properties using +VALUES+ at the same time",
-      queryText = "create n :Person values {name : 'Andres', title : 'Developer'}",
+      queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, addedLabels = 1))
   }
