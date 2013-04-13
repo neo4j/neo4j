@@ -1,6 +1,6 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 Lucene Index:
 o Lucene upgraded to 3.6.2

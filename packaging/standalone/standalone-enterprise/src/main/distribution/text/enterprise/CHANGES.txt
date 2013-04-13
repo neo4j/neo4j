@@ -1,6 +1,6 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 HA:
 o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop
