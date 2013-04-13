@@ -167,8 +167,10 @@ neo4j-03$ ./bin/neo4j start
 [TIP]
 .Startup Time
 ==================
-Note that a Neo4j HA instance will wait during startup until it can reach at least half of the instances configured in
-+ha.initial_hosts+. In this example, neo4j-01 will not complete its startup until neo4j-02 is also started.
+When running in HA mode, the startup script returns immediately instead of waiting for the server to become available.
+This is because the instance does not accept any requests until a cluster has been formed.
+In the example above this happens when you startup the second instance.
+To keep track of the startup state you can follow the messages in console.log - the path to that is printed before the startup script returns.
 ==================
 
 Now, you should be able to access the 3 servers and check their HA status:
