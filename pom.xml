@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>1.9-SNAPSHOT</version>
+  <version>1.9.RC1</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
@@ -33,6 +33,7 @@
     <module>advanced</module>
     <module>enterprise</module>
     <module>cypher-plugin</module>
+    <module>gremlin-plugin</module>
   </modules>
   
   <build>
