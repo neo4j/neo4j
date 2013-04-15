@@ -52,7 +52,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
@@ -105,7 +104,7 @@ public abstract class GraphDatabaseSettings
     @Description("Enable this to specify a parser other than the default one.")
     public static final OptionsSetting cypher_parser_version = new CypherParserSetting( setting(
             "cypher_parser_version",
-            Settings.options( CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ) );
+            options( CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ) );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( setting("query_cache_size", INTEGER, "100", min( 0 ) ));

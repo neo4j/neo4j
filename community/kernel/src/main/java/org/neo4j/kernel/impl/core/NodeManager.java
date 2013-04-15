@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -71,7 +70,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
-import org.neo4j.kernel.impl.util.RelIdIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -589,16 +587,6 @@ public class NodeManager
                 } ) );
     }
 
-    private Set<Long> asSet( RelIdIterator ids )
-    {
-        Set<Long> set = new HashSet<Long>();
-        while ( ids.hasNext() )
-        {
-            set.add( ids.next() );
-        }
-        return set;
-    }
-
     RelationshipType getRelationshipTypeById( int id ) throws KeyNotFoundException
     {
         return relTypeHolder.getKeyById( id );
@@ -791,7 +779,7 @@ public class NodeManager
     @SuppressWarnings("unchecked")
     public Iterable<? extends Cache<?>> caches()
     {
-        return Arrays.asList( nodeCache, relCache );
+        return asList( nodeCache, relCache );
     }
 
     public void setRollbackOnly()

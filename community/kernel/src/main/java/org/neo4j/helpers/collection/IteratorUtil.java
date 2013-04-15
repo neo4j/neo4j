@@ -620,7 +620,7 @@ public abstract class IteratorUtil
      * Function for converting Enum to String
      */
     @SuppressWarnings( "rawtypes" )
-    public static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
+    public final static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
     {
         @Override
         public String apply( Enum from )
