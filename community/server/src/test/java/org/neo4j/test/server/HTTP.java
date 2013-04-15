@@ -266,6 +266,11 @@ public class HTTP
             return new RawPayload( payload );
         }
 
+        public static RawPayload quotedJson( String json )
+        {
+            return new RawPayload( json.replaceAll( "'", "\"" ) );
+        }
+
         private RawPayload( String payload )
         {
             this.payload = payload;

@@ -62,9 +62,9 @@ import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
-import org.neo4j.server.rest.transactional.TimeoutEvictingTransactionRegistry;
+import org.neo4j.server.rest.transactional.TransactionFacade;
+import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
-import org.neo4j.server.rest.transactional.TransactionalActions;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
@@ -92,8 +92,8 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
-    private TransactionalActions transactionalActions;
-    private TimeoutEvictingTransactionRegistry transactionRegistry;
+    private TransactionFacade transactionFacade;
+    private TransactionHandleRegistry transactionRegistry;
     private Logging logging;
 
     protected abstract PreFlightTasks createPreflightTasks();
@@ -139,7 +139,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             databaseActions = createDatabaseActions();
 
-            transactionalActions = createTransactionalActions();
+            transactionFacade = createTransactionalActions();
 
             cypherExecutor = new CypherExecutor( database, logging.getMessagesLog( CypherExecutor.class ) );
 
@@ -202,13 +202,12 @@ public abstract class AbstractNeoServer implements NeoServer
                         DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
     }
 
-    private TransactionalActions createTransactionalActions()
+    private TransactionFacade createTransactionalActions()
     {
         final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
         final RealClock clock = new RealClock();
 
-        transactionRegistry =
-            new TimeoutEvictingTransactionRegistry(clock, logging.getMessagesLog(TransactionRegistry.class));
+        transactionRegistry = new TransactionHandleRegistry(clock, logging.getMessagesLog(TransactionRegistry.class));
 
         resolveDependency( JobScheduler.class ).scheduleRecurring( new Runnable()
         {
@@ -220,11 +219,11 @@ public abstract class AbstractNeoServer implements NeoServer
             }
         }, round( timeout / 2.0 ), SECONDS );
 
-        return new TransactionalActions(
+        return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 new ExecutionEngine( database.getGraph() ),
                 transactionRegistry,
-                logging.getMessagesLog( TransactionalActions.class ));
+                logging.getMessagesLog( TransactionFacade.class ));
     }
 
     protected InterruptThreadTimer createInterruptStartupTimer()
@@ -588,7 +587,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
-        singletons.add( providerForSingleton( transactionalActions, TransactionalActions.class ) );
+        singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
 
         return singletons;
     }

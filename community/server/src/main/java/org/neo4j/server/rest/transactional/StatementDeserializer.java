@@ -19,15 +19,19 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.codehaus.jackson.JsonToken.END_ARRAY;
 import static org.codehaus.jackson.JsonToken.END_OBJECT;
+import static org.codehaus.jackson.JsonToken.FIELD_NAME;
 import static org.codehaus.jackson.JsonToken.START_ARRAY;
+import static org.codehaus.jackson.JsonToken.START_OBJECT;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +51,6 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
     private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
     private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap( map() );
     private static final Iterator<Neo4jError> NO_ERRORS = emptyIterator();
-
 
     private final JsonParser input;
     private State state;
@@ -91,7 +94,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             switch ( state )
             {
                 case BEFORE_OUTER_ARRAY:
-                    if ( !discardStartArray() )
+                    if ( !discardTokensUntilStatementArray() )
                     {
                         return null;
                     }
@@ -166,17 +169,34 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         errors.add( error );
     }
 
-    private boolean discardStartArray() throws Neo4jError, IOException
+    private boolean discardTokensUntilStatementArray() throws Neo4jError, IOException
     {
-        JsonToken token = input.nextToken();
-        if ( token == null )
+        List<JsonToken> expectedTokens = asList( START_OBJECT, FIELD_NAME, START_ARRAY );
+        String expectedField = "statements";
+
+        List<JsonToken> foundTokens = new ArrayList<JsonToken>();
+
+        for ( int i = 0; i < expectedTokens.size(); i++ )
         {
-            return false;
+            JsonToken token = input.nextToken();
+            if ( i == 0 && token == null )
+            {
+                return false;
+            }
+            if ( token == FIELD_NAME )
+            {
+                if ( !expectedField.equals( input.getText() ) )
+                {
+                    throw new InvalidRequestError( String.format( "Unable to deserialize request, " +
+                            "expected first field to be '%s', but was '%s'", expectedField, input.getText() ) );
+                }
+            }
+            foundTokens.add( token );
         }
-        if ( token != START_ARRAY )
+        if ( !expectedTokens.equals( foundTokens ) )
         {
-            throw new InvalidRequestError( "Unable to deserialize request, expected " + START_ARRAY + ", " +
-                    "found " + token + "." );
+            throw new InvalidRequestError( String.format( "Unable to deserialize request, expected %s, found %s.",
+                    expectedTokens, foundTokens ) );
         }
         return true;
     }

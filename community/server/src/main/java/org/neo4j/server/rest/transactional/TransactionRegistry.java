@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
@@ -32,11 +31,11 @@ public interface TransactionRegistry
 {
     public long begin();
 
-    public void suspend( long id, TransactionContext txContext );
+    public void release( long id, TransactionHandle transactionHandle );
 
-    public TransactionContext resume( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError;
+    public TransactionHandle acquire( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError;
 
-    public void finish( long id );
+    public void forget( long id );
 
     public void rollbackAllSuspendedTransactions();
 }
