@@ -2144,7 +2144,7 @@ create a-[r:REL]->b
   }
 
   @Test def use_predicate_as_expression() {
-    testFrom1_9("start n=node(0) return id(n) = 0, n is null",
+    testAll("start n=node(0) return id(n) = 0, n is null",
       Query.
         start(NodeById("n", 0)).
         returns(
@@ -2187,7 +2187,7 @@ create a-[r:REL]->b
 
 
   @Test def with_limit() {
-    testFrom1_9("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
+    testAll("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
         limit(2).
@@ -2202,7 +2202,7 @@ create a-[r:REL]->b
   }
 
   @Test def with_sort_limit() {
-    testFrom1_9("start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
+    testAll("start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
         orderBy(SortItem(IdFunction(Identifier("n")), false)).
@@ -2223,7 +2223,7 @@ create a-[r:REL]->b
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
       returns()
 
-    testFrom1_9("start n=node(0) set n = {prop}",
+    testAll("start n=node(0) set n = {prop}",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2475,7 +2475,7 @@ create a-[r:REL]->b
   }
 
   @Test def single_node_match_pattern() {
-    testFrom1_9("start s = node(*) match s return s",
+    testAll("start s = node(*) match s return s",
       Query.
         start(AllNodes("s")).
         matches(SingleNode("s")).
@@ -2492,7 +2492,7 @@ create a-[r:REL]->b
   }
 
   @Test def single_node_match_pattern_path() {
-    testFrom1_9("start s = node(*) match p = s return s",
+    testAll("start s = node(*) match p = s return s",
       Query.
         start(AllNodes("s")).
         matches(SingleNode("s")).
@@ -2523,9 +2523,8 @@ create a-[r:REL]->b
     testQuery(Some("1.9"), query, expectedQuery)
   }
 
-  def testFrom1_9(query: String, expectedQuery: AbstractQuery) {
+  def testPre2_0(query: String, expectedQuery: AbstractQuery) {
     test1_9(query, expectedQuery)
-    test2_0(query, expectedQuery)
   }
 
   def testFrom2_0(query: String, expectedQuery: AbstractQuery) {
@@ -2542,7 +2541,6 @@ create a-[r:REL]->b
     testQuery(Some("experimental"), query + ";", expectedQuery)
   }
 
-
   def testAll(query: String, expectedQuery: AbstractQuery) {
     testAll_Except_Experimental(query, expectedQuery)
     testExperimental(query, expectedQuery)
@@ -2550,10 +2548,6 @@ create a-[r:REL]->b
 
   def testAll_Except_Experimental(query: String, expectedQuery: AbstractQuery) {
     test2_0(query, expectedQuery)
-    test1_9(query, expectedQuery)
-  }
-
-  def testPre2_0(query: String, expectedQuery: AbstractQuery) {
     test1_9(query, expectedQuery)
   }
 
