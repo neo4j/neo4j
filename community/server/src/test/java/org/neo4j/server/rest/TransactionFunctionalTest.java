@@ -26,9 +26,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.set;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 import static org.neo4j.test.server.HTTP.Response;
 
@@ -46,11 +45,9 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-public class TransactionDocIT extends AbstractRestFunctionalTestBase
+public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
-
-    // TODO: currently we send a list of statements, however we agreed to push the list down to a property on a top level object
 
     @Test
     public void begin__execute__commit() throws Exception
@@ -67,7 +64,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
 
         // execute
-        Response execute = http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 200 ) );
 
@@ -90,7 +87,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
 
         // execute
-        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
@@ -114,7 +111,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
 
         // execute and commit
-        Response commit = http.POST( commitResource, set( map( "statement", "CREATE n" ) ) );
+        Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
         assertNoErrors( (Map<String, Object>) commit.content() );
 
         assertThat( commit.status(), equalTo( 200 ) );
@@ -127,7 +124,8 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = http.POST( "/db/data/transaction", set( map( "statement", "CREATE n" ) ) );
+        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' " +
+                "} ] }" ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
@@ -146,13 +144,13 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // commit
         http.POST( commitResource );
 
         // execute
-        Response execute = http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
         assertErrors( execute, Neo4jError.Code.INVALID_TRANSACTION_ID );
@@ -164,7 +162,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute and commit
-        Response begin = http.POST( "/db/data/transaction/commit", set( map( "statement", "CREATE n" ) ) );
+        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -181,9 +179,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), iterator(
-                map( "statement", "CREATE n" ),
-                map( "statement", "CREATE n" ) ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, { 'statement': 'CREATE n' } ] }" ) );
 
         // commit
         assertNoErrors( http.POST( commitResource ) );
@@ -202,10 +198,10 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // execute
-        http.POST( begin.location(), set( map( "statement", "CREATE n" ) ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // commit
         http.POST( commitResource );
@@ -219,11 +215,11 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n" ) ) );
+        Response begin = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
         String commitResource = begin.stringFromContent( "commit" );
 
         // commit with invalid cypher
-        begin = POST( commitResource, set( map( "statement", "CREATE ;;' RETURN id(n)" ) ) );
+        begin = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
         assertThat( begin.status(), is( 200 ) );
         assertErrors( begin, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
@@ -237,7 +233,7 @@ public class TransactionDocIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST( getDataUri() + "transaction", set( map( "statement", "CREATE n" ) ) );
+        Response begin = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
         String commitResource = begin.stringFromContent( "commit" );
 
         // commit with malformed json

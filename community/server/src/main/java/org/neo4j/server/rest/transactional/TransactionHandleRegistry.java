@@ -29,21 +29,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
-public class TimeoutEvictingTransactionRegistry // implements TransactionRegistry
+public class TransactionHandleRegistry implements TransactionRegistry
 {
-    public static final String TX_NOT_FOUND_ERR_MSG =
-            "The transaction you asked for cannot be found. " +
-            "This could also be because the transaction has timed out and has been rolled back.";
-
-    public static final String TX_CONCURRENT_ACCESS_ERR_MSG =
-            "Please ensure that you are not concurrently using the same transaction elsewhere. ";
-
     private final AtomicLong idGenerator = new AtomicLong( 0l );
     private final ConcurrentHashMap<Long, TransactionMarker> registry =
             new ConcurrentHashMap<Long, TransactionMarker>( 64 );
@@ -51,7 +43,7 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
     private final Clock clock;
     private final StringLogger log;
 
-    public TimeoutEvictingTransactionRegistry( Clock clock, StringLogger log )
+    public TransactionHandleRegistry( Clock clock, StringLogger log )
     {
         this.clock = clock;
         this.log = log;
@@ -71,7 +63,9 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
         @Override
         SuspendedTransaction getTransaction() throws ConcurrentTransactionAccessError
         {
-            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
+            throw new ConcurrentTransactionAccessError(
+                    "The transaction you wanted to access is being used concurrently by another request. " +
+                            "Please ensure that you are not concurrently using the same transaction elsewhere. " );
         }
 
         boolean isSuspended()
@@ -82,12 +76,12 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
 
     private class SuspendedTransaction extends TransactionMarker
     {
-        final TransitionalTxManagementTransactionContext context;
+        final TransactionHandle transactionHandle;
         final long lastActiveTimestamp;
 
-        private SuspendedTransaction( TransitionalTxManagementTransactionContext context )
+        private SuspendedTransaction( TransactionHandle transactionHandle )
         {
-            this.context = context;
+            this.transactionHandle = transactionHandle;
             this.lastActiveTimestamp = clock.currentTimeInMilliseconds();
         }
 
@@ -103,6 +97,7 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
         }
     }
 
+    @Override
     public long begin()
     {
         long id = idGenerator.incrementAndGet();
@@ -116,7 +111,8 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
         }
     }
 
-    public void suspend( long id, TransactionContext txContext )
+    @Override
+    public void release( long id, TransactionHandle transactionHandle )
     {
         TransactionMarker marker = registry.get( id );
 
@@ -130,42 +126,44 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
             throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
         }
 
-        TransitionalTxManagementTransactionContext transitionalContext = transitionalContext( txContext );
-        transitionalContext.suspendSinceTransactionsAreStillThreadBound();
-        SuspendedTransaction transaction = new SuspendedTransaction( transitionalContext );
+        SuspendedTransaction transaction = new SuspendedTransaction( transactionHandle );
         if ( !registry.replace( id, marker, transaction ) )
         {
             throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
         }
     }
 
-    public TransactionContext resume( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError
+    @Override
+    public TransactionHandle acquire( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError
     {
         TransactionMarker marker = registry.get( id );
 
         if ( null == marker )
         {
-            throw new InvalidTransactionIdError( TX_NOT_FOUND_ERR_MSG );
+            throw new InvalidTransactionIdError( "The transaction you asked for cannot be found. "
+                    + "This could also be because the transaction has timed out and has been rolled back." );
         }
 
         if ( !marker.isSuspended() )
         {
-            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
+            throw new ConcurrentTransactionAccessError(
+                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
         }
 
         SuspendedTransaction transaction = marker.getTransaction();
         if ( registry.replace( id, marker, ActiveTransaction.INSTANCE ) )
         {
-            transaction.context.resumeSinceTransactionsAreStillThreadBound();
-            return transaction.context;
+            return transaction.transactionHandle;
         }
         else
         {
-            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
+            throw new ConcurrentTransactionAccessError(
+                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
         }
     }
 
-    public void finish( long id )
+    @Override
+    public void forget( long id )
     {
         TransactionMarker marker = registry.get( id );
 
@@ -186,6 +184,7 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
         }
     }
 
+    @Override
     public void rollbackAllSuspendedTransactions()
     {
         rollbackSuspended( Predicates.<TransactionMarker>TRUE() );
@@ -222,9 +221,8 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
             {
                 if ( predicate.accept( marker ) && marker.isSuspended() )
                 {
-                    TransitionalTxManagementTransactionContext context = marker.getTransaction().context;
-                    context.resumeSinceTransactionsAreStillThreadBound();
-                    context.rollback();
+                    TransactionHandle transactionHandle = marker.getTransaction().transactionHandle;
+                    transactionHandle.forceRollback();
                     entries.remove();
 
                     long idleSeconds = MILLISECONDS.toSeconds( clock.currentTimeInMilliseconds() -
@@ -241,10 +239,4 @@ public class TimeoutEvictingTransactionRegistry // implements TransactionRegistr
         }
     }
 
-    private TransitionalTxManagementTransactionContext transitionalContext( TransactionContext txContext )
-    {
-        assert txContext instanceof TransitionalTxManagementTransactionContext :
-                "During transition to kernel API, only TransitionalTxManagementTransactionContext are allowed.";
-        return (TransitionalTxManagementTransactionContext) txContext;
-    }
 }

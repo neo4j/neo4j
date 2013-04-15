@@ -25,14 +25,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.set;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
-import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 import java.util.Iterator;
 import java.util.List;
@@ -46,7 +42,6 @@ import org.neo4j.test.server.HTTP;
 
 public class TransactionDocTest extends AbstractRestFunctionalTestBase
 {
-
     /**
      * Create a transaction
      * <p/>
@@ -61,9 +56,8 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 201 )
-                .payload( createJsonFrom( set( map(
-                        "statement", "CREATE (n {props}) RETURN n",
-                        "parameters", map( "props", map( "name", "My Node" ) ) ) ) ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {props}) RETURN n', " +
+                        "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
                 .post( getDataUri() + "transaction" );
 
         // Then
@@ -83,12 +77,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     public void execute_statements_in_running_transaction() throws PropertyValueException
     {
         // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
+        String location = POST( getDataUri() + "transaction" ).location();
 
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN n" ) ) ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n' } ] }" ) )
                 .post( location );
 
         // Then
@@ -104,12 +98,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     public void commit_a_running_transaction() throws PropertyValueException
     {
         // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
+        String location = POST( getDataUri() + "transaction" ).location();
 
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN id(n)" ) ) ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
                 .post( location + "/commit" );
 
         // Then
@@ -132,7 +126,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "CREATE n RETURN id(n)" ) ) ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
 
         // Then
@@ -151,9 +145,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     public void rollback_a_running_transaction() throws PropertyValueException
     {
         // Given
-        HTTP.Response firstReq = POST( getDataUri() + "transaction", set( map( "statement",
-                "CREATE n RETURN id(n)" ) ) );
+        HTTP.Response firstReq = POST( getDataUri() + "transaction",
+                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) );
         String location = firstReq.location();
+        System.out.println( "firstReq = " + firstReq.content() );
+        System.out.println( "location = " + location );
 
         // Document
         ResponseEntity response = gen.get()
@@ -187,12 +183,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     public void handling_errors() throws PropertyValueException
     {
         // Given
-        String location = POST( getDataUri() + "transaction", set() ).location();
+        String location = POST( getDataUri() + "transaction" ).location();
 
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
-                .payload( createJsonFrom( set( map( "statement", "This is not a valid Cypher Statement." ) ) ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'This is not a valid Cypher Statement.' } ] }" ) )
                 .post( location + "/commit" );
 
         // Then
@@ -200,54 +196,9 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertErrors( result, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
     }
 
-    //
-    // -- Integration tests that are not part of the documentation
-    //
-
-    @Test
-    public void invalidRequestShouldContainErrorAndHaveNoEffect() throws Exception
-    {
-        // Given I've started a transaction
-        HTTP.Response response = POST( getDataUri() + "transaction", set( map( "statement",
-                "CREATE n RETURN id(n)" ) ) );
-        Integer nodeId = resultCell( response, 0, 0 );
-        String txLocation = response.location();
-
-        // When
-        response = POST( txLocation + "/commit", set( map( "statement", "CREATE ;;' RETURN id(n)" ) ) );
-
-        // Then
-        assertThat( GET( getNodeUri( nodeId ) ).status(), is( 404 ) );
-        assertThat( response.status(), is( 200 ) ); // <-- Because error will happen after streaming starts
-        assertErrors( response, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
-    }
-
-    @Test
-    public void invalidJsonInRequestShouldContainErrorAndHaveNoEffect() throws Exception
-    {
-        // Given I've started a transaction
-        HTTP.Response response = POST( getDataUri() + "transaction", set( map( "statement",
-                "CREATE n RETURN id(n)" ) ) );
-        Integer nodeId = resultCell( response, 0, 0 );
-        String txLocation = response.location();
-
-        // When
-        response = POST( txLocation + "/commit", rawPayload( "[{asd,::}]" ) );
-
-        // Then
-        assertThat( GET( getNodeUri( nodeId ) ).status(), is( 404 ) );
-        assertThat( response.status(), is( 200 ) ); // <-- Because error will happen after streaming starts
-        assertErrors( response, Neo4jError.Code.INVALID_REQUEST );
-    }
-
     private void assertNoErrors( Map<String, Object> response )
     {
         assertErrors( response );
-    }
-
-    private void assertErrors( HTTP.Response response, Neo4jError.Code... expectedErrors )
-    {
-        assertErrors( response.<Map<String, Object>>content(), expectedErrors );
     }
 
     private void assertErrors( Map<String, Object> response, Neo4jError.Code... expectedErrors )
@@ -280,4 +231,8 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         return (T) data.get( row ).get( column );
     }
 
+    private String quotedJson( String singleQuoted )
+    {
+        return singleQuoted.replaceAll( "'", "\"" );
+    }
 }

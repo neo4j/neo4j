@@ -22,7 +22,7 @@ package org.neo4j.server.rest.transactional;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.transactional.TransactionalActions.ResultHandler;
+import static org.neo4j.server.rest.transactional.TransactionFacade.ResultHandler;
 
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -39,11 +39,11 @@ public class ConcurrentTransactionAccessTest
     {
         // given
         TransactionRegistry registry =
-                new TimeoutEvictingTransactionRegistry( mock( Clock.class), StringLogger.DEV_NULL );
-        TransactionalActions actions = new TransactionalActions(
+                new TransactionHandleRegistry( mock( Clock.class), StringLogger.DEV_NULL );
+        TransactionFacade actions = new TransactionFacade(
                 mock( TransitionalPeriodTransactionMessContainer.class ), null, registry, null );
 
-        final TransactionalActions.Transaction transaction = actions.newTransaction();
+        final TransactionHandle transactionHandle = actions.newTransactionHandle();
 
         final DoubleLatch latch = new DoubleLatch();
 
@@ -64,7 +64,7 @@ public class ConcurrentTransactionAccessTest
             public void run()
             {
                 // start and block until finish
-                transaction.execute( statements, mock( ResultHandler.class ) );
+                transactionHandle.execute( statements, mock( ResultHandler.class ) );
             }
         } ).start();
 
@@ -73,7 +73,7 @@ public class ConcurrentTransactionAccessTest
         try
         {
             // when
-            actions.findTransaction( transaction.getId() );
+            actions.findTransactionHandle( transactionHandle.getId() );
             fail( "should have thrown exception" );
         }
         catch ( ConcurrentTransactionAccessError neo4jError )
