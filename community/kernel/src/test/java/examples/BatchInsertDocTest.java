@@ -32,8 +32,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.MapUtil;
@@ -50,11 +52,13 @@ public class BatchInsertDocTest
     {
         // START SNIPPET: insert
         BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example", fileSystem );
+        Label personLabel = DynamicLabel.label( "Person" );
+        inserter.createDeferredSchemaIndex( personLabel ).on( "name" );
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "name", "Mattias" );
-        long mattiasNode = inserter.createNode( properties );
+        long mattiasNode = inserter.createNode( properties, personLabel );
         properties.put( "name", "Chris" );
-        long chrisNode = inserter.createNode( properties );
+        long chrisNode = inserter.createNode( properties, personLabel );
         RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
         // To set properties on the relationship, use a properties map
         // instead of null as the last parameter.
@@ -115,10 +119,12 @@ public class BatchInsertDocTest
         // START SNIPPET: batchDb
         GraphDatabaseService batchDb =
                 BatchInserters.batchDatabase( "target/batchdb-example", fileSystem );
-        Node mattiasNode = batchDb.createNode();
+        Label personLabel = DynamicLabel.label( "Person" );
+        Node mattiasNode = batchDb.createNode( personLabel );
         mattiasNode.setProperty( "name", "Mattias" );
         Node chrisNode = batchDb.createNode();
         chrisNode.setProperty( "name", "Chris" );
+        chrisNode.addLabel( personLabel );
         RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
         mattiasNode.createRelationshipTo( chrisNode, knows );
         // END SNIPPET: batchDb

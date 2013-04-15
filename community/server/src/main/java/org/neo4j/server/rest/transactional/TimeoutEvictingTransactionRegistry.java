@@ -37,6 +37,13 @@ import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
 
 public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
 {
+    public static final String TX_NOT_FOUND_ERR_MSG =
+            "The transaction you asked for cannot be found. " +
+            "This could also be because the transaction has timed out and has been rolled back.";
+
+    public static final String TX_CONCURRENT_ACCESS_ERR_MSG =
+            "Please ensure that you are not concurrently using the same transaction elsewhere. ";
+
     private final AtomicLong idGenerator = new AtomicLong( 0l );
     private final ConcurrentHashMap<Long, TransactionMarker> registry =
             new ConcurrentHashMap<Long, TransactionMarker>( 64 );
@@ -64,9 +71,7 @@ public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
         @Override
         SuspendedTransaction getTransaction() throws ConcurrentTransactionAccessError
         {
-            throw new ConcurrentTransactionAccessError(
-                    "The transaction you wanted to access is being used concurrently by another request. " +
-                            "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
         }
 
         boolean isSuspended()
@@ -140,14 +145,12 @@ public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
 
         if ( null == marker )
         {
-            throw new InvalidTransactionIdError( "The transaction you asked for cannot be found. "
-                    + "This could also be because the transaction has timed out and has been rolled back." );
+            throw new InvalidTransactionIdError( TX_NOT_FOUND_ERR_MSG );
         }
 
         if ( !marker.isSuspended() )
         {
-            throw new ConcurrentTransactionAccessError(
-                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
         }
 
         SuspendedTransaction transaction = marker.getTransaction();
@@ -158,8 +161,7 @@ public class TimeoutEvictingTransactionRegistry implements TransactionRegistry
         }
         else
         {
-            throw new ConcurrentTransactionAccessError(
-                    "Please ensure that you are not concurrently using the same transaction elsewhere. " );
+            throw new ConcurrentTransactionAccessError( TX_CONCURRENT_ACCESS_ERR_MSG );
         }
     }
 
