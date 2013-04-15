@@ -32,8 +32,8 @@ public interface LockManager
     final String NAME = "Locking";
 
     @Description( "The number of lock sequences that would have lead to a deadlock situation that "
-                  + "Neo4j has detected and adverted (by throwing DeadlockDetectedException)." )
-    long getNumberOfAdvertedDeadlocks();
+                  + "Neo4j has detected and averted (by throwing DeadlockDetectedException)." )
+    long getNumberOfAvertedDeadlocks();
 
     @Description( "Information about all locks held by Neo4j" )
     List<LockInfo> getLocks();
