@@ -42,21 +42,22 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
+import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.StatementDeserializer;
-import org.neo4j.server.rest.transactional.TransactionalActions;
+import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 /**
- * This does basic mapping from HTTP to {@link TransactionalActions}, and should not do anything more complicated
+ * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not do anything more complicated
  * than that.
  */
 @Path("/transaction")
 public class TransactionalService
 {
-    private final TransactionalActions actions;
+    private final TransactionFacade actions;
     private final TransactionUriScheme uriScheme;
 
-    public TransactionalService( @Context TransactionalActions actions, @Context UriInfo uriInfo )
+    public TransactionalService( @Context TransactionFacade actions, @Context UriInfo uriInfo )
     {
         this.actions = actions;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
@@ -67,27 +68,16 @@ public class TransactionalService
     @Produces({MediaType.APPLICATION_JSON})
     public Response executeStatementsInNewTransaction( final InputStream input )
     {
-        final TransactionalActions.Transaction transaction;
+        final TransactionHandle transactionHandle;
         try
         {
-            transaction = actions.newTransaction();
+            transactionHandle = actions.newTransactionHandle();
         }
         catch ( Neo4jError neo4jError )
         {
             return invalidTransaction( neo4jError );
         }
-        return Response.created( uriScheme.txUri( transaction.getId() ) )
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( new StreamingOutput()
-                {
-                    @Override
-                    public void write( OutputStream output ) throws IOException, WebApplicationException
-                    {
-                        transaction.execute(
-                                new StatementDeserializer( input ),
-                                new ExecutionResultSerializer( output, uriScheme ) );
-                    }
-                } ).build();
+        return createdResponse( transactionHandle, executeStatements( input, transactionHandle ) );
     }
 
     @POST
@@ -96,27 +86,16 @@ public class TransactionalService
     @Produces({MediaType.APPLICATION_JSON})
     public Response executeStatements( @PathParam("id") final long id, final InputStream input )
     {
-        final TransactionalActions.Transaction transaction;
+        final TransactionHandle transactionHandle;
         try
         {
-            transaction = actions.findTransaction( id );
+            transactionHandle = actions.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
             return invalidTransaction( neo4jError );
         }
-        return Response.ok()
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( new StreamingOutput()
-                {
-                    @Override
-                    public void write( OutputStream output ) throws IOException, WebApplicationException
-                    {
-                        transaction.execute(
-                                new StatementDeserializer( input ),
-                                new ExecutionResultSerializer( output, uriScheme ) );
-                    }
-                } ).build();
+        return okResponse( executeStatements( input, transactionHandle ) );
     }
 
     @POST
@@ -125,27 +104,16 @@ public class TransactionalService
     @Produces({MediaType.APPLICATION_JSON})
     public Response commitTransaction( @PathParam("id") final long id, final InputStream input )
     {
-        final TransactionalActions.Transaction transaction;
+        final TransactionHandle transactionHandle;
         try
         {
-            transaction = actions.findTransaction( id );
+            transactionHandle = actions.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
             return invalidTransaction( neo4jError );
         }
-        return Response.ok()
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( new StreamingOutput()
-                {
-                    @Override
-                    public void write( OutputStream output ) throws IOException, WebApplicationException
-                    {
-                        transaction.commit(
-                                new StatementDeserializer( input ),
-                                new ExecutionResultSerializer( output, uriScheme ) );
-                    }
-                } ).build();
+        return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
     }
 
     @POST
@@ -154,27 +122,16 @@ public class TransactionalService
     @Produces({MediaType.APPLICATION_JSON})
     public Response commitNewTransaction( final InputStream input )
     {
-        final TransactionalActions.Transaction transaction;
+        final TransactionHandle transactionHandle;
         try
         {
-            transaction = actions.newTransaction();
+            transactionHandle = actions.newTransactionHandle();
         }
         catch ( Neo4jError neo4jError )
         {
             return invalidTransaction( neo4jError );
         }
-        return Response.ok()
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( new StreamingOutput()
-                {
-                    @Override
-                    public void write( OutputStream output ) throws IOException, WebApplicationException
-                    {
-                        transaction.commit(
-                                new StatementDeserializer( input ),
-                                new ExecutionResultSerializer( output, uriScheme ) );
-                    }
-                } ).build();
+        return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
     }
 
     @DELETE
@@ -182,25 +139,16 @@ public class TransactionalService
     @Consumes({MediaType.APPLICATION_JSON})
     public Response rollbackTransaction( @PathParam("id") final long id )
     {
-        final TransactionalActions.Transaction transaction;
+        final TransactionHandle transactionHandle;
         try
         {
-            transaction = actions.findTransaction( id );
+            transactionHandle = actions.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
             return invalidTransaction( neo4jError );
         }
-        return Response.ok()
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( new StreamingOutput()
-                {
-                    @Override
-                    public void write( OutputStream output ) throws IOException, WebApplicationException
-                    {
-                        transaction.rollback( new ExecutionResultSerializer( output, uriScheme ) );
-                    }
-                } ).build();
+        return okResponse( rollback( transactionHandle ) );
     }
 
     private Response invalidTransaction( Neo4jError neo4jError )
@@ -208,6 +156,61 @@ public class TransactionalService
         return Response.status( Response.Status.NOT_FOUND )
                 .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
                 .entity( serializeError( neo4jError ) ).build();
+    }
+
+    private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )
+    {
+        return Response.created( uriScheme.txUri( transactionHandle.getId() ) )
+                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
+                .entity( streamingResults ).build();
+    }
+
+    private Response okResponse( StreamingOutput streamingResults )
+    {
+        return Response.ok()
+                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
+                .entity( streamingResults ).build();
+    }
+
+    private StreamingOutput executeStatements( final InputStream input, final TransactionHandle
+            transactionHandle )
+    {
+        return new StreamingOutput()
+        {
+            @Override
+            public void write( OutputStream output ) throws IOException, WebApplicationException
+            {
+                transactionHandle.execute(
+                        new StatementDeserializer( input ),
+                        new ExecutionResultSerializer( output, uriScheme ) );
+            }
+        };
+    }
+
+    private StreamingOutput executeStatementsAndCommit( final InputStream input, final TransactionHandle transactionHandle )
+    {
+        return new StreamingOutput()
+        {
+            @Override
+            public void write( OutputStream output ) throws IOException, WebApplicationException
+            {
+                transactionHandle.commit(
+                        new StatementDeserializer( input ),
+                        new ExecutionResultSerializer( output, uriScheme ) );
+            }
+        };
+    }
+
+    private StreamingOutput rollback( final TransactionHandle transactionHandle )
+    {
+        return new StreamingOutput()
+        {
+            @Override
+            public void write( OutputStream output ) throws IOException, WebApplicationException
+            {
+                transactionHandle.rollback( new ExecutionResultSerializer( output, uriScheme ) );
+            }
+        };
     }
 
     private StreamingOutput serializeError( final Neo4jError neo4jError )

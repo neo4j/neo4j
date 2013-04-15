@@ -31,7 +31,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.UnknownStatementError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
-public class ExecutionResultSerializer implements TransactionalActions.ResultHandler
+public class ExecutionResultSerializer implements TransactionFacade.ResultHandler
 {
     private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
 

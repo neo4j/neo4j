@@ -29,9 +29,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.rest.transactional.error.InvalidRequestError;
@@ -43,7 +41,7 @@ public class StatementDeserializerTest
     public void shouldDeserializeSingleStatement() throws Exception
     {
         // Given
-        String json = createJsonFrom( asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) );
+        String json = createJsonFrom( map( "statements", asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
 
         // When
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
@@ -54,6 +52,40 @@ public class StatementDeserializerTest
 
         assertThat( stmt.statement(), equalTo( "Blah blah" ) );
         assertThat( stmt.parameters(), equalTo( map( "one", 12 ) ) );
+
+        assertThat( de.hasNext(), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldRejectMapWithADifferentFieldBeforeStatement() throws Exception
+    {
+        // NOTE: We don't really want this behaviour, but it's a symptom of keeping
+        // streaming behaviour while moving the statement list into a map.
+
+        String json = "{ \"timeout\" : 200, \"statements\" : [ { \"statement\" : \"ignored\", \"parameters\" : {}} ] }";
+
+        assertYieldsErrors( json,
+                new InvalidRequestError( "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
+    }
+
+    @Test
+    public void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished() throws Exception
+    {
+        // NOTE: We don't really want this behaviour, but it's a symptom of keeping
+        // streaming behaviour while moving the statement list into a map.
+
+        // Given
+        String json =  "{ \"statements\" : [ { \"statement\" : \"Blah blah\", \"parameters\" : {\"one\" : 12}} ] " +
+                "totally invalid json is totally ignored";
+
+        // When
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+
+        // Then
+        assertThat( de.hasNext(), equalTo( true ) );
+        Statement stmt = de.next();
+
+        assertThat( stmt.statement(), equalTo( "Blah blah" ) );
 
         assertThat( de.hasNext(), equalTo( false ) );
     }
@@ -76,9 +108,9 @@ public class StatementDeserializerTest
     public void shouldDeserializeMultipleStatements() throws Exception
     {
         // Given
-        String json = createJsonFrom( asList(
+        String json = createJsonFrom( map( "statements", asList(
                 map( "statement", "Blah blah", "parameters", map( "one", 12 ) ),
-                map( "statement", "Blah bluh", "parameters", map( "asd", asList( "one, two" ) ) ) ) );
+                map( "statement", "Blah bluh", "parameters", map( "asd", asList( "one, two" ) ) ) ) ) );
 
         // When
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
@@ -102,17 +134,18 @@ public class StatementDeserializerTest
     @Test
     public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
     {
-        assertYieldsErrors( "{}", Arrays.<Neo4jError>asList(
-                new InvalidRequestError( "Unable to deserialize request, expected START_ARRAY, " +
-                        "found START_OBJECT." ) ) );
-        assertYieldsErrors( "[{]}", Arrays.<Neo4jError>asList(
+        assertYieldsErrors( "{}",
+                new InvalidRequestError( "Unable to deserialize request, " +
+                        "expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
+                        "found [START_OBJECT, END_OBJECT, null]." ) );
+        assertYieldsErrors( "[{]}",
                 new InvalidRequestError(
                         "Unable to deserialize request: Unexpected close marker ']': expected '}' " +
                                 "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
-                                "at [Source: TestInputStream; line: 1, column: 4]" ) ) );
+                                "at [Source: TestInputStream; line: 1, column: 4]" ) );
     }
 
-    private void assertYieldsErrors( String json, List<Neo4jError> expectedList ) throws UnsupportedEncodingException
+    private void assertYieldsErrors( String json, Neo4jError... expectedErrors ) throws UnsupportedEncodingException
     {
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) )
         {
@@ -128,7 +161,7 @@ public class StatementDeserializerTest
         }
 
         Iterator<Neo4jError> actual = de.errors();
-        Iterator<Neo4jError> expected = expectedList.iterator();
+        Iterator<Neo4jError> expected = asList( expectedErrors ).iterator();
         while ( actual.hasNext() )
         {
             assertTrue( expected.hasNext() );
