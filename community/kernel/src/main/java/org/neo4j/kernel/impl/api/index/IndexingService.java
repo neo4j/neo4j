@@ -89,7 +89,7 @@ public class IndexingService extends LifecycleAdapter
         this.providerMap = providerMap;
         this.storeView = storeView;
         this.logging = logging;
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
         this.updateableSchemaState = updateableSchemaState;
 
         if ( providerMap == null || providerMap.getDefaultProvider() == null )

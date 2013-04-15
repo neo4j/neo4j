@@ -41,7 +41,7 @@ public abstract class CleanupService extends LifecycleAdapter
 
     protected CleanupService( Logging logging )
     {
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
     }
 
     public abstract <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable );

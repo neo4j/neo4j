@@ -42,7 +42,7 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
 
     public IsolatedTransactionKeyCreator( Logging logging )
     {
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
     }
     
     @Override

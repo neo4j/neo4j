@@ -110,7 +110,7 @@ public class IndexingServiceTest
     private static Logging mockLogging( TestLogger logger )
     {
         Logging logging = mock( Logging.class );
-        when( logging.getLogger( any( Class.class ) ) ).thenReturn( logger );
+        when( logging.getMessagesLog( any( Class.class ) ) ).thenReturn( logger );
         return logging;
     }
 }

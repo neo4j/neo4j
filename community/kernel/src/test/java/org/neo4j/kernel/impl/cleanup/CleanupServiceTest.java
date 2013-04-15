@@ -107,7 +107,7 @@ public class CleanupServiceTest
         // GIVEN
         Logging logging = mock(Logging.class);
         StringLogger logger = mock(StringLogger.class);
-        when(logging.getLogger(any(Class.class))).thenReturn(logger);
+        when(logging.getMessagesLog(any(Class.class))).thenReturn(logger);
         CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, logging, referenceQueue );
         service.start();
         Runnable cleanupTask = acquireCleanupTask();

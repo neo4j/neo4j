@@ -78,7 +78,7 @@ public class IndexPopulationJob implements Runnable
         this.flipper = flipper;
         this.storeView = storeView;
         this.updateableSchemaState = updateableSchemaState;
-        this.log = logging.getLogger( getClass() );
+        this.log = logging.getMessagesLog( getClass() );
     }
     
     @Override
