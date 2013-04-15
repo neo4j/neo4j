@@ -41,9 +41,9 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
  */
 public class SchemaCache
 {
-    private final Map<Long, Map<Long,SchemaRule>> rulesMap = new HashMap<Long, Map<Long,SchemaRule>>();
+    private final Map<Long, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<Long, Map<Long,SchemaRule>>();
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<Long, SchemaRule>();
-    
+
     public SchemaCache( Iterable<SchemaRule> initialRules )
     {
         splitUpInitialRules( initialRules );
@@ -57,18 +57,18 @@ public class SchemaCache
 
     private Map<Long,SchemaRule> getOrCreateSchemaRulesMapForLabel( Long label )
     {
-        Map<Long,SchemaRule> rulesForLabel = rulesMap.get( label );
+        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
         if ( rulesForLabel == null )
         {
             rulesForLabel = new HashMap<Long, SchemaRule>();
-            rulesMap.put( label, rulesForLabel );
+            rulesByLabelMap.put( label, rulesForLabel );
         }
         return rulesForLabel;
     }
     
     public Iterable<SchemaRule> getSchemaRules()
     {
-        return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesMap.values() )
+        return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesByLabelMap.values() )
         {
             @Override
             protected Iterator<SchemaRule> createNestedIterator( Map<Long,SchemaRule> item )
@@ -80,7 +80,7 @@ public class SchemaCache
     
     public Collection<SchemaRule> getSchemaRulesForLabel( long label )
     {
-        Map<Long,SchemaRule> rulesForLabel = rulesMap.get( label );
+        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
         return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :
             Collections.<SchemaRule>emptyList();
     }
@@ -97,9 +97,9 @@ public class SchemaCache
         if ( rule == null )
             return;
         
-        Map<Long, SchemaRule> rules = rulesMap.get( rule.getLabel() );
+        Map<Long, SchemaRule> rules = rulesByLabelMap.get( rule.getLabel() );
         if ( rules.remove( id ) != null )
             if ( rules.isEmpty() )
-                rulesMap.remove( rule.getLabel() );
+                rulesByLabelMap.remove( rule.getLabel() );
     }
 }

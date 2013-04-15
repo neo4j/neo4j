@@ -23,14 +23,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,9 +69,13 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -117,6 +129,12 @@ public class TestBatchInsert
     {
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap() );
     }
+    
+    private BatchInserter newBatchInserter( KernelExtensionFactory<?> provider )
+    {
+        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+    }
 
     private GraphDatabaseService newBatchGraphDatabase()
     {
@@ -128,13 +146,14 @@ public class TestBatchInsert
         return newGraphDatabase( Predicates.<TestGraphDatabaseFactory>notNull() );
     }
     
-    private GraphDatabaseService newGraphDatabase( final Iterable<KernelExtensionFactory<?>> extensions )
+    private GraphDatabaseService newGraphDatabase( final KernelExtensionFactory<?> provider )
     {
         return newGraphDatabase( new Predicate<TestGraphDatabaseFactory>()
         {
             @Override
             public boolean accept( TestGraphDatabaseFactory item )
             {
+                List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
                 item.setKernelExtensions( extensions );
                 return true;
             }
@@ -156,7 +175,7 @@ public class TestBatchInsert
         long node1 = graphDb.createNode( null );
         long node2 = graphDb.createNode( null );
         long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
-            null );
+                null );
         BatchRelationship rel = graphDb.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
@@ -220,8 +239,6 @@ public class TestBatchInsert
         String value = "Something";
         String key = "name";
         inserter.setNodeProperty( node, key, value );
-        
-        System.out.println( "///////////" );
         
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
         assertEquals( value, db.getNodeById( node ).getProperty( key ) );
@@ -463,7 +480,6 @@ public class TestBatchInsert
                 fail( "Unexpected relationship " + rel.getId() );
             }
         }
-        graphDb.shutdown();
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
         Node realStartNode = db.getNodeById( startNode );
@@ -615,7 +631,7 @@ public class TestBatchInsert
             endNodes[i] = graphDb.createNode();
             setProperties( endNodes[i] );
             Relationship rel = startNode.createRelationshipTo( endNodes[i],
-                relTypeArray[i % 5] );
+                    relTypeArray[i % 5] );
             rels.add( rel );
             setProperties( rel );
         }
@@ -674,7 +690,6 @@ public class TestBatchInsert
                 RelTypes.BATCH_TEST, null );
         inserter.createRelationship( inserter.createNode( null ), nodeId,
                 RelTypes.REL_TYPE1, null );
-        inserter.shutdown();
 
         // Delete node and all its relationships
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
@@ -810,8 +825,7 @@ public class TestBatchInsert
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        IndexCreator creator = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" );
-        IndexDefinition definition = creator.create();
+        IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
@@ -819,39 +833,87 @@ public class TestBatchInsert
     }
 
     @Test
-    public void shouldReadExistingOnlineIndexes() throws Exception
+    public void shouldRunPopulationJobAtShutdown() throws Throwable
     {
-        // GIVEN: LABEL
-        Label hackerLabel = label( "Hacker" );
-        InMemoryIndexProvider provider = new InMemoryIndexProvider();
-        InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( providerFactory );
+        // GIVEN
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
 
-        // GIVEN: CREATED INDEX
-        GraphDatabaseService gdb = newGraphDatabase( extensions );
-        Transaction tx = gdb.beginTx();
-        IndexDefinition definition = createIndex( gdb, hackerLabel, "handle" );
-        tx.success();
-        tx.finish();
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
 
-        // GIVEN: ONLINE INDEX
-        tx = gdb.beginTx();
-        gdb.schema().awaitIndexOnline( definition, 10L, TimeUnit.SECONDS );
-        Node node = gdb.createNode( hackerLabel );
-        node.setProperty( "handle", "count0" );
-        tx.success();
-        tx.finish();
-        gdb.shutdown();
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
-        // GIVEN: BATCH INSERTER
-        BatchInserter inserter = BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
 
         // WHEN
-        ResourceIterable<Long> result = inserter.findNodesByLabelAndProperty( label( "Hacker" ), "handle", "count0" );
+        inserter.shutdown();
 
         // THEN
-        assertEquals( asSet( node.getId() ), asSet( result ));
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong() );
+        verify( populator ).create();
+        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
     }
+
+    @Test
+    public void shouldRepopulatePreexistingIndexed() throws Throwable
+    {
+        // GIVEN
+        long jakewins = dbWithIndexAndSingleIndexedNode();
+
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
+
+        // WHEN
+        inserter.shutdown();
+
+        // THEN
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong() );
+        verify( populator ).create();
+        verify( populator ).add( jakewins, "Jakewins" );
+        verify( populator ).add( boggle, "b0ggl3" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
+    }
+
+    private long dbWithIndexAndSingleIndexedNode()
+    {
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+        inserter.shutdown();
+        return nodeId;
+    }
+
 
     private IndexDefinition createIndex( GraphDatabaseService gdb,  Label label, String propertyKey )
     {
@@ -910,5 +972,23 @@ public class TestBatchInsert
             expectedLabelNames.add( labelName );
         }
         return Pair.of( labels, expectedLabelNames );
+    }
+    
+    private static class PickySchemaIndexProvider extends InMemoryIndexProvider
+    {
+        private final Set<Long> existingAccessors = new HashSet<Long>();
+        
+        @Override
+        public IndexAccessor getOnlineAccessor( long indexId )
+        {
+            if ( !existingAccessors.add( indexId ) )
+                throw new IllegalStateException( "getOnlineAccessor called multiple times for " + indexId );
+            return super.getOnlineAccessor( indexId );
+        }
+        
+        void clear()
+        {
+            existingAccessors.clear();
+        }
     }
 }

@@ -32,14 +32,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -51,7 +49,7 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class IndexPopulationJob implements Runnable
 {
-    private final IndexingService.IndexStoreView storeView;
+    private final IndexStoreView storeView;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
@@ -69,7 +67,7 @@ public class IndexPopulationJob implements Runnable
 
     public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                                IndexPopulator populator, FlippableIndexProxy flipper,
-                               IndexingService.IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
+                               IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
                                Logging logging )
     {
         this.descriptor = descriptor;
@@ -137,7 +135,9 @@ public class IndexPopulationJob implements Runnable
             try
             {
                 if ( !success )
+                {
                     populator.close( false );
+                }
             }
             catch ( Throwable e )
             {
@@ -153,13 +153,13 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllNodes()
     {
-        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<Pair<Long, Object>>()
+        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate>()
         {
             @Override
-            public boolean visit( Pair<Long, Object> element )
+            public boolean visit( NodePropertyUpdate update )
             {
-                populator.add( element.first(), element.other() );
-                populateFromQueueIfAvailable( element.first() );
+                populator.add( update.getNodeId(), update.getValueAfter() );
+                populateFromQueueIfAvailable( update.getNodeId() );
 
                 return false;
             }
