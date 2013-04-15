@@ -6,7 +6,7 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 HA:
 o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop

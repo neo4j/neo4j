@@ -102,7 +102,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public MasterImpl( GraphDatabaseAPI db, Logging logging, Config config )
     {
         this.graphDb = db;
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
         graphProperties = graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).getGraphProperties();
         txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );

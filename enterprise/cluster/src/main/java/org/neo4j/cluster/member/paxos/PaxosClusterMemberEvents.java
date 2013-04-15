@@ -84,7 +84,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         this.cluster = cluster;
         this.heartbeat = heartbeat;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
 
         clusterListener = new ClusterListenerImpl();
 

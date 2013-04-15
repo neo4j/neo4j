@@ -47,7 +47,7 @@ public class JmxKernelExtension implements Lifecycle
     public JmxKernelExtension( KernelData kernelData, Logging logging )
     {
         this.kernelData = kernelData;
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
     }
 
     @Override

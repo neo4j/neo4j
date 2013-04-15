@@ -21,6 +21,7 @@ package org.neo4j.server.logging;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.LogMarker;
 
 public class JulAdapter extends StringLogger
 {
@@ -45,6 +46,12 @@ public class JulAdapter extends StringLogger
 
     @Override
     public void logMessage( String msg, boolean flush )
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
+    public void logMessage( String msg, LogMarker marker )
     {
         throw new UnsupportedOperationException( "TODO" );
     }

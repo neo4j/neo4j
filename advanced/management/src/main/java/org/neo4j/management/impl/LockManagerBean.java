@@ -66,7 +66,8 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = management.getKernelData().graphDatabase().getLockManager();
         }
 
-        public long getNumberOfAdvertedDeadlocks()
+        @Override
+        public long getNumberOfAvertedDeadlocks()
         {
             return lockManager.getDetectedDeadlockCount();
         }

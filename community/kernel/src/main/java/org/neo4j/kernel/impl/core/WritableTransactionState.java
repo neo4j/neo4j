@@ -260,7 +260,7 @@ public class WritableTransactionState implements TransactionState
         this.tx = tx;
         this.txHook = txHook;
         this.txIdGenerator = txIdGenerator;
-        this.log = logging.getLogger( getClass() );
+        this.log = logging.getMessagesLog( getClass() );
     }
 
     @Override

@@ -48,7 +48,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     public HaIdGeneratorFactory( Master master, HighAvailability highAvailability, Logging logging )
     {
         this.master = master;
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
     }
 
     @Override

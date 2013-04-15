@@ -19,22 +19,21 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-public class DevNullLoggingService
-        extends LifecycleAdapter
-        implements Logging
+public class LogMarker
 {
-    @Override
-    public StringLogger getMessagesLog( Class loggingClass )
+    private final String name;
+
+    public LogMarker( String name )
     {
-        return StringLogger.DEV_NULL;
+        this.name = name;
     }
 
-    @Override
-    public ConsoleLogger getConsoleLog( Class loggingClass )
+    public String getName()
     {
-        return new ConsoleLogger( StringLogger.DEV_NULL );
+        return name;
     }
+
+    public static final String CONSOLE = "console";
+
+    public static final LogMarker CONSOLE_MARK = new LogMarker( CONSOLE );
 }

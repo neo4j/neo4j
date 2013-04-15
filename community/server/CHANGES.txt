@@ -3,7 +3,7 @@
 o Added support for labels
 o Added support for the new label-based indexes
 
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 o Introduces new slash screen containing a guide to Neo4j. Several small aesthetic improvements
 

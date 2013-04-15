@@ -1,4 +1,4 @@
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop
   accepting write requests and all transactions will timeout.

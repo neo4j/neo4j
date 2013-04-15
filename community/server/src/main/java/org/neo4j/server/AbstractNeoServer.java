@@ -141,7 +141,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             transactionalActions = createTransactionalActions();
 
-            cypherExecutor = new CypherExecutor( database, logging.getLogger( CypherExecutor.class ) );
+            cypherExecutor = new CypherExecutor( database, logging.getMessagesLog( CypherExecutor.class ) );
 
             configureWebServer();
 
@@ -207,7 +207,8 @@ public abstract class AbstractNeoServer implements NeoServer
         final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
         final RealClock clock = new RealClock();
 
-        transactionRegistry = new TimeoutEvictingTransactionRegistry(clock, logging.getLogger(TransactionRegistry.class));
+        transactionRegistry =
+            new TimeoutEvictingTransactionRegistry(clock, logging.getMessagesLog(TransactionRegistry.class));
 
         resolveDependency( JobScheduler.class ).scheduleRecurring( new Runnable()
         {
@@ -223,7 +224,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 new ExecutionEngine( database.getGraph() ),
                 transactionRegistry,
-                logging.getLogger( TransactionalActions.class ));
+                logging.getMessagesLog( TransactionalActions.class ));
     }
 
     protected InterruptThreadTimer createInterruptStartupTimer()

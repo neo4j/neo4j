@@ -57,7 +57,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         {
             super( management );
             this.diagnostics = management.getKernelData().graphDatabase().getDiagnosticsManager();
-            this.log = management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency( Logging.class ).getLogger( getClass() );
+            this.log = management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency( Logging.class ).getMessagesLog( getClass() );
         }
 
         @Override

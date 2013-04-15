@@ -42,7 +42,7 @@ public class StateTransitionLogger
 
     public void stateTransition( StateTransition transition )
     {
-        StringLogger logger = logging.getLogger( transition.getOldState().getClass() );
+        StringLogger logger = logging.getMessagesLog( transition.getOldState().getClass() );
 
         if ( logger.isDebugEnabled() )
         {

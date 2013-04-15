@@ -53,7 +53,7 @@ public class AcceptorContext
 
     public StringLogger getLogger( Class clazz )
     {
-        return logging.getLogger( clazz );
+        return logging.getMessagesLog( clazz );
     }
 
     public void leave()

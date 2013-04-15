@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -79,6 +81,12 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
+        public void logMessage( String msg, LogMarker marker )
+        {
+            appendLine( msg );
+        }
+
+        @Override
         public void logMessage( String msg, Throwable cause, boolean flush )
         {
             appendLine( msg );
@@ -106,7 +114,7 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
-        public StringLogger getLogger( Class loggingClass )
+        public StringLogger getMessagesLog( Class loggingClass )
         {
             if ( loggingClass.equals( DiagnosticsManager.class ) )
             {
@@ -116,6 +124,12 @@ public class DiagnosticsLoggingTest
             {
                 return StringLogger.DEV_NULL;
             }
+        }
+
+        @Override
+        public ConsoleLogger getConsoleLog( Class loggingClass )
+        {
+            return new ConsoleLogger( StringLogger.SYSTEM );
         }
     }
 

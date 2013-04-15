@@ -1,4 +1,4 @@
-1.9.RC1 (????-??-??)
+1.9.RC1 (2013-04-15)
 --------------------
 o Removes URL discovery mechanism for clustering
 o Moves from URI as an instance id to integers - they must be specified manually. The new setting is

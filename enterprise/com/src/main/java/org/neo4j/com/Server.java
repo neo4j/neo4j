@@ -144,7 +144,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
         this.txVerifier = txVerifier;
     }
 

@@ -31,15 +31,6 @@
     </encoder>
   </appender>
 
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>${CONSOLE_LEVEL:-WARN}</level>
-    </filter>
-    <encoder>
-      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
-    </encoder>
-  </appender>
-
   <if condition='property("remote_logging_enabled").contains("true")'>
     <then>
       <appender name="SOCKET" class="ch.qos.logback.classic.net.SocketAppender">
@@ -54,9 +45,8 @@
     </then>
   </if>
 
-  <logger name="org.neo4j" level="INFO" additivity="false">
+  <logger name="org.neo4j" level="INFO" additivity="true">
     <appender-ref ref="FILE"/>
-    <appender-ref ref="CONSOLE"/>
   </logger>
 
   <include resource="custom-logback.xml"/>
