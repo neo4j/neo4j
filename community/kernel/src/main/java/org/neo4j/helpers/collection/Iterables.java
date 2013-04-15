@@ -79,35 +79,6 @@ public final class Iterables
         return EMPTY;
     }
 
-    public static <T> Iterable<T> constant( final T item )
-    {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return new Iterator<T>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public T next()
-                    {
-                        return item;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                    }
-                };
-            }
-        };
-    }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
     {

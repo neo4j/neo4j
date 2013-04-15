@@ -35,7 +35,7 @@ public class NodePropertyUpdate
     private final long[] labelsAfter;
 
     public NodePropertyUpdate( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
-            Object valueAfter, long[] labelsAfter )
+                               Object valueAfter, long[] labelsAfter )
     {
         this.nodeId = nodeId;
         this.propertyKeyId = propertyKeyId;
@@ -51,11 +51,17 @@ public class NodePropertyUpdate
         boolean beforeSet = valueBefore != null;
         boolean afterSet = valueAfter != null;
         if ( !beforeSet && afterSet )
+        {
             return UpdateMode.ADDED;
+        }
         if ( beforeSet && afterSet )
+        {
             return UpdateMode.CHANGED;
-        if ( beforeSet && !afterSet )
+        }
+        if ( beforeSet )
+        {
             return UpdateMode.REMOVED;
+        }
         throw new IllegalArgumentException( "Neither before or after set" );
     }
 

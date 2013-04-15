@@ -182,9 +182,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // old code base
         TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore,
                 indexService );
+
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, newTxState(),
-                persistenceCache, schemaCache, schemaState);
+        result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache, schemaCache, schemaState);
+
         // + Constraint evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
