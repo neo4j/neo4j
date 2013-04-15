@@ -2114,7 +2114,7 @@ RETURN x0.name?
 
   @Test
   def with_should_not_forget_original_type() {
-    val result = parseAndExecute("create a={x:8} with a.x as foo return sum(foo)")
+    val result = parseAndExecute("create (a{x:8}) with a.x as foo return sum(foo)")
 
     assert(result.toList === List(Map("sum(foo)" -> 8)))
   }
@@ -2123,7 +2123,7 @@ RETURN x0.name?
   def with_should_not_forget_parameters() {
     graph.index().forNodes("test")
     val id = "bar"
-    val result = parseAndExecute("start n=node:test(name={id}) with count(*) as c where c=0 create x={name:{id}} return c, x", "id" -> id).toList
+    val result = parseAndExecute("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x", "id" -> id).toList
 
     assert(result.size === 1)
     assert(result(0)("c").asInstanceOf[Long] === 0)
@@ -2310,7 +2310,7 @@ RETURN x0.name?
 
   @Test
   def can_use_identifiers_created_inside_the_foreach() {
-    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create a= { name: 'foo'}  set a.id = x)")
+    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create (a { name: 'foo'})  set a.id = x)")
 
     assert(result.toList === List())
   }

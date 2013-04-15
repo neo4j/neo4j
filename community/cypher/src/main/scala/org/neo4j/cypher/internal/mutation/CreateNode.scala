@@ -56,7 +56,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     /*
      Parameters coming in from the outside in queries using parameters like this:
 
-     CREATE n = {param}
+     CREATE (n {param})
 
      This parameter can either be a collection of maps, or a single map. Cypher creates one node per incoming map.
 

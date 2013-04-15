@@ -37,13 +37,13 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
 
   @Test def boostingRecommendations() {
     executeQuery("""create 
-clark={name: "Clark Kent"},
-lois={name:"Lois Lane"},
-jimmy={name:"Jimmy Olsen"},
-perry={name:"Perry White"},
-cooper={name:"Anderson Cooper"},
-dailyplanet={name:"Daily Planet"},
-cnn={name:"CNN"},
+(clark {name: "Clark Kent"}),
+(lois {name:"Lois Lane"}),
+(jimmy {name:"Jimmy Olsen"}),
+(perry {name:"Perry White"}),
+(cooper {name:"Anderson Cooper"}),
+(dailyplanet {name:"Daily Planet"}),
+(cnn {name:"CNN"}),
 clark-[:KNOWS {weight: 4}]->lois,
 clark-[:KNOWS {weight: 4}]->jimmy,
 lois-[:KNOWS {weight: 4}]->perry,

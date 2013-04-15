@@ -41,7 +41,7 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
         the center node and all relationships connected to it are removed.""",
       queryText = """create center
 foreach( x in range(1,6) : 
-   create leaf={count : x}, center-[:X]->leaf
+   create (leaf {count : x}), center-[:X]->leaf
 )
 ==== center ====
 MATCH leaf1<--center-->leaf2
