@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.RC1</version>
+    <version>1.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>1.9.RC1</version>
+    <version>1.9-SNAPSHOT</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
