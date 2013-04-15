@@ -446,11 +446,12 @@ public abstract class StringLogger
 
     private static class ActualStringLogger extends StringLogger
     {
+        private final static String encoding = "UTF-8";
+
         private PrintWriter out;
         private final Integer rotationThreshold;
         private final File file;
         private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>();
-        private final String encoding = "UTF-8";
         private final FileSystemAbstraction fileSystem;
 
         private ActualStringLogger( FileSystemAbstraction fileSystem, String filename, int rotationThreshold )

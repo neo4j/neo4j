@@ -134,15 +134,15 @@ public enum Uniqueness implements UniquenessFactory
      */
     NONE
     {
-        private UniquenessFilter instance = new NotUnique();
-        
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
-            return instance;
+            return notUniqueInstance;
         }
     };
-    
+
+    private static final UniquenessFilter notUniqueInstance = new NotUnique();
+
     private static void acceptNull( Object optionalParameter )
     {
         if ( optionalParameter != null )
