@@ -29,6 +29,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import java.util.concurrent._
 import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.helpers.Time
 
 class ExecutionPlanImplTest extends Assertions with Timed {
   @Test def should_not_go_into_never_ending_loop() {
@@ -36,7 +37,7 @@ class ExecutionPlanImplTest extends Assertions with Timed {
 
     val exception = intercept[ExecutionException](timeoutAfter(1) {
       val epi = new FakeEPI(q, null)
-      epi.execute(Map())
+      epi.execute(Map(),new Time())
     })
 
     assertTrue(exception.getCause.isInstanceOf[InternalException])

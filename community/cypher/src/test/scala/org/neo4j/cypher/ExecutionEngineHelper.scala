@@ -20,10 +20,12 @@
 package org.neo4j.cypher
 
 import internal.commands.Query
-import org.junit.Before
+import internal.helpers.{TimeSource, Time}
+import org.junit.{Assert, Before}
+import org.scalatest.Assertions
 
 
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
+trait ExecutionEngineHelper extends GraphDatabaseTestBase with TimeSource {
 
   var engine: ExecutionEngine = null
 
@@ -40,8 +42,14 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)
-    
-    plan.execute(params.toMap)
+    val time = createTime
+    val result = plan.execute(params.toMap, time).asInstanceOf[PipeExecutionResult]
+
+    val outerTime = time.timeTaken
+    val delta = outerTime - result.state.timeTaken
+
+    Assert.assertTrue("reported time taken is close enough to measured time "+delta+" "+outerTime, delta==0 || delta / outerTime < 0.1)
+    result
   }
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {

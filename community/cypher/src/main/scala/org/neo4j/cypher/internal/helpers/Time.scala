@@ -17,11 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.helpers
 
-import internal.helpers.Time
+class Time {
+  lazy val getTime = currentTime
 
-trait ExecutionPlan {
-  def execute(params: Map[String,Any], time : Time): ExecutionResult
-  def profile(params: Map[String,Any], time : Time): ExecutionResult
+  def currentTime = System.currentTimeMillis()
+
+  val startTime = currentTime
+
+  def timeTaken = (currentTime-startTime).toInt
+}
+
+trait TimeSource {
+  def createTime : Time = new Time()
 }
