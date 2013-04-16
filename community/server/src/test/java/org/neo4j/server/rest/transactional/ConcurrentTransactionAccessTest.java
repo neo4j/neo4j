@@ -22,7 +22,6 @@ package org.neo4j.server.rest.transactional;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.transactional.TransactionFacade.ResultHandler;
 
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -64,7 +63,7 @@ public class ConcurrentTransactionAccessTest
             public void run()
             {
                 // start and block until finish
-                transactionHandle.execute( statements, mock( ResultHandler.class ) );
+                transactionHandle.execute( statements, mock( ExecutionResultSerializer.class ) );
             }
         } ).start();
 

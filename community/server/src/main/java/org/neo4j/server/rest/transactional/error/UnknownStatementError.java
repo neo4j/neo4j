@@ -21,7 +21,7 @@ package org.neo4j.server.rest.transactional.error;
 
 public class UnknownStatementError extends Neo4jError
 {
-    public UnknownStatementError( String statement, RuntimeException e )
+    public UnknownStatementError( String statement, Exception e )
     {
         super( Code.UNKNOWN_STATEMENT_ERROR, "Failed to execute '" + statement + "'.", e );
     }

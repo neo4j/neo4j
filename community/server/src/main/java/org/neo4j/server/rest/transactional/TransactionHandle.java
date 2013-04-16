@@ -76,14 +76,14 @@ public class TransactionHandle
         return id;
     }
 
-    public void execute( StatementDeserializer statements, TransactionFacade.ResultHandler results )
+    public void execute( StatementDeserializer statements, ExecutionResultSerializer output )
     {
         List<Neo4jError> errors = new LinkedList<Neo4jError>();
         try
         {
-            results.prologue( id );
+            output.transactionId( id );
             ensureActiveTransaction();
-            execute( statements, results, errors );
+            execute( statements, output, errors );
         }
         catch ( UnableToStartTransactionError neo4jError )
         {
@@ -91,18 +91,18 @@ public class TransactionHandle
         }
         finally
         {
-            results.epilogue( errors.iterator() );
+            output.errors( errors );
+            output.finish();
         }
     }
 
-    public void commit( StatementDeserializer statements, TransactionFacade.ResultHandler results )
+    public void commit( StatementDeserializer statements, ExecutionResultSerializer output )
     {
         List<Neo4jError> errors = new LinkedList<Neo4jError>();
         try
         {
-            results.prologue();
             ensureActiveTransaction();
-            commit( statements, results, errors );
+            commit( statements, output, errors );
         }
         catch ( UnableToStartTransactionError neo4jError )
         {
@@ -110,16 +110,16 @@ public class TransactionHandle
         }
         finally
         {
-            results.epilogue( errors.iterator() );
+            output.errors( errors );
+            output.finish();
         }
     }
 
-    public void rollback( TransactionFacade.ResultHandler results )
+    public void rollback( ExecutionResultSerializer output )
     {
         List<Neo4jError> errors = new LinkedList<Neo4jError>();
         try
         {
-            results.prologue();
             ensureActiveTransaction();
             rollback( errors );
         }
@@ -129,7 +129,8 @@ public class TransactionHandle
         }
         finally
         {
-            results.epilogue( errors.iterator() );
+            output.errors( errors );
+            output.finish();
         }
     }
 
@@ -159,10 +160,10 @@ public class TransactionHandle
         }
     }
 
-    private void execute( StatementDeserializer statements, TransactionFacade.ResultHandler results,
+    private void execute( StatementDeserializer statements, ExecutionResultSerializer output,
                           List<Neo4jError> errors )
     {
-        executeStatements( statements, results, errors );
+        executeStatements( statements, output, errors );
 
         if ( errors.isEmpty() )
         {
@@ -175,12 +176,12 @@ public class TransactionHandle
         }
     }
 
-    private void commit( StatementDeserializer statements, TransactionFacade.ResultHandler results,
+    private void commit( StatementDeserializer statements, ExecutionResultSerializer output,
                          List<Neo4jError> errors )
     {
         try
         {
-            executeStatements( statements, results, errors );
+            executeStatements( statements, output, errors );
 
             if ( errors.isEmpty() )
             {
@@ -230,7 +231,7 @@ public class TransactionHandle
         }
     }
 
-    private void executeStatements( StatementDeserializer statements, TransactionFacade.ResultHandler results,
+    private void executeStatements( StatementDeserializer statements, ExecutionResultSerializer output,
                                     List<Neo4jError> errors )
     {
         try
@@ -247,7 +248,7 @@ public class TransactionHandle
                     // ctx = tx.newStatement()
                     // cypher.execute( ctx, statement, resultVisitor );
                     // ctx.close()
-                    results.visitStatementResult( result );
+                    output.statementResult( result );
                 }
                 catch ( ParameterNotFoundException e )
                 {

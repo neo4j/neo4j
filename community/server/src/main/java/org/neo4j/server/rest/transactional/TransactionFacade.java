@@ -19,10 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.util.Iterator;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -54,43 +51,6 @@ public class TransactionFacade
     private final TransactionRegistry registry;
     private final StringLogger log;
 
-    /**
-     * In order to support streaming results back to the user, while at the same time ensuring proper closing of
-     * resources, no public method (other than {@link #newTransactionHandle()}, which we may want to move somewhere
-     * else)
-     * in this implementation returns a result. Instead, results are reported to a handler that you pass in, with the
-     * guarantee that when the method returns, all results have been reported to the handler.
-     */
-    public static interface ResultHandler
-    {
-        /**
-         * Will always get called once, and is always the first method to get called. This method is not allowed
-         * to throw exceptions. If there are network errors or similar, the handler should take appropriate action,
-         * but never fail this method.
-         */
-        void prologue( long txId );
-
-        /**
-         * Will always get called once, and is always the first method to get called. This method is not allowed
-         * to throw exceptions. If there are network errors or similar, the handler should take appropriate action,
-         * but never fail this method.
-         */
-        void prologue();
-
-        /**
-         * Will get called at most once per statement. This method is *only* allowed to throw ActionFailedException,
-         * throwing anything but that may lead to resource leakage.
-         */
-        void visitStatementResult( ExecutionResult result ) throws Neo4jError;
-
-        /**
-         * Will always get called once, and will always be the last method to get called. This method is not allowed
-         * to throw exceptions. If there are network errors or similar, the handler should take appropriate action,
-         * but never fail this method.
-         */
-        void epilogue( Iterator<Neo4jError> errors );
-    }
-
     public TransactionFacade( TransitionalPeriodTransactionMessContainer mess, ExecutionEngine engine,
                               TransactionRegistry registry, StringLogger log )
     {
@@ -109,5 +69,4 @@ public class TransactionFacade
     {
         return registry.acquire( txId );
     }
-
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.neo4j.helpers.collection.IteratorUtil.singletonIterator;
+import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,8 +42,8 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
-import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.StatementDeserializer;
+import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
@@ -221,7 +221,8 @@ public class TransactionalService
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
                 ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, uriScheme );
-                serializer.errorsOnly( singletonIterator( neo4jError ) );
+                serializer.errors( asList( neo4jError ) );
+                serializer.finish();
             }
         };
     }

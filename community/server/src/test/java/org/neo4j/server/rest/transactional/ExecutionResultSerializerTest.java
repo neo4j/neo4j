@@ -20,27 +20,20 @@
 package org.neo4j.server.rest.transactional;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.singletonIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
@@ -48,158 +41,349 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.server.rest.transactional.error.InvalidRequestError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.UnableToStartTransactionError;
-import org.neo4j.server.rest.transactional.error.UnknownStatementError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class ExecutionResultSerializerTest
 {
     @Test
-    public void shouldSerializeSuccessfulExecutionResult() throws Exception
+    public void shouldSerializeResponseWithCommitUriOnly() throws Exception
     {
-        // Given
-        ExecutionResult stmtResult = mock( ExecutionResult.class );
-
-        List<String> expectedColumns = asList( "Number", "String", "Boolean", "PropContainer", "Path" );
-        when( stmtResult.columns() ).thenReturn( expectedColumns );
-
-        int theNumber = 1337;
-        String theString = "Stuff";
-        boolean theBoolean = true;
-        PropertyContainer thePropContainer = mockPropertyContainer();
-        Path thePath = mockPath();
-
-        when( stmtResult.iterator() ).thenReturn( singletonIterator(
-                map( "Number", theNumber,
-                        "String", theString,
-                        "Boolean", theBoolean,
-                        "PropContainer", thePropContainer,
-                        "Path", thePath ) ) );
-
+        // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
 
-        // When
-        serializer.prologue( 1337l );
-        serializer.visitStatementResult( stmtResult );
-        serializer.epilogue( NO_ERRORS );
+        // when
+        serializer.transactionId( 1337 );
+        serializer.finish();
 
-        // Then
-        Map<String, Object> result = deserialize( output );
-        assertThat( result.keySet(), equalTo( asSet( "results", "errors", "commit" ) ) );
-        assertThat( ((List) result.get( "errors" )).size(), equalTo( 0 ) );
-        assertThat( ((String) result.get( "commit" )), equalTo( "transaction/1337/commit" ) );
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[],\"errors\":[]}", result );
+    }
 
-        List<Map<String, Object>> results = listOfMaps( result.get( "results" ) );
-        assertThat( results.size(), equalTo( 1 ) );
+    @Test
+    public void shouldSerializeResponseWithCommitUriAndResults() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
 
-        List<String> columns = listOfStrings( results.get( 0 ).get( "columns" ) );
-        assertThat( asSet( columns ), equalTo( asSet( expectedColumns ) ) );
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ) );
 
-        List<List<Object>> data = listOfLists( results.get( 0 ).get( "data" ) );
-        assertThat( data.size(), is( 1 ) );
+        // when
+        serializer.transactionId( 1337 );
+        serializer.statementResult( executionResult );
+        serializer.finish();
 
-        // And all known output types should have been correctly serialized
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+    }
 
-        List<Object> row = data.get( 0 );
-        assertThat( (Integer) row.get( 0 ), equalTo( theNumber ) );
-        assertThat( (String) row.get( 1 ), equalTo( theString ) );
-        assertThat( (Boolean) row.get( 2 ), equalTo( theBoolean ) );
-        assertThat( mapOfStringToObject( row.get( 3 ) ), equalTo( map(
+    @Test
+    public void shouldSerializeResponseWithResultsOnly() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.statementResult( executionResult );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionId( 1337 );
+        serializer.statementResult( executionResult );
+        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithResultsAndErrors() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.statementResult( executionResult );
+        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        // when
+        serializer.transactionId( 1337 );
+        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[],\"errors\":[{\"code\":100," +
+                "\"message\":\"error1\"}]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithErrorsOnly() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        // when
+        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        // when
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithMultipleResultRows() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ), map(
+                "column1", "value3",
+                "column2", "value4" ) );
+
+        // when
+        serializer.statementResult( executionResult );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                "\"data\":[[\"value1\",\"value2\"],[\"value3\",\"value4\"]]}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializeResponseWithMultipleResults() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult1 = mockExecutionResult( map(
+                "column1", "value1",
+                "column2", "value2" ) );
+        ExecutionResult executionResult2 = mockExecutionResult( map(
+                "column3", "value3",
+                "column4", "value4" ) );
+
+        // when
+        serializer.statementResult( executionResult1 );
+        serializer.statementResult( executionResult2 );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[" +
+                "{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}," +
+                "{\"columns\":[\"column3\",\"column4\"],\"data\":[[\"value3\",\"value4\"]]}]," +
+                "\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializeNodeAsMapOfProperties() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "node", mockNode( map(
                 "a", 12,
                 "b", true,
-                "c", asList( 1, 0, 1, 2 ),
-                "d", asList( 1, 0, 1, 2 ),
-                "e", asList( "a", "b", "ääö" ) ) ) );
+                "c", new int[]{1, 0, 1, 2},
+                "d", new byte[]{1, 0, 1, 2},
+                "e", new String[]{"a", "b", "ääö"} ) ) ) );
 
-        //noinspection unchecked
-        assertThat( listOfMaps( row.get( 4 ) ), equalTo( asList(
-                map(),
-                map( "a", 12 ),
-                map() ) ) );
+        // when
+        serializer.statementResult( executionResult );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
+                "\"data\":[[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
-    public void shouldSerializeResponseWithNoResultsOrErrors() throws Exception
+    public void shouldSerializePathAsListOfMapsOfProperties() throws Exception
     {
-        // Given
+        // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
 
-        // When
-        serializer.prologue( 1337l );
-        serializer.epilogue( NO_ERRORS );
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
 
-        // Then
-        Map<String, Object> result = deserialize( output );
+        // when
+        serializer.statementResult( executionResult );
+        serializer.finish();
 
-        assertThat( ((List) result.get( "errors" )).size(), equalTo( 0 ) );
-        assertThat( ((String) result.get( "commit" )), equalTo( "transaction/1337/commit" ) );
-        assertThat( result.keySet().size(), equalTo( 3 ) );
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
+                "\"data\":[[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
-    public void shouldSerializeResponseWithWithErrorsButNoResults() throws Exception
+    public void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
     {
-        // Given
+        // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
 
-        // When
-        serializer.prologue( 1337l );
-        serializer.epilogue( iterator(
-                new UnableToStartTransactionError( null ),
-                new UnknownStatementError( "SOME STRING", null ) ) );
+        Map<String, Object> data = map(
+                "column1", "value1",
+                "column2", "value2" );
+        ExecutionResult executionResult = mock( ExecutionResult.class );
+        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        @SuppressWarnings("unchecked")
+        Iterator<Map<String, Object>> iterator = mock( Iterator.class );
+        when( iterator.hasNext() ).thenReturn( true, true, false );
+        when( iterator.next() ).thenReturn( data ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
+        when( executionResult.iterator() ).thenReturn( iterator );
 
-        // Then
-        Map<String, Object> result = deserialize( output );
-
-        assertThat( ((String) result.get( "commit" )), equalTo( "transaction/1337/commit" ) );
-        assertThat( result.keySet().size(), equalTo( 3 ) );
-        List<Map<String, Object>> errors = listOfMaps( result.get( "errors" ) );
-
-        assertThat( errors.size(), equalTo( 2 ) );
-        assertThat( (Long.valueOf( (Integer) errors.get( 0 ).get( "code" ) )),
-                equalTo( Neo4jError.Code.UNABLE_TO_START_TRANSACTION.getCode() ) );
-        assertThat( (Long.valueOf( (Integer) errors.get( 1 ).get( "code" ) )),
-                equalTo( Neo4jError.Code.UNKNOWN_STATEMENT_ERROR.getCode() ) );
-        assertThat( ((String) errors.get( 1 ).get( "message" )),
-                containsString( "SOME STRING" ) );
-    }
-
-    @Test
-    public void shouldProduceValidJSONEvenIfExecutionResultThrowsError() throws Exception
-    {
-        // Given
-        ExecutionResult stmtResult = mock( ExecutionResult.class );
-
-        List<String> expectedColumns = asList( "Number", "String", "Boolean", "PropContainer", "Path" );
-        when( stmtResult.columns() ).thenReturn( expectedColumns );
-        when( stmtResult.iterator() ).thenReturn( new ExplodingIterator() );
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
-
-        // When
-        serializer.prologue( 1337l );
+        // when
         try
         {
-            serializer.visitStatementResult( stmtResult );
-            fail( "Should have thrown exception" );
+            serializer.statementResult( executionResult );
+            fail( "should have thrown exception" );
         }
-        catch ( UnknownStatementError e )
+        catch ( Neo4jError neo4jError )
         {
-            // expected
+            serializer.errors( asList( neo4jError ) );
         }
-        serializer.epilogue( NO_ERRORS );
+        serializer.finish();
 
-        // Then result can be deserialized.
-        deserialize( output );
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+                "\"errors\":[{\"code\":20100,\"message\":\"Failed to execute 'Executing statement failed.'.\"}]}",
+                result );
     }
 
-    private static final Iterator<Neo4jError> NO_ERRORS = IteratorUtil.iterator();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    @Test
+    public void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnHasNext() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+
+        Map<String, Object> data = map(
+                "column1", "value1",
+                "column2", "value2" );
+        ExecutionResult executionResult = mock( ExecutionResult.class );
+        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        @SuppressWarnings("unchecked")
+        Iterator<Map<String, Object>> iterator = mock( Iterator.class );
+        when( iterator.hasNext() ).thenReturn( true ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
+        when( iterator.next() ).thenReturn( data );
+        when( executionResult.iterator() ).thenReturn( iterator );
+
+        // when
+        try
+        {
+            serializer.statementResult( executionResult );
+            fail( "should have thrown exception" );
+        }
+        catch ( Neo4jError neo4jError )
+        {
+            serializer.errors( asList( neo4jError ) );
+        }
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+                "\"errors\":[{\"code\":20100,\"message\":\"Failed to execute 'Executing statement failed.'.\"}]}",
+                result );
+    }
+
+    private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
+    {
+        Set<String> keys = new HashSet<String>();
+        for ( Map<String, Object> row : rows )
+        {
+            keys.addAll( row.keySet() );
+        }
+        ExecutionResult executionResult = mock( ExecutionResult.class );
+        when( executionResult.columns() ).thenReturn( new ArrayList<String>( keys ) );
+        when( executionResult.iterator() ).thenReturn( asList( rows ).iterator() );
+        return executionResult;
+    }
+
     private static final TransactionUriScheme txUriScheme = new TransactionUriScheme()
     {
         @Override
@@ -215,88 +399,38 @@ public class ExecutionResultSerializerTest
         }
     };
 
-    private PropertyContainer mockPropertyContainer()
+    private static Node mockNode( Map<String, Object> properties )
     {
-        Map<String, Object> props = map(
-                "a", 12,
-                "b", true,
-                "c", new int[]{1, 0, 1, 2},
-                "d", new byte[]{1, 0, 1, 2},
-                "e", new String[]{"a", "b", "ääö"} );
-        Node node = mock( Node.class );
-        when( node.getPropertyKeys() ).thenReturn( props.keySet() );
-        for ( Map.Entry<String, Object> entry : props.entrySet() )
-        {
-            when( node.getProperty( entry.getKey() ) ).thenReturn( entry.getValue() );
-        }
-
-        return node;
+        return mockPropertiesContainer( Node.class, properties );
     }
 
-    private Path mockPath()
+    private static <T extends PropertyContainer> T mockPropertiesContainer( Class<T> containerType, Map<String,
+            Object> properties )
     {
-        Node firstNode = mock( Node.class );
-        when( firstNode.getPropertyKeys() ).thenReturn( Collections.<String>emptyList() );
+        T propertyContainer = mock( containerType );
+        when( propertyContainer.getPropertyKeys() ).thenReturn( properties.keySet() );
+        for ( Map.Entry<String, Object> entry : properties.entrySet() )
+        {
+            when( propertyContainer.getProperty( entry.getKey() ) ).thenReturn( entry.getValue() );
+        }
+        return propertyContainer;
+    }
 
-        Relationship rel = mock( Relationship.class );
-        when( rel.getPropertyKeys() ).thenReturn( asList( "a" ) );
-        when( rel.getProperty( "a" ) ).thenReturn( 12 );
+    private static Relationship mockRelationship( Map<String, Object> properties )
+    {
+        return mockPropertiesContainer( Relationship.class, properties );
+    }
 
-        Node endNode = mock( Node.class );
-        when( endNode.getPropertyKeys() ).thenReturn( Collections.<String>emptyList() );
-
+    private static Path mockPath( Map<String, Object> startNodeProperties, Map<String,
+            Object> relationshipProperties, Map<String,
+            Object> endNodeProperties )
+    {
         Path p = mock( Path.class );
-        when( p.iterator() ).thenReturn( IteratorUtil.<PropertyContainer>iterator( firstNode, rel, endNode ) );
+        Node startNode = mockNode( startNodeProperties );
+        Relationship relationship = mockRelationship( relationshipProperties );
+        Node endNode = mockNode( endNodeProperties );
+        when( p.iterator() ).thenReturn( IteratorUtil.<PropertyContainer>iterator( startNode, relationship, endNode ) );
         return p;
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> listOfMaps( Object value )
-    {
-        return (List<Map<String, Object>>) value;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<List<Object>> listOfLists( Object value )
-    {
-        return (List<List<Object>>) value;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> mapOfStringToObject( Object value )
-    {
-        return (Map<String, Object>) value;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> listOfStrings( Object value )
-    {
-        return (List<String>) value;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> deserialize( ByteArrayOutputStream output ) throws IOException
-    {
-        return OBJECT_MAPPER.readValue( output.toByteArray(), Map.class );
-    }
-
-    private static class ExplodingIterator implements Iterator<Map<String, Object>>
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return true;
-        }
-
-        @Override
-        public Map<String, Object> next()
-        {
-            throw new RuntimeException( "NOBODY EXPECTED THIS!" );
-        }
-
-        @Override
-        public void remove()
-        {
-        }
-    }
 }
