@@ -52,7 +52,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     def solveUnsolvedStartpoints: (QueryToken[StartItem] => QueryToken[StartItem]) = {
       case Unsolved(MergeNodeStartItem(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None))) =>
-        val startItem: StartItem = NodeFetchStrategy.findStartStrategy(identifier, where.map(Unsolved(_)), ctx).s
+        val startItem: StartItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx).s
         val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem)
 
         Unsolved(MergeNodeStartItem(mergeNodeAction.copy(nodeProducerOption = Some(nodeProducer))))
@@ -82,23 +82,23 @@ class StartPointChoosingBuilder extends PlanBuilder {
       case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start, end)
     }.flatten.toSet
 
-    def findSingleNodePoints(startPoints: Set[StartItemWithRating]): Iterable[StartItem] =
+    def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[StartItem] =
       startPoints.collect {
-        case StartItemWithRating(si, r, _) if r == Single => si
+        case RatedStartItem(si, r, _) if r == Single => si
       }
 
 
     patterns.flatMap(
       (pattern: MatchPattern) => {
-        val startPoints: Set[StartItemWithRating] =
-          pattern.nodes.map(key => findStartStrategy(key, plan.query.where, ctx)).toSet
+        val startPoints: Set[RatedStartItem] =
+          pattern.nodes.map(key => findStartStrategy(key, plan.query.where.map(_.token), ctx)).toSet
 
         val singleNodePoints = findSingleNodePoints(startPoints)
         val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet
 
         if (shortestPathPointsInPattern.nonEmpty) {
           startPoints.collect {
-            case StartItemWithRating(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
+            case RatedStartItem(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
           }.toSet union singleNodePoints.toSet
         } else if (singleNodePoints.nonEmpty) {
           // We want to keep all these start points because cartesian product with them is free

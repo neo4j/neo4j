@@ -27,12 +27,37 @@ import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.NodeByLabel
 import org.neo4j.cypher.internal.commands.HasLabel
 
-//TODO: Make perty?
+
+
+/*
+This rather simple class finds a starting strategy for a given single node and a list of predicates required
+to be true for that node
+
+@see NodeStrategy
+ */
 object NodeFetchStrategy {
+  val nodeStrategies: Seq[NodeStrategy] = Seq(NodeByIdStrategy, IndexSeekStrategy, LabelScanStrategy, GlobalStrategy)
+
+  def findStartStrategy(node: String, where: Seq[Predicate], ctx: PlanContext): RatedStartItem = {
+    val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, where, ctx))
+    ratedItems.sortBy(_.rating).head
+  }
+}
+
+/*
+Bundles a possible start item with a rating (where lower implies better) and a list of predicates that
+are implicitly solved when using the start item
+ */
+case class RatedStartItem(s: StartItem, rating: Integer, solvedPredicates: Seq[Predicate])
+
+
+/*
+Finders produce StartItemWithRatings for a node and a set of required predicates over that node
+ */
+trait NodeStrategy {
   type LabelName = String
   type IdentifierName = String
   type PropertyKey = String
-
 
   val Single = 0
   val IndexEquality = 1
@@ -41,53 +66,70 @@ object NodeFetchStrategy {
   val LabelScan = 4
   val Global = 5
 
-  def findStartStrategy(node: String, where: Seq[QueryToken[Predicate]], ctx: PlanContext):
-  StartItemWithRating = {
+
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem]
+
+  protected def findLabelsForNode(node: String, where: Seq[Predicate]): Seq[SolvedPredicate[LabelName]] =
+    where.collect {
+      case predicate@HasLabel(Identifier(identifier), label) if identifier == node => SolvedPredicate(label.name, predicate)
+    }
+
+  case class SolvedPredicate[T](solution: T, predicate: Predicate)
+}
+
+object NodeByIdStrategy extends NodeStrategy {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+    val idPredicates: Seq[SolvedPredicate[Long]] = findEqualityPredicatesUsingNodeId(node, where)
+    val ids: Seq[Long] = idPredicates.map(_.solution)
+    val predicates: Seq[Predicate] = idPredicates.map(_.predicate)
+    if (ids.nonEmpty)
+      Seq(RatedStartItem(NodeById(node, ids: _*), Single, predicates))
+    else
+      Seq.empty
+  }
+
+  private def findEqualityPredicatesUsingNodeId(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[Long]] =
+    where.collect {
+      case predicate@Equals(IdFunction(Identifier(id)), Literal(idValue))
+        if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
+      case predicate@Equals(Literal(idValue), IdFunction(Identifier(id)))
+        if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
+    }
+
+}
+
+object IndexSeekStrategy extends NodeStrategy {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
     val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where)
-    val idPredicates: Seq[SolvedPredicate[Long]] = findEqualityPredicatesUsingNodeId(node, where)
 
-    val indexSeeks: Seq[(SchemaIndex, Predicate, Predicate)] = for (
+    for (
       labelPredicate <- labelPredicates;
       propertyPredicate <- propertyPredicates
       if (ctx.getIndexRuleId(labelPredicate.solution, propertyPredicate.solution).nonEmpty)
-    ) yield (SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, None), labelPredicate.predicate, propertyPredicate.predicate)
-
-    if (idPredicates.nonEmpty) {
-      val ids: Seq[Long] = idPredicates.map(_.solution)
-      val predicates: Seq[Predicate] = idPredicates.map(_.predicate)
-      StartItemWithRating(NodeById(node, ids: _*), Single, predicates)
-    } else if (indexSeeks.nonEmpty) {
-      // TODO: Once we have index statistics, we can pick the best one
-      val chosenSeek = indexSeeks.head
-      StartItemWithRating(chosenSeek._1, IndexEquality, Seq(chosenSeek._2, chosenSeek._3))
-    } else if (labelPredicates.nonEmpty) {
-      // TODO: Once we have label statistics, we can pick the best one
-      StartItemWithRating(NodeByLabel(node, labelPredicates.head.solution), LabelScan, Seq(labelPredicates.head.predicate))
-    } else {
-      StartItemWithRating(AllNodes(node), Global, null)
-    }
+    ) yield RatedStartItem(SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, None), IndexEquality, Seq(labelPredicate.predicate, propertyPredicate.predicate))
   }
 
-  private def findLabelsForNode(node: String, where: Seq[QueryToken[Predicate]]): Seq[SolvedPredicate[LabelName]] =
-    where.collect {
-      case Unsolved(predicate@HasLabel(Identifier(identifier), label)) if identifier == node => SolvedPredicate(label.name, predicate)
-    }
 
-  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[QueryToken[Predicate]]): Seq[SolvedPredicate[PropertyKey]] =
+  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
-      case Unsolved(predicate@Equals(Property(Identifier(id), propertyName), expression)) if id == identifier => SolvedPredicate(propertyName, predicate)
-      case Unsolved(predicate@Equals(expression, Property(Identifier(id), propertyName))) if id == identifier => SolvedPredicate(propertyName, predicate)
-    }
-
-  private def findEqualityPredicatesUsingNodeId(identifier: IdentifierName, where: Seq[QueryToken[Predicate]]): Seq[SolvedPredicate[Long]] =
-    where.collect {
-      case Unsolved(predicate@Equals(IdFunction(Identifier(id)), Literal(idValue)))
-        if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
-      case Unsolved(predicate@Equals(Literal(idValue), IdFunction(Identifier(id))))
-        if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
+      case predicate@Equals(Property(Identifier(id), propertyName), expression) if id == identifier => SolvedPredicate(propertyName, predicate)
+      case predicate@Equals(expression, Property(Identifier(id), propertyName)) if id == identifier => SolvedPredicate(propertyName, predicate)
     }
 }
 
-case class StartItemWithRating(s: StartItem, rating: Integer, solvedPredicates:Seq[Predicate])
-case class SolvedPredicate[T](solution:T, predicate:Predicate)
+object GlobalStrategy extends NodeStrategy {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] =
+    Seq(RatedStartItem(AllNodes(node), Global, Seq.empty))
+}
+
+object LabelScanStrategy extends NodeStrategy {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+    val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
+
+    labelPredicates.map {
+      case SolvedPredicate(labelName, predicate) =>
+        RatedStartItem(NodeByLabel(node, labelName), LabelScan, Seq(predicate))
+    }
+  }
+}
