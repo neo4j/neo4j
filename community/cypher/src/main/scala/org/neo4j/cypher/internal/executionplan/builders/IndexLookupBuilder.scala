@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Property}
 import org.neo4j.cypher.IndexHintException
-import values.LabelValue
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.Equals
@@ -34,76 +33,50 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.query.start.exists(interestingFilter)
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    val startItem = extractInterestingStartItem(plan)
-    val hint = startItem.token.asInstanceOf[SchemaIndex]
-    val foundPredicates = findMatchingPredicates(plan, hint)
+    val querylessHint = extractInterestingStartItem(plan)
+    val hint = querylessHint.token
+    val propertyPredicates = findPropertyPredicates(plan, hint)
+    val labelPredicates = findLabelPredicates(plan, hint)
 
-    val (originalLabelPred, labelPredicatesAfterThis) = extractLabelPredicates(plan, hint)
-
-    if (foundPredicates.isEmpty)
+    if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
       throw new IndexHintException(hint, "No useful predicate was found for your index hint. Make sure the" +
         " property expression is alone either side of the equality sign.")
 
-    val (predicate, expression) = foundPredicates.head
+    val (predicate, expression) = propertyPredicates.head
 
     val q: PartiallySolvedQuery = plan.query
 
-    val newHint: Unsolved[StartItem] = Unsolved(hint.copy(query = Some(expression)))
+    val queryfullHint: Unsolved[StartItem] = Unsolved(hint.copy(query = Some(expression)))
     val newQuery = q.copy(
-      where = (q.where.filterNot(x => x == predicate || x == originalLabelPred) :+ predicate.solve) ++ labelPredicatesAfterThis,
-      start = q.start.filterNot(_ == startItem) :+ newHint
+      where = q.where.filterNot(x => x == predicate || labelPredicates.contains(x)) ++ labelPredicates.map(_.solve) :+ predicate.solve,
+      start = q.start.filterNot(_ == querylessHint) :+ queryfullHint
     )
 
     plan.copy(query = newQuery)
   }
 
-
-  private def extractLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): (QueryToken[Predicate], Seq[QueryToken[Predicate]]) = {
-    val unsolvedHasLabels: Seq[(Unsolved[Predicate], Seq[LabelValue])] = plan.query.where.flatMap {
-      case x@Unsolved(HasLabel(Identifier(identifier), labelNames))
-        if hint.identifier == identifier && labelNames.exists(_.name == hint.label) => Some((x, labelNames))
-
-      case _ => None
+  def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[Unsolved[Predicate]] =
+    plan.query.where.collect {
+      case predicate@Unsolved(HasLabel(Identifier(identifier), label))
+        if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
-    if (unsolvedHasLabels.isEmpty)
-      throw new IndexHintException(hint, "The identifier used in the index hint is not marked with the expected label.")
+  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(Unsolved[Predicate], Expression)] =
+    plan.query.where.collect {
+      case predicate@Unsolved(Equals(Property(Identifier(id), prop), expression))
+        if id == hint.identifier && prop == hint.property => (predicate, expression)
 
-    val (originalLabelPredicate, labelNames) = unsolvedHasLabels.head
-    val (labelValue, rest) = labelNames.partition(_.name == hint.label)
-    val remainingLabelPredicates = solveLabelPredicates(hint, labelValue, rest)
-    (originalLabelPredicate, remainingLabelPredicates)
-  }
-
-
-  private def solveLabelPredicates(hint: SchemaIndex, labelValue: Seq[LabelValue], rest: Seq[LabelValue]): Seq[QueryToken[Predicate]] = {
-    val solvedLabelPredicate: QueryToken[Predicate] = Solved(HasLabel(Identifier(hint.identifier), labelValue))
-    val remainingLabelPredicates = Seq(solvedLabelPredicate) ++ (if (rest.nonEmpty)
-      Some[QueryToken[Predicate]](Unsolved(HasLabel(Identifier(hint.identifier), rest)))
-    else
-      None)
-    remainingLabelPredicates
-  }
-
-  private def findMatchingPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(Unsolved[Predicate], Expression)] =
-    plan.query.where.flatMap {
-      case x@Unsolved(Equals(Property(Identifier(id), prop), expression))
-        if id == hint.identifier && prop == hint.property => Some((x, expression))
-
-      case x@Unsolved(Equals(expression, Property(Identifier(id), prop)))
-        if id == hint.identifier && prop == hint.property => Some((x, expression))
-
-      case _ => None
+      case predicate@Unsolved(Equals(expression, Property(Identifier(id), prop)))
+        if id == hint.identifier && prop == hint.property => (predicate, expression)
     }
 
-  private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[StartItem] =
-    plan.query.start.filter(interestingFilter).head
+  private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =
+    plan.query.start.filter(interestingFilter).head.asInstanceOf[QueryToken[SchemaIndex]]
 
   private def interestingFilter: PartialFunction[QueryToken[StartItem], Boolean] = {
     case Unsolved(SchemaIndex(_, _, _, None)) => true
-    case _                                  => false
+    case _                                    => false
   }
-
 
   def priority = PlanBuilder.IndexLookup
 }

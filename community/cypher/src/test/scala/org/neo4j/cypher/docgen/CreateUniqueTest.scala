@@ -91,6 +91,6 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       returns = "The A node is connected in a `KNOWS` relationship to the c node, but since C doesn't have " +
                 "the `:blue` label, a new node labeled as `:blue` is created along with a `KNOWS` relationship "+
                 "from A to it",
-      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, addedLabels = 1))
+      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, labelsAdded = 1))
   }
 }

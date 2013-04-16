@@ -28,20 +28,22 @@ import org.neo4j.cypher.{InternalException, CypherTypeException}
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.spi.QueryContext
 
-
 case class MergeNodeAction(identifier: String,
                            expectations: Seq[Predicate],
                            onCreate: Seq[UpdateAction],
-                           onUpdate: Seq[UpdateAction],
+                           onMatch: Seq[UpdateAction],
                            nodeProducerOption: Option[EntityProducer[Node]]) extends UpdateAction {
-  def children = expectations ++ onCreate ++ onUpdate
+
+  def children = expectations ++ onCreate ++ onMatch
 
   lazy val nodeProducer: EntityProducer[Node] = nodeProducerOption.getOrElse(throw new InternalException(
     "Tried to run merge action without finding node producer. This should never happen. " +
       "It seems the execution plan builder failed. "))
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
-    val foundNodes: Iterator[Node] = nodeProducer(context, state)
+    val foundNodes: Iterator[ExecutionContext] = nodeProducer(context, state).
+      map(n => context.newWith(identifier -> n)).
+      filter(ctx => expectations.forall(_.isMatch(ctx)(state)))
 
     if (foundNodes.isEmpty) {
       val query: QueryContext = state.query
@@ -54,7 +56,11 @@ case class MergeNodeAction(identifier: String,
 
       Iterator(newContext)
     } else {
-      foundNodes.map(n => context.newWith(identifier -> n))
+      foundNodes.map {
+        nextContext =>
+          onMatch.foreach(_.exec(nextContext, state))
+          nextContext
+      }
     }
   }
 
@@ -64,7 +70,7 @@ case class MergeNodeAction(identifier: String,
     MergeNodeAction(identifier = identifier,
       expectations = expectations.map(_.rewrite(f)),
       onCreate = onCreate.map(_.rewrite(f)),
-      onUpdate = onCreate.map(_.rewrite(f)),
+      onMatch = onMatch.map(_.rewrite(f)),
       nodeProducerOption)
 
   def throwIfSymbolsMissing(in: SymbolTable) {
@@ -76,11 +82,11 @@ case class MergeNodeAction(identifier: String,
 
     expectations.foreach(_.throwIfSymbolsMissing(symbols))
     onCreate.foreach(_.throwIfSymbolsMissing(symbols))
-    onUpdate.foreach(_.throwIfSymbolsMissing(symbols))
+    onMatch.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
   def symbolTableDependencies =
     (expectations.flatMap(_.symbolTableDependencies)
       ++ onCreate.flatMap(_.symbolTableDependencies)
-      ++ onUpdate.flatMap(_.symbolTableDependencies)).toSet - identifier
+      ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
 }

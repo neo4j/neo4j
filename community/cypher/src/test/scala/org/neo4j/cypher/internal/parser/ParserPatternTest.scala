@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0._
+import experimental._
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.helpers.LabelSupport
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.graphdb.Direction
 
 class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
@@ -32,10 +32,10 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = labelShortForm
 
     parsing(":FOO") shouldGive
-      LabelSet(LabelSupport.labelCollection("FOO"))
+      Seq(LabelName("FOO"))
 
     parsing(":FOO:BAR") shouldGive
-      LabelSet(LabelSupport.labelCollection("FOO", "BAR"))
+      Seq(LabelName("FOO"), LabelName("BAR"))
 
     assertFails("[:foo, :bar]")
   }
@@ -44,13 +44,28 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = node
 
     parsing("n") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet.empty, true)
+      ParsedEntity("n", Identifier("n"), Map.empty, Seq.empty, true)
 
     parsing("(n)") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet.empty, true)
+      ParsedEntity("n", Identifier("n"), Map.empty, Seq.empty, true)
 
     parsing("n {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
+      ParsedEntity("n", Identifier("n"), Map("name" -> Literal("Andres")), Seq.empty, false)
+  }
+
+  @Test def paths() {
+    implicit val parserToTest = path
+
+    parsing("a-[r:TYPE]->b") shouldGive
+      List(ParsedRelation("r", Map.empty, bareNode("a"), bareNode("b"), Seq("TYPE"), Direction.OUTGOING, false))
+
+    parsing("a-[r]->b") shouldGive
+      List(ParsedRelation("r", Map.empty, bareNode("a"), bareNode("b"), Seq.empty, Direction.OUTGOING, false))
+  }
+
+
+  def bareNode(id: String): ParsedEntity = {
+    ParsedEntity(id, Identifier(id), Map.empty, Seq.empty, true)
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???
