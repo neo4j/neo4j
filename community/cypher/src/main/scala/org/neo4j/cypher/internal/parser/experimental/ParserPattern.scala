@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 
 trait ParserPattern extends Base with Labels {
 
@@ -86,14 +86,11 @@ trait ParserPattern extends Base with Labels {
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
 
-
-  private def values = (("="|VALUES) ~> curlyMapWithExpression) | curlyMap
-
-  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(values) ^^ {
-    case labelSpec ~ optMap =>
+  private def labelsAndValues: Parser[(Seq[LabelValue], Map[String, Expression], Boolean)] = optLabelShortForm ~ opt(curlyMap) ^^ {
+    case labels ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
-      val bare = labelSpec.bare && optMap.isEmpty
-      (labelSpec, mapVal, bare)
+      val bare = labels.isEmpty && optMap.isEmpty
+      (labels, mapVal, bare)
   }
 
   private def singleNodeDefinition = identity ~ labelsAndValues ^^ {
@@ -112,20 +109,20 @@ trait ParserPattern extends Base with Labels {
     in =>
       (generatedName ~ expression).apply(in) match {
         case Success(_ ~ Identifier(name), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet.empty, true), rest)
+          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq.empty, true), rest)
 
         case Success(name ~ Literal(n: LabelName), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet(Seq(n)), true), rest)
+          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq(n), true), rest)
 
         case Success(name ~ exp, rest) =>
-          Success(ParsedEntity(name, exp, Map[String, Expression](), LabelSet.empty, true), rest)
+          Success(ParsedEntity(name, exp, Map[String, Expression](), Seq.empty, true), rest)
 
         case x: Error           => x
         case Failure(msg, rest) => failure("expected an expression that is a node", rest)
       }
   }
 
-  private def path: Parser[List[AbstractPattern]] =
+  def path: Parser[List[AbstractPattern]] =
     relationship | shortestPath | optParens(singleNodeDefinition) ^^ (List(_))
 
   private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
@@ -205,11 +202,8 @@ trait ParserPattern extends Base with Labels {
   private def expressionAsMap(x:Parser[Expression]):Parser[Map[String, Expression]] =
     x ^^ (x => Map[String, Expression]("*" -> x))
 
-  private def curlyMap =
+  def curlyMap: Parser[Map[String, Expression]] =
     expressionAsMap(parameter) | literalMap
-
-  private def curlyMapWithExpression =
-    expressionAsMap(expression) | literalMap
 
   private def literalMap = "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
 

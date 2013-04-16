@@ -34,6 +34,7 @@ sealed abstract class LabelOp
 case object LabelSetOp extends LabelOp
 case object LabelRemoveOp extends LabelOp
 
+//TODO: Should take single label
 case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[LabelValue])
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
 

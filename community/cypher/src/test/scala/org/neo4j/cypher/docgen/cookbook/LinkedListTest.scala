@@ -38,10 +38,10 @@ class LinkedListTest extends ArticleTest with StatisticsChecker {
         assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
         assert(result.toList.size === 0)
       case "add"    =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 2, propertiesSet = 1, deletedRelationships = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 2, propertiesSet = 1, relationshipsDeleted = 1)
         assert(result.toList.size === 0)
       case "delete" =>
-        assertStats(result, deletedNodes = 1, relationshipsCreated = 1, deletedRelationships = 2)
+        assertStats(result, nodesDeleted = 1, relationshipsCreated = 1, relationshipsDeleted = 2)
         assert(result.toList.size === 0)
     }
   }
