@@ -299,7 +299,22 @@ public class TestApps extends AbstractShellTest
         finishTx();
         executeCommand( "START n = node(" + node.getId() + ") RETURN n.name;", nodeOneName );
     }
-    
+
+    @Test
+    public void cypherTiming() throws Exception
+    {
+
+        beginTx();
+        Node node = db.createNode();
+        Node otherNode = db.createNode();
+        node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
+        finishTx();
+
+        executeCommand( "START n = node(" + node.getId() + ") match p=n-[r?*]-m RETURN p;", "\\d+ ms" );
+    }
+
+
+
     @Test
     public void filterProperties() throws Exception
     {

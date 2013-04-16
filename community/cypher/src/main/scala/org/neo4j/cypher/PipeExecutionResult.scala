@@ -67,18 +67,11 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
     columnSizes.toMap
   }
 
-  protected def createTimedResults: (List[Map[String, Any]], String) = {
-    val start = System.currentTimeMillis()
-    val eagerResult = result.toList
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
-  }
+  def eagerResult = result.toList
 
   def dumpToString(writer: PrintWriter) {
-    val (eagerResult, timeTaken) = createTimedResults
-
-    val columnSizes = calculateColumnSizes(eagerResult)
+    val result = eagerResult
+    val columnSizes = calculateColumnSizes(result)
 
     if (columns.nonEmpty) {
       val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
@@ -86,14 +79,14 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
       val lineWidth: Int = headerLine.length - 2
       val --- = "+" + repeat("-", lineWidth) + "+"
 
-      val row = if (eagerResult.size > 1) "rows" else "row"
-      val footer = "%d %s".format(eagerResult.size, row)
+      val row = if (result.size > 1) "rows" else "row"
+      val footer = "%d %s".format(result.size, row)
 
       writer.println(---)
       writer.println(headerLine)
       writer.println(---)
 
-      eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
+      result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
 
       writer.println(---)
       writer.println(footer)
@@ -112,10 +105,6 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
         writer.println("+--------------------------------------------+")
       }
     }
-
-
-
-    writer.println("%s ms".format(timeTaken))
   }
 
   lazy val dumpToString: String = {
