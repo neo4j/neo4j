@@ -48,7 +48,7 @@ class CreateUniqueTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.CREATE UNIQUE
-[refcard]
+["refcard", cardcss="write"]
 ----
 ###assertion=create parameters=aname
 //

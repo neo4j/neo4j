@@ -43,7 +43,7 @@ class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("propertyName" -> "Chris"))
 
   def text = """.Predicate Functions
-[refcard]
+["refcard", cardcss="general"]
 ----
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)

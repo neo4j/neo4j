@@ -53,7 +53,7 @@ class AggregationTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("propertyName" -> 30))
 
   def text = """.Aggregation
-[refcard]
+["refcard", cardcss="general"]
 ----
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)

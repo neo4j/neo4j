@@ -327,6 +327,23 @@ footer div.mid {
   font-weight: 500;
 }
 
+.col.cardgeneral tr th {
+  background: #617a96 url('bg-general.png');
+}
+
+.col.cardread tr th, p.cardread span {
+  background: #789661 url('bg-read.png');
+}
+p.cardread span {
+  color: #ffffff;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.col.cardwrite tr th {
+  background: #967061 url('bg-write.png');
+}
+
 .col tr th:first-child {
   border-top-left-radius: 5px;
   -webkit-border-top-left-radius: 5px;

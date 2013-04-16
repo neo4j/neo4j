@@ -2,7 +2,9 @@
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
-The basic read query structure of Cypher is as follows:
+++++
+<p class="cardread"><span>The basic read query structure</span></p>
+++++
 
 [source,cypher]
 ----
@@ -30,8 +32,18 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 
 == Syntax ==
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/where.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
+
 ++++
-<div class="col"><div class="blk">
+<div class="col cardgeneral"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -50,20 +62,12 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 </div></div>
 ++++
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/where.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
-
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
 
 .Write-Only Query Structure 
-[refcard]
+["refcard", cardcss="write"]
 ----
 CREATE [UNIQUE]*
 [SET|DELETE|FOREACH]*
@@ -71,7 +75,7 @@ CREATE [UNIQUE]*
 ----
 
 .Read-Write Query Structure 
-[refcard]
+["refcard", cardcss="write"]
 ----
 START
 [MATCH]
@@ -100,7 +104,5 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/mathematica
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
 

@@ -66,7 +66,7 @@ class CreateTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.CREATE
-[refcard]
+["refcard", cardcss="write"]
 ----
 ###assertion=create-node parameters=aname
 //

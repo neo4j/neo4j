@@ -50,7 +50,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.SET
-[refcard]
+["refcard", cardcss="write"]
 ----
 ###assertion=set parameters=set
 START n = node(%A%)
