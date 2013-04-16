@@ -136,7 +136,13 @@ public class SchemaImpl implements Schema
                 case FAILED:
                     throw new IllegalStateException( "Index entered a FAILED state. Please see database logs." );
                 default:
-                    Thread.yield();
+                    try
+                    {
+                        Thread.sleep( 100 );
+                    }
+                    catch ( InterruptedException e )
+                    {   // What to do?
+                    }
                     break;
             }
         } while ( System.currentTimeMillis() < timeout );

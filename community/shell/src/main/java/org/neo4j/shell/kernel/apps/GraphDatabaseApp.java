@@ -712,7 +712,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
                 matches.put( type.name(), direction );
             }
         }
-        return matches.isEmpty() ? null : matches;
+        return matches.isEmpty() ? Collections.<String, Direction>emptyMap() : matches;
     }
     
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,

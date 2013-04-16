@@ -61,6 +61,8 @@ public class Mkrel extends GraphDatabaseApp
             "Verbose mode: display created nodes/relationships" ) );
         this.addOptionDefinition( "np", new OptionDefinition( OptionValueType.MUST,
             "Properties (a json map) to set for the new node (if one is created)" ) );
+        addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
+            "Labels to attach to the created node (if one is created), either a single label or a JSON array" ) );
         this.addOptionDefinition( "rp", new OptionDefinition( OptionValueType.MUST,
             "Properties (a json map) to set for the new relationship" ) );
         this.addOptionDefinition( "cd", new OptionDefinition( OptionValueType.NONE,
@@ -86,7 +88,7 @@ public class Mkrel extends GraphDatabaseApp
         Node node = null;
         if ( createNode )
         {
-            node = getServer().getDb().createNode();
+            node = getServer().getDb().createNode( Mknode.parseLabels( parser ) );
             session.set( KEY_LAST_CREATED_NODE, "" + node.getId() );
             setProperties( node, parser.options().get( "np" ) );
         }
