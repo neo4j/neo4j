@@ -42,7 +42,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
-import org.neo4j.server.rest.transactional.StatementDeserializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -54,12 +53,12 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 @Path("/transaction")
 public class TransactionalService
 {
-    private final TransactionFacade actions;
+    private final TransactionFacade facade;
     private final TransactionUriScheme uriScheme;
 
-    public TransactionalService( @Context TransactionFacade actions, @Context UriInfo uriInfo )
+    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo )
     {
-        this.actions = actions;
+        this.facade = facade;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
     }
 
@@ -71,7 +70,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = actions.newTransactionHandle();
+            transactionHandle = facade.newTransactionHandle( uriScheme );
         }
         catch ( Neo4jError neo4jError )
         {
@@ -89,7 +88,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = actions.findTransactionHandle( id );
+            transactionHandle = facade.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
@@ -107,7 +106,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = actions.findTransactionHandle( id );
+            transactionHandle = facade.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
@@ -125,7 +124,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = actions.newTransactionHandle();
+            transactionHandle = facade.newTransactionHandle( uriScheme );
         }
         catch ( Neo4jError neo4jError )
         {
@@ -142,7 +141,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = actions.findTransactionHandle( id );
+            transactionHandle = facade.findTransactionHandle( id );
         }
         catch ( Neo4jError neo4jError )
         {
@@ -160,7 +159,7 @@ public class TransactionalService
 
     private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )
     {
-        return Response.created( uriScheme.txUri( transactionHandle.getId() ) )
+        return Response.created( transactionHandle.uri() )
                 .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
                 .entity( streamingResults ).build();
     }
@@ -180,9 +179,7 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.execute(
-                        new StatementDeserializer( input ),
-                        new ExecutionResultSerializer( output, uriScheme ) );
+                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output ) );
             }
         };
     }
@@ -194,9 +191,7 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.commit(
-                        new StatementDeserializer( input ),
-                        new ExecutionResultSerializer( output, uriScheme ) );
+                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output ) );
             }
         };
     }
@@ -208,7 +203,7 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.rollback( new ExecutionResultSerializer( output, uriScheme ) );
+                transactionHandle.rollback( facade.serializer( output ) );
             }
         };
     }
@@ -220,7 +215,7 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, uriScheme );
+                ExecutionResultSerializer serializer = facade.serializer( output );
                 serializer.errors( asList( neo4jError ) );
                 serializer.finish();
             }

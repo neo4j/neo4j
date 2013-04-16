@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import static javax.xml.bind.DatatypeConverter.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.net.URI;
 
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -29,6 +32,7 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 import org.neo4j.test.DoubleLatch;
 
 public class ConcurrentTransactionAccessTest
@@ -39,10 +43,11 @@ public class ConcurrentTransactionAccessTest
         // given
         TransactionRegistry registry =
                 new TransactionHandleRegistry( mock( Clock.class), StringLogger.DEV_NULL );
-        TransactionFacade actions = new TransactionFacade(
-                mock( TransitionalPeriodTransactionMessContainer.class ), null, registry, null );
+        TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
+        when(kernel.newTransactionContext()).thenReturn( mock(TransitionalTxManagementTransactionContext.class) );
+        TransactionFacade actions = new TransactionFacade( kernel, null, registry, null );
 
-        final TransactionHandle transactionHandle = actions.newTransactionHandle();
+        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme() );
 
         final DoubleLatch latch = new DoubleLatch();
 
@@ -72,7 +77,7 @@ public class ConcurrentTransactionAccessTest
         try
         {
             // when
-            actions.findTransactionHandle( transactionHandle.getId() );
+            actions.findTransactionHandle( DisgustingUriScheme.parseTxId( transactionHandle.uri() ) );
             fail( "should have thrown exception" );
         }
         catch ( ConcurrentTransactionAccessError neo4jError )
@@ -82,6 +87,26 @@ public class ConcurrentTransactionAccessTest
         finally
         {
             latch.finish();
+        }
+    }
+
+    private static class DisgustingUriScheme implements TransactionUriScheme
+    {
+        private static long parseTxId( URI txUri )
+        {
+            return parseLong( txUri.toString() );
+        }
+
+        @Override
+        public URI txUri( long id )
+        {
+            return URI.create( String.valueOf( id ) );
+        }
+
+        @Override
+        public URI txCommitUri( long id )
+        {
+            return txUri( id );
         }
     }
 }

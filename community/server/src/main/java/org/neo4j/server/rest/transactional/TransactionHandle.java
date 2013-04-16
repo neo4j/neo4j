@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +36,7 @@ import org.neo4j.server.rest.transactional.error.UnknownCommitError;
 import org.neo4j.server.rest.transactional.error.UnknownDatabaseError;
 import org.neo4j.server.rest.transactional.error.UnknownRollbackError;
 import org.neo4j.server.rest.transactional.error.UnknownStatementError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -58,22 +60,25 @@ public class TransactionHandle
     private final KernelAPI kernel;
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
+    private final TransactionUriScheme uriScheme;
     private final StringLogger log;
     private final long id;
     private TransitionalTxManagementTransactionContext context;
 
-    public TransactionHandle( KernelAPI kernel, ExecutionEngine engine, TransactionRegistry registry, StringLogger log )
+    public TransactionHandle( KernelAPI kernel, ExecutionEngine engine, TransactionRegistry registry,
+                              TransactionUriScheme uriScheme, StringLogger log )
     {
         this.kernel = kernel;
         this.engine = engine;
         this.registry = registry;
+        this.uriScheme = uriScheme;
         this.log = log;
         this.id = registry.begin();
     }
 
-    public long getId()
+    public URI uri()
     {
-        return id;
+        return uriScheme.txUri( id );
     }
 
     public void execute( StatementDeserializer statements, ExecutionResultSerializer output )
@@ -81,7 +86,7 @@ public class TransactionHandle
         List<Neo4jError> errors = new LinkedList<Neo4jError>();
         try
         {
-            output.transactionId( id );
+            output.transactionCommitUri( uriScheme.txCommitUri( id ) );
             ensureActiveTransaction();
             execute( statements, output, errors );
         }

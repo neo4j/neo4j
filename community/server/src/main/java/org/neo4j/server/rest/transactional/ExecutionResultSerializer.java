@@ -21,6 +21,7 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,15 +29,15 @@ import java.util.Map;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.UnknownStatementError;
-import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Writes directly to an output stream, therefore implicitly stateful. Methods must be invoked in the correct
  * order, as follows:
  * <ul>
- * <li>{@link #transactionId(long) transactionId}{@code ?}</li>
+ * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
  * <li>{@link #statementResult(ExecutionResult) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
@@ -46,9 +47,9 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, TransactionUriScheme scheme )
+    public ExecutionResultSerializer( OutputStream output, StringLogger log )
     {
-        this.scheme = scheme;
+        this.log = log;
         JsonGenerator generator = null;
         try
         {
@@ -58,7 +59,7 @@ public class ExecutionResultSerializer
         {
             handleIOException( e );
         }
-        out = generator;
+        this.out = generator;
     }
 
     /**
@@ -66,12 +67,12 @@ public class ExecutionResultSerializer
      * to throw exceptions. If there are network errors or similar, the handler should take appropriate action,
      * but never fail this method.
      */
-    public void transactionId( long txId )
+    public void transactionCommitUri( URI commitUri )
     {
         try
         {
             ensureDocumentOpen();
-            out.writeStringField( "commit", scheme.txCommitUri( txId ).toString() );
+            out.writeStringField( "commit", commitUri.toString() );
         }
         catch ( IOException e )
         {
@@ -177,7 +178,7 @@ public class ExecutionResultSerializer
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
     private final JsonGenerator out;
-    private final TransactionUriScheme scheme;
+    private final StringLogger log;
 
     private void ensureDocumentOpen() throws IOException
     {
@@ -260,6 +261,6 @@ public class ExecutionResultSerializer
 
     private void handleIOException( IOException exc )
     {
-        exc.printStackTrace(); // TODO: proper logging
+        log.error( "Failed to generate JSON output.", exc );
     }
 }

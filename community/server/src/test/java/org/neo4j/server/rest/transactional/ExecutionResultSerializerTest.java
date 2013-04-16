@@ -25,8 +25,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,15 +38,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+import org.mockito.internal.stubbing.answers.ThrowsException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.InvalidRequestError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class ExecutionResultSerializerTest
 {
@@ -52,15 +57,16 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, org.neo4j.kernel.impl.util
+                .StringLogger.DEV_NULL );
 
         // when
-        serializer.transactionId( 1337 );
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[],\"errors\":[]}", result );
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[]}", result );
     }
 
     @Test
@@ -68,20 +74,20 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
         // when
-        serializer.transactionId( 1337 );
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                 "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
     }
 
@@ -90,7 +96,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -111,21 +117,21 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
         // when
-        serializer.transactionId( 1337 );
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult );
         serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                 "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
     }
 
@@ -134,7 +140,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -156,16 +162,16 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
-        serializer.transactionId( 1337 );
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"transaction/1337/commit\",\"results\":[],\"errors\":[{\"code\":100," +
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":100," +
                 "\"message\":\"error1\"}]}", result );
     }
 
@@ -174,7 +180,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
         serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
@@ -190,7 +196,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
         serializer.finish();
@@ -205,7 +211,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -228,7 +234,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult1 = mockExecutionResult( map(
                 "column1", "value1",
@@ -255,7 +261,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "node", mockNode( map(
@@ -281,7 +287,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
@@ -302,7 +308,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -339,7 +345,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, txUriScheme );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -371,6 +377,22 @@ public class ExecutionResultSerializerTest
                 result );
     }
 
+    @Test
+    public void shouldLogIOErrors() throws Exception
+    {
+        // given
+        IOException failure = new IOException();
+        OutputStream output = mock( OutputStream.class, new ThrowsException( failure ) );
+        TestLogger log = new TestLogger();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, log );
+
+        // when
+        serializer.finish();
+
+        // then
+        log.assertExactly( error( "Failed to generate JSON output.", failure ) );
+    }
+
     private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
     {
         Set<String> keys = new HashSet<String>();
@@ -383,21 +405,6 @@ public class ExecutionResultSerializerTest
         when( executionResult.iterator() ).thenReturn( asList( rows ).iterator() );
         return executionResult;
     }
-
-    private static final TransactionUriScheme txUriScheme = new TransactionUriScheme()
-    {
-        @Override
-        public URI txUri( long id )
-        {
-            return URI.create( "transaction/" + id );
-        }
-
-        @Override
-        public URI txCommitUri( long id )
-        {
-            return URI.create( "transaction/" + id + "/commit" );
-        }
-    };
 
     private static Node mockNode( Map<String, Object> properties )
     {

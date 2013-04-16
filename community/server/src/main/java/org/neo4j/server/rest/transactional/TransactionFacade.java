@@ -19,10 +19,14 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
@@ -60,13 +64,23 @@ public class TransactionFacade
         this.log = log;
     }
 
-    public TransactionHandle newTransactionHandle() throws Neo4jError
+    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws Neo4jError
     {
-        return new TransactionHandle( kernel, engine, registry, log );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, log );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws Neo4jError
     {
         return registry.acquire( txId );
+    }
+
+    public StatementDeserializer deserializer( InputStream input )
+    {
+        return new StatementDeserializer( input );
+    }
+
+    public ExecutionResultSerializer serializer( OutputStream output )
+    {
+        return new ExecutionResultSerializer( output, log );
     }
 }

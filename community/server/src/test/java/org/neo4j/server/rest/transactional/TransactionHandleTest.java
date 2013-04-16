@@ -34,6 +34,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.deserilizationErrors;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
+import java.net.URI;
 import java.util.Iterator;
 
 import org.hamcrest.Description;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InvalidRequestError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class TransactionHandleTest
 {
@@ -60,7 +62,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine,
-                registry, StringLogger.DEV_NULL );
+                registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -70,7 +72,7 @@ public class TransactionHandleTest
         verify( executionEngine ).execute( "query", map() );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -89,7 +91,7 @@ public class TransactionHandleTest
         when( registry.begin() ).thenReturn( 1337l );
 
         TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ),
-                registry, StringLogger.DEV_NULL );
+                registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -101,7 +103,7 @@ public class TransactionHandleTest
         transactionOrder.verify( registry ).release( 1337l, handle );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -121,7 +123,7 @@ public class TransactionHandleTest
 
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
 
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, StringLogger.DEV_NULL );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         handle.execute( statements( new Statement( "query", map() ) ), output );
@@ -138,7 +140,7 @@ public class TransactionHandleTest
         order.verify( registry ).release( 1337l, handle );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -157,7 +159,7 @@ public class TransactionHandleTest
         when( registry.begin() ).thenReturn( 1337l );
 
         TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ),
-                registry, StringLogger.DEV_NULL );
+                registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -187,7 +189,7 @@ public class TransactionHandleTest
         when( registry.begin() ).thenReturn( 1337l );
 
         TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ),
-                registry, StringLogger.DEV_NULL );
+                registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -215,7 +217,7 @@ public class TransactionHandleTest
 
         // when
         TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ),
-                registry, StringLogger.DEV_NULL );
+                registry, uriScheme, StringLogger.DEV_NULL );
 
         // then
         verifyZeroInteractions( kernel );
@@ -227,7 +229,7 @@ public class TransactionHandleTest
         verify( kernel ).newTransactionContext();
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -246,7 +248,7 @@ public class TransactionHandleTest
         when( registry.begin() ).thenReturn( 1337l );
 
         TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry,
-                StringLogger.DEV_NULL );
+                uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -257,7 +259,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).errors( argThat( hasErrors( 1 ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -277,7 +279,7 @@ public class TransactionHandleTest
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
         when( executionEngine.execute( "query", map() ) ).thenThrow( new NullPointerException() );
 
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, StringLogger.DEV_NULL );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -288,7 +290,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionId( 1337 );
+        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).errors( argThat( hasErrors( 1 ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -308,7 +310,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry, log );
+        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry, uriScheme, log );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -324,6 +326,21 @@ public class TransactionHandleTest
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
+
+    private static final TransactionUriScheme uriScheme = new TransactionUriScheme()
+    {
+        @Override
+        public URI txUri( long id )
+        {
+            return URI.create( "transaction/" + id );
+        }
+
+        @Override
+        public URI txCommitUri( long id )
+        {
+            return URI.create( "transaction/" + id + "/commit" );
+        }
+    };
 
     private KernelAPI mockKernel()
     {
