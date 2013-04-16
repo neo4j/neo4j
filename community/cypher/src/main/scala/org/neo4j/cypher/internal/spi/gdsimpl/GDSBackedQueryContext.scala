@@ -84,7 +84,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         graph.index.forNodes(name).get(key, value).iterator().asScala
 
       def indexQuery(name: String, query: Any): Iterator[Node] =
-        graph.index.forNodes(name).query(name, query).iterator().asScala
+        graph.index.forNodes(name).query(query).iterator().asScala
 
       def all: Iterator[Node] =
         GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
