@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal, Collection, Expression}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.internal.commands.values.LabelValue
 
 /**
@@ -54,14 +53,7 @@ sealed abstract class LabelSpec {
    */
   def asLabelSet: LabelSet
 
-  /**
-   * @throws SyntaxException if this is a LabelChoice
-   * @return this as a predicate or none if the contained expression is an empty collection
-   */
-  def asOptPredicate(ident: Identifier): Option[HasLabel] = {
-    val labelVals = asLabelSet.labelVals
-    if (labelVals.isEmpty) None else Some(HasLabel(ident, labelVals))
-  }
+  def toPredicates(ident: Identifier): Seq[HasLabel] = asLabelSet.labelVals.map(HasLabel(ident,_))
 
   /**
    * Reduce a LabelChoice to a LabelSet if possible

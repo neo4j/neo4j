@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 
 trait Labels extends Base {
   def labelName: Parser[LabelName] = ":" ~> escapableString ^^ { x => LabelName(x) }
 
-  def labelShortForm: Parser[LabelSet] = rep1(labelName) ^^ {
-    case litList => LabelSet(litList)
-  }
+  def labelShortForm: Parser[Seq[LabelValue]] = rep1(labelName)
 
-  def optLabelShortForm: Parser[LabelSet] = opt(labelShortForm) ^^ {
-    case optSpec => optSpec.getOrElse(LabelSet.empty)
+  def optLabelShortForm: Parser[Seq[LabelValue]] = opt(labelShortForm) ^^ {
+    case optSpec => optSpec.getOrElse(Seq.empty)
   }
 
   def expression: Parser[Expression]
 }
-

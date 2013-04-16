@@ -302,33 +302,33 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, labels: Seq[LabelValue]) extends Predicate with CollectionSupport {
+case class HasLabel(entity: Expression, label: LabelValue) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val node           = CastSupport.erasureCastOrFail[Node](entity(m))
     val nodeId         = node.getId
     val queryCtx       = state.query
 
-    val expectedLabels = try {
-      labels.map(_.id(state))
+    val labelId = try {
+      label.id(state)
     } catch {
       // If we are running in a query were we can't write changes,
       // just return false for this predicate.
       case _: NotInTransactionException => return false
     }
-    expectedLabels.forall(queryCtx.isLabelSetOnNode(_, nodeId))
+    queryCtx.isLabelSetOnNode(labelId, nodeId)
   }
 
-  override def toString = s"hasLabel(${entity}, [${labels.map(_.name).mkString(", ")}])"
+  override def toString = s"hasLabel(${entity}: ${label.name})"
 
-  def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), labels.map(_.typedRewrite[LabelValue](f)))
+  def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[LabelValue](f))
 
-  def children = labels :+ entity
+  def children = Seq(label, entity)
 
-  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
+  def symbolTableDependencies = entity.symbolTableDependencies ++ label.symbolTableDependencies
 
   def assertInnerTypes(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)
-    labels.foreach(_.throwIfSymbolsMissing(symbols))
+    label.throwIfSymbolsMissing(symbols)
     entity.evaluateType(NodeType(), symbols)
   }
 

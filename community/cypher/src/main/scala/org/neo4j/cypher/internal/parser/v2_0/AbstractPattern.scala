@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.graphdb.Direction
 import collection.Map
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
-import org.neo4j.cypher.internal.commands.{Or, HasLabel, Predicate}
-import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.commands.{And, HasLabel, Predicate}
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 abstract sealed class AbstractPattern {
   def makeOutgoing:AbstractPattern
@@ -34,8 +34,8 @@ abstract sealed class AbstractPattern {
   def parsedLabelPredicates: Seq[Predicate] =
     parsedEntities.flatMap { (entity: ParsedEntity) =>
       val ident: Identifier = Identifier(entity.name)
-      val labelPreds: Seq[HasLabel] = entity.labels.allSets.flatMap(_.asOptPredicate(ident))
-      if (labelPreds.isEmpty) None else Some(labelPreds.reduce(Or))
+      val labelPreds: Seq[HasLabel] = entity.labels.map(HasLabel(ident, _))
+      if (labelPreds.isEmpty) None else Some(labelPreds.reduce(And.apply))
     }
 }
 
@@ -56,7 +56,7 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
-                        labels: LabelSpec,
+                        labels: Seq[LabelValue],
                         bare: Boolean) extends AbstractPattern {
   def makeOutgoing = this
 

@@ -72,7 +72,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     relate(a, c)
 
     val pattern = RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
-    val pred = HasLabel(Identifier("  UNNAMED1"), Seq(LabelName("Tror_Inte_Det")))
+    val pred = HasLabel(Identifier("  UNNAMED1"), LabelName("Tror_Inte_Det"))
     val expression = PatternPredicate(Seq(pattern), pred)
     val m = createExecutionContext(Map("a" -> a))
 

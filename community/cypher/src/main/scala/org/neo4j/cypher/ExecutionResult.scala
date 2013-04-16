@@ -66,7 +66,9 @@ case class QueryStatistics(nodesCreated: Int = 0,
     includeIfNonZero(builder, "Labels added: ", addedLabels)
     includeIfNonZero(builder, "Labels removed: ", removedLabels)
 
-    builder.toString()
+    val result = builder.toString()
+
+    if (result.isEmpty) "<Nothing happened>" else result
   }
 
   private def includeIfNonZero(builder:StringBuilder, message: String, count:Long) = if(count>0) {

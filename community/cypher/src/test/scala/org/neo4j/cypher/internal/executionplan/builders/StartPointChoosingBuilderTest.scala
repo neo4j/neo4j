@@ -82,7 +82,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
-      where = Seq(HasLabel(Identifier(identifier), Seq(LabelName("Person"))),
+      where = Seq(HasLabel(Identifier(identifier), LabelName("Person")),
                   Equals(Property(Identifier(identifier),"prop1"), Literal("banana")))
     )
 
@@ -112,7 +112,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_an_index_if_only_one_possible_exists() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      HasLabel(Identifier(identifier), LabelName(label)),
       Equals(Property(Identifier(identifier), property), expression)
     ), patterns = Seq(
       SingleNode(identifier)
@@ -131,7 +131,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_an_index_if_only_one_possible_exists_other_side() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      HasLabel(Identifier(identifier), LabelName(label)),
       Equals(expression, Property(Identifier(identifier), property))
     ), patterns = Seq(
       SingleNode(identifier)
@@ -150,7 +150,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_any_index_available() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      HasLabel(Identifier(identifier), LabelName(label)),
       Equals(Property(Identifier(identifier), property), expression),
       Equals(Property(Identifier(identifier), otherProperty), expression)
     ), patterns = Seq(
@@ -171,7 +171,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_produce_label_start_points_when_no_property_predicate_is_used() {
     // Given MATCH n:Person
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), Seq(LabelName(label)))
+      HasLabel(Identifier(identifier), LabelName(label))
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -202,7 +202,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_produce_label_start_points_when_no_matching_index_exist() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      HasLabel(Identifier(identifier), LabelName(label)),
       Equals(Property(Identifier(identifier), property), expression)
     ), patterns = Seq(
       SingleNode(identifier)
@@ -239,7 +239,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // MATCH p=shortestPath( (a:Person{prop:42}) -[*]-> (b{prop:666}) )
     val query = q(
       where = Seq(
-        HasLabel(Identifier(identifier), Seq(LabelName(label))),
+        HasLabel(Identifier(identifier), LabelName(label)),
         Equals(Property(Identifier(identifier), property), expression1),
         Equals(Property(Identifier(otherIdentifier), property), expression2)),
 

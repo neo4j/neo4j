@@ -34,28 +34,28 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     implicit val parserToTest = patternPredicate
 
     parsing("a-->(:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), LabelName("Foo")))
 
     parsing("a-->(n:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), Seq(LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), LabelName("Foo")))
 
     parsing("a-->(:Bar:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"), LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), LabelName("Bar")), HasLabel(Identifier("  UNNAMED5"),LabelName("Foo"))))
 
     val patterns = Seq(
       RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
       RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
 
     val predicate = And(
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("First"))),
-      HasLabel(Identifier("  UNNAMED16"), Seq(LabelName("Second"))))
+      HasLabel(Identifier("  UNNAMED5"), LabelName("First")),
+      HasLabel(Identifier("  UNNAMED16"), LabelName("Second")))
 
     parsing("a-->(:First)-->(:Second)") shouldGive
       PatternPredicate(patterns, predicate)
 
     val orPred = Or(
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"))),
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo")))
+      HasLabel(Identifier("  UNNAMED5"), LabelName("Bar")),
+      HasLabel(Identifier("  UNNAMED5"), LabelName("Foo"))
     )
   }
 

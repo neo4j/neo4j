@@ -94,7 +94,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     val a = createNode().getId
 
     val result = parseAndExecute("start a = node(1) delete a")
-    assertStats(result,       deletedNodes = 1    )
+    assertStats(result, nodesDeleted = 1    )
 
     assert(result.toList === List())
     intercept[NotFoundException](graph.getNodeById(a))
@@ -105,7 +105,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     (1 to 4).foreach(i => createNode())
 
     val result = parseAndExecute("start a = node(1),b=node(2,3,4) delete a")
-    assertStats(result, deletedNodes = 1)
+    assertStats(result, nodesDeleted = 1)
 
     assert(result.toList === List())
   }
@@ -122,7 +122,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     relate(a, d)
 
     val result = parseAndExecute("start a = node(1) match a-[r]->() delete r")
-    assertStats(result,        deletedRelationships = 3    )
+    assertStats(result, relationshipsDeleted = 3    )
 
     assert(a.getRelationships.asScala.size === 0)
   }
@@ -452,7 +452,7 @@ return distinct center""")
     createNode()
     val result = parseAndExecute("start a=node(1) delete a foreach( x in [1] : delete a)")
 
-    assertStats(result, deletedNodes = 1)
+    assertStats(result, nodesDeleted = 1)
   }
 
   @Test
@@ -528,7 +528,7 @@ return distinct center""")
     val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO", "BAR"))
-    assertStats(result, nodesCreated = 1, addedLabels = 2);
+    assertStats(result, nodesCreated = 1, labelsAdded = 2);
   }
   
   @Test
@@ -537,7 +537,7 @@ return distinct center""")
     val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO"))
-    assertStats(result, addedLabels = 1);
+    assertStats(result, labelsAdded = 1);
   }
 }
 
@@ -546,13 +546,13 @@ trait StatisticsChecker extends Assertions {
                   nodesCreated: Int = 0,
                   relationshipsCreated: Int = 0,
                   propertiesSet: Int = 0,
-                  deletedNodes: Int = 0,
-                  deletedRelationships: Int = 0,
-                  addedLabels: Int = 0,
-                  removedLabels: Int = 0) {
+                  nodesDeleted: Int = 0,
+                  relationshipsDeleted: Int = 0,
+                  labelsAdded: Int = 0,
+                  labelsRemoved: Int = 0) {
     val statistics = result.queryStatistics()
-    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes,
-                                deletedRelationships, addedLabels, removedLabels)
+    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, nodesDeleted,
+                                relationshipsDeleted, labelsAdded, labelsRemoved)
     )
   }
 }

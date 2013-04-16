@@ -84,7 +84,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     def findSingleNodePoints(startPoints: Set[StartItemWithRating]): Iterable[StartItem] =
       startPoints.collect {
-        case StartItemWithRating(si, r) if r == Single => si
+        case StartItemWithRating(si, r, _) if r == Single => si
       }
 
 
@@ -98,7 +98,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
         if (shortestPathPointsInPattern.nonEmpty) {
           startPoints.collect {
-            case StartItemWithRating(si, r) if shortestPathPoints.contains(si.identifierName) => si
+            case StartItemWithRating(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
           }.toSet union singleNodePoints.toSet
         } else if (singleNodePoints.nonEmpty) {
           // We want to keep all these start points because cartesian product with them is free

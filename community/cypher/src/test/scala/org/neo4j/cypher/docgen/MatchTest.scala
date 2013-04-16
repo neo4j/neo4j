@@ -304,5 +304,4 @@ Cypher will try to match the relationship where the connected nodes switch sides
       assertions = p => assertEquals(List(node("WallStreet")), p.columnAs[Node]("movie").toList)
     )
   }
-
 }

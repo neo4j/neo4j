@@ -89,7 +89,7 @@ trait StartAndCreateClause extends Base with Expressions with Merge {
     case ParsedRelation(name, props, a, b, relType, dir, map) if relType.size == 1 =>
 
       def translate(in: ParsedEntity) =
-        RelationshipEndpoint(in.expression, in.props, in.labels.asLabelSet.labelVals, in.bare)
+        RelationshipEndpoint(in.expression, in.props, in.labels, in.bare)
 
       val (from, to) = if (dir != Direction.INCOMING)
         (a, b)
@@ -99,10 +99,10 @@ trait StartAndCreateClause extends Base with Expressions with Merge {
       Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, translate(from), translate(to), relType.head, props))))
 
     case ParsedEntity(_, Identifier(name), props, labels, bare) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, labels.asLabelSet.labelVals, bare))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, labels, bare))))
 
     case ParsedEntity(name, p: ParameterExpression, _, labels, bare) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, Map[String, Expression]("*" -> p), labels.asLabelSet.labelVals, bare))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, Map[String, Expression]("*" -> p), labels, bare))))
 
     case _ => No(Seq(""))
   }

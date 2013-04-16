@@ -21,10 +21,19 @@ package org.neo4j.cypher.internal.parser
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
+import expressions.Property
+import expressions.TimestampFunction
 import org.neo4j.cypher.internal.mutation.{PropertySetAction, MergeNodeAction}
-import org.neo4j.cypher.internal.commands.expressions.{TimestampFunction, Property, Identifier, Expression}
+import expressions._
 import org.neo4j.cypher.internal.commands.values.LabelName
 import org.neo4j.cypher.internal.parser.experimental.{Updates, StartAndCreateClause, MatchClause}
+import org.neo4j.cypher.internal.mutation.PropertySetAction
+import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.commands.MergeNodeStartItem
+import org.neo4j.cypher.internal.commands.LabelAction
+import values.LabelName
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.HasLabel
 
 
 class MergeTest extends StartAndCreateClause with MatchClause with Updates with ParserTest {
@@ -35,7 +44,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
     val B = "b"
     val NO_PATHS = Seq.empty
     val NO_PRODUCER = None
-    def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), Seq(LabelName("Label")))
+    def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), LabelName("Label"))
     def setNodeLabels(id: String) = LabelAction(Identifier(id), LabelSetOp, Seq(LabelName("Label")))
     def setProperty(id: String) = PropertySetAction(Property(Identifier(id), "property"), TimestampFunction())
 
@@ -43,7 +52,14 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
       (Seq(MergeNodeStartItem(MergeNodeAction(node,
         expectations = Seq.empty,
         onCreate = Seq.empty,
-        onUpdate = Seq.empty,
+        onMatch = Seq.empty,
+        nodeProducerOption = NO_PRODUCER))), NO_PATHS)
+
+    parsing("MERGE (nodeName {prop:42})") shouldGive
+      (Seq(MergeNodeStartItem(MergeNodeAction(node,
+        expectations = Seq(Equals(Property(Identifier("nodeName"), "prop"), Literal(42))),
+        onCreate = Seq(PropertySetAction(Property(Identifier("nodeName"), "prop"), Literal(42))),
+        onMatch = Seq.empty,
         nodeProducerOption = NO_PRODUCER))), NO_PATHS)
 
 
@@ -51,7 +67,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
       (Seq(MergeNodeStartItem(MergeNodeAction(node,
         expectations = Seq(nodeHasLabelPredicate(node)),
         onCreate = Seq(setNodeLabels(node)),
-        onUpdate = Seq.empty,
+        onMatch = Seq.empty,
         nodeProducerOption = NO_PRODUCER))),
         NO_PATHS)
 
@@ -59,7 +75,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
       (Seq(MergeNodeStartItem(MergeNodeAction(node,
         expectations = Seq(nodeHasLabelPredicate(node)),
         onCreate = Seq(setProperty(node), setNodeLabels(node)),
-        onUpdate = Seq.empty,
+        onMatch = Seq.empty,
         nodeProducerOption = NO_PRODUCER))),
         NO_PATHS)
 
@@ -67,7 +83,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
       (Seq(MergeNodeStartItem(MergeNodeAction(node,
         expectations = Seq(nodeHasLabelPredicate(node)),
         onCreate = Seq(setNodeLabels(node)),
-        onUpdate = Seq(setProperty(node)),
+        onMatch = Seq(setProperty(node)),
         nodeProducerOption = NO_PRODUCER))),
         NO_PATHS)
 
@@ -83,13 +99,13 @@ ON MATCH b SET b.property = timestamp()
         MergeNodeStartItem(MergeNodeAction(A,
           expectations = Seq(nodeHasLabelPredicate(A)),
           onCreate = Seq(setProperty(A), setNodeLabels(A)),
-          onUpdate = Seq(setProperty(A)),
+          onMatch = Seq(setProperty(A)),
           nodeProducerOption = NO_PRODUCER)),
 
         MergeNodeStartItem(MergeNodeAction(B,
           expectations = Seq(nodeHasLabelPredicate(B)),
           onCreate = Seq(setProperty(B), setNodeLabels(B)),
-          onUpdate = Seq(setProperty(B)),
+          onMatch = Seq(setProperty(B)),
           nodeProducerOption = NO_PRODUCER))),
         Seq.empty)
   }

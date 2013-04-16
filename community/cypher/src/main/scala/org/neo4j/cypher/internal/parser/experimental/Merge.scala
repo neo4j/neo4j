@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.parser.experimental
 
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.expressions.Identifier
-import org.neo4j.cypher.internal.mutation.UpdateAction
+import expressions.{Property, Identifier}
+import org.neo4j.cypher.internal.mutation.{PropertySetAction, UpdateAction, MergeNodeAction}
 import scala.Predef._
 import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.commands.MergeNodeStartItem
 import org.neo4j.cypher.internal.commands.LabelAction
 import org.neo4j.cypher.internal.commands.HasLabel
 
 
-trait Merge extends Base with Labels {
+trait Merge extends Base with Labels with ParserPattern {
 
   def merge: Parser[(Seq[StartItem], Seq[NamedPath])] = rep1(mergeNode) ~ rep(onCreate | onUpdate) ^^ {
     case nodes ~ actions =>
@@ -49,7 +48,7 @@ trait Merge extends Base with Labels {
       val startItems = nodes.map {
         case nodeStartAction => MergeNodeStartItem(nodeStartAction.copy(
           onCreate = createActions(nodeStartAction.identifier),
-          onUpdate = updateActions.getOrElse(nodeStartAction.identifier, Seq.empty)))
+          onMatch = updateActions.getOrElse(nodeStartAction.identifier, Seq.empty)))
       }
 
       (startItems, Seq.empty)
@@ -61,10 +60,15 @@ trait Merge extends Base with Labels {
       case None                  => (id -> actions)
     })
 
-  private def mergeNode: Parser[MergeNodeAction] = MERGE ~> optParens(identity ~ opt(labelShortForm)) ^^ {
-    case id ~ labels =>
-      val onCreate = labels.toSeq.map(l => LabelAction(Identifier(id), LabelSetOp, l.labelVals))
-      val expectations = labels.toSeq.map(l => HasLabel(Identifier(id), l.labelVals))
+  private def mergeNode: Parser[MergeNodeAction] = MERGE ~> optParens(identity ~ optLabelShortForm ~ opt(curlyMap)) ^^ {
+    case id ~ labels ~ propsOption =>
+      val props = propsOption.getOrElse(Map.empty)
+      val expectations = labels.map(HasLabel(Identifier(id),_)) ++ props.map {
+        case (key, value) => Equals(Property(Identifier(id), key), value)
+      }
+      val onCreate = labels.map(l => LabelAction(Identifier(id), LabelSetOp, Seq(l))) ++ props.map {
+        case (key, value) => PropertySetAction(Property(Identifier(id), key), value)
+      }
       MergeNodeAction(id, expectations, onCreate, Seq.empty, None)
   }
 

@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{HasLabel, Equals, SchemaIndex}
+import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Property, Identifier}
 import org.neo4j.cypher.IndexHintException
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import values.LabelName
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.HasLabel
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -76,20 +79,23 @@ class IndexLookupBuilderTest extends BuilderTest {
   def should_pick_out_correct_label_predicate() {
     //GIVEN
     val identifier = "id"
-    val label1 = "label"
-    val label2 = "apa"
+    val label1 = "label1"
+    val label2 = "label2"
     val property = "prop"
     val valueExpression = Literal(42)
-    val predicate = Equals(valueExpression, Property(Identifier(identifier), property))
 
-    val labelPredicate = HasLabel(Identifier(identifier), Seq(LabelName(label1), LabelName(label2)))
-    val expectedLabelPredicates = Seq(
-      Solved(HasLabel(Identifier(identifier), Seq(LabelName(label1)))),
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label2)))))
+    val label1Predicate = HasLabel(Identifier(identifier), LabelName(label1))
+    val label2Predicate = HasLabel(Identifier(identifier), LabelName(label2))
+    val propertyPredicate = Equals(valueExpression, Property(Identifier(identifier), property))
+
+    val predicates: Seq[Unsolved[Predicate]] = Seq(
+      Unsolved(label1Predicate),
+      Unsolved(label2Predicate),
+      Unsolved(propertyPredicate))
 
     val q = PartiallySolvedQuery().copy(
       start = Seq(Unsolved(SchemaIndex(identifier, label1, property, None))),
-      where = Seq(Unsolved(predicate), Unsolved(labelPredicate))
+      where = predicates
     )
 
     //WHEN
@@ -97,11 +103,13 @@ class IndexLookupBuilderTest extends BuilderTest {
 
     //THEN
     assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label1, property, Some(valueExpression)))))
-    assert(plan.query.where.toSet === (expectedLabelPredicates :+ Solved(predicate)).toSet)
+    val a = plan.query.where.toSet
+    val b = Set(Solved(label1Predicate), Unsolved(label2Predicate), Solved(propertyPredicate))
+    assert(a === b)
   }
 
   private def test(identifier: String, label: String, property: String, predicate: Equals, valueExpression: Literal) {
-    val labelPredicate = HasLabel(Identifier(identifier), Seq(LabelName(label)))
+    val labelPredicate = HasLabel(Identifier(identifier), LabelName(label))
 
     val q = PartiallySolvedQuery().copy(
       start = Seq(Unsolved(SchemaIndex(identifier, label, property, None))),
@@ -113,6 +121,6 @@ class IndexLookupBuilderTest extends BuilderTest {
 
     //THEN
     assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label, property, Some(valueExpression)))))
-    assert(plan.query.where === Seq(Solved(predicate), Solved(labelPredicate)))
+    assert(plan.query.where.toSet === Set(Solved(predicate), Solved(labelPredicate)))
   }
 }
