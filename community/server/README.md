@@ -57,7 +57,7 @@ To run the webdriver tests for webadmin:
 
 Or, to run all tests (both unit, functional and webdriver):
 
-    mvn clean test -Dtests=all
+    mvn clean verify -DfullBuild
 
 You can run the tests under different browsers using maven profiles. By default, Firefox is used. 
 Available profiles are:
