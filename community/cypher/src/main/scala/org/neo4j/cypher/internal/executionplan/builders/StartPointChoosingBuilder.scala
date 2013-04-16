@@ -64,13 +64,18 @@ class StartPointChoosingBuilder extends PlanBuilder {
   }
 
   private def solveUnsolvedMergePoints(ctx: PlanContext): (QueryToken[StartItem] => QueryToken[StartItem]) = {
-    //TODO: Should produce an EntityProducer that filters
     case Unsolved(MergeNodeStartItem(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None))) =>
-      val startItem: StartItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx).s
-      val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem)
+      val startItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx)
+      val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem.s)
+      val predicatesLeft = where.toSet -- startItem.solvedPredicates
 
-      Unsolved(MergeNodeStartItem(mergeNodeAction.copy(nodeProducerOption = Some(nodeProducer))))
+      val newMergeNodeAction = mergeNodeAction.copy(
+        nodeProducerOption = Some(nodeProducer),
+        expectations = predicatesLeft.toSeq)
+
+      Unsolved(MergeNodeStartItem(newMergeNodeAction))
     case x                                                                                            => x
+
   }
 
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[StartItem] = {

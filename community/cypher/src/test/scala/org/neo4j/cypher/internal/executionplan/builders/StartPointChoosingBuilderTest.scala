@@ -22,15 +22,26 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands._
-import expressions.{IdFunction, Property, Literal, Identifier}
-import values.LabelName
-import org.neo4j.cypher.internal.commands.HasLabel
+import expressions.Identifier
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.symbols.NodeType
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.commands.expressions.IdFunction
+import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.commands.MergeNodeStartItem
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.SingleNode
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.NodeByLabel
+import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -275,7 +286,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.contains( Unsolved(AllNodes("c")) ))
+    assert(plan.query.start.contains(Unsolved(AllNodes("c"))))
   }
 
 
@@ -292,6 +303,27 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
+  }
+
+  @Test
+  def should_solved_merge_node_start_points() {
+    // Given MERGE (x:Label)
+    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val query = q(
+      start = Seq(MergeNodeStartItem(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), LabelName("Label"))), Seq.empty, Seq.empty, None)))
+    )
+    when(context.getLabelId("Label")).thenReturn(Some(42L))
+
+    // When
+    val plan = assertAccepts(pipe, query)
+
+    // Then
+    plan.query.start match {
+      case Seq(Unsolved(MergeNodeStartItem(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_))))) =>
+        true
+      case _ =>
+        fail("Expected something else, but got this: " + plan.query.start)
+    }
   }
 
   private def q(start: Seq[StartItem] = Seq(),
