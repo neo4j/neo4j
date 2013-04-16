@@ -68,7 +68,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId )
     {
-        return new LuceneIndexPopulator( standard( ), directoryFactory, dirFile( indexId ), 10000, documentLogic, writerLogic );
+        return new LuceneIndexPopulator( standard(), directoryFactory, dirFile( indexId ), 10000,
+                documentLogic, writerLogic );
     }
 
     @Override
@@ -76,7 +77,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            return new LuceneIndexAccessor( standard( ), directoryFactory, dirFile( indexId ), documentLogic, writerLogic );
+            return new LuceneIndexAccessor( standard(), directoryFactory, dirFile( indexId ),
+                    documentLogic, writerLogic );
         }
         catch ( IOException e )
         {

@@ -126,6 +126,7 @@ public class BatchInserterImpl implements BatchInserter
     private final FileSystemAbstraction fileSystem;
     private final CleanupService cleanupService;
     private final SchemaCache schemaCache;
+    private final Config config;
     private boolean isShutdown = false;
 
     private final Function<Long,Label> labelIdToLabelFunction = new Function<Long,Label>()
@@ -151,7 +152,7 @@ public class BatchInserterImpl implements BatchInserter
         params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
 
-        Config config = new Config( params, GraphDatabaseSettings.class );
+        config = new Config( params, GraphDatabaseSettings.class );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
@@ -1223,9 +1224,13 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
         {
-            if ( type.isInstance( FileSystemAbstraction.class ) )
+            if ( type.isInstance( fileSystem ) )
             {
                 return type.cast( fileSystem );
+            }
+            if ( type.isInstance( config ) )
+            {
+                return type.cast( config );
             }
             throw new IllegalArgumentException( "Unknown dependency " + type );
         }

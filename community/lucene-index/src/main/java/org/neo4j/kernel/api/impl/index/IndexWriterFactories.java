@@ -29,14 +29,14 @@ import org.neo4j.index.impl.lucene.LuceneDataSource;
 
 public class IndexWriterFactories
 {
-    public static LuceneIndexWriterFactory standard( )
+    public static LuceneIndexWriterFactory standard()
     {
         return new LuceneIndexWriterFactory()
         {
             @Override
             public IndexWriter create( Directory directory ) throws IOException
             {
-                IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_35, LuceneDataSource.KEYWORD_ANALYZER );
+                IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
                 writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
                 return new IndexWriter( directory, writerConfig );
             }
