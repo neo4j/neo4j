@@ -56,7 +56,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier)),
-                                           Unsolved(AllNodes(otherIdentifier))))
+      Unsolved(AllNodes(otherIdentifier))))
   }
 
   @Test
@@ -73,7 +73,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList          === Seq(Unsolved(AllNodes(identifier))))
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
     assert(plan.query.tail.get.start.toList === Seq())
   }
 
@@ -83,10 +83,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
       where = Seq(HasLabel(Identifier(identifier), LabelName("Person")),
-                  Equals(Property(Identifier(identifier),"prop1"), Literal("banana")))
+        Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
     )
 
-    when( context.getIndexRuleId( "Person", "prop1" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop1")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -118,7 +118,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -137,7 +137,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -157,8 +157,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( label, property ) ).thenReturn( Some(1337l) )
-    when( context.getIndexRuleId( label, otherProperty ) ).thenReturn( Some(1338l) )
+    when(context.getIndexRuleId(label, property)).thenReturn(Some(1337l))
+    when(context.getIndexRuleId(label, otherProperty)).thenReturn(Some(1338l))
 
     // When
     val result = assertAccepts(query).query
@@ -208,7 +208,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( None )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(None)
 
     // When
     val plan = assertAccepts(query)
@@ -259,6 +259,27 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test
+  def should_find_start_items_for_all_patterns() {
+    // Given
+
+    // START a=node(0) MATCH a-[x]->b, c-[x]->d
+    val query = q(
+      start = Seq(NodeById("a", 0)),
+      patterns = Seq(
+        RelatedTo("a", "b", "x", Seq.empty, Direction.OUTGOING, optional = false),
+        RelatedTo("c", "d", "x", Seq.empty, Direction.OUTGOING, optional = false)
+      )
+    )
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.contains( Unsolved(AllNodes("c")) ))
+  }
+
+
+  @Test
   def should_not_introduce_start_points_if_provided_by_last_pipe() {
     // Given
     val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
@@ -277,7 +298,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
                 where: Seq[Predicate] = Seq(),
                 patterns: Seq[Pattern] = Seq(),
                 returns: Seq[ReturnColumn] = Seq(),
-                tail:Option[PartiallySolvedQuery] = None) =
+                tail: Option[PartiallySolvedQuery] = None) =
     PartiallySolvedQuery().copy(
       start = start.map(Unsolved(_)),
       where = where.map(Unsolved(_)),

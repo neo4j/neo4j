@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import collection.mutable.{Set => MutableSet}
-import org.neo4j.cypher.{PatternException, SyntaxException}
+import org.neo4j.cypher.PatternException
 
 class PatternGraph(val patternNodes: Map[String, PatternNode],
                    val patternRels: Map[String, PatternRelationship],
@@ -229,11 +229,6 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
     boundPatternElements.foreach {
       case pr: PatternRelationship => pr.startNode.traverse(follow, visit_node, visit_relationship, (), Seq())
       case pn: PatternNode         => pn.traverse(follow, visit_node, visit_relationship, (), Seq())
-    }
-
-    val notVisitedElements = allPatternElements.filterNot(visited contains)
-    if (notVisitedElements.nonEmpty) {
-      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisitedElements.map(_.key).sorted.mkString(", "))
     }
 
     loop
