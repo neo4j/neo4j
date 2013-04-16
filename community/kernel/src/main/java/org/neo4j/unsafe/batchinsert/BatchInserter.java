@@ -19,12 +19,10 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.schema.IndexCreator;
 
 /**

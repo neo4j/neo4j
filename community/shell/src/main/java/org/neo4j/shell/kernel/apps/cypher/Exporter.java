@@ -19,23 +19,14 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
+import java.io.PrintWriter;
+import java.rmi.RemoteException;
+
 import org.neo4j.cypher.export.SubGraph;
 import org.neo4j.cypher.export.SubGraphExporter;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.OutputAsWriter;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.util.json.JSONException;
-import org.neo4j.shell.util.json.JSONObject;
-
-import java.io.PrintWriter;
-import java.rmi.RemoteException;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class Exporter
 {

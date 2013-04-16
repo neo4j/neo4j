@@ -23,8 +23,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
