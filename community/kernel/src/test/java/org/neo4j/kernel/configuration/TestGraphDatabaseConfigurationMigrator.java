@@ -42,26 +42,33 @@ public class TestGraphDatabaseConfigurationMigrator
     public void testEnableOnlineBackup()
     {
         ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_enabled", "true", "online_backup_server", "0.0.0.0:6372-6382" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "online_backup_enabled", "true", "online_backup_server", "0.0.0.0:6362-6372" ) ) );
 
         // 1.9
-        assertThat( migrator.apply( stringMap( "online_backup_port", "1234" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_server", "0.0.0.0:1234" ) ) );
+        assertThat( migrator.apply( stringMap( "online_backup_port", "1234" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "online_backup_server", "0.0.0.0:1234" ) ) );
     }
 
     @Test
     public void testUdcEnabled()
     {
         ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        assertThat( migrator.apply( stringMap( "neo4j.ext.udc.disable", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "neo4j.ext.udc.enabled", "false" ) ) );
-        assertThat( migrator.apply( stringMap( "neo4j.ext.udc.disable", "false" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "neo4j.ext.udc.enabled", "true" ) ) );
+        assertThat( migrator.apply( stringMap( "neo4j.ext.udc.disable", "true" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "neo4j.ext.udc.enabled", "false" ) ) );
+        assertThat( migrator.apply( stringMap( "neo4j.ext.udc.disable", "false" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "neo4j.ext.udc.enabled", "true" ) ) );
     }
 
     @Test
     public void testEnableRemoteShell()
     {
         ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        assertThat( migrator.apply( stringMap( "enable_remote_shell", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "remote_shell_enabled", "true" ) ) );
-        assertThat( migrator.apply( stringMap( "enable_remote_shell", "false" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "remote_shell_enabled", "false" ) ) );
-        assertThat( migrator.apply( stringMap( "enable_remote_shell", "port=1234" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "remote_shell_enabled", "true","remote_shell_port","1234","remote_shell_read_only","false","remote_shell_name","shell" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_remote_shell", "true" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "remote_shell_enabled", "true" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_remote_shell", "false" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "remote_shell_enabled", "false" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_remote_shell", "port=1234" ), StringLogger.DEV_NULL  ),
+                equalTo( stringMap( "remote_shell_enabled", "true","remote_shell_port","1234","remote_shell_read_only","false","remote_shell_name","shell" ) ) );
     }
 }

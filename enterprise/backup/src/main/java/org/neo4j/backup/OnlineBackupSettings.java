@@ -44,5 +44,5 @@ public class OnlineBackupSettings
 
     @Description("Listening server for online backups")
     public static final Setting<HostnamePort> online_backup_server = setting( "online_backup_server", HOSTNAME_PORT,
-            "0.0.0.0:6372-6382" );
+            "0.0.0.0:6362-6372" );
 }
