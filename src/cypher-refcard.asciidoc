@@ -2,20 +2,31 @@
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
+The basic read query structure of Cypher is as follows:
+
+[source,cypher]
+----
+START
+[MATCH]
+[WHERE]
+RETURN [ORDER BY] [SKIP] [LIMIT]
+----
+
+Key principles and capabilities of Cypher are as follows:
+
+
 * Cypher matches patterns of nodes and relationship in the graph, to extract information or modify the data.
-* Cypher has the concept of identifiers which denote named, bound elements and parameters. 
-* Cypher can create, update, and remove nodes, relationships, and properties. 
+* Cypher has the concept of identifiers which denote named, bound elements and parameters.
+* Cypher can create, update, and remove nodes, relationships, and properties.
 
 ++++
 <div class="paragraph"><p>You can try cypher snippets live in the Neo4j Console at 
-<a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>.</p></div>
-<div class="paragraph"><p>Read the full Cypher documentation at 
+<a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>
+or read the full Cypher documentation at 
 <a href="http://docs.neo4j.org" target="_blank">docs.neo4j.org</a>.</p></div>
 ++++
 
-Note: When `{value}` and similar appears in the text, this is placeholders for values.
-For ad hoc queries, substitute them with literals.
-In applications you should use parameters, which happen to look like that.
+Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
 
 == Syntax ==
 
@@ -39,22 +50,15 @@ In applications you should use parameters, which happen to look like that.
 </div></div>
 ++++
 
-.Read-Only Query Structure 
-[refcard]
-----
-START
-[MATCH]
-[WHERE]
-RETURN [ORDER BY] [SKIP] [LIMIT]
-----
-
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/where.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
 
