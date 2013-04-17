@@ -1,0 +1,23 @@
+[[query-merge]]
+Merge
+=====
+
+== Introduction ==
++MERGE+ is not only used for single nodes - just like +MATCH+, if multiple nodes match, they will all be bound to the identifier.
+
+The following graph is used for the examples below:
+
+.Graph
+include::includes/cypher-merge-graph.asciidoc[]
+
+include::merge-single-node-with-a-label.asciidoc[]
+
+include::merge-single-node-with-properties.asciidoc[]
+
+include::merge-single-node-specifying-both-label-and-property.asciidoc[]
+
+include::merge-with-on-create.asciidoc[]
+
+include::merge-with-on-match.asciidoc[]
+
+include::merge-with-on-create-and-on-match.asciidoc[]

@@ -50,73 +50,82 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    def solveUnsolvedStartpoints: (QueryToken[StartItem] => QueryToken[StartItem]) = {
-      case Unsolved(MergeNodeStartItem(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None))) =>
-        val startItem: StartItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx).s
-        val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem)
-
-        Unsolved(MergeNodeStartItem(mergeNodeAction.copy(nodeProducerOption = Some(nodeProducer))))
-      case x                                                                                            => x
-    }
 
     val q: PartiallySolvedQuery = plan.query
 
-    val startItems: Seq[QueryToken[StartItem]] =
-      q.start match {
-        // TODO: We should check each pattern individually, not look at the whole query
-        case Seq() if q.matchPattern.nonEmpty => findStartItemsForEachPattern(plan, ctx).map(Unsolved(_))
-        case in                               => in.map(solveUnsolvedStartpoints)
-      }
+    // Find disconnected patterns, and make sure we have start points for all of them
+    val disconnectedStarItems: Seq[QueryToken[StartItem]] = findStartItemsForDisconnectedPatterns(plan, ctx).map(Unsolved(_))
 
+    // Find merge points that do not have a node producer, and produce one for them
+    // TODO: Decide if this should live in it's own builder or not
+    val solvedMergePoints = plan.query.start.map(solveUnsolvedMergePoints(ctx))
 
-    plan.copy(query = q.copy(start = startItems))
+    plan.copy(query = q.copy(start = disconnectedStarItems ++ solvedMergePoints))
   }
 
+  private def solveUnsolvedMergePoints(ctx: PlanContext): (QueryToken[StartItem] => QueryToken[StartItem]) = {
+    case Unsolved(MergeNodeStartItem(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None))) =>
+      val startItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx)
+      val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem.s)
+      val predicatesLeft = where.toSet -- startItem.solvedPredicates
 
-  private def findStartItemsForEachPattern(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[StartItem] = {
+      val newMergeNodeAction = mergeNodeAction.copy(
+        nodeProducerOption = Some(nodeProducer),
+        expectations = predicatesLeft.toSeq)
 
-    import NodeFetchStrategy.findStartStrategy
+      Unsolved(MergeNodeStartItem(newMergeNodeAction))
+    case x                                                                                            => x
 
-    val patterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
-    val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
-      case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start, end)
-    }.flatten.toSet
+  }
+
+  private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[StartItem] = {
+    val disconnectedPatterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
+    val startPointNames = plan.query.start.map(_.token.identifierName)
+    val allPredicates = plan.query.where.map(_.token)
 
     def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[StartItem] =
       startPoints.collect {
         case RatedStartItem(si, r, _) if r == Single => si
       }
 
+    def findStartItemFor(pattern: MatchPattern): Iterable[StartItem] = {
+      val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
+        case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start, end)
+      }.flatten.toSet
 
-    patterns.flatMap(
+      val startPoints: Set[RatedStartItem] =
+        pattern.nodes.map(key => NodeFetchStrategy.findStartStrategy(key, allPredicates, ctx)).toSet
+
+      val singleNodePoints = findSingleNodePoints(startPoints)
+      val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet
+
+      if (shortestPathPointsInPattern.nonEmpty) {
+        startPoints.collect {
+          case RatedStartItem(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
+        }.toSet union singleNodePoints.toSet
+      } else if (singleNodePoints.nonEmpty) {
+        // We want to keep all these start points because cartesian product with them is free
+        singleNodePoints
+      } else {
+        // Lastly, let's pick the best start point possible
+        Some(startPoints.toSeq.sortBy(_.rating).head.s)
+      }
+    }
+
+    disconnectedPatterns.flatMap(
       (pattern: MatchPattern) => {
-        val startPoints: Set[RatedStartItem] =
-          pattern.nodes.map(key => findStartStrategy(key, plan.query.where.map(_.token), ctx)).toSet
+        val startPointsAlreadyInPattern = (startPointNames intersect pattern.nodes)
 
-        val singleNodePoints = findSingleNodePoints(startPoints)
-        val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet
-
-        if (shortestPathPointsInPattern.nonEmpty) {
-          startPoints.collect {
-            case RatedStartItem(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
-          }.toSet union singleNodePoints.toSet
-        } else if (singleNodePoints.nonEmpty) {
-          // We want to keep all these start points because cartesian product with them is free
-          singleNodePoints
-        } else {
-          // Lastly, let's pick the best start point possible
-          Some(startPoints.toSeq.sortBy(_.rating).head.s)
-        }
+        if (startPointsAlreadyInPattern.isEmpty)
+          findStartItemFor(pattern)
+        else
+          None
       }
     )
   }
-
-
-  // MATCH n WHERE id(n) = 0
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
     !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
 
   def priority = PlanBuilder.IndexLookup
-
 }

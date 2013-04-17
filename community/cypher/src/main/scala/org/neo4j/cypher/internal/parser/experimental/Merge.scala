@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.parser.experimental
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Identifier}
+import expressions.{Nullable, Property, Identifier}
 import org.neo4j.cypher.internal.mutation.{PropertySetAction, UpdateAction, MergeNodeAction}
-import scala.Predef._
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.MergeNodeStartItem
 import org.neo4j.cypher.internal.commands.LabelAction
@@ -64,7 +63,7 @@ trait Merge extends Base with Labels with ParserPattern {
     case id ~ labels ~ propsOption =>
       val props = propsOption.getOrElse(Map.empty)
       val expectations = labels.map(HasLabel(Identifier(id),_)) ++ props.map {
-        case (key, value) => Equals(Property(Identifier(id), key), value)
+        case (key, value) => Equals(Nullable(Property(Identifier(id), key)), value)
       }
       val onCreate = labels.map(l => LabelAction(Identifier(id), LabelSetOp, Seq(l))) ++ props.map {
         case (key, value) => PropertySetAction(Property(Identifier(id), key), value)
