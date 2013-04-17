@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,9 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+
+import ch.qos.logback.classic.LoggerContext;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -123,7 +121,8 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
+import static java.lang.String.format;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -320,8 +319,11 @@ public abstract class InternalAbstractGraphDatabase
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
                 GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(
-                        config.get( Configuration.use_memory_mapped_buffers ) ),
-                config.get( GraphDatabaseSettings.dump_configuration ) );
+                        config.get( Configuration.use_memory_mapped_buffers ) ) );
+        if (config.get( GraphDatabaseSettings.dump_configuration ))
+        {
+            System.out.println( autoConfigurator.getNiceMemoryInformation() );
+        }
         Map<String, String> configParams = config.getParams();
         Map<String, String> autoConfiguration = autoConfigurator.configure();
         for ( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
