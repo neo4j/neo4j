@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -35,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Function;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -72,7 +75,7 @@ public class SchemaAcceptanceTest
         schema.awaitIndexOnline( single( indexes), 5L, TimeUnit.SECONDS );
     }
 
-    @Test(expected = ConstraintViolationException.class)
+    @Test
     public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
     {
         // Given
@@ -85,7 +88,15 @@ public class SchemaAcceptanceTest
         try
         {
             schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
-            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+            try
+            {
+                schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+                fail( "Should not have validated" );
+            }
+            catch ( ConstraintViolationException e )
+            {
+                assertThat( e.getMessage(), containsString( "Unable to create index" ) );
+            }
             tx.success();
         }
         finally
@@ -129,7 +140,7 @@ public class SchemaAcceptanceTest
         assertThat(caught, not(nullValue()));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldThrowConstraintViolationIfAskedToCreateCompoundIdex() throws Exception
     {
         // Given
@@ -144,6 +155,11 @@ public class SchemaAcceptanceTest
                     .on( "my_property_key" )
                     .on( "other_property" ).create();
             tx.success();
+            fail( "Should not be able to create index on multiple property keys" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            assertThat( e.getMessage(), containsString( "Compound indexes" ) );
         }
         finally
         {
@@ -167,7 +183,7 @@ public class SchemaAcceptanceTest
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
     }
 
-    @Test(expected = ConstraintViolationException.class)
+    @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
     {
         // GIVEN
@@ -181,7 +197,15 @@ public class SchemaAcceptanceTest
         try
         {
             index.drop();
-            index.drop();
+            try
+            {
+                index.drop();
+                fail( "Should not be able to drop index twice" );
+            }
+            catch ( ConstraintViolationException e )
+            {
+                assertThat( e.getMessage(), containsString( "Unable to drop index" ) );
+            }
             tx.success();
         }
         finally
@@ -193,7 +217,7 @@ public class SchemaAcceptanceTest
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
     }
 
-    @Test( expected = ConstraintViolationException.class )
+    @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
     {
         // GIVEN
@@ -204,7 +228,15 @@ public class SchemaAcceptanceTest
         dropIndex( beansAPI, index );
 
         // WHEN
-        dropIndex( beansAPI, index );
+        try
+        {
+            dropIndex( beansAPI, index );
+            fail( "Should not be able to drop index twice" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertThat( e.getMessage(), containsString( "Unable to drop index" ) );
+        }
 
         // THEN
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
@@ -226,6 +258,32 @@ public class SchemaAcceptanceTest
 
         // THEN
         assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+    }
+    
+    @Test
+    public void shouldRecreateDroppedIndex() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+        Node node = createNode( beansAPI, property, "Neo", label );
+        
+        // create an index
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        
+        // delete the index right away
+        dropIndex( beansAPI, index );
+
+        // WHEN recreating that index
+        createIndexRule( beansAPI, label, property );
+        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+
+        // THEN it should exist and be usable
+        index = single( beansAPI.schema().getIndexes( label ) );
+        assertEquals( IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+        assertEquals( asSet( node ), asSet( beansAPI.findNodesByLabelAndProperty( label, property, "Neo" ) ) );
     }
 
     private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
@@ -267,5 +325,21 @@ public class SchemaAcceptanceTest
                 return single( from.getPropertyKeys() );
             }
         }, indexes );
+    }
+    
+    private Node createNode( GraphDatabaseService db, String key, Object value, Label label )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode( label );
+            node.setProperty( key, value );
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }
