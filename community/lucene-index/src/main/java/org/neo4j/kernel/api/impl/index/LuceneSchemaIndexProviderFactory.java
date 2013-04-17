@@ -39,11 +39,9 @@ public class LuceneSchemaIndexProviderFactory extends
 
     public interface Dependencies
     {
-
         Config getConfig();
 
         FileSystemAbstraction getFileSystem();
-
     }
 
     public LuceneSchemaIndexProviderFactory()
