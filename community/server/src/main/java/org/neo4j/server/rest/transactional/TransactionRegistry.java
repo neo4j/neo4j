@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.server.rest.transactional.error.InvalidConcurrentConcurrentTransactionAccess;
+import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 
 /**
@@ -33,7 +33,7 @@ public interface TransactionRegistry
 
     public void release( long id, TransactionHandle transactionHandle );
 
-    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentConcurrentTransactionAccess;
+    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentTransactionAccess;
 
     public void forget( long id );
 

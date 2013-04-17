@@ -31,7 +31,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
-import org.neo4j.server.rest.transactional.error.InvalidConcurrentConcurrentTransactionAccess;
+import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 
 public class TransactionHandleRegistry implements TransactionRegistry
@@ -51,7 +51,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private static abstract class TransactionMarker
     {
-        abstract SuspendedTransaction getTransaction() throws InvalidConcurrentConcurrentTransactionAccess;
+        abstract SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess;
 
         abstract boolean isSuspended();
     }
@@ -61,9 +61,9 @@ public class TransactionHandleRegistry implements TransactionRegistry
         public static final ActiveTransaction INSTANCE = new ActiveTransaction();
 
         @Override
-        SuspendedTransaction getTransaction() throws InvalidConcurrentConcurrentTransactionAccess
+        SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess
         {
-            throw new InvalidConcurrentConcurrentTransactionAccess();
+            throw new InvalidConcurrentTransactionAccess();
         }
 
         boolean isSuspended()
@@ -84,7 +84,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         }
 
         @Override
-        SuspendedTransaction getTransaction() throws InvalidConcurrentConcurrentTransactionAccess
+        SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess
         {
             return this;
         }
@@ -132,7 +132,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
-    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentConcurrentTransactionAccess
+    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentTransactionAccess
     {
         TransactionMarker marker = registry.get( id );
 
@@ -143,7 +143,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
         if ( !marker.isSuspended() )
         {
-            throw new InvalidConcurrentConcurrentTransactionAccess();
+            throw new InvalidConcurrentTransactionAccess();
         }
 
         SuspendedTransaction transaction = marker.getTransaction();
@@ -153,7 +153,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         }
         else
         {
-            throw new InvalidConcurrentConcurrentTransactionAccess();
+            throw new InvalidConcurrentTransactionAccess();
         }
     }
 
@@ -196,7 +196,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
                 {
                     return item.getTransaction().lastActiveTimestamp < oldestLastActiveTime;
                 }
-                catch ( InvalidConcurrentConcurrentTransactionAccess concurrentTransactionAccessError )
+                catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
                 {
                     throw new RuntimeException( concurrentTransactionAccessError );
                 }
@@ -226,7 +226,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
                             "automatically rolled back.", entry.getKey(), idleSeconds ) );
                 }
             }
-            catch ( InvalidConcurrentConcurrentTransactionAccess concurrentTransactionAccessError )
+            catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
             {
                 // Allow this - someone snatched the transaction from under our feet,
                 // indicating someone is concurrently modifying transactions in the registry, which is allowed.

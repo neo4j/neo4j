@@ -23,13 +23,12 @@ public class InternalBeginTransactionError extends TransactionLifecycleException
 {
     public InternalBeginTransactionError( RuntimeException cause )
     {
-        super( "It was not possible to start a new transaction. " +
-               "Please refer to the database logs for details.", cause );
+        super( cause );
     }
 
     @Override
-    public Neo4jError toNeo4jError()
+    protected StatusCode getStatusCode()
     {
-        return new Neo4jError( StatusCode.INTERNAL_BEGIN_TRANSACTION_ERROR, getMessage(), getCause() );
+        return StatusCode.INTERNAL_BEGIN_TRANSACTION_ERROR;
     }
 }

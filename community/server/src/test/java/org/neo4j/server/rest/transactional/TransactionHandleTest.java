@@ -49,7 +49,6 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.InvalidRequestFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -257,7 +256,8 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( deserilizationErrors( new InvalidRequestFormat( "invalid request" ) ), output );
+        handle.execute( deserilizationErrors(
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "invalid request" ) ), output );
 
         // then
         verify( transactionContext ).rollback();

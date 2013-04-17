@@ -32,8 +32,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.junit.Test;
-import org.neo4j.server.rest.transactional.error.InvalidRequestFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 
 public class StatementDeserializerTest
 {
@@ -65,7 +65,8 @@ public class StatementDeserializerTest
         String json = "{ \"timeout\" : 200, \"statements\" : [ { \"statement\" : \"ignored\", \"parameters\" : {}} ] }";
 
         assertYieldsErrors( json,
-                new InvalidRequestFormat( "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
     }
 
     @Test
@@ -135,11 +136,11 @@ public class StatementDeserializerTest
     public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
     {
         assertYieldsErrors( "{}",
-                new InvalidRequestFormat( "Unable to deserialize request, " +
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "Unable to deserialize request, " +
                         "expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
                         "found [START_OBJECT, END_OBJECT, null]." ) );
         assertYieldsErrors( "[{]}",
-                new InvalidRequestFormat(
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
                         "Unable to deserialize request: Unexpected close marker ']': expected '}' " +
                                 "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
                                 "at [Source: TestInputStream; line: 1, column: 4]" ) );

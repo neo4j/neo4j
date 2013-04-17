@@ -38,11 +38,29 @@ public class Neo4jError
     private final String message;
     private final Throwable cause;
 
+    public Neo4jError( StatusCode statusCode )
+    {
+        this( statusCode, null, null );
+    }
+
+    public Neo4jError( StatusCode statusCode, Throwable cause )
+    {
+        this( statusCode, null, cause );
+    }
+
+    public Neo4jError( StatusCode statusCode, String message )
+    {
+        this( statusCode, message, null );
+    }
+
     public Neo4jError( StatusCode statusCode, String message, Throwable cause )
     {
+        if ( statusCode == null  )
+            throw new IllegalArgumentException( "statusCode must not be null" );
+
         this.statusCode = statusCode;
-        this.message = message;
         this.cause = cause;
+        this.message = buildMessage( statusCode, message, cause );
     }
 
     public StatusCode getStatusCode()
@@ -57,7 +75,7 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        return false;
+        return statusCode.getDescription().includeStackTrace();
     }
 
     public String getStackTraceAsString()
@@ -71,5 +89,22 @@ public class Neo4jError
             cause.printStackTrace( printWriter );
             return stringWriter.toString();
         }
+    }
+
+    private String buildMessage( StatusCode statusCode, String message, Throwable cause )
+    {
+        StringBuilder builder = new StringBuilder( statusCode.getDefaultMessage() );
+        if ( message != null ) {
+            builder.append( " Details: ");
+            builder.append( message );
+            return builder.toString();
+        }
+        if ( cause != null )
+        {
+            builder.append( " Cause: ");
+            builder.append( cause.getMessage() );
+            return builder.toString();
+        }
+        return builder.toString();
     }
 }

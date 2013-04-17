@@ -19,15 +19,11 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class CommunicationError extends Neo4jError
+public class InvalidConcurrentTransactionAccess extends TransactionLifecycleException
 {
-    public CommunicationError( Exception e )
+    @Override
+    protected StatusCode getStatusCode()
     {
-        this( e.getMessage(), e );
-    }
-
-    public CommunicationError( String message, Throwable cause )
-    {
-        super( StatusCode.COMMUNICATION_ERROR, message, cause );
+        return StatusCode.INVALID_CONCURRENT_TRANSACTION_ACCESS;
     }
 }

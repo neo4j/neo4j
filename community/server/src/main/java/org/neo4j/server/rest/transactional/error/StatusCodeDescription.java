@@ -19,19 +19,15 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-import org.neo4j.cypher.CypherException;
-import org.neo4j.server.rest.transactional.CypherExceptionMapping;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Wrapper for CypherException. Specific
- */
-public class StatementExecutionError extends Neo4jError
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.FIELD )
+public @interface StatusCodeDescription
 {
-
-    private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
-
-    public StatementExecutionError( CypherException cause )
-    {
-        super( EXCEPTION_MAPPING.apply( cause ), cause.getMessage(), cause );
-    }
+    String message();
+    boolean includeStackTrace() default false;
 }

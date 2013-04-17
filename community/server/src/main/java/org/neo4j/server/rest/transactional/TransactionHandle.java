@@ -30,14 +30,9 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.CommunicationError;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
-import org.neo4j.server.rest.transactional.error.InternalCommitTransactionError;
-import org.neo4j.server.rest.transactional.error.InternalDatabaseError;
-import org.neo4j.server.rest.transactional.error.InternalRollbackTransactionError;
-import org.neo4j.server.rest.transactional.error.InternalStatementExecutionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.StatementExecutionError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -59,6 +54,8 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  */
 public class TransactionHandle
 {
+    private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
+
     private final KernelAPI kernel;
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
@@ -199,7 +196,7 @@ public class TransactionHandle
                 catch ( RuntimeException e )
                 {
                     log.error( "Failed to commit transaction.", e );
-                    errors.add( new InternalCommitTransactionError( e ) );
+                    errors.add( new Neo4jError( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR, e ) );
                 }
             }
             else
@@ -211,7 +208,7 @@ public class TransactionHandle
                 catch ( RuntimeException e )
                 {
                     log.error( "Failed to rollback transaction.", e );
-                    errors.add( new InternalRollbackTransactionError( e ) );
+                    errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );
                 }
             }
         }
@@ -230,7 +227,7 @@ public class TransactionHandle
         catch ( RuntimeException e )
         {
             log.error( "Failed to rollback transaction.", e );
-            errors.add( new InternalRollbackTransactionError( e ) );
+            errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );
         }
         finally
         {
@@ -261,17 +258,17 @@ public class TransactionHandle
                 }
                 catch ( CypherException e )
                 {
-                    errors.add( new StatementExecutionError( e ) );
+                    errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
                     break;
                 }
                 catch ( IOException e )
                 {
-                    errors.add( new CommunicationError( e ) );
+                    errors.add( new Neo4jError( StatusCode.COMMUNICATION_ERROR, e ) );
                     break;
                 }
                 catch ( RuntimeException e )
                 {
-                    errors.add( new InternalStatementExecutionError( e ) );
+                    errors.add( new Neo4jError( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, e ) );
                     break;
                 }
             }
@@ -284,7 +281,7 @@ public class TransactionHandle
         }
         catch ( RuntimeException e )
         {
-            errors.add( new InternalDatabaseError( e ) );
+            errors.add( new Neo4jError( StatusCode.INTERNAL_DATABASE_ERROR, e ) );
         }
     }
 
