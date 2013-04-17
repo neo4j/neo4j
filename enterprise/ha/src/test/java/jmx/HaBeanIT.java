@@ -116,7 +116,7 @@ public class HaBeanIT
         assertTrue( "single instance should be master and available", ha.isAvailable() );
         assertEquals( "single instance should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
         ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertEquals( "single instance should be the returned instance id", "1", info.getClusterId() );
+        assertEquals( "single instance should be the returned instance id", "1", info.getInstanceId() );
     }
 
     @Test
@@ -185,7 +185,7 @@ public class HaBeanIT
                 {
                     assertEquals( "Either master or slave, no other way",
                             HighAvailabilityModeSwitcher.SLAVE, info.getRoles()[0] );
-                    assertEquals( "instance " + info.getClusterId() + " is cluster slave but HA master",
+                    assertEquals( "instance " + info.getInstanceId() + " is cluster slave but HA master",
                             HighAvailabilityModeSwitcher.SLAVE, info.getHaRole() );
                 }
                 for ( String uri : info.getUris() )
@@ -223,7 +223,7 @@ public class HaBeanIT
             assertEquals( 3, bean.getInstancesInCluster().length );
             for ( ClusterMemberInfo info : bean.getInstancesInCluster() )
             {
-                assertTrue( bean.getInstanceId() + ": every instance should be available: " + info.getClusterId(),
+                assertTrue( bean.getInstanceId() + ": every instance should be available: " + info.getInstanceId(),
                         info.isAvailable() );
                 for ( String role : info.getRoles() )
                 {
@@ -256,7 +256,7 @@ public class HaBeanIT
         assertNotNull( clusterMember );
 //        String address = clusterMember.getAddress();
 //        assertNotNull( "No JMX address for instance", address );
-        String id = clusterMember.getClusterId();
+        String id = clusterMember.getInstanceId();
         assertNotNull( "No instance id", id );
     }
 
@@ -281,7 +281,7 @@ public class HaBeanIT
         assertNotNull( clusterMembers );
         assertEquals( 1, clusterMembers.length );
 //        assertEquals( clusterMember.getAddress(), clusterMembers[0].getAddress() );
-        assertEquals( clusterMember.getClusterId(), clusterMembers[0].getClusterId() );
+        assertEquals( clusterMember.getInstanceId(), clusterMembers[0].getInstanceId() );
     }
 
     @Test
@@ -373,7 +373,7 @@ public class HaBeanIT
     {
         for ( ClusterMemberInfo member : members )
         {
-            if ( member.getClusterId().equals( Integer.toString( instanceId ) ) )
+            if ( member.getInstanceId().equals( Integer.toString( instanceId ) ) )
             {
                 return member;
             }

@@ -255,7 +255,7 @@ public class LockManagerImpl implements LockManager
      */
     public void dumpLocksOnResource( Object resource, Logging logging )
     {
-        StringLogger logger = logging.getLogger( LockManager.class );
+        StringLogger logger = logging.getMessagesLog( LockManager.class );
         RWLock lock = null;
         synchronized ( resourceLockMap )
         {
@@ -328,7 +328,7 @@ public class LockManagerImpl implements LockManager
      */
     public void dumpRagStack( Logging logging )
     {
-        logging.getLogger( getClass() ).logLongMessage( "RAG stack", ragManager );
+        logging.getMessagesLog( getClass() ).logLongMessage( "RAG stack", ragManager );
     }
 
     /**
@@ -359,7 +359,7 @@ public class LockManagerImpl implements LockManager
         
         DumpVisitor( Logging logging )
         {
-            logger = logging.getLogger( LockManager.class );
+            logger = logging.getMessagesLog( LockManager.class );
         }
         
         int emptyLockCount = 0;

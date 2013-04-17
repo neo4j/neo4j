@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
 
 public class TestMasterCommittingAtSlave
@@ -195,12 +196,12 @@ public class TestMasterCommittingAtSlave
 
     private void assertNoFailureLogs()
     {
-        assertFalse( "Errors:" + log.errors.toString(), log.anyMessageLogged );
+        assertFalse( "Errors:" + log.errors.toString(), log.unexpectedExceptionLogged );
     }
 
     private void assertFailureLogs()
     {
-        assertTrue( log.anyMessageLogged );
+        assertTrue( log.unexpectedExceptionLogged );
     }
 
     private void assertCalls( FakeSlave slave, long... txs )
@@ -352,7 +353,7 @@ public class TestMasterCommittingAtSlave
 
     private static class FakeStringLogger extends StringLogger
     {
-        private volatile boolean anyMessageLogged;
+        private volatile boolean unexpectedExceptionLogged;
         private final StringBuilder errors = new StringBuilder();
 
         @Override
@@ -363,12 +364,21 @@ public class TestMasterCommittingAtSlave
 
         private void addError( String msg )
         {
-            anyMessageLogged = true;
+            if ( !msg.contains( "communication" ) )
+            {
+                unexpectedExceptionLogged = true;
+            }
             errors.append( errors.length() > 0 ? "," : "" ).append( msg );
         }
 
         @Override
         public void logMessage( String msg, boolean flush )
+        {
+            addError( msg );
+        }
+
+        @Override
+        public void logMessage( String msg, LogMarker marker )
         {
             addError( msg );
         }

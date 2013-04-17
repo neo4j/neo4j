@@ -60,7 +60,7 @@ public final class HaBackupProvider extends BackupExtensionService
     public URI resolve( URI address, Args args, Logging logging )
     {
         String master = null;
-        StringLogger logger = logging.getLogger( HaBackupProvider.class );
+        StringLogger logger = logging.getMessagesLog( HaBackupProvider.class );
         logger.debug( "Asking cluster member(s) at '" + address
                 + "' for master" );
 

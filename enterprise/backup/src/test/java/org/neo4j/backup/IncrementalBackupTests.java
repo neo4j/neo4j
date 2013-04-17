@@ -1,0 +1,138 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.backup;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.net.InetAddress;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.TargetDirectory;
+
+public class IncrementalBackupTests
+{
+    private File serverPath;
+    private File backupPath;
+
+    @Rule
+    public TestName testName = new TestName();
+
+    @Before
+    public void before() throws Exception
+    {
+        File base = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        serverPath = new File( base, "server" );
+        backupPath = new File( base, "backup" );
+    }
+
+    @Test
+    public void shouldDoIncrementalBackup() throws Exception
+    {
+        DbRepresentation initialDataSetRepresentation = createInitialDataSet2( serverPath );
+        ServerInterface server = startServer( serverPath );
+
+        // START SNIPPET: onlineBackup
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+        backup.full( backupPath.getPath() );
+        // END SNIPPET: onlineBackup
+        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
+
+        DbRepresentation furtherRepresentation = addMoreData2( serverPath );
+        server = startServer( serverPath );
+        // START SNIPPET: onlineBackup
+        backup.incremental( backupPath.getPath() );
+        // END SNIPPET: onlineBackup
+        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
+    }
+
+
+    private DbRepresentation createInitialDataSet2( File path )
+    {
+        GraphDatabaseService db = startGraphDatabase( path );
+        Transaction tx = db.beginTx();
+        db.createNode().setProperty( "name", "Goofy" );
+        Node donald = db.createNode();
+        donald.setProperty( "name", "Donald" );
+        Node daisy = db.createNode();
+        daisy.setProperty( "name", "Daisy" );
+        Relationship knows = donald.createRelationshipTo( daisy,
+                DynamicRelationshipType.withName( "LOVES" ) );
+        knows.setProperty( "since", 1940 );
+        tx.success();
+        tx.finish();
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
+    }
+
+    private DbRepresentation addMoreData2( File path )
+    {
+        GraphDatabaseService db = startGraphDatabase( path );
+        Transaction tx = db.beginTx();
+        Node donald = db.getNodeById( 2 );
+        Node gladstone = db.createNode();
+        gladstone.setProperty( "name", "Gladstone" );
+        Relationship hates = donald.createRelationshipTo( gladstone,
+                DynamicRelationshipType.withName( "HATES" ) );
+        hates.setProperty( "since", 1948 );
+        tx.success();
+        tx.finish();
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
+    }
+
+    private GraphDatabaseService startGraphDatabase( File path )
+    {
+        return new GraphDatabaseFactory().
+                newEmbeddedDatabaseBuilder( path.getPath() ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
+                setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+                newGraphDatabase();
+    }
+
+    private ServerInterface startServer( File path ) throws Exception
+    {
+        ServerInterface server = new EmbeddedServer( path.getPath() );
+        server.awaitStarted();
+        return server;
+    }
+
+    private void shutdownServer( ServerInterface server ) throws Exception
+    {
+        server.shutdown();
+        Thread.sleep( 1000 );
+    }
+}

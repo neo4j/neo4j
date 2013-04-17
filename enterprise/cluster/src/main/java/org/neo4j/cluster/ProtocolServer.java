@@ -51,7 +51,7 @@ public class ProtocolServer implements BindingNotifier
     {
         this.me = me;
         this.stateMachines = stateMachines;
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
 
         FromHeaderMessageProcessor fromHeaderMessageProcessor = new FromHeaderMessageProcessor();
         addBindingListener( fromHeaderMessageProcessor );

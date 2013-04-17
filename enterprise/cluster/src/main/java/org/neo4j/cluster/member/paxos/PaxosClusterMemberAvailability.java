@@ -51,7 +51,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         this.myId = myId;
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logging.getLogger( getClass() );
+        this.logger = logging.getMessagesLog( getClass() );
 
         bindingListener = new BindingListener()
         {

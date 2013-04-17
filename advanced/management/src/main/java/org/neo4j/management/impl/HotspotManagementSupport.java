@@ -49,7 +49,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
     {
         JMXServiceURL url = null;
         StringLogger logger = kernel.graphDatabase().getDependencyResolver().resolveDependency( Logging.class )
-                .getLogger( HotspotManagementSupport.class );
+                .getMessagesLog( HotspotManagementSupport.class );
         try
         {
             Class<?> cal = Class.forName( "sun.management.ConnectorAddressLink" );

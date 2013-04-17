@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.logging.LogMarker;
 
 public abstract class StringLogger
 {
@@ -174,6 +175,13 @@ public abstract class StringLogger
             }
 
             @Override
+            public void logMessage( String msg, LogMarker marker )
+            {
+                logger1.logMessage( msg, marker );
+                logger2.logMessage( msg, marker );
+            }
+
+            @Override
             public void logMessage( String msg, Throwable cause, boolean flush )
             {
                 logger1.logMessage( msg, cause, flush );
@@ -231,6 +239,13 @@ public abstract class StringLogger
             {
                 createLogger();
                 logger.logMessage( msg, flush );
+            }
+
+            @Override
+            public void logMessage( String msg, LogMarker marker )
+            {
+                createLogger();
+                logger.logMessage( msg, marker );
             }
 
             @Override
@@ -374,6 +389,8 @@ public abstract class StringLogger
 
     public abstract void logMessage( String msg, boolean flush );
 
+    public abstract void logMessage( String msg, LogMarker marker );
+
     public abstract void logMessage( String msg, Throwable cause, boolean flush );
 
     public abstract void addRotationListener( Runnable listener );
@@ -388,6 +405,11 @@ public abstract class StringLogger
     {
         @Override
         public void logMessage( String msg, boolean flush )
+        {
+        }
+
+        @Override
+        public void logMessage( String msg, LogMarker marker )
         {
         }
 
@@ -482,6 +504,12 @@ public abstract class StringLogger
                 out.flush();
             }
             checkRotation();
+        }
+
+        @Override
+        public void logMessage( String msg, LogMarker marker )
+        {
+            logMessage( msg );
         }
 
         private String time()

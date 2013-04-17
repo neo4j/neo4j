@@ -236,7 +236,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected XaDataSourceManager createXaDataSourceManager()
     {
-        XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getLogger( HaXaDataSourceManager.class ) );
+        XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class ) );
         requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ), toReturn,
                 dependencyResolver );
         return toReturn;
@@ -356,7 +356,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 new InstanceId( config.get( ClusterSettings.server_id ) ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, members, clusterEvents,
-                clusterClient, logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
+                clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         if ( compatibilityMode )
         {

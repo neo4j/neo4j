@@ -94,7 +94,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
         
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;

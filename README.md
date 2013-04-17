@@ -40,4 +40,4 @@ For how to make the documentation build go, see: [manual/](https://github.com/ne
 When building code from a different year, you are likely to see failures due to outdated license headers.
 The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
 
-We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.
+We also supply commercial licenses. Please contact [Neo Technology](mailto:sales@neotechnology.com) for more information.

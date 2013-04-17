@@ -20,7 +20,6 @@
 package org.neo4j.server.helpers;
 
 import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
@@ -88,9 +87,9 @@ public class ServerBuilder
 
     public CommunityNeoServer build() throws IOException
     {
-        if ( dbDir == null )
+        if ( dbDir == null && persistent)
         {
-            this.dbDir = createTempDir().getAbsolutePath();
+            throw new IllegalStateException( "Must specify path" );
         }
         File configFile = createPropertiesFiles();
 
@@ -159,9 +158,11 @@ public class ServerBuilder
     private void createPropertiesFile( File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
                 Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+        if (dbDir != null)
+            properties.put(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir);
+
         if ( portNo != null )
         {
             properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );

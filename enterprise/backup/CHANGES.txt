@@ -1,3 +1,8 @@
+1.9.RC1 (2013-04-15)
+--------------------
+o -full and -incremental backup flags are deprecated, type of backup is
+  automatically determined by the contents of the target directory
+
 1.9.M05 (2013-03-05)
 --------------------
 o Backup server now binds by default to 127.0.0.1

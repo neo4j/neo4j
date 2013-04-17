@@ -232,7 +232,7 @@ public class ClusterContext
 
     public StringLogger getLogger( Class loggingClass )
     {
-        return logging.getLogger( loggingClass );
+        return logging.getMessagesLog( loggingClass );
     }
 
     @Override

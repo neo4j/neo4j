@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +35,7 @@ public class PropertyFileBuilder
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private String dbTuningPropertyFile = null;
     private ArrayList<Tuple> nameValuePairs = new ArrayList<Tuple>();
+    private File file;
 
     private static class Tuple
     {
@@ -50,19 +49,18 @@ public class PropertyFileBuilder
         public String value;
     }
 
-    public static PropertyFileBuilder builder()
+    public static PropertyFileBuilder builder(File file)
     {
-        return new PropertyFileBuilder();
+        return new PropertyFileBuilder(file);
     }
 
-    private PropertyFileBuilder()
+    private PropertyFileBuilder( File file )
     {
+        this.file = file;
     }
 
     public File build() throws IOException
     {
-        File temporaryConfigFile = createTempPropertyFile();
-
         String dbDir = ServerTestUtils.createTempDir().getAbsolutePath();
         String rrdbDir = ServerTestUtils.createTempDir().getAbsolutePath();
         Map<String, String> properties = MapUtil.stringMap(
@@ -73,8 +71,8 @@ public class PropertyFileBuilder
         if ( portNo != null ) properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
         if ( dbTuningPropertyFile != null ) properties.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile );
         for ( Tuple t : nameValuePairs ) properties.put( t.name, t.value );
-        ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
-        return temporaryConfigFile;
+        ServerTestUtils.writePropertiesToFile( properties, file );
+        return file;
     }
 
     public PropertyFileBuilder withDbTuningPropertyFile( File f )

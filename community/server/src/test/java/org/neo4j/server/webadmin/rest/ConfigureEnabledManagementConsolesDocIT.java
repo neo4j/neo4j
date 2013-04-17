@@ -44,7 +44,9 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
     {
-        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
+        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "")
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         
         assertThat(exec("ls","shell").getStatus(),  is(400));
@@ -52,7 +54,9 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     
     @Test
     public void shellConsoleShouldBeEnabledByDefault() throws Exception {
-        server = server().build();
+        server = server()
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .build();
         server.start();
         
         assertThat(exec("ls","shell").getStatus(),  is(200));

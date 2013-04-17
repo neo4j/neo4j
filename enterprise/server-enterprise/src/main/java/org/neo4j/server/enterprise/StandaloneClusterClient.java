@@ -128,6 +128,11 @@ public class StandaloneClusterClient
             System.err.println( "No initial hosts to connect to supplied" );
             System.exit( 1 );
         }
+        if ( !config.containsKey( ClusterSettings.server_id.name() ) )
+        {
+            System.err.println( "No server id specified" );
+            System.exit( 1 );
+        }
     }
     
     private static Map<String, String> readFromConfigConfig( Map<String, String> config, File propertiesFile )
@@ -137,7 +142,8 @@ public class StandaloneClusterClient
         for ( Setting<?> setting : new Setting[] {
                 ClusterSettings.initial_hosts,
                 ClusterSettings.cluster_name,
-                ClusterSettings.cluster_server } )
+                ClusterSettings.cluster_server,
+                ClusterSettings.server_id} )
                 // TODO add timeouts
         {
             moveOver( existingConfig, result, setting );

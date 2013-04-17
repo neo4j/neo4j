@@ -41,6 +41,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 
 public abstract class GraphStoreFixture implements TestRule
 {
+
+    private StoreAccess storeAccess;
+
     public void apply( Transaction transaction ) throws IOException
     {
         applyTransaction( write( transaction, null ) );
@@ -48,7 +51,11 @@ public abstract class GraphStoreFixture implements TestRule
 
     public StoreAccess storeAccess()
     {
-        return new StoreAccess( directory );
+        if (storeAccess == null)
+        {
+            storeAccess = new StoreAccess( directory );
+        }
+        return storeAccess;
     }
 
     public File directory()
@@ -288,7 +295,11 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected void stop()
     {
-        // allow for override
+        if ( storeAccess != null )
+        {
+            storeAccess.close();
+            storeAccess = null;
+        }
     }
 
     protected int myId()

@@ -84,7 +84,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
     {
         DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
         Logging logging = dependencyResolver.resolveDependency( Logging.class );
-        return logging.getLogger( ExecutionEngine.class );
+        return logging.getMessagesLog( ExecutionEngine.class );
     }
 
     protected Map<String, Object> getParameters(Session session) throws ShellException

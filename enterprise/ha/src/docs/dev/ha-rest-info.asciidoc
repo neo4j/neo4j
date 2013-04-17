@@ -1,0 +1,96 @@
+[[ha-rest-info]]
+REST endpoint for HA status information
+=======================================
+
+== Introduction ==
+
+A common use case for Neo4j HA clusters is to direct all write requests to the master instance while using slaves for read operations.
+This allows for maximum write performance, while distributing the read load.
+This way you get read scalability and failover for your deployment.
+The most common way to achieve this is to place a load balancer in front of the HA cluster, an example being shown with <<ha-haproxy, HA Proxy>>.
+As you can see in that guide, it makes use of a REST endpoint to discover which instance is the master and direct write load to it.
+In this section, we'll deal with this REST endpoint and explain its semantics.
+
+== The endpoints ==
+
+Each HA instance comes with 2 endpoints regarding its HA status.
+They are complimentary but each may be used depending on your load balancing needs and your production setup.
+Those are:
+
+* +/db/manage/server/ha/master+
+* +/db/manage/server/ha/slave+
+
+To use them, just do an HTTP GET at either and you'll get back the following:
+
+.HA REST endpoint responses
+[options="header", cols="2m,<1,<2m,<2m"]
+|========================================================================================
+| Endpoint                           | Instance State  | Returned Code  | Body text
+1.2+^.^| /db/manage/server/ha/master | Master          | 200 OK         | true
+                                     | Slave           | 404 Not Found  | false
+1.2+^.^| /db/manage/server/ha/slave  | Master          | 404 Not Found  | false
+                                     | Slave           | 200 OK         | true
+|========================================================================================
+
+
+== Examples ==
+
+From the command line, a common way to ask those endpoints is to use +curl+.
+With no arguments, +curl+ will do an HTTP +GET+ on the URI provided and will output the body text, if any.
+If you also want to get the response code, just add the +-v+ flag for verbose output. Here are some examples:
+
+* Requesting +master+ endpoint on a running master with verbose output
+
+[source,shell]
+--------------
+#> curl -v localhost:7474/db/manage/server/ha/master
+* About to connect() to localhost port 7474 (#0)
+*   Trying ::1...
+* connected
+* Connected to localhost (::1) port 7474 (#0)
+> GET /db/manage/server/ha/master HTTP/1.1
+> User-Agent: curl/7.24.0 (x86_64-apple-darwin12.0) libcurl/7.24.0 OpenSSL/0.9.8r zlib/1.2.5
+> Host: localhost:7474
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Content-Type: text/plain
+< Access-Control-Allow-Origin: *
+< Transfer-Encoding: chunked
+< Server: Jetty(6.1.25)
+<
+* Connection #0 to host localhost left intact
+true* Closing connection #0
+--------------
+
+* Requesting +slave+ endpoint on a running master without verbose output:
+
+[source,shell]
+--------------
+#> curl localhost:7474/db/manage/server/ha/slave
+false
+--------------
+
+* Finally, requesting the +master+ endpoint on a slave with verbose output
+
+[source,shell]
+--------------
+#> curl -v localhost:7475/db/manage/server/ha/master
+* About to connect() to localhost port 7475 (#0)
+*   Trying ::1...
+* connected
+* Connected to localhost (::1) port 7475 (#0)
+> GET /db/manage/server/ha/master HTTP/1.1
+> User-Agent: curl/7.24.0 (x86_64-apple-darwin12.0) libcurl/7.24.0 OpenSSL/0.9.8r zlib/1.2.5
+> Host: localhost:7475
+> Accept: */*
+>
+< HTTP/1.1 404 Not Found
+< Content-Type: text/plain
+< Access-Control-Allow-Origin: *
+< Transfer-Encoding: chunked
+< Server: Jetty(6.1.25)
+<
+* Connection #0 to host localhost left intact
+false* Closing connection #0
+--------------

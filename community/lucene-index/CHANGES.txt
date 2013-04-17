@@ -1,3 +1,7 @@
+1.9.RC1 (2013-04-15)
+--------------------
+o Lucene upgraded to 3.6.2
+
 1.9.M05 (2013-03-05)
 --------------------
 o LuceneIndexProvider is now replaced by LuceneKernelExtension

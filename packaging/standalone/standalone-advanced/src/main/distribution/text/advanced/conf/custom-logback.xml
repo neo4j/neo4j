@@ -20,21 +20,6 @@
 
 -->
 <included>
-  <logger name="org.neo4j.diagnostics" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster.protocol" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster.NetworkMock" level="warn">
-  </logger>
-
-  <logger name="org.neo4j.kernel.ha" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster.protocol.heartbeat" level="info">
-  </logger>
-
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="info">
   </logger>
 

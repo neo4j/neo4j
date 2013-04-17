@@ -26,64 +26,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
 public class ServerTestUtils
 {
-//    public static final GraphDatabaseFactory HA_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
-//    {
-//        @Override
-//        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-//                Map<String, String> databaseProperties )
-//        {
-//            GraphDatabaseBuilder builder = new EnterpriseGraphDatabaseFactory().
-//                    newHighlyAvailableDatabaseBuilder( databaseStoreDirectory );
-//            for (Map.Entry<String, String> config : databaseProperties.entrySet())
-//            {
-//                builder.setConfig( config.getKey(), config.getValue() );
-//
-//            }
-//            return (GraphDatabaseAPI) builder.newGraphDatabase();
-//        }
-//    };
-//
-    public static File createTempDir() throws IOException
-    {
-        File d = File.createTempFile( "neo4j-test", "dir" );
-        if ( !d.delete() )
-        {
-            throw new RuntimeException( "temp config directory pre-delete failed" );
-        }
-        if ( !d.mkdirs() )
-        {
-            throw new RuntimeException( "temp config directory not created" );
-        }
-        return d;
-    }
-
-    public static File createTempPropertyFile() throws IOException
-    {
-        return createTempPropertyFile( createTempDir() );
-    }
-
-    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties, File propertyFile )
-    {
-        writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
-    }
-
-    private static String asOneLine( Map<String, String> properties )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( Map.Entry<String, String> property : properties.entrySet() )
-        {
-            builder.append( (builder.length() > 0 ? "," : "") );
-            builder.append( property.getKey() + "=" + property.getValue() );
-        }
-        return builder.toString();
-    }
-
     public static void writePropertyToFile( String name, String value, File propertyFile )
     {
         Properties properties = loadProperties( propertyFile );

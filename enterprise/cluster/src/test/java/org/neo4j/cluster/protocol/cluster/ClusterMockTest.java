@@ -99,7 +99,8 @@ public class ClusterMockTest
     @Before
     public void setup()
     {
-        executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Configuration output" ) );
+        executor = Executors.newSingleThreadExecutor(
+                new NamedThreadFactory( "Configuration output", Thread.MAX_PRIORITY ) );
     }
 
     @After

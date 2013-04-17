@@ -1,3 +1,8 @@
+1.9.RC1 (2013-04-15)
+--------------------
+o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop
+  accepting write requests and all transactions will timeout.
+
 1.9.M05 (2013-03-05)
 --------------------
 o Slave only mode is now available

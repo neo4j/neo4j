@@ -27,8 +27,10 @@ import java.io.IOException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -42,6 +44,9 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
     private static CommunityNeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
+    @ClassRule
+    public static TemporaryFolder staticFolder = new TemporaryFolder(  );
+
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
@@ -54,6 +59,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
     public static void allocateServer() throws IOException
     {
         server = ServerBuilder.server()
+                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )
                 .build();
         server.start();

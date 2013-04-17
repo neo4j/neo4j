@@ -20,9 +20,14 @@
 package org.neo4j.test.server;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public class ExclusiveServerTestBase
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @BeforeClass
     public static final void ensureServerNotRunning()
     {

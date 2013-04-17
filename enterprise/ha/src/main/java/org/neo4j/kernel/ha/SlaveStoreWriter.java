@@ -24,11 +24,14 @@ import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_D
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,18 +46,21 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 
 public class SlaveStoreWriter
 {
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
     private final Config config;
-    
+    private final ConsoleLogger console;
+
     // TODO Should be accepted as a dependency
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-    public SlaveStoreWriter( Config config )
+    public SlaveStoreWriter( Config config, ConsoleLogger console )
     {
         this.config = config;
+        this.console = console;
     }
 
     public void copyStore( Master master ) throws IOException
@@ -71,7 +77,7 @@ public class SlaveStoreWriter
         // Get the response, deserialise to disk
         Response response = master.copyStore( new RequestContext( 0,
                 config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0,
-                0 ), new ToFileStoreWriter( tempStore ) );
+                0 ), decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) ) );
         long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fileSystem,
                 tempStore, LOGICAL_LOG_DEFAULT_NAME );
         if ( highestLogVersion > -1 )
@@ -112,5 +118,30 @@ public class SlaveStoreWriter
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
         }
+    }
+
+    private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
+    {
+        return new StoreWriter()
+        {
+            private int totalFiles;
+
+            @Override
+            public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+                               boolean hasData ) throws IOException
+            {
+                console.log( "Copying " + path );
+                actual.write( path, data, temporaryBuffer, hasData );
+                console.log( "Copied " + path );
+                totalFiles++;
+            }
+
+            @Override
+            public void done()
+            {
+                actual.done();
+                console.log( "Done, copied " + totalFiles + " files");
+            }
+        };
     }
 }

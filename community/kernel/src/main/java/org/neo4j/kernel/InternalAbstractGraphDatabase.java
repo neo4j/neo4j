@@ -336,7 +336,7 @@ public abstract class InternalAbstractGraphDatabase
 
         config.applyChanges( configParams );
 
-        this.msgLog = logging.getLogger( getClass() );
+        this.msgLog = logging.getMessagesLog( getClass() );
 
         config.setLogger( msgLog );
 
@@ -358,7 +358,7 @@ public abstract class InternalAbstractGraphDatabase
         kernelEventHandlers = new KernelEventHandlers();
 
         caches = createCaches();
-        diagnosticsManager = life.add( new DiagnosticsManager( logging.getLogger( DiagnosticsManager.class ) ) );
+        diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
@@ -372,7 +372,7 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getLogger( ReadOnlyTxManager.class ) );
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getMessagesLog( ReadOnlyTxManager.class ) );
         }
         else
         {
@@ -380,7 +380,7 @@ public abstract class InternalAbstractGraphDatabase
             if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
-                        logging.getLogger( TxManager.class ), fileSystem, stateFactory );
+                        logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory );
             }
             else
             {
@@ -392,7 +392,7 @@ public abstract class InternalAbstractGraphDatabase
                             + serviceName );
                 }
                 txManager = provider.loadTransactionManager( this.storeDir.getPath(), xaDataSourceManager,
-                        kernelPanicEventGenerator, txHook, logging.getLogger( AbstractTransactionManager.class ),
+                        kernelPanicEventGenerator, txHook, logging.getMessagesLog( AbstractTransactionManager.class ),
                         fileSystem, stateFactory );
             }
         }
@@ -412,7 +412,7 @@ public abstract class InternalAbstractGraphDatabase
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
-        persistenceManager = new PersistenceManager( logging.getLogger( PersistenceManager.class ), txManager,
+        persistenceManager = new PersistenceManager( logging.getMessagesLog( PersistenceManager.class ), txManager,
                 persistenceSource, syncHook );
 
         propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
@@ -492,7 +492,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected XaDataSourceManager createXaDataSourceManager()
     {
-        return new XaDataSourceManager( logging.getLogger( XaDataSourceManager.class ) );
+        return new XaDataSourceManager( logging.getMessagesLog( XaDataSourceManager.class ) );
     }
 
     @Override
@@ -511,12 +511,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -526,7 +526,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -575,7 +575,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -640,7 +640,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreFactory createStoreFactory()
     {
         return new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
-                logging.getLogger( StoreFactory.class ), txHook );
+                logging.getMessagesLog( StoreFactory.class ), txHook );
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -782,7 +782,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
+                    storeFactory, lockManager, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                     xaFactory, stateFactory, transactionInterceptorProviders, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 

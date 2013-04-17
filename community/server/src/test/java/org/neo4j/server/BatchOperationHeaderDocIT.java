@@ -30,7 +30,9 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;
@@ -39,9 +41,12 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 public class BatchOperationHeaderDocIT extends ExclusiveServerTestBase {
     private NeoServer server;
 
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder(  );
+
     @Before
     public void cleanTheDatabase() throws IOException {
-        server = server().withThirdPartyJaxRsPackage("org.dummy.web.service", DUMMY_WEB_SERVICE_MOUNT_POINT).build();
+        server = server().withThirdPartyJaxRsPackage("org.dummy.web.service", DUMMY_WEB_SERVICE_MOUNT_POINT).usingDatabaseDir( folder.getRoot().getAbsolutePath() ).build();
         server.start();
     }
 

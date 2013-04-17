@@ -49,7 +49,7 @@ class FunctionsTest extends DocumentingTestBase {
       title = "ALL",
       syntax = "ALL(identifier in collection WHERE predicate)",
       arguments = common_arguments,
-      text = """Tests whether a predicate holds for all element of this collection collection.""",
+      text = """Tests whether a predicate holds for all element of this collection.""",
       queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) WHERE x.age > 30) return p""",
       returns = """All nodes in the returned paths will have an `age` property of at least 30.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))

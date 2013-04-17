@@ -55,6 +55,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.ProcessStreamHandler;
@@ -135,9 +136,15 @@ public class StandaloneClusterClientIT
             Logging logging = new Logging()
             {
                 @Override
-                public StringLogger getLogger( Class loggingClass )
+                public StringLogger getMessagesLog( Class loggingClass )
                 {
                     return StringLogger.SYSTEM;
+                }
+
+                @Override
+                public ConsoleLogger getConsoleLog( Class loggingClass )
+                {
+                    return new ConsoleLogger( StringLogger.SYSTEM );
                 }
             };
             final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging, new ServerIdElectionCredentialsProvider() );

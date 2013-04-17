@@ -19,22 +19,19 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 
-public class DevNullLoggingService
-        extends LifecycleAdapter
-        implements Logging
+public class ConsoleLoggingFilter extends Filter<ILoggingEvent>
 {
     @Override
-    public StringLogger getMessagesLog( Class loggingClass )
+    public FilterReply decide( ILoggingEvent event )
     {
-        return StringLogger.DEV_NULL;
-    }
-
-    @Override
-    public ConsoleLogger getConsoleLog( Class loggingClass )
-    {
-        return new ConsoleLogger( StringLogger.DEV_NULL );
+        if ( event.getMarker() != null && LogMarker.CONSOLE.equals( event.getMarker().getName() ) )
+        {
+            return FilterReply.ACCEPT;
+        }
+        return FilterReply.DENY;
     }
 }

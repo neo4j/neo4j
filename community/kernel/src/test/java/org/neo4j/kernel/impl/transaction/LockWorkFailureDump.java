@@ -54,7 +54,7 @@ public class LockWorkFailureDump
             for ( LockWorker worker : workers )
             {
                 // - what each is doing and have up to now
-                logging.getLogger( getClass() ).logLongMessage( "Worker " + worker, worker );
+                logging.getMessagesLog( getClass() ).logLongMessage( "Worker " + worker, worker );
             }
             return file;
         }

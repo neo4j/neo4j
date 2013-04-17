@@ -36,18 +36,18 @@ import org.neo4j.helpers.Pair;
 public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
-    private final String clusterId;
+    private final String instanceId;
     private final boolean available;
     private final boolean alive;
     private final String haRole;
     private final String[] uris;
     private final String[] roles;
 
-    @ConstructorProperties( { "clusterId", "available", "alive", "haRole", "uris", "roles" } )
+    @ConstructorProperties( { "instanceId", "available", "alive", "haRole", "uris", "roles" } )
     public ClusterMemberInfo( String instanceId, boolean available, boolean alive, String haRole, String[] uris,
                               String[] roles )
     {
-        this.clusterId = instanceId;
+        this.instanceId = instanceId;
         this.available = available;
         this.alive = alive;
         this.haRole = haRole;
@@ -55,9 +55,9 @@ public class ClusterMemberInfo implements Serializable
         this.roles = roles;
     }
 
-    public String getClusterId()
+    public String getInstanceId()
     {
-        return clusterId;
+        return instanceId;
     }
 
     public boolean isAvailable()
@@ -89,7 +89,7 @@ public class ClusterMemberInfo implements Serializable
     @SuppressWarnings( "boxing" )
     public String toString()
     {
-        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,HA URI=%s]", clusterId, available, haRole,
+        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,HA URI=%s]", instanceId, available, haRole,
                 Arrays.toString(uris) );
     }
 
@@ -112,7 +112,7 @@ public class ClusterMemberInfo implements Serializable
         {
             throw new IllegalStateException( "The instance does not have a public JMX server." );
         }
-        Neo4jManager manager = Neo4jManager.get( url(address), username, password, clusterId );
+        Neo4jManager manager = Neo4jManager.get( url(address), username, password, instanceId );
         return Pair.of( manager, manager.getHighAvailabilityBean() );
     }
 

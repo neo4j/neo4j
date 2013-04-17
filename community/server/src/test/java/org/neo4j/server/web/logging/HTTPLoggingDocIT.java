@@ -87,6 +87,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         // given
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "false" )
+            .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
             .build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
@@ -116,6 +117,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "true" )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+            .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
             .build();
         server.start();
 
@@ -151,6 +153,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             .withPreflightTasks( new EnsurePreparedForHttpLogging(config) )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+            .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
             .build();
 
         // when
