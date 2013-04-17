@@ -32,7 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.junit.Test;
-import org.neo4j.server.rest.transactional.error.InvalidRequestError;
+import org.neo4j.server.rest.transactional.error.InvalidRequestFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 public class StatementDeserializerTest
@@ -65,7 +65,7 @@ public class StatementDeserializerTest
         String json = "{ \"timeout\" : 200, \"statements\" : [ { \"statement\" : \"ignored\", \"parameters\" : {}} ] }";
 
         assertYieldsErrors( json,
-                new InvalidRequestError( "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
+                new InvalidRequestFormat( "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
     }
 
     @Test
@@ -135,11 +135,11 @@ public class StatementDeserializerTest
     public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
     {
         assertYieldsErrors( "{}",
-                new InvalidRequestError( "Unable to deserialize request, " +
+                new InvalidRequestFormat( "Unable to deserialize request, " +
                         "expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
                         "found [START_OBJECT, END_OBJECT, null]." ) );
         assertYieldsErrors( "[{]}",
-                new InvalidRequestError(
+                new InvalidRequestFormat(
                         "Unable to deserialize request: Unexpected close marker ']': expected '}' " +
                                 "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
                                 "at [Source: TestInputStream; line: 1, column: 4]" ) );
@@ -168,7 +168,7 @@ public class StatementDeserializerTest
             Neo4jError error = actual.next();
             Neo4jError expectedError = expected.next();
 
-            assertThat( error.getErrorCode(), equalTo( expectedError.getErrorCode() ) );
+            assertThat( error.getStatusCode(), equalTo( expectedError.getStatusCode() ) );
             assertThat( error.getMessage(), equalTo( expectedError.getMessage() ) );
         }
 

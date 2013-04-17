@@ -19,12 +19,17 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownCommitError extends Neo4jError
+public class InternalBeginTransactionError extends TransactionLifecycleException
 {
-    public UnknownCommitError( RuntimeException e )
+    public InternalBeginTransactionError( RuntimeException cause )
     {
-        super( Code.UNKNOWN_COMMIT_ERROR,
-                "It was not possible to commit your transaction. " +
-                        "Please refer to the database logs for details.", e );
+        super( "It was not possible to start a new transaction. " +
+               "Please refer to the database logs for details.", cause );
+    }
+
+    @Override
+    public Neo4jError toNeo4jError()
+    {
+        return new Neo4jError( StatusCode.INTERNAL_BEGIN_TRANSACTION_ERROR, getMessage(), getCause() );
     }
 }

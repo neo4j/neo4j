@@ -19,23 +19,25 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.cypher.ParameterNotFoundException;
+import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.MissingParameterError;
+import org.neo4j.server.rest.transactional.error.CommunicationError;
+import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
+import org.neo4j.server.rest.transactional.error.InternalCommitTransactionError;
+import org.neo4j.server.rest.transactional.error.InternalDatabaseError;
+import org.neo4j.server.rest.transactional.error.InternalRollbackTransactionError;
+import org.neo4j.server.rest.transactional.error.InternalStatementExecutionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.UnableToStartTransactionError;
-import org.neo4j.server.rest.transactional.error.UnknownCommitError;
-import org.neo4j.server.rest.transactional.error.UnknownDatabaseError;
-import org.neo4j.server.rest.transactional.error.UnknownRollbackError;
-import org.neo4j.server.rest.transactional.error.UnknownStatementError;
+import org.neo4j.server.rest.transactional.error.StatementExecutionError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -90,9 +92,9 @@ public class TransactionHandle
             ensureActiveTransaction();
             execute( statements, output, errors );
         }
-        catch ( UnableToStartTransactionError neo4jError )
+        catch ( InternalBeginTransactionError e )
         {
-            errors.add( neo4jError );
+            errors.add( e.toNeo4jError() );
         }
         finally
         {
@@ -109,9 +111,9 @@ public class TransactionHandle
             ensureActiveTransaction();
             commit( statements, output, errors );
         }
-        catch ( UnableToStartTransactionError neo4jError )
+        catch ( InternalBeginTransactionError e )
         {
-            errors.add( neo4jError );
+            errors.add( e.toNeo4jError() );
         }
         finally
         {
@@ -128,9 +130,9 @@ public class TransactionHandle
             ensureActiveTransaction();
             rollback( errors );
         }
-        catch ( UnableToStartTransactionError neo4jError )
+        catch ( InternalBeginTransactionError e )
         {
-            errors.add( neo4jError );
+            errors.add( e.toNeo4jError() );
         }
         finally
         {
@@ -145,7 +147,7 @@ public class TransactionHandle
         context.rollback();
     }
 
-    private void ensureActiveTransaction() throws UnableToStartTransactionError
+    private void ensureActiveTransaction() throws InternalBeginTransactionError
     {
         if ( context == null )
         {
@@ -156,7 +158,7 @@ public class TransactionHandle
             catch ( RuntimeException e )
             {
                 log.error( "Failed to start transaction.", e );
-                throw new UnableToStartTransactionError( e );
+                throw new InternalBeginTransactionError( e );
             }
         }
         else
@@ -197,7 +199,7 @@ public class TransactionHandle
                 catch ( RuntimeException e )
                 {
                     log.error( "Failed to commit transaction.", e );
-                    errors.add( new UnknownCommitError( e ) );
+                    errors.add( new InternalCommitTransactionError( e ) );
                 }
             }
             else
@@ -209,7 +211,7 @@ public class TransactionHandle
                 catch ( RuntimeException e )
                 {
                     log.error( "Failed to rollback transaction.", e );
-                    errors.add( new UnknownRollbackError( e ) );
+                    errors.add( new InternalRollbackTransactionError( e ) );
                 }
             }
         }
@@ -228,7 +230,7 @@ public class TransactionHandle
         catch ( RuntimeException e )
         {
             log.error( "Failed to rollback transaction.", e );
-            errors.add( new UnknownRollbackError( e ) );
+            errors.add( new InternalRollbackTransactionError( e ) );
         }
         finally
         {
@@ -244,30 +246,32 @@ public class TransactionHandle
             while ( statements.hasNext() )
             {
                 Statement statement = statements.next();
+                ExecutionResult result;
                 try
                 {
-                    ExecutionResult result = engine.execute( statement.statement(), statement.parameters() );
+                    result = engine.execute( statement.statement(), statement.parameters() );
                     // NOTE: The TransactionContext et cetera used up until this method, and then blatantly ignored,
                     // is meant to be passed on to a new internal cypher API, like so:
 
                     // ctx = tx.newStatement()
                     // cypher.execute( ctx, statement, resultVisitor );
                     // ctx.close()
+
                     output.statementResult( result );
                 }
-                catch ( ParameterNotFoundException e )
+                catch ( CypherException e )
                 {
-                    errors.add( new MissingParameterError( e.getMessage(), e ) );
+                    errors.add( new StatementExecutionError( e ) );
+                    break;
+                }
+                catch ( IOException e )
+                {
+                    errors.add( new CommunicationError( e ) );
                     break;
                 }
                 catch ( RuntimeException e )
                 {
-                    errors.add( new UnknownStatementError( statement.statement(), e ) );
-                    break;
-                }
-                catch ( Neo4jError e )
-                {
-                    errors.add( e );
+                    errors.add( new InternalStatementExecutionError( e ) );
                     break;
                 }
             }
@@ -280,7 +284,7 @@ public class TransactionHandle
         }
         catch ( RuntimeException e )
         {
-            errors.add( new UnknownDatabaseError( e ) );
+            errors.add( new InternalDatabaseError( e ) );
         }
     }
 

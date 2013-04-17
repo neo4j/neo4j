@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * This is an initial move towards unified errors - it should not live here in the server, but should probably
  * exist in the kernel or similar, where it can be shared across surfaces other than the server.
@@ -29,67 +32,44 @@ package org.neo4j.server.rest.transactional.error;
  * <p/>
  * This way, we make it easy to transition this service over to a unified error code based error scheme.
  */
-public abstract class Neo4jError extends Exception
+public class Neo4jError
 {
+    private final StatusCode statusCode;
+    private final String message;
+    private final Throwable cause;
 
-    /*
-     * Put in place as an enum to enforce all error codes remaining collected in one location.
-     * Note: These codes will be exposed to the user through our API, although for now they will
-     * remain undocumented. There is a discussion to be had about these codes and how we should
-     * categorize and pick them.
-     *
-     * The categories below are an initial proposal, we should have a real discussion about this before
-     * anything is documented.
-     */
-    public enum Code
+    public Neo4jError( StatusCode statusCode, String message, Throwable cause )
     {
-        // 00000-09999 : User errors - Invalid syntax, impossible statements
-        INVALID_REQUEST( 100 ),
+        this.statusCode = statusCode;
+        this.message = message;
+        this.cause = cause;
+    }
 
-        STATEMENT_MISSING_PARAMETER( 1001 ),
+    public StatusCode getStatusCode()
+    {
+        return statusCode;
+    }
 
-        // 10000-19999 : Data errors - constraint violations, resources not found
-        INVALID_TRANSACTION_ID( 10010 ),
-        CONCURRENT_TRANSACTION_ACCESS( 10011 ),
+    public String getMessage()
+    {
+        return message;
+    }
 
-        // 20000-29999 : Database errors - Database shut down, unable to tell what went wrong
-        UNKNOWN_DATABASE_ERROR( 20000 ),
-        UNKNOWN_COMMIT_ERROR( 20001 ),
-        UNKNOWN_ROLLBACK_ERROR( 20002 ),
+    public boolean shouldSerializeStackTrace()
+    {
+        return false;
+    }
 
-        UNABLE_TO_START_TRANSACTION( 20010 ),
-
-        UNKNOWN_STATEMENT_ERROR( 20100 ),
-
-        // 30000-39999 : Cluster errors - Election fraud, unable to join cluster, remote locks timed out
-
-        // 40000-49999 : Infrastructure errors - Network failures, memory issues, disk space et cetera
-        CLIENT_COMMUNICATION_ERROR( 40100 );
-
-        private final long code;
-
-        private Code( long code )
+    public String getStackTraceAsString()
+    {
+        if ( cause == null )
+            return "";
+        else
         {
-            this.code = code;
-        }
-
-        public long getCode()
-        {
-            return code;
+            StringWriter stringWriter = new StringWriter(  );
+            PrintWriter printWriter = new PrintWriter( stringWriter );
+            cause.printStackTrace( printWriter );
+            return stringWriter.toString();
         }
     }
-
-    private final Code errorCode;
-
-    public Neo4jError( Code errorCode, String message, Throwable cause )
-    {
-        super( message, cause );
-        this.errorCode = errorCode;
-    }
-
-    public Code getErrorCode()
-    {
-        return errorCode;
-    }
-
 }

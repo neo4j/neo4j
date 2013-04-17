@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
-import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
+import org.neo4j.server.rest.transactional.error.InvalidConcurrentConcurrentTransactionAccess;
+import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 
 /**
  * Stores transaction contexts for the server, including handling concurrency safe ways to acquire
@@ -33,7 +33,7 @@ public interface TransactionRegistry
 
     public void release( long id, TransactionHandle transactionHandle );
 
-    public TransactionHandle acquire( long id ) throws InvalidTransactionIdError, ConcurrentTransactionAccessError;
+    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentConcurrentTransactionAccess;
 
     public void forget( long id );
 

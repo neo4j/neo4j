@@ -19,10 +19,21 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class ClientCommunicationError extends Neo4jError
+public class InternalStatementExecutionError extends Neo4jError
 {
-    public ClientCommunicationError( String message, Throwable cause )
+    public InternalStatementExecutionError( Exception e)
     {
-        super( Code.CLIENT_COMMUNICATION_ERROR, message, cause );
+        this( e.getMessage(), e );
+    }
+
+    public InternalStatementExecutionError( String message, Exception e )
+    {
+        super( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, "Internal error when executing statement: '" + message + "'.", e );
+    }
+
+    @Override
+    public boolean shouldSerializeStackTrace()
+    {
+        return true;
     }
 }

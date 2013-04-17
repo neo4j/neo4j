@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownStatementError extends Neo4jError
+public class InternalCommitTransactionError extends Neo4jError
 {
-    public UnknownStatementError( String statement, Exception e )
+    public InternalCommitTransactionError( RuntimeException e )
     {
-        super( Code.UNKNOWN_STATEMENT_ERROR, "Failed to execute '" + statement + "'.", e );
+        super( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR,
+                "It was not possible to commit your transaction. " +
+                        "Please refer to the database logs for details.", e );
     }
 }

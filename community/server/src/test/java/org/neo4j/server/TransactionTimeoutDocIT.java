@@ -25,8 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.helpers.ServerBuilder.server;
-import static org.neo4j.server.rest.transactional.TimeoutEvictingTransactionRegistry.TX_NOT_FOUND_ERR_MSG;
-import static org.neo4j.server.rest.transactional.error.Neo4jError.Code.INVALID_TRANSACTION_ID;
+import static org.neo4j.server.rest.transactional.error.StatusCode.INVALID_TRANSACTION_ID;
 
 import java.util.List;
 import java.util.Map;
@@ -61,9 +60,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
 
         // Then
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( (String) errors.get( 0 ).get( "message" ), equalTo( TX_NOT_FOUND_ERR_MSG ) );
-
-        assertThat( ((Number) errors.get( 0 ).get( "code" )).longValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
+        assertThat( ((Number) errors.get( 0 ).get( "code" )).intValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
     }
 
     private String txURI()

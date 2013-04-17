@@ -19,10 +19,15 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class InvalidRequestError extends Neo4jError
+public class InternalDatabaseError extends Neo4jError
 {
-    public InvalidRequestError( String message )
+    public InternalDatabaseError( Throwable cause )
     {
-        super( Code.INVALID_REQUEST, message, null );
+        this( "Internal database error. Please refer to the attached stack trace for details.", cause );
+    }
+
+    public InternalDatabaseError( String message, Throwable cause )
+    {
+        super( StatusCode.INTERNAL_DATABASE_ERROR, message, cause );
     }
 }

@@ -19,12 +19,19 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownRollbackError extends Neo4jError
+import org.neo4j.cypher.CypherException;
+import org.neo4j.server.rest.transactional.CypherExceptionMapping;
+
+/**
+ * Wrapper for CypherException. Specific
+ */
+public class StatementExecutionError extends Neo4jError
 {
-    public UnknownRollbackError( RuntimeException cause )
+
+    private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
+
+    public StatementExecutionError( CypherException cause )
     {
-        super( Code.UNKNOWN_ROLLBACK_ERROR,
-                "Unable to roll back transaction, and unable to determine cause of failure. " +
-                        "Please refer to the logs for details.", cause );
+        super( EXCEPTION_MAPPING.apply( cause ), cause.getMessage(), cause );
     }
 }

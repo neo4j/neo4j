@@ -30,8 +30,8 @@ import org.junit.Test;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.paging.FakeClock;
-import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
-import org.neo4j.server.rest.transactional.error.InvalidTransactionIdError;
+import org.neo4j.server.rest.transactional.error.InvalidConcurrentConcurrentTransactionAccess;
+import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 
 public class TimeoutEvictingTransactionRegistryIT
 {
@@ -91,7 +91,7 @@ public class TimeoutEvictingTransactionRegistryIT
             registry.resume( txId );
             fail( "Should have thrown exception" );
         }
-        catch ( ConcurrentTransactionAccessError exc )
+        catch ( InvalidConcurrentConcurrentTransactionAccess exc )
         {
             // ok
         }
@@ -112,7 +112,7 @@ public class TimeoutEvictingTransactionRegistryIT
             registry.resume( txId );
             fail( "Should have thrown exception" );
         }
-        catch ( ConcurrentTransactionAccessError exc )
+        catch ( InvalidConcurrentConcurrentTransactionAccess exc )
         {
             // ok
         }
@@ -148,7 +148,7 @@ public class TimeoutEvictingTransactionRegistryIT
             registry.resume( txId1 );
             fail( "Should have thrown exception" );
         }
-        catch ( InvalidTransactionIdError exc )
+        catch ( InvalidTransactionId exc )
         {
             // ok
         }

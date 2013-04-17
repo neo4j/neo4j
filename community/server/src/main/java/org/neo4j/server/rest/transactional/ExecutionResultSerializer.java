@@ -31,7 +31,6 @@ import org.codehaus.jackson.JsonGenerator;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.UnknownStatementError;
 
 /**
  * Writes directly to an output stream, therefore implicitly stateful. Methods must be invoked in the correct
@@ -57,7 +56,7 @@ public class ExecutionResultSerializer
         }
         catch ( IOException e )
         {
-            handleIOException( e );
+            loggedIOException( e );
         }
         this.out = generator;
     }
@@ -76,15 +75,15 @@ public class ExecutionResultSerializer
         }
         catch ( IOException e )
         {
-            handleIOException( e );
+            loggedIOException( e );
         }
     }
 
     /**
-     * Will get called at most once per statement. This method is *only* allowed to throw {@link Neo4jError},
-     * throwing anything else may lead to resource leakage.
+     * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
+     * to execute further statements.
      */
-    public void statementResult( ExecutionResult result ) throws Neo4jError
+    public void statementResult( ExecutionResult result ) throws IOException
     {
         try
         {
@@ -103,7 +102,7 @@ public class ExecutionResultSerializer
         }
         catch ( IOException e )
         {
-            handleIOException( e );
+            throw loggedIOException( e );
         }
     }
 
@@ -126,8 +125,12 @@ public class ExecutionResultSerializer
                     try
                     {
                         out.writeStartObject();
-                        out.writeObjectField( "code", error.getErrorCode().getCode() );
+                        out.writeObjectField( "code", error.getStatusCode().getCode() );
                         out.writeObjectField( "message", error.getMessage() );
+                        if ( error.shouldSerializeStackTrace() )
+                        {
+                            out.writeObjectField( "stackTrace", error.getStackTraceAsString() );
+                        }
                     }
                     finally
                     {
@@ -143,7 +146,7 @@ public class ExecutionResultSerializer
         }
         catch ( IOException e )
         {
-            handleIOException( e );
+            loggedIOException( e );
         }
     }
 
@@ -165,7 +168,7 @@ public class ExecutionResultSerializer
         }
         catch ( IOException e )
         {
-            handleIOException( e );
+            loggedIOException( e );
         }
     }
 
@@ -209,8 +212,7 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data ) throws IOException,
-            UnknownStatementError
+    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data ) throws IOException
     {
         out.writeArrayFieldStart( "data" );
         try
@@ -232,10 +234,6 @@ public class ExecutionResultSerializer
                     out.writeEndArray();
                 }
             }
-        }
-        catch ( Exception e )
-        {
-            throw new UnknownStatementError( "Executing statement failed.", e );
         }
         finally
         {
@@ -259,8 +257,9 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void handleIOException( IOException exc )
+    private IOException loggedIOException( IOException exception )
     {
-        log.error( "Failed to generate JSON output.", exc );
+        log.error( "Failed to generate JSON output.", exception );
+        return exception;
     }
 }

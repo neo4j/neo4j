@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnableToStartTransactionError extends Neo4jError
+public class InvalidRequestFormat extends Neo4jError
 {
-    public UnableToStartTransactionError( RuntimeException cause )
+    public InvalidRequestFormat( String message )
     {
-        super( Code.UNABLE_TO_START_TRANSACTION,
-                "It was not possible to start a new transaction. " +
-                        "Please refer to the database logs for details.", cause );
+        super( StatusCode.INVALID_REQUEST_FORMAT, message, null );
     }
 }

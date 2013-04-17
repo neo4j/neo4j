@@ -19,10 +19,17 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class InvalidTransactionIdError extends Neo4jError
+public class InvalidTransactionId extends TransactionLifecycleException
 {
-    public InvalidTransactionIdError( String message )
+    public InvalidTransactionId()
     {
-        super( Code.INVALID_TRANSACTION_ID, message, null );
+        super( "The transaction you asked for cannot be found. " +
+               "This could also be because the transaction has timed out and has been rolled back." );
+    }
+
+    @Override
+    public Neo4jError toNeo4jError()
+    {
+        return new Neo4jError( StatusCode.INVALID_TRANSACTION_ID, getMessage(), this );
     }
 }

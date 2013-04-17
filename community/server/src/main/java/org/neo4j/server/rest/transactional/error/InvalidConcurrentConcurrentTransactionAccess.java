@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownDatabaseError extends Neo4jError
+public class InvalidConcurrentConcurrentTransactionAccess extends TransactionLifecycleException
 {
-    public UnknownDatabaseError( Throwable cause )
+    public InvalidConcurrentConcurrentTransactionAccess()
     {
-        this( "Something went wrong, and the database was unable to accurately tell what it was. Please refer to the " +
-                "database logs for details.", cause );
+        super( "The requested transaction is being used concurrently by another request." );
     }
 
-    public UnknownDatabaseError( String message, Throwable cause )
+    @Override
+    public Neo4jError toNeo4jError()
     {
-        super( Code.UNKNOWN_DATABASE_ERROR, message, cause );
+        return new Neo4jError( StatusCode.INVALID_CONCURRENT_TRANSACTION_ACCESS, getMessage(), this );
     }
 }

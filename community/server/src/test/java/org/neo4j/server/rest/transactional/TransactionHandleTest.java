@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -35,19 +36,22 @@ import static org.neo4j.server.rest.transactional.StubStatementDeserializer.dese
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
 import java.net.URI;
-import java.util.Iterator;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.InvalidRequestError;
+import org.neo4j.server.rest.transactional.error.InvalidRequestFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class TransactionHandleTest
@@ -123,7 +127,8 @@ public class TransactionHandleTest
 
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
 
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
+                StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         handle.execute( statements( new Statement( "query", map() ) ), output );
@@ -252,7 +257,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( deserilizationErrors( new InvalidRequestError( "invalid request" ) ), output );
+        handle.execute( deserilizationErrors( new InvalidRequestFormat( "invalid request" ) ), output );
 
         // then
         verify( transactionContext ).rollback();
@@ -260,7 +265,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( 1 ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INVALID_REQUEST_FORMAT ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -279,7 +284,8 @@ public class TransactionHandleTest
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
         when( executionEngine.execute( "query", map() ) ).thenThrow( new NullPointerException() );
 
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
+                StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -291,7 +297,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( 1 ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -310,7 +316,8 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry, uriScheme, log );
+        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry, uriScheme,
+                log );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -322,7 +329,36 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( 1 ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR ) ) );
+        outputOrder.verify( output ).finish();
+        verifyNoMoreInteractions( output );
+    }
+
+    @Test
+    public void shouldLogMessageIfCypherSyntaxErrorOccurs() throws Exception
+    {
+        // given
+        KernelAPI kernel = mockKernel();
+
+        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        when( executionEngine.execute( "matsch (n) return n", map() ) ).thenThrow( new SyntaxException( "did you mean MATCH?" ) );
+
+        StringLogger log = mock( StringLogger.class );
+
+        TransactionRegistry registry = mock( TransactionRegistry.class );
+        when( registry.begin() ).thenReturn( 1337l );
+
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, log );
+        ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
+
+        // when
+        handle.commit( statements( new Statement( "matsch (n) return n", map() ) ), output );
+
+        // then
+        verify( registry ).forget( 1337l );
+
+        InOrder outputOrder = inOrder( output );
+        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.STATEMENT_SYNTAX_ERROR ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -352,28 +388,30 @@ public class TransactionHandleTest
 
     private static Matcher<Iterable<Neo4jError>> hasNoErrors()
     {
-        return hasErrors( 0 );
+        return hasErrors();
     }
 
-    private static Matcher<Iterable<Neo4jError>> hasErrors( final int errorCount )
+    private static Matcher<Iterable<Neo4jError>> hasErrors( StatusCode... codes )
     {
+        final Set<StatusCode> expectedErrorsCodes = new HashSet<StatusCode>( asList( codes ) );
+
         return new TypeSafeMatcher<Iterable<Neo4jError>>()
         {
             @Override
             protected boolean matchesSafely( Iterable<Neo4jError> item )
             {
-                int errors = 0;
-                for ( Iterator<Neo4jError> iterator = item.iterator(); iterator.hasNext(); iterator.next() )
+                Set<StatusCode> actualErrorCodes = new HashSet<StatusCode>();
+                for ( Neo4jError neo4jError : item )
                 {
-                    errors++;
+                    actualErrorCodes.add( neo4jError.getStatusCode() );
                 }
-                return errors == errorCount;
+                return expectedErrorsCodes.equals( actualErrorCodes );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendValue( errorCount ).appendText( "errors" );
+                description.appendText( "Errors with set of codes" ).appendValue( expectedErrorsCodes );
             }
         };
     }

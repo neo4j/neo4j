@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class CommitError extends Neo4jError
+public class InternalRollbackTransactionError extends Neo4jError
 {
-    public CommitError( String message, Throwable cause )
+    public InternalRollbackTransactionError( RuntimeException cause )
     {
-        super( Code.UNKNOWN_COMMIT_ERROR, message, cause );
+        super( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR,
+                "Unable to roll back transaction, and unable to determine cause of failure. " +
+                        "Please refer to the logs for details.", cause );
     }
 }

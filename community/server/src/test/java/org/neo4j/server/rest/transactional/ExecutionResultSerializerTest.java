@@ -47,8 +47,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.server.rest.transactional.error.InvalidRequestError;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.InternalStatementExecutionError;
+import org.neo4j.server.rest.transactional.error.InvalidRequestFormat;
 
 public class ExecutionResultSerializerTest
 {
@@ -126,13 +126,13 @@ public class ExecutionResultSerializerTest
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.errors( asList( new InvalidRequestFormat( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"message\":\"error1\"}]}", result );
     }
 
     @Test
@@ -148,13 +148,13 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.errors( asList( new InvalidRequestFormat( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"message\":\"error1\"}]}", result );
     }
 
     @Test
@@ -166,12 +166,12 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.errors( asList( new InvalidRequestFormat( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":100," +
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":40001," +
                 "\"message\":\"error1\"}]}", result );
     }
 
@@ -183,12 +183,12 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
-        serializer.errors( asList( new InvalidRequestError( "error1" ) ) );
+        serializer.errors( asList( new InvalidRequestFormat( "error1" ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[],\"errors\":[{\"code\":100,\"message\":\"error1\"}]}", result );
+        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"message\":\"error1\"}]}", result );
     }
 
     @Test
@@ -327,17 +327,17 @@ public class ExecutionResultSerializerTest
             serializer.statementResult( executionResult );
             fail( "should have thrown exception" );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( RuntimeException neo4jError )
         {
-            serializer.errors( asList( neo4jError ) );
+            serializer.errors( asList( new InternalStatementExecutionError( neo4jError ) ) );
         }
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":20100,\"message\":\"Failed to execute 'Executing statement failed.'.\"}]}",
-                result );
+                "\"errors\":[{\"code\":50001,\"message\":\"Internal error when executing statement: 'Stuff went wrong!'.\",\"stackTrace\":***}]}",
+                replaceStackTrace( result, "***" ) );
     }
 
     @Test
@@ -364,17 +364,18 @@ public class ExecutionResultSerializerTest
             serializer.statementResult( executionResult );
             fail( "should have thrown exception" );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( RuntimeException neo4jError )
         {
-            serializer.errors( asList( neo4jError ) );
+            serializer.errors( asList( new InternalStatementExecutionError( neo4jError ) ) );
         }
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":20100,\"message\":\"Failed to execute 'Executing statement failed.'.\"}]}",
-                result );
+                "\"errors\":[{\"code\":50001,\"message\":\"Internal error when executing statement: 'Stuff went wrong!'.\"," +
+                "\"stackTrace\":***}]}",
+                replaceStackTrace( result, "***" ) );
     }
 
     @Test
@@ -440,4 +441,8 @@ public class ExecutionResultSerializerTest
         return p;
     }
 
+    private String replaceStackTrace( String json, String matchableStackTrace )
+    {
+        return json.replaceAll( "\"stackTrace\":\"[^\"]*\"", "\"stackTrace\":" + matchableStackTrace );
+    }
 }
