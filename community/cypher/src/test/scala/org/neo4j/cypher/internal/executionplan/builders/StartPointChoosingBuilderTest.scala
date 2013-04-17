@@ -22,15 +22,26 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands._
-import expressions.{IdFunction, Property, Literal, Identifier}
-import values.LabelName
-import org.neo4j.cypher.internal.commands.HasLabel
+import expressions.Identifier
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.symbols.NodeType
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.commands.expressions.IdFunction
+import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.commands.MergeNodeStartItem
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.SingleNode
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.NodeByLabel
+import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -56,7 +67,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier)),
-                                           Unsolved(AllNodes(otherIdentifier))))
+      Unsolved(AllNodes(otherIdentifier))))
   }
 
   @Test
@@ -73,7 +84,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList          === Seq(Unsolved(AllNodes(identifier))))
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
     assert(plan.query.tail.get.start.toList === Seq())
   }
 
@@ -83,10 +94,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
       where = Seq(HasLabel(Identifier(identifier), LabelName("Person")),
-                  Equals(Property(Identifier(identifier),"prop1"), Literal("banana")))
+        Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
     )
 
-    when( context.getIndexRuleId( "Person", "prop1" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop1")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -118,7 +129,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -137,7 +148,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
 
     // When
     val plan = assertAccepts(query)
@@ -157,8 +168,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( label, property ) ).thenReturn( Some(1337l) )
-    when( context.getIndexRuleId( label, otherProperty ) ).thenReturn( Some(1338l) )
+    when(context.getIndexRuleId(label, property)).thenReturn(Some(1337l))
+    when(context.getIndexRuleId(label, otherProperty)).thenReturn(Some(1338l))
 
     // When
     val result = assertAccepts(query).query
@@ -208,7 +219,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( None )
+    when(context.getIndexRuleId("Person", "prop")).thenReturn(None)
 
     // When
     val plan = assertAccepts(query)
@@ -259,6 +270,27 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test
+  def should_find_start_items_for_all_patterns() {
+    // Given
+
+    // START a=node(0) MATCH a-[x]->b, c-[x]->d
+    val query = q(
+      start = Seq(NodeById("a", 0)),
+      patterns = Seq(
+        RelatedTo("a", "b", "x", Seq.empty, Direction.OUTGOING, optional = false),
+        RelatedTo("c", "d", "x", Seq.empty, Direction.OUTGOING, optional = false)
+      )
+    )
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.contains(Unsolved(AllNodes("c"))))
+  }
+
+
+  @Test
   def should_not_introduce_start_points_if_provided_by_last_pipe() {
     // Given
     val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
@@ -273,11 +305,32 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
   }
 
+  @Test
+  def should_solved_merge_node_start_points() {
+    // Given MERGE (x:Label)
+    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val query = q(
+      start = Seq(MergeNodeStartItem(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), LabelName("Label"))), Seq.empty, Seq.empty, None)))
+    )
+    when(context.getLabelId("Label")).thenReturn(Some(42L))
+
+    // When
+    val plan = assertAccepts(pipe, query)
+
+    // Then
+    plan.query.start match {
+      case Seq(Unsolved(MergeNodeStartItem(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_))))) =>
+        true
+      case _ =>
+        fail("Expected something else, but got this: " + plan.query.start)
+    }
+  }
+
   private def q(start: Seq[StartItem] = Seq(),
                 where: Seq[Predicate] = Seq(),
                 patterns: Seq[Pattern] = Seq(),
                 returns: Seq[ReturnColumn] = Seq(),
-                tail:Option[PartiallySolvedQuery] = None) =
+                tail: Option[PartiallySolvedQuery] = None) =
     PartiallySolvedQuery().copy(
       start = start.map(Unsolved(_)),
       where = where.map(Unsolved(_)),

@@ -53,13 +53,15 @@ case class MatchRelationship(from:String, to:String) {
 }
 
 case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship]) {
-
-  def nonEmpty : Boolean = nodes.nonEmpty || relationships.nonEmpty
+  def isEmpty: Boolean = nodes.isEmpty && relationships.isEmpty
+  def nonEmpty : Boolean = !isEmpty
 
   def possibleStartNodes : Seq[String] = nodes
 
   def disconnectedPatternsWithout (identifiers:Seq[String]): Seq[MatchPattern] =
-    disconnectedPatterns.filterNot( _.containsAnyNodeIdentifier( identifiers ) )
+    disconnectedPatterns.
+      filterNot( _.containsAnyNodeIdentifier( identifiers ) ).
+      filter(_.nonEmpty)
 
   def containsAnyNodeIdentifier(identifiers: Seq[String]): Boolean = nodes.exists( identifiers.contains(_) )
 

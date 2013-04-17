@@ -28,11 +28,6 @@ class SemanticErrorTest extends ExecutionEngineHelper {
       "Unknown identifier `bar`.")
   }
 
-  @Test def throwOnDisconnectedPattern() {
-    expectedError("start x=node(0) match a-[rel]->b return x",
-      "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
-  }
-
   @Test def defineNodeAndTreatItAsARelationship() {
     expectedError("start r=node(0) match a-[r]->b return r",
       "Some identifiers are used as both relationships and nodes: r")

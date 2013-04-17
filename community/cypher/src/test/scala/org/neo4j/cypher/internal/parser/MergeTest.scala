@@ -57,7 +57,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
 
     parsing("MERGE (nodeName {prop:42})") shouldGive
       (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq(Equals(Property(Identifier("nodeName"), "prop"), Literal(42))),
+        expectations = Seq(Equals(Nullable(Property(Identifier("nodeName"), "prop")), Literal(42))),
         onCreate = Seq(PropertySetAction(Property(Identifier("nodeName"), "prop"), Literal(42))),
         onMatch = Seq.empty,
         nodeProducerOption = NO_PRODUCER))), NO_PATHS)
