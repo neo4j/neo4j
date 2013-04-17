@@ -46,7 +46,7 @@ class MatchTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.MATCH
-["refcard", cardcss="read"]
+["refcard", cardcss="read c2-2 c3-2"]
 ----
 ###assertion=related
 START n=node(%A%), m=node(%B%)

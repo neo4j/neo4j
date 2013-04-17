@@ -25,7 +25,7 @@ class StartTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val section = "refcard"
   val title = "Start"
-  override def indexProps: List[String] = List("value", "name")
+  override def indexProps: List[String] = List("value", "name", "key")
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -68,12 +68,12 @@ class StartTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
+    "A" -> Map("value" -> 10, "key" -> 20),
     "B" -> Map("value" -> 20, "name" -> "Bob"),
     "C" -> Map("value" -> 30))
 
   def text = """.START
-["refcard", cardcss="read"]
+["refcard", cardcss="read c2-2 c3-2"]
 ----
 ###assertion=all-nodes
 //
@@ -105,7 +105,7 @@ Multiple starting points.
 ### assertion=index-match parameters=index-match
 //
 
-START n=node:nodeIndexName({key}={value})
+START n=node:nodeIndexName(key={value})
 
 RETURN n###
 

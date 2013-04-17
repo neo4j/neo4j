@@ -46,7 +46,7 @@ class WhereTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("propertyName" -> "Chris"))
 
   def text = """.WHERE
-["refcard", cardcss="read"]
+["refcard", cardcss="read c2-2 c3-2"]
 ----
 ###assertion=returns-one parameters=aname
 START n=node(%A%), m=node(%B%)

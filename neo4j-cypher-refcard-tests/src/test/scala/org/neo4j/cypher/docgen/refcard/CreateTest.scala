@@ -98,7 +98,7 @@ Create nodes with the given properties.
 ###assertion=create-rel
 START n=node(%A%), m=node(%B%)
 
-CREATE n-[r:KNOWS]->m
+CREATE (n)-[r:KNOWS]->(m)
 
 RETURN r###
 
@@ -107,7 +107,7 @@ Create a relationship with the given type and direction; bind an identifier to i
 ###assertion=create-rel-prop parameters=ayear
 START n=node(%A%), m=node(%B%)
 
-CREATE n-[:LOVES {since: {value}}]->m
+CREATE (n)-[:LOVES {since: {value}}]->(m)
 
 RETURN n###
 

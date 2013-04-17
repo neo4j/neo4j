@@ -2,18 +2,6 @@
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
-++++
-<p class="cardread"><span>The basic read query structure</span></p>
-++++
-
-[source,cypher]
-----
-START
-[MATCH]
-[WHERE]
-RETURN [ORDER BY] [SKIP] [LIMIT]
-----
-
 Key principles and capabilities of Cypher are as follows:
 
 
@@ -32,6 +20,15 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 
 == Syntax ==
 
+.Read Query Structure 
+["refcard", cardcss="read c2-2 c3-2"]
+----
+START
+[MATCH]
+[WHERE]
+RETURN [ORDER BY] [SKIP] [LIMIT]
+----
+
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
@@ -42,8 +39,36 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
+.Write-Only Query Structure 
+["refcard", cardcss="write c2-2"]
+----
+CREATE [UNIQUE]*
+[SET|DELETE|FOREACH]*
+[RETURN [ORDER BY] [SKIP] [LIMIT]]
+----
+
+.Read-Write Query Structure 
+["refcard", cardcss="write c2-2"]
+----
+START
+[MATCH]
+[WHERE]
+[CREATE [UNIQUE]]*
+[SET|DELETE|FOREACH]*
+[RETURN [ORDER BY] [SKIP] [LIMIT]]
+----
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
+
+
 ++++
-<div class="col cardgeneral"><div class="blk">
+<div class="col cardgeneral c3-2"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -66,33 +91,6 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.as
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
 
-.Write-Only Query Structure 
-["refcard", cardcss="write"]
-----
-CREATE [UNIQUE]*
-[SET|DELETE|FOREACH]*
-[RETURN [ORDER BY] [SKIP] [LIMIT]]
-----
-
-.Read-Write Query Structure 
-["refcard", cardcss="write"]
-----
-START
-[MATCH]
-[WHERE]
-[CREATE [UNIQUE]]*
-[SET|DELETE|FOREACH]*
-[RETURN [ORDER BY] [SKIP] [LIMIT]]
-----
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
-
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicate-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/scalar-functions.asciidoc[]
@@ -105,4 +103,25 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-func
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
 
+++++
+<div class="col cardperformance c2-2"><div class="blk">
+++++
+
+[options="header", cols="a"]
+|===
+|Performance
+| 
+* Use parameters instead of literals when possible.
+  This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
+* Avoid using optional relationships.
+  Cypher has to employ a much slower pattern matcher when you use optional relationships.
+* Always set an upper limit for your variable length relationships.
+  It's easy to have a query go wild and touch all nodes in a graph by mistake.
+* Return only the data you need.
+  Avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
+|===
+
+++++
+</div></div>
+++++
 

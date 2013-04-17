@@ -56,7 +56,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("propertyName" -> "Chris"))
 
   def text = """.Collection Functions
-["refcard", cardcss="general"]
+["refcard", cardcss="general c3-3"]
 ----
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
@@ -126,10 +126,10 @@ The `step` argument is optional.
 ###assertion=returns-one parameters=range
 START n=node(%A%), m=node(%C%)
 MATCH path=(n)-[*]->(m)
-WITH nodes(path) as collection
+WITH nodes(path) as coll
 RETURN
 
-REDUCE(str = "", n IN collection : str + n.propertyName )
+REDUCE(str = "", n IN coll : str + n.propertyName )
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.

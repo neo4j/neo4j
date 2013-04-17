@@ -1,27 +1,82 @@
+<style>
+.col {
+  clear: left;
+}
 
-<!-- layout -->
+.columns {
+  float: left;
+  width: 440px;
+}
 
-<script type="text/javascript" src="js/masonry.min.js"></script>
+.page {
+  float: left;
+}
+
+footer div.mid {
+  padding: 1em;
+}
+
+.moved {
+  display: none;
+}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript">
-window.onload = function() {
-/*  var h2s  = document.getElementsByTagName("h2");
-  var i = h2s.length;
-  while ( i-- ) {
-    var h2 = h2s[i];
-    var parent = h2.parentNode;
-    if ( parent.nextElementSibling ) {
-      var nextContainer = parent.nextElementSibling;
-      if ( nextContainer.firstElementChild ) {
-        nextContainer.insertBefore( h2, nextContainer.firstElementChild );
-        parent.parentNode.removeChild( parent );
-      }
-    }
-  }*/
-  var wall = new Masonry( document.getElementById('page'), {
-    columnWidth: 440,
-    gutterWidth: 0
-  });
-};
+  if ( !window.jQuery )
+  {
+    document.write( '<script src="js/jquery.min.js"><\/script>' );
+  }
 </script>
-
-
+<script type="text/javascript">
+  $( function()
+  {
+    function init()
+    {
+      var pageWidth = $( window ).width();
+      var numberOfColumns = 1;
+      var columns = [];
+      switch ( true )
+      {
+        case pageWidth >= 978 && pageWidth < 1350:
+          numberOfColumns = 2;
+          break;
+        case pageWidth >= 1350:
+          numberOfColumns = 3;
+          break;
+      }
+      if ( numberOfColumns < 2 )
+      {
+        return;
+      }
+      var page = $( "#clearing-div" );
+      for ( var i = 2; i <= numberOfColumns; i++ )
+      {
+        column = $( '<div class="columns" id="column-' + i + '"/>' );
+        column.insertBefore( page );
+        columns.push( column );
+      }
+      //           <div style="clear:both;"> </div>
+      $( "#page > div.col" ).each( function()
+      {
+        var element = $( this );
+        for ( var i = 2; i <= numberOfColumns; i++ )
+        {
+          var moveTo = "c" + numberOfColumns + "-" + i;
+          if ( element.hasClass( moveTo ) )
+          {
+            var clone = element.clone( true );
+            clone.appendTo( columns[i - 2] );
+            element.addClass( "moved" );
+          }
+        }
+      } );
+    }
+    init();
+    $( window ).resize(function()
+    {
+      $( "div.columns" ).remove();
+      $( "#page > div.col" ).removeClass( "moved" );
+      init();
+    });
+  } );
+</script>

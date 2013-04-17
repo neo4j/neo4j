@@ -51,7 +51,7 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.Patterns
-["refcard", cardcss="general"]
+["refcard", cardcss="general c2-2 c3-2"]
 ----
 ###assertion=related
 START n=node(%A%), m=node(%B%)

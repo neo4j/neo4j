@@ -46,13 +46,13 @@ class WithTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.WITH
-["refcard", cardcss="read"]
+["refcard", cardcss="read c2-2 c3-3"]
 ----
 ###assertion=friends parameters=name
 //
 
 START user=node:nodeIndexName(name = {name})
-MATCH user-[:FRIEND]-friend
+MATCH (user)-[:FRIEND]-(friend)
 WITH user, count(friend) as friends
 WHERE friends > 10
 RETURN user

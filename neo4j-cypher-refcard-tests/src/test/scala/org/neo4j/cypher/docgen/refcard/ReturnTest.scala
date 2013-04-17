@@ -61,7 +61,7 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("propertyName" -> 30))
 
   def text = """.RETURN
-["refcard", cardcss="read"]
+["refcard", cardcss="read c3-3"]
 ----
 ###assertion=all-nodes
 //

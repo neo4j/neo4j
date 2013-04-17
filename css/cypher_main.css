@@ -328,21 +328,26 @@ footer div.mid {
 }
 
 .col.cardgeneral tr th {
-  background: #617a96 url('bg-general.png');
+  background: #617a96;
 }
 
-.col.cardread tr th, p.cardread span {
-  background: #789661 url('bg-read.png');
-}
-p.cardread span {
-  color: #ffffff;
-  padding: 2px 4px;
-  border-radius: 4px;
+.col.cardread tr th/*, p.cardread span*/ {
+  background: #789661;
 }
 
 .col.cardwrite tr th {
-  background: #967061 url('bg-write.png');
+  background: #967061;
 }
+
+.col.cardperformance tr th {
+  background: #965656;
+}
+
+/*p.cardread span {
+  color: #ffffff;
+  padding: 2px 4px;
+  border-radius: 4px;
+}*/
 
 .col tr th:first-child {
   border-top-left-radius: 5px;
