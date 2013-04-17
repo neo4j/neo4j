@@ -36,20 +36,17 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.TestProtocolServer;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
@@ -63,7 +60,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.LoggerRule;
 
@@ -94,15 +90,6 @@ public class ClusterMockTest
 
     ClusterTestScript script;
 
-    ExecutorService executor;
-
-    @Before
-    public void setup()
-    {
-        executor = Executors.newSingleThreadExecutor(
-                new NamedThreadFactory( "Configuration output", Thread.MAX_PRIORITY ) );
-    }
-
     @After
     public void tearDown()
     {
@@ -116,7 +103,6 @@ public class ClusterMockTest
             }
         }
 
-        executor.shutdownNow();
     }
 
     protected void testCluster( int nrOfServers, NetworkMock mock,
@@ -496,7 +482,7 @@ public class ClusterMockTest
                                         toJoin[i] = servers.get( i ).getServer().boundAt();
                                     }
                                     final Future<ClusterConfiguration> result = cluster.join( "default", toJoin );
-                                    executor.submit( new Runnable()
+                                    Runnable joiner =  new Runnable()
                                     {
                                         @Override
                                         public void run()
@@ -514,7 +500,8 @@ public class ClusterMockTest
                                                 out.add( cluster );
                                             }
                                         }
-                                    } );
+                                    } ;
+                                    network.addFutureWaiter( result, joiner );
                                 }
                             } else
                             {
@@ -527,7 +514,7 @@ public class ClusterMockTest
                                 }
 
                                 final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
-                                executor.submit( new Runnable()
+                                Runnable joiner =  new Runnable()
                                 {
                                     @Override
                                     public void run()
@@ -553,7 +540,8 @@ public class ClusterMockTest
                                             }
                                         }
                                     }
-                                } );
+                                };
+                                network.addFutureWaiter( result, joiner );
                             }
                             break;
                         }
@@ -791,33 +779,27 @@ public class ClusterMockTest
                     }
                     else
                     {
-                        try
+                        final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
+                        Runnable joiner =  new Runnable()
                         {
-                            final Future<ClusterConfiguration> result = cluster.join( "default", new URI( in.get( 0 ).toString() ) );
-                            executor.submit( new Runnable()
+                            @Override
+                            public void run()
                             {
-                                @Override
-                                public void run()
+                                try
                                 {
-                                    try
-                                    {
-                                        ClusterConfiguration clusterConfiguration = result.get();
-                                        logger.getLogger().debug( "**** Cluster configuration:" +
-                                                clusterConfiguration );
-                                    }
-                                    catch ( Exception e )
-                                    {
-                                        logger.getLogger().debug( "**** Node could not join cluster:" + e
-                                                .getMessage() );
-                                        out.add( cluster );
-                                    }
+                                    ClusterConfiguration clusterConfiguration = result.get();
+                                    logger.getLogger().debug( "**** Cluster configuration:" +
+                                            clusterConfiguration );
                                 }
-                            } );
-                        }
-                        catch ( URISyntaxException e )
-                        {
-                            e.printStackTrace();
-                        }
+                                catch ( Exception e )
+                                {
+                                    logger.getLogger().debug( "**** Node could not join cluster:" + e
+                                            .getMessage() );
+                                    out.add( cluster );
+                                }
+                            }
+                        };
+                        network.addFutureWaiter( result, joiner );
                     }
                     logger.getLogger().debug( "Enter cluster:" + cluster.toString() );
 
