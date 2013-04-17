@@ -56,7 +56,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
@@ -65,11 +64,9 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -909,13 +906,6 @@ public class TestBatchInsert
         return nodeId;
     }
 
-
-    private IndexDefinition createIndex( GraphDatabaseService gdb,  Label label, String propertyKey )
-    {
-        IndexCreator creator = gdb.schema().indexCreator( label ).on( propertyKey );
-        return creator.create();
-    }
-
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
@@ -967,23 +957,5 @@ public class TestBatchInsert
             expectedLabelNames.add( labelName );
         }
         return Pair.of( labels, expectedLabelNames );
-    }
-    
-    private static class PickySchemaIndexProvider extends InMemoryIndexProvider
-    {
-        private final Set<Long> existingAccessors = new HashSet<Long>();
-        
-        @Override
-        public IndexAccessor getOnlineAccessor( long indexId )
-        {
-            if ( !existingAccessors.add( indexId ) )
-                throw new IllegalStateException( "getOnlineAccessor called multiple times for " + indexId );
-            return super.getOnlineAccessor( indexId );
-        }
-        
-        void clear()
-        {
-            existingAccessors.clear();
-        }
     }
 }
