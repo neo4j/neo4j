@@ -19,15 +19,14 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+@Ignore("Waiting for fix in 1.9")
 public class QuorumWritesIT
 {
     @Test
