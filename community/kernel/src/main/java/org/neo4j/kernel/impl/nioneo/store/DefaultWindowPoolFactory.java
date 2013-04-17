@@ -62,7 +62,6 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
      *
      * @param config          Map of configuration parameters
      * @param storageFileName Name of the file on disk
-     * @param log
      * @return The number of bytes memory mapped windows this store has
      */
     // TODO: This should use the type-safe config API, rather than this magic stuff
@@ -104,5 +103,4 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
 
         return 0;
     }
-
 }

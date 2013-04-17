@@ -20,8 +20,6 @@
 
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -35,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -120,6 +117,8 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -252,8 +251,11 @@ public abstract class InternalAbstractGraphDatabase
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                                                                   config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                                                                  config.get( GraphDatabaseSettings.use_memory_mapped_buffers ),
-                                                                  config.get( GraphDatabaseSettings.dump_configuration ) );
+                                                                  config.get( GraphDatabaseSettings.use_memory_mapped_buffers ) );
+        if (config.get( GraphDatabaseSettings.dump_configuration ))
+        {
+            System.out.println( autoConfigurator.getNiceMemoryInformation() );
+        }
         Map<String, String> configParams = config.getParams();
         Map<String,String> autoConfiguration = autoConfigurator.configure( );
         for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
