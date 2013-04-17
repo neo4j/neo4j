@@ -99,8 +99,8 @@ public class NetworkInstance
 
     // Receiving
     private ExecutorService sendExecutor;
+    private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
-    private ServerSocketChannelFactory nioChannelFactory;
     //    private Channel channel;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
@@ -167,8 +167,8 @@ public class NetworkInstance
         }
 
         channels.close().awaitUninterruptibly();
-        nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
+        serverBootstrap.releaseExternalResources();
     }
 
     @Override
