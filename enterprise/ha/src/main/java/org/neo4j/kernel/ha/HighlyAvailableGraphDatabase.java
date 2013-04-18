@@ -466,7 +466,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Caches createCaches()
     {
-        return new HaCaches( msgLog );
+        return new HaCaches( logging.getMessagesLog( Caches.class ) );
     }
 
     @Override
