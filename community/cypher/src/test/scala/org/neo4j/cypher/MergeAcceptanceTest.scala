@@ -195,7 +195,4 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     // When
     intercept[CypherTypeException](parseAndExecute("match (a) merge (a) return a"))
   }
-
-  override def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
-    super.parseAndExecute("CYPHER experimental " + q, params: _*)
 }

@@ -21,12 +21,8 @@ package org.neo4j.cypher.internal.parser
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
-import expressions.Property
-import expressions.TimestampFunction
-import org.neo4j.cypher.internal.mutation.{PropertySetAction, MergeNodeAction}
 import expressions._
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.parser.experimental.{Updates, StartAndCreateClause, MatchClause}
+import org.neo4j.cypher.internal.parser.v2_0.{Updates, StartAndCreateClause, MatchClause}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.commands.MergeNodeStartItem

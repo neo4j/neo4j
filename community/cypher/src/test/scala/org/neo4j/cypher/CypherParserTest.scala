@@ -1869,7 +1869,7 @@ create a-[r:REL]->b
 
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED44" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED44" -> vFrom2_0)
   }
 
   @Test def single_create_unique_with_rel() {
@@ -1881,7 +1881,7 @@ create a-[r:REL]->b
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    test(vAll diff List(vExperimental),
+    test(vAll,
         "start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
@@ -1901,7 +1901,7 @@ create a-[r:REL]->b
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED58", "  UNNAMED44") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED58", "  UNNAMED44") -> vFrom2_0)
   }
 
   @Test def two_relates() {
@@ -1921,7 +1921,7 @@ create a-[r:REL]->b
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED33", "  UNNAMED41") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED33", "  UNNAMED41") -> vFrom2_0 )
   }
 
   @Test def relate_with_initial_values_for_node() {
@@ -1943,7 +1943,7 @@ create a-[r:REL]->b
 
     testVariants(string, query,
       ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED33", false) -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED33", false) -> vFrom2_0 )
   }
 
   @Test def relate_with_initial_values_for_rel() {
@@ -1964,7 +1964,7 @@ create a-[r:REL]->b
     }
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED33" -> vFrom2_0 )
   }
 
   @Test def foreach_with_literal_collectionOld() {
@@ -2015,7 +2015,7 @@ create a-[r:REL]->b
 
     val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
 
-    test(vAll diff List(vExperimental),
+    test(vAll,
         "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x", q)
   }
 
@@ -2132,7 +2132,7 @@ create a-[r:REL]->b
 
     testVariants(string, query,
     "  UNNAMED1" -> vPre2_0,
-    "  UNNAMED48"-> (vFrom2_0 diff List(vExperimental)))
+    "  UNNAMED48"-> vFrom2_0 )
   }
 
   @Test def use_predicate_as_expression() {
@@ -2154,7 +2154,7 @@ create a-[r:REL]->b
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    test(vFrom2_0 diff List(vExperimental),
+    test(vFrom2_0 ,
         "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).
@@ -2512,7 +2512,7 @@ create a-[r:REL]->b
       }
     }
 
-  private val vAll = List(v1_9, v2_0, vExperimental)
+  private val vAll = List(v1_9, v2_0)
   private val vPre2_0 = List(v1_9)
   private val vFrom2_0 = vAll diff vPre2_0
 

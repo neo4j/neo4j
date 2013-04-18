@@ -25,12 +25,12 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
 
-trait StartAndCreateClause extends Base with Expressions with CreateUnique {
+trait StartAndCreateClause extends Base with Expressions with CreateUnique with Merge {
   def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart
 
   def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = START ~> commaList(startBit) ^^ (x => (x, Seq()))
 
-  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = createUnique|create
+  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = merge|createUnique|create
 
   def create = CREATE ~> commaList(usePattern(translate)) ^^ {
     case matching =>

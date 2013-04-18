@@ -36,7 +36,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
       Seq(ForeachAction(collection, id, createCmds ++ updateCmds))
   }
 
-  private def set: Parser[Seq[UpdateAction]] = {
+  def set: Parser[Seq[UpdateAction]] = {
     def mapSetter : Parser[UpdateAction] = SET ~> expression ~ "=" ~ expression ^^ {
       case element ~ "=" ~ map => MapPropertySetAction(element, map)
     }
