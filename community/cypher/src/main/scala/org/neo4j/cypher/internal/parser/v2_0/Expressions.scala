@@ -35,7 +35,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     result
   }
 
-  def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor | "%" ~ factor | "^" ~ factor) ^^ {
+  def term: Parser[Expression] = factor_lvl_0 ~ rep("*" ~ factor_lvl_0 | "/" ~ factor_lvl_0 | "%" ~ factor_lvl_0 | "^" ~ factor_lvl_0) ^^ {
     case head ~ rest =>
       var result = head
       rest.foreach {
@@ -48,7 +48,9 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       result
   }
 
-  def factor: Parser[Expression] =
+  def factor_lvl_0: Parser[Expression] = arrayAccess | factor_lvl_1
+
+  def factor_lvl_1: Parser[Expression] =
   (     NULL ^^^ Literal(null)
       | TRUE ^^^ True()
       | FALSE ^^^ Not(True())
@@ -67,6 +69,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | stringLit
       | numberLiteral
       | collectionLiteral
+      | listComprehension
       | parameter
       | entity
       | parens(expression)
@@ -83,9 +86,16 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     Literal(value)
   })
 
+  def arrayAccess = factor_lvl_1 ~ rep1("[" ~> opt(expression) ~ ".." ~ opt(expression) <~ "]") ^^ {
+    case coll ~ accessors => accessors.foldLeft(coll) {
+      case (inCollection, from ~ _ ~ to) => SliceExpression(inCollection, from, to)
+    }
+  }
+
   def entity: Parser[Identifier] = identity ^^ (x => Identifier(x))
 
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
+
 
   def listComprehension: Parser[Expression] = "[" ~> identity ~ IN ~ expression ~ opt(WHERE ~> predicate) ~ opt(":" ~> expression) <~ "]" ^^ {
     case id ~ _ ~ collection ~ Some(predicate) ~ Some(mapExpression) => ExtractFunction(FilterFunction(collection, id, predicate), id, mapExpression)

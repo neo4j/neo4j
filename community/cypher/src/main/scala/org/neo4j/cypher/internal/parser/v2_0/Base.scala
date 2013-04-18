@@ -68,7 +68,7 @@ abstract class Base extends Strings  {
 
   def lowerCaseIdent = ident ^^ (c => c.toLowerCase)
 
-  def number: Parser[String] = """-?(\d+(\.\d*)?|\d*\.\d+)""".r
+  def number: Parser[String] = """-?(\d+(\.\d+)?|\d*\.\d+)""".r
 
   def optParens[U](q: => Parser[U]): Parser[U] = q | parens(q)
 

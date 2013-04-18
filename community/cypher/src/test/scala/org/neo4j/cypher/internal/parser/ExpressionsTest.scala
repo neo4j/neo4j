@@ -25,10 +25,9 @@ import expressions._
 import org.junit.Test
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
+  implicit val parserToTest = expression
 
   @Test def simple_cases() {
-    implicit val parserToTest = simpleCase
-
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
       SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE"))), None)
 
@@ -49,8 +48,6 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
   }
 
   @Test def generic_cases() {
-    implicit val parserToTest = genericCase
-
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
       GenericCase(Seq((True(), Literal("ONE"))), None)
 
@@ -74,23 +71,30 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
   }
 
   @Test def list_comprehension() {
-    implicit val parserToTest = listComprehension
-
     val predicate = Equals(Property(Identifier("x"), "prop"), Literal(42))
     val mapExpression = Property(Identifier("x"), "name")
 
-    parsing("[x.name : x in collection WHERE x.prop = 42]") shouldGive
+    parsing("[x in collection WHERE x.prop = 42 : x.name]") shouldGive
       ExtractFunction(FilterFunction(Identifier("collection"), "x", predicate), "x", mapExpression)
 
-    parsing("[x in collection WHERE x.prop = 42 ]") shouldGive
+    parsing("[x in collection WHERE x.prop = 42]") shouldGive
       FilterFunction(Identifier("collection"), "x", predicate)
 
-    parsing("[x in collection : x.name ]") shouldGive
+    parsing("[x in collection : x.name]") shouldGive
       ExtractFunction(Identifier("collection"), "x", mapExpression)
   }
 
-  @Test def arraysAccess() {
+  @Test def array_indexing() {
+    val collection = Collection(Literal(1), Literal(2), Literal(3), Literal(4))
 
+    parsing("[1,2,3,4][1..2]") shouldGive
+      SliceExpression(collection, Some(Literal(1)), Some(Literal(2)))
+
+    parsing("[1,2,3,4][1..2][2..3]") shouldGive
+      SliceExpression(SliceExpression(collection, Some(Literal(1)), Some(Literal(2))), Some(Literal(2)), Some(Literal(3)))
+
+    parsing("collection[1..2]") shouldGive
+      SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2)))
   }
 
   def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)

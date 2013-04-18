@@ -58,6 +58,6 @@ trait ParserTest extends JavaTokenParsers with Assertions {
 
   private def convertResult[T](r: ParseResult[T], s: String) = r match {
     case Success(t, _)     => new ResultCheck[T](Seq(t), s)
-    case NoSuccess(msg, _) => fail(s"Could not parse '$s': $msg")
+    case NoSuccess(msg, in) => fail(s"Could not parse @${in.offset}'$s': $msg")
   }
 }
