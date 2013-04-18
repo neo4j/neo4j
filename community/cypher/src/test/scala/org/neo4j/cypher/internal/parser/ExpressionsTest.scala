@@ -22,10 +22,6 @@ package org.neo4j.cypher.internal.parser
 import v2_0.{MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.PatternPredicate
-import values.LabelName
-import org.neo4j.cypher.internal.commands.HasLabel
 import org.junit.Test
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
@@ -77,5 +73,25 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
       GenericCase(Seq(alt1, alt2), Some(Literal("OTHER")))
   }
 
-  def createProperty(entity: String, propName: String) = ???
+  @Test def list_comprehension() {
+    implicit val parserToTest = listComprehension
+
+    val predicate = Equals(Property(Identifier("x"), "prop"), Literal(42))
+    val mapExpression = Property(Identifier("x"), "name")
+
+    parsing("[x.name : x in collection WHERE x.prop = 42]") shouldGive
+      ExtractFunction(FilterFunction(Identifier("collection"), "x", predicate), "x", mapExpression)
+
+    parsing("[x in collection WHERE x.prop = 42 ]") shouldGive
+      FilterFunction(Identifier("collection"), "x", predicate)
+
+    parsing("[x in collection : x.name ]") shouldGive
+      ExtractFunction(Identifier("collection"), "x", mapExpression)
+  }
+
+  @Test def arraysAccess() {
+
+  }
+
+  def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }

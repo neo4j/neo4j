@@ -87,6 +87,12 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
+  def listComprehension: Parser[Expression] = "[" ~> identity ~ IN ~ expression ~ opt(WHERE ~> predicate) ~ opt(":" ~> expression) <~ "]" ^^ {
+    case id ~ _ ~ collection ~ Some(predicate) ~ Some(mapExpression) => ExtractFunction(FilterFunction(collection, id, predicate), id, mapExpression)
+    case id ~ _ ~ collection ~ Some(predicate) ~ None                => FilterFunction(collection, id, predicate)
+    case id ~ _ ~ collection ~ None ~ Some(mapExpression)            => ExtractFunction(collection, id, mapExpression)
+  }
+
   def property: Parser[Expression] = identity ~ "." ~ escapableString ^^ {
     case v ~ "." ~ p => createProperty(v, p)
   }
@@ -230,7 +236,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     case function ~ (property ~ "," ~ percentile) => function match {
       case "percentile_cont" => PercentileCont(property, percentile)
       case "percentile_disc" => PercentileDisc(property, percentile)
-    } 
+    }
   }
 
   def countStar: Parser[Expression] = COUNT ~> parens("*") ^^^ CountStar()

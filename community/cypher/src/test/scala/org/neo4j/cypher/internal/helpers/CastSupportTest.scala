@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.helpers
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.junit.internal.runners.statements.Fail
-import org.scalatest.exceptions.TestFailedException
 import org.neo4j.cypher.CypherTypeException
 
 class CastSupportTest extends Assertions {
@@ -41,24 +39,24 @@ class CastSupportTest extends Assertions {
 
   @Test def downcastPfMatchTest() {
     val given: Any                          = Seq(1)
-    val fun: PartialFunction[Any, Seq[Int]] = CastSupport.erasureCast[Seq[Int]]
+    val fun: PartialFunction[Any, Seq[Int]] = CastSupport.cast[Seq[Int]]
     val then                                = fun(given)
     assert(then == Seq(1))
   }
 
   @Test def downcastPfMismatchTest() {
     val given: Any                           = "Hallo"
-    val fun: PartialFunction[Any, Seq[Long]] = CastSupport.erasureCast[Seq[Long]]
+    val fun: PartialFunction[Any, Seq[Long]] = CastSupport.cast[Seq[Long]]
     assert(! fun.isDefinedAt(given))
   }
 
   @Test def downcastAppMatchTest() {
     val given: Any = 1
-    assert(CastSupport.erasureCastOrFail[java.lang.Integer](given) == 1)
+    assert(CastSupport.castOrFail[java.lang.Integer](given) == 1)
   }
 
   @Test def downcastAppMismatchTest() {
     val given: Any = Seq(1)
-    intercept[CypherTypeException](CastSupport.erasureCastOrFail[Int](given))
+    intercept[CypherTypeException](CastSupport.castOrFail[Int](given))
   }
 }

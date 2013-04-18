@@ -32,7 +32,7 @@ object CastSupport {
    * @tparam A Required super type of type erasure of remaining elements
    * @return seq without any element whose type erasure does not conform to A
    */
-  def sift[A : Manifest](seq: Seq[Any]): Seq[A] = seq.collect(erasureCast)
+  def sift[A : Manifest](seq: Seq[Any]): Seq[A] = seq.collect(cast)
 
   /**
    * Casts input to A if possible according to type erasure, discards input otherwise
@@ -40,9 +40,9 @@ object CastSupport {
    * @tparam A the required super type to which arguments should be cast
    * @return PartialFunction that is the identity function on all instances of the type erasure of A
    */
-  def erasureCast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
+  def cast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
 
-  def erasureCastOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
+  def castOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
     case v: A => v
     case _    => throw new CypherTypeException(
       s"Expected ${value} to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")

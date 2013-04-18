@@ -23,7 +23,7 @@ import expressions.{Literal, Expression}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import values.LabelValue
@@ -304,7 +304,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
 
 case class HasLabel(entity: Expression, label: LabelValue) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val node           = CastSupport.erasureCastOrFail[Node](entity(m))
+    val node           = CastSupport.castOrFail[Node](entity(m))
     val nodeId         = node.getId
     val queryCtx       = state.query
 
