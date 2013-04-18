@@ -3,7 +3,11 @@ Merge
 =====
 
 == Introduction ==
-+MERGE+ is not only used for single nodes - just like +MATCH+, if multiple nodes match, they will all be bound to the identifier.
++MERGE+ either matches existing nodes and binds them, or it creates new data and binds that. For example, you can
+search for a user node by id, and if the node does not already exist in the database, it will create it.
+
++MERGE+ is not only used for single nodes - just like +MATCH+, if multiple nodes match, they will all be
+bound to the identifier.
 
 The following graph is used for the examples below:
 
