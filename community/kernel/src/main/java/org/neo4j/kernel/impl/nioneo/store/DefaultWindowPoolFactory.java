@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.Settings.setting;
-
 import java.io.File;
 import java.nio.channels.FileChannel;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.Settings.setting;
 
 public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
@@ -66,12 +68,15 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
      */
     private long calculateMappedMemory( Config config, File storageFileName )
     {
-        String realName = storageFileName.getName();
-
-        Long mem = config.get( setting( realName + ".mapped_memory", Settings.BYTES, Settings.NO_DEFAULT ));
+        Long mem = config.get( memoryMappingSetting( storageFileName.getName() ) );
         if ( mem == null )
             mem = 0L;
 
         return mem;
+    }
+
+    public static Setting<Long> memoryMappingSetting( String fileName )
+    {
+        return setting( fileName + ".mapped_memory", Settings.BYTES, Settings.NO_DEFAULT );
     }
 }

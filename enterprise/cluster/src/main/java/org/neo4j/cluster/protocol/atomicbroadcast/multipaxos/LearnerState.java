@@ -167,7 +167,8 @@ public enum LearnerState
                                       instanceId < context.learnerContext.getLastKnownLearnedInstanceInCluster();
                                       instanceId++ )
                                 {
-                                    org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( instanceId );
+                                    org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id =
+                                            new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( instanceId );
                                     PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( id );
                                     if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState(
                                             PaxosInstance.State.delivered ) )
@@ -197,7 +198,8 @@ public enum LearnerState
                         {
                             // Someone wants to learn a value that we might have
                             LearnerMessage.LearnRequestState state = message.getPayload();
-                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
+                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId =
+                                    new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
                             if ( instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance
                                     .State.delivered ) )

@@ -33,12 +33,13 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
@@ -51,7 +52,7 @@ public class TestLockManagerBean
     @Before
     public void setupLockManager()
     {
-        lockManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+        lockManager = ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( LockManager.class );
     }
 
@@ -255,12 +256,12 @@ public class TestLockManagerBean
         return lock;
     }
 
-    private static AbstractGraphDatabase graphDb;
+    private static GraphDatabaseService graphDb;
 
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var" + File.separator
                 + ManagementBeansTest.class.getSimpleName() );
     }
 

@@ -38,8 +38,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class CypherSql
 {
@@ -63,8 +63,7 @@ public class CypherSql
 
     public static void main( String[] args ) throws SQLException
     {
-        CypherSql instance = new CypherSql( new EmbeddedGraphDatabase(
-                "target/cyphersql" + System.currentTimeMillis() ) );
+        CypherSql instance = new CypherSql( new GraphDatabaseFactory().newEmbeddedDatabase( "target/cyphersql" + System.currentTimeMillis() ) );
         instance.createDbs();
         instance.run();
         instance.shutdown();

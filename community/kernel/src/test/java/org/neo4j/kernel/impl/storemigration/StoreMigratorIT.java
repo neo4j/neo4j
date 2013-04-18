@@ -39,10 +39,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -88,7 +88,7 @@ public class StoreMigratorIT
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
 
-        GraphDatabaseService database = new EmbeddedGraphDatabase( outputDir.getPath() );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase(outputDir.getPath() );
 
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
         verifier.verifyNodes();

@@ -276,7 +276,7 @@ public enum HighAvailabilityMemberState
                         // this is just someone else that joined the cluster
                         return this;
                     }
-                    throw new RuntimeException( "i prolly missed a masterIsElected event, we're not looking good" );
+                    throw new RuntimeException( "i probably missed a masterIsElected event, we're not looking good" );
                 }
 
                 @Override

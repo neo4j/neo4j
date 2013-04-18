@@ -302,9 +302,9 @@ public class ClusterClient extends LifecycleAdapter
             }
         } );
 
-        life.add( stateMachineExecutor );
-
         life.add( networkNodeTCP );
+
+        life.add( stateMachineExecutor );
 
         // Timeout timer - triggers every 10 ms
         life.add( new Lifecycle()

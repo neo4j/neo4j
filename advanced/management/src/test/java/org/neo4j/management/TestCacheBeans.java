@@ -31,22 +31,25 @@ import java.util.Iterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class TestCacheBeans
 {
-    private AbstractGraphDatabase graphDb;
+    private GraphDatabaseService graphDb;
     private Collection<Cache> caches;
 
     @Before
     public synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var" + File.separator
                 + ManagementBeansTest.class.getSimpleName() );
-        caches = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getManagementBeans(
-                Cache.class );
+        caches = ((GraphDatabaseAPI)graphDb).
+                getDependencyResolver().
+                resolveDependency( JmxKernelExtension.class ).
+                getManagementBeans( Cache.class );
     }
 
     @After

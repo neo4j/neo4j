@@ -45,21 +45,6 @@ public class Start extends ReadOnlyGraphDatabaseApp
 {
     private ExecutionEngine engine;
 
-    protected ExecutionEngine getEngine()
-    {
-        if ( this.engine == null )
-        {
-            synchronized ( this )
-            {
-                if ( this.engine == null )
-                {
-                    this.engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
-                }
-            }
-        }
-        return this.engine;
-    }
-
     @Override
     public String getDescription()
     {
@@ -105,12 +90,13 @@ public class Start extends ReadOnlyGraphDatabaseApp
     protected void handleResult( Output out, ExecutionResult result, long startTime, Session session,
             AppCommandParser parser ) throws RemoteException, ShellException
     {
-        printResult( out, result/*, rows, time*/ );
+        printResult( out, result, startTime );
     }
 
-    private void printResult( Output out, ExecutionResult result ) throws RemoteException
+    private void printResult( Output out, ExecutionResult result, long startTime ) throws RemoteException
     {
         result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
+        out.println( (now() - startTime) + " ms" );
     }
 
     protected StringLogger getCypherLogger()
@@ -136,5 +122,26 @@ public class Start extends ReadOnlyGraphDatabaseApp
     protected boolean isComplete( String query )
     {
         return query.endsWith( ";" );
+    }
+
+
+    protected ExecutionEngine getEngine()
+    {
+        if ( this.engine == null )
+        {
+            synchronized ( this )
+            {
+                if ( this.engine == null )
+                {
+                    this.engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+                }
+            }
+        }
+        return this.engine;
+    }
+
+    protected long now()
+    {
+        return System.currentTimeMillis();
     }
 }

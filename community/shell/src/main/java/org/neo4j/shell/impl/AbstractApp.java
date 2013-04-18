@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.OptionDefinition;
@@ -76,6 +77,8 @@ public abstract class AbstractApp implements App
 
 	public void setServer( AppShellServer server )
 	{
+        if ( this.server != null )
+            throw new IllegalStateException( "Server already set" );
 		this.server = server;
 	}
 	

@@ -34,7 +34,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
@@ -144,7 +145,7 @@ public class RrdFactoryTest
     public void shouldCreateRrdFileInDbSubdirectory() throws Exception
     {
         String storeDir = testDirectory.directory().getAbsolutePath();
-        db = new WrappingDatabase( new EmbeddedGraphDatabase( storeDir ) );
+        db = new WrappingDatabase( (AbstractGraphDatabase) new GraphDatabaseFactory().newEmbeddedDatabase(storeDir ) );
         TestableRrdFactory factory = createRrdFactory();
 
         // When

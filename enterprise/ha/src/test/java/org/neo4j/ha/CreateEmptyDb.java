@@ -22,7 +22,7 @@ package org.neo4j.ha;
 import java.io.File;
 
 import org.junit.Ignore;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 @Ignore("Not a test")
 public class CreateEmptyDb
@@ -34,7 +34,7 @@ public class CreateEmptyDb
 
     public static void at( String storeDir )
     {
-        new EmbeddedGraphDatabase( storeDir ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
     }
 
     public static void at( File storeDir )

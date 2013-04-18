@@ -26,9 +26,10 @@ import java.io.File;
 
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -81,7 +82,7 @@ public class TestBranchedData
 
     private void startDbAndCreateNode()
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( dir.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
