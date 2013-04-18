@@ -35,8 +35,8 @@ import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
@@ -51,7 +51,7 @@ public class CreateTransactionsAndDie
     {
         String storeDir = args[0];
         int count = parseInt( args[1] );
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         for ( int i = 0; i < 2; i++ ) create1pcTx( db );
         for ( int i = 0; i < count; i++ ) create2pcTx( db );
         

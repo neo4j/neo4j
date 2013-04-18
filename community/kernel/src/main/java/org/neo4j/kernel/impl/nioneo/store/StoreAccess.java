@@ -29,8 +29,9 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -53,14 +54,14 @@ public class StoreAccess
     private boolean closeable;
     private NeoStore neoStore;
 
-    public StoreAccess( InternalAbstractGraphDatabase graphdb )
+    public StoreAccess( GraphDatabaseAPI graphdb )
     {
         this( getNeoStoreFrom( graphdb ) );
     }
 
-    private static NeoStore getNeoStoreFrom( InternalAbstractGraphDatabase graphdb )
+    private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
+        return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
     }
 
     public StoreAccess( NeoStore store )

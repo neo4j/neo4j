@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -74,9 +75,9 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
             path = args[0];
         }
         delete( new File( path ) );
-        InternalAbstractGraphDatabase graphdb = new EmbeddedGraphDatabase( path );
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( path );
         RaceBetweenCommitAndGetMoreRelationshipsIT race = instance = new RaceBetweenCommitAndGetMoreRelationshipsIT(
-                graphdb, graphdb.getNodeManager() );
+                graphdb, graphdb.getDependencyResolver().resolveDependency( NodeManager.class ) );
         try
         {
             race.execute();

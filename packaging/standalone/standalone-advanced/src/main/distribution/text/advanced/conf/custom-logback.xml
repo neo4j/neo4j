@@ -30,8 +30,8 @@
     </encoder>
   </appender>
 
-  <root level="info">
+  <logger name="org.neo4j">
     <appender-ref ref="CONSOLE"/>
-  </root>
+  </logger>
 
 </included>

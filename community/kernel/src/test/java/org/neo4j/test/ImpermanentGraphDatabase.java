@@ -61,7 +61,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
     
     static final String PATH = "test-data/impermanent-db";
-    
+
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase()
     {
         this( new HashMap<String, String>() );
@@ -81,11 +85,19 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
         this( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
         this( storeDir, withForcedInMemoryConfiguration( params ),
@@ -96,6 +108,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 Service.load( TransactionInterceptorProvider.class ) );
     }
     
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
@@ -106,6 +122,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         trackUnclosedUse( PATH );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,

@@ -30,20 +30,20 @@ import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class ManagementBeansTest
 {
-    private static AbstractGraphDatabase graphDb;
+    private static GraphDatabaseAPI graphDb;
 
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var"
+        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var"
                 + File.separator + ManagementBeansTest.class.getSimpleName() );
     }
 

@@ -44,12 +44,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -91,7 +91,7 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( TestPatternMatching.class ).graphDbDir( true ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPatternMatching.class ).graphDbDir( true ).getAbsolutePath() );
     }
 
     @Before

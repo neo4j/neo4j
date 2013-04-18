@@ -53,8 +53,11 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
      *
+     * This is deprecated. Use GraphDatabaseFactory instead.
+     *
      * @param storeDir the store directory for the Neo4j store files
      */
+    @Deprecated
     public EmbeddedGraphDatabase( String storeDir )
     {
         this( storeDir, new HashMap<String, String>() );
@@ -67,9 +70,12 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
      *
+     * This is deprecated. Use GraphDatabaseFactory instead.
+     *
      * @param storeDir the store directory for the db files
      * @param params   configuration parameters
      */
+    @Deprecated
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params )
     {
         this( storeDir, params,
@@ -79,6 +85,16 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
                 Service.load( TransactionInterceptorProvider.class ) );
     }
 
+    /**
+     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     *
+     * @param storeDir
+     * @param params
+     * @param indexProviders
+     * @param kernelExtensions
+     * @param cacheProviders
+     * @param txInterceptorProviders
+     */
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                   Iterable<CacheProvider> cacheProviders,

@@ -38,13 +38,13 @@ import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -88,7 +88,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).incremental( backupDirectory );
         run( new Verification() );
 
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( backupDirectory );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupDirectory );
         try
         {
             new Verification().run( db );
@@ -297,7 +297,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
      */
     public static void main( String... args ) throws Exception
     {
-        EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( "target/test-data/junk" );
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/junk" );
         try
         {
             new WriteTransaction().run( graphdb );

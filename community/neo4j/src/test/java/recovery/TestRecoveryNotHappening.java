@@ -32,8 +32,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TargetDirectory;
@@ -99,14 +99,14 @@ public class TestRecoveryNotHappening
     public static void main( String[] args )
     {
         String storeDir = args[0];
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createNodeWithNameProperty( db, "test" );
         System.exit( 0 );
     }
 
     private void startDb()
     {
-        db = new EmbeddedGraphDatabase( storeDirectory.getAbsolutePath() );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory.getAbsolutePath() );
     }
 
     private static Node createNodeWithNameProperty( GraphDatabaseService db, String name )

@@ -177,6 +177,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     public void stop()
     {
         channelPool.close( true );
+        bootstrap.releaseExternalResources();
         executor.shutdownNow();
         mismatchingVersionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );

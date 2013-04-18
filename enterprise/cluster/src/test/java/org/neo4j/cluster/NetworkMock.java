@@ -25,8 +25,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -38,6 +40,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
@@ -59,6 +62,8 @@ public class NetworkMock
     private MessageTimeoutStrategy timeoutStrategy;
     private Logging logging;
     protected final StringLogger logger;
+    private final List<Pair<Future<?>, Runnable>> futureWaiter;
+
 
     public NetworkMock( long tickDuration, MultipleFailureLatencyStrategy strategy,
                         MessageTimeoutStrategy timeoutStrategy )
@@ -68,6 +73,7 @@ public class NetworkMock
         this.timeoutStrategy = timeoutStrategy;
         this.logging = new LogbackService( null, (LoggerContext) LoggerFactory.getILoggerFactory() );
         logger = logging.getMessagesLog( NetworkMock.class );
+        futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
     }
 
     public TestProtocolServer addServer( int serverId, URI serverUri )
@@ -119,6 +125,11 @@ public class NetworkMock
     {
         debug( serverId, "leaves network" );
         participants.remove( serverId );
+    }
+
+    public void addFutureWaiter(Future<?> future, Runnable toRun)
+    {
+        futureWaiter.add( Pair.<Future<?>, Runnable>of(future, toRun) );
     }
 
     public int tick()
@@ -206,8 +217,16 @@ public class NetworkMock
             }
         }
 
-        // Allow other threads (listeners) to process
-        Thread.yield();
+        Iterator<Pair<Future<?>, Runnable>> waiters = futureWaiter.iterator();
+        while ( waiters.hasNext() )
+        {
+            Pair<Future<?>, Runnable> next = waiters.next();
+            if ( next.first().isDone() )
+            {
+                next.other().run();
+                waiters.remove();
+            }
+        }
 
         return messageDeliveries.size();
     }

@@ -48,13 +48,13 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
@@ -327,7 +327,7 @@ class BackupService
         return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, ConfigParam... params )
+    static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.FALSE );
@@ -338,7 +338,7 @@ class BackupService
                 param.configure( config );
             }
         }
-        return new EmbeddedGraphDatabase( targetDirectory, config );
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config ).newGraphDatabase();
     }
 
     private RequestContext addDiffToSlaveContext( RequestContext original,
