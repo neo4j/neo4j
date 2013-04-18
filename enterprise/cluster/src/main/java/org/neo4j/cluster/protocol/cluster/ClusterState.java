@@ -527,8 +527,7 @@ public enum ClusterState
                         case leaveTimedout:
                         {
                             context.getLogger( ClusterState.class ).warn( "Failed to leave. Cluster may consider this" +
-                                    " instance still a " +
-                                    "member" );
+                                    " instance still a member" );
                             context.left();
                             return start;
                         }
