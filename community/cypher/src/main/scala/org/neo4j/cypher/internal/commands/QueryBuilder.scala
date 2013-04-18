@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{ParameterExpression, Literal, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
-class QueryBuilder(startItems: Seq[StartItem]) {
+class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
   var updates = Seq[UpdateAction]()
   var matching: Seq[Pattern] = Seq()
   var where: Predicate = True()
@@ -34,6 +34,10 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   var indexHints: Seq[SchemaIndex] = Seq()
   var tail: Option[Query] = None
   var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
+
+  def startItems(items: StartItem*): QueryBuilder = store {
+    startItems = items
+  }
 
   def matches(patterns: Pattern*): QueryBuilder = store {
     matching = patterns
@@ -67,12 +71,20 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     skip = Some(ParameterExpression(skipTo))
   }
 
+  def skip(skipTo: Expression): QueryBuilder = store {
+    skip = Some(skipTo)
+  }
+
   def limit(limitTo: Int): QueryBuilder = store {
     limit = Some(Literal(limitTo))
   }
 
   def limit(limitTo: String): QueryBuilder = store {
     limit = Some(ParameterExpression(limitTo))
+  }
+
+  def limit(limitTo: Expression): QueryBuilder = store {
+    limit = Some(limitTo)
   }
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store {
