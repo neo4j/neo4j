@@ -378,9 +378,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         * In Compatibility Mode: That means they start when switchover happens. If added to life too they will be
         * restarted
         */
+        paxosLife.add( clusterClient );
         paxosLife.add( memberStateMachine );
         paxosLife.add( clusterEvents );
-        paxosLife.add( clusterClient );
         paxosLife.add( localClusterMemberAvailability );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
