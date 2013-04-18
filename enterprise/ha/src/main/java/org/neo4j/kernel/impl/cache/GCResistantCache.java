@@ -340,9 +340,9 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private void logStatistics( StringLogger log )
     {
-        log.logMessage( this.toString(), true );
+        log.debug( this.toString() );
     }
-    
+
     @Override
     public String toString()
     {
