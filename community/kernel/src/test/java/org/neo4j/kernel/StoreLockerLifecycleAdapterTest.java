@@ -28,6 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TargetDirectory;
 
 public class StoreLockerLifecycleAdapterTest
@@ -48,7 +51,7 @@ public class StoreLockerLifecycleAdapterTest
 
         try
         {
-            db = new EmbeddedGraphDatabase( storeDir );
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         }
         finally
         {
@@ -57,7 +60,7 @@ public class StoreLockerLifecycleAdapterTest
 
         try
         {
-            db = new EmbeddedGraphDatabase( storeDir );
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         }
         finally
         {
@@ -72,9 +75,9 @@ public class StoreLockerLifecycleAdapterTest
 
         try
         {
-            db = new EmbeddedGraphDatabase( storeDir );
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
-            new EmbeddedGraphDatabase( storeDir );
+            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
             fail();
         }
@@ -95,9 +98,11 @@ public class StoreLockerLifecycleAdapterTest
 
         try
         {
-            db = new EmbeddedGraphDatabase( storeDir );
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
-            new EmbeddedReadOnlyGraphDatabase( storeDir );
+            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir).
+                    setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE ).
+                    newGraphDatabase();
 
             fail();
         }

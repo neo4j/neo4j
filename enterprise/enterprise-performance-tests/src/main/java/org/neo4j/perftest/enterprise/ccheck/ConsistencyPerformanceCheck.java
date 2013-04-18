@@ -35,12 +35,12 @@ import java.util.Map;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -96,7 +96,7 @@ public class ConsistencyPerformanceCheck
             DataGenerator.run( configuration );
         }
         // ensure that the store is recovered
-        new EmbeddedGraphDatabase( configuration.get( DataGenerator.store_dir ) ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( configuration.get( DataGenerator.store_dir ) ).shutdown();
 
         // run the consistency check
         ProgressMonitorFactory progress;

@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
@@ -94,7 +94,7 @@ public class ConsistencyCheckTool
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
-            new EmbeddedGraphDatabase( storeDir ).shutdown();
+            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         }
         else
         {

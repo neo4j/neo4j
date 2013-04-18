@@ -44,3 +44,4 @@ The license header check can be skipped by appending the following to the comman
 
 For further details on building, please consult community/README.md.
 
+We also supply commercial licenses. Please contact [Neo Technology](mailto:sales@neotechnology.com) for more information.

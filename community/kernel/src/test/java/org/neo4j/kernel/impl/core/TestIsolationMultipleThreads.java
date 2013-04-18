@@ -34,8 +34,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Test atomicity of Neo4j. How to get consistent results with or without locks?
@@ -53,7 +53,7 @@ public class TestIsolationMultipleThreads
     @Before
     public void setup()
     {
-        database = new EmbeddedGraphDatabase( temp.getRoot().getAbsolutePath() );
+        database = new GraphDatabaseFactory().newEmbeddedDatabase( temp.getRoot().getAbsolutePath() );
         Transaction tx = database.beginTx();
 
         for (int i = 0; i < COUNT; i++)

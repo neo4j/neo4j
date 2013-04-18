@@ -49,7 +49,6 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.ServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
@@ -99,8 +98,8 @@ public class NetworkInstance
 
     // Receiving
     private ExecutorService sendExecutor;
+    private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
-    private ServerSocketChannelFactory nioChannelFactory;
     //    private Channel channel;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
@@ -167,8 +166,8 @@ public class NetworkInstance
         }
 
         channels.close().awaitUninterruptibly();
-        nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
+        serverBootstrap.releaseExternalResources();
     }
 
     @Override

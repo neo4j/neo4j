@@ -42,11 +42,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
@@ -124,8 +123,8 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupPath.getPath() );
-            for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
+            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
+            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
             }
@@ -137,8 +136,8 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupPath.getPath() );
-            for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
+            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
+            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class).getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
             }
@@ -177,8 +176,8 @@ public class TestBackup
             server = null;
 
             // do 2 rotations, add two empty logs
-            new EmbeddedGraphDatabase( backupPath.getPath() ).shutdown();
-            new EmbeddedGraphDatabase( backupPath.getPath() ).shutdown();
+            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
+            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -199,9 +198,9 @@ public class TestBackup
             // 2 one the real and the other from the rotation of shutdown
             assertEquals( 2, logsFound );
 
-            db = new EmbeddedGraphDatabase( backupPath.getPath() );
+            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
 
-            for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
+            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
             }
@@ -434,10 +433,10 @@ public class TestBackup
 
     private long getLastCommittedTx( String path )
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         try
         {
-            XaDataSource ds = ((InternalAbstractGraphDatabase)db).getXaDataSourceManager().getNeoStoreDataSource();
+            XaDataSource ds = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
             return ds.getLastCommittedTxId();
         }
         finally
@@ -502,7 +501,7 @@ public class TestBackup
     {
         try
         {
-            new EmbeddedGraphDatabase( path ).shutdown();
+            new GraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
         catch ( RuntimeException ex )
@@ -549,7 +548,7 @@ public class TestBackup
             GraphDatabaseService db = null;
             try
             {
-                db = new EmbeddedGraphDatabase( path );
+                db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
             }
             catch ( RuntimeException ex )
             {

@@ -42,11 +42,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 
@@ -133,7 +133,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
     {
         commitTx();
 
-        graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "filesClosedProperty",
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( getClass() ).directory( "filesClosedProperty",
                 true ).getAbsolutePath() );
         final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
         final long time = System.currentTimeMillis();

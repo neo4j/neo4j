@@ -31,9 +31,10 @@ import java.io.File;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestRecoveryMultipleDataSources
@@ -58,7 +59,7 @@ public class TestRecoveryMultipleDataSources
                 getClass().getName() } ).waitFor() );
         
         // When
-        GraphDatabaseService db = new EmbeddedGraphDatabase( dir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
 
         // Then
         try
@@ -73,13 +74,13 @@ public class TestRecoveryMultipleDataSources
 
     public static void main( String[] args )
     {
-        GraphDatabaseAPI db = new EmbeddedGraphDatabase( dir );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir );
         Transaction tx = db.beginTx();
         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
         tx.success();
         tx.finish();
         
-        db.getXaDataSourceManager().rotateLogicalLogs();
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
         tx = db.beginTx();
         db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
         tx.success();

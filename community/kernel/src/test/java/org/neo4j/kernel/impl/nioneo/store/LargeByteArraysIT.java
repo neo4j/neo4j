@@ -27,9 +27,10 @@ import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 @Ignore( "Written as a reaction to an observed bug, but it doesn't seem to trigger it though" )
 public class LargeByteArraysIT
@@ -39,7 +40,7 @@ public class LargeByteArraysIT
     @Test
     public void largeByteArrays() throws Exception
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( forTest( getClass() ).directory( "bytearrays", true ).getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).directory( "bytearrays", true ).getAbsolutePath() );
         try
         {
 //            setLogSize( db );
@@ -55,7 +56,7 @@ public class LargeByteArraysIT
         }
     }
 
-    private void createNodeWithBigArray( EmbeddedGraphDatabase db )
+    private void createNodeWithBigArray( GraphDatabaseService db )
     {
         Transaction tx = db.beginTx();
         try
@@ -75,10 +76,5 @@ public class LargeByteArraysIT
         byte[] array = new byte[max( 248, RANDOM.nextInt( 248*1024 ) )];
         for ( int i = 0; i < array.length; i++ ) array[i] = (byte) (currentTimeMillis()%255);
         return array;
-    }
-
-    private void setLogSize( EmbeddedGraphDatabase db )
-    {
-        db.getXaDataSourceManager().getNeoStoreDataSource().setLogicalLogTargetSize( 2*1024*1024 );
     }
 }

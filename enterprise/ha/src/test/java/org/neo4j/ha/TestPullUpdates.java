@@ -71,8 +71,10 @@ public class TestPullUpdates
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         setProperty( master, 1 );
         awaitPropagation( 1, cluster );
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
         ClusterManager.RepairKit masterShutdownRK = cluster.shutdown( master );
         cluster.await( masterAvailable() );
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
         setProperty( cluster.getMaster(), 2 );
 
         masterShutdownRK.repair();
