@@ -145,7 +145,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
         catch ( IOException e )
         {
-            addError( new Neo4jError( StatusCode.COMMUNICATION_ERROR, "Input error while deserializing request.", e ) );
+            addError( new Neo4jError( StatusCode.NETWORK_ERROR, "Input error while deserializing request.", e ) );
             return null;
         }
     }
@@ -184,9 +184,10 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                 if ( !expectedField.equals( input.getText() ) )
                 {
                     addError( new Neo4jError(
-                                StatusCode.INVALID_REQUEST_FORMAT,
-                                String.format( "Unable to deserialize request, " +
-                                  "expected first field to be '%s', but was '%s'", expectedField, input.getText() ) ) );
+                            StatusCode.INVALID_REQUEST_FORMAT,
+                            String.format( "Unable to deserialize request, " +
+                                    "expected first field to be '%s', but was '%s'", expectedField,
+                                    input.getText() ) ) );
                     return false;
                 }
             }

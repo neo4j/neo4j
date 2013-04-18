@@ -126,6 +126,7 @@ public class ExecutionResultSerializer
                     {
                         out.writeStartObject();
                         out.writeObjectField( "code", error.getStatusCode().getCode() );
+                        out.writeObjectField( "status", error.getStatusCode().name() );
                         out.writeObjectField( "message", error.getMessage() );
                         if ( error.shouldSerializeStackTrace() )
                         {

@@ -20,10 +20,10 @@
 package org.neo4j.server.rest.transactional;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
+import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 
 public class TransactionHandleRegistry implements TransactionRegistry
 {
@@ -132,7 +133,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
-    public TransactionHandle acquire( long id ) throws InvalidTransactionId, InvalidConcurrentTransactionAccess
+    public TransactionHandle acquire( long id ) throws TransactionLifecycleException
     {
         TransactionMarker marker = registry.get( id );
 
@@ -207,31 +208,34 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private void rollbackSuspended( Predicate<TransactionMarker> predicate )
     {
-        Iterator<Map.Entry<Long,TransactionMarker>> entries = registry.entrySet().iterator();
-        while ( entries.hasNext() )
-        {
-            Map.Entry<Long, TransactionMarker> entry = entries.next();
-            TransactionMarker marker = entry.getValue();
-            try
-            {
-                if ( predicate.accept( marker ) && marker.isSuspended() )
-                {
-                    TransactionHandle transactionHandle = marker.getTransaction().transactionHandle;
-                    transactionHandle.forceRollback();
-                    entries.remove();
+        Set<Long> candidateTransactionIdsToRollback = new HashSet<Long>();
 
-                    long idleSeconds = MILLISECONDS.toSeconds( clock.currentTimeInMilliseconds() -
-                            marker.getTransaction().lastActiveTimestamp );
-                    log.info( format( "Transaction with id %d has been idle for %d seconds, and has been " +
-                            "automatically rolled back.", entry.getKey(), idleSeconds ) );
-                }
-            }
-            catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
+        for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
+        {
+            TransactionMarker marker = entry.getValue();
+            if ( predicate.accept( marker ) && marker.isSuspended() )
             {
-                // Allow this - someone snatched the transaction from under our feet,
-                // indicating someone is concurrently modifying transactions in the registry, which is allowed.
+                candidateTransactionIdsToRollback.add( entry.getKey() );
             }
         }
-    }
 
+
+        for ( long id : candidateTransactionIdsToRollback )
+        {
+            TransactionHandle handle;
+            try
+            {
+                handle = acquire( id );
+            }
+            catch ( TransactionLifecycleException invalidTransactionId )
+            {
+                // Allow this - someone snatched the transaction from under our feet,
+                continue;
+            }
+            handle.forceRollback();
+            forget( id );
+
+            log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
+        }
+    }
 }

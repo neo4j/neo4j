@@ -24,7 +24,7 @@ package org.neo4j.server.rest.transactional.error;
  * due to server transaction lifecycle transitions that map directly on a
  * @{link StatusCode}
  */
-public abstract class TransactionLifecycleException extends RuntimeException
+public abstract class TransactionLifecycleException extends Exception
 {
     protected TransactionLifecycleException()
     {

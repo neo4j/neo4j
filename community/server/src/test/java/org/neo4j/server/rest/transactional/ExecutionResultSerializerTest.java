@@ -132,7 +132,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
     }
 
     @Test
@@ -154,7 +154,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
     }
 
     @Test
@@ -172,6 +172,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":40001," +
+                "\"status\":\"INVALID_REQUEST_FORMAT\"," +
                 "\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
     }
 
@@ -188,7 +189,7 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
     }
 
     @Test
@@ -336,7 +337,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":50001,\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\",\"stackTrace\":***}]}",
+                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -374,7 +375,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":50001,\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\"," +
+                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }

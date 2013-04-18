@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional.error;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 import java.util.HashSet;
 
@@ -46,14 +45,11 @@ public class StatusCodeTest
     }
 
     @Test
-    public void eachStatusCodeHasADescription() throws Exception
+    public void eachStatusCodeHasADefaultMessage() throws Exception
     {
-        // for each
         for ( StatusCode statusCode : StatusCode.values() )
         {
-            StatusCodeDescription description = statusCode.getDescription();
-            assertNotNull( statusCode.toString() + " description", description );
-            assertNotNull( statusCode.toString() + " message", description.message() );
+            assertNotNull( statusCode.toString() + " defaultMessage", statusCode.getDefaultMessage() );
         }
     }
 }

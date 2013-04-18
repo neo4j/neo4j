@@ -263,7 +263,7 @@ public class TransactionHandle
                 }
                 catch ( IOException e )
                 {
-                    errors.add( new Neo4jError( StatusCode.COMMUNICATION_ERROR, e ) );
+                    errors.add( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
                     break;
                 }
                 catch ( RuntimeException e )

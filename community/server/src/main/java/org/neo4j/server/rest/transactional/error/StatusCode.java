@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-import java.lang.annotation.Annotation;
-
 /*
  * Put in place as an enum to enforce all error codes remaining collected in one location.
  * Note: These codes will be exposed to the user through our API, although for now they will
@@ -39,77 +37,69 @@ public enum StatusCode
     //
     // 3xxxxx Communication protocol errors
     //
-    @StatusCodeDescription( message="Error during communication with the client" )
-    COMMUNICATION_ERROR( 30000 ),
+    NETWORK_ERROR(
+            30000, "Failed to transfer request or response.",
+            StackTraceStrategy.SEND_TO_CLIENT ),
 
     //
     // 4xxxxx User errors
     //
-    @StatusCodeDescription( message="Invalid request was not understood by the server." )
-    INVALID_REQUEST( 40000 ),
-    @StatusCodeDescription( message="Unable to deserialize request due to invalid request format." )
-    INVALID_REQUEST_FORMAT( 40001 ),
+    INVALID_REQUEST(
+            40000, "Invalid request was not understood by the server." ),
+    INVALID_REQUEST_FORMAT(
+            40001, "Unable to deserialize request due to invalid request format." ),
 
-    @StatusCodeDescription( message="The transaction you asked for cannot be found. "
-                                   +"Maybe the transaction has timed out and was rolled back." )
-    INVALID_TRANSACTION_ID( 40010 ),
-    @StatusCodeDescription( message="The requested transaction is being used concurrently by another request." )
-    INVALID_CONCURRENT_TRANSACTION_ACCESS( 40011 ),
+    INVALID_TRANSACTION_ID(
+            40010, "Unrecognized transaction id. Transaction may have timed out and been rolled back." ),
+    INVALID_CONCURRENT_TRANSACTION_ACCESS(
+            40011, "The requested transaction is being used concurrently by another request." ),
 
-    @StatusCodeDescription( message="Error when executing statement." )
-    STATEMENT_EXECUTION_ERROR( 42000 ),
-    @StatusCodeDescription( message="Syntax error in statement." )
-    STATEMENT_SYNTAX_ERROR( 42001 ),
-    @StatusCodeDescription( message="Parameter missing in statement." )
-    STATEMENT_MISSING_PARAMETER_ERROR( 42002 ),
+    STATEMENT_EXECUTION_ERROR(
+            42000, "Error when executing statement." ),
+    STATEMENT_SYNTAX_ERROR(
+            42001, "Syntax error in statement." ),
+    STATEMENT_MISSING_PARAMETER_ERROR(
+            42002, "Parameter missing in statement." ),
 
     //
     // 5xxxxx Database errors
     //
-    @StatusCodeDescription( message="Internal database error. Please refer to the attached stack trace for details.",
-                            includeStackTrace=true )
-    INTERNAL_DATABASE_ERROR( 50000 ),
-    @StatusCodeDescription( message="Internal error when executing statement.",
-                            includeStackTrace=true )
-    INTERNAL_STATEMENT_EXECUTION_ERROR( 50001 ),
+    INTERNAL_DATABASE_ERROR(
+            50000, "Internal database error. Please refer to the attached stack trace for details.",
+            StackTraceStrategy.SEND_TO_CLIENT ),
+    INTERNAL_STATEMENT_EXECUTION_ERROR(
+            50001, "Internal error when executing statement.",
+            StackTraceStrategy.SEND_TO_CLIENT ),
 
-    @StatusCodeDescription( message="Unable to start transaction, and unable to determine cause of failure. "
-                                  +"Please refer to the database logs for details.",
-                            includeStackTrace=true )
-    INTERNAL_BEGIN_TRANSACTION_ERROR( 53010 ),
-    @StatusCodeDescription( message="Unable to roll back transaction, and unable to determine cause of failure. "
-                                   +"Please refer to the database logs for details.",
-                            includeStackTrace=true )
-    INTERNAL_ROLLBACK_TRANSACTION_ERROR( 53011 ),
-    @StatusCodeDescription( message="It was not possible to commit your transaction. "
-                                   +"Please refer to the database logs for details.",
-                            includeStackTrace=true )
-    INTERNAL_COMMIT_TRANSACTION_ERROR( 53012 );
+    INTERNAL_BEGIN_TRANSACTION_ERROR(
+            53010, "Unable to start transaction, and unable to determine cause of failure. ",
+            StackTraceStrategy.SEND_TO_CLIENT ),
+    INTERNAL_ROLLBACK_TRANSACTION_ERROR(
+            53011, "Unable to roll back transaction, and unable to determine cause of failure. ",
+            StackTraceStrategy.SEND_TO_CLIENT ),
+    INTERNAL_COMMIT_TRANSACTION_ERROR(
+            53012, "It was not possible to commit your transaction. ",
+            StackTraceStrategy.SEND_TO_CLIENT );
 
     private final int code;
-    private final StatusCodeDescription description;
+    private final String defaultMessage;
+    private final StackTraceStrategy stackTraceStrategy;
 
-    StatusCode( int code )
+    enum StackTraceStrategy
+    {
+        SWALLOW, SEND_TO_CLIENT
+    }
+
+    StatusCode( int code, String defaultMessage )
+    {
+        this (code, defaultMessage, StackTraceStrategy.SWALLOW );
+    }
+
+    StatusCode( int code, String defaultMessage, StackTraceStrategy stackTraceStrategy )
     {
         this.code = code;
-        try
-        {
-            Annotation[] annotations = StatusCode.class.getField( name() ).getDeclaredAnnotations();
-            StatusCodeDescription description = null;
-            for (Annotation annotation : annotations)
-                if ( annotation instanceof  StatusCodeDescription )
-                {
-                    if ( description == null )
-                        description = StatusCodeDescription.class.cast(annotation);
-                    else
-                        throw new AssertionError( "Duplicate StatusCodeDescription for field " + name() );
-                }
-            this.description = description;
-        }
-        catch ( NoSuchFieldException e )
-        {
-            throw new AssertionError( e );
-        }
+        this.defaultMessage = defaultMessage;
+        this.stackTraceStrategy = stackTraceStrategy;
     }
 
     public int getCode()
@@ -119,11 +109,11 @@ public enum StatusCode
 
     public String getDefaultMessage()
     {
-        return getDescription().message();
+        return defaultMessage;
     }
 
-    public StatusCodeDescription getDescription()
+    public boolean includeStackTrace()
     {
-        return description;
+        return StackTraceStrategy.SEND_TO_CLIENT == stackTraceStrategy;
     }
 }

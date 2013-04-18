@@ -43,18 +43,19 @@ import org.neo4j.test.server.HTTP;
 public class TransactionDocTest extends AbstractRestFunctionalTestBase
 {
     /**
-     * Create a transaction
-     * <p/>
-     * You create a new transaction by posting zero or more cypher statements
+     * Begin a transaction
+     *
+     * You begin a new transaction by posting zero or more cypher statements
      * to the transaction endpoint. The server will respond with the result of
-     * your statements, as well as the location of your running transaction.
+     * your statements, as well as the location of your open transaction.
      */
     @Test
     @Documented
-    public void starting_a_transaction() throws PropertyValueException
+    public void begin_a_transaction() throws PropertyValueException
     {
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 201 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {props}) RETURN n', " +
                         "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
@@ -68,19 +69,21 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Execute statements in running transaction
-     * <p/>
-     * Given that you have a running transaction, you can post any number of statements to it.
+     * Execute statements in an open transaction
+     *
+     * Given that you have an open transaction, you can make a number of requests, each of which executes additional
+     * statements, and keeps the transaction open.
      */
     @Test
     @Documented
-    public void execute_statements_in_running_transaction() throws PropertyValueException
+    public void execute_statements_in_an_open_transaction() throws PropertyValueException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
 
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n' } ] }" ) )
                 .post( location );
@@ -91,17 +94,21 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Commit a running transaction
+     * Commit an open transaction
+     *
+     * Given you have an open transaction, you can send a commit request. Optionally, you submit additional statements
+     * along with the request that will be executed before committing the transaction.
      */
     @Test
     @Documented
-    public void commit_a_running_transaction() throws PropertyValueException
+    public void commit_an_open_transaction() throws PropertyValueException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
 
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
                 .post( location + "/commit" );
@@ -115,16 +122,18 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create and commit a transaction in one request
-     * <p/>
-     * This is similar to how the old cypher endpoint behaves.
+     * Begin and commit a transaction in one request
+     *
+     * If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,
+     * execute statements, and commit with just a single HTTP request.
      */
     @Test
     @Documented
-    public void create_and_commit_a_transaction_in_one_request() throws PropertyValueException
+    public void begin_and_commit_a_transaction_in_one_request() throws PropertyValueException
     {
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
@@ -138,21 +147,23 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Rollback a running transaction
+     * Rollback an open transaction
+     *
+     * Given that you have an open transaction, you can send a roll back request. The server will roll back the
+     * transaction.
      */
     @Test
     @Documented
-    public void rollback_a_running_transaction() throws PropertyValueException
+    public void rollback_an_open_transaction() throws PropertyValueException
     {
         // Given
         HTTP.Response firstReq = POST( getDataUri() + "transaction",
                 HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) );
         String location = firstReq.location();
-        System.out.println( "firstReq = " + firstReq.content() );
-        System.out.println( "location = " + location );
 
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .delete( location + "" );
 
@@ -166,17 +177,18 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
     /**
      * Handling errors
-     * <p/>
-     * The result of any operation against the transaction resource is streamed back to the client,
-     * which means that the server does not know ahead of time if the request will be successful or not.
-     * <p/>
-     * Because of that, all operations against the transactional resource returns 200 or 201 statuses, always.
-     * In order to verify that a request was successful, at the end of each result will be a field called
-     * "errors". If this is empty, the operation completed successfully.
-     * <p/>
-     * If it is not empty, any related transaction will have been rolled back.
-     * <p/>
-     * In this example, we send the server an invalid statement.
+     *
+     * The result of any request against the transaction endpoint is streamed back to the client.
+     * Therefore the server does not know whether the request will be successful or not when it sends the HTTP status
+     * code.
+     *
+     * Because of this, all requests against the transactional endpoint will return 200 or 201 status code, regardless
+     * of whether statements were successfully executed. At the end of the response payload, the server includes a list
+     * of errors that occurred while executing statements. If this list is empty, the request completed successfully.
+     *
+     * If any errors occur while executing statements, the server will roll back the transaction.
+     *
+     * In this example, we send the server an invalid statement to demonstrate error handling.
      */
     @Test
     @Documented
@@ -187,6 +199,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'This is not a valid Cypher Statement.' } ] }" ) )
                 .post( location + "/commit" );

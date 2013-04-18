@@ -75,7 +75,7 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        return statusCode.getDescription().includeStackTrace();
+        return statusCode.includeStackTrace();
     }
 
     public String getStackTraceAsString()
