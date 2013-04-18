@@ -26,7 +26,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -39,11 +41,15 @@ import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -342,12 +348,36 @@ public class TestApps extends AbstractShellTest
     }
     
     @Test
+    public void createNodeWithLabel() throws Exception
+    {
+        executeCommand( "mknode --cd -l PERSON" );
+        assertEquals( asSet( "PERSON" ), asSet( names( getCurrentNode().getLabels() ) ) );
+    }
+    
+    @Test
+    public void createNodeWithPropertiesAndLabels() throws Exception
+    {
+        executeCommand( "mknode --cd --np \"{'name': 'Test'}\" -l \"['PERSON', 'THING']\"" );
+        assertEquals( "Test", getCurrentNode().getProperty( "name" ) );
+        assertEquals( asSet( "PERSON", "THING" ), asSet( names( getCurrentNode().getLabels() ) ) );
+    }
+    
+    @Test
     public void createRelationshipWithArrayProperty() throws Exception
     {
         String type = "ARRAY";
         executeCommand( "mkrel -ct " + type + " --rp \"{'values':[1,2,3,4]}\"" );
         assertTrue( Arrays.equals( new int[] {1,2,3,4},
                 (int[]) getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ).getProperty( "values" ) ) );
+    }
+    
+    @Test
+    public void createRelationshipToNewNodeWithLabels() throws Exception
+    {
+        String type = "TEST";
+        executeCommand( "mkrel -ctl " + type + " PERSON" );
+        assertEquals( asSet( "PERSON" ), asSet( names( getCurrentNode().getSingleRelationship(
+                withName( type ), OUTGOING ).getEndNode().getLabels() ) ) );
     }
     
     @Test
@@ -550,5 +580,181 @@ public class TestApps extends AbstractShellTest
                 "node = db.createNode()\n" +
                 "node.setProperty( \"name\", \"Mattias\" )\n" +
                 "node.getProperty( \"name\" )\n", "Mattias" );
+    }
+    
+    @Test
+    public void canAddLabelToNode() throws Exception
+    {
+        // GIVEN
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        executeCommand( "cd -a " + node.getId() );
+        
+        // WHEN
+        executeCommand( "set -l PERSON" );
+        
+        // THEN
+        assertEquals( asSet( "PERSON" ), asSet( names( node.getLabels() ) ) );
+    }
+    
+    @Test
+    public void canAddMultipleLabelsToNode() throws Exception
+    {
+        // GIVEN
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        executeCommand( "cd -a " + node.getId() );
+        
+        // WHEN
+        executeCommand( "set -l ['PERSON','THING']" );
+        
+        // THEN
+        assertEquals( asSet( "PERSON", "THING" ), asSet( names( node.getLabels() ) ) );
+    }
+    
+    @Test
+    public void canRemoveLabelFromNode() throws Exception
+    {
+        // GIVEN
+        beginTx();
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        node.addLabel( label( "PERSON" ) );
+        finishTx();
+        executeCommand( "cd -a " + node.getId() );
+
+        // WHEN
+        executeCommand( "rm -l PERSON" );
+
+        // THEN
+        assertEquals( asSet(), asSet( names( node.getLabels() ) ) );
+    }
+    
+    @Test
+    public void canRemoveMultipleLabelsFromNode() throws Exception
+    {
+        // GIVEN
+        beginTx();
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        node.addLabel( label( "PERSON" ) );
+        node.addLabel( label( "THING" ) );
+        node.addLabel( label( "OBJECT" ) );
+        finishTx();
+        executeCommand( "cd -a " + node.getId() );
+
+        // WHEN
+        executeCommand( "rm -l ['PERSON','OBJECT']" );
+
+        // THEN
+        assertEquals( asSet( "THING" ), asSet( names( node.getLabels() ) ) );
+    }
+    
+    @Test
+    public void canListLabels() throws Exception
+    {
+        // GIVEN
+        beginTx();
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        node.addLabel( label( "PERSON" ) );
+        node.addLabel( label( "FATHER" ) );
+        finishTx();
+        executeCommand( "cd -a " + node.getId() );
+
+        // WHEN/THEN
+        executeCommand( "ls", ":PERSON", ":FATHER" );
+    }
+    
+    @Test
+    public void canListFilteredLabels() throws Exception
+    {
+        // GIVEN
+        beginTx();
+        Relationship[] chain = createRelationshipChain( 1 );
+        Node node = chain[0].getEndNode();
+        node.addLabel( label( "PERSON" ) );
+        node.addLabel( label( "FATHER" ) );
+        finishTx();
+        executeCommand( "cd -a " + node.getId() );
+
+        // WHEN/THEN
+        executeCommand( "ls -f PER.*", ":PERSON", "!:FATHER" );
+    }
+    
+    @Test
+    public void canListIndexes() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        beginTx();
+        IndexDefinition index = db.schema().indexCreator( label ).on( "name" ).create();
+        finishTx();
+        db.schema().awaitIndexOnline( index, 10, SECONDS );
+
+        // WHEN / THEN
+        executeCommand( "schema --ls", ":PERSON", IndexState.ONLINE.name() );
+    }
+
+    @Test
+    public void canListIndexesForGivenLabel() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "PERSON" );
+        Label label2 = label( "BUILDING" );
+        beginTx();
+        IndexDefinition index1 = db.schema().indexCreator( label1 ).on( "name" ).create();
+        IndexDefinition index2 = db.schema().indexCreator( label2 ).on( "name" ).create();
+        finishTx();
+        db.schema().awaitIndexOnline( index1, 10, SECONDS );
+        db.schema().awaitIndexOnline( index2, 10, SECONDS );
+
+        // WHEN / THEN
+        executeCommand( "schema --ls -l " + label2.name(), ":" + label2.name(),
+                IndexState.ONLINE.name(), "!:" + label1.name() );
+    }
+
+    @Test
+    public void canListIndexesForGivenProperty() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        String property1 = "name";
+        String property2 = "age";
+        beginTx();
+        IndexDefinition index1 = db.schema().indexCreator( label ).on( property1 ).create();
+        IndexDefinition index2 = db.schema().indexCreator( label ).on( property2 ).create();
+        finishTx();
+        db.schema().awaitIndexOnline( index1, 10, SECONDS );
+        db.schema().awaitIndexOnline( index2, 10, SECONDS );
+
+        // WHEN / THEN
+        executeCommand( "schema --ls -p " + property1, property1, "!" + property2 );
+    }
+    
+    @Test
+    public void canAwaitIndexesToComeOnline() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        beginTx();
+        IndexDefinition index = db.schema().indexCreator( label ).on( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema --await -l " + label.name() );
+        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+    }
+
+    private Iterable<String> names( Iterable<Label> labels )
+    {
+        return Iterables.map( new Function<Label, String>()
+        {
+            @Override
+            public String apply( Label label )
+            {
+                return label.name();
+            }
+        }, labels );
     }
 }

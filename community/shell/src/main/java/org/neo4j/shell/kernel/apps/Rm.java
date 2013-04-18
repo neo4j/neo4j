@@ -19,10 +19,14 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
+import org.neo4j.shell.OptionDefinition;
+import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -35,28 +39,51 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation( App.class )
 public class Rm extends GraphDatabaseApp
 {
+    {
+        addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
+                "Removes a property" ) );
+        addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
+                "Removes one or more labels" ) );
+    }
+    
     @Override
     public String getDescription()
     {
-        return "Removes a property from the current node or relationship.\n" +
-            "Usage: rm <key>";
+        return "Removes a property from the current node or relationship or label from the current node.\n" +
+            "Usage:\n" +
+            "  rm <key>\n" +
+            "  rm -p name\n" +
+            "  rm -l PERSON";
     }
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
-        if ( parser.arguments().isEmpty() )
-        {
-            throw new ShellException( "Must supply the property key to " +
-                "remove, like: rm title" );
-        }
-
-        String key = parser.arguments().get( 0 );
         NodeOrRelationship thing = getCurrent( session );
-        if ( thing.removeProperty( key ) == null )
+        boolean forProperty = parser.options().containsKey( "p" );
+        boolean forLabel = parser.options().containsKey( "l" );
+        if ( forProperty || !forLabel )
+        {   // Property
+            if ( parser.arguments().isEmpty() )
+            {
+                throw new ShellException( "Must supply the property key or label name to " +
+                    "remove, like: rm title" );
+            }
+            
+            String key = parser.arguments().get( 0 );
+            if ( thing.removeProperty( key ) == null )
+            {
+                out.println( "Property '" + key + "' not found" );
+            }
+        }
+        else
         {
-            out.println( "Property '" + key + "' not found" );
+            Node node = thing.asNode();
+            for ( Label label : Mknode.parseLabels( parser ) )
+            {
+                node.removeLabel( label );
+            }
         }
         return Continuation.INPUT_COMPLETE;
     }
