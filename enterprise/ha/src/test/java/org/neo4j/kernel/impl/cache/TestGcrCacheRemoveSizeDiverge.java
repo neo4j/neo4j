@@ -33,9 +33,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -51,7 +53,7 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 @RunWith( SubProcessTestRunner.class )
 public class TestGcrCacheRemoveSizeDiverge
 {
-    private static EmbeddedGraphDatabase graphdb;
+    private static GraphDatabaseAPI graphdb;
     private static DebuggedThread thread;
     private static CountDownLatch latch = new CountDownLatch( 1 );
 
@@ -60,9 +62,10 @@ public class TestGcrCacheRemoveSizeDiverge
     {
         try
         {
-        graphdb = new EmbeddedGraphDatabase( forTest(
-                TestGcrCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath(),
-                stringMap( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME ) );
+        graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
+                newEmbeddedDatabaseBuilder( forTest(TestGcrCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath()).
+                setConfig( stringMap( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME ) ).
+                newGraphDatabase();
         }
         catch ( Throwable t )
         {
@@ -145,10 +148,10 @@ public class TestGcrCacheRemoveSizeDiverge
          */
 
         final Node node = createNodeWithSomeRelationships();
-        graphdb.getNodeManager().clearCache();
+        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         enableBreakpoints();
         graphdb.getNodeById( node.getId() );
-        final Cache<?> nodeCache = graphdb.getNodeManager().caches().iterator().next();
+        final Cache<?> nodeCache = graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).caches().iterator().next();
         assertTrue( "We didn't get a hold of the right cache object", nodeCache.toString().toLowerCase().contains( "node" ) );
 
         Thread t1 = new Thread( "T1: Relationship loader" )

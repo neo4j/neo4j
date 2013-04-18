@@ -27,23 +27,23 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.impl.XaManagerBean;
 import org.neo4j.test.TargetDirectory;
 
 public class TestXaManagerBeans
 {
-    private AbstractGraphDatabase graphDb;
+    private GraphDatabaseAPI graphDb;
     private XaManager xaManager;
     private TargetDirectory dir = TargetDirectory.forTest( getClass() );
 
     @Before
     public synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( dir.directory( "test" ).getAbsolutePath() );
+        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(dir.directory( "test" ).getAbsolutePath() );
         xaManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( XaManager.class );
     }

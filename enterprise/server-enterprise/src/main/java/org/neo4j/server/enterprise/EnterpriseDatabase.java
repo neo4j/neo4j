@@ -19,20 +19,12 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -48,7 +40,9 @@ public class EnterpriseDatabase extends CommunityDatabase
                     public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                                                             Map<String, String> databaseProperties )
                     {
-                        return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+                        return (GraphDatabaseAPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().
+                                newEmbeddedDatabaseBuilder( databaseStoreDirectory).
+                                setConfig( databaseProperties ).newGraphDatabase();
                     }
                 },
         HA
@@ -57,16 +51,9 @@ public class EnterpriseDatabase extends CommunityDatabase
                     public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                                                             Map<String, String> databaseProperties )
                     {
-                        List<IndexProvider> indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
-                        List<KernelExtensionFactory<?>> kernelExtensions = Iterables.toList( Iterables
-                                .<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-                                        KernelExtensionFactory
-                                .class ) ) );
-                        List<CacheProvider> cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
-                        List<TransactionInterceptorProvider> txInterceptorProviders =
-                                Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
-                        return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
-                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+                        return (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory().
+                                newHighlyAvailableDatabaseBuilder( databaseStoreDirectory ).
+                                setConfig( databaseProperties ).newGraphDatabase();
                     }
                 };
 

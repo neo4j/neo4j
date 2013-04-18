@@ -27,7 +27,7 @@ import java.net.URL;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.nioneo.store.ProduceUncleanStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
@@ -53,7 +53,7 @@ public class NeoStoreVersionRecordUpgradeIssueIT
 
     private void startAndShutdown( File storeDir )
     {
-        new EmbeddedGraphDatabase( storeDir.getAbsolutePath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
     }
 
     private File copyResourceStore( String resource ) throws Exception

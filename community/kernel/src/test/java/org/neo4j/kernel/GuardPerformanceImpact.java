@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 public class GuardPerformanceImpact
 {
@@ -82,7 +83,7 @@ public class GuardPerformanceImpact
 
     private static long withoutGuard() throws IOException
     {
-        final InternalAbstractGraphDatabase db = prepare( false );
+        final GraphDatabaseAPI db = prepare( false );
         try
         {
             final long start = currentTimeMillis();
@@ -96,15 +97,17 @@ public class GuardPerformanceImpact
         }
     }
 
-    private static InternalAbstractGraphDatabase prepare( boolean insertGuard ) throws IOException
+    private static GraphDatabaseAPI prepare( boolean insertGuard ) throws IOException
     {
         File tmpFile = File.createTempFile( "neo4j-test", "" );
         tmpFile.delete();
-        return new EmbeddedGraphDatabase( tmpFile.getCanonicalPath(),
-                stringMap( "enable_execution_guard", valueOf( insertGuard ) ) );
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().
+                newEmbeddedDatabaseBuilder( tmpFile.getCanonicalPath()).
+                setConfig( stringMap( "enable_execution_guard", valueOf( insertGuard ) ) ).
+                newGraphDatabase();
     }
 
-    private static void createData( final InternalAbstractGraphDatabase db )
+    private static void createData( final GraphDatabaseAPI db )
     {
         for ( int j = 0; j < TX; j++ )
         {
@@ -118,7 +121,7 @@ public class GuardPerformanceImpact
         }
     }
 
-    private static void cleanup( final InternalAbstractGraphDatabase db )
+    private static void cleanup( final GraphDatabaseAPI db )
     {
         db.shutdown();
         deleteFiles( new File( db.getStoreDir() ) );
@@ -139,7 +142,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabled() throws IOException
     {
-        final InternalAbstractGraphDatabase db = prepare( true );
+        final GraphDatabaseAPI db = prepare( true );
         try
         {
             final long start = currentTimeMillis();
@@ -154,7 +157,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabledAndActiveOpsCount() throws IOException
     {
-        final InternalAbstractGraphDatabase db = prepare( true );
+        final GraphDatabaseAPI db = prepare( true );
         try
         {
             final long start = currentTimeMillis();
@@ -172,7 +175,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabledAndActiveTimeout() throws IOException
     {
-        final InternalAbstractGraphDatabase db = prepare( true );
+        final GraphDatabaseAPI db = prepare( true );
         try
         {
             final long start = currentTimeMillis();

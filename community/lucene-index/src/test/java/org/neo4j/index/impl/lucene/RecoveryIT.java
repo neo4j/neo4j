@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -51,7 +51,7 @@ public class RecoveryIT
         process.destroy();
         process.waitFor();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(path );
         assertTrue( db.index().existsForNodes( "myIndex" ) );
         Index<Node> index = db.index().forNodes( "myIndex" );
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )

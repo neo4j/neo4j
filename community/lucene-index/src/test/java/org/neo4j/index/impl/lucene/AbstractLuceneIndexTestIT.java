@@ -32,10 +32,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 
 public abstract class AbstractLuceneIndexTestIT
@@ -46,7 +46,7 @@ public abstract class AbstractLuceneIndexTestIT
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( AbstractLuceneIndexTest.class ).directory( "dir", true ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( AbstractLuceneIndexTest.class ).directory( "dir", true ).getAbsolutePath() );
     }
 
     @AfterClass

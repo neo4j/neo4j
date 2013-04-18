@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.ProcessStreamHandler;
@@ -94,7 +94,7 @@ public class LuceneThreeFiveUpgradeIT
     {
         try
         {
-            new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
+            new GraphDatabaseFactory().newEmbeddedDatabase(storeDir.getAbsolutePath() );
             fail( "Shouldn't be able to start" );
         }
         catch ( Exception e )
@@ -104,7 +104,9 @@ public class LuceneThreeFiveUpgradeIT
     
     private void assertIndexContainsNode( File storeDir, Map<String, String> config )
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir.getAbsolutePath(), config );
+        GraphDatabaseService db = new GraphDatabaseFactory().
+                newEmbeddedDatabaseBuilder(storeDir.getAbsolutePath()).
+                setConfig(config ).newGraphDatabase();
         try
         {
             Node node = db.getNodeById( 1 );

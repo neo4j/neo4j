@@ -34,18 +34,24 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
 public class BigStoreIT implements RelationshipType
@@ -53,7 +59,7 @@ public class BigStoreIT implements RelationshipType
     private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
     
     private static final String PATH = "target/var/big";
-    private InternalAbstractGraphDatabase db;
+    private GraphDatabaseService db;
     public @Rule
     TestName testName = new TestName()
     {
@@ -69,7 +75,7 @@ public class BigStoreIT implements RelationshipType
     {
         // Delete before just to be sure
         deleteFileOrDirectory( new File( PATH ) );
-        db = new EmbeddedGraphDatabase( PATH );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
     }
     
     @After
@@ -159,7 +165,7 @@ public class BigStoreIT implements RelationshipType
         tx.finish();
         
         db.shutdown();
-        db = new EmbeddedGraphDatabase( PATH );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         
         // Verify the data
         int verified = 0;
@@ -274,7 +280,7 @@ public class BigStoreIT implements RelationshipType
             if ( i == 0 )
             {
                 db.shutdown();
-                db = new EmbeddedGraphDatabase( PATH );
+                db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
             }
         }
     }
@@ -295,6 +301,6 @@ public class BigStoreIT implements RelationshipType
 
     private void setHighId( IdType type, long highId )
     {
-        db.getIdGeneratorFactory().get( type ).setHighId( highId );
+        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).setHighId( highId );
     }
 }

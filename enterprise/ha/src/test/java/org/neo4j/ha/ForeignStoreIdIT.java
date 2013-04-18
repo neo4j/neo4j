@@ -34,8 +34,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -137,7 +137,7 @@ public class ForeignStoreIdIT
     private String createAnotherStore( File directory, int transactions )
     {
         String storeDir = directory.getAbsolutePath();
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createNodes( db, transactions, "node" );
         db.shutdown();
         return storeDir;

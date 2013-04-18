@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.test.ImpermanentGraphDatabase;
-
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class CypherUpdateMapTest
 {
 
     private ExecutionEngine engine;
-    private ImpermanentGraphDatabase gdb;
+    private GraphDatabaseService gdb;
 
     @Test
     public void updateNodeByMapParameter()
@@ -67,7 +69,13 @@ public class CypherUpdateMapTest
     @Before
     public void setup()
     {
-        gdb = new ImpermanentGraphDatabase();
+        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         engine = new ExecutionEngine(gdb);
+    }
+
+    @After
+    public void cleanup()
+    {
+        gdb.shutdown();
     }
 }

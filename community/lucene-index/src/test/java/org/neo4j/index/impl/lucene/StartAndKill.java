@@ -20,8 +20,8 @@
 package org.neo4j.index.impl.lucene;
 
 import org.junit.Ignore;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 @Ignore
 public class StartAndKill
@@ -29,7 +29,7 @@ public class StartAndKill
     public static void main( String[] args )
     {
         Args arguments = new Args( args );
-        new EmbeddedGraphDatabase( arguments.orphans().get( 0 ), arguments.asMap() );
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(arguments.orphans().get( 0 )).setConfig( arguments.asMap() ).newGraphDatabase();
         System.exit( 1 );
     }
 }

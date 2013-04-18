@@ -27,9 +27,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.TargetDirectory;
@@ -59,15 +61,15 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 @RunWith(SubProcessTestRunner.class)
 public class TestTxApplicationSynchronization
 {
-    private EmbeddedGraphDatabase baseDb;
-    private EmbeddedGraphDatabase targetDb;
+    private GraphDatabaseAPI baseDb;
+    private GraphDatabaseAPI targetDb;
     private long nodeId;
 
     @Before
     public void before() throws Exception
     {
         TargetDirectory dir = TargetDirectory.forTest( getClass() );
-        baseDb = new EmbeddedGraphDatabase( dir.directory( "base", true ).getAbsolutePath() );
+        baseDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir.directory( "base", true ).getAbsolutePath() );
 
         Transaction tx = baseDb.beginTx();
         Node node = baseDb.createNode();
@@ -76,7 +78,7 @@ public class TestTxApplicationSynchronization
         tx.success();
         tx.finish();
 
-        targetDb = new EmbeddedGraphDatabase( dir.directory( "target", true ).getAbsolutePath() );
+        targetDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir.directory( "target", true ).getAbsolutePath() );
         Pair<Long, ReadableByteChannel> lastTx = getLatestCommitedTx( baseDb );
         NeoStoreXaDataSource targetNeoDatasource = targetDb.getXaDataSourceManager().getNeoStoreDataSource();
         targetNeoDatasource.applyCommittedTransaction( lastTx.first(), lastTx.other() );
@@ -180,9 +182,9 @@ public class TestTxApplicationSynchronization
         latch.countDown();
     }
 
-    private static Pair<Long, ReadableByteChannel> getLatestCommitedTx( EmbeddedGraphDatabase db ) throws Exception
+    private static Pair<Long, ReadableByteChannel> getLatestCommitedTx( GraphDatabaseAPI db ) throws Exception
     {
-        XaDataSource neoDatasource = db.getXaDataSourceManager().getNeoStoreDataSource();
+        XaDataSource neoDatasource = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
         long lastCommittedTxId = neoDatasource.getLastCommittedTxId();
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
 

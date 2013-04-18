@@ -29,13 +29,15 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 
@@ -319,11 +321,12 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected void applyTransaction( ReadableByteChannel transaction ) throws IOException
     {
-        EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( directory, configuration( false ) );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
         try
         {
             database.beginTx();
-            database.getXaDataSourceManager().getNeoStoreDataSource().applyPreparedTransaction( transaction );
+            database.getDependencyResolver().resolveDependency( XaDataSourceManager.class).getNeoStoreDataSource()
+                    .applyPreparedTransaction( transaction );
         }
         finally
         {
@@ -348,7 +351,7 @@ public abstract class GraphStoreFixture implements TestRule
 
     private void generateInitialData()
     {
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( directory, configuration( true ) );
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( true ) ).newGraphDatabase();
         try
         {
             generateInitialData( graphDb );

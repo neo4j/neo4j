@@ -60,6 +60,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     
     static final String PATH = "test-data/impermanent-db";
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase()
     {
         this( new HashMap<String, String>() );
@@ -79,16 +83,28 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
         super( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
         super( storeDir, withForcedInMemoryConfiguration( params ) );
     }
     
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
@@ -99,6 +115,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         trackUnclosedUse( PATH );
     }
 
+    /**
+     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     */
+    @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,

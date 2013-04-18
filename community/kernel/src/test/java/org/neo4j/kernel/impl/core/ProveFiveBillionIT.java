@@ -33,7 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
@@ -76,7 +76,7 @@ public class ProveFiveBillionIT
         System.out.println( "Switch to embedded" );
         
         // Then create the rest with embedded graph db.
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         Node firstNode = db.getNodeById( first );
         Transaction tx = db.beginTx();
         for ( ; i < 5000000000L; i++ )

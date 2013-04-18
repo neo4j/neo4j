@@ -33,8 +33,8 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -52,7 +52,7 @@ public class StoreUpgradeIntegrationTest
         HashMap params = new HashMap();
         params.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        GraphDatabaseService database = new EmbeddedGraphDatabase( workingDirectory.getPath(), params );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
         database.shutdown();
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
@@ -75,8 +75,8 @@ public class StoreUpgradeIntegrationTest
 
         try
         {
-            GraphDatabaseService database = new EmbeddedGraphDatabase(
-                    workingDirectory.getPath(), params );
+            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+                    workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
@@ -103,8 +103,7 @@ public class StoreUpgradeIntegrationTest
 
         try
         {
-            GraphDatabaseService database = new EmbeddedGraphDatabase(
-                    workingDirectory.getPath(), params );
+            GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
