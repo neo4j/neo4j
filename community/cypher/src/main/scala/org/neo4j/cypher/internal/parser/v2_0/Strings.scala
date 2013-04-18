@@ -70,6 +70,7 @@ trait Strings extends JavaTokenParsers {
   def SINGLE = ignoreCase("single")
   def OR = ignoreCase("or")
   def AND = ignoreCase("and")
+  def XOR = ignoreCase("xor")
   def AS = ignoreCase("as")
   def NODE = ignoreCase("node")
   def RELATIONSHIP = (ignoreCase("relationship") | ignoreCase("rel")) ^^^ "rel"

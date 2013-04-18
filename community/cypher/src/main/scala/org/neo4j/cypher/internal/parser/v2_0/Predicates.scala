@@ -47,15 +47,19 @@ import org.neo4j.cypher.internal.commands.LessThan
 import org.neo4j.cypher.internal.parser.AbstractPattern
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
-  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( OR ~> predicateLvl1 ) ^^ {
-    case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
+  def predicate: Parser[Predicate] = predicateLvl1 ~ rep(OR ~> predicateLvl1) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => Or(a, b))
   }
 
-  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( AND ~> predicateLvl2 ) ^^{
-    case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep(AND ~> predicateLvl2) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => And(a, b))
   }
 
-  def predicateLvl2: Parser[Predicate] = (
+  def predicateLvl2: Parser[Predicate] = predicateLvl3 ~ rep(XOR ~> predicateLvl3) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => Xor(a, b))
+  }
+
+  def predicateLvl3: Parser[Predicate] = (
         operators
       | TRUE ^^^ True()
       | FALSE ^^^ Not(True())

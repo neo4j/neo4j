@@ -350,6 +350,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
+  @Test def shouldCreateXorQuery() {
+    test(vFrom2_0,
+      "start a = NODE(1) where a.name = 'andres' xor a.name = 'mattias' return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(Xor(
+        Equals(Property(Identifier("a"), "name"), Literal("andres")),
+        Equals(Property(Identifier("a"), "name"), Literal("mattias")))).
+        returns(ReturnItem(Identifier("a"), "a")))
+  }
+
   @Test def relatedTo() {
     val string = "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b"
     def query(DIFFERENCE: String): Query = {
@@ -669,6 +680,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("n", 1, 2, 3)).
         where(Or(
+        And(
+          Equals(Property(Identifier("n"), "animal"), Literal("monkey")),
+          Equals(Property(Identifier("n"), "food"), Literal("banana"))),
+        And(
+          Equals(Property(Identifier("n"), "animal"), Literal("cow")),
+          Equals(Property(Identifier("n"), "food"), Literal("grass"))))).
+        returns(ReturnItem(Identifier("n"), "n")))
+  }
+
+  @Test def nestedBooleanOperatorsAndParentesisXor() {
+    test(vFrom2_0,
+      """start n = NODE(1,2,3) where (n.animal = "monkey" and n.food = "banana") xor (n.animal = "cow" and n
+      .food="grass") return n""",
+      Query.
+        start(NodeById("n", 1, 2, 3)).
+        where(Xor(
         And(
           Equals(Property(Identifier("n"), "animal"), Literal("monkey")),
           Equals(Property(Identifier("n"), "food"), Literal("banana"))),
@@ -1444,16 +1471,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def binary_precedence() {
-    test("""start n=node(0) where n.a = 'x' and n.b = 'x' or n.c = 'x' return n""",
+    test(vFrom2_0, """start n=node(0) where n.a = 'x' and n.b = 'x' xor n.c = 'x' or n.d = 'x' return n""",
       Query.
         start(NodeById("n", 0)).
         where(
         Or(
           And(
             Equals(Property(Identifier("n"), "a"), Literal("x")),
-            Equals(Property(Identifier("n"), "b"), Literal("x"))
+            Xor(
+              Equals(Property(Identifier("n"), "b"), Literal("x")),
+              Equals(Property(Identifier("n"), "c"), Literal("x"))
+            )
           ),
-          Equals(Property(Identifier("n"), "c"), Literal("x"))
+          Equals(Property(Identifier("n"), "d"), Literal("x"))
         )
       ).returns(ReturnItem(Identifier("n"), "n"))
     )
