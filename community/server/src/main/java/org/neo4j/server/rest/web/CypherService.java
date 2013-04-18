@@ -71,8 +71,16 @@ public class CypherService
         }
 
         String query = (String) command.get( QUERY_KEY );
-        Map<String, Object> params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) ? command.get(
-                PARAMS_KEY ) : new HashMap<String, Object>());
+        Map<String, Object> params = null;
+        try
+        {
+            params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) ? command.get(PARAMS_KEY ) : new
+                    HashMap<String, Object>());
+        }
+        catch ( ClassCastException e )
+        {
+            return output.badRequest( new IllegalArgumentException("Parameters must be a JSON map") );
+        }
         try
         {
             if ( profile )
