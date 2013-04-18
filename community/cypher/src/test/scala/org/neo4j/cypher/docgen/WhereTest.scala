@@ -47,7 +47,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Boolean operations",
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`.",
-      queryText = """start n=node(%Andres%, %Tobias%) where (n.age < 30 and n.name = "Tobias") or not(n.name = "Tobias")  return n""",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name = "Peter" xor (n.age < 30 and n.name = "Tobias") or not(n.name = "Tobias")  return n""",
       returns = """This will return both nodes in the start clause.""",
       assertions = (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
   }

@@ -327,6 +327,21 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
+  @Test def shouldHandleXorFilters() {
+    val n1 = createNode(Map("name" -> "boy"))
+    val n2 = createNode(Map("name" -> "girl"))
+
+    val query = Query.
+      start(NodeById("n", n1.getId, n2.getId)).
+      where(Xor(
+      Equals(Property(Identifier("n"), "name"), Literal("boy")),
+      Equals(Property(Identifier("n"), "name"), Literal("girl")))).
+      returns(ReturnItem(Identifier("n"), "n"))
+
+    val result = execute(query)
+
+    assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
+  }
 
   @Test def shouldHandleNestedAndOrFilters() {
     val n1 = createNode(Map("animal" -> "monkey", "food" -> "banana"))
