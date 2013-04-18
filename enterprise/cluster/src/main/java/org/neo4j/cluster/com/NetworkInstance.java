@@ -159,6 +159,7 @@ public class NetworkInstance
     public void stop()
             throws Throwable
     {
+        msgLog.debug( "Shutting down NetworkInstance" );
         sendExecutor.shutdown();
         if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
@@ -168,6 +169,7 @@ public class NetworkInstance
         channels.close().awaitUninterruptibly();
         clientBootstrap.releaseExternalResources();
         serverBootstrap.releaseExternalResources();
+        msgLog.debug( "Shutting down NetworkInstance complete" );
     }
 
     @Override
