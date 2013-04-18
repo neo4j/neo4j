@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -957,5 +958,21 @@ public final class Iterables
                 };
             }
         };
+    }
+    
+    @SuppressWarnings( "rawtypes" )
+    public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
+    {
+        List<T> list = toList( iterable );
+        Collections.sort( list, new Comparator<T>()
+        {
+            @SuppressWarnings( "unchecked" )
+            @Override
+            public int compare( T o1, T o2 )
+            {
+                return compareFunction.apply( o1 ).compareTo( compareFunction.apply( o2 ) );
+            }
+        } );
+        return list;
     }
 }

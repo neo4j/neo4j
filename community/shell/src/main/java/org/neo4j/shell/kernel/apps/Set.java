@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -143,13 +145,20 @@ public class Set extends GraphDatabaseApp
             "[321,45324] for an int[] or\n" +
             "\"['The first string','The second string here']\" for a " +
             "String[]" ) );
+        this.addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
+            "Tells the command to set the supplied values as property." ) );
+        this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
+                "Sets one or more labels on the current node." ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Sets a property on the current node or relationship.\n" +
-        	"Usage: set <key> <value>";
+        return "Sets a property on the current node or relationship or label on the current node.\n" +
+        		"Usage:\n" +
+        		"  set <key> <value>\n" +
+        		"  set -p <key> <value>\n" +
+        		"  set -l PERSON";
     }
 
     protected static String getValueTypeName( Class<?> cls )
@@ -161,18 +170,32 @@ public class Set extends GraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException
     {
-        if ( parser.arguments().size() < 2 )
-        {
-            throw new ShellException( "Must supply key and value, " +
-                "like: set title \"This is a my title\"" );
+        boolean forProperty = parser.options().containsKey( "p" );
+        boolean forLabel = parser.options().containsKey( "l" );
+        if ( forProperty || !forLabel )
+        {   // Property
+            if ( parser.arguments().size() < 2 )
+            {
+                throw new ShellException( "Must supply key and value, " +
+                    "like: set title \"This is a my title\"" );
+            }
+
+            String key = parser.arguments().get( 0 );
+            ValueType valueType = getValueType( parser );
+            Object value = parseValue( parser.arguments().get( 1 ), valueType );
+
+            NodeOrRelationship thing = getCurrent( session );
+            thing.setProperty( key, value );
         }
-
-        String key = parser.arguments().get( 0 );
-        ValueType valueType = getValueType( parser );
-        Object value = parseValue( parser.arguments().get( 1 ), valueType );
-
-        NodeOrRelationship thing = getCurrent( session );
-        thing.setProperty( key, value );
+        else
+        {   // Label
+            Node node = getCurrent( session ).asNode();
+            for ( Label label : Mknode.parseLabels( parser ) )
+            {
+                node.addLabel( label );
+            }
+        }
+        
         return Continuation.INPUT_COMPLETE;
     }
 

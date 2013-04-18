@@ -43,16 +43,18 @@ import org.neo4j.shell.util.json.JSONObject;
  */
 public abstract class AbstractApp implements App
 {
-	private Map<String, OptionDefinition> optionDefinitions =
+	private final Map<String, OptionDefinition> optionDefinitions =
 		new HashMap<String, OptionDefinition>();
 	private AppShellServer server;
 	
-	public String getName()
+	@Override
+    public String getName()
 	{
 		return this.getClass().getSimpleName().toLowerCase();
 	}
 
-	public OptionDefinition getOptionDefinition( String option )
+	@Override
+    public OptionDefinition getOptionDefinition( String option )
 	{
 		return this.optionDefinitions.get( option );
 	}
@@ -63,7 +65,8 @@ public abstract class AbstractApp implements App
 		this.optionDefinitions.put( option, definition );
 	}
 	
-	public String[] getAvailableOptions()
+	@Override
+    public String[] getAvailableOptions()
 	{
 		String[] result = this.optionDefinitions.keySet().toArray(
 			new String[ this.optionDefinitions.size() ] );
@@ -76,28 +79,33 @@ public abstract class AbstractApp implements App
 		this.server = server;
 	}
 	
-	public AppShellServer getServer()
+	@Override
+    public AppShellServer getServer()
 	{
 		return this.server;
 	}
 	
-	public String getDescription()
+	@Override
+    public String getDescription()
 	{
 		return null;
 	}
 	
-	public String getDescription( String option )
+	@Override
+    public String getDescription( String option )
 	{
 		OptionDefinition definition = this.optionDefinitions.get( option );
 		return definition == null ? null : definition.getDescription();
 	}
 	
-	public void shutdown()
+	@Override
+    public void shutdown()
 	{
 	    // Default behaviour is to do nothing
 	}
 	
-	public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
+	@Override
+    public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
     {
 	    return Collections.emptyList();
 	}
@@ -111,6 +119,7 @@ public abstract class AbstractApp implements App
 		}
 		return builder.toString();
 	}
+	
 	protected static Map<String, Object> parseFilter( String filterString,
 	    Output out ) throws RemoteException, ShellException
 	{
