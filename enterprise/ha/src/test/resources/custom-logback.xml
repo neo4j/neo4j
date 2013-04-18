@@ -23,7 +23,7 @@
   <logger name="neo4j.diagnostics" level="debug">
   </logger>
 
-  <logger name="org.neo4j.cluster.protocol" level="debug">
+  <logger name="org.neo4j.cluster" level="debug">
   </logger>
 
   <logger name="org.neo4j.cluster.NetworkMock" level="warn">
@@ -32,7 +32,7 @@
   <logger name="org.neo4j.kernel.ha" level="debug">
   </logger>
 
-  <root level="info">
+  <root level="debug">
     <appender-ref ref="CONSOLE"/>
   </root>
 
