@@ -251,6 +251,11 @@ public class HTTP
             }
         }
 
+        public String rawContent()
+        {
+            return entity;
+        }
+
         public String stringFromContent( String key )
         {
             return (String) ((Map<String, Object>) content()).get( key );

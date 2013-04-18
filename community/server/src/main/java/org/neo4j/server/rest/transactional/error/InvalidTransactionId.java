@@ -19,10 +19,11 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class ConcurrentTransactionAccessError extends Neo4jError
+public class InvalidTransactionId extends TransactionLifecycleException
 {
-    public ConcurrentTransactionAccessError( String message )
+    @Override
+    protected StatusCode getStatusCode()
     {
-        super( Code.CONCURRENT_TRANSACTION_ACCESS, message , null );
+        return StatusCode.INVALID_TRANSACTION_ID;
     }
 }

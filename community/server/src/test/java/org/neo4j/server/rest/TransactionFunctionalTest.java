@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -41,7 +42,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -150,10 +151,11 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         http.POST( commitResource );
 
         // execute
-        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] " +
+                "}" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
-        assertErrors( execute, Neo4jError.Code.INVALID_TRANSACTION_ID );
+        assertErrorCodes( execute, StatusCode.INVALID_TRANSACTION_ID );
     }
 
     @Test
@@ -215,14 +217,18 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-        String commitResource = begin.stringFromContent( "commit" );
+        Response response = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        String commitResource = response.stringFromContent( "commit" );
 
         // commit with invalid cypher
-        begin = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
+        response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
-        assertThat( begin.status(), is( 200 ) );
-        assertErrors( begin, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
+        System.out.println( "begin.rawContent() = " + response.rawContent() );
+
+        assertThat( response.status(), is( 200 ) );
+        assertErrorCodes( response, StatusCode.STATEMENT_SYNTAX_ERROR );
+        assertErrorMessages( response, "Syntax error in statement. Cause: expected an expression that is a node\n\"CREATE ;;\"\n        ^" );
+        assertNoStackTrace( response );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
@@ -240,41 +246,76 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         Response response = POST( commitResource, rawPayload( "[{asd,::}]" ) );
 
         assertThat( response.status(), is( 200 ) );
-        assertErrors( response, Neo4jError.Code.INVALID_REQUEST );
+        assertErrorCodes( response, StatusCode.INVALID_REQUEST_FORMAT );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
     private void assertNoErrors( Response response )
     {
-        assertErrors( response.<Map<String, Object>>content() );
+        assertErrorCodes( response.<Map<String, Object>>content() );
     }
 
     private void assertNoErrors( Map<String, Object> response )
     {
-        assertErrors( response );
+        assertErrorCodes( response );
     }
 
-    private void assertErrors( Response response, Neo4jError.Code... expectedErrors )
+    private void assertNoStackTrace( Response response )
     {
-        assertErrors( response.<Map<String, Object>>content(), expectedErrors );
+        Map<String, Object> content = response.content();
+
+        List<Map<String, Object>> errors = ((List<Map<String, Object>>) content.get( "errors" ));
+
+        for ( Map<String, Object> error : errors )
+        {
+            assertFalse( error.containsKey( "stackTrace" ) );
+        }
+    }
+
+    private void assertErrorCodes( Response response, StatusCode... expectedErrors )
+    {
+        assertErrorCodes( response.<Map<String, Object>>content(), expectedErrors );
+    }
+
+    private void assertErrorMessages( Response response, String... expectedMessages )
+    {
+        assertErrorMessages( response.<Map<String, Object>>content(), expectedMessages );
     }
 
     @SuppressWarnings("unchecked")
-    private void assertErrors( Map<String, Object> response, Neo4jError.Code... expectedErrors )
+    private void assertErrorCodes( Map<String, Object> response, StatusCode... expectedErrors )
     {
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<Neo4jError.Code> expected = iterator( expectedErrors );
+        Iterator<StatusCode> expected = iterator( expectedErrors );
 
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( Long.valueOf( (Integer) errors.next().get( "code" ) ), equalTo( expected.next().getCode() ) );
+            assertThat( (Integer) errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
         }
         if ( errors.hasNext() )
         {
             Map<String, Object> error = errors.next();
             fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get( "message" ) + "'." );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertErrorMessages( Map<String, Object> response, String... expectedMessages )
+    {
+        Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
+        Iterator<String> expected = iterator( expectedMessages );
+
+        while ( expected.hasNext() )
+        {
+            assertTrue( errors.hasNext() );
+            assertThat( (String) errors.next().get( "message" ), equalTo( expected.next() ) );
+        }
+        if ( errors.hasNext() )
+        {
+            Map<String, Object> error = errors.next();
+            fail( "Expected no more errors, but got " + error.get( "message" ) + " - '" + error.get( "message" ) + "'." );
         }
     }
 

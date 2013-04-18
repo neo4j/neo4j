@@ -17,14 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional.error;
+package org.neo4j.server.rest.transactional;
 
+import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.InternalException;
 import org.neo4j.cypher.ParameterNotFoundException;
+import org.neo4j.cypher.SyntaxException;
+import org.neo4j.helpers.Function;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 
-public class MissingParameterError extends Neo4jError
+public class CypherExceptionMapping implements Function<CypherException, StatusCode>
 {
-    public MissingParameterError( String message, ParameterNotFoundException cause )
+    @Override
+    public StatusCode apply( CypherException e )
     {
-        super( Code.STATEMENT_MISSING_PARAMETER, message, cause );
+        if ( ParameterNotFoundException.class.isInstance( e ) )
+            return StatusCode.STATEMENT_MISSING_PARAMETER_ERROR;
+
+        if ( SyntaxException.class.isInstance( e ) )
+            return StatusCode.STATEMENT_SYNTAX_ERROR;
+
+        if ( InternalException.class.isInstance( e ) )
+            return StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR;
+
+        return StatusCode.STATEMENT_EXECUTION_ERROR;
     }
 }

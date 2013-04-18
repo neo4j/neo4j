@@ -36,7 +36,7 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
@@ -193,7 +193,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertErrors( result, Neo4jError.Code.UNKNOWN_STATEMENT_ERROR );
+        assertErrors( result, StatusCode.STATEMENT_SYNTAX_ERROR );
     }
 
     private void assertNoErrors( Map<String, Object> response )
@@ -201,15 +201,15 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertErrors( response );
     }
 
-    private void assertErrors( Map<String, Object> response, Neo4jError.Code... expectedErrors )
+    private void assertErrors( Map<String, Object> response, StatusCode... expectedErrors )
     {
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<Neo4jError.Code> expected = iterator( expectedErrors );
+        Iterator<StatusCode> expected = iterator( expectedErrors );
 
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( Long.valueOf( (Integer) errors.next().get( "code" ) ), equalTo( expected.next().getCode() ) );
+            assertThat( (Integer) errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
         }
         if ( errors.hasNext() )
         {

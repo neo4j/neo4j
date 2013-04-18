@@ -19,10 +19,26 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class ClientCommunicationError extends Neo4jError
+/**
+ * TransactionLifecycleExceptions are internal exceptions that may be thrown
+ * due to server transaction lifecycle transitions that map directly on a
+ * @{link StatusCode}
+ */
+public abstract class TransactionLifecycleException extends RuntimeException
 {
-    public ClientCommunicationError( String message, Throwable cause )
+    protected TransactionLifecycleException()
     {
-        super( Code.CLIENT_COMMUNICATION_ERROR, message, cause );
     }
+
+    protected TransactionLifecycleException( Throwable cause )
+    {
+        super( cause );
+    }
+
+    public Neo4jError toNeo4jError()
+    {
+        return new Neo4jError( getStatusCode(), getMessage(), this );
+    }
+
+    protected abstract StatusCode getStatusCode();
 }

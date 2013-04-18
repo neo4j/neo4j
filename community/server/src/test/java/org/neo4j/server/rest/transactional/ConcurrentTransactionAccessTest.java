@@ -31,7 +31,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
-import org.neo4j.server.rest.transactional.error.ConcurrentTransactionAccessError;
+import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 import org.neo4j.test.DoubleLatch;
 
@@ -80,7 +80,7 @@ public class ConcurrentTransactionAccessTest
             actions.findTransactionHandle( DisgustingUriScheme.parseTxId( transactionHandle.uri() ) );
             fail( "should have thrown exception" );
         }
-        catch ( ConcurrentTransactionAccessError neo4jError )
+        catch ( InvalidConcurrentTransactionAccess neo4jError )
         {
             // then we get here
         }
