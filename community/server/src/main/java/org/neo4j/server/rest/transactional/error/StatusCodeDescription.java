@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownRollbackError extends Neo4jError
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.FIELD )
+public @interface StatusCodeDescription
 {
-    public UnknownRollbackError( RuntimeException cause )
-    {
-        super( Code.UNKNOWN_ROLLBACK_ERROR,
-                "Unable to roll back transaction, and unable to determine cause of failure. " +
-                        "Please refer to the logs for details.", cause );
-    }
+    String message();
+    boolean includeStackTrace() default false;
 }

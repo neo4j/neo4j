@@ -25,7 +25,7 @@ import java.io.OutputStream;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -64,12 +64,12 @@ public class TransactionFacade
         this.log = log;
     }
 
-    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws Neo4jError
+    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
     {
         return new TransactionHandle( kernel, engine, registry, uriScheme, log );
     }
 
-    public TransactionHandle findTransactionHandle( long txId ) throws Neo4jError
+    public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
     {
         return registry.acquire( txId );
     }

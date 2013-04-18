@@ -19,10 +19,11 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownStatementError extends Neo4jError
+public class InvalidConcurrentTransactionAccess extends TransactionLifecycleException
 {
-    public UnknownStatementError( String statement, Exception e )
+    @Override
+    protected StatusCode getStatusCode()
     {
-        super( Code.UNKNOWN_STATEMENT_ERROR, "Failed to execute '" + statement + "'.", e );
+        return StatusCode.INVALID_CONCURRENT_TRANSACTION_ACCESS;
     }
 }

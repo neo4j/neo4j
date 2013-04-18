@@ -42,9 +42,8 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.server.rest.transactional.error.ClientCommunicationError;
-import org.neo4j.server.rest.transactional.error.InvalidRequestError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
@@ -94,7 +93,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             switch ( state )
             {
                 case BEFORE_OUTER_ARRAY:
-                    if ( !discardTokensUntilStatementArray() )
+                    if ( !beginsWithCorrectTokens() )
                     {
                         return null;
                     }
@@ -127,7 +126,8 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                     if ( statement == null )
                     {
-                        throw new InvalidRequestError( "No statement provided." );
+                        addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "No statement provided." ) );
+                        return null;
                     }
                     return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters );
 
@@ -139,17 +139,13 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
         catch ( JsonParseException e )
         {
-            addError( new InvalidRequestError( "Unable to deserialize request: " + e.getMessage() ) );
+            addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        "Unable to deserialize request: " + e.getMessage() ) );
             return null;
         }
         catch ( IOException e )
         {
-            addError( new ClientCommunicationError( "Input error while deserializing request.", e ) );
-            return null;
-        }
-        catch ( Neo4jError error )
-        {
-            addError( error );
+            addError( new Neo4jError( StatusCode.COMMUNICATION_ERROR, "Input error while deserializing request.", e ) );
             return null;
         }
     }
@@ -169,7 +165,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         errors.add( error );
     }
 
-    private boolean discardTokensUntilStatementArray() throws Neo4jError, IOException
+    private boolean beginsWithCorrectTokens() throws IOException
     {
         List<JsonToken> expectedTokens = asList( START_OBJECT, FIELD_NAME, START_ARRAY );
         String expectedField = "statements";
@@ -187,16 +183,21 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             {
                 if ( !expectedField.equals( input.getText() ) )
                 {
-                    throw new InvalidRequestError( String.format( "Unable to deserialize request, " +
-                            "expected first field to be '%s', but was '%s'", expectedField, input.getText() ) );
+                    addError( new Neo4jError(
+                                StatusCode.INVALID_REQUEST_FORMAT,
+                                String.format( "Unable to deserialize request, " +
+                                  "expected first field to be '%s', but was '%s'", expectedField, input.getText() ) ) );
+                    return false;
                 }
             }
             foundTokens.add( token );
         }
         if ( !expectedTokens.equals( foundTokens ) )
         {
-            throw new InvalidRequestError( String.format( "Unable to deserialize request, expected %s, found %s.",
-                    expectedTokens, foundTokens ) );
+            addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        String.format( "Unable to deserialize request, expected %s, found %s.",
+                          expectedTokens, foundTokens ) ) );
+            return false;
         }
         return true;
     }

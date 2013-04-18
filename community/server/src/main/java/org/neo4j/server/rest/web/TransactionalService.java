@@ -45,6 +45,7 @@ import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 
 /**
  * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not do anything more complicated
@@ -72,9 +73,9 @@ public class TransactionalService
         {
             transactionHandle = facade.newTransactionHandle( uriScheme );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( neo4jError );
+            return invalidTransaction( e );
         }
         return createdResponse( transactionHandle, executeStatements( input, transactionHandle ) );
     }
@@ -90,9 +91,9 @@ public class TransactionalService
         {
             transactionHandle = facade.findTransactionHandle( id );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( neo4jError );
+            return invalidTransaction( e );
         }
         return okResponse( executeStatements( input, transactionHandle ) );
     }
@@ -108,9 +109,9 @@ public class TransactionalService
         {
             transactionHandle = facade.findTransactionHandle( id );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( neo4jError );
+            return invalidTransaction( e );
         }
         return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
     }
@@ -126,9 +127,9 @@ public class TransactionalService
         {
             transactionHandle = facade.newTransactionHandle( uriScheme );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( neo4jError );
+            return invalidTransaction( e );
         }
         return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
     }
@@ -143,18 +144,18 @@ public class TransactionalService
         {
             transactionHandle = facade.findTransactionHandle( id );
         }
-        catch ( Neo4jError neo4jError )
+        catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( neo4jError );
+            return invalidTransaction( e );
         }
         return okResponse( rollback( transactionHandle ) );
     }
 
-    private Response invalidTransaction( Neo4jError neo4jError )
+    private Response invalidTransaction( TransactionLifecycleException e )
     {
         return Response.status( Response.Status.NOT_FOUND )
                 .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( serializeError( neo4jError ) ).build();
+                .entity( serializeError( e.toNeo4jError() ) ).build();
     }
 
     private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )

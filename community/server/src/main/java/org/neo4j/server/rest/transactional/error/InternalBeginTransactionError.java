@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-public class UnknownDatabaseError extends Neo4jError
+public class InternalBeginTransactionError extends TransactionLifecycleException
 {
-    public UnknownDatabaseError( Throwable cause )
+    public InternalBeginTransactionError( RuntimeException cause )
     {
-        this( "Something went wrong, and the database was unable to accurately tell what it was. Please refer to the " +
-                "database logs for details.", cause );
+        super( cause );
     }
 
-    public UnknownDatabaseError( String message, Throwable cause )
+    @Override
+    protected StatusCode getStatusCode()
     {
-        super( Code.UNKNOWN_DATABASE_ERROR, message, cause );
+        return StatusCode.INTERNAL_BEGIN_TRANSACTION_ERROR;
     }
 }
