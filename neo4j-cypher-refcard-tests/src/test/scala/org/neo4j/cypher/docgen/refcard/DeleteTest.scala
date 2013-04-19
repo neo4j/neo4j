@@ -42,7 +42,7 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
       case "parameters=set" =>
         Map("value" -> "a value")
       case "parameters=map" =>
-        Map("map" -> Map("propertyName" -> "a value"))
+        Map("map" -> Map("property" -> "a value"))
       case "" =>
         Map()
     }
@@ -65,9 +65,9 @@ DELETE n, r
 Delete a node and a relationship.
 
 ###assertion=delete-prop
-CREATE (n {propertyName: "value"})
+CREATE (n {property: "value"})
 
-DELETE n.propertyName
+DELETE n.property
 ###
 
 Delete a property.

@@ -51,9 +51,9 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """.Collection Functions
 ["refcard", cardcss="general c3-3"]
@@ -84,7 +84,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection
 RETURN
 
-EXTRACT(x IN collection: x.propertyName)
+EXTRACT(x IN collection: x.property)
 ###
 
 A collection of the value of the expression for each element in the collection.
@@ -95,7 +95,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection
 RETURN
 
-FILTER(x IN collection: x.propertyName <> {value})
+FILTER(x IN collection: x.property <> {value})
 ###
 
 A collection of the elements where the predicate is `true`.
@@ -129,7 +129,7 @@ MATCH path=(n)-[*]->(m)
 WITH nodes(path) as coll
 RETURN
 
-REDUCE(str = "", n IN coll : str + n.propertyName )
+REDUCE(str = "", n IN coll : str + n.property )
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.

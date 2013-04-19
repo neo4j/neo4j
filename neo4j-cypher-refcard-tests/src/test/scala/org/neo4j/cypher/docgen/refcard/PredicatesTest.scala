@@ -59,9 +59,9 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """.Predicates
 ["refcard", cardcss="general c3-3"]
@@ -71,7 +71,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 WHERE
 
-n.propertyName <> {value}
+n.property <> {value}
 
 RETURN n,m###
 
@@ -82,7 +82,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 WHERE
 
-n.propertyName <> {value} AND m.propertyName <> {value}
+HAS(n.property) AND n.property = {value}
 
 RETURN n,m###
 
@@ -93,7 +93,7 @@ Use boolean operators to combine predicates.
 START n=node(*)
 WHERE
 
-HAS(n.propertyName)
+HAS(n.property)
 
 RETURN n###
 
@@ -114,7 +114,7 @@ Check if something is `null`.
 START n=node(*)
 WHERE
 
-n.propertyName? = {value}
+n.property? = {value}
 
 RETURN n###
 
@@ -124,7 +124,7 @@ Defaults to `true` if the property does not exist.
 START n=node(*)
 WHERE
 
-n.propertyName! = {value}
+n.property! = {value}
 
 RETURN n###
 
@@ -132,9 +132,9 @@ Defaults to `false` if the property does not exist.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)
-WHERE HAS(n.propertyName) AND
+WHERE HAS(n.property) AND
 
-n.propertyName =~ {regex}
+n.property =~ {regex}
 
 RETURN n###
 
@@ -152,9 +152,9 @@ Make sure the pattern has at least one match.
 
 ###assertion=returns-one parameters=names
 START n=node(*)
-WHERE HAS(n.propertyName) AND
+WHERE HAS(n.property) AND
 
-n.propertyName IN [{value1}, {value2}]
+n.property IN [{value1}, {value2}]
 
 RETURN n###
 

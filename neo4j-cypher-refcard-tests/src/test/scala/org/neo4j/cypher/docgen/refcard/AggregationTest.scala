@@ -48,9 +48,9 @@ class AggregationTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> 10),
-    "B" -> Map("propertyName" -> 20),
-    "C" -> Map("propertyName" -> 30))
+    "A" -> Map("property" -> 10),
+    "B" -> Map("property" -> 20),
+    "C" -> Map("property" -> 30))
 
   def text = """.Aggregation
 ["refcard", cardcss="general"]
@@ -90,7 +90,7 @@ which removes duplicates from the values
 START n=node(%A%, %B%, %C%)
 RETURN
 
-SUM(n.propertyName)
+SUM(n.property)
 ###
 
 Sum numerical values.
@@ -99,7 +99,7 @@ Sum numerical values.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-AVG(n.propertyName)
+AVG(n.property)
 ###
 
 Calculates the average.
@@ -108,7 +108,7 @@ Calculates the average.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-MAX(n.propertyName)
+MAX(n.property)
 ###
 
 Maximum numerical value.
@@ -117,7 +117,7 @@ Maximum numerical value.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-MIN(n.propertyName)
+MIN(n.property)
 ###
 
 Minimum numerical value.
@@ -126,7 +126,7 @@ Minimum numerical value.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-COLLECT(n.propertyName?)
+COLLECT(n.property?)
 ###
 
 Collection from the values, ignores `null`.
@@ -135,7 +135,7 @@ Collection from the values, ignores `null`.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-PERCENTILE_DISC(n.propertyName, {percentile})
+PERCENTILE_DISC(n.property, {percentile})
 ###
 
 Discrete percentile.
@@ -145,7 +145,7 @@ The `percentile` argument is from `0.0` to `1.0`.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-PERCENTILE_CONT(n.propertyName, {percentile})
+PERCENTILE_CONT(n.property, {percentile})
 ###
 
 Continuous percentile.

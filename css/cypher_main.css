@@ -1,4 +1,4 @@
-html, body {
+html,body {
   padding: 0;
   margin: 0;
   height: 100%;
@@ -15,233 +15,207 @@ html, body {
 }
 
 @media screen and (min-width: 1350px) {
-
-  html, body {
+  html,body {
     font-size: 0.975em;
   }
-
   .mid {
     margin: 0 auto;
     width: 1330px;
   }
-  
   header img.neo4j-logo {
-     width: 282px;
-     float: left;
+    width: 282px;
+    float: left;
     margin: 2em 0 0 3%;
-  }  
-  
+  }
   header h1 {
     float: right;
-      padding: 1.5em 3% 0 3%;
+    padding: 1.5em 3% 0 3%;
   }
-
   header {
     height: 8em;
-    }
-    
-    .col {
-      float: left;
-      width: 420px;
-      margin: 0 10px;
-      padding: 10px 0;
-    }
-
+  }
+  .col {
+    float: left;
+    width: 420px;
+    margin: 0 10px;
+    padding: 10px 0;
+  }
 }
 
-@media screen and (min-width: 978px)  and (max-width: 1349px) {
-
-  html, body {
+@media screen and (min-width: 978px) and (max-width: 1349px) {
+  html,body {
     font-size: 0.975em;
   }
-
   .mid {
     margin: 0 auto;
     width: 90%;
   }
-  
   header img.neo4j-logo {
-     width: 282px;
-     float: left;
+    width: 282px;
+    float: left;
     margin: 2em 0 0 3%;
-  }  
-  
+  }
   header h1 {
     float: right;
-      padding: 1.5em 3% 0 3%;
+    padding: 1.5em 3% 0 3%;
   }
-
   header {
     height: 8em;
-    }
-    
-    .col {
-      float: left;
-      width: 420px;
-      margin: 10px;
-    }
-
+  }
+  .col {
+    float: left;
+    width: 420px;
+    margin: 10px;
+  }
 }
 
 @media screen and (min-width: 780px) and (max-width: 977px) {
-
-  html, body {
+  html,body {
     font-size: 0.95em;
   }
-
   .mid {
     margin: 0 auto;
     width: 80%;
   }
-  
   header img.neo4j-logo {
     width: 282px;
     float: left;
-     margin: 2em 0 0 3%;
+    margin: 2em 0 0 3%;
   }
-  
   header h1 {
     float: right;
-      padding: 1.5em 3% 0 3%;
+    padding: 1.5em 3% 0 3%;
   }
-
   header {
     height: 8em;
-    }
-    
-    .col {
-      float: left;
-      width: 600px;
-      margin: 0 10px;
-      padding: 10px 0;
-   }
-
+  }
+  .col {
+    float: left;
+    width: 600px;
+    margin: 0 10px;
+    padding: 10px 0;
+  }
 }
 
 @media screen and (min-width: 521px) and (max-width: 779px) {
-
-  html, body {
+  html,body {
     font-size: 0.9em;
   }
-
   .mid {
     margin: 0 auto;
     width: 93%;
   }
-  
   header img.neo4j-logo {
     width: 212px;
     float: left;
-     margin: 2em 0 0 3%;
+    margin: 2em 0 0 3%;
   }
-    
   header h1 {
     float: right;
     padding: 1em 3% 0 3%;
     font-size: 1.5em;
   }
-  
   header {
     height: 7em;
-    }
-    
-    .col {
-      float: left;
-      width: 96%;
-   }
-   
-   .col img {
-     width: 80%;
-     }
-
+  }
+  .col {
+    float: left;
+    width: 96%;
+  }
+  .col img {
+    width: 80%;
+  }
 }
 
 @media screen and (max-width: 520px) {
-
-  html, body {
+  html,body {
     font-size: 0.9em;
   }
-
   .mid {
     margin: 0;
     width: 100%;
   }
-  
   header img.neo4j-logo {
     width: 212px;
     float: none;
     margin: 1em 0 0 3%;
   }
-  
   header h1 {
     float: none;
     padding: 0.25em 3% 0 3%;
     font-size: 1.3em;
   }
-  
   header {
     height: 8em;
-    }
-    
-    .col {
-      float: none;
-      width: 92%;
-   }
-   
-   .col img {
-      width: 98%;
-   }
-
+  }
+  .col {
+    float: none;
+    width: 92%;
+  }
+  .col img {
+    width: 98%;
+  }
 }
 
 @media print {
-
-  html, body {
+  html,body {
     font-size: 8pt;
-  }  
-  
+  }
   footer div.mid {
     float: right;
   }
-  
   table {
     border: solid 1px #e5e5e5 !important;
     border-collapse: collapse !important;
     page-break-inside: avoid;
   }
-  
   th {
     border-bottom: solid 1px #e5e5e5 !important;
   }
-  
   .mid {
     margin: 0;
     width: 100%;
   }
-  
   header img.neo4j-logo {
     width: 282px;
     float: left;
     margin: 2em 0 0 3%;
   }
-
   header h1 {
     float: right;
-      padding: 1.5em 3% 0 3%;
+    padding: 1.5em 3% 0 3%;
   }
-  
   header {
     height: 8em;
-    }
-    
-  .col {
-      float: left;
-      width: 44%;
-      margin: 10px;
-      padding: 10px 0;
-   }
-
-  a[href]:after { content: ""; }
+  }
+  body .col {
+    float: left;
+    width: 44%;
+    margin: 0 10px;
+    padding: 5px 0;
+    clear: none;
+  }
+  html,body {
+    background-color: #ffffff !important;
+  }
+  .main .mid {
+    background: none !important;
+    box-shadow: none !important;
+  }
+  .columns {
+    display: none;
+  }
+  div.moved {
+    display: block;
+  }
+  a[href]:after {
+    content: "";
+  }
+  body .syntaxhighlighter a,body .syntaxhighlighter div,body .syntaxhighlighter code,body .syntaxhighlighter table,body .syntaxhighlighter table td,body .syntaxhighlighter table tr,body .syntaxhighlighter table tbody,body .syntaxhighlighter table thead,body .syntaxhighlighter table caption,body .syntaxhighlighter textarea
+    {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
 }
 
 @page {
@@ -251,7 +225,7 @@ html, body {
 .page {
   margin: 0 0 2em 0;
   padding: 0 0 3em 0;
-/*  page-break-after : right;
+  /*  page-break-after : right;
   page-break-inside : avoid;*/
 }
 
@@ -262,7 +236,6 @@ header {
   margin: 0;
   padding: 0;
 }
-
 
 .main .mid {
   overflow: visible;
@@ -280,7 +253,7 @@ header .mid {
 
 header h1 {
   margin: 0;
-  font-family:  'Ubuntu', Candara, sans-serif;
+  font-family: 'Ubuntu', Candara, sans-serif;
   font-weight: 500;
 }
 
@@ -331,7 +304,7 @@ footer div.mid {
   background: #617a96;
 }
 
-.col.cardread tr th/*, p.cardread span*/ {
+.col.cardread tr th /*, p.cardread span*/ {
   background: #789661;
 }
 
@@ -340,7 +313,7 @@ footer div.mid {
 }
 
 .col.cardperformance tr th {
-  background: #965656;
+  background: #964362;
 }
 
 /*p.cardread span {
@@ -348,7 +321,6 @@ footer div.mid {
   padding: 2px 4px;
   border-radius: 4px;
 }*/
-
 .col tr th:first-child {
   border-top-left-radius: 5px;
   -webkit-border-top-left-radius: 5px;
@@ -372,7 +344,7 @@ footer div.mid {
   border-bottom: 1px solid #e5e5e5;
 }
 
-.col td pre, .blk pre {
+.col td pre,.blk pre {
   white-space: nowrap;
 }
 
@@ -381,13 +353,13 @@ footer div.mid {
   margin: 0;
 }
 
-code, em.code, em.tx, span.monospaced {
+code,em.code,em.tx,span.monospaced {
   font-family: "Ubuntu Mono", "Courier New", Courier, monospace, serif;
   font-style: normal;
   font-size: 14px;
 }
 
-code, span.monospaced {
+code,span.monospaced {
   color: #004759;
 }
 
@@ -419,60 +391,48 @@ ul {
   padding-left: 15px;
 }
 
-#page_1, #page_2, #page_3, #page_4 {
+#page_1,#page_2,#page_3,#page_4 {
   /*border: 1px solid red;*/
   overflow: auto;
 }
 
-
-.syntaxhighlighter a,
-.syntaxhighlighter div,
-.syntaxhighlighter code,
-.syntaxhighlighter table,
-.syntaxhighlighter table td,
-.syntaxhighlighter table tr,
-.syntaxhighlighter table tbody,
-.syntaxhighlighter table thead,
-.syntaxhighlighter table caption,
-.syntaxhighlighter textarea {
+.syntaxhighlighter a,.syntaxhighlighter div,.syntaxhighlighter code,.syntaxhighlighter table,.syntaxhighlighter table td,.syntaxhighlighter table tr,.syntaxhighlighter table tbody,.syntaxhighlighter table thead,.syntaxhighlighter table caption,.syntaxhighlighter textarea
+  {
   font-size: 14px !important;
-  font-family: "Ubuntu Mono", Consolas, Monaco,"Bitstream Vera Sans Mono", monospace !important;
+  font-family: "Ubuntu Mono", Consolas, Monaco, "Bitstream Vera Sans Mono", monospace !important;
   line-height: 18px !important;
 }
-body .syntaxhighlighter,
-body .syntaxhighlighter .line.alt2 {
+
+body .syntaxhighlighter,body .syntaxhighlighter .line.alt2 {
   background-color: transparent !important;
 }
+
 body .syntaxhighlighter {
   overflow: visible !important;
   margin: 0.1em 0 0 0 !important;
 }
 
 /**** Transitions ****/
-
-.masonry,
-.masonry .masonry-brick {
+.masonry,.masonry .masonry-brick {
   -webkit-transition-duration: 0.7s;
-     -moz-transition-duration: 0.7s;
-      -ms-transition-duration: 0.7s;
-       -o-transition-duration: 0.7s;
-          transition-duration: 0.7s;
+  -moz-transition-duration: 0.7s;
+  -ms-transition-duration: 0.7s;
+  -o-transition-duration: 0.7s;
+  transition-duration: 0.7s;
 }
 
 .masonry {
   -webkit-transition-property: width, height;
-     -moz-transition-property: width, height;
-      -ms-transition-property: width, height;
-       -o-transition-property: width, height;
-          transition-property: width, height;
+  -moz-transition-property: width, height;
+  -ms-transition-property: width, height;
+  -o-transition-property: width, height;
+  transition-property: width, height;
 }
 
 .masonry .masonry-brick {
   -webkit-transition-property: left, right, top;
-     -moz-transition-property: left, right, top;
-      -ms-transition-property: left, right, top;
-       -o-transition-property: left, right, top;
-          transition-property: left, right, top;
+  -moz-transition-property: left, right, top;
+  -ms-transition-property: left, right, top;
+  -o-transition-property: left, right, top;
+  transition-property: left, right, top;
 }
-
-

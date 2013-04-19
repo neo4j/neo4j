@@ -55,10 +55,10 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "ROOT" -> Map("propertyName" -> 0),
-    "A" -> Map("propertyName" -> 10),
-    "B" -> Map("propertyName" -> 20),
-    "C" -> Map("propertyName" -> 30))
+    "ROOT" -> Map("property" -> 0),
+    "A" -> Map("property" -> 10),
+    "B" -> Map("property" -> 20),
+    "C" -> Map("property" -> 30))
 
   def text = """.RETURN
 ["refcard", cardcss="read c3-3"]
@@ -92,7 +92,7 @@ Return unique rows.
 START n=node(*)
 RETURN *
 
-ORDER BY n.propertyName
+ORDER BY n.property
 ###
 
 Sort the result.
@@ -102,7 +102,7 @@ Sort the result.
 START n=node(*)
 RETURN *
 
-ORDER BY n.propertyName DESC
+ORDER BY n.property DESC
 ###
 
 Sort the result in descending order.

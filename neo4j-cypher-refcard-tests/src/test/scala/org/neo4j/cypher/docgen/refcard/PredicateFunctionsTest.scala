@@ -38,9 +38,9 @@ class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
   }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """.Predicate Functions
 ["refcard", cardcss="general c3-3"]
@@ -51,7 +51,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 WHERE
 
-ALL(x IN collection WHERE HAS(x.propertyName))
+ALL(x IN collection WHERE HAS(x.property))
 
 RETURN n,m###
 
@@ -62,7 +62,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-ANY(x IN collection WHERE HAS(x.propertyName))
+ANY(x IN collection WHERE HAS(x.property))
 
 RETURN n,m###
 
@@ -73,7 +73,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-NONE(x IN collection WHERE HAS(x.propertyName))
+NONE(x IN collection WHERE HAS(x.property))
 
 RETURN n,m###
 
@@ -84,7 +84,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-SINGLE(x IN collection WHERE HAS(x.propertyName))
+SINGLE(x IN collection WHERE HAS(x.property))
 
 RETURN n,m###
 

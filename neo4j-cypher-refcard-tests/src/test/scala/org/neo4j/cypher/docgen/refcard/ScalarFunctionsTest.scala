@@ -46,9 +46,9 @@ class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """.Scalar Functions
 ["refcard", cardcss="general c2-2 c3-2"]
@@ -76,7 +76,7 @@ String representation of the relationship type.
 START n=node(%A%)
 RETURN
 
-COALESCE(n.propertyName?, {defaultValue})###
+COALESCE(n.property?, {defaultValue})###
 
 The first non-`null` expression.
 

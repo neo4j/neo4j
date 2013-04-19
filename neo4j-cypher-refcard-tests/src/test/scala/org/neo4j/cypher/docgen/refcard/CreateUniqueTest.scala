@@ -54,7 +54,8 @@ class CreateUniqueTest extends RefcardTest with StatisticsChecker {
 //
 START n=node(%A%)
 
-CREATE UNIQUE (n)-[:KNOWS]->(m {propertyName: {value}})
+CREATE UNIQUE
+    (n)-[:KNOWS]->(m {property: {value}})
 
 RETURN m###
 

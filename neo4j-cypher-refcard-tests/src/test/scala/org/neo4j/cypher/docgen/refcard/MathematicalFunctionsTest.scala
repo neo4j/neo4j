@@ -48,10 +48,10 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"),
-    "ROOT" -> Map("propertyName" -> 1))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"),
+    "ROOT" -> Map("property" -> 1))
 
   def text = """.Mathematical Functions
 ["refcard", cardcss="general c2-2 c3-2"]

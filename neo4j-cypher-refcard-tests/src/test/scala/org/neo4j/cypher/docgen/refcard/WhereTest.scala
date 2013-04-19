@@ -41,9 +41,9 @@ class WhereTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("propertyName" -> "Andrés"),
-    "B" -> Map("propertyName" -> "Tobias"),
-    "C" -> Map("propertyName" -> "Chris"))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """.WHERE
 ["refcard", cardcss="read c2-2 c3-2"]
@@ -52,7 +52,7 @@ class WhereTest extends RefcardTest with StatisticsChecker {
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 
-WHERE n.propertyName <> {value}
+WHERE n.property <> {value}
 
 RETURN n,m###
 

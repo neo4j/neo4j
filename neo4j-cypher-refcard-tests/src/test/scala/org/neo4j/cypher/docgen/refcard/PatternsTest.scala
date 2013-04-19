@@ -137,7 +137,7 @@ Any depth.
 START n=node(%A%)
 CREATE UNIQUE
 
-(n)-[:KNOWS]->(m {propertyName: {value}})
+(n)-[:KNOWS]->(m {property: {value}})
 
 RETURN m###
 
