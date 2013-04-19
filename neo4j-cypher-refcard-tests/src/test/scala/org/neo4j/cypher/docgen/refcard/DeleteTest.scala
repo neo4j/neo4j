@@ -53,7 +53,7 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.DELETE
-["refcard", cardcss="write c2-2"]
+["refcard", cardcss="write c2-2 c4-4"]
 ----
 ###assertion=delete
 START r = relationship(1)

@@ -51,7 +51,7 @@ class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("property" -> "Chris"))
 
   def text = """.Scalar Functions
-["refcard", cardcss="general c2-2 c3-2"]
+["refcard", cardcss="general c2-2 c3-2 c4-4"]
 ----
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)

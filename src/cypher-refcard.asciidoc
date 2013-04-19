@@ -21,7 +21,7 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 == Syntax ==
 
 .Read Query Structure 
-["refcard", cardcss="read c2-2 c3-2"]
+["refcard", cardcss="read c2-2 c3-2 c4-2"]
 ----
 START
 [MATCH]
@@ -40,7 +40,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
 .Write-Only Query Structure 
-["refcard", cardcss="write c2-2"]
+["refcard", cardcss="write c2-2 c4-4"]
 ----
 CREATE [UNIQUE]*
 [SET|DELETE|FOREACH]*
@@ -48,7 +48,7 @@ CREATE [UNIQUE]*
 ----
 
 .Read-Write Query Structure 
-["refcard", cardcss="write c2-2"]
+["refcard", cardcss="write c2-2 c4-4"]
 ----
 START
 [MATCH]
@@ -104,7 +104,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-func
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
 
 ++++
-<div class="col cardperformance c2-2"><div class="blk">
+<div class="col cardperformance c2-2 c4-3"><div class="blk">
 ++++
 
 [options="header", cols="a"]

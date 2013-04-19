@@ -14,7 +14,35 @@ html,body {
   float: left;
 }
 
-@media screen and (min-width: 1350px) {
+@media screen and (min-width: 1800px) {
+  html,body {
+    font-size: 0.975em;
+  }
+  .mid {
+    margin: 0 auto;
+    width: 1800px;
+  }
+  header img.neo4j-logo {
+    width: 282px;
+    float: left;
+    margin: 2em 0 0 3%;
+  }
+  header h1 {
+    float: right;
+    padding: 1.5em 3% 0 3%;
+  }
+  header {
+    height: 8em;
+  }
+  .col {
+    float: left;
+    width: 420px;
+    margin: 0 10px;
+    padding: 10px 0;
+  }
+}
+
+@media screen and (min-width: 1350px) and (max-width: 1799px) {
   html,body {
     font-size: 0.975em;
   }

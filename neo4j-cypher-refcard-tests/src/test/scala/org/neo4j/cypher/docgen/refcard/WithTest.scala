@@ -46,7 +46,7 @@ class WithTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.WITH
-["refcard", cardcss="read c2-2 c3-3"]
+["refcard", cardcss="read c2-2 c3-3 c4-3"]
 ----
 ###assertion=friends parameters=name
 //

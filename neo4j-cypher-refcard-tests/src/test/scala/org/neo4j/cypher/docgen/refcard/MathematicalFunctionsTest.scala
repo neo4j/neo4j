@@ -54,7 +54,7 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
     "ROOT" -> Map("property" -> 1))
 
   def text = """.Mathematical Functions
-["refcard", cardcss="general c2-2 c3-2"]
+["refcard", cardcss="general c2-2 c3-2 c4-4"]
 ----
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)

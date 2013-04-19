@@ -73,7 +73,7 @@ class StartTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """.START
-["refcard", cardcss="read c2-2 c3-2"]
+["refcard", cardcss="read c2-2 c3-2 c4-2"]
 ----
 ###assertion=all-nodes
 //

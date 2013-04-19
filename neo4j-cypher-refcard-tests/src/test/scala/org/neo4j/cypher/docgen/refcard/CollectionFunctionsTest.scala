@@ -56,7 +56,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("property" -> "Chris"))
 
   def text = """.Collection Functions
-["refcard", cardcss="general c3-3"]
+["refcard", cardcss="general c3-3 c4-3"]
 ----
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)

@@ -58,7 +58,7 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
     "ROOT" -> Map("property" -> 1))
 
   def text = """.String Functions
-["refcard", cardcss="general c2-2 c3-2"]
+["refcard", cardcss="general c2-2 c3-2 c4-2"]
 ----
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
