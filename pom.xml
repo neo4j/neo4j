@@ -21,7 +21,7 @@
     <docs.upstream>${project.build.directory}</docs.upstream>
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
     <docs-plugin.skip>true</docs-plugin.skip>
-    <doctools.version>10-SNAPSHOT</doctools.version>
+    <doctools.version>12</doctools.version>
     <docs.server>neo@static.neo4j.org</docs.server>
     <docs.rootpath>/var/www/docs.neo4j.org</docs.rootpath>
     <refcard.version>1.9</refcard.version>
