@@ -44,7 +44,7 @@ public interface TraversalPosition
      * 
      * @return The current node
      */
-    public Node currentNode();
+    Node currentNode();
 
     /**
      * Returns the previous node.
@@ -54,7 +54,7 @@ public interface TraversalPosition
      *
      * @return The previous node, or <code>null</code>
      */
-    public Node previousNode();
+    Node previousNode();
 
     /**
      * Return the last relationship traversed.
@@ -64,7 +64,7 @@ public interface TraversalPosition
      *
      * @return The last relationship traversed, or <code>null</code>.
      */
-    public Relationship lastRelationshipTraversed();
+    Relationship lastRelationshipTraversed();
 
     /**
      * Returns the current traversal depth.
@@ -80,14 +80,14 @@ public interface TraversalPosition
      *
      * @return The current traversal depth
      */
-    public int depth();
+    int depth();
 
     /**
      * Returns the number of nodes returned by the traverser so far.
      * 
      * @return The number of returned nodes.
      */
-    public int returnedNodesCount();
+    int returnedNodesCount();
 
     /**
      * Returns <code>true</code> if the current position is anywhere except on
@@ -115,7 +115,7 @@ public interface TraversalPosition
      * @return <code>true</code> if the this TraversalPosition is not at the
      *         start node, <code>false</code> if it is.
      */
-    public boolean notStartNode();
+    boolean notStartNode();
 
     /**
      * Returns <code>true</code> if the current position is the start node,
@@ -143,5 +143,5 @@ public interface TraversalPosition
      * @return <code>true</code> if the this TraversalPosition is at the start
      *         node, <code>false</code> if it is not.
      */
-    public boolean isStartNode();
+    boolean isStartNode();
 }

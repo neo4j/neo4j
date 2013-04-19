@@ -19,6 +19,33 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
+import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
+import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.ID;
+import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.OS_PROPERTY_PREFIX;
+import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.REVISION;
+import static org.neo4j.ext.udc.UdcConstants.SOURCE;
+import static org.neo4j.ext.udc.UdcConstants.TAGS;
+import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
+import static org.neo4j.ext.udc.UdcConstants.UNKNOWN_DIST;
+import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
+import static org.neo4j.ext.udc.UdcConstants.VERSION;
+
+import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Pattern;
+
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -29,16 +56,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-
-import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.*;
-import java.util.regex.Pattern;
-
-import static org.neo4j.ext.udc.UdcConstants.*;
 
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
@@ -145,7 +162,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             GraphDatabaseSetting.StringSetting setting = (GraphDatabaseSetting.StringSetting) haSettings.getField(
                     "cluster_name" ).get( null );
             String name = config.get( setting );
-            return name != null ? Math.abs( name.hashCode() ) : null;
+            return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
         }
         catch ( Exception e )
         {

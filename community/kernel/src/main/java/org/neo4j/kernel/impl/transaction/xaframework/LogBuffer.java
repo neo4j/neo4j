@@ -24,21 +24,21 @@ import java.nio.channels.FileChannel;
 
 public interface LogBuffer
 {
-    public LogBuffer put( byte b ) throws IOException;
+    LogBuffer put( byte b ) throws IOException;
 
-    public LogBuffer putShort( short b ) throws IOException;
+    LogBuffer putShort( short b ) throws IOException;
 
-    public LogBuffer putInt( int i ) throws IOException;
+    LogBuffer putInt( int i ) throws IOException;
 
-    public LogBuffer putLong( long l ) throws IOException;
+    LogBuffer putLong( long l ) throws IOException;
 
-    public LogBuffer putFloat( float f ) throws IOException;
+    LogBuffer putFloat( float f ) throws IOException;
 
-    public LogBuffer putDouble( double d ) throws IOException;
+    LogBuffer putDouble( double d ) throws IOException;
 
-    public LogBuffer put( byte[] bytes ) throws IOException;
+    LogBuffer put( byte[] bytes ) throws IOException;
 
-    public LogBuffer put( char[] chars ) throws IOException;
+    LogBuffer put( char[] chars ) throws IOException;
 
     /**
      * Makes sure the data added to this buffer is written out to the underlying
@@ -47,7 +47,7 @@ public interface LogBuffer
      *
      * @throws IOException if the data couldn't be written.
      */
-    public void writeOut() throws IOException;
+    void writeOut() throws IOException;
 
     /**
      * Makes sure the data added to this buffer is written out to the underlying
@@ -56,9 +56,9 @@ public interface LogBuffer
      * 
      * @throws IOException if the data couldn't be written.
      */
-    public void force() throws IOException;
+    void force() throws IOException;
 
-    public long getFileChannelPosition() throws IOException;
+    long getFileChannelPosition() throws IOException;
 
-    public FileChannel getFileChannel();
+    FileChannel getFileChannel();
 }

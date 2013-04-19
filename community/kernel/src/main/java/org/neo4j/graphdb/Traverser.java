@@ -89,7 +89,7 @@ public interface Traverser extends Iterable<Node>
      * the traversal should go next than a depth first traversal does. Depth
      * first traversals are thus more memory efficient.
      */
-    public static enum Order
+    static enum Order
     {
         /**
          * Sets a depth first traversal meaning the traverser will go as deep as
@@ -125,7 +125,7 @@ public interface Traverser extends Iterable<Node>
      *
      * @return The current traversal position
      */
-    public TraversalPosition currentPosition();
+    TraversalPosition currentPosition();
 
     /**
      * Returns a collection of all nodes for this traversal. It traverses
@@ -137,7 +137,7 @@ public interface Traverser extends Iterable<Node>
      *
      * @return A collection of all nodes for this this traversal.
      */
-    public Collection<Node> getAllNodes();
+    Collection<Node> getAllNodes();
 
     // Doc: especially remove() thing
     /**
@@ -153,5 +153,5 @@ public interface Traverser extends Iterable<Node>
     // Doc: does it create a new iterator or reuse the existing one? This is
     // very important! It must be re-use, how else would currentPosition()
     // make sense?
-    public Iterator<Node> iterator();
+    Iterator<Node> iterator();
 }

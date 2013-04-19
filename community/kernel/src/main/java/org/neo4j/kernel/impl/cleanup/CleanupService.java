@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
+import static java.lang.String.format;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
 
 public abstract class CleanupService extends LifecycleAdapter
 {
@@ -60,6 +62,6 @@ public abstract class CleanupService extends LifecycleAdapter
 
     void logLeakedReference( CleanupReference reference )
     {
-        logger.warn( String.format( "Resource not closed.", reference ) );
+        logger.warn( format( "Resource not closed: %s", reference.description() ) );
     }
 }

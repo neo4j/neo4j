@@ -78,14 +78,14 @@ public interface Relationship extends PropertyContainer
      *
      * @return the id of this node
      */
-    public long getId();
+     long getId();
 
     /**
      * Deletes this relationship. Invoking any methods on this relationship
      * after <code>delete()</code> has returned is invalid and will lead to
      * unspecified behavior.
      */
-    public void delete();
+     void delete();
 
     // Node accessors
     /**
@@ -96,7 +96,7 @@ public interface Relationship extends PropertyContainer
      *
      * @return the start node of this relationship
      */
-    public Node getStartNode();
+    Node getStartNode();
 
     /**
      * Returns the end node of this relationship. For a definition of how end
@@ -106,7 +106,7 @@ public interface Relationship extends PropertyContainer
      *
      * @return the end node of this relationship
      */
-    public Node getEndNode();
+    Node getEndNode();
 
     /**
      * A convenience operation that, given a node that is attached to this
@@ -129,7 +129,7 @@ public interface Relationship extends PropertyContainer
      * @throws RuntimeException if the given node is neither the start nor end
      *             node of this relationship
      */
-    public Node getOtherNode( Node node );
+    Node getOtherNode( Node node );
 
     /**
      * Returns the two nodes that are attached to this relationship. The first
@@ -138,7 +138,7 @@ public interface Relationship extends PropertyContainer
      *
      * @return the two nodes that are attached to this relationship
      */
-    public Node[] getNodes();
+    Node[] getNodes();
 
     /**
      * Returns the type of this relationship. A relationship's type is an
@@ -153,7 +153,7 @@ public interface Relationship extends PropertyContainer
      *
      * @return the type of this relationship
      */
-    public RelationshipType getType();
+    RelationshipType getType();
 
     /**
      * Indicates whether this relationship is of the type <code>type</code>.
@@ -166,5 +166,5 @@ public interface Relationship extends PropertyContainer
      *         <code>type</code>, <code>false</code> otherwise or if
      *         <code>null</code>
      */
-    public boolean isType( RelationshipType type );
+    boolean isType( RelationshipType type );
 }

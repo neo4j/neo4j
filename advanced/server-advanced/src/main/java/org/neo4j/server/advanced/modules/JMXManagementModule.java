@@ -34,9 +34,8 @@ import org.neo4j.server.modules.ServerModule;
 public class JMXManagementModule implements ServerModule {
 
 	private NeoServer server;
-	private ServerManagement serverManagement;
 
-	public JMXManagementModule(NeoServer server)
+    public JMXManagementModule(NeoServer server)
 	{
 		this.server = server;
 	}
@@ -44,7 +43,7 @@ public class JMXManagementModule implements ServerModule {
 	@Override
 	public void start(StringLogger logger) {
 		try {
-	    	serverManagement = new ServerManagement( server );
+            ServerManagement serverManagement = new ServerManagement( server );
 	        MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
 			beanServer.registerMBean( serverManagement, createObjectName());
 		} catch (Exception e) {
@@ -56,9 +55,10 @@ public class JMXManagementModule implements ServerModule {
 	public void stop() {
 		try 
 		{
-			MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
-			beanServer.unregisterMBean(createObjectName());
-		} catch (InstanceNotFoundException e) {
+            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+            beanServer.unregisterMBean(createObjectName());
+		} catch (InstanceNotFoundException e)
+        {
 			// ok
 		} catch (Exception e) {
 			throw new RuntimeException("Unable to shut down jmx management, see nested exception.", e);

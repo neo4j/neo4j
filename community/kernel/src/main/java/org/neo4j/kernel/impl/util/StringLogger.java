@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
@@ -40,14 +41,30 @@ public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final String DEFAULT_ENCODING = "UTF-8";
-    public static final StringLogger SYSTEM = new ActualStringLogger( new PrintWriter( System.out, true ) )
+    public static final StringLogger SYSTEM;
+
+    static
     {
-        @Override
-        public void close()
+        PrintWriter writer;
+
+        try
         {
-            // don't close System.out
+            writer = new PrintWriter( new OutputStreamWriter( System.out, DEFAULT_ENCODING ) );
         }
-    };
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        SYSTEM = new ActualStringLogger( writer )
+        {
+            @Override
+            public void close()
+            {
+                // don't close System.out
+            }
+        };
+    }
 
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
@@ -642,29 +659,6 @@ public abstract class StringLogger
         public void logLine( String line )
         {
             target.logLine( line );
-        }
-    }
-    
-    protected static class SystemLogger extends ActualStringLogger
-    {
-        private final boolean debugEnabled;
-
-        private SystemLogger( boolean debugEnabled )
-        {
-            super( new PrintWriter( System.out ) );
-            this.debugEnabled = debugEnabled;
-        }
-        
-        @Override
-        public boolean isDebugEnabled()
-        {
-            return debugEnabled;
-        }
-
-        @Override
-        public void close()
-        {
-            // don't close System.out
         }
     }
 }

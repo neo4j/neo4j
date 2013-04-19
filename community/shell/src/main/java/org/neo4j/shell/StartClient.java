@@ -19,10 +19,12 @@
  */
 package org.neo4j.shell;
 
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -332,7 +334,7 @@ public class StartClient
 
     private static void executeFile( ShellClient client, File file ) throws IOException, ShellException
     {
-        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        BufferedReader reader = newBufferedFileReader( file, UTF_8 );
         String line;
         while ( ( line = reader.readLine() ) != null )
         {

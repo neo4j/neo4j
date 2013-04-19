@@ -75,6 +75,14 @@ public class DijkstraPriorityQueueImpl<CostType> implements
             else if ( !node.equals( other.node ) ) return false;
             return true;
         }
+
+        @Override
+        public int hashCode()
+        {
+            int result = node != null ? node.hashCode() : 0;
+            result = 31 * result + (cost != null ? cost.hashCode() : 0);
+            return result;
+        }
     }
 
     Comparator<CostType> costComparator;

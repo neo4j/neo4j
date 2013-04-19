@@ -69,7 +69,7 @@ public interface Node extends PropertyContainer
      *
      * @return the id of this node
      */
-    public long getId();
+    long getId();
 
     /**
      * Deletes this node if it has no relationships attached to it. If
@@ -78,7 +78,7 @@ public interface Node extends PropertyContainer
      * Invoking any methods on this node after <code>delete()</code> has
      * returned is invalid and will lead to unspecified behavior.
      */
-    public void delete();
+    void delete();
 
     // Relationships
 
@@ -88,7 +88,7 @@ public interface Node extends PropertyContainer
      *
      * @return all relationships attached to this node
      */
-    public Iterable<Relationship> getRelationships();
+    Iterable<Relationship> getRelationships();
 
     /**
      * Returns <code>true</code> if there are any relationships attached to this
@@ -97,7 +97,7 @@ public interface Node extends PropertyContainer
      * @return <code>true</code> if there are any relationships attached to this
      *         node, <code>false</code> otherwise
      */
-    public boolean hasRelationship();
+    boolean hasRelationship();
 
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -109,7 +109,7 @@ public interface Node extends PropertyContainer
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    public Iterable<Relationship> getRelationships( RelationshipType... types );
+    Iterable<Relationship> getRelationships( RelationshipType... types );
     
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -122,7 +122,7 @@ public interface Node extends PropertyContainer
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
+    Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -134,7 +134,7 @@ public interface Node extends PropertyContainer
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( RelationshipType... types );
+    boolean hasRelationship( RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -147,7 +147,7 @@ public interface Node extends PropertyContainer
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( Direction direction, RelationshipType... types );
+    boolean hasRelationship( Direction direction, RelationshipType... types );
     
     /**
      * Returns all {@link Direction#OUTGOING OUTGOING} or
@@ -166,7 +166,7 @@ public interface Node extends PropertyContainer
      * @return all relationships with the given direction that are attached to
      *         this node
      */
-    public Iterable<Relationship> getRelationships( Direction dir );
+    Iterable<Relationship> getRelationships( Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships in the given
@@ -184,7 +184,7 @@ public interface Node extends PropertyContainer
      * @return <code>true</code> if there are any relationships in the given
      *         direction attached to this node, <code>false</code> otherwise
      */
-    public boolean hasRelationship( Direction dir );
+    boolean hasRelationship( Direction dir );
 
     /**
      * Returns all relationships with the given type and direction that are
@@ -201,7 +201,7 @@ public interface Node extends PropertyContainer
      * @return all relationships attached to this node that match the given type
      *         and direction
      */
-    public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
+    Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships of the given
@@ -219,7 +219,7 @@ public interface Node extends PropertyContainer
      *         relationship type and direction attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( RelationshipType type, Direction dir );
+    boolean hasRelationship( RelationshipType type, Direction dir );
 
     /**
      * Returns the only relationship of a given type and direction that is
@@ -257,7 +257,7 @@ public interface Node extends PropertyContainer
      * @throws RuntimeException if more than one relationship matches the given
      *             type and direction
      */
-    public Relationship getSingleRelationship( RelationshipType type, Direction dir );
+    Relationship getSingleRelationship( RelationshipType type, Direction dir );
 
     /**
      * Creates a relationship between this node and another node. The
@@ -272,7 +272,7 @@ public interface Node extends PropertyContainer
      * @param type the type of the new relationship
      * @return the newly created relationship
      */
-    public Relationship createRelationshipTo( Node otherNode, RelationshipType type );
+    Relationship createRelationshipTo( Node otherNode, RelationshipType type );
 
     /**
      * Instantiates a traverser that will start at this node and traverse
@@ -310,7 +310,7 @@ public interface Node extends PropertyContainer
      *             {@link TraversalDescription#traverse(Node...)}
      */
     @Deprecated
-    public Traverser traverse( Traverser.Order traversalOrder,
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             RelationshipType relationshipType, Direction direction );
@@ -355,7 +355,7 @@ public interface Node extends PropertyContainer
      * {@link TraversalDescription#traverse(Node...)}
      */
     @Deprecated
-    public Traverser traverse( Traverser.Order traversalOrder,
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             RelationshipType firstRelationshipType, Direction firstDirection,
@@ -410,7 +410,7 @@ public interface Node extends PropertyContainer
      * {@link TraversalDescription#traverse(Node...)}
      */
     @Deprecated
-    public Traverser traverse( Traverser.Order traversalOrder,
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections );
@@ -421,7 +421,7 @@ public interface Node extends PropertyContainer
      *
      * @param label the label to add to this node.
      */
-    public void addLabel( Label label );
+    void addLabel( Label label );
 
     /**
      * Removes a {@link Label} from this node. If this node doesn't have this label,
@@ -429,7 +429,7 @@ public interface Node extends PropertyContainer
      *
      * @param label the label to remove from this node.
      */
-    public void removeLabel( Label label );
+    void removeLabel( Label label );
 
     /**
      * Checks whether or not this node has the given label.
@@ -437,7 +437,7 @@ public interface Node extends PropertyContainer
      * @param label the label to check for.
      * @return {@code true} if this node has the given label, otherwise {@code false}.
      */
-    public boolean hasLabel( Label label );
+    boolean hasLabel( Label label );
     
     /**
      * Lists all labels attached to this node. If this node has no
@@ -445,5 +445,5 @@ public interface Node extends PropertyContainer
      * 
      * @return all labels attached to this node.
      */
-    public ResourceIterable<Label> getLabels();
+    ResourceIterable<Label> getLabels();
 }

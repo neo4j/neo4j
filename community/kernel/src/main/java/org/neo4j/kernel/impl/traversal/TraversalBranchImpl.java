@@ -262,7 +262,7 @@ class TraversalBranchImpl implements TraversalBranch
                         }
                         finally
                         {
-                            branch = branch.parent();
+                            branch = branch != null ? branch.parent() : null;
                         }
                     }
                 };

@@ -20,7 +20,9 @@
 package org.neo4j.helpers.progress;
 
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,7 +40,14 @@ public abstract class ProgressMonitorFactory
 
     public static ProgressMonitorFactory textual( final OutputStream out )
     {
-        return textual( new PrintWriter(out) );
+        try
+        {
+            return textual( new OutputStreamWriter( out, "UTF-8" ) );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public static ProgressMonitorFactory textual( final Writer out )

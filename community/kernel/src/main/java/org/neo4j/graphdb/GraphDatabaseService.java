@@ -54,7 +54,7 @@ public interface GraphDatabaseService
      * 
      * @return the created node.
      */
-    public Node createNode();
+    Node createNode();
 
     /**
      * Creates a new node and adds the provided labels to it.
@@ -62,7 +62,7 @@ public interface GraphDatabaseService
      * @param labels {@link Label labels} to add to the created node.
      * @return the created node.
      */
-    public Node createNode( Label... labels );
+    Node createNode( Label... labels );
 
     /**
      * Looks up a node by id. Please note: Neo4j reuses its internal ids when
@@ -73,7 +73,7 @@ public interface GraphDatabaseService
      * @return the node with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    public Node getNodeById( long id );
+    Node getNodeById( long id );
 
     /**
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
@@ -84,7 +84,7 @@ public interface GraphDatabaseService
      * @return the relationship with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    public Relationship getRelationshipById( long id );
+    Relationship getRelationshipById( long id );
 
     /**
      * Returns the reference node, which is a "starting point" in the node
@@ -97,7 +97,7 @@ public interface GraphDatabaseService
      *              canonical way of getting hold of entry points in the graph.
      */
     @Deprecated
-    public Node getReferenceNode();
+    Node getReferenceNode();
     
     /**
      * Returns all nodes in the graph.
@@ -106,7 +106,7 @@ public interface GraphDatabaseService
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     @Deprecated
-    public Iterable<Node> getAllNodes();
+    Iterable<Node> getAllNodes();
 
     /**
      * Returns all nodes having the label, and the wanted property value.
@@ -137,21 +137,21 @@ public interface GraphDatabaseService
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     @Deprecated
-    public Iterable<RelationshipType> getRelationshipTypes();
+    Iterable<RelationshipType> getRelationshipTypes();
 
     /**
      * Shuts down Neo4j. After this method has been invoked, it's invalid to
      * invoke any methods in the Neo4j API and all references to this instance
      * of GraphDatabaseService should be discarded.
      */
-    public void shutdown();
+    void shutdown();
 
     /**
      * Starts a new transaction and associates it with the current thread.
      * 
      * @return a new transaction instance
      */
-    public Transaction beginTx();
+    Transaction beginTx();
     
     /**
      * Registers {@code handler} as a handler for transaction events which
@@ -167,8 +167,7 @@ public interface GraphDatabaseService
      * in transaction lifecycles.
      * @return the handler passed in as the argument.
      */
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> handler );
+    <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler );
     
     /**
      * Unregisters {@code handler} from the list of transaction event handlers.
@@ -186,8 +185,7 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      * to calling this method.
      */
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> handler );
+    <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
     
     /**
      * Registers {@code handler} as a handler for kernel events which
@@ -200,8 +198,7 @@ public interface GraphDatabaseService
      * in the kernel lifecycle.
      * @return the handler passed in as the argument.
      */
-    public KernelEventHandler registerKernelEventHandler(
-            KernelEventHandler handler );
+    KernelEventHandler registerKernelEventHandler( KernelEventHandler handler );
 
     /**
      * Unregisters {@code handler} from the list of kernel event handlers.
@@ -217,8 +214,7 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      * to calling this method.
      */
-    public KernelEventHandler unregisterKernelEventHandler(
-            KernelEventHandler handler );
+    KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler );
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,
@@ -226,12 +222,12 @@ public interface GraphDatabaseService
      * 
      * @return the {@link Schema schema manager} for this database.
      */
-    public Schema schema();
+    Schema schema();
 
     /**
      * Returns the {@link IndexManager} paired with this graph database service
      * and is the entry point for managing indexes coupled with this database.
      * @return the {@link IndexManager} for this database.
      */
-    public IndexManager index();
+    IndexManager index();
 }

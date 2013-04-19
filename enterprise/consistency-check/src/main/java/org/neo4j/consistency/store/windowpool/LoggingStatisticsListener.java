@@ -21,10 +21,11 @@ package org.neo4j.consistency.store.windowpool;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class LoggingStatisticsListener implements MappingStatisticsListener
 {
@@ -32,7 +33,7 @@ public class LoggingStatisticsListener implements MappingStatisticsListener
 
     public LoggingStatisticsListener( File fileName ) throws FileNotFoundException
     {
-        this.logWriter = new PrintWriter( new FileOutputStream( fileName, true ) );
+        this.logWriter = FileUtils.newFilePrintWriter( fileName, Charsets.UTF_8 );
     }
 
     @Override

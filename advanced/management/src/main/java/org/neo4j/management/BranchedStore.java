@@ -26,7 +26,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "Information about the branched stores present in this HA cluster member" )
 public interface BranchedStore
 {
-    final String NAME = "Branched Store";
+    String NAME = "Branched Store";
 
     @Description( "A list of the branched stores" )
     BranchedStoreInfo[] getBranchedStores();

@@ -21,7 +21,7 @@ package org.neo4j.visualization.asciidoc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -125,7 +125,7 @@ public class AsciidocHelper
             GraphStyle graphStyle, String graphvizOptions )
     {
         GraphvizWriter writer = new GraphvizWriter( graphStyle );
-        OutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try
         {
             writer.emit( out, Walker.fullGraph( graph ) );
@@ -137,10 +137,17 @@ public class AsciidocHelper
 
         String safeTitle = title.replaceAll( ILLEGAL_STRINGS, "" );
 
-        return "." + title + "\n[\"dot\", \""
-               + ( safeTitle + "-" + identifier ).replace( " ", "-" )
-               + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
-               + "----\n" + out.toString() + "----\n";
+        try
+        {
+            return "." + title + "\n[\"dot\", \""
+                   + ( safeTitle + "-" + identifier ).replace( " ", "-" )
+                   + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
+                   + "----\n" + out.toString("UTF-8") + "----\n";
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private static void removeReferenceNode( GraphDatabaseService graph )

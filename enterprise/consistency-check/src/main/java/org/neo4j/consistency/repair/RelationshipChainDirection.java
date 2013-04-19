@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.repair;
 
+import static java.lang.String.format;
+
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public enum RelationshipChainDirection
@@ -45,6 +47,6 @@ public enum RelationshipChainDirection
         {
             return second;
         }
-        throw new IllegalArgumentException( String.format( "%d does not reference node %d", rel, nodeId ) );
+        throw new IllegalArgumentException( format( "%s does not reference node %d", rel, nodeId ) );
     }
 }

@@ -73,20 +73,20 @@ public interface Transaction
      * {@link #success()} is invoked afterwards -- the transaction will still be 
      * rolled back.
      */
-    public void failure();
+    void failure();
 
     /**
      * Marks this transaction as successful, which means that it will be
      * committed upon invocation of {@link #finish()} unless {@link #failure()}
      * has or will be invoked before then.
      */
-    public void success();
+    void success();
 
     /**
      * Commits or marks this transaction for rollback, depending on whether
      * {@link #success()} or {@link #failure()} has been previously invoked.
      */
-    public void finish();
+    void finish();
     
     /**
      * Acquires a write lock for {@code entity} for this transaction.
@@ -101,7 +101,7 @@ public interface Transaction
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    public Lock acquireWriteLock( PropertyContainer entity );
+    Lock acquireWriteLock( PropertyContainer entity );
     
     /**
      * Acquires a read lock for {@code entity} for this transaction.
@@ -116,5 +116,5 @@ public interface Transaction
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    public Lock acquireReadLock( PropertyContainer entity );
+    Lock acquireReadLock( PropertyContainer entity );
 }

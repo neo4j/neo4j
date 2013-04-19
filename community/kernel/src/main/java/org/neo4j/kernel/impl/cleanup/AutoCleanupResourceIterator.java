@@ -77,4 +77,10 @@ class AutoCleanupResourceIterator<T> implements ResourceIterator<T>
     {
         iterator.remove();
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "AutoCleanupResourceIterator(%s)", iterator );
+    }
 }

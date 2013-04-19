@@ -47,7 +47,14 @@ public class InternalJettyServletRequest extends Request
 
         public Input( String data )
         {
-            bytes = data.getBytes();
+            try
+            {
+                bytes = data.getBytes("UTF-8");
+            }
+            catch ( UnsupportedEncodingException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         public int read() throws IOException

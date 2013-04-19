@@ -40,7 +40,7 @@ public class SystemOutput implements Output
             out = new PrintWriter(new OutputStreamWriter(System.out,"UTF-8"));
         } catch (UnsupportedEncodingException e) {
             System.err.println("Unsupported encoding UTF-8, using "+Charset.defaultCharset()+", error: "+e.getMessage());
-            out = new PrintWriter(System.out);
+            out = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
         }
     }
 

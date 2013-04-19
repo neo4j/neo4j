@@ -64,7 +64,7 @@ public class HaLoggingIT extends AbstractClusterTest
     private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
     {
         int count = 0;
-        for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ) ) )
+        for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ), "UTF-8" ) )
             if ( line.endsWith( toLookFor ) )
                 count++;
         return count;

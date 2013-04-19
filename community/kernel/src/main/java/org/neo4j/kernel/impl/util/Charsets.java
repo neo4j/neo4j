@@ -17,34 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
+import java.nio.charset.Charset;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
-/**
- * Common interface for the node,relationship,property and relationship type
- * stores.
- */
-public interface Store
+public class Charsets
 {
-    /**
-     * Returns the id of next free record.
-     *
-     * @return The id of the next free record
-     * @throws IOException
-     *             If unable to
-     */
-    long nextId();
 
-    String getTypeDescriptor();
+    public static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
-    long getHighestPossibleIdInUse();
-
-    long getNumberOfIdsInUse();
-
-    WindowPoolStats getWindowPoolStats();
-
-    void logIdUsage( StringLogger.LineLogger logger );
 }

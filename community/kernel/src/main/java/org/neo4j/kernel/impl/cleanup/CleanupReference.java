@@ -26,14 +26,22 @@ import java.lang.ref.PhantomReference;
 class CleanupReference extends PhantomReference<Object>
 {
     private final ReferenceQueueBasedCleanupService cleanupService;
+    private final String referenceDescription;
+
     private Closeable handler;
     CleanupReference prev, next;
 
     CleanupReference( Object referent, ReferenceQueueBasedCleanupService cleanupService, Closeable handler )
     {
         super( referent, cleanupService.collectedReferences.queue );
+        this.referenceDescription = referent.toString();
         this.cleanupService = cleanupService;
         this.handler = handler;
+    }
+
+    public String description()
+    {
+        return referenceDescription;
     }
 
     void cleanupNow( boolean explicit ) throws IOException

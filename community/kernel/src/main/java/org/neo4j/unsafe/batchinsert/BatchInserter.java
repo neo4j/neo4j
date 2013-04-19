@@ -51,7 +51,7 @@ public interface BatchInserter
      *
      * @return The id of the created node.
      */
-    public long createNode( Map<String,Object> properties, Label... labels );
+    long createNode( Map<String,Object> properties, Label... labels );
 
     /**
      * Creates a node with supplied id and properties. If a node with the given
@@ -62,7 +62,7 @@ public interface BatchInserter
      * properties should be added.
      * @param labels a list of labels to initially create the node with.
      */
-    public void createNode( long id, Map<String,Object> properties, Label... labels );
+    void createNode( long id, Map<String,Object> properties, Label... labels );
     
     /**
      * Checks if a node with the given id exists.
@@ -70,7 +70,7 @@ public interface BatchInserter
      * @param nodeId the id of the node.
      * @return <code>true</code> if the node exists.
      */
-    public boolean nodeExists( long nodeId );
+    boolean nodeExists( long nodeId );
 
     /**
      * Sets the properties of a node. This method will remove any properties
@@ -84,7 +84,7 @@ public interface BatchInserter
      * @param properties map containing the properties or <code>null</code> to
      * clear all properties.
      */
-    public void setNodeProperties( long node, Map<String,Object> properties );
+    void setNodeProperties( long node, Map<String,Object> properties );
 
     /**
      * Returns true iff the node with id {@code node} has a property with name
@@ -94,7 +94,7 @@ public interface BatchInserter
      * @param propertyName The property name to check for
      * @return True if the node has the named property - false otherwise.
      */
-    public boolean nodeHasProperty( long node, String propertyName );
+    boolean nodeHasProperty( long node, String propertyName );
     
     /**
      * Replaces any existing labels for the given node with the supplied list of labels.
@@ -102,20 +102,20 @@ public interface BatchInserter
      * @param node the node to set labels for.
      * @param labels the labels to set for the node.
      */
-    public void setNodeLabels( long node, Label... labels );
+    void setNodeLabels( long node, Label... labels );
     
     /**
      * @param node the node to get labels for.
      * @return all labels for the given node.
      */
-    public Iterable<Label> getNodeLabels( long node );
+    Iterable<Label> getNodeLabels( long node );
     
     /**
      * @param node the node to check.
      * @param label the label to check.
      * @return {@code true} if a node has a given label, otherwise {@code false}.
      */
-    public boolean nodeHasLabel( long node, Label label );
+    boolean nodeHasLabel( long node, Label label );
 
     /**
      * Returns true iff the relationship with id {@code relationship} has a
@@ -126,7 +126,7 @@ public interface BatchInserter
      * @return True if the relationship has the named property - false
      *         otherwise.
      */
-    public boolean relationshipHasProperty( long relationship,
+    boolean relationshipHasProperty( long relationship,
             String propertyName );
 
     /**
@@ -138,7 +138,7 @@ public interface BatchInserter
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
      */
-    public void setNodeProperty( long node, String propertyName,
+    void setNodeProperty( long node, String propertyName,
             Object propertyValue );
 
     /**
@@ -151,7 +151,7 @@ public interface BatchInserter
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
      */
-    public void setRelationshipProperty( long relationship,
+    void setRelationshipProperty( long relationship,
             String propertyName, Object propertyValue );
     /**
      * Returns a map containing all the properties of this node.
@@ -160,7 +160,7 @@ public interface BatchInserter
      *
      * @return map containing this node's properties.
      */
-    public Map<String,Object> getNodeProperties( long nodeId );
+    Map<String,Object> getNodeProperties( long nodeId );
 
     /**
      * Returns an iterable over all the relationship ids connected to node with
@@ -169,7 +169,7 @@ public interface BatchInserter
      * @param nodeId the id of the node.
      * @return iterable over the relationship ids connected to the node.
      */
-    public Iterable<Long> getRelationshipIds( long nodeId );
+    Iterable<Long> getRelationshipIds( long nodeId );
 
     /**
      * Returns an iterable of {@link BatchRelationship relationships} connected
@@ -178,7 +178,7 @@ public interface BatchInserter
      * @param nodeId the id of the node.
      * @return iterable over the relationships connected to the node.
      */
-    public Iterable<BatchRelationship> getRelationships( long nodeId );
+    Iterable<BatchRelationship> getRelationships( long nodeId );
 
     /**
      * Creates a relationship between two nodes of a specific type.
@@ -190,7 +190,7 @@ public interface BatchInserter
      * properties should be added.
      * @return the id of the created relationship.
      */
-    public long createRelationship( long node1, long node2, RelationshipType
+    long createRelationship( long node1, long node2, RelationshipType
         type, Map<String,Object> properties );
 
     /**
@@ -199,7 +199,7 @@ public interface BatchInserter
      * @param relId the relationship id.
      * @return a simple relationship wrapper for the relationship.
      */
-    public BatchRelationship getRelationshipById( long relId );
+    BatchRelationship getRelationshipById( long relId );
 
     /**
      * Sets the properties of a relationship. This method will remove any
@@ -215,7 +215,7 @@ public interface BatchInserter
      * @param properties map containing the properties or <code>null</code> to
      * clear all properties.
      */
-    public void setRelationshipProperties( long rel,
+    void setRelationshipProperties( long rel,
         Map<String,Object> properties );
 
     /**
@@ -224,7 +224,7 @@ public interface BatchInserter
      * @param relId the id of the relationship.
      * @return map containing the relationship's properties.
      */
-    public Map<String,Object> getRelationshipProperties( long relId );
+    Map<String,Object> getRelationshipProperties( long relId );
 
     /**
      * Removes the property named {@code property} from the node with id
@@ -233,7 +233,7 @@ public interface BatchInserter
      * @param node The id of the node from which to remove the property
      * @param property The name of the property
      */
-    public void removeNodeProperty( long node, String property );
+    void removeNodeProperty( long node, String property );
 
     /**
      * Removes the property named {@code property} from the relationship with id
@@ -243,7 +243,7 @@ public interface BatchInserter
      *            property
      * @param property The name of the property
      */
-    public void removeRelationshipProperty( long relationship, String property );
+    void removeRelationshipProperty( long relationship, String property );
 
     /**
      * Returns an {@link IndexCreator} where details about the index to create can be
@@ -261,7 +261,7 @@ public interface BatchInserter
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */
-    public IndexCreator createDeferredSchemaIndex( Label label );
+    IndexCreator createDeferredSchemaIndex( Label label );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only
@@ -276,14 +276,14 @@ public interface BatchInserter
      * After this method has been invoked any other method call to this batch
      * inserter is illegal.
      */
-    public void shutdown();
+    void shutdown();
 
     /**
      * Returns the path to this Neo4j store.
      *
      * @return the path to this Neo4j store.
      */
-    public String getStoreDir();
+    String getStoreDir();
 
     /**
      * Returns the reference node id or <code>-1</code> if it doesn't exist.
@@ -293,5 +293,5 @@ public interface BatchInserter
      *              canonical way of getting hold of entry points in the graph.
      */
     @Deprecated
-    public long getReferenceNode();
+    long getReferenceNode();
 }

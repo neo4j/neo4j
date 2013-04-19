@@ -42,7 +42,7 @@ public interface PropertyContainer
      * 
      * @return The GraphDatabase this Node or Relationship belongs to.
      */
-    public GraphDatabaseService getGraphDatabase();
+    GraphDatabaseService getGraphDatabase();
     
     /**
      * Returns <code>true</code> if this property container has a property
@@ -53,7 +53,7 @@ public interface PropertyContainer
      * @return <code>true</code> if this property container has a property
      *         accessible through the given key, <code>false</code> otherwise
      */
-    public boolean hasProperty( String key );
+    boolean hasProperty( String key );
 
     /**
      * Returns the property value associated with the given key. The value is of
@@ -71,7 +71,7 @@ public interface PropertyContainer
      * @throws NotFoundException if there's no property associated with
      *             <code>key</code>
      */
-    public Object getProperty( String key );
+    Object getProperty( String key );
 
     /**
      * Returns the property value associated with the given key, or a default
@@ -83,7 +83,7 @@ public interface PropertyContainer
      *            property value was associated with the given key
      * @return the property value associated with the given key
      */
-    public Object getProperty( String key, Object defaultValue );
+    Object getProperty( String key, Object defaultValue );
 
     /**
      * Sets the property value for the given key to <code>value</code>. The
@@ -107,7 +107,7 @@ public interface PropertyContainer
      * @throws IllegalArgumentException if <code>value</code> is of an
      *             unsupported type (including <code>null</code>)
      */
-    public void setProperty( String key, Object value );
+    void setProperty( String key, Object value );
 
     /**
      * Removes the property associated with the given key and returns the old
@@ -117,7 +117,7 @@ public interface PropertyContainer
      * @param key the property key
      * @return the property value that used to be associated with the given key
      */
-    public Object removeProperty( String key );
+    Object removeProperty( String key );
 
     /**
      * Returns all existing property keys, or an empty iterable if this property
@@ -126,7 +126,7 @@ public interface PropertyContainer
      * @return all property keys on this property container
      */
     // TODO: figure out concurrency semantics
-    public Iterable<String> getPropertyKeys();
+    Iterable<String> getPropertyKeys();
 
     /**
      * Returns all currently valid property values, or an empty iterable if this
@@ -144,5 +144,5 @@ public interface PropertyContainer
      */
     // TODO: figure out concurrency semantics
     @Deprecated
-    public Iterable<Object> getPropertyValues();
+    Iterable<Object> getPropertyValues();
 }

@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
@@ -215,7 +216,7 @@ public class InternalJettyServletResponse extends Response
 
     public PrintWriter getWriter() throws IOException
     {
-        return new PrintWriter( output );
+        return new PrintWriter( new OutputStreamWriter( output, "UTF-8") );
     }
 
     public void setCharacterEncoding( String encoding )

@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.Map;
@@ -103,7 +104,7 @@ public class StreamingBatchOperations extends BatchOperations
 
         @Override
         public PrintWriter getWriter() throws IOException {
-            return new PrintWriter(output);
+            return new PrintWriter( new OutputStreamWriter( output, "UTF-8") );
         }
     }
 }

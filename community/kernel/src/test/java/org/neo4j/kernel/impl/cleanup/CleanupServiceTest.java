@@ -122,7 +122,7 @@ public class CleanupServiceTest
 
         // THEN
         verify( handler, times( 1 ) ).close();
-        verify(logger).warn("Resource not closed.");
+        verify(logger).warn("Resource not closed: AutoCleanupResourceIterator(StubIterator())");
     }
 
     @Test
@@ -238,6 +238,12 @@ public class CleanupServiceTest
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "StubIterator()";
         }
     }
 }

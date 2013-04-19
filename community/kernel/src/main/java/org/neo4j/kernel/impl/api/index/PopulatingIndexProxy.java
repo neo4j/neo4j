@@ -86,7 +86,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
-        return getProviderDescriptor();
+        return providerDescriptor;
     }
 
     @Override

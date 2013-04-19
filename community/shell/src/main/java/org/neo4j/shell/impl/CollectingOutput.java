@@ -34,11 +34,14 @@ import org.neo4j.shell.Output;
 public class CollectingOutput extends UnicastRemoteObject implements Output, Serializable, Iterable<String>
 {
     private static final long serialVersionUID = 1L;
+    private static final String lineSeparator = System.getProperty( "line.separator" );
+
+    private transient StringWriter stringWriter = new StringWriter();
+    private transient PrintWriter allLinesAsOne = new PrintWriter( stringWriter );
+
     private final List<String> lines = new ArrayList<String>();
+
     private String ongoingLine = "";
-    private StringWriter stringWriter = new StringWriter();
-    private PrintWriter allLinesAsOne = new PrintWriter( stringWriter );
-    private final String lineSeparator = System.getProperty( "line.separator" );
 
     public CollectingOutput() throws RemoteException
     {

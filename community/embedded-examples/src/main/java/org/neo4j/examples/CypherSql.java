@@ -248,10 +248,9 @@ public class CypherSql
             String targetMatchAttribute, Object[][] relationships,
             String relationshipType ) throws SQLException
     {
-        String targetAttribute = sourceEntity.toLowerCase() + "_id";
         PreparedStatement prep = prepareSimpleRelationshipStatement(
                 sourceEntity, sourceMatchAttribute, targetEntity,
-                targetMatchAttribute, targetAttribute );
+                targetMatchAttribute );
         insertIntoRdbms( prep, relationships );
         createRelationshipsInGraphdb( sourceEntity, sourceMatchAttribute,
                 targetEntity, targetMatchAttribute, relationships,
@@ -418,8 +417,7 @@ public class CypherSql
 
     private PreparedStatement prepareSimpleRelationshipStatement(
             String sourceEntity, String sourceMatchAttribute,
-            String targetEntity, String targetMatchAttribute,
-            String targetAttribute ) throws SQLException
+            String targetEntity, String targetMatchAttribute) throws SQLException
     {
         StringBuilder sql = new StringBuilder( 100 );
         sql.append( "UPDATE " )

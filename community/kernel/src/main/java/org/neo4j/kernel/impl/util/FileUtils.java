@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -344,5 +349,15 @@ public class FileUtils
         {
             out.close();
         }
+    }
+
+    public static BufferedReader newBufferedFileReader( File file, Charset charset ) throws FileNotFoundException
+    {
+        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset) );
+    }
+
+    public static PrintWriter newFilePrintWriter( File file, Charset charset ) throws FileNotFoundException
+    {
+        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset) );
     }
 }

@@ -52,7 +52,7 @@ public interface DependencyResolver
     /**
      * Responsible for making the choice between available candidates. 
      */
-    public interface SelectionStrategy<T>
+    interface SelectionStrategy<T>
     {
         /**
          * Given a set of candidates, select an appropriate one. Even if there are candidates this
@@ -71,7 +71,7 @@ public interface DependencyResolver
      * Adapter for {@link DependencyResolver} which will select the first available candidate by default
      * for {@link #resolveDependency(Class)}.
      */
-    public abstract static class Adapter implements DependencyResolver
+    abstract static class Adapter implements DependencyResolver
     {
         @SuppressWarnings( "rawtypes" )
         private static final SelectionStrategy FIRST = new SelectionStrategy()

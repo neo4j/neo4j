@@ -28,15 +28,15 @@ public interface Cache<E extends EntityWithSize>
      *
      * @return name of the cache
      */
-    public String getName();
+    String getName();
 
     /**
      * Adds <CODE>element</CODE> to cache.
      *
-     * @param element
+     * @param value
      *            the element to cache
      */
-    public void put( E value );
+    void put( E value );
 
     /**
      * Removes the element for <CODE>key</CODE> from cache and returns it. If
@@ -48,7 +48,7 @@ public interface Cache<E extends EntityWithSize>
      * @return the removed element or <CODE>null</CODE> if element didn't
      *         exist
      */
-    public E remove( long key );
+    E remove( long key );
 
     /**
      * Returns the cached element for <CODE>key</CODE>. If the element isn't
@@ -58,27 +58,27 @@ public interface Cache<E extends EntityWithSize>
      *            the key for the element
      * @return the cached element or <CODE>null</CODE> if element didn't exist
      */
-    public E get( long key );
+    E get( long key );
 
     /**
      * Removing all cached elements.
      */
-    public void clear();
+    void clear();
 
     /**
      * Returns the cache size. This number means different depending on cache type.
      *
      * @return cache size
      */
-    public long size();
+    long size();
 
-    public void putAll( Collection<E> values );
+    void putAll( Collection<E> values );
 
-    public long hitCount();
+    long hitCount();
 
-    public long missCount();
+    long missCount();
 
-    public void updateSize( E entity, int newSize );
+    void updateSize( E entity, int newSize );
     
-    public void printStatistics();
+    void printStatistics();
 }

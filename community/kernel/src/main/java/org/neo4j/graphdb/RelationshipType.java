@@ -94,5 +94,5 @@ public interface RelationshipType
      * 
      * @return the name of the relationship type
      */
-    public String name();
+    String name();
 }

@@ -658,7 +658,7 @@ public abstract class IteratorUtil
      * @param file the file to get the lines for.
      * @return an {@link Iterable} for iterating over the lines of a text file.
      */
-    public static ClosableIterable<String> asIterable( final File file )
+    public static ClosableIterable<String> asIterable( final File file, final String encoding )
     {
         return new ClosableIterable<String>()
         {
@@ -670,7 +670,7 @@ public abstract class IteratorUtil
                 try
                 {
                     if ( mostRecentIterator != null ) mostRecentIterator.close();
-                    mostRecentIterator = asIterator( file );
+                    mostRecentIterator = asIterator( file, encoding );
                     return mostRecentIterator;
                 }
                 catch ( IOException e )
@@ -694,9 +694,9 @@ public abstract class IteratorUtil
      * @param file the file to get the lines for.
      * @return an {@link Iterator} for iterating over the lines of a text file.
      */
-    public static ClosableIterator<String> asIterator( File file ) throws IOException
+    public static ClosableIterator<String> asIterator( File file, String encoding ) throws IOException
     {
-        return new LinesOfFileIterator( file );
+        return new LinesOfFileIterator( file, encoding );
     }
     
     public static <T> void streamToFile( Iterable<T> iterable, File file, String encoding ) throws IOException

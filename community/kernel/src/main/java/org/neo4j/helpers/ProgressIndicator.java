@@ -60,7 +60,7 @@ public interface ProgressIndicator
      * 
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
      */
-    public abstract class SimpleProgress implements ProgressIndicator
+    abstract class SimpleProgress implements ProgressIndicator
     {
         private final long total;
         private int lastPermille = 0;
@@ -99,7 +99,7 @@ public interface ProgressIndicator
 
         long currentProgress( boolean incremental, long value )
         {
-            return currentProgress = ( incremental ? ( currentProgress + value ) : value );
+            return currentProgress = incremental ? currentProgress + value : value;
         }
 
         @Override
@@ -148,7 +148,7 @@ public interface ProgressIndicator
      * 
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
      */
-    public abstract class MultiProgress extends SimpleProgress
+    abstract class MultiProgress extends SimpleProgress
     {
         private long base = 0;
 
@@ -215,7 +215,7 @@ public interface ProgressIndicator
      * 
      * @author Mattias Persson
      */
-    public class UnknownEndProgress implements ProgressIndicator
+    class UnknownEndProgress implements ProgressIndicator
     {
         private final long stepSize;
         private long lastAbsolutePosition = -1;
