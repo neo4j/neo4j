@@ -1,5 +1,9 @@
-2.0.M01
--------
+2.0.0-M02
+---------
+o REST transaction support
+
+2.0.0-M01
+---------
 o Added support for labels
 o Added support for the new label-based indexes
 

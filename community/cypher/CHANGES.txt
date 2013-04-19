@@ -1,5 +1,10 @@
-2.0.M01
--------
+2.0.0-M02
+---------
+o Added MERGE clause
+o MATCH now supports single-node patterns
+
+2.0.0-M01
+---------
 o BREAKING CHANGE: It is no longer possible to use parameterized identifiers in START
 o Added the possibility to set labels on and remove labels from nodes
 o Now uses the labels specified in MATCH while matching

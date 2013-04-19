@@ -1,7 +1,22 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-2.0.M01
--------
+2.0.0-M02
+---------
+o In server, added REST transaction support
+o In cypher, added MERGE clause
+o In cypher, MATCH now supports single-node patterns
+o In shell, support for listing indexes and their state
+o Support for labels in the org.neo4j.unsafe.batchinsert APIs.
+o BREAKING CHANGE: Replaced protected fields from org.neo4j.graphdb.factory.GraphDatabaseFactory with a single
+  org.neo4j.graphdb.factory.GraphDatabaseFactoryState instance to avoid race conditions when creating multiple,
+  lazily instantiated builders
+o BREAKING CHANGE: org.neo4j.graphdb.index.BatchInserterIndex and org.neo4j.graphdb.index.BatchInserterIndexProvider
+  has been removed in favor of the same interfaces available in org.neo4j.unsafe.batchinsert
+o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary compatible with 1.9 due to some methods
+  now taking a varargs array of labels as last argument.  Please recompile any code that depends on the BatchInserter.
+
+2.0.0-M01
+---------
 o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements

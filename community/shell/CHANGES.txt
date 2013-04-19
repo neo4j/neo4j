@@ -1,5 +1,9 @@
-2.0.M01
--------
+2.0.0-M02
+---------
+o Support for listing indexes and their state
+
+2.0.0-M01
+---------
 o no welcome message with command mode (-c), also configurable with -Dquiet=true
 o shell variables passed to cypher queries as parameters
 o allow json for shell variable values, maps, arrays, etc
