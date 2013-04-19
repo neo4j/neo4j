@@ -57,6 +57,7 @@ import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
+import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
@@ -205,7 +206,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade createTransactionalActions()
     {
         final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
-        final RealClock clock = new RealClock();
+        final Clock clock = new RealClock();
 
         transactionRegistry = new TransactionHandleRegistry(clock, logging.getMessagesLog(TransactionRegistry.class));
 
@@ -221,7 +222,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                new ExecutionEngine( database.getGraph() ),
+                new ExecutionEngine( database.getGraph(), logging.getMessagesLog( ExecutionEngine.class ) ),
                 transactionRegistry,
                 logging.getMessagesLog( TransactionFacade.class ));
     }

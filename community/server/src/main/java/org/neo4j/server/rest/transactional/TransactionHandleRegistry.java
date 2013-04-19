@@ -125,8 +125,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
         }
 
-        SuspendedTransaction transaction = new SuspendedTransaction( transactionHandle );
-        if ( !registry.replace( id, marker, transaction ) )
+        TransactionMarker suspendedTx = new SuspendedTransaction( transactionHandle );
+        if ( !registry.replace( id, marker, suspendedTx ) )
         {
             throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
         }
@@ -213,7 +213,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
         {
             TransactionMarker marker = entry.getValue();
-            if ( predicate.accept( marker ) && marker.isSuspended() )
+            if (marker.isSuspended() && predicate.accept(marker))
             {
                 candidateTransactionIdsToRollback.add( entry.getKey() );
             }

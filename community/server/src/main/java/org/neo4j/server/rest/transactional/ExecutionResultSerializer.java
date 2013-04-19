@@ -180,7 +180,7 @@ public class ExecutionResultSerializer
 
     private State currentState = State.EMPTY;
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
+    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() );
     private final JsonGenerator out;
     private final StringLogger log;
 

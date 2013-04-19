@@ -55,10 +55,10 @@ public class TransactionFacade
     private final TransactionRegistry registry;
     private final StringLogger log;
 
-    public TransactionFacade( TransitionalPeriodTransactionMessContainer mess, ExecutionEngine engine,
+    public TransactionFacade( KernelAPI kernel, ExecutionEngine engine,
                               TransactionRegistry registry, StringLogger log )
     {
-        this.kernel = mess;
+        this.kernel = kernel;
         this.engine = engine;
         this.registry = registry;
         this.log = log;
