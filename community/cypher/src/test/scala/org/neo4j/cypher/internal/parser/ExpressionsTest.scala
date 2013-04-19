@@ -95,6 +95,15 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
     parsing("collection[1..2]") shouldGive
       SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2)))
+
+    parsing("[1,2,3,4][2]") shouldGive
+      ElementFromCollection(collection, Literal(2))
+
+    parsing("[[1,2]][0][6]") shouldGive
+      ElementFromCollection(ElementFromCollection(Collection(Collection(Literal(1), Literal(2))), Literal(0)), Literal(6))
+
+    parsing("collection[1..2][0]") shouldGive
+      ElementFromCollection(SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2))), Literal(0))
   }
 
   def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
