@@ -42,7 +42,7 @@ public class GraphStyle
 	 * @param edgeStyle
 	 *            the relationship style to use.
 	 */
-    protected GraphStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
+    public GraphStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
 	{
         this.configuration = null;
 		this.nodeStyle = nodeStyle;
