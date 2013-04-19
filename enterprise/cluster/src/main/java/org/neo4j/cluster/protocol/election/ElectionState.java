@@ -78,6 +78,11 @@ public enum ElectionState
                     {
                         case demote:
                         {
+                            if ( !context.electionOk() )
+                            {
+                                break;
+                            }
+
                             InstanceId demoteNode = message.getPayload();
                             // TODO  Could perhaps be done better?
                             context.nodeFailed( demoteNode );
@@ -129,6 +134,10 @@ public enum ElectionState
 
                         case performRoleElections:
                         {
+                            if ( !context.electionOk() )
+                            {
+                                break;
+                            }
                             if ( context.getClusterContext().isInCluster() )
                             {
                                 // Only the first alive server should try elections. Everyone else waits

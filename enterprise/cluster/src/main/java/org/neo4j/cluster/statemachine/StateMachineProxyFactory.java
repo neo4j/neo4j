@@ -34,7 +34,6 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
-import org.slf4j.LoggerFactory;
 
 /**
  * Used to generate dynamic proxies whose methods are backed by a {@link StateMachine}. Method
@@ -212,7 +211,6 @@ public class StateMachineProxyFactory
             {
                 this.response = response;
                 this.notifyAll();
-                LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Notify all:"+conversationId );
                 return true;
             }
             else

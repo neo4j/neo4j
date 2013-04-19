@@ -299,6 +299,11 @@ public class ElectionContext
         }, roles ) );
     }
 
+    public boolean electionOk()
+    {
+        return heartbeatContext.getFailed().size() <= clusterContext.getConfiguration().getMembers().size() /2;
+    }
+
     private static class Vote
             implements Comparable<Vote>
     {
