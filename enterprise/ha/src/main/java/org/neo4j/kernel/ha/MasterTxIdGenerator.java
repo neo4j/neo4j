@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 
 import javax.transaction.xa.XAException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
@@ -96,7 +97,7 @@ public class MasterTxIdGenerator implements TxIdGenerator
                     if ( !committer.isDone() )
                         continue;
 
-                    if ( isSuccessfull( committer ) )
+                    if ( isSuccessful( committer ) )
                         // This committer was successful, increment counter
                         successfulReplications++;
                     else if ( slaves.hasNext() )
@@ -149,7 +150,7 @@ public class MasterTxIdGenerator implements TxIdGenerator
         } );
     }
 
-    private boolean isSuccessfull( Future<Void> committer )
+    private boolean isSuccessful( Future<Void> committer )
     {
         try
         {
@@ -162,6 +163,8 @@ public class MasterTxIdGenerator implements TxIdGenerator
         }
         catch ( ExecutionException e )
         {
+            log.error( "Slave commit threw " + (e.getCause() instanceof ComException ? "communication" : "" )
+                    + " exception", e );
             return false;
         }
         catch ( CancellationException e )

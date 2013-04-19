@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.junit.Test;
+import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
@@ -173,12 +174,12 @@ public class TestMasterCommittingAtSlave
     
     private void assertNoFailureLogs()
     {
-        assertFalse( "Errors:" + log.errors.toString(), log.anyMessageLogged );
+        assertFalse( "Errors:" + log.errors.toString(), log.unexpectedExceptionLogged );
     }
     
     private void assertFailureLogs()
     {
-        assertTrue( log.anyMessageLogged );
+        assertTrue( log.unexpectedExceptionLogged );
     }
     
     private void assertCalls( FakeSlave slave, long... txs )
@@ -322,7 +323,7 @@ public class TestMasterCommittingAtSlave
         public Response<Void> pullUpdates( String resource, long txId )
         {
             if ( failing )
-                throw new RuntimeException( "Told to fail" );
+                throw new ComException( "Told to fail" );
             
             calledWithTxId.add( txId );
             return new Response<Void>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
@@ -353,7 +354,7 @@ public class TestMasterCommittingAtSlave
     
     private static class FakeStringLogger extends StringLogger
     {
-        private volatile boolean anyMessageLogged;
+        private volatile boolean unexpectedExceptionLogged;
         private StringBuilder errors = new StringBuilder();
         
         @Override
@@ -364,7 +365,10 @@ public class TestMasterCommittingAtSlave
 
         private void addError( String msg )
         {
-            anyMessageLogged = true;
+            if ( !msg.contains( "communication" ) )
+            {
+                unexpectedExceptionLogged = true;
+            }
             errors.append( errors.length() > 0 ? "," : "" ).append( msg );
         }
 
