@@ -106,5 +106,16 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
       ElementFromCollection(SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2))), Literal(0))
   }
 
+  @Test def literal_maps() {
+    parsing("{ name: 'Andres' }") shouldGive
+      LiteralMap(Map("name" -> Literal("Andres")))
+
+    parsing("{ } ") shouldGive
+      LiteralMap(Map())
+
+    parsing("{ meta : { name: 'Andres' } } ") shouldGive
+      LiteralMap(Map("meta" -> LiteralMap(Map("name" -> Literal("Andres")))))
+  }
+
   def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }
