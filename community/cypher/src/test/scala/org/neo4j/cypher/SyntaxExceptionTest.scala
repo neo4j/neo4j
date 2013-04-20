@@ -76,7 +76,7 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",
-      "invalid start of query")
+      "expected valid query body")
   }
 
   @Test def shouldComplainAboutWholeNumbers() {

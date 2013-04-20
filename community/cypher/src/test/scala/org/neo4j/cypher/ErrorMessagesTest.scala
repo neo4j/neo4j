@@ -40,7 +40,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def badStart() {
     expectError(
       "starta = node(0) return a",
-      "invalid start of query")
+      "expected valid query body")
   }
 
   @Test def functionDoesNotExist() {

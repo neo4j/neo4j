@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression, Identifier}
+import org.neo4j.cypher.internal.commands.expressions.{LiteralMap, Literal, Expression, Identifier}
 import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 
 trait ParserPattern extends Base with Labels {
@@ -112,6 +112,9 @@ trait ParserPattern extends Base with Labels {
 
         case Success(name ~ Literal(n: LabelName), rest) =>
           Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq(n), true), rest)
+
+        case Success(name ~ x, rest) if x.isInstanceOf[LiteralMap] =>
+          Failure("apa", rest)
 
         case Success(name ~ exp, rest) =>
           Success(ParsedEntity(name, exp, Map[String, Expression](), Seq.empty, true), rest)
