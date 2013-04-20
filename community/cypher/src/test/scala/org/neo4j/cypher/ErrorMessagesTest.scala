@@ -43,7 +43,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def badStart() {
     expectError("starta = node(0) return a",
-      vLegacy -> "invalid start of query",
+      vLegacy -> "expected valid query body",
       v2_0 -> "Invalid input 'a' (line 1, column 6)"
     )
   }

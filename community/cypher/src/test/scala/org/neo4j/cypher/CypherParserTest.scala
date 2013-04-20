@@ -3023,6 +3023,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test(vFrom2_0, string, query)
   }
 
+  @Test def return_only_query_with_literal_map() {
+    test(vFrom2_0, "RETURN { key: 'value' }",
+      Query.
+        matches().
+        returns(
+        ReturnItem(LiteralMap(Map("key"->Literal("value"))), "{ key: 'value' }")))
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None

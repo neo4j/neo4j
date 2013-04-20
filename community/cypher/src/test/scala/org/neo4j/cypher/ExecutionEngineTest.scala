@@ -2804,4 +2804,11 @@ RETURN x0.name
     assert( 6 === relationships.size )
 
   }
+
+  @Test
+  def allow_queries_with_only_return() {
+    val result = parseAndExecute("RETURN 'Andres'").toList
+
+    assert(result === List(Map("'Andres'"->"Andres")))
+  }
 }

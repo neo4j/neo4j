@@ -71,7 +71,7 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   @Test def shouldWarnAboutMissingStart() {
     test("where s.name = 'Name' and s.age = 10 return s",
-      vLegacy -> "invalid start of query",
+      vLegacy -> "expected valid query body",
       v2_0    -> "Query must begin with START, MATCH or CREATE (line 1, column 1)"
     )
   }
