@@ -37,6 +37,7 @@ class ElementFromCollectionTest extends Assertions {
     assert(idx(1) === 2)
     assert(idx(2) === 3)
     assert(idx(3) === 4)
+    assert(idx(-1) === 4)
     intercept[OutOfBoundsException](idx(4))
   }
 

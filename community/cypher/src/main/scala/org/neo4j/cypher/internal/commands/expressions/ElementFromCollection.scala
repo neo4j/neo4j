@@ -33,10 +33,13 @@ case class ElementFromCollection(collection: Expression, index: Expression) exte
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     var idx = castOrFail[Number](index(ctx)).intValue()
-    val iter = makeTraversable(collection(ctx)).toIterator
+    val iterableResult = makeTraversable(collection(ctx))
 
-    if (idx < 0)
-      throw new OutOfBoundsException("Can't have negative values for collection indexes")
+    if (idx < 0) {
+      idx = iterableResult.size + idx
+    }
+
+    val iter = iterableResult.toIterator
 
     try {
       while (idx > 0) {
