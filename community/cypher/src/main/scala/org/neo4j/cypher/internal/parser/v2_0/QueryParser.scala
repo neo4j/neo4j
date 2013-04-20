@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.commands.Slice
 import org.neo4j.cypher.internal.commands.Return
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 
 trait QueryParser
@@ -42,11 +43,21 @@ trait QueryParser
 {
   def query: Parser[Query] = Parser {
     in =>
-      val result = (queryStart ~ body).apply(in)
+      val result = (opt(queryStart) ~ body).apply(in)
       result match {
-        case Success(start ~ body, rest) =>
+        case Success(Some(start) ~ body, rest) =>
+
           val q = expandQuery(start, body)
-          if (isNonMutatingQueryWithoutReturn(q)) failure("expected return clause", rest) else Success(q, rest)
+          if (isNonMutatingQueryWithoutReturn(q))
+            failure("expected return clause", rest)
+          else
+            Success(q, rest)
+
+        case Success(None ~ body, rest)
+          if body.isInstanceOf[BodyReturn] =>
+
+          Success(expandQuery(body), rest)
+
         case ns:NoSuccess =>
           ns
       }
@@ -137,17 +148,28 @@ trait QueryParser
       case b: BodyWith =>
         checkForAggregates(start.predicate)
         val next = expandQuery(b.nextStart, b.next)
-        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.namedPaths, Some(next))
+        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate,
+          b.order, b.slice, start.namedPaths, Some(next))
 
       case b: BodyReturn =>
         checkForAggregates(start.predicate)
-        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.namedPaths, None)
+        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate,
+          b.order, b.slice, start.namedPaths, None)
 
       case NoBody() =>
-        Query(Return(List()), start.startItems, start.updates, Seq(), start.hints, True(), None, Seq(), None, start.namedPaths, None)
+        Query(Return(List()), start.startItems, start.updates, Seq(), start.hints, True(), None, Seq(), None,
+          start.namedPaths, None)
     }
 
-  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern], Seq[NamedPath], Predicate) = matching match {
+  private def expandQuery(b: Body): Query = b match {
+    case body:BodyReturn=> Query(body.returns, Seq.empty, Seq.empty, Seq.empty, Seq.empty, True(), body.aggregate,
+      body.order, body.slice, Seq.empty, None)
+    case _ => throw new ThisShouldNotHappenError("Andres","This is just here to stop parser warnings")
+  }
+
+
+  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern],
+    Seq[NamedPath], Predicate) = matching match {
     case Some((a, b, c)) => (a, b, c)
     case None            => (Seq(), Seq(), True())
   }
