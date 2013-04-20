@@ -22,28 +22,30 @@ package org.neo4j.cypher.internal.parser.experimental.rules
 import org.junit.Test
 import org.parboiled.scala._
 import org.neo4j.cypher.internal.parser.experimental.ast
-import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 
-class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension, legacy.Expression] with Expressions {
-  implicit val parserToTest = ListComprehension ~ EOI
+class MapLiteralTest extends ParserExperimentalTest[ast.Expression, legacy.Expression] with Expressions {
+  implicit val parserToTest = MapLiteral ~ EOI
 
-  @Test def tests() {
-    val filterCommand = legacy.FilterFunction(
-      legacy.Identifier("p"),
-      "a",
-      commands.GreaterThan(legacy.Property(legacy.Identifier("a"), PropertyKey("foo")), legacy.Literal(123)))
+  @Test def literal_maps() {
+    parsing("{ name: 'Andres' }") shouldGive
+      legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))
 
-    parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
+    parsing("{ meta : { name: 'Andres' } }") shouldGive
+      legacy.LiteralMap(Map("meta" -> legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))))
 
-    parsing("[ a in p | a.foo ]") shouldGive
-      legacy.ExtractFunction(legacy.Identifier("p"), "a", legacy.Property(legacy.Identifier("a"), PropertyKey("foo")))
-
-    parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Identifier("a"), PropertyKey("foo")))
+    parsing("{ }") shouldGive
+      legacy.LiteralMap(Map())
   }
 
-  def convert(astNode: ast.ListComprehension): legacy.Expression = astNode.toCommand
+  @Test def nested_map_support() {
+    parsing("{ key: 'value' }") shouldGive
+      legacy.LiteralMap(Map("key" -> legacy.Literal("value")))
+
+    parsing("{ inner1: { inner2: 'Value' } }") shouldGive
+      legacy.LiteralMap(Map("inner1" -> legacy.LiteralMap(Map("inner2" -> legacy.Literal("Value")))))
+  }
+
+  def convert(astNode: ast.Expression): legacy.Expression = astNode.toCommand
 }

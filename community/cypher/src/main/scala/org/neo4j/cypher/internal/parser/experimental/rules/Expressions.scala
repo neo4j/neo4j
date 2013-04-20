@@ -102,6 +102,7 @@ trait Expressions extends Parser
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
     | StringLiteral
     | NumberLiteral
+    | MapLiteral
     | group(keyword("NOT") ~> identifier ~~ ("(" ~~ Expression ~~ ")" | Expression)) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
     | keyword("NULL") ~>> token ~~> ast.Null
     | keyword("TRUE") ~>> token ~~> ast.True

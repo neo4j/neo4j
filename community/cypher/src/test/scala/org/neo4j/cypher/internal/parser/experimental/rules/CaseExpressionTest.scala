@@ -17,27 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.experimental.rules
 
-import v2_0.{MatchClause, Expressions}
-import org.neo4j.cypher.internal.commands._
-import expressions._
 import org.junit.Test
+import org.parboiled.scala._
+import org.neo4j.cypher.internal.parser.experimental.ast
+import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 
-class ExpressionsTest extends Expressions with MatchClause with ParserTest {
+class CaseExpressionTest extends ParserExperimentalTest[ast.Expression, legacy.Expression] with Expressions {
+  implicit val parserToTest = CaseExpression ~ EOI
 
   @Test def simple_cases() {
-    implicit val parserToTest = simpleCase
-
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
-      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE"))), None)
+      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE"))), None)
 
     parsing(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""") shouldGive
-      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE")), (Literal(2), Literal("TWO"))), None)
+      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), None)
 
     parsing(
       """CASE 1
@@ -45,24 +46,22 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""") shouldGive
-      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE")), (Literal(2), Literal("TWO"))), Some(Literal("DEFAULT")))
+      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), Some(legacy.Literal("DEFAULT")))
   }
 
   @Test def generic_cases() {
-    implicit val parserToTest = genericCase
-
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      GenericCase(Seq((True(), Literal("ONE"))), None)
+      legacy.GenericCase(Seq((commands.True(), legacy.Literal("ONE"))), None)
 
-    val alt1 = (Equals(Literal(1), Literal(2)), Literal("ONE"))
-    val alt2 = (Equals(Literal(2), Literal("apa")), Literal("TWO"))
+    val alt1 = (commands.Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
+    val alt2 = (commands.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
 
     parsing(
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""") shouldGive
-      GenericCase(Seq(alt1, alt2), None)
+      legacy.GenericCase(Seq(alt1, alt2), None)
 
     parsing(
       """CASE
@@ -70,19 +69,8 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""") shouldGive
-      GenericCase(Seq(alt1, alt2), Some(Literal("OTHER")))
+      legacy.GenericCase(Seq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
-  @Test def literal_maps() {
-    implicit val parserToTest = literalMapExpression
-
-    parsing("{ name: 'Andres' }") shouldGive
-      LiteralMap(Map("name" -> Literal("Andres")))
-
-    parsing("{ } ") shouldGive
-      LiteralMap(Map())
-
-    parsing("{ meta : { name: 'Andres' } } ") shouldGive
-      LiteralMap(Map("meta" -> LiteralMap(Map("name" -> Literal("Andres")))))
-  }
+  def convert(astNode: ast.Expression): legacy.Expression = astNode.toCommand
 }

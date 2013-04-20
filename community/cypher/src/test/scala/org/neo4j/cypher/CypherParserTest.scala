@@ -2569,13 +2569,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
       ))
   }
 
-  @Test def set_to_map() {
+  @Test def set_to_param() {
     val q2 = Query.
       start().
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
       returns()
 
     test("start n=node(0) set n = {prop}",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def set_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("n"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))))).
+      returns()
+
+    test(vFrom2_0, "start n=node(0) set n = {key: 'value', foo: 1}",
       Query.
         start(NodeById("n", 0)).
         tail(q2).

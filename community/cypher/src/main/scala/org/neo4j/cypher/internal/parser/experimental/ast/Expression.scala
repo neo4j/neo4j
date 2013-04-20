@@ -190,5 +190,11 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
 
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
 
-  def toCommand = ???
+  def toCommand = {
+    val literalMap: Map[String, CommandExpression] = items.map {
+      case (id, ex) => id.name -> ex.toCommand
+    }.toMap
+
+    commandexpressions.LiteralMap(literalMap)
+  }
 }

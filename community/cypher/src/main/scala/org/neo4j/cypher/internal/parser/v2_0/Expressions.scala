@@ -71,6 +71,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | collectionLiteral
       | parameter
       | entity
+      | literalMapExpression
       | parens(expression)
       | failure("illegal value"))
 
@@ -112,6 +113,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def filterFunc: Parser[Expression] = FILTER ~> parens(identity ~ IN ~ expression ~ (WHERE | ":") ~ predicate) ^^ {
     case symbol ~ in ~ collection ~ where ~ pred => FilterFunction(collection, symbol, pred)
   }
+
+  def literalMapExpression: Parser[Expression] = literalMap ^^ (data => LiteralMap(data))
 
   def shortestPathFunc: Parser[Expression] = {
     def translate(abstractPattern: AbstractPattern): Maybe[ShortestPath] =

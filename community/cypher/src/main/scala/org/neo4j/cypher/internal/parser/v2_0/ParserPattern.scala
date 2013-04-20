@@ -197,7 +197,7 @@ trait ParserPattern extends Base with Labels {
   def curlyMap: Parser[Map[String, Expression]] =
     expressionAsMap(parameter) | literalMap
 
-  private def literalMap = "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
+  def literalMap = "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
 
   private def direction(l: Option[String], r: Option[String]): Direction = (l, r) match {
     case (None, Some(_)) => Direction.OUTGOING
