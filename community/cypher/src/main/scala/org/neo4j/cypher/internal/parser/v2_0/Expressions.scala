@@ -93,11 +93,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       case (inCollection, Some(idx) ~ None)    => ElementFromCollection(inCollection, idx)
     }
   }
-  def indexAccess: Parser[Expression] = (factor_lvl_1 | sliceAccess) ~ rep1("[" ~> expression <~ "]") ^^ {
-    case coll ~ accessors => accessors.foldLeft(coll) {
-      case (inCollection, idx) => ElementFromCollection(inCollection, idx)
-    }
-  }
 
   def entity: Parser[Identifier] = identity ^^ (x => Identifier(x))
 

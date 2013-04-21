@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{IsMap, IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
@@ -58,6 +58,8 @@ trait StringHelper {
   protected def text(a: Any, ctx: QueryContext): String = a match {
     case x: Node            => x.toString + props(x, ctx)
     case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, ctx)
+    case IsMap(mapFunc)     => val map = mapFunc(state.query)
+                               "{ " + map.map { case (k,v) => k + ": " + text(v)  }.mkString(",") + " }"
     case IsCollection(coll) => coll.map(elem => text(elem, ctx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
     case v: LabelValue      => v.name
