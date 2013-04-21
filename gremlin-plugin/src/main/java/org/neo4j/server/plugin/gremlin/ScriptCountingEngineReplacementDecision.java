@@ -26,6 +26,11 @@ public class ScriptCountingEngineReplacementDecision implements EngineReplacemen
     private final Set<String> scripts=new HashSet<String>();
     private final int maxScriptCount;
 
+    public ScriptCountingEngineReplacementDecision()
+    {
+        this(100);
+    }
+
     public ScriptCountingEngineReplacementDecision(int maxScriptCount) {
         this.maxScriptCount = maxScriptCount;
     }
