@@ -105,6 +105,4 @@ ON MATCH b SET b.property = timestamp()
           nodeProducerOption = NO_PRODUCER))),
         Seq.empty)
   }
-
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 }

@@ -116,6 +116,4 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
     parsing("{ meta : { name: 'Andres' } } ") shouldGive
       LiteralMap(Map("meta" -> LiteralMap(Map("name" -> Literal("Andres")))))
   }
-
-  def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }

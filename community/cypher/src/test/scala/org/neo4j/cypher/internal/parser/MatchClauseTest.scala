@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.parser
 
 import v2_0.{Expressions, MatchClause}
-import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
@@ -37,6 +36,4 @@ class MatchClauseTest extends MatchClause with Expressions with ParserTest {
   }
 
   implicit def a(p: Pattern): (Seq[Pattern], Seq[NamedPath], Predicate) = (Seq(p), Seq.empty, True())
-
-  def createProperty(entity: String, propName: String): Expression = ???
 }

@@ -86,10 +86,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
-    case v ~ "." ~ p => createProperty(v, p)
+    case v ~ "." ~ p => Property(Identifier(v), p)
   }
-
-  def createProperty(entity: String, propName: String): Expression
 
   def nullableProperty: Parser[Expression] = (
     property ~> "!=" ^^^ (throw new SyntaxException("Cypher does not support != for inequality comparisons. " +

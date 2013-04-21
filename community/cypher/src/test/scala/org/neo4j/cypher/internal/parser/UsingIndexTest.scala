@@ -38,7 +38,5 @@ class UsingIndexTest extends UsingIndex with ParserTest {
     assertFails("USING INDEX n.user(name, age)")
   }
 
-  def createProperty(entity: String, propName: String) = ???
-
   def matchTranslator(abstractPattern: AbstractPattern) = ???
 }
