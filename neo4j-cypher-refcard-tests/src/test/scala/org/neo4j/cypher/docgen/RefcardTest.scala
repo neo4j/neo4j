@@ -82,23 +82,15 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
 
   def text: String
 
-  def expandQuery(query: String, queryPart: String, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String], parametersChoice: String) = {
+  def expandQuery(query: String, queryPart: String, dir: File, possibleAssertion: Seq[String], parametersChoice: String) = {
     val name = title.toLowerCase.replace(" ", "-")
-    runQuery(emptyGraph, query, possibleAssertion, parametersChoice)
+    runQuery(query, possibleAssertion, parametersChoice)
 
     queryPart
   }
 
-  def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
-    val result = if (emptyGraph) {
-      val db = new ImpermanentGraphDatabase()
-      val engine = new ExecutionEngine(db)
-      val result = executeQuery(query, parameters(parametersChoice))(engine)
-      db.shutdown()
-      result
-    } else
-      executeQuery(query, parameters(parametersChoice))
-
+  def runQuery( query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
+    val result = executeQuery(query, parameters(parametersChoice))
     possibleAssertion.foreach(name => {
       try {
         assert(name, result)
@@ -154,7 +146,6 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
         {
           val firstLine = query.split("\n").head
 
-          val emptyGraph = firstLine.contains("empty-graph")
           val asserts: Seq[String] = assertiongRegEx.findFirstMatchIn(firstLine).toSeq.flatMap(_.subgroups)
           val parameterChoice: String = parametersRegEx.findFirstMatchIn(firstLine).mkString("")
 
@@ -162,7 +153,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
           val q = rest.replaceAll("#", "")
           val parts = q.split("\n\n")
           val publishPart = parts(1)
-          producedText = producedText.replace(query, expandQuery(q, publishPart, emptyGraph, dir, asserts, parameterChoice))
+          producedText = producedText.replace(query, expandQuery(q, publishPart, dir, asserts, parameterChoice))
         }
     }
 
