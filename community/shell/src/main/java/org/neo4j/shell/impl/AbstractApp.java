@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.OptionDefinition;
