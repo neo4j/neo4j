@@ -36,6 +36,19 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
     }
 
     @Override
+    public long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException
+    {
+        // KISS - but refactor into a general purpose constraint checker later on
+        if ( propertyKey == null )
+        {
+            throw new ConstraintViolationKernelException(
+                    String.format( "Null is not a valid property name. Only non-null strings are allowed." ));
+        }
+
+        return delegate.getOrCreatePropertyKeyId( propertyKey );
+    }
+
+    @Override
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on

@@ -46,6 +46,8 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -174,13 +176,57 @@ public class NodeProxy implements Node
     @Override
     public void setProperty( String key, Object value )
     {
-        nodeLookup.lookup( nodeId, LockType.WRITE ).setProperty( nodeLookup.getNodeManager(), this, key, value );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            long propertyId = ctxForWriting.getOrCreatePropertyKeyId( key );
+            ctxForWriting.nodeSetPropertyValue( nodeId, propertyId, value );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup( nodeId, LockType.WRITE ).removeProperty( nodeLookup.getNodeManager(), this, key );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            long propertyId = ctxForWriting.getOrCreatePropertyKeyId( key );
+            return ctxForWriting.nodeRemoveProperty( nodeId, propertyId );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
     @Override
@@ -226,13 +272,66 @@ public class NodeProxy implements Node
     @Override
     public Object getProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup( nodeId ).getProperty( nodeLookup.getNodeManager(), key );
+        // TODO: Push this check to getPropertyKeyId
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long propertyId = ctxForReading.getPropertyKeyId( key );
+            return ctxForReading.getNodePropertyValue( nodeId, propertyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
     }
 
     @Override
     public boolean hasProperty( String key )
     {
-        return nodeLookup.lookup( nodeId ).hasProperty( nodeLookup.getNodeManager(), key );
+        if ( null == key )
+            return false;
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long propertyId = ctxForReading.getPropertyKeyId( key );
+            return ctxForReading.nodeHasProperty( nodeId, propertyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return false;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return false;
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
     }
 
     public int compareTo( Object node )
