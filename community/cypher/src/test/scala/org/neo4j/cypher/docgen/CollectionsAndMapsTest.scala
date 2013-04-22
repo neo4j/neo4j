@@ -34,7 +34,7 @@ class CollectionsAndMapsTest extends ArticleTest {
 Collections
 ===========
 
-Collections in Cypher have good support.
+Cypher has good support for collections.
 
 A literal collection is created by using brackets and separating the elements in the collection with comas.
 
@@ -65,8 +65,8 @@ RETURN range(0,10)[-5..]###
 ###
 RETURN range(0,10)[..4]###
 
-List comprehension
-==================
+== List comprehension ==
+
 List comprehension is a syntactic construct available in Cypher for creating a collection based on existing collections.
 It follows the form of the mathematical set-builder notation (set comprehension) instead of the use of map
 and filter functions.
@@ -74,15 +74,33 @@ and filter functions.
 ###
 RETURN [x in range(0,10) WHERE x % 2 = 0 : x^3 ]###
 
+This query returns the even elements of the incoming collection of the numbers between 0 to 20.
+
 Either the WHERE part, or the expression, can be omitted, if you only want to filter or map respectively.
 
 ###
 RETURN [x in range(0,10) WHERE x % 2 = 0 ]###
-###
-RETURN [x in range(0,10) WHERE x % 2 = 0 ]###
 
-Literal maps
-============
+This expression returns a collection containing only the even elements from the incoming collection - it's 
+the elements that allow the predicate +x % 2 = 0+ to evaluate to true.
+
+###
+RETURN [x in range(0,10) : x ^ 2 ]###
+
+This query returns a new collection, containing the result of the +x ^ 2+ expression.
+
+== Map access ==
+
+You access values on maps using the same syntax as for properties on nodes: +map.property+
+These can also be chained, if you have maps in maps.
+
+###
+MATCH n
+WITH { innerMap: { key: "value" } } as map
+RETURN map.innerMap.key###
+
+== Literal maps ==
+
 From Cypher, you can also construct maps. In Java, they will be java.util.Map<String,Object>, through REST
 you will get JSON objects.
 

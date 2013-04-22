@@ -70,7 +70,7 @@ Something like this:
 
 To initialize an empty linked list, we simply create an empty node, and make it link to itself.
 
-###no-results empty-graph assertion=create
+###no-results assertion=create
 CREATE root-[:LINK]->root // no ‘value’ property assigned to root
 RETURN root###
 
