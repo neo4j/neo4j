@@ -1,28 +1,35 @@
-[[rest-api-transactional]] == Transactional HTTP endpoint ==
+[[rest-api-transactional]]
+== Transactional HTTP endpoint ==
 
-The transactional HTTP endpoint is the primary interface for doing work with Neo4j, allowing a series of Cypher statements to execute within the scope of a 
-single transaction. The transaction may be kept open across multiple HTTP requests, each of which may contain multiple Cypher statements. The transaction is left open until you choose to commit or roll back the work, though may be automatically rolled back when a timeout has been exceeded. 
+The Neo4j transactional HTTP endpoint allows you to execute a series of Cypher statements within the scope of a
+transaction. The transaction may be kept open across multiple HTTP requests, until the client chooses to commit or roll
+back. Each HTTP request can include a list of statements, and for convenience you can include statements along with a
+request to begin or commit a transaction.
 
-The server guards against orphaned transactions by using a timeout which resets every time a statment is submitted to the transactional endpoint. If there are
-no requests for a given transaction within the timeout period, the server will
-roll it back. You can configure the timeout duration in 'neo4j-server.properties', 
-by setting 'org.neo4j.server.transaction.timeout' to the number of seconds before
-timeout. The default timeout is 60 seconds.
+The server guards against orphaned transactions by using a timeout. If there are no requests for a given transaction
+within the timeout period, the server will roll it back. You can configure the timeout in the server configuration, by
+setting 'org.neo4j.server.transaction.timeout' to the number of seconds before timeout. The default timeout is 60
+seconds.
 
-Any statement which fails will invalidate the transaction, causing a rollback. 
+The key difference between the transactional HTTP endpoint and the <<rest-api-cypher,cypher endpoint>> is the ability to
+use the same transaction across multiple HTTP requests. The cypher endpoint always attempts to commit a transaction at
+the end of each HTTP request.
 
-Once committed or rolled back, requests to a transaction will be rejected. 
+[NOTE]
+This is a new feature in the API, and is still experimental. Expect this API to change without notice, until this note
+is removed.
 
-[NOTE] This is a new feature in the API, and is still experimental. Expect this
-API to change without notice, until this note is removed.
+[NOTE]
+The serialization format for cypher results is mostly the same as the <<rest-api-cypher,cypher endpoint>>.
+However, the format for raw entities is slightly less verbose and does not include hypermedia links.
 
-[NOTE] The serialization format for Cypher results is mostly the same as the
-<<rest-api-Cypher,Cypher endpoint>>. However, the format for raw entities is
-slightly less verbose and does not include hypermedia links.
+[NOTE]
+Open transactions are not shared among members of an HA cluster. Therefore, if you use this endpoint in an HA cluster,
+you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
 
-[NOTE] Open transactions are not shared among members of an HA cluster.
-Therefore, if you use this endpoint in an HA cluster, you must ensure that all
-requests for a given transaction are sent to the same Neo4j instance.
+[TIP]
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever
+possible in order to let the server cache query plans.
 
 include::begin-a-transaction.asciidoc[]
 
