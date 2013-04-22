@@ -60,6 +60,8 @@ public class ConcurrentInstanceStartupIT
     @Test
     public void concurrentStartupShouldWork() throws Exception
     {
+        // Ensures that the instances don't race to create the test's base directory and only care about their own.
+        testDirectory.directory( "nothingToSeeHereMoveAlong" );
         StringBuffer initialHostsBuffer = new StringBuffer( "127.0.0.1:5001" );
         for ( int i = 2; i <= INSTANCE_COUNT; i++ )
         {
