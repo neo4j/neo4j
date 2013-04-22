@@ -45,7 +45,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
+import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -55,6 +57,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.transaction.LockType;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -367,6 +370,57 @@ public class StoreStatementContext extends CompositeStatementContext
         {
             throw new PropertyNotFoundException(
                     "No property with id " + propertyKeyId + " on node with id " + nodeId, e );
+        }
+    }
+
+    @Override
+    public boolean nodeHasProperty(long nodeId, long propertyKeyId)
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            String propertyKey = getPropertyKeyName( propertyKeyId );
+            return nodeManager.getNodeForProxy( nodeId, null ).hasProperty(nodeManager, propertyKey);
+        }
+        catch (IllegalStateException e)
+        {
+            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+        }
+    }
+
+    @Override
+    public void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+            throws PropertyKeyIdNotFoundException,  EntityNotFoundException
+    {
+        try
+        {
+            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
+            String propertyKey = getPropertyKeyName( propertyId );
+            NodeImpl nodeImpl = nodeManager.getNodeForProxy(nodeId, LockType.WRITE);
+            NodeProxy nodeProxy = nodeManager.newNodeProxyById(nodeId);
+            nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, value );
+        }
+        catch (IllegalStateException e)
+        {
+            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+        }
+    }
+
+    @Override
+    public Object nodeRemoveProperty( long nodeId, long propertyId )
+            throws PropertyKeyIdNotFoundException,  EntityNotFoundException
+    {
+        try
+        {
+            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
+            String propertyKey = getPropertyKeyName( propertyId );
+            NodeImpl nodeImpl = nodeManager.getNodeForProxy(nodeId, LockType.WRITE);
+            NodeProxy nodeProxy = nodeManager.newNodeProxyById(nodeId);
+            return nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
+        }
+        catch (IllegalStateException e)
+        {
+            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
         }
     }
 

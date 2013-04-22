@@ -33,6 +33,184 @@ import org.neo4j.graphdb.Relationship;
 public class PropertyIT extends KernelIntegrationTest
 {
     @Test
+    public void shouldSetNodePropertyValue() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+
+        // WHEN
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+
+        // THEN
+        assertEquals( "bozo", statement.getNodePropertyValue( nodeId, propertyId ) );
+
+        // WHEN
+        commit();
+        newTransaction();
+
+        // THEN
+        assertEquals( "bozo", statement.getNodePropertyValue( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void shouldRemoveSetNodeProperty() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+
+        // WHEN
+        statement.nodeRemoveProperty( nodeId, propertyId );
+
+        // THEN
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+
+        // WHEN
+        commit();
+
+        // THEN
+        newTransaction();
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+        commit();
+        newTransaction();
+
+        // WHEN
+        Object previous = statement.nodeRemoveProperty( nodeId, propertyId );
+
+        // THEN
+        assertEquals( "bozo", previous );
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+
+        // WHEN
+        commit();
+
+        // THEN
+        newTransaction();
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        commit();
+        newTransaction();
+
+        // WHEN
+        Object result = statement.nodeRemoveProperty( nodeId, propertyId );
+
+        // THEN
+        assertEquals( null, result );
+    }
+
+    @Test
+    public void nodeHasPropertyIfSet() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+
+        // WHEN
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+
+        // THEN
+        assertTrue( statement.nodeHasProperty( nodeId, propertyId ) );
+
+        // WHEN
+        commit();
+        newTransaction();
+
+        // THEN
+        assertTrue( statement.nodeHasProperty( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void nodeHasNotPropertyIfUnset() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+
+        // WHEN
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+
+        // THEN
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+
+        // WHEN
+        commit();
+        newTransaction();
+
+        // THEN
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void shouldRollbackSetNodePropertyValue() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        commit();
+
+        // WHEN
+        newTransaction();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+        rollback();
+
+        // THEN
+        newTransaction();
+        assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+    }
+
+    @Test
+    public void shouldUpdateNodePropertyValue() throws Exception
+    {
+        // GIVEN
+        newTransaction();
+        Node node = db.createNode();
+        long propertyId = statement.getOrCreatePropertyKeyId( "clown" );
+        long nodeId = node.getId();
+        statement.nodeSetPropertyValue( nodeId, propertyId, "bozo" );
+        commit();
+
+        // WHEN
+        newTransaction();
+        statement.nodeSetPropertyValue( nodeId, propertyId, 42 );
+        commit();
+
+        // THEN
+        newTransaction();
+        assertEquals( 42, statement.getNodePropertyValue( nodeId, propertyId ) );
+    }
+
+    @Test
     public void shouldListNodePropertyKeys() throws Exception
     {
         // WHEN

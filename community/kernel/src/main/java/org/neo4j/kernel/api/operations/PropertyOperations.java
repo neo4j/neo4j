@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -33,7 +34,7 @@ public interface PropertyOperations
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long getOrCreatePropertyKeyId( String propertyKey );
+    long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException;
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist a
@@ -52,6 +53,24 @@ public interface PropertyOperations
     Object getNodePropertyValue( long nodeId, long propertyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
 
+    /**
+     * Returns true if node has the property given it's property key id for the node with the given node id
+     */
+    boolean nodeHasProperty(long nodeId, long propertyId)
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    /**
+     * Set a node's property given the node's id, the property key id, and the value
+     */
+    void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    /**
+     * Remove a node's property given the node's id and the property key id and return the value to which
+     * it was set or null if it was not set on the node
+     */
+    Object nodeRemoveProperty( long nodeId, long propertyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
     /**
      * Return all property keys associated with a node.
      */

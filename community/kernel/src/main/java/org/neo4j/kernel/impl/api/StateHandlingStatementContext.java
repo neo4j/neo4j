@@ -60,13 +60,6 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object getNodePropertyValue( long nodeId, long propertyId )
-            throws PropertyNotFoundException, PropertyKeyIdNotFoundException
-    {
-        throw new UnsupportedOperationException( "only implemented in StoreStatementContext for now" );
-    }
-
-    @Override
     public void deleteNode( long nodeId )
     {
         state.deleteNode( nodeId );

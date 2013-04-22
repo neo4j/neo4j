@@ -267,6 +267,21 @@ public class CompositeStatementContext implements StatementContext
         return result;
     }
 
+
+    @Override
+    public boolean nodeHasProperty(long nodeId, long propertyId)
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = propertyOperations.nodeHasProperty(nodeId, propertyId);
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
     @Override
     public Iterator<Long> listNodePropertyKeys( long nodeId )
     {
@@ -415,7 +430,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey )
+    public long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -460,6 +475,34 @@ public class CompositeStatementContext implements StatementContext
         V result = schemaOperations.getOrCreateFromSchemaState( key, creator );
 
         afterOperation();
+        return result;
+    }
+
+    @Override
+    public void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        propertyOperations.nodeSetPropertyValue( nodeId, propertyId, value );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
+    public Object nodeRemoveProperty( long nodeId, long propertyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        Object result = propertyOperations.nodeRemoveProperty( nodeId, propertyId );
+
+        afterWriteOperation();
+        afterOperation();
+
         return result;
     }
 
