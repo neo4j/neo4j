@@ -55,10 +55,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def indexProps: List[String] = List()
   
   def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
-    val result = engine.execute(replaceNodeIds(queryText))
-    result.toList //Let's materialize the result
-    result.dumpToString()
-    result
+    engine.execute(replaceNodeIds(queryText))
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
   }
