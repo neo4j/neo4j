@@ -1,6 +1,5 @@
 [[cypher-schema]]
-Schema and Indexing
-===================
+= Schema and Indexing =
 
 Neo4j 2.0 introduced an optional schema for the graph, based around the concept of +LABELS+.
 Cypher allows you to manipulate that schema using the Cypher data definition language (DDL).
@@ -8,3 +7,9 @@ Cypher allows you to manipulate that schema using the Cypher data definition lan
 The currently supported operations are:
 
 . <<query-schema-index, Schema based indexes>>
+
+:leveloffset: 2
+
+include::ql/schema-index/index.asciidoc[]
+
+

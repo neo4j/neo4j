@@ -31,10 +31,6 @@ include::ql/remove/index.asciidoc[]
 
 include::ql/foreach/index.asciidoc[]
 
-:leveloffset: 2
-
-include::ql/schema-index/index.asciidoc[]
-
 :leveloffset: 0
 
 
