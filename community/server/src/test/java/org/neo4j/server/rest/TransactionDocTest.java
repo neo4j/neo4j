@@ -45,9 +45,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Begin a transaction
      *
-     * You begin a new transaction by posting zero or more cypher statements
-     * to the transaction endpoint. The server will respond with the result of
-     * your statements, as well as the location of your open transaction.
+     * You begin a new transaction by posting zero or more Cypher statements
+     * to the transactional endpoint. The server will respond with an array
+     * of results named +results+. There will be one entry for each statement,
+     * appearing in the same order as the originating statements.
+     * Also, +commit+ will indicate the location of your open transaction.
      */
     @Test
     @Documented
@@ -71,8 +73,9 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Execute statements in an open transaction
      *
-     * Given that you have an open transaction, you can make a number of requests, each of which executes additional
-     * statements, and keeps the transaction open.
+     * Once you have an open transaction, you can make a number of requests
+     * with additional statements. Each request keeps the transaction open and 
+     * resets the timeout.
      */
     @Test
     @Documented
@@ -85,7 +88,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n' } ] }" ) )
                 .post( location );
 
         // Then
@@ -96,8 +99,10 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Commit an open transaction
      *
-     * Given you have an open transaction, you can send a commit request. Optionally, you submit additional statements
-     * along with the request that will be executed before committing the transaction.
+     * To complete a successful transaction, send a commit 
+     * request. Optionally, you may submit additional statements
+     * along with the request; these will be executed before committing 
+     * the transaction.
      */
     @Test
     @Documented
@@ -110,7 +115,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n { promise: \"Smile every day.\" }) RETURN n' } ] }" ) )
                 .post( location + "/commit" );
 
         // Then
@@ -124,8 +129,10 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Begin and commit a transaction in one request
      *
-     * If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,
-     * execute statements, and commit with just a single HTTP request.
+     * If there is no need to keep a transaction open across multiple HTTP 
+     * requests, you can begin a transaction, execute statements, then commit 
+     * with just a single HTTP request.
+     *
      */
     @Test
     @Documented
@@ -135,7 +142,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n { artist: \"George Thorogood\", \"One bourbon, one scotch, and one beer.\" } RETURN n' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
 
         // Then
@@ -147,10 +154,10 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Rollback an open transaction
+     * Roll back an open transaction
      *
-     * Given that you have an open transaction, you can send a roll back request. The server will roll back the
-     * transaction.
+     * To discard the work done by all statements within a transaction,
+     * you can send a rollback request. This will close the transaction.
      */
     @Test
     @Documented
@@ -158,7 +165,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     {
         // Given
         HTTP.Response firstReq = POST( getDataUri() + "transaction",
-                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) );
+                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n' } ] }" ) );
         String location = firstReq.location();
 
         // Document
