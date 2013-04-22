@@ -98,14 +98,6 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object getNodePropertyValue( long nodeId, long propertyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
-    {
-        lockHolder.acquireNodeReadLock( nodeId );
-        return super.getNodePropertyValue( nodeId, propertyId );
-    }
-
-    @Override
     public void deleteNode( long nodeId )
     {
         lockHolder.acquireNodeWriteLock( nodeId );
