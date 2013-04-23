@@ -38,7 +38,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -150,6 +149,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -881,7 +882,7 @@ public abstract class InternalAbstractGraphDatabase
                 return new PlaceboTransaction( txManager, txManager.getTransactionState() );
             }
 
-            txManager.begin();
+            txManager.begin( forceMode );
             return new TopLevelTransaction( txManager, txManager.getTransactionState() );
         }
         catch ( SystemException e )
