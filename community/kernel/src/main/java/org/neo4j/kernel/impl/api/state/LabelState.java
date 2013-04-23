@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
@@ -26,6 +27,7 @@ public class LabelState extends EntityState
 {
     private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
     private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
+    private final DiffSets<UniquenessConstraint> uniquenessConstraints = new DiffSets<UniquenessConstraint>();
 
     public LabelState( long id )
     {
@@ -40,5 +42,10 @@ public class LabelState extends EntityState
     public DiffSets<IndexRule> getIndexRuleDiffSets()
     {
         return indexRuleDiffSets;
+    }
+
+    public DiffSets<UniquenessConstraint> uniquenessConstraints()
+    {
+        return uniquenessConstraints;
     }
 }

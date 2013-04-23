@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.contains;
-
 import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -40,6 +36,7 @@ import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -56,9 +53,14 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.LockType;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.contains;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -231,26 +233,24 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public IndexRule getIndexRule( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
     {
-        Iterator<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean accept( SchemaRule rule )
-            {
-                return
-                    rule.getLabel() == labelId
-                            && rule.getKind() == Kind.INDEX_RULE
-                            && propertyKey == ((IndexRule)rule).getPropertyKey();
-            }
+        Iterator<IndexRule> rules = schemaRules(
+                IndexRule.class, SchemaRule.Kind.INDEX_RULE, labelId,
+                new Predicate<IndexRule>()
+                {
+                    @Override
+                    public boolean accept( IndexRule item )
+                    {
+                        return item.getPropertyKey() == propertyKey;
+                    }
+                } );
 
-        }, neoStore.getSchemaStore().loadAll() );
-
-        if ( !filtered.hasNext() )
+        if ( !rules.hasNext() )
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
                     propertyKey + " not found" );
 
-        IndexRule rule = (IndexRule) filtered.next();
+        IndexRule rule = rules.next();
 
-        if ( filtered.hasNext() )
+        if ( rules.hasNext() )
             throw new SchemaRuleNotFoundException( "Found more than one matching index" );
         return rule;
     }
@@ -269,7 +269,7 @@ public class StoreStatementContext extends CompositeStatementContext
             @Override
             public boolean accept( SchemaRule rule )
             {
-                return rule.getLabel() == labelId && rule.getKind() == Kind.INDEX_RULE;
+                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
             }
         } );
     }
@@ -282,7 +282,7 @@ public class StoreStatementContext extends CompositeStatementContext
             @Override
             public boolean accept( SchemaRule rule )
             {
-                return rule.getKind() == Kind.INDEX_RULE;
+                return rule.getKind() == SchemaRule.Kind.INDEX_RULE;
             }
         } );
     }
@@ -305,6 +305,58 @@ public class StoreStatementContext extends CompositeStatementContext
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexRule.getId() ).getState();
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, final long propertyKeyId )
+    {
+        return schemaRules(
+                new Function<UniquenessConstraintRule, UniquenessConstraint>()
+                {
+                    @Override
+                    public UniquenessConstraint apply( UniquenessConstraintRule rule )
+                    {
+                        // We can use propertyKeyId straight up here, without reading from the record, since we have
+                        // verified that it has that propertyKeyId in the predicate. And since we currently only support
+                        // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+                        return new UniquenessConstraint( rule.getLabel(), propertyKeyId );
+                    }
+                }, SchemaRule.Kind.UNIQUENESS_CONSTRAINT, labelId,
+                new Predicate<UniquenessConstraintRule>()
+                {
+                    @Override
+                    public boolean accept( UniquenessConstraintRule rule )
+                    {
+                        return rule.containsPropertyKeyId( propertyKeyId );
+                    }
+                }
+        );
+    }
+
+    private <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, SchemaRule.Kind kind,
+                                                            long labelId, Predicate<T> predicate )
+    {
+        assert type == kind.getRuleClass();
+        return schemaRules( Functions.cast( type ), kind, labelId, predicate );
+    }
+
+    private <R extends SchemaRule, T> Iterator<T> schemaRules(
+            Function<? super R, T> conversion, final SchemaRule.Kind kind,
+            final long labelId, final Predicate<R> predicate )
+    {
+        @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
+        Function<SchemaRule, T> ruleConversion = (Function) conversion;
+        return map( ruleConversion, filter( new Predicate<SchemaRule>()
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return rule.getLabel() == labelId &&
+                       rule.getKind() == kind &&
+                       predicate.accept( (R) rule );
+            }
+        }, neoStore.getSchemaStore().loadAll() ) );
     }
 
     @Override

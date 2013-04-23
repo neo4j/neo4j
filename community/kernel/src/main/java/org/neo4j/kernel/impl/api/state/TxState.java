@@ -24,10 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 /**
@@ -85,7 +87,8 @@ public class TxState
 
     private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
     private final DiffSets<Long> nodes = new DiffSets<Long>();
-
+    private final Map<UniquenessConstraint,UniquenessConstraintRule> constraintRules =
+            new HashMap<UniquenessConstraint, UniquenessConstraintRule>();
 
     private final OldTxStateBridge legacyState;
     private final PersistenceManager persistenceManager;
@@ -282,5 +285,39 @@ public class TxState
             states.put( id, result );
         }
         return result;
+    }
+
+    public UniquenessConstraint addConstraint( UniquenessConstraint constraint, boolean create )
+    {
+        if ( getOrCreateLabelState( constraint.label() ).uniquenessConstraints().add( constraint ) && create )
+        {
+            // This is obviously wrong - we should not need to allocate an id, and create store layer records this early.
+            // It should be enough to keep the UniquenessConstraint object around here in this layer, and then allocate
+            // the ids and create records when we are about to commit the transaction - that would then be done based on
+            // the state from this layer.
+            UniquenessConstraintRule rule = new UniquenessConstraintRule(
+                    idGeneration.newSchemaRuleId(), constraint.label(), constraint.property() );
+            persistenceManager.createSchemaRule( rule );
+
+            constraintRules.put( constraint, rule );
+        }
+        return constraint;
+    }
+
+    public DiffSets<UniquenessConstraint> constraintsForLabel( long labelId )
+    {
+        return getOrCreateLabelState( labelId ).uniquenessConstraints();
+    }
+
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        if ( constraintsForLabel( constraint.label() ).remove( constraint ) )
+        {
+            UniquenessConstraintRule rule = constraintRules.get( constraint );
+            if ( rule != null )
+            {
+                persistenceManager.dropSchemaRule( rule.getId() );
+            }
+        }
     }
 }

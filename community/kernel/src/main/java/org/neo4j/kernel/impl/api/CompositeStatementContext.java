@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityOperations;
@@ -255,7 +256,7 @@ public class CompositeStatementContext implements StatementContext
         beforeOperation();
         beforeReadOperation();
 
-        boolean result = propertyOperations.nodeHasProperty(nodeId, propertyKeyId );
+        boolean result = propertyOperations.nodeHasProperty( nodeId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -366,6 +367,19 @@ public class CompositeStatementContext implements StatementContext
         return result;
     }
 
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<UniquenessConstraint> result = schemaOperations.getConstraints( labelId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
     //
     // WRITE OPERATIONS
     //
@@ -436,6 +450,31 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        UniquenessConstraint result = schemaOperations.addUniquenessConstraint( labelId, propertyKeyId );
+
+        afterWriteOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        schemaOperations.dropConstraint( constraint );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
     public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
         beforeOperation();
@@ -451,9 +490,11 @@ public class CompositeStatementContext implements StatementContext
     public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
     {
         beforeOperation();
+        beforeWriteOperation();
 
         V result = schemaOperations.getOrCreateFromSchemaState( key, creator );
 
+        afterWriteOperation();
         afterOperation();
         return result;
     }

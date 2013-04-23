@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -84,4 +85,10 @@ public interface SchemaOperations
      * Check if some key is in the schema state.
      */
     <K> boolean schemaStateContains( K key );
+
+    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId );
+
+    Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId );
+
+    void dropConstraint( UniquenessConstraint constraint );
 }

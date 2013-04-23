@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
@@ -91,5 +92,23 @@ public class DelegatingSchemaOperations implements SchemaOperations
     public <K> boolean schemaStateContains( K key )
     {
         return delegate.schemaStateContains( key );
+    }
+
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        return delegate.addUniquenessConstraint( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        return delegate.getConstraints( labelId, propertyKeyId );
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        delegate.dropConstraint( constraint );
     }
 }

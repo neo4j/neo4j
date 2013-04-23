@@ -25,6 +25,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class LockingStatementContext extends CompositeStatementContext
@@ -100,5 +101,26 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireNodeWriteLock( nodeId );
         delegate.deleteNode( nodeId );
+    }
+
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        lockHolder.acquireSchemaWriteLock();
+        return delegate.addUniquenessConstraint( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraints( labelId, propertyKeyId );
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        lockHolder.acquireSchemaWriteLock();
+        delegate.dropConstraint( constraint );
     }
 }

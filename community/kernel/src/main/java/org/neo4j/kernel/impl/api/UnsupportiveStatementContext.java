@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -222,6 +223,23 @@ public class UnsupportiveStatementContext implements StatementContext
         throw unsupported();
     }
 
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        throw unsupported();
+    }
 
     private UnsupportedOperationException unsupported()
     {

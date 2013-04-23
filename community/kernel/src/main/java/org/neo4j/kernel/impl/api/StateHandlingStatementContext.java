@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-
 import java.util.Iterator;
 import java.util.Set;
 
@@ -36,12 +32,17 @@ import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class StateHandlingStatementContext extends CompositeStatementContext
 {
@@ -78,13 +79,13 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             if ( state.nodeIsAddedInThisTx( nodeId ) )
             {
                 Boolean labelState = state.getLabelState( nodeId, labelId );
-                return labelState != null ? labelState.booleanValue() : false;
+                return labelState != null && labelState;
             }
 
             Boolean labelState = state.getLabelState( nodeId, labelId );
             if ( labelState != null )
             {
-                return labelState.booleanValue();
+                return labelState;
             }
         }
 
@@ -158,6 +159,39 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
         state.dropIndexRule( indexRule );
+    }
+
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        boolean create = true;
+        for(Iterator<UniquenessConstraint> it = delegate.getConstraints( labelId, propertyKeyId ); it.hasNext(); )
+        {
+            if ( it.next().equals( labelId, propertyKeyId ) )
+            {
+                create = false;
+                break;
+            }
+        }
+        return state.addConstraint( new UniquenessConstraint( labelId, propertyKeyId ), create );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        Iterator<UniquenessConstraint> constraints = delegate.getConstraints( labelId, propertyKeyId );
+        DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( labelId );
+        if ( diff != null )
+        {
+            return diff.apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        state.dropConstraint( constraint );
     }
 
     @Override
