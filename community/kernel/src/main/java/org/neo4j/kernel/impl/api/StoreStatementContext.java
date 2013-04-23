@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.LabelIdHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.impl.transaction.LockType;
 public class StoreStatementContext extends CompositeStatementContext
 {
     private final PropertyIndexManager propertyIndexManager;
+    private final LabelIdHolder labelIdHolder;
     private final NodeManager nodeManager;
     private final NeoStore neoStore;
     private final IndexingService indexService;
@@ -91,16 +93,18 @@ public class StoreStatementContext extends CompositeStatementContext
                 throw new ThisShouldNotHappenError( "Jake", "Property key id stored in store should exist." );
             }
         }
-    };;
+    };
 
-    public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
+    public StoreStatementContext( PropertyIndexManager propertyIndexManager, LabelIdHolder labelIdHolder,
+                                  NodeManager nodeManager, NeoStore neoStore, IndexingService indexService,
+                                  IndexReaderFactory indexReaderFactory )
     {
         assert neoStore != null : "No neoStore provided";
 
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
         this.propertyIndexManager = propertyIndexManager;
+        this.labelIdHolder = labelIdHolder;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.nodeStore = neoStore.getNodeStore();
@@ -123,7 +127,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getOrCreateId( label );
+            return labelIdHolder.getOrCreateId( label );
         }
         catch ( TransactionFailureException e )
         {
@@ -149,7 +153,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( label );
+            return labelIdHolder.getIdByKeyName( label );
         }
         catch ( KeyNotFoundException e )
         {
@@ -189,7 +193,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getKeyById( (int) labelId ).getKey();
+            return labelIdHolder.getKeyById( (int) labelId ).getName();
         }
         catch ( KeyNotFoundException e )
         {

@@ -40,14 +40,13 @@ public class ReadOnlyNodeManager extends NodeManager
     public ReadOnlyNodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                 EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
-                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
-                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
-            relationshipLookups,
+                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager, LabelIdHolder labelIdHolder,
+                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
         super( config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
-                relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
+                relationshipTypeHolder, cacheType, propertyIndexManager, labelIdHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }
 

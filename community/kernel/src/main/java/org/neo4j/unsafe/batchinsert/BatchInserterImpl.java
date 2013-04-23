@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.batchinsert;
 
 import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -75,6 +76,8 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyStore;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -118,7 +121,7 @@ public class BatchInserterImpl implements BatchInserter
     private final File storeDir;
     private final PropertyIndexHolder indexHolder;
     private final RelationshipTypeHolder typeHolder;
-    private final LabelHolder labelHolder;
+    private final LabelIdHolder labelIdHolder;
     private final IdGeneratorFactory idGeneratorFactory;
     private final SchemaIndexProviderMap schemaIndexProviders;
     // TODO use Logging instead
@@ -134,7 +137,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public Label apply( Long from )
         {
-            return labelHolder.getLabel( from );
+            return label(labelIdHolder.getStringKey( from ) );
         }
     };
 
@@ -174,7 +177,7 @@ public class BatchInserterImpl implements BatchInserter
         neoStore.makeStoreOk();
         NameData[] indexes = getPropertyIndexStore().getNames( 10000 );
         indexHolder = new PropertyIndexHolder( indexes );
-        labelHolder = new LabelHolder( indexHolder );
+        labelIdHolder = new LabelIdHolder( neoStore.getLabelKeyStore().getNames( Integer.MAX_VALUE ) );
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
@@ -275,7 +278,7 @@ public class BatchInserterImpl implements BatchInserter
         // TODO: Do not create duplicate index
 
         SchemaStore schemaStore = getSchemaStore();
-        IndexRule schemaRule = new IndexRule( schemaStore.nextId(), getOrCreateLabelId( label ),
+        IndexRule schemaRule = new IndexRule( schemaStore.nextId(), getOrCreateLabelId( label.name() ),
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 getOrCreatePropertyIndex( propertyKey ) );
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
@@ -537,6 +540,21 @@ public class BatchInserterImpl implements BatchInserter
         return indexHolder.getKeyId( name );
     }
 
+    private long getOrCreateLabelId( String name )
+    {
+        long index = getLabelId( name );
+        if ( index == -1 )
+        {
+            index = createNewLabelId( name );
+        }
+        return index;
+    }
+
+    private long getLabelId( String name )
+    {
+        return labelIdHolder.getKeyId( name );
+    }
+
     private boolean primitiveHasProperty( PrimitiveRecord record,
                                           String propertyName )
     {
@@ -600,20 +618,10 @@ public class BatchInserterImpl implements BatchInserter
     {
         long[] ids = new long[labels.length];
         for ( int i = 0; i < ids.length; i++ )
-            ids[i] = getOrCreateLabelId( labels[i] );
+            ids[i] = getOrCreateLabelId( labels[i].name() );
         return ids;
     }
 
-    private long getOrCreateLabelId( Label label )
-    {
-        return getOrCreatePropertyIndex( label.name() );
-    }
-
-    private long getLabelId( Label label )
-    {
-        return indexHolder.getKeyId( label.name() );
-    }
-    
     @Override
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
@@ -658,11 +666,8 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public boolean nodeHasLabel( long node, Label label )
     {
-        long labelId = getLabelId( label );
-        if ( labelId == -1 )
-            return false;
-
-        return nodeHasLabel( node, labelId );
+        long labelId = getLabelId( label.name() );
+        return labelId != -1 && nodeHasLabel( node, labelId );
     }
 
     private boolean nodeHasLabel( long node, long labelId )
@@ -1043,6 +1048,25 @@ public class BatchInserterImpl implements BatchInserter
         }
         idxStore.updateRecord( record );
         indexHolder.addPropertyIndex( stringKey, keyId );
+        return keyId;
+    }
+
+    private int createNewLabelId( String stringKey )
+    {
+        LabelKeyStore labelKeyStore = neoStore.getLabelKeyStore();
+        int keyId = (int) labelKeyStore.nextId();
+        LabelKeyRecord record = new LabelKeyRecord( keyId );
+        record.setInUse( true );
+        record.setCreated();
+        Collection<DynamicRecord> keyRecords =
+                labelKeyStore.allocateNameRecords( encodeString( stringKey ) );
+        record.setNameId( (int) first( keyRecords ).getId() );
+        for ( DynamicRecord keyRecord : keyRecords )
+        {
+            record.addNameRecord( keyRecord );
+        }
+        labelKeyStore.updateRecord( record );
+        labelIdHolder.addLabelId( stringKey, keyId );
         return keyId;
     }
 

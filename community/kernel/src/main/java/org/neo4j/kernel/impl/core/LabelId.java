@@ -17,38 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.graphdb.Label;
-
-class LabelHolder
+public class LabelId
 {
-    private final PropertyIndexHolder indexHolder;
-    private final Map<Long,Label> labelInstances = new HashMap<Long,Label>();
+    private final String name;
+    private final int labelId;
 
-    LabelHolder( PropertyIndexHolder indexHolder )
+    public LabelId( String name, int labelId )
     {
-        this.indexHolder = indexHolder;
+        this.name = name;
+        this.labelId = labelId;
     }
-    
-    long getKeyId( Label label )
+
+    public String getName()
     {
-        return indexHolder.getKeyId( label.name() );
+        return name;
     }
-    
-    Label getLabel( long keyId )
+
+    public int getLabelId()
     {
-        Label label = labelInstances.get( keyId );
-        if ( label == null )
-        {
-            label = label( indexHolder.getStringKey( (int)keyId ) );
-            labelInstances.put( keyId, label );
-        }
-        return label;
+        return this.labelId;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return labelId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        return o instanceof LabelId && labelId == ((LabelId) o).getLabelId();
     }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -64,6 +65,10 @@ public class TransactionReader
         void visitUpdateRelationshipType( int localId, RelationshipTypeRecord node );
 
         void visitDeleteRelationshipType( int localId, int node );
+
+        void visitUpdateLabelKey( int localId, LabelKeyRecord node );
+
+        void visitDeleteLabelKey( int localId, int node );
 
         void visitUpdatePropertyIndex( int localId, PropertyIndexRecord node );
 
@@ -187,6 +192,19 @@ public class TransactionReader
             else
             {
                 visitor.visitUpdateRelationshipType( localId, record );
+            }
+        }
+
+        @Override
+        public void visitLabelKey( LabelKeyRecord record )
+        {
+            if ( !record.inUse() )
+            {
+                visitor.visitDeleteLabelKey( localId, record.getId() );
+            }
+            else
+            {
+                visitor.visitUpdateLabelKey( localId, record );
             }
         }
 

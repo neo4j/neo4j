@@ -26,6 +26,7 @@ import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.incremental.DiffCheck;
 import org.neo4j.consistency.store.DiffStore;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -128,6 +129,16 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
         if ( next != null )
         {
             next.visitRelationshipType( record );
+        }
+    }
+
+    @Override
+    public void visitLabelKey( LabelKeyRecord record )
+    {
+        diffs.visitLabelKey( record );
+        if ( next != null )
+        {
+            next.visitLabelKey( record );
         }
     }
 

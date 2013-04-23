@@ -46,7 +46,7 @@ public class LabelKeyStore extends AbstractNameStore<LabelKeyRecord>
                           FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                           DynamicStringStore nameStore )
     {
-        super(fileName, config, IdType.PROPERTY_INDEX, idGeneratorFactory, windowPoolFactory,
+        super(fileName, config, IdType.LABEL_NAME, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore);
     }
 

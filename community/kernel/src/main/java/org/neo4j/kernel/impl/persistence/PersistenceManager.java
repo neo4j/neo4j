@@ -91,6 +91,18 @@ public class PersistenceManager
         return getReadOnlyResource/*IfPossible*/().loadPropertyIndexes();
     }
 
+    public NameData[] loadLabels()
+    {
+        /* Using getReadOnlyResource here since loadPropertyIndexes doesn't
+         * follow transaction state visibility standard anyway. There's also
+         * an issue where this is called right after the neostore data source
+         * has been started, but potentially before all recovery has been
+         * done on all data sources, meaning that a call to getTransaction
+         * could fail.
+         */
+        return getReadOnlyResource/*IfPossible*/().loadLabels();
+    }
+
     public long getRelationshipChainPosition( long nodeId )
     {
         return getReadOnlyResourceIfPossible().getRelationshipChainPosition( nodeId );
@@ -206,6 +218,11 @@ public class PersistenceManager
     public void createPropertyIndex( String key, int id )
     {
         getResource( true ).createPropertyIndex( key, id );
+    }
+
+    public void createLabelId( String name, int id )
+    {
+        getResource( true ).createLabelId( name, id );
     }
 
     public void createRelationshipType( int id, String name )

@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -330,6 +332,7 @@ public abstract class Command extends XaCommand
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
     private static final byte NEOSTORE_COMMAND = (byte) 6;
     private static final byte SCHEMA_RULE_COMMAND = (byte) 7;
+    private static final byte LABEL_KEY_COMMAND = (byte) 8;
 
     abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
 
@@ -1052,7 +1055,92 @@ public abstract class Command extends XaCommand
                     neoStore == null ? null : neoStore.getRelationshipTypeStore(), record );
         }
     }
-    
+
+    static class LabelKeyCommand extends Command
+    {
+        private final LabelKeyRecord record;
+        private final LabelKeyStore store;
+
+        LabelKeyCommand( LabelKeyStore store,
+                         LabelKeyRecord record )
+        {
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            this.record = record;
+            this.store = store;
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitLabelKey( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
+        }
+
+        @Override
+        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        {
+            // no-op
+        }
+
+        @Override
+        public void execute()
+        {
+            store.updateRecord( record );
+        }
+
+        @Override
+        public void writeToFile( LogBuffer buffer ) throws IOException
+        {
+            // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue()
+                : Record.NOT_IN_USE.byteValue();
+            buffer.put( LABEL_KEY_COMMAND );
+            buffer.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
+            writeDynamicRecords( buffer, record.getNameRecords() );
+        }
+
+        public static Command readFromFile( NeoStore neoStore,
+            ReadableByteChannel byteChannel, ByteBuffer buffer )
+            throws IOException
+        {
+            // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
+            if ( !readAndFlip( byteChannel, buffer, 13 ) )
+                return null;
+            int id = buffer.getInt();
+            byte inUseFlag = buffer.get();
+            boolean inUse = false;
+            if ( (inUseFlag & Record.IN_USE.byteValue()) ==
+                Record.IN_USE.byteValue() )
+            {
+                inUse = true;
+            }
+            else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+            {
+                throw new IOException( "Illegal in use flag: " + inUseFlag );
+            }
+            LabelKeyRecord record = new LabelKeyRecord( id );
+            record.setInUse( inUse );
+            record.setNameId( buffer.getInt() );
+            int nrTypeRecords = buffer.getInt();
+            for ( int i = 0; i < nrTypeRecords; i++ )
+            {
+                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
+                if ( dr == null )
+                {
+                    return null;
+                }
+                record.addNameRecord( dr );
+            }
+            return new LabelKeyCommand(
+                    neoStore == null ? null : neoStore.getLabelKeyStore(), record );
+        }
+    }
+
     static class SchemaRuleCommand extends Command
     {
         private final IndexingService indexes;
@@ -1164,17 +1252,15 @@ public abstract class Command extends XaCommand
             case NODE_COMMAND:
                 return NodeCommand.readFromFile( neoStore, byteChannel, buffer );
             case PROP_COMMAND:
-                return PropertyCommand.readFromFile( neoStore, byteChannel,
-                    buffer );
+                return PropertyCommand.readFromFile( neoStore, byteChannel, buffer );
             case PROP_INDEX_COMMAND:
-                return PropertyIndexCommand.readFromFile( neoStore, byteChannel,
-                    buffer );
+                return PropertyIndexCommand.readFromFile( neoStore, byteChannel, buffer );
             case REL_COMMAND:
-                return RelationshipCommand.readFromFile( neoStore, byteChannel,
-                    buffer );
+                return RelationshipCommand.readFromFile( neoStore, byteChannel, buffer );
             case REL_TYPE_COMMAND:
-                return RelationshipTypeCommand.readFromFile( neoStore,
-                    byteChannel, buffer );
+                return RelationshipTypeCommand.readFromFile( neoStore, byteChannel, buffer );
+            case LABEL_KEY_COMMAND:
+                return LabelKeyCommand.readFromFile( neoStore, byteChannel, buffer );
             case NEOSTORE_COMMAND:
                 return NeoStoreCommand.readFromFile( neoStore, byteChannel, buffer );
             case SCHEMA_RULE_COMMAND:

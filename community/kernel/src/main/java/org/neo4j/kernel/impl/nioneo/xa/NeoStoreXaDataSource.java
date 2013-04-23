@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.LabelId;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -325,14 +326,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
             idGenerators = new ArrayMap<Class<?>,Store>( (byte)5, false, false );
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
-            this.idGenerators.put( Relationship.class,
-                neoStore.getRelationshipStore() );
-            this.idGenerators.put( RelationshipType.class,
-                neoStore.getRelationshipTypeStore() );
-            this.idGenerators.put( PropertyStore.class,
-                neoStore.getPropertyStore() );
-            this.idGenerators.put( PropertyIndex.class,
-                                   neoStore.getPropertyStore().getIndexStore() );
+            this.idGenerators.put( Relationship.class, neoStore.getRelationshipStore() );
+            this.idGenerators.put( RelationshipType.class, neoStore.getRelationshipTypeStore() );
+            this.idGenerators.put( LabelId.class, neoStore.getLabelKeyStore() );
+            this.idGenerators.put( PropertyStore.class, neoStore.getPropertyStore() );
+            this.idGenerators.put( PropertyIndex.class, neoStore.getPropertyStore().getIndexStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
 
             life.start();

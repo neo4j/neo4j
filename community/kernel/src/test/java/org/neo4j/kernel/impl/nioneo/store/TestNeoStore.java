@@ -250,7 +250,12 @@ public class TestNeoStore
             public void addRelationshipType( NameData type )
             {
             }
-            
+
+            @Override
+            public void addLabelId( NameData labelId )
+            {
+            }
+
             @Override
             public void addPropertyIndex( NameData index )
             {
