@@ -155,6 +155,7 @@ public class PropertyBlock implements Cloneable
     {
         StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
+        result.append( "blocks=" + valueBlocks.length ).append( "," );
         result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
         result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
         if ( type != null ) switch ( type )
