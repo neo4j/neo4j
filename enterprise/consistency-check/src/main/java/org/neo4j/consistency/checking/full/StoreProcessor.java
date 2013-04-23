@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -63,10 +64,18 @@ class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
-    protected void checkRelationshipLabel( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord label,
-                                           RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    protected void checkRelationshipTypeName( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord relationshipType,
+                                              RecordCheck<RelationshipTypeRecord,
+                                                      ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        report.forRelationshipLabel( label, checker );
+        report.forRelationshipTypeName( relationshipType, checker );
+    }
+
+    @Override
+    protected void checkLabelName( RecordStore<LabelKeyRecord> store, LabelKeyRecord label,
+                                   RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
+    {
+        report.forLabelName( label, checker );
     }
 
     @Override

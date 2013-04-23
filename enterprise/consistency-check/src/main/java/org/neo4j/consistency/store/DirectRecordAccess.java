@@ -20,6 +20,7 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -57,7 +58,7 @@ public class DirectRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeRecord> relationshipType( int id )
     {
         return new DirectRecordReference<RelationshipTypeRecord>( access.getRelationshipTypeStore().forceGetRecord( id ),
                                                                   this );
@@ -83,9 +84,21 @@ public class DirectRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
     {
         return new DirectRecordReference<DynamicRecord>( access.getTypeNameStore().forceGetRecord( id ), this );
+    }
+
+    @Override
+    public RecordReference<LabelKeyRecord> labelKey( int id )
+    {
+        return new DirectRecordReference<LabelKeyRecord>( access.getLabelKeyStore().forceGetRecord( id ), this );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelKeyName( int id )
+    {
+        return new DirectRecordReference<DynamicRecord>( access.getLabelKeyNameStore().forceGetRecord( id ), this );
     }
 
     @Override

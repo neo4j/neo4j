@@ -44,11 +44,13 @@ public class StoreAccess
     private final RecordStore<NodeRecord> nodeStore;
     private final RecordStore<RelationshipRecord> relStore;
     private final RecordStore<RelationshipTypeRecord> relTypeStore;
+    private final RecordStore<LabelKeyRecord> labelKeyStore;
     private final RecordStore<PropertyRecord> propStore;
     // Transitive stores
     private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<PropertyIndexRecord> propIndexStore;
     private final RecordStore<DynamicRecord> typeNameStore;
+    private final RecordStore<DynamicRecord> labelKeyNameStore;
     private final RecordStore<DynamicRecord> propKeyStore;
     // internal state
     private boolean closeable;
@@ -67,12 +69,12 @@ public class StoreAccess
     public StoreAccess( NeoStore store )
     {
         this( store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeStore() );
+                store.getRelationshipTypeStore(), store.getLabelKeyStore() );
         this.neoStore = store;
     }
 
     public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-                        RelationshipTypeStore typeStore )
+                        RelationshipTypeStore typeStore, LabelKeyStore labelKeyStore )
     {
         this.nodeStore = wrapStore( nodeStore );
         this.relStore = wrapStore( relStore );
@@ -80,8 +82,10 @@ public class StoreAccess
         this.stringStore = wrapStore( propStore.getStringStore() );
         this.arrayStore = wrapStore( propStore.getArrayStore() );
         this.relTypeStore = wrapStore( typeStore );
+        this.labelKeyStore = wrapStore( labelKeyStore );
         this.propIndexStore = wrapStore( propStore.getIndexStore() );
         this.typeNameStore = wrapStore( typeStore.getNameStore() );
+        this.labelKeyNameStore = wrapStore( labelKeyStore.getNameStore() );
         this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
     }
 
@@ -152,6 +156,11 @@ public class StoreAccess
         return relTypeStore;
     }
 
+    public RecordStore<LabelKeyRecord> getLabelKeyStore()
+    {
+        return labelKeyStore;
+    }
+
     public RecordStore<PropertyIndexRecord> getPropertyIndexStore()
     {
         return propIndexStore;
@@ -160,6 +169,11 @@ public class StoreAccess
     public RecordStore<DynamicRecord> getTypeNameStore()
     {
         return typeNameStore;
+    }
+
+    public RecordStore<DynamicRecord> getLabelKeyNameStore()
+    {
+        return labelKeyNameStore;
     }
 
     public RecordStore<DynamicRecord> getPropertyKeyStore()

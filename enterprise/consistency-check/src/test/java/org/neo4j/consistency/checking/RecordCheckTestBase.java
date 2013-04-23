@@ -167,19 +167,19 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         };
     }
 
-    public static RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> dummyRelationshipLabelCheck()
+    public static RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> dummyRelationshipLabelCheck()
     {
-        return new RelationshipLabelRecordCheck()
+        return new RelationshipTypeRecordCheck()
         {
             @Override
-            public void check( RelationshipTypeRecord record, ConsistencyReport.LabelConsistencyReport report,
+            public void check( RelationshipTypeRecord record, ConsistencyReport.RelationshipTypeConsistencyReport report,
                                RecordAccess records )
             {
             }
 
             @Override
             public void checkChange( RelationshipTypeRecord oldRecord, RelationshipTypeRecord newRecord,
-                                     ConsistencyReport.LabelConsistencyReport report, DiffRecordAccess records )
+                                     ConsistencyReport.RelationshipTypeConsistencyReport report, DiffRecordAccess records )
             {
             }
         };
@@ -232,7 +232,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
 
     DynamicRecord addLabelName( DynamicRecord name )
     {
-        return records.addLabelName( name );
+        return records.addRelationshipTypeName( name );
     }
 
     public static DynamicRecord string( DynamicRecord record )

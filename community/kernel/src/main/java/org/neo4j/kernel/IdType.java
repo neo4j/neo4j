@@ -30,6 +30,8 @@ public enum IdType
     PROPERTY_INDEX_BLOCK( false ),
     RELATIONSHIP_TYPE( 16, false ),
     RELATIONSHIP_TYPE_BLOCK( false ),
+    LABEL_NAME( false ),
+    LABEL_NAME_BLOCK( false ),
     NEOSTORE_BLOCK( false ),
     SCHEMA( 35, true ),
     NODE_LABELS( 35, true );
