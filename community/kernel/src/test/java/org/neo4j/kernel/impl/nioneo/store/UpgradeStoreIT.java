@@ -307,7 +307,7 @@ public class UpgradeStoreIT
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_BLOCK,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
         RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
@@ -334,7 +334,7 @@ public class UpgradeStoreIT
         public RelationshipTypeStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
             super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                    new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, stringStore );
+                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore );
         }
 
         @Override

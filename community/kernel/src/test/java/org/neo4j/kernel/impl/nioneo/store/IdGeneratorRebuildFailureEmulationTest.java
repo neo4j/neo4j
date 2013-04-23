@@ -158,7 +158,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
         config.put( GraphDatabaseSettings.store_dir.name(), prefix );
         factory = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.SYSTEM, null );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, null );
     }
 
     @After
