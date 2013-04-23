@@ -33,7 +33,9 @@ import org.neo4j.kernel.impl.util.FileUtils;
 public class EmbeddedNeo4j
 {
     private static final String DB_PATH = "target/neo4j-hello-db";
-    String greeting;
+
+    public String greeting;
+
     // START SNIPPET: vars
     GraphDatabaseService graphDb;
     Node firstNode;
