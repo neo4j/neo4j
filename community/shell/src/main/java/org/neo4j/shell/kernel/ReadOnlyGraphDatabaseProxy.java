@@ -70,7 +70,7 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
@@ -1093,9 +1093,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public RelationshipTypeHolder getRelationshipTypeHolder()
+    public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
     {
-        return actual.getRelationshipTypeHolder();
+        return actual.getRelationshipTypeTokenHolder();
     }
 
     @Override

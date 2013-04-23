@@ -58,7 +58,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -85,11 +85,11 @@ public class TestXa
     private NeoStoreXaConnection xaCon;
     private Logger log;
     private Level level;
-    private Map<String, PropertyIndex> propertyIndexes;
+    private Map<String, PropertyKeyToken> propertyKeyTokens;
 
-    private static class MyPropertyIndex extends org.neo4j.kernel.impl.core.PropertyIndex
+    private static class MyPropertyKeyToken extends PropertyKeyToken
     {
-        protected MyPropertyIndex( String key, int keyId )
+        protected MyPropertyKeyToken( String key, int keyId )
         {
             super( key, keyId );
         }
@@ -121,7 +121,7 @@ public class TestXa
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        propertyIndexes = new HashMap<String, PropertyIndex>();
+        propertyKeyTokens = new HashMap<String, PropertyKeyToken>();
 
         StoreFactory sf = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
                 GraphDatabaseSettings.class ), new DefaultIdGeneratorFactory(),
@@ -268,18 +268,18 @@ public class TestXa
         return Pair.of( Pair.of( activeLog, activeLogBackup ), Pair.of( currentLog, currentLogBackup ) );
     }
 
-    private PropertyIndex index( String key )
+    private PropertyKeyToken index( String key )
     {
-        PropertyIndex result = propertyIndexes.get( key );
+        PropertyKeyToken result = propertyKeyTokens.get( key );
         if ( result != null )
         {
             return result;
         }
 
-        int id = (int) ds.nextId( PropertyIndex.class );
-        PropertyIndex index = new MyPropertyIndex( key, id );
-        propertyIndexes.put( key, index );
-        xaCon.getWriteTransaction().createPropertyIndex( key, id );
+        int id = (int) ds.nextId( PropertyKeyToken.class );
+        PropertyKeyToken index = new MyPropertyKeyToken( key, id );
+        propertyKeyTokens.put( key, index );
+        xaCon.getWriteTransaction().createPropertyKeyToken( key, id );
         return index;
     }
 
@@ -297,7 +297,7 @@ public class TestXa
                 node1, index( "prop1" ), "string1" );
         xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getWriteTransaction().createRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipTypeToken( relType1,
                 "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
@@ -425,12 +425,17 @@ public class TestXa
             }
             
             @Override
-            public void addRelationshipType( NameData type )
+            public void addRelationshipTypeToken( Token type )
             {
             }
-            
+
             @Override
-            public void addPropertyIndex( NameData index )
+            public void addLabelToken( Token labelId )
+            {
+            }
+
+            @Override
+            public void addPropertyKeyToken( Token index )
             {
             }
 
@@ -455,7 +460,7 @@ public class TestXa
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getWriteTransaction().createRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipTypeToken( relType1,
                 "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
@@ -667,7 +672,7 @@ public class TestXa
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getWriteTransaction().createRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipTypeToken( relType1,
                 "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
@@ -800,7 +805,7 @@ public class TestXa
                 node1, index( "prop1" ), "string1" );
         xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getWriteTransaction().createRelationshipType( relType1, "relationshiptype1" );
+        xaCon.getWriteTransaction().createRelationshipTypeToken( relType1, "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(

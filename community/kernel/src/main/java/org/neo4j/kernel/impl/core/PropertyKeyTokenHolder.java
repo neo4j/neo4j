@@ -28,16 +28,16 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-public class PropertyIndexManager extends KeyHolder<PropertyIndex>
+public class PropertyKeyTokenHolder extends TokenHolder<PropertyKeyToken>
 {
-    private static final PropertyIndex[] EMPTY_PROPERTY_INDEXES = new PropertyIndex[0];
+    private static final PropertyKeyToken[] EMPTY_PROPERTY_INDEXES = new PropertyKeyToken[0];
     
-    private final Map<String, PropertyIndex[]> indexMap = new CopyOnWriteHashMap<String, PropertyIndex[]>();
+    private final Map<String, PropertyKeyToken[]> indexMap = new CopyOnWriteHashMap<String, PropertyKeyToken[]>();
 
-    public PropertyIndexManager( AbstractTransactionManager txManager, PersistenceManager persistenceManager,
-            EntityIdGenerator idGenerator, KeyCreator keyCreator )
+    public PropertyKeyTokenHolder( AbstractTransactionManager txManager, PersistenceManager persistenceManager,
+                                   EntityIdGenerator idGenerator, TokenCreator tokenCreator )
     {
-        super( txManager, persistenceManager, idGenerator, keyCreator );
+        super( txManager, persistenceManager, idGenerator, tokenCreator );
     }
 
     @Override
@@ -52,9 +52,9 @@ public class PropertyIndexManager extends KeyHolder<PropertyIndex>
      * this legacy method is left behind and used specifically for property indexes
      * until migration has been added to dedup them.
      */
-    public PropertyIndex[] index( String key )
+    public PropertyKeyToken[] index( String key )
     {
-        PropertyIndex[] existing = null;
+        PropertyKeyToken[] existing = null;
         if ( key != null )
         {
             existing = indexMap.get( key );
@@ -72,18 +72,18 @@ public class PropertyIndexManager extends KeyHolder<PropertyIndex>
      * until migration has been added to dedup them.
      */
     @Override
-    protected void addKeyEntry( String name, int id )
+    protected void addToken( String name, int id )
     {
-        super.addKeyEntry( name, id );
-        PropertyIndex[] list = indexMap.get( name );
-        PropertyIndex key = newKey( name, id );
+        super.addToken( name, id );
+        PropertyKeyToken[] list = indexMap.get( name );
+        PropertyKeyToken key = newToken( name, id );
         if ( list == null )
         {
-            list = new PropertyIndex[] { key };
+            list = new PropertyKeyToken[] { key };
         }
         else
         {
-            PropertyIndex[] extendedList = new PropertyIndex[list.length+1];
+            PropertyKeyToken[] extendedList = new PropertyKeyToken[list.length+1];
             arraycopy( list, 0, extendedList, 0, list.length );
             extendedList[list.length] = key;
             list = extendedList;
@@ -92,14 +92,14 @@ public class PropertyIndexManager extends KeyHolder<PropertyIndex>
     }
 
     @Override
-    protected PropertyIndex newKey( String key, int id )
+    protected PropertyKeyToken newToken( String name, int id )
     {
-        return new PropertyIndex( key, id );
+        return new PropertyKeyToken( name, id );
     }
     
     @Override
-    protected String nameOf( PropertyIndex key )
+    protected String nameOf( PropertyKeyToken token )
     {
-        return key.getKey();
+        return token.getKey();
     }
 }

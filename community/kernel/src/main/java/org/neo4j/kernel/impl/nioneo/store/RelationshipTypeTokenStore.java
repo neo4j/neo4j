@@ -34,10 +34,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
  */
-public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRecord>
+public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord>
 {
     public static abstract class Configuration
-        extends AbstractNameStore.Configuration
+        extends TokenStore.Configuration
     {
 
     }
@@ -45,17 +45,17 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeStore(File fileName, Config config,
-                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                 DynamicStringStore nameStore)
+    public RelationshipTypeTokenStore( File fileName, Config config,
+                                       IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                                       FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                       DynamicStringStore nameStore )
     {
-        super(fileName, config, IdType.RELATIONSHIP_TYPE, idGeneratorFactory, windowPoolFactory,
+        super(fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore);
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, RelationshipTypeRecord record )
+    public void accept( RecordStore.Processor processor, RelationshipTypeTokenRecord record )
     {
         processor.processRelationshipType(this, record);
     }
@@ -81,6 +81,7 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     }
 
     @Override
+    // TODO: Remove this method?
     protected void rebuildIdGenerator()
     {
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
@@ -137,9 +138,9 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     }
 
     @Override
-    protected RelationshipTypeRecord newRecord( int id )
+    protected RelationshipTypeTokenRecord newRecord( int id )
     {
-        return new RelationshipTypeRecord( id );
+        return new RelationshipTypeTokenRecord( id );
     }
 
     @Override

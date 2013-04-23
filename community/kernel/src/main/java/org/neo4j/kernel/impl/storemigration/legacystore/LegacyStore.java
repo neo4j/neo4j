@@ -36,10 +36,10 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 
 /**
@@ -145,15 +145,15 @@ public class LegacyStore implements Closeable
                 buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
     }
 
-    public void copyRelationshipTypeStore( NeoStore neoStore ) throws IOException
+    public void copyRelationshipTypeTokenStore( NeoStore neoStore ) throws IOException
     {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_STORE_NAME,
-                buildTypeDescriptorAndVersion( RelationshipTypeStore.TYPE_DESCRIPTOR ) );
+        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME,
+                buildTypeDescriptorAndVersion( RelationshipTypeTokenStore.TYPE_DESCRIPTOR ) );
     }
 
-    public void copyRelationshipTypeNameStore( NeoStore neoStore ) throws IOException
+    public void copyRelationshipTypeTokenNameStore( NeoStore neoStore ) throws IOException
     {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME,
+        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME,
                 buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
     }
 
@@ -163,15 +163,15 @@ public class LegacyStore implements Closeable
                 buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ) );
     }
 
-    public void copyPropertyIndexStore( NeoStore neoStore ) throws IOException
+    public void copyPropertyKeyTokenStore( NeoStore neoStore ) throws IOException
     {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_INDEX_STORE_NAME,
-                buildTypeDescriptorAndVersion( PropertyIndexStore.TYPE_DESCRIPTOR ) );
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
+                buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ) );
     }
 
-    public void copyPropertyIndexNameStore( NeoStore neoStore ) throws IOException
+    public void copyPropertyKeyTokenNameStore( NeoStore neoStore ) throws IOException
     {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME,
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
                 buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
     }
 

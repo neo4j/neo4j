@@ -413,7 +413,7 @@ public class LabelsAcceptanceTest
                     {
                         switch(idType)
                         {
-                            case PROPERTY_INDEX:
+                            case LABEL_TOKEN:
                                 return new EphemeralIdGenerator( idType )
                                 {
                                     @Override public long nextId()

@@ -36,9 +36,9 @@ import java.util.List;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,13 +55,14 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ConsistencyReporterTest.TestAllReportMessages.class,
@@ -283,17 +284,21 @@ public class ConsistencyReporterTest
             {
                 return new PropertyRecord( 0 );
             }
-            if ( type == PropertyIndexRecord.class )
+            if ( type == PropertyKeyTokenRecord.class )
             {
-                return new PropertyIndexRecord( 0 );
+                return new PropertyKeyTokenRecord( 0 );
             }
             if ( type == PropertyBlock.class )
             {
                 return new PropertyBlock();
             }
-            if ( type == RelationshipTypeRecord.class )
+            if ( type == RelationshipTypeTokenRecord.class )
             {
-                return new RelationshipTypeRecord( 0 );
+                return new RelationshipTypeTokenRecord( 0 );
+            }
+            if ( type == LabelTokenRecord.class )
+            {
+                return new LabelTokenRecord( 0 );
             }
             if ( type == DynamicRecord.class )
             {

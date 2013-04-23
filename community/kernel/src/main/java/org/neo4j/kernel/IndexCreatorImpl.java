@@ -32,17 +32,17 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.impl.core.KeyHolder;
-import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
 
 public class IndexCreatorImpl implements IndexCreator
 {
     private final Collection<String> propertyKeys;
     private final Label label;
-    private final KeyHolder<PropertyIndex> propertyKeyManager;
+    private final TokenHolder<PropertyKeyToken> propertyKeyManager;
     private final ThreadToStatementContextBridge ctxProvider;
 
-    IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider, KeyHolder<PropertyIndex> propertyKeyManager, Label label )
+    IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider, TokenHolder<PropertyKeyToken> propertyKeyManager, Label label )
     {
         this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;
@@ -51,7 +51,7 @@ public class IndexCreatorImpl implements IndexCreator
     }
     
     private IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider,
-            KeyHolder<PropertyIndex> propertyKeyManager, Label label, Collection<String> propertyKeys )
+            TokenHolder<PropertyKeyToken> propertyKeyManager, Label label, Collection<String> propertyKeys )
     {
         this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;

@@ -38,7 +38,7 @@ abstract class Primitive
 
     protected abstract PropertyData changeProperty( NodeManager nodeManager, PropertyData property, Object value, TransactionState tx );
 
-    protected abstract PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
+    protected abstract PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value );
 
     protected abstract void removeProperty( NodeManager nodeManager,
             PropertyData property, TransactionState tx );
@@ -138,17 +138,17 @@ abstract class Primitive
                 {
                     continue;
                 }
-                keys.add( nodeManager.getPropertyIndex( index ).getKey() );
+                keys.add( nodeManager.getPropertyKeyToken( index ).getKey() );
             }
             if ( addMap != null )
             {
                 for ( Integer index : addMap.keySet() )
                 {
-                    keys.add( nodeManager.getPropertyIndex( index ).getKey() );
+                    keys.add( nodeManager.getPropertyKeyToken( index ).getKey() );
                 }
             }
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -157,7 +157,7 @@ abstract class Primitive
 
     public Object getProperty( NodeManager nodeManager, String key ) throws NotFoundException
     {
-        PropertyIndex[] keys = nodeManager.index( key );
+        PropertyKeyToken[] keys = nodeManager.getPropertyKeyTokens( key );
         if(keys != null && keys.length > 0)
         {
             return getProperty( nodeManager, keys[0].getKeyId() );
@@ -220,7 +220,7 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key ) )
+        for ( PropertyKeyToken index : nodeManager.getPropertyKeyTokens( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
@@ -259,7 +259,7 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key ) )
+        for ( PropertyKeyToken index : nodeManager.getPropertyKeyTokens( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
@@ -297,10 +297,10 @@ abstract class Primitive
             ensureFullProperties( nodeManager );
             ArrayMap<Integer,PropertyData> addMap = tx.getOrCreateCowPropertyAddMap( this );
             ArrayMap<Integer,PropertyData> skipMap = tx.getCowPropertyRemoveMap( this );
-            PropertyIndex index = null;
+            PropertyKeyToken index = null;
             PropertyData property = null;
             boolean foundInSkipMap = false;
-            for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
+            for ( PropertyKeyToken cachedIndex : nodeManager.getPropertyKeyTokens( key ) )
             {
                 if ( skipMap != null && skipMap.remove( cachedIndex.getKeyId() ) != null )
                 {
@@ -320,8 +320,8 @@ abstract class Primitive
             }
             if ( index == null )
             {
-                int keyId = nodeManager.getOrCreatePropertyIndex( key );
-                index = nodeManager.getPropertyIndexOrNull( keyId );
+                int keyId = nodeManager.getOrCreatePropertyKeyId( key );
+                index = nodeManager.getPropertyKeyTokenOrNull( keyId );
             }
             if ( property != null && !foundInSkipMap )
             {
@@ -361,7 +361,7 @@ abstract class Primitive
             // Don't create the map if it doesn't exist here... but instead when (and if)
             // the property is found below.
             ArrayMap<Integer,PropertyData> removeMap = tx.getCowPropertyRemoveMap( this );
-            for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
+            for ( PropertyKeyToken cachedIndex : nodeManager.getPropertyKeyTokens( key ) )
             {
                 if ( addMap != null )
                 {
@@ -463,7 +463,7 @@ abstract class Primitive
             new ArrayList<PropertyEventData>( properties.length );
         for ( PropertyData property : properties )
         {
-            PropertyIndex index = nodeManager.getPropertyIndexOrNull( property.getIndex() );
+            PropertyKeyToken index = nodeManager.getPropertyKeyTokenOrNull( property.getIndex() );
             Object value = getPropertyValue( nodeManager, property );
             props.add( new PropertyEventData( index.getKey(), value ) );
         }
@@ -473,7 +473,7 @@ abstract class Primitive
     protected Object getCommittedPropertyValue( NodeManager nodeManager, String key, TransactionState tx )
     {
         ensureFullLightProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key ) )
+        for ( PropertyKeyToken index : nodeManager.getPropertyKeyTokens( key ) )
         {
             PropertyData property = getPropertyForIndex( index.getKeyId() );
             if ( property != null )

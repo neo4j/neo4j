@@ -38,15 +38,14 @@ public class ReadOnlyNodeManager extends NodeManager
 {
     public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
-                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
-                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
-                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
-            relationshipLookups,
+                                EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
         super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
-                relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
+                relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }
 
@@ -64,7 +63,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    int getOrCreatePropertyIndex( String key )
+    int getOrCreatePropertyKeyId( String key )
     {
         throw new ReadOnlyDbException();
     }
@@ -76,7 +75,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
+    PropertyData nodeAddProperty( NodeImpl node, PropertyKeyToken index, Object value )
     {
         throw new ReadOnlyDbException();
     }
@@ -101,7 +100,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyData relAddProperty( RelationshipImpl rel, PropertyIndex index, Object value )
+    PropertyData relAddProperty( RelationshipImpl rel, PropertyKeyToken index, Object value )
     {
         throw new ReadOnlyDbException();
     }

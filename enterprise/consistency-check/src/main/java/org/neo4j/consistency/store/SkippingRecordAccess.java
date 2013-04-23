@@ -22,12 +22,13 @@ package org.neo4j.consistency.store;
 import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 @SuppressWarnings("unchecked")
 public class SkippingRecordAccess implements DiffRecordAccess
@@ -51,13 +52,13 @@ public class SkippingRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
         return skipReference();
     }
 
     @Override
-    public RecordReference<PropertyIndexRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
         return skipReference();
     }
@@ -75,7 +76,19 @@ public class SkippingRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
+    {
+        return skipReference();
+    }
+
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
+    {
+        return skipReference();
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelName( int id )
     {
         return skipReference();
     }

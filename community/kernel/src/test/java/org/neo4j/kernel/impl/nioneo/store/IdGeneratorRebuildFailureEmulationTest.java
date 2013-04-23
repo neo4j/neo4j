@@ -97,7 +97,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         public static void on_setHighId( DebugInterface di, BreakPoint setHighId )
         {
             if ( setHighId.invocationCount() > 1
-                    || "org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore".equals( di.thread().getStackTrace()
+                    || RelationshipTypeTokenStore.class.getName().equals( di.thread().getStackTrace()
                     [2].getClassName() ) )
             {
                 setHighId.disable();

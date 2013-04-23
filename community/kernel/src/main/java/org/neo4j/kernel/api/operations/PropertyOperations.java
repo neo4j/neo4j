@@ -45,32 +45,33 @@ public interface PropertyOperations
     /**
      * Returns the name of a property given it's property key id
      */
-    String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
+    String getPropertyKeyName( long propertyKeyId ) throws PropertyKeyIdNotFoundException;
 
     /**
      * Returns the value of the property given it's property key id for the node with the given node id
      */
-    Object getNodePropertyValue( long nodeId, long propertyId )
+    Object getNodePropertyValue( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
 
     /**
      * Returns true if node has the property given it's property key id for the node with the given node id
      */
-    boolean nodeHasProperty(long nodeId, long propertyId)
+    boolean nodeHasProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
     /**
      * Set a node's property given the node's id, the property key id, and the value
      */
-    void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+    void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Object nodeRemoveProperty( long nodeId, long propertyId )
+    Object nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
     /**
      * Return all property keys associated with a node.
      */

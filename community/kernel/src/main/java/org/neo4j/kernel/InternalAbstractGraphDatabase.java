@@ -91,18 +91,20 @@ import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
-import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
+import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
+import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.KeyCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -192,7 +194,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreLockerLifecycleAdapter storeLocker;
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
-    protected RelationshipTypeHolder relationshipTypeHolder;
+    protected RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     protected NodeManager nodeManager;
     protected IndexManagerImpl indexManager;
     protected Schema schema;
@@ -202,11 +204,12 @@ public abstract class InternalAbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected LockManager lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
-    protected KeyCreator relationshipTypeCreator;
+    protected TokenCreator relationshipTypeCreator;
     protected NioNeoDbPersistenceSource persistenceSource;
     protected TxEventSyncHookFactory syncHook;
     protected PersistenceManager persistenceManager;
-    protected PropertyIndexManager propertyIndexManager;
+    protected PropertyKeyTokenHolder propertyKeyTokenHolder;
+    protected LabelTokenHolder labelTokenHolder;
     protected IndexStore indexStore;
     protected LogBufferFactory logBufferFactory;
     protected AbstractTransactionManager txManager;
@@ -450,19 +453,18 @@ public abstract class InternalAbstractGraphDatabase
 
         persistenceManager = new PersistenceManager( logging.getMessagesLog( PersistenceManager.class ), txManager,
                 persistenceSource, syncHook );
-        
-        KeyCreator propertyIndexCreator = createPropertyKeyCreator();
 
-        propertyIndexManager = life.add( new PropertyIndexManager( txManager, persistenceManager, persistenceSource, propertyIndexCreator ) );
+        propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( txManager, persistenceManager, persistenceSource, createPropertyKeyCreator() ) );
+        labelTokenHolder = life.add( new LabelTokenHolder( txManager, persistenceManager, persistenceSource, createLabelIdCreator() ) );
 
-        relationshipTypeHolder = new RelationshipTypeHolder( txManager,
+        relationshipTypeTokenHolder = new RelationshipTypeTokenHolder( txManager,
                 persistenceManager, persistenceSource, relationshipTypeCreator );
 
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
+        kernelAPI = life.add( new Kernel( txManager, propertyKeyTokenHolder, labelTokenHolder, persistenceManager,
                 xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
@@ -499,7 +501,7 @@ public abstract class InternalAbstractGraphDatabase
             life.add( kernelExtensions );
         }
 
-        schema = new SchemaImpl( statementContextProvider, cleanupService, propertyIndexManager );
+        schema = new SchemaImpl( statementContextProvider, cleanupService, propertyKeyTokenHolder );
 
         indexManager = new IndexManagerImpl( config, indexStore, xaDataSourceManager, txManager, this );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
@@ -552,14 +554,19 @@ public abstract class InternalAbstractGraphDatabase
         return dependencyResolver;
     }
 
-    protected KeyCreator createRelationshipTypeCreator()
+    protected TokenCreator createRelationshipTypeCreator()
     {
         return new DefaultRelationshipTypeCreator( logging );
     }
     
-    protected KeyCreator createPropertyKeyCreator()
+    protected TokenCreator createPropertyKeyCreator()
     {
-        return new DefaultPropertyKeyCreator( logging );
+        return new DefaultPropertyTokenCreator( logging );
+    }
+
+    protected TokenCreator createLabelIdCreator()
+    {
+        return new DefaultLabelIdCreator( logging );
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -567,14 +574,18 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
+            return new ReadOnlyNodeManager(
+                    logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+                    persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
+                    createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
+                    statementContextProvider );
         }
 
-        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
+        return new NodeManager(
+                logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+                persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
+                createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
+                statementContextProvider );
     }
 
     private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -583,7 +594,7 @@ public abstract class InternalAbstractGraphDatabase
         if ( readOnly )
         {
             return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                    persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
                 @Override
@@ -632,7 +643,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
             @Override
@@ -1058,9 +1069,9 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public RelationshipTypeHolder getRelationshipTypeHolder()
+    public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
     {
-        return relationshipTypeHolder;
+        return relationshipTypeTokenHolder;
     }
 
     @Override
@@ -1306,9 +1317,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( diagnosticsManager );
             }
-            else if ( PropertyIndexManager.class.isAssignableFrom( type ) && type.isInstance( propertyIndexManager ) )
+            else if ( PropertyKeyTokenHolder.class.isAssignableFrom( type ) && type.isInstance( propertyKeyTokenHolder ) )
             {
-                return type.cast( propertyIndexManager );
+                return type.cast( propertyKeyTokenHolder );
+            }
+            else if ( LabelTokenHolder.class.isAssignableFrom( type ) && type.isInstance( labelTokenHolder ) )
+            {
+                return type.cast( labelTokenHolder );
             }
             else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
             {

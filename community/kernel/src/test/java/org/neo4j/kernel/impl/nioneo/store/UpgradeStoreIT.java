@@ -306,13 +306,13 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_BLOCK,
+        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
-        RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, stringStore );
+        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
-            RelationshipTypeRecord record = new RelationshipTypeRecord( i );
+            RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( i );
             record.setCreated();
             record.setInUse( true );
             Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
@@ -327,11 +327,11 @@ public class UpgradeStoreIT
         store.close();
     }
 
-    private static class RelationshipTypeStoreWithOneOlderVersion extends RelationshipTypeStore
+    private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
         private boolean versionCalled;
 
-        public RelationshipTypeStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
+        public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
             super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                     new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore );

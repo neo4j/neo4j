@@ -36,13 +36,14 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public class RecordAccessStub implements RecordAccess, DiffRecordAccess
 {
@@ -175,10 +176,12 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     private final Map<Long, Delta<PropertyRecord>> properties = new HashMap<Long, Delta<PropertyRecord>>();
     private final Map<Long, Delta<DynamicRecord>> strings = new HashMap<Long, Delta<DynamicRecord>>();
     private final Map<Long, Delta<DynamicRecord>> arrays = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<RelationshipTypeRecord>> labels = new HashMap<Long, Delta<RelationshipTypeRecord>>();
-    private final Map<Long, Delta<PropertyIndexRecord>> keys = new HashMap<Long, Delta<PropertyIndexRecord>>();
+    private final Map<Long, Delta<RelationshipTypeTokenRecord>> relationshipTypeTokens = new HashMap<Long, Delta<RelationshipTypeTokenRecord>>();
+    private final Map<Long, Delta<LabelTokenRecord>> labelTokens = new HashMap<Long, Delta<LabelTokenRecord>>();
+    private final Map<Long, Delta<PropertyKeyTokenRecord>> propertyKeyTokens = new HashMap<Long, Delta<PropertyKeyTokenRecord>>();
+    private final Map<Long, Delta<DynamicRecord>> relationshipTypeNames = new HashMap<Long, Delta<DynamicRecord>>();
     private final Map<Long, Delta<DynamicRecord>> labelNames = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> keyNames = new HashMap<Long, Delta<DynamicRecord>>();
+    private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<Long, Delta<DynamicRecord>>();
     private Delta<NeoStoreRecord> graph;
 
     private static class Delta<R extends AbstractBaseRecord>
@@ -251,12 +254,12 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
 
     public DynamicRecord addKeyName( DynamicRecord name )
     {
-        return add( keyNames, name );
+        return add( propertyKeyNames, name );
     }
 
-    public DynamicRecord addLabelName( DynamicRecord name )
+    public DynamicRecord addRelationshipTypeName( DynamicRecord name )
     {
-        return add( labelNames, name );
+        return add( relationshipTypeNames, name );
     }
 
     public <R extends AbstractBaseRecord> R addChange( R oldRecord, R newRecord )
@@ -289,13 +292,13 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
                 throw new IllegalArgumentException( "Invalid dynamic record type" );
             }
         }
-        else if ( newRecord instanceof RelationshipTypeRecord )
+        else if ( newRecord instanceof RelationshipTypeTokenRecord )
         {
-            add( labels, (RelationshipTypeRecord) oldRecord, (RelationshipTypeRecord) newRecord );
+            add( relationshipTypeTokens, (RelationshipTypeTokenRecord) oldRecord, (RelationshipTypeTokenRecord) newRecord );
         }
-        else if ( newRecord instanceof PropertyIndexRecord )
+        else if ( newRecord instanceof PropertyKeyTokenRecord )
         {
-            add( keys, (PropertyIndexRecord) oldRecord, (PropertyIndexRecord) newRecord );
+            add( propertyKeyTokens, (PropertyKeyTokenRecord) oldRecord, (PropertyKeyTokenRecord) newRecord );
         }
         else if ( newRecord instanceof NeoStoreRecord )
         {
@@ -338,13 +341,13 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
                 throw new IllegalArgumentException( "Invalid dynamic record type" );
             }
         }
-        else if ( record instanceof RelationshipTypeRecord )
+        else if ( record instanceof RelationshipTypeTokenRecord )
         {
-            add( labels, (RelationshipTypeRecord) record );
+            add( relationshipTypeTokens, (RelationshipTypeTokenRecord) record );
         }
-        else if ( record instanceof PropertyIndexRecord )
+        else if ( record instanceof PropertyKeyTokenRecord )
         {
-            add( keys, (PropertyIndexRecord) record );
+            add( propertyKeyTokens, (PropertyKeyTokenRecord) record );
         }
         else if ( record instanceof NeoStoreRecord )
         {
@@ -397,15 +400,15 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
-        return reference( labels, id, Version.LATEST );
+        return reference( relationshipTypeTokens, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<PropertyIndexRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
-        return reference( keys, id, Version.LATEST );
+        return reference( propertyKeyTokens, id, Version.LATEST );
     }
 
     @Override
@@ -421,7 +424,19 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
+    {
+        return reference( relationshipTypeNames, id, Version.LATEST );
+    }
+
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
+    {
+        return reference( labelTokens, id, Version.LATEST );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelName( int id )
     {
         return reference( labelNames, id, Version.LATEST );
     }
@@ -429,7 +444,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     @Override
     public RecordReference<DynamicRecord> propertyKeyName( int id )
     {
-        return reference( keyNames, id, Version.LATEST );
+        return reference( propertyKeyNames, id, Version.LATEST );
     }
 
     @Override

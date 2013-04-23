@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.nioneo.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.nioneo.store.Record.NO_PREV_RELATIONSHIP;
 
@@ -27,15 +27,15 @@ import java.io.IOException;
 
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
@@ -98,13 +98,13 @@ public class TransactionWriter
 
     public void propertyKey( int id, String key, int... dynamicIds ) throws IOException
     {
-        write( new Command.PropertyIndexCommand( null, withName( new PropertyIndexRecord( id ), dynamicIds, key ) ) );
+        write( new Command.PropertyKeyTokenCommand( null, withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) ) );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds ) throws IOException
     {
-        write( new Command.RelationshipTypeCommand( null,
-                withName( new RelationshipTypeRecord( id ), dynamicIds, label ) ) );
+        write( new Command.RelationshipTypeTokenCommand( null,
+                withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) ) );
     }
 
     public void update( NeoStoreRecord record ) throws IOException
@@ -188,14 +188,14 @@ public class TransactionWriter
         write( new Command.PropertyCommand( null, before, property ) );
     }
 
-    public void add( RelationshipTypeRecord record ) throws IOException
+    public void add( RelationshipTypeTokenRecord record ) throws IOException
     {
-        write( new Command.RelationshipTypeCommand( null, record ) );
+        write( new Command.RelationshipTypeTokenCommand( null, record ) );
     }
 
-    public void add( PropertyIndexRecord record ) throws IOException
+    public void add( PropertyKeyTokenRecord record ) throws IOException
     {
-        write( new Command.PropertyIndexCommand( null, record ) );
+        write( new Command.PropertyKeyTokenCommand( null, record ) );
     }
 
     public void add( NeoStoreRecord record ) throws IOException
@@ -208,7 +208,7 @@ public class TransactionWriter
         LogIoUtils.writeCommand( buffer, localId, command );
     }
 
-    private static <T extends AbstractNameRecord> T withName( T record, int[] dynamicIds, String name )
+    private static <T extends TokenRecord> T withName( T record, int[] dynamicIds, String name )
     {
         if ( dynamicIds == null || dynamicIds.length == 0 )
         {

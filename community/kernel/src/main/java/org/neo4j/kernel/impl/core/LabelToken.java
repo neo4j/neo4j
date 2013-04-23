@@ -19,29 +19,36 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
-public class RelationshipTypeHolder extends KeyHolder<RelationshipType>
+public class LabelToken
 {
-    public RelationshipTypeHolder( AbstractTransactionManager transactionManager,
-                                   PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                                   KeyCreator keyCreator )
+    private final String name;
+    private final int labelId;
+
+    public LabelToken( String name, int labelId )
     {
-        super( transactionManager, persistenceManager, idGenerator, keyCreator );
+        this.name = name;
+        this.labelId = labelId;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public int getLabelId()
+    {
+        return this.labelId;
     }
 
     @Override
-    protected RelationshipTypeImpl newKey( String key, int id )
+    public int hashCode()
     {
-        return new RelationshipTypeImpl( key, id );
+        return labelId;
     }
 
     @Override
-    protected String nameOf( RelationshipType key )
+    public boolean equals( Object o )
     {
-        return key.name();
+        return o instanceof LabelToken && labelId == ((LabelToken) o).getLabelId();
     }
 }

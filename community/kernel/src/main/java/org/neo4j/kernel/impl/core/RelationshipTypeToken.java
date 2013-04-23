@@ -20,22 +20,45 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.logging.Logging;
 
-public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCreator
+class RelationshipTypeToken implements RelationshipType
 {
-    public DefaultRelationshipTypeCreator( Logging logging )
+    final String name;
+    private final int id;
+
+    RelationshipTypeToken( String name, int id )
     {
-        super( logging );
+        assert name != null;
+        this.name = name;
+        this.id = id;
     }
 
-    @Override
-    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
+    public String name()
     {
-        int id = (int) idGenerator.nextId( RelationshipType.class );
-        persistence.createRelationshipType( id, name );
+        return name;
+    }
+    
+    public int getId()
+    {
         return id;
+    }
+
+    public String toString()
+    {
+        return name;
+    }
+
+    public boolean equals( Object o )
+    {
+        if ( !(o instanceof RelationshipType) )
+        {
+            return false;
+        }
+        return name.equals( ((RelationshipType) o).name() );
+    }
+
+    public int hashCode()
+    {
+        return name.hashCode();
     }
 }

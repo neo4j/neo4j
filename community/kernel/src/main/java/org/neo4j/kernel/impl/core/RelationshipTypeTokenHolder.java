@@ -19,12 +19,29 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public interface KeyCreator
+public class RelationshipTypeTokenHolder extends TokenHolder<RelationshipType>
 {
-    int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name );
+    public RelationshipTypeTokenHolder( AbstractTransactionManager transactionManager,
+                                        PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
+                                        TokenCreator tokenCreator )
+    {
+        super( transactionManager, persistenceManager, idGenerator, tokenCreator );
+    }
+
+    @Override
+    protected RelationshipTypeToken newToken( String name, int id )
+    {
+        return new RelationshipTypeToken( name, id );
+    }
+
+    @Override
+    protected String nameOf( RelationshipType token )
+    {
+        return token.name();
+    }
 }

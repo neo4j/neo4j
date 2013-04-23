@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class NoTransactionState implements TransactionState
 {
-    protected final PropertyIndex[] EMPTY_PROPERTY_INDEX_ARRAY = new PropertyIndex[0];
+    protected final PropertyKeyToken[] EMPTY_PROPERTY_INDEX_ARRAY = new PropertyKeyToken[0];
 
     @Override
     public LockElement acquireWriteLock( Object resource )

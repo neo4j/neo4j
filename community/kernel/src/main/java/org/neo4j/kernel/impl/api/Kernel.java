@@ -34,8 +34,9 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -92,7 +93,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final AbstractTransactionManager transactionManager;
-    private final PropertyIndexManager propertyIndexManager;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final LabelTokenHolder labelTokenHolder;
     private final PersistenceManager persistenceManager;
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
@@ -109,13 +111,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private NodeManager nodeManager;
     private PersistenceCache persistenceCache;
 
-    public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
+    public Kernel( AbstractTransactionManager transactionManager,
+                   PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                    PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
                    LockManager lockManager, UpdateableSchemaState schemaState,
                    DependencyResolver dependencyResolver )
     {
         this.transactionManager = transactionManager;
-        this.propertyIndexManager = propertyIndexManager;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
         this.persistenceManager = persistenceManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
@@ -180,8 +184,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
-        TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore,
-                indexService );
+        TransactionContext result = new StoreTransactionContext(
+                propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService );
 
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache, schemaCache, schemaState);
@@ -206,7 +210,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private StatementContext createReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new StoreStatementContext( propertyIndexManager, nodeManager,
+        StatementContext result = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.Caching( indexService ) );
 
         // + Cache

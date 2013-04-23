@@ -22,19 +22,19 @@ package org.neo4j.kernel.ha;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.KeyCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class SlavePropertyKeyCreator implements KeyCreator
+public class SlavePropertyTokenCreator implements TokenCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final HaXaDataSourceManager xaDsm;
 
-    public SlavePropertyKeyCreator( Master master, RequestContextFactory requestContextFactory,
-                                         HaXaDataSourceManager xaDsm )
+    public SlavePropertyTokenCreator( Master master, RequestContextFactory requestContextFactory,
+                                      HaXaDataSourceManager xaDsm )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;

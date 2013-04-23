@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.GraphStoreFixture;
@@ -282,9 +282,9 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getTypeNameStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getRelationshipTypeNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
-        access.getTypeNameStore().updateRecord( record );
+        access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
@@ -309,9 +309,9 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getPropertyKeyStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
-        access.getPropertyKeyStore().updateRecord( record );
+        access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
@@ -325,10 +325,10 @@ public class FullCheckIntegrationTest
     {
         // given
         StoreAccess access = fixture.storeAccess();
-        RelationshipTypeRecord record = access.getRelationshipTypeStore().forceGetRecord( 1 );
+        RelationshipTypeTokenRecord record = access.getRelationshipTypeTokenStore().forceGetRecord( 1 );
         record.setNameId( 20 );
         record.setInUse( true );
-        access.getRelationshipTypeStore().updateRecord( record );
+        access.getRelationshipTypeTokenStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
@@ -353,9 +353,9 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getPropertyKeyStore().forceGetRecord( inconsistentKey.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get() );
         record.setInUse( false );
-        access.getPropertyKeyStore().updateRecord( record );
+        access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );

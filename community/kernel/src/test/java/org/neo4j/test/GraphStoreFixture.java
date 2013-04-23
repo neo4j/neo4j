@@ -361,8 +361,8 @@ public abstract class GraphStoreFixture implements TestRule
             propId = stores.getPropertyStore().getHighId();
             stringPropId = stores.getStringStore().getHighId();
             arrayPropId = stores.getArrayStore().getHighId();
-            relTypeId = (int) stores.getRelationshipTypeStore().getHighId();
-            propKeyId = (int) stores.getPropertyKeyStore().getHighId();
+            relTypeId = (int) stores.getRelationshipTypeTokenStore().getHighId();
+            propKeyId = (int) stores.getPropertyKeyNameStore().getHighId();
         }
         finally
         {

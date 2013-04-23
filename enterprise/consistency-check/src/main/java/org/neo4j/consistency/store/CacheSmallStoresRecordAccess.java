@@ -20,22 +20,23 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public class CacheSmallStoresRecordAccess implements DiffRecordAccess
 {
     private final DiffRecordAccess delegate;
-    private final PropertyIndexRecord[] propertyRecords;
-    private final RelationshipTypeRecord[] relationshipLabels;
+    private final PropertyKeyTokenRecord[] propertyRecords;
+    private final RelationshipTypeTokenRecord[] relationshipLabels;
 
     public CacheSmallStoresRecordAccess( DiffRecordAccess delegate,
-                                         PropertyIndexRecord[] propertyRecords,
-                                         RelationshipTypeRecord[] relationshipLabels )
+                                         PropertyKeyTokenRecord[] propertyRecords,
+                                         RelationshipTypeTokenRecord[] relationshipLabels )
     {
         this.delegate = delegate;
         this.propertyRecords = propertyRecords;
@@ -61,24 +62,24 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
         if ( id < relationshipLabels.length )
         {
-            return new DirectRecordReference<RelationshipTypeRecord>( relationshipLabels[id], this );
+            return new DirectRecordReference<RelationshipTypeTokenRecord>( relationshipLabels[id], this );
         }
         else
         {
-            return delegate.relationshipLabel( id );
+            return delegate.relationshipType( id );
         }
     }
 
     @Override
-    public RecordReference<PropertyIndexRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
         if ( id < propertyRecords.length )
         {
-            return new DirectRecordReference<PropertyIndexRecord>( propertyRecords[id], this );
+            return new DirectRecordReference<PropertyKeyTokenRecord>( propertyRecords[id], this );
         }
         else
         {
@@ -99,9 +100,21 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
     {
-        return delegate.relationshipLabelName( id );
+        return delegate.relationshipTypeName( id );
+    }
+
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
+    {
+        return delegate.label( id );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelName( int id )
+    {
+        return delegate.labelName( id );
     }
 
     @Override

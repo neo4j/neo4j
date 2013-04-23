@@ -76,11 +76,11 @@ public class StoreMigrator
 
             // Just copy unchanged stores that doesn't need migration
             legacyStore.copyRelationshipStore( neoStore );
-            legacyStore.copyRelationshipTypeStore( neoStore );
-            legacyStore.copyRelationshipTypeNameStore( neoStore );
+            legacyStore.copyRelationshipTypeTokenStore( neoStore );
+            legacyStore.copyRelationshipTypeTokenNameStore( neoStore );
             legacyStore.copyPropertyStore( neoStore );
-            legacyStore.copyPropertyIndexStore( neoStore );
-            legacyStore.copyPropertyIndexNameStore( neoStore );
+            legacyStore.copyPropertyKeyTokenStore( neoStore );
+            legacyStore.copyPropertyKeyTokenNameStore( neoStore );
             legacyStore.copyDynamicStringPropertyStore( neoStore );
             legacyStore.copyDynamicArrayPropertyStore( neoStore );
         }

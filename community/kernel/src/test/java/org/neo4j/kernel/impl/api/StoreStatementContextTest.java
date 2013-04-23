@@ -53,8 +53,9 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -255,7 +256,8 @@ public class StoreStatementContextTest
         IndexingService mockIndexService = mock(IndexingService.class);
         when( mockIndexService.getIndexDescriptor( 1337l ) ).thenReturn( idxDesc );
 
-        StoreStatementContext ctx = new StoreStatementContext( null, null, mock( NeoStore.class ), mockIndexService, null);
+        StoreStatementContext ctx = new StoreStatementContext(
+                null, null, null, mock( NeoStore.class ), mockIndexService, null);
 
         // WHEN
         IndexDescriptor idx = ctx.getIndexDescriptor( 1337l );
@@ -293,7 +295,8 @@ public class StoreStatementContextTest
         NeoStoreXaDataSource neoStoreDataSource = db.getDependencyResolver()
                 .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
         statement = new StoreStatementContext(
-                db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
+                db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class ),
+                db.getDependencyResolver().resolveDependency( LabelTokenHolder.class ),
                 db.getDependencyResolver().resolveDependency( NodeManager.class ),
                 neoStoreDataSource.getNeoStore(),
                 indexingService, new IndexReaderFactory.Caching( indexingService ));

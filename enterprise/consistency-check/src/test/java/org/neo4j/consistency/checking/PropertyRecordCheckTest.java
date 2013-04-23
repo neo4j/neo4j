@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -71,7 +71,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
-        PropertyIndexRecord key = add( notInUse( new PropertyIndexRecord( 0 ) ) );
+        PropertyKeyTokenRecord key = add( notInUse( new PropertyKeyTokenRecord( 0 ) ) );
         PropertyBlock block = propertyBlock( key, PropertyType.INT, 0 );
         property.addPropertyBlock( block );
 
@@ -152,7 +152,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
-        PropertyIndexRecord key = add( inUse( new PropertyIndexRecord( 6 ) ) );
+        PropertyKeyTokenRecord key = add( inUse( new PropertyKeyTokenRecord( 6 ) ) );
         DynamicRecord value = add( notInUse( string( new DynamicRecord( 1001 ) ) ) );
         PropertyBlock block = propertyBlock( key, value );
         property.addPropertyBlock( block );
@@ -169,7 +169,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
-        PropertyIndexRecord key = add( inUse( new PropertyIndexRecord( 6 ) ) );
+        PropertyKeyTokenRecord key = add( inUse( new PropertyKeyTokenRecord( 6 ) ) );
         DynamicRecord value = add( notInUse( array( new DynamicRecord( 1001 ) ) ) );
         PropertyBlock block = propertyBlock( key, value );
         property.addPropertyBlock( block );
@@ -187,7 +187,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
-        PropertyIndexRecord key = add( inUse( new PropertyIndexRecord( 6 ) ) );
+        PropertyKeyTokenRecord key = add( inUse( new PropertyKeyTokenRecord( 6 ) ) );
         DynamicRecord value = add( inUse( string( new DynamicRecord( 1001 ) ) ) );
         PropertyBlock block = propertyBlock( key, value );
         property.addPropertyBlock( block );
@@ -205,7 +205,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
-        PropertyIndexRecord key = add( inUse( new PropertyIndexRecord( 6 ) ) );
+        PropertyKeyTokenRecord key = add( inUse( new PropertyKeyTokenRecord( 6 ) ) );
         DynamicRecord value = add( inUse( array( new DynamicRecord( 1001 ) ) ) );
         PropertyBlock block = propertyBlock( key, value );
         property.addPropertyBlock( block );
@@ -412,7 +412,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord oldProperty = inUse( new PropertyRecord( 42 ) );
-        PropertyBlock block = propertyBlock( add( inUse( new PropertyIndexRecord( 1 ) ) ),
+        PropertyBlock block = propertyBlock( add( inUse( new PropertyKeyTokenRecord( 1 ) ) ),
                                              add( string( inUse( new DynamicRecord( 100 ) ) ) ) );
         oldProperty.addPropertyBlock( block );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
@@ -432,7 +432,7 @@ public class PropertyRecordCheckTest
     {
         // given
         PropertyRecord oldProperty = inUse( new PropertyRecord( 42 ) );
-        PropertyBlock block = propertyBlock( add( inUse( new PropertyIndexRecord( 1 ) ) ),
+        PropertyBlock block = propertyBlock( add( inUse( new PropertyKeyTokenRecord( 1 ) ) ),
                                              add( array( inUse( new DynamicRecord( 100 ) ) ) ) );
         oldProperty.addPropertyBlock( block );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );

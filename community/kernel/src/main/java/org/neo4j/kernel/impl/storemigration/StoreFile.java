@@ -37,11 +37,13 @@ public enum StoreFile
     PROPERTY_STORE( "PropertyStore", StoreFactory.PROPERTY_STORE_NAME ),
     PROPERTY_ARRAY_STORE( "ArrayPropertyStore", StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
     PROPERTY_STRING_STORE( "StringPropertyStore", StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
-    PROPERTY_INDEX_STORE( "PropertyIndexStore", StoreFactory.PROPERTY_INDEX_STORE_NAME ),
-    PROPERTY_INDEX_KEYS_STORE( "StringPropertyStore", StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ),
+    PROPERTY_INDEX_STORE( "PropertyIndexStore", StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ),
+    PROPERTY_INDEX_KEYS_STORE( "StringPropertyStore", StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
     RELATIONSHIP_STORE( "RelationshipStore", StoreFactory.RELATIONSHIP_STORE_NAME ),
-    RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
-    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ),
+    RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
+    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
+    LABEL_NAME_STORE( "LabelNameStore", StoreFactory.LABEL_TOKEN_STORE_NAME, false ),
+    LABEL_NAME_NAMES_STORE( "StringPropertyStore", StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME, false ),
     SCHEMA_STORE( "SchemaStore", StoreFactory.SCHEMA_STORE_NAME, false );
     
     private final String typeDescriptor;

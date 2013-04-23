@@ -74,7 +74,7 @@ public enum DynamicStore
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
-            return records.relationshipLabelName( (int) block );
+            return records.relationshipTypeName( (int) block );
         }
 
         @Override

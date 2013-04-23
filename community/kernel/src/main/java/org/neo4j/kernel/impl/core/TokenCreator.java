@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class KeyNotFoundException extends Exception
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+
+public interface TokenCreator
 {
-    public KeyNotFoundException( String message )
-    {
-        super( message );
-    }
+    int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
+            PersistenceManager persistence, String name );
 }

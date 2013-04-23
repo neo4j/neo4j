@@ -65,7 +65,7 @@ public class StoreVersionTest
                 neoStore.getRelationshipStore(),
                 neoStore.getRelationshipTypeStore(),
                 neoStore.getPropertyStore(),
-                neoStore.getPropertyStore().getIndexStore()
+                neoStore.getPropertyStore().getPropertyKeyTokenStore()
         };
 
         for ( CommonAbstractStore store : stores )

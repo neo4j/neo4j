@@ -26,10 +26,12 @@ public enum IdType
     PROPERTY( 36, true ), // This one
     STRING_BLOCK( 36, true ), // This one
     ARRAY_BLOCK( 36, true ), // This one
-    PROPERTY_INDEX( false ),
-    PROPERTY_INDEX_BLOCK( false ),
-    RELATIONSHIP_TYPE( 16, false ),
-    RELATIONSHIP_TYPE_BLOCK( false ),
+    PROPERTY_KEY_TOKEN( false ),
+    PROPERTY_KEY_TOKEN_NAME( false ),
+    RELATIONSHIP_TYPE_TOKEN( 16, false ),
+    RELATIONSHIP_TYPE_TOKEN_NAME( false ),
+    LABEL_TOKEN( false ),
+    LABEL_TOKEN_NAME( false ),
     NEOSTORE_BLOCK( false ),
     SCHEMA( 35, true ),
     NODE_LABELS( 35, true );
