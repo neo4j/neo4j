@@ -337,28 +337,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         {
             releaseWindow( window );
         }
-        for ( PropertyBlock block : record.getPropertyBlocks() )
-        {
-            // assert block.inUse();
-            if ( block.getType() == PropertyType.STRING )
-            {
-                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord stringRecord : stringRecords )
-                {
-                    stringRecord.setType( PropertyType.STRING.intValue() );
-                    block.addValueRecord( stringRecord );
-                }
-            }
-            else if ( block.getType() == PropertyType.ARRAY )
-            {
-                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord arrayRecord : arrayRecords )
-                {
-                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                    block.addValueRecord( arrayRecord );
-                }
-            }
-        }
         return record;
     }
 
@@ -584,7 +562,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     
     public Object getStringFor( PropertyBlock propertyBlock )
     {
-        assert !propertyBlock.isLight();
+        ensureHeavy( propertyBlock );
         return getStringFor( propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
     }
 
@@ -597,7 +575,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     public Object getArrayFor( PropertyBlock propertyBlock )
     {
-        assert !propertyBlock.isLight();
+        ensureHeavy( propertyBlock );
         return getArrayFor( propertyBlock.getValueRecords() );
     }
 
