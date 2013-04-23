@@ -143,7 +143,7 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         
         private RECORD prepareForChange()
         {
-            ensureBeforeInstantiated();
+            ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
                 this.allChanges.put( key, this );
@@ -180,14 +180,14 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         
         public RECORD getBefore()
         {
-            ensureBeforeInstantiated();
+            ensureHasBeforeRecordImage();
             if ( !manageBeforeState )
                 throw new UnsupportedOperationException( "This RecordChanges instance doesn't manage before-state" );
             return before;
         }
 
         @SuppressWarnings( "unchecked" )
-        private void ensureBeforeInstantiated()
+        private void ensureHasBeforeRecordImage()
         {
             if ( manageBeforeState && this.before == null )
             {

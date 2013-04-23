@@ -64,8 +64,10 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -455,6 +457,73 @@ public class WriteTransactionTest
         // WHEN
         tx.createSchemaRule( rule );
         prepareAndCommit( tx );
+    }
+    
+    @Test
+    public void shouldWriteProperPropertyRecordsWhenOnlyChangingLinkage() throws Exception
+    {
+        /* There was an issue where GIVEN:
+         * 
+         *   Legend: () = node, [] = property record
+         *   
+         *   ()-->[0:block{size:1}]
+         *   
+         * WHEN adding a new property record in front of if, not chaning any data in that record i.e:
+         * 
+         *   ()-->[1:block{size:4}]-->[0:block{size:1}]
+         *
+         * The state of property record 0 would be that it had loaded value records for that block,
+         * but those value records weren't heavy, so writing that record to the log would fail
+         * w/ an assertion data != null.
+         */
+        
+        // GIVEN
+        WriteTransaction tx = newWriteTransaction( NO_INDEXING );
+        int nodeId = 0;
+        tx.nodeCreate( nodeId );
+        PropertyIndex index = new PropertyIndex( "key", 0 );
+        tx.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
+        prepareAndCommit( tx );
+
+        // WHEN
+        Visitor<XaCommand> verifier = new Visitor<XaCommand>()
+        {
+            @Override
+            public boolean visit( XaCommand element )
+            {
+                if ( element instanceof PropertyCommand )
+                {
+                    // THEN
+                    PropertyCommand propertyCommand = (PropertyCommand) element;
+                    verifyPropertyRecord( propertyCommand.getBefore() );
+                    verifyPropertyRecord( propertyCommand.getAfter() );
+                    return true;
+                }
+                return false;
+            }
+
+            private void verifyPropertyRecord( PropertyRecord record )
+            {
+                if ( record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
+                {
+                    for ( PropertyBlock block : record.getPropertyBlocks() )
+                        assertTrue( block.isLight() );
+                }
+            }
+        };
+        tx = newWriteTransaction( NO_INDEXING, verifier );
+        PropertyIndex index2 = new PropertyIndex( "key2", 1 );
+        tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
+        prepareAndCommit( tx );
+    }
+
+    private String string( int length )
+    {
+        StringBuilder result = new StringBuilder();
+        char ch = 'a';
+        for ( int i = 0; i < length; i++ )
+            result.append( (char)((ch + (i%10))) );
+        return result.toString();
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
