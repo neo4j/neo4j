@@ -24,8 +24,6 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
