@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.lang.String.format;
-import static java.lang.reflect.Proxy.newProxyInstance;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
@@ -62,22 +57,7 @@ public class CompositeStatementContext implements StatementContext
     public CompositeStatementContext()
     {
         // If not given anything to delegate to, default to making all ops unsupported.
-        StatementContext unsupportedOpDelegate = (StatementContext) newProxyInstance( getClass().getClassLoader(),
-                new Class[]{StatementContext.class}, new InvocationHandler()
-        {
-            @Override
-            public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-            {
-                String outerName = CompositeStatementContext.this.getClass().getSimpleName();
-                throw new UnsupportedOperationException( format( "%s does not support %s.", outerName,
-                        method.getName() ) );
-            }
-        } );
-        this.entityOperations = unsupportedOpDelegate;
-        this.propertyOperations = unsupportedOpDelegate;
-        this.labelOperations = unsupportedOpDelegate;
-        this.schemaOperations = unsupportedOpDelegate;
-        this.delegateToClose = unsupportedOpDelegate;
+        this(UnsupportiveStatementContext.instance());
 
     }
 

@@ -153,11 +153,18 @@ abstract class Primitive
 
     public Object getProperty( NodeManager nodeManager, String key ) throws NotFoundException
     {
-        if ( key == null )
+        PropertyIndex[] keys = nodeManager.index( key );
+        if(keys != null && keys.length > 0)
         {
-            throw new IllegalArgumentException( "null key" );
+            return getProperty( nodeManager, keys[0].getKeyId() );
+        } else
+        {
+            throw newPropertyNotFoundException( key );
         }
-        
+    }
+
+    public Object getProperty( NodeManager nodeManager, int key ) throws NotFoundException
+    {
         TransactionState tx = nodeManager.getTransactionState();
         ArrayMap<Integer,PropertyData> skipMap = null, addMap = null;
         if ( tx.hasChanges() )
@@ -167,27 +174,25 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key ) )
+
+        if ( skipMap != null && skipMap.get( key ) != null )
         {
-            if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
-            {
-                throw newPropertyNotFoundException( key );
-            }
-            if ( addMap != null )
-            {
-                PropertyData property = addMap.get( index.getKeyId() );
-                if ( property != null )
-                {
-                    return getPropertyValue( nodeManager, property );
-                }
-            }
-            PropertyData property = getPropertyForIndex( index.getKeyId() );
+            throw newPropertyNotFoundException( "No property with id " + key + " exists on " + this );
+        }
+        if ( addMap != null )
+        {
+            PropertyData property = addMap.get( key );
             if ( property != null )
             {
                 return getPropertyValue( nodeManager, property );
             }
         }
-        throw newPropertyNotFoundException( key );
+        PropertyData property = getPropertyForIndex(key );
+        if ( property != null )
+        {
+            return getPropertyValue( nodeManager, property );
+        }
+        throw newPropertyNotFoundException( "No property with id " + key + " exists on " + this );
     }
 
     private NotFoundException newPropertyNotFoundException( String key )

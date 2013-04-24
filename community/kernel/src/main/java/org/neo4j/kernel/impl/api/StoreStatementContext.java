@@ -359,8 +359,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            String propertyKey = getPropertyKeyName( propertyKeyId );
-            return nodeManager.getNodeForProxy( nodeId, null ).getProperty( nodeManager, propertyKey );
+            return nodeManager.getNodeForProxy( nodeId, null ).getProperty( nodeManager, (int)propertyKeyId );
         }
         catch (IllegalStateException e)
         {

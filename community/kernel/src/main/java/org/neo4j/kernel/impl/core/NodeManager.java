@@ -899,7 +899,7 @@ public class NodeManager
 
             for ( String key : propertyKeys )
             {
-                Object value = primitive.getProperty( this, key );
+                Object value = primitive.getProperty( this, propertyIndexManager.index( key )[0].getKeyId() );
                 for ( PropertyTracker<T> tracker : trackers )
                 {
                     tracker.propertyRemoved( proxy, key, value );

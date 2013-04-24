@@ -1,0 +1,230 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.api;
+
+import java.util.Iterator;
+
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
+public class UnsupportiveStatementContext implements StatementContext
+{
+
+    private static final UnsupportiveStatementContext INSTANCE = new UnsupportiveStatementContext();
+
+    public static StatementContext instance()
+    {
+        return INSTANCE;
+    }
+
+    @Override
+    public void close()
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Long> getNodesWithLabel( long labelId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void deleteNode( long nodeId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public long getLabelId( String label ) throws LabelNotFoundKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Object getNodePropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
+            PropertyNotFoundException, EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void nodeSetPropertyValue( long nodeId, long propertyId,
+                                      Object value ) throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Object nodeRemoveProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Long> listNodePropertyKeys( long nodeId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Long> listRelationshipPropertyKeys( long relationshipId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<IndexRule> getIndexRules( long labelId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<IndexRule> getIndexRules()
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
+    {
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        throw unsupported();
+    }
+
+
+    private UnsupportedOperationException unsupported()
+    {
+        return new UnsupportedOperationException( "This operation is not implemented." );
+    }
+}

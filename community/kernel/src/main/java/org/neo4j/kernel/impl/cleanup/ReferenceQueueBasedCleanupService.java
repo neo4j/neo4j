@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.cleanup;
 
 import java.io.Closeable;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -59,24 +60,17 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     public void start()
     {
         running = true;
-        scheduler.schedule( this );
+        scheduler.scheduleRecurring( this, 1, TimeUnit.SECONDS );
     }
 
     @Override
     public void run()
     {
-        try
+        if ( running )
         {
             for ( CleanupReference reference; running && (reference = collectedReferences.remove()) != null; )
             {
                 cleanup( reference );
-            }
-        }
-        finally
-        {
-            if ( running )
-            {
-                scheduler.schedule( this );
             }
         }
     }

@@ -151,6 +151,11 @@ public class RelationshipProxy implements Relationship
 
     public Object getProperty( String key )
     {
+        if(key == null)
+        {
+            // TODO: Move check into kernel API once kernel API is used by this method.
+            throw new IllegalArgumentException( "Null is not a valid property key." );
+        }
         return relationshipLookups.lookupRelationship( relId ).getProperty( relationshipLookups.getNodeManager(), key );
     }
 

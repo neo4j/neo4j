@@ -38,6 +38,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -149,8 +150,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1512,21 +1511,26 @@ public abstract class InternalAbstractGraphDatabase
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( key, value, ctx, labelId );
+        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, ctx, labelId );
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value, final StatementContext ctx, long labelId )
     {
         Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
-        final NodeProxy.NodeLookup lookup = createNodeLookup();
 
         Iterator<Long> matches = filter( new Predicate<Long>()
         {
             @Override
             public boolean accept( Long item )
             {
-                Object propertyValue = lookup.lookup( item ).getProperty( nodeManager, propertyName, null );
-                return propertyValue != null && propertyValue.equals( value );
+                try
+                {
+                    return ctx.getNodePropertyValue( item, propertyId ).equals( value );
+                }
+                catch ( KernelException e )
+                {
+                    return false;
+                }
             }
         }, nodesWithLabel );
 

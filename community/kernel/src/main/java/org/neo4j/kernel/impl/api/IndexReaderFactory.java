@@ -35,7 +35,7 @@ public interface IndexReaderFactory
 
     public static class Caching implements IndexReaderFactory
     {
-        private final Map<Long,IndexReader> indexReaders = new HashMap<Long, IndexReader>();
+        private Map<Long,IndexReader> indexReaders = null;
         private final IndexingService indexingService;
 
         public Caching( IndexingService indexingService )
@@ -46,6 +46,11 @@ public interface IndexReaderFactory
         @Override
         public IndexReader newReader( long indexId ) throws IndexNotFoundKernelException
         {
+            if( indexReaders == null )
+            {
+                indexReaders = new HashMap<Long, IndexReader>();
+            }
+
             IndexReader reader = indexReaders.get( indexId );
             if ( reader == null )
             {
@@ -59,11 +64,13 @@ public interface IndexReaderFactory
         @Override
         public void close()
         {
-            for ( IndexReader indexReader : indexReaders.values() )
+            if(indexReaders != null)
             {
-                indexReader.close();
+                for ( IndexReader indexReader : indexReaders.values() )
+                {
+                    indexReader.close();
+                }
             }
-            indexReaders.clear();
         }
     }
 }

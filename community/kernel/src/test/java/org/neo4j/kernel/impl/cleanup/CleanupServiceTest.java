@@ -26,6 +26,7 @@ import static org.mockito.Mockito.*;
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -49,7 +50,7 @@ public class CleanupServiceTest
         service.start();
 
         // THEN
-        verify( scheduler ).schedule( Matchers.<Runnable> any() );
+        verify( scheduler ).scheduleRecurring( Matchers.<Runnable> any(), anyLong(), any( TimeUnit.class ) );
     }
 
     @Test
@@ -65,7 +66,7 @@ public class CleanupServiceTest
         task.run();
 
         // THEN
-        verify( scheduler ).schedule( Matchers.<Runnable> any() );
+        verify( scheduler ).scheduleRecurring( Matchers.<Runnable> any(), anyLong(), any( TimeUnit.class ) );
     }
 
     @Test
@@ -206,7 +207,7 @@ public class CleanupServiceTest
     private Runnable acquireCleanupTask()
     {
         ArgumentCaptor<Runnable> taskCaptor = ArgumentCaptor.forClass( Runnable.class );
-        verify( scheduler ).schedule( taskCaptor.capture() );
+        verify( scheduler ).scheduleRecurring( taskCaptor.capture(), anyLong(), any( TimeUnit.class ) );
         Runnable task = taskCaptor.getValue();
         return task;
     }
