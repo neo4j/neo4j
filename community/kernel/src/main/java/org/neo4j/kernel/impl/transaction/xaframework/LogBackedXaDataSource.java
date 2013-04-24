@@ -101,7 +101,9 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     @Override
     public long rotateLogicalLog() throws IOException
     {
-        return logicalLog.rotate();
+        // Go through XaResourceManager so that all paths which rotates the
+        // logical log will go through its lock
+        return getXaContainer().getResourceManager().rotateLogicalLog();
     }
 
     @Override
