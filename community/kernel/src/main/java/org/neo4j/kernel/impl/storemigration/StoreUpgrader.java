@@ -127,12 +127,10 @@ public class StoreUpgrader
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
             throw new UnableToUpgradeException( e );
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             throw Exceptions.launderedException( e );
         }
         finally

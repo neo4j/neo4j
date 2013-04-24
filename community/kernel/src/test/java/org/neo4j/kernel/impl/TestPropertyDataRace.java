@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl;
 
 import java.util.concurrent.CountDownLatch;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,7 +80,7 @@ public class TestPropertyDataRace
                 {
                     for ( String key : one.getPropertyKeys() )
                     {
-                        System.out.println( getName() + " removed " + key + "=" + one.removeProperty( key ) );
+                        one.removeProperty( key );
                     }
                     clearCaches();
                     prepare.countDown();
@@ -126,7 +127,7 @@ public class TestPropertyDataRace
                     }
                     for ( String key : one.getPropertyKeys() )
                     {
-                        System.out.println( getName() + " removed " + key + "=" + one.removeProperty( key ) );
+                        one.removeProperty( key );
                     }
 
                     txn.success();
@@ -142,7 +143,7 @@ public class TestPropertyDataRace
         done.await();
         for ( String key : two.getPropertyKeys() )
         {
-            System.out.println( "should be untouched: " + key + "=" + two.getProperty( key ) );
+            two.getProperty( key );
         }
     }
 

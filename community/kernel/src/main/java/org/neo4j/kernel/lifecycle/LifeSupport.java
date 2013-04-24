@@ -41,6 +41,17 @@ public class LifeSupport
     List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
     LifecycleStatus status = LifecycleStatus.NONE;
     List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final StringLogger log;
+    
+    public LifeSupport()
+    {
+        this( StringLogger.SYSTEM_ERR );
+    }
+    
+    public LifeSupport( StringLogger log )
+    {
+        this.log = log;
+    }
 
     /**
      * Initialize all registered instances, transitioning from status NONE to STOPPED.
@@ -418,8 +429,8 @@ public class LifeSupport
             return exception;
         }
 
-        exception.printStackTrace();
-        chainedLifecycleException.printStackTrace();
+        log.error( "Lifecycle exception", exception );
+        log.error( "Chained lifecycle exception", chainedLifecycleException );
         
         Throwable current = exception;
         while ( current.getCause() != null )
@@ -512,7 +523,7 @@ public class LifeSupport
                 }
                 catch ( Throwable e )
                 {
-                    e.printStackTrace();
+                    log.error( "Exception when stopping " + instance, e );
                     throw new LifecycleException( instance, LifecycleStatus.STARTED, LifecycleStatus.STOPPED, e );
                 }
                 finally

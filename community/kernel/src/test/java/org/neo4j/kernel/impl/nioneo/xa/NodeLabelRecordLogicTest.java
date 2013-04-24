@@ -358,7 +358,7 @@ public class NodeLabelRecordLogicTest
     public void startUp()
     {
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.SYSTEM,
+                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
                 new DefaultTxHook() );
         File storeFile = new File( "store" );
         storeFactory.createNodeStore( storeFile );

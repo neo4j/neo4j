@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.LinkedList;
 import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Test LifeSupport lifecycle transitions
@@ -37,7 +37,7 @@ public class LifeSupportTest
     public void testOkLifecycle()
         throws LifecycleException
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -80,7 +80,7 @@ public class LifeSupportTest
     @Test()
     public void testFailingInit()
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -108,7 +108,7 @@ public class LifeSupportTest
     @Test()
     public void testFailingStart()
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -136,7 +136,7 @@ public class LifeSupportTest
     @Test()
     public void testFailingStartAndFailingStop()
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         Exception stopThrowable = new Exception();
         LifecycleMock instance1 = new LifecycleMock( null, null, stopThrowable, null );
@@ -158,7 +158,7 @@ public class LifeSupportTest
             assertEquals( startThrowable, throwable.getCause().getCause().getCause() );
         }
 
-        lifeSupport.dump( StringLogger.SYSTEM );
+        lifeSupport.dump( StringLogger.DEV_NULL );
 
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
         assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
@@ -170,7 +170,7 @@ public class LifeSupportTest
     public void testFailingStop()
         throws LifecycleException
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -201,7 +201,7 @@ public class LifeSupportTest
     public void testFailingShutdown()
         throws LifecycleException
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -232,7 +232,7 @@ public class LifeSupportTest
     public void testRestartOk()
         throws LifecycleException
     {
-        LifeSupport lifeSupport = new LifeSupport();
+        LifeSupport lifeSupport = newLifeSupport();
 
         LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
         lifeSupport.add( instance1 );
@@ -276,7 +276,7 @@ public class LifeSupportTest
     public void testAddInstanceWhenInitInitsInstance()
             throws LifecycleException
     {
-        LifeSupport support = new LifeSupport();
+        LifeSupport support = newLifeSupport();
 
         support.init();
 
@@ -294,7 +294,7 @@ public class LifeSupportTest
     public void testAddInstanceWhenStartedStartsInstance()
         throws LifecycleException
     {
-        LifeSupport support = new LifeSupport();
+        LifeSupport support = newLifeSupport();
 
         support.init();
         support.start();
@@ -315,7 +315,7 @@ public class LifeSupportTest
     public void testAddInstanceWhenStoppedInitsInstance()
             throws LifecycleException
     {
-        LifeSupport support = new LifeSupport();
+        LifeSupport support = newLifeSupport();
 
         support.init();
         support.start();
@@ -337,7 +337,7 @@ public class LifeSupportTest
     public void testAddInstanceWhenShutdownDoesNotAffectInstance()
             throws LifecycleException
     {
-        LifeSupport support = new LifeSupport();
+        LifeSupport support = newLifeSupport();
 
         support.init();
         support.start();
@@ -422,5 +422,10 @@ public class LifeSupportTest
         {
             return transitions.get( transitions.size() - 1 );
         }
+    }
+
+    private LifeSupport newLifeSupport()
+    {
+        return new LifeSupport( StringLogger.DEV_NULL );
     }
 }

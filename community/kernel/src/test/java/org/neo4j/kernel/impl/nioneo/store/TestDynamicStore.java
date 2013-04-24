@@ -34,8 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -120,13 +118,13 @@ public class TestDynamicStore
     private void createEmptyStore( File fileName, int blockSize )
     {
         new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), fs.get(),
-                StringLogger.SYSTEM, null ).createDynamicArrayStore( fileName, blockSize );
+                StringLogger.DEV_NULL, null ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, fs.get(), StringLogger.SYSTEM );
+                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL );
     }
 
     private void deleteBothFiles()
@@ -146,11 +144,8 @@ public class TestDynamicStore
     @Test
     public void testStickyStore() throws IOException
     {
-        Logger log = Logger.getLogger( CommonAbstractStore.class.getName() );
-        Level level = log.getLevel();
         try
         {
-            log.setLevel( Level.OFF );
             createEmptyStore( dynamicStoreFile(), 30 );
             FileChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
             fileChannel.truncate( fileChannel.size() - 2 );
@@ -161,7 +156,6 @@ public class TestDynamicStore
         }
         finally
         {
-            log.setLevel( level );
             deleteBothFiles();
         }
     }

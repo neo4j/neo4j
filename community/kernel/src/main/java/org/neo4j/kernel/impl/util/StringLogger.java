@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -41,22 +42,28 @@ public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final String DEFAULT_ENCODING = "UTF-8";
-    public static final StringLogger SYSTEM;
+    public static final StringLogger SYSTEM, SYSTEM_ERR;
 
     static
+    {
+        SYSTEM = instantiateStringLoggerForPrintStream( System.out );
+        SYSTEM_ERR = instantiateStringLoggerForPrintStream( System.err );
+    }
+
+    private static ActualStringLogger instantiateStringLoggerForPrintStream( PrintStream stream )
     {
         PrintWriter writer;
 
         try
         {
-            writer = new PrintWriter( new OutputStreamWriter( System.out, DEFAULT_ENCODING ) );
+            writer = new PrintWriter( new OutputStreamWriter( stream, DEFAULT_ENCODING ) );
         }
         catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( e );
         }
 
-        SYSTEM = new ActualStringLogger( writer )
+        return new ActualStringLogger( writer )
         {
             @Override
             public void close()

@@ -56,7 +56,7 @@ public class StoreVersionTest
         config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath());
         config.put( "neo_store", storeFileName.getPath() );
         StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.SYSTEM,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
                 null );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
 
@@ -91,7 +91,7 @@ public class StoreVersionTest
         try
         {
             new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.SYSTEM, null );
+                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -114,7 +114,7 @@ public class StoreVersionTest
         config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
         config.put( "neo_store", storeFileName.getPath() );
         StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.SYSTEM,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
                 null );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
         // The first checks the instance method, the other the public one

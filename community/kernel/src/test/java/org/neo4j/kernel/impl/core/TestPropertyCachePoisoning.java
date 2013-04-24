@@ -74,7 +74,7 @@ public class TestPropertyCachePoisoning
                 removeProperty( first, "key" );
             }
         };
-        System.out.println( "key:" + first.getProperty( "key", null ) );
+        first.getProperty( "key", null );
         final Node second = new TX<Node>()
         {
             @Override
@@ -154,6 +154,7 @@ public class TestPropertyCachePoisoning
         {
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     Transaction tx = graphdb.beginTx();

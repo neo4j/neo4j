@@ -117,7 +117,7 @@ public class StandaloneClusterClientIT
     
     // === Everything else ===
     
-    private File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
+    private final File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
     private LifeSupport life;
     private ClusterClient[] clients;
     
@@ -138,13 +138,13 @@ public class StandaloneClusterClientIT
                 @Override
                 public StringLogger getMessagesLog( Class loggingClass )
                 {
-                    return StringLogger.SYSTEM;
+                    return StringLogger.DEV_NULL;
                 }
 
                 @Override
                 public ConsoleLogger getConsoleLog( Class loggingClass )
                 {
-                    return new ConsoleLogger( StringLogger.SYSTEM );
+                    return new ConsoleLogger( StringLogger.DEV_NULL );
                 }
             };
             final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging, new ServerIdElectionCredentialsProvider() );

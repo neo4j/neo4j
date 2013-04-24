@@ -108,7 +108,7 @@ public class TestNeoStore
         path = targetDirectory.directory( "dir", true );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.SYSTEM, null );
+                fs.get(), StringLogger.DEV_NULL, null );
         sf.createNeoStore( file( NeoStore.DEFAULT_NAME ) ).close();
     }
 
