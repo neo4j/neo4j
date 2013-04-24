@@ -35,7 +35,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 import java.io.IOException;
@@ -541,7 +541,7 @@ public class WriteTransactionTest
     {
         transactionState = TransactionState.NO_STATE;
         storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
-                fs.get(), SYSTEM, new DefaultTxHook() );
+                fs.get(), DEV_NULL, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
     }
@@ -553,7 +553,7 @@ public class WriteTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand> verifier )
         {
             super( new File( "log" ), null, null, null, new DefaultLogBufferFactory(),
-                    fs, new SingleLoggingService( SYSTEM ), LogPruneStrategies.NO_PRUNING, null );
+                    fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null );
             this.verifier = verifier;
         }
         
@@ -590,7 +590,7 @@ public class WriteTransactionTest
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
                     new NeoStoreIndexStoreView( neoStore ),
                     new KernelSchemaStateStore(),
-                    new SingleLoggingService( SYSTEM )
+                    new SingleLoggingService( DEV_NULL )
                 );
         }
         

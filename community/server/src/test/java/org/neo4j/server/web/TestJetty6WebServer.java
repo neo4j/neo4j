@@ -19,6 +19,16 @@
  */
 package org.neo4j.server.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
+import java.util.Arrays;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.guard.Guard;
@@ -30,15 +40,6 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import java.util.Arrays;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 @Path("/")
 public class TestJetty6WebServer {
@@ -89,7 +90,7 @@ public class TestJetty6WebServer {
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
         InMemoryAppender appender = new InMemoryAppender(AbstractNeoServer.log);
-        final Guard dummyGuard = new Guard(StringLogger.SYSTEM);
+        final Guard dummyGuard = new Guard(StringLogger.DEV_NULL);
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
         {
             @Override

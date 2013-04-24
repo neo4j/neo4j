@@ -25,7 +25,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 import java.util.Arrays;
@@ -140,7 +140,7 @@ public class SchemaStoreTest
         config = new Config( stringMap() );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), SYSTEM,
+        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), DEV_NULL,
                 new DefaultTxHook() );
         File file = new File( "schema-store" );
         storeFactory.createSchemaStore( file );
