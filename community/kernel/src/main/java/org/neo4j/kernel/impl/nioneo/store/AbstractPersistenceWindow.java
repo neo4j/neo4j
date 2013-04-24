@@ -101,7 +101,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     
     private void writeContents()
     {
-        ByteBuffer byteBuffer = buffer.getBuffer();
+        ByteBuffer byteBuffer = buffer.getBuffer().duplicate();
         byteBuffer.clear();
 
         try
