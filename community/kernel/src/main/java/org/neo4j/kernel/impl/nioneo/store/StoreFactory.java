@@ -180,7 +180,7 @@ public class StoreFactory
     private LabelKeyStore newLabelKeyStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
-                IdType.PROPERTY_INDEX_BLOCK);
+                IdType.LABEL_NAME_BLOCK );
         return new LabelKeyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
