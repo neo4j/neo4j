@@ -54,22 +54,6 @@ public class CleanupServiceTest
     }
 
     @Test
-    public void shouldRescheduleCleanupTaskAfterRunning() throws Throwable
-    {
-        // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
-        service.start();
-        Runnable task = acquireCleanupTask();
-        reset(scheduler);
-
-        // WHEN
-        task.run();
-
-        // THEN
-        verify( scheduler ).scheduleRecurring( Matchers.<Runnable> any(), anyLong(), any( TimeUnit.class ) );
-    }
-
-    @Test
     public void shouldCleanupCollectedReferences() throws Throwable
     {
         // GIVEN
