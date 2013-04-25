@@ -30,7 +30,7 @@ class CollectionsAndMapsTest extends ArticleTest {
   val title = "Collections"
   val section = "Syntax"
   val text =
-"""
+    """
 Collections
 ===========
 
@@ -74,20 +74,12 @@ and filter functions.
 ###
 RETURN [x in range(0,10) WHERE x % 2 = 0 : x^3 ]###
 
-This query returns the even elements of the incoming collection of the numbers between 0 to 20.
-
 Either the WHERE part, or the expression, can be omitted, if you only want to filter or map respectively.
 
 ###
 RETURN [x in range(0,10) WHERE x % 2 = 0 ]###
-
-This expression returns a collection containing only the even elements from the incoming collection - it's 
-the elements that allow the predicate +x % 2 = 0+ to evaluate to true.
-
 ###
-RETURN [x in range(0,10) : x ^ 2 ]###
-
-This query returns a new collection, containing the result of the +x ^ 2+ expression.
+RETURN [x in range(0,10) WHERE x % 2 = 0 ]###
 
 == Map access ==
 
@@ -105,9 +97,7 @@ From Cypher, you can also construct maps. In Java, they will be java.util.Map<St
 you will get JSON objects.
 
 ###
-RETURN { key : "Value", collectionKey: [ { inner: "Map1" }, { inner: "Map2" } ] }###
-
-"""
+RETURN { key : "Value", collectionKey: [ { inner: "Map1" }, { inner: "Map2" } ] }###"""
 }
 
 

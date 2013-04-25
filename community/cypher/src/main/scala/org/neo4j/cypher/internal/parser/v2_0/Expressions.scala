@@ -104,8 +104,10 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     case id ~ _ ~ collection ~ None ~ Some(mapExpression)            => ExtractFunction(collection, id, mapExpression)
   }
 
-  def property: Parser[Expression] = identity ~ "." ~ escapableString ^^ {
-    case v ~ "." ~ p => Property(Identifier(v), p)
+  def property: Parser[Expression] = (entity | parens(expression)) ~ rep1("." ~> escapableString) ^^ {
+    case v ~ keys => keys.foldLeft[Expression](v) {
+      case (lastExp, propKey) => Property(lastExp, propKey)
+    }
   }
 
   def nullableProperty: Parser[Expression] = (

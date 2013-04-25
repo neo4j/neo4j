@@ -116,4 +116,16 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
     parsing("{ meta : { name: 'Andres' } } ") shouldGive
       LiteralMap(Map("meta" -> LiteralMap(Map("name" -> Literal("Andres")))))
   }
+
+  @Test def better_map_support() {
+    parsing("map.key1.key2.key3") shouldGive
+      Property(Property(Property(Identifier("map"), "key1"), "key2"), "key3")
+
+    parsing("({ key: 'value' }).key") shouldGive
+      Property(LiteralMap(Map("key" -> Literal("value"))), "key")
+
+    parsing("({ inner1: { inner2: 'Value' } }).key") shouldGive
+      Property(LiteralMap(Map("inner1" -> LiteralMap(Map("inner2" -> Literal("Value"))))), "key")
+
+  }
 }
