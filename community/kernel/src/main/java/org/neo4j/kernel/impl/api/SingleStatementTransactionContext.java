@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.TransactionFailureException;
 
 /**
  * Limits number of open statements to max 1, so that when starting another
@@ -54,7 +55,7 @@ public class SingleStatementTransactionContext extends DelegatingTransactionCont
     }
 
     @Override
-    public void commit()
+    public void commit() throws TransactionFailureException
     {
         closeShop();
         super.commit();

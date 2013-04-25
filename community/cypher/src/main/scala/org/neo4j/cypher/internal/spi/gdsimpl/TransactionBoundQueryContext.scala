@@ -28,6 +28,7 @@ import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
@@ -78,8 +79,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def getTransaction = tx
 
-  def exactIndexSearch(id: Long, value: Any) =
-    ctx.exactIndexLookup(id, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+  def exactIndexSearch(index: IndexDescriptor, value: Any) =
+    ctx.exactIndexLookup(index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 

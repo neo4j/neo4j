@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import ch.qos.logback.classic.LoggerContext;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -83,6 +78,7 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -95,7 +91,6 @@ import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -105,12 +100,12 @@ import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -152,6 +147,11 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1504,11 +1504,11 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexRule indexRule = ctx.getIndexRule( labelId, propertyId );
+            IndexDescriptor indexRule = ctx.getIndexRule( labelId, propertyId );
             if(ctx.getIndexState( indexRule ) == InternalIndexState.ONLINE)
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ), ctx );
+                return map2nodes( ctx.exactIndexLookup( indexRule, value ), ctx );
             }
         }
         catch ( SchemaRuleNotFoundException e )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +28,12 @@ import java.util.Random;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.ReadOperations;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.api.operations.WriteOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
@@ -46,16 +49,24 @@ public class CompositeStatementContextTest
     public static List<Object[]> allMethods()
     {
         List<Object[]> methods = new ArrayList<Object[]>();
-        for ( Method method : StatementContext.class.getMethods() )
+        for ( Method method : ReadOperations.class.getMethods() )
         {
-            methods.add( new Object[]{method} );
+            methods.add( new Object[]{new OperationMethod( ReadOrWrite.READ, method )} );
+        }
+        for ( Method method : WriteOperations.class.getMethods() )
+        {
+            methods.add( new Object[]{new OperationMethod( ReadOrWrite.WRITE, method )} );
+        }
+        for ( Method method : SchemaStateOperations.class.getMethods() )
+        {
+            methods.add( new Object[]{new OperationMethod( null, method )} );
         }
         return methods;
     }
 
-    private final Method method;
+    private final OperationMethod method;
 
-    public CompositeStatementContextTest( Method method )
+    public CompositeStatementContextTest( OperationMethod method )
     {
         this.method = method;
     }
@@ -65,7 +76,7 @@ public class CompositeStatementContextTest
     {
         // given
         StatementContext delegate = mock( StatementContext.class );
-        Object[] arguments = arguments( method );
+        Object[] arguments = arguments( method.getParameterTypes() );
         Object expectedResult = null;
         if ( method.getReturnType() != void.class )
         {
@@ -85,26 +96,57 @@ public class CompositeStatementContextTest
         {
             assertEquals( expectedResult, result );
         }
-        // Verify before and after methods - note: this does not know which methods are supposed to be read vs write
-        if ( !"close".equals( method.getName() ) )
-        {
-            // Used to assert that we invoke the same operation
-            ArgumentCaptor<ReadOrWrite> readORwrite = ArgumentCaptor.forClass( ReadOrWrite.class );
+        // Verify before and after methods
 
-            InOrder order = inOrder( context.checking );
-            order.verify( context.checking ).beforeOperation();
-            order.verify( context.checking ).beforeReadOrWriteOperation( readORwrite.capture() );
-            order.verify( context.checking ).afterReadOrWriteOperation( readORwrite.getValue() );
-            order.verify( context.checking ).afterOperation();
-            verifyNoMoreInteractions( context.checking );
+        InOrder order = inOrder( context.checking );
+        order.verify( context.checking ).beforeOperation();
+        if ( method.operation != null )
+        {
+            order.verify( context.checking ).beforeReadOrWriteOperation( method.operation );
+            order.verify( context.checking ).afterReadOrWriteOperation( method.operation );
+        }
+        order.verify( context.checking ).afterOperation();
+        verifyNoMoreInteractions( context.checking );
+    }
+
+    private static class OperationMethod
+    {
+        final ReadOrWrite operation;
+        private final Method method;
+
+        OperationMethod( ReadOrWrite operation, Method method )
+        {
+            this.operation = operation;
+            this.method = method;
+        }
+
+        public Class<?> getReturnType()
+        {
+            return method.getReturnType();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "%s#%s(...)", method.getDeclaringClass().getName(), method.getName() );
+        }
+
+        public Object invoke( Object obj, Object... args )
+                throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+        {
+            return method.invoke( obj, args );
+        }
+
+        public Class<?>[] getParameterTypes()
+        {
+            return method.getParameterTypes();
         }
     }
 
     private final Random random = new Random();
 
-    private Object[] arguments( Method method )
+    private Object[] arguments( Class<?>[] parameters )
     {
-        Class<?>[] parameters = method.getParameterTypes();
         Object[] arguments = new Object[parameters.length];
         for ( int i = 0; i < arguments.length; i++ )
         {

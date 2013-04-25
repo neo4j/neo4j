@@ -17,32 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.schema;
+package org.neo4j.kernel.impl.api;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
 
-/**
- * Definition for an index
- * 
- * NOTE: This is part of the new index API introduced in Neo4j 2.0.
- * The former index API lives in {@link IndexManager}.
- */
-public interface IndexDefinition
+public class SchemaStateConcern implements SchemaStateOperations
 {
-    /**
-     * @return the {@link Label label} this index definition is associated with.
-     */
-    Label getLabel();
-    
-    /**
-     * @return the property keys this index was created on.
-     */
-    Iterable<String> getPropertyKeys();
-    
-    /**
-     * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
-     * and any related background jobs and files will be stopped and removed.
-     */
-    void drop();
+    private final UpdateableSchemaState schemaState;
+
+    public SchemaStateConcern( UpdateableSchemaState schemaState )
+    {
+        this.schemaState = schemaState;
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        return schemaState.getOrCreate( key, creator );
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        return schemaState.get( key ) != null;
+    }
 }

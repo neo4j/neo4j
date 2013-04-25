@@ -17,32 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.schema;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 
-/**
- * Definition for an index
- * 
- * NOTE: This is part of the new index API introduced in Neo4j 2.0.
- * The former index API lives in {@link IndexManager}.
- */
-public interface IndexDefinition
+public interface KeyWriteOperations
 {
     /**
-     * @return the {@link Label label} this index definition is associated with.
+     * Returns a label id for a label name. If the label doesn't exist prior to
+     * this call it gets created.
      */
-    Label getLabel();
-    
+    long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
+
     /**
-     * @return the property keys this index was created on.
+     * Returns a property key id for a property key. If the key doesn't exist prior to
+     * this call it gets created.
      */
-    Iterable<String> getPropertyKeys();
-    
-    /**
-     * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
-     * and any related background jobs and files will be stopped and removed.
-     */
-    void drop();
+    long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException;
 }

@@ -17,30 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.operations.SchemaOperations;
-
-public class SchemaStateOperations extends DelegatingSchemaOperations
+public interface ReadOperations extends KeyReadOperations, EntityReadOperations, SchemaReadOperations
 {
-    private final UpdateableSchemaState schemaState;
-
-    public SchemaStateOperations( SchemaOperations delegate, UpdateableSchemaState schemaState )
-    {
-        super(delegate);
-        this.schemaState = schemaState;
-    }
-
-    @Override
-    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
-    {
-        return schemaState.<K, V>getOrCreate( key, creator );
-    }
-
-    @Override
-    public <K> boolean schemaStateContains( K key )
-    {
-        return schemaState.<K, Object>get( key ) != null;
-    }
 }

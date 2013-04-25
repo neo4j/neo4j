@@ -29,6 +29,7 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
@@ -47,7 +48,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    when(planContext.getIndexRuleId(label, prop)).thenReturn(None)
+    when(planContext.getIndexRule(label, prop)).thenReturn(None)
 
     //WHEN
     intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, None)))
@@ -58,12 +59,12 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    val indexId: Long = 1L
+    val index: IndexDescriptor = new IndexDescriptor(123,456)
     val value = 42
     val queryContext: QueryContext = mock[QueryContext]
-    when(planContext.getIndexRuleId(label, prop)).thenReturn(Some(indexId))
+    when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
     val indexResult = Iterator(null)
-    when(queryContext.exactIndexSearch(indexId, value)).thenReturn(indexResult)
+    when(queryContext.exactIndexSearch(index, value)).thenReturn(indexResult)
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 
     //WHEN

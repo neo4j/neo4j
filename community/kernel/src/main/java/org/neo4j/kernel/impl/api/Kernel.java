@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.synchronizedList;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -29,7 +26,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
@@ -47,6 +43,9 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.util.Collections.synchronizedList;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -185,10 +184,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
         TransactionContext result = new StoreTransactionContext(
-                propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService );
+                transactionManager, propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService );
 
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache, schemaCache, schemaState);
+        result = new StateHandlingTransactionContext( result, new SchemaStorage( neoStore.getSchemaStore() ),
+                                                      newTxState(), providerMap, persistenceCache, schemaCache,
+                                                      persistenceManager, schemaState );
 
         // + Constraint evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
@@ -210,8 +211,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private StatementContext createReadOnlyStatementContext()
     {
         // I/O
+        SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         StatementContext result = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
-                neoStore, indexService, new IndexReaderFactory.Caching( indexService ) );
+                schemaStorage, neoStore, indexService, new IndexReaderFactory.Caching( indexService ) );
 
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
@@ -227,8 +229,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private StatementContext createSchemaStateStatementContext( StatementContext inner )
     {
-        SchemaOperations schemaOps = new SchemaStateOperations( inner, schemaState );
-        return new CompositeStatementContext( inner, schemaOps );
+        return new CompositeStatementContext( inner, new SchemaStateConcern( schemaState ) );
     }
 
     private TxState newTxState()
@@ -239,12 +240,17 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 new TxState.IdGeneration()
                 {
                     @Override
-                    public long newSchemaRuleId()
+                    public long newNodeId()
                     {
-                        return neoStore.getSchemaStore().nextId();
+                        throw new UnsupportedOperationException( "not implemented" );
                     }
-                },
-                providerMap
+
+                    @Override
+                    public long newRelationshipId()
+                    {
+                        throw new UnsupportedOperationException( "not implemented" );
+                    }
+                }
         );
     }
 

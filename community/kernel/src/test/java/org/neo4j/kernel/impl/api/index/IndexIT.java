@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class IndexIT
 {
@@ -48,7 +48,7 @@ public class IndexIT
         long labelId = 5, propertyKey = 8;
 
         // WHEN
-        IndexRule rule = statement.addIndexRule( labelId, propertyKey );
+        IndexDescriptor rule = statement.addIndexRule( labelId, propertyKey );
         statement.close();
         tx.success();
         tx.finish();
@@ -68,7 +68,7 @@ public class IndexIT
         long labelId = 5, propertyKey = 8;
 
         // WHEN
-        IndexRule expectedRule = statement.addIndexRule( labelId, propertyKey );
+        IndexDescriptor expectedRule = statement.addIndexRule( labelId, propertyKey );
         statement.close();
         tx.success();
         tx.finish();
@@ -87,7 +87,7 @@ public class IndexIT
         long labelId = 5, propertyKey = 8;
         Transaction tx = db.beginTx();
         StatementContext statement = ctxProvider.getCtxForWriting();
-        IndexRule existingRule = statement.addIndexRule( labelId, propertyKey );
+        IndexDescriptor existingRule = statement.addIndexRule( labelId, propertyKey );
         statement.close();
         tx.success();
         tx.finish();
@@ -96,8 +96,8 @@ public class IndexIT
         tx = db.beginTx();
         statement = ctxProvider.getCtxForWriting();
         long propertyKey2 = 10;
-        IndexRule addedRule = statement.addIndexRule( labelId, propertyKey2 );
-        Set<IndexRule> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
+        IndexDescriptor addedRule = statement.addIndexRule( labelId, propertyKey2 );
+        Set<IndexDescriptor> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
         statement.close();
         tx.success();
         tx.finish();
@@ -125,7 +125,7 @@ public class IndexIT
     }
 
 
-    private void awaitIndexOnline( IndexRule indexRule ) throws IndexNotFoundKernelException
+    private void awaitIndexOnline( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
         StatementContext ctx = ctxProvider.getCtxForReading();
         long start = System.currentTimeMillis();

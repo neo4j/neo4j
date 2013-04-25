@@ -26,20 +26,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -150,8 +145,9 @@ public class TxStateTest
         long labelId = 2, labelId2 = 5, propertyKey = 3;
 
         // WHEN
-        IndexRule rule = state.addIndexRule( labelId, propertyKey );
-        state.addIndexRule( labelId2, propertyKey );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
+        state.addIndexRule( rule );
+        state.addIndexRule( new IndexDescriptor( labelId2, propertyKey ) );
 
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSetsByLabel( labelId ).getAdded() );
@@ -164,7 +160,8 @@ public class TxStateTest
         long labelId = 2, propertyKey = 3;
 
         // WHEN
-        IndexRule rule = state.addIndexRule( labelId, propertyKey );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
+        state.addIndexRule( rule );
 
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSets().getAdded() );
@@ -228,7 +225,8 @@ public class TxStateTest
     public void shouldAddUniquenessConstraint() throws Exception
     {
         // when
-        UniquenessConstraint constraint = state.addConstraint( new UniquenessConstraint( 1, 17 ), true);
+        UniquenessConstraint constraint = new UniquenessConstraint( 1, 17 );
+        state.addConstraint( constraint );
 
         // then
         DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( 1 );
@@ -240,23 +238,26 @@ public class TxStateTest
     public void addingUniquenessConstraintShouldBeIdempotent() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = state.addConstraint( new UniquenessConstraint( 1, 17 ), true);
+        UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
+        state.addConstraint( constraint1 );
 
         // when
-        UniquenessConstraint constraint2 = state.addConstraint( new UniquenessConstraint( 1, 17 ), true);
+        UniquenessConstraint constraint2 = new UniquenessConstraint( 1, 17 );
+        state.addConstraint( constraint2 );
 
         // then
         assertEquals( constraint1, constraint2 );
         assertEquals( Collections.singleton( constraint1 ), state.constraintsForLabel( 1 ).getAdded() );
-        verify( persistenceManager, times( 1 ) ).createSchemaRule( any( SchemaRule.class ) );
     }
 
     @Test
     public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels() throws Exception
     {
         // when
-        UniquenessConstraint constraint1 = state.addConstraint( new UniquenessConstraint( 1, 17 ), true);
-        UniquenessConstraint constraint2 = state.addConstraint( new UniquenessConstraint( 2, 17 ), true);
+        UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
+        state.addConstraint( constraint1 );
+        UniquenessConstraint constraint2 = new UniquenessConstraint( 2, 17 );
+        state.addConstraint( constraint2 );
 
         // then
         assertEquals( Collections.singleton( constraint1 ), state.constraintsForLabel( 1 ).getAdded() );
@@ -273,7 +274,7 @@ public class TxStateTest
         legacyState = mock( OldTxStateBridge.class );
         persistenceManager = mock( PersistenceManager.class );
         state = new TxState( legacyState,
-                persistenceManager, mock( TxState.IdGeneration.class ),
-                new DefaultSchemaIndexProviderMap( SchemaIndexProvider.NO_INDEX_PROVIDER ) );
+                persistenceManager, mock( TxState.IdGeneration.class )
+        );
     }
 }

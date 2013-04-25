@@ -26,9 +26,9 @@ import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.transaction.LockType;
 
 import static org.junit.Assert.assertEquals;
@@ -71,13 +71,13 @@ public class LockingStatementContextTest
         // given
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
-        IndexRule rule = mock( IndexRule.class );
+        IndexDescriptor rule = mock( IndexDescriptor.class );
         when( delegate.addIndexRule( 123, 456 ) ).thenReturn( rule );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        IndexRule result = context.addIndexRule( 123, 456 );
+        IndexDescriptor result = context.addIndexRule( 123, 456 );
 
         // then
         assertSame( rule, result );
@@ -93,7 +93,7 @@ public class LockingStatementContextTest
         // given
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
-        IndexRule rule = mock( IndexRule.class );
+        IndexDescriptor rule = mock( IndexDescriptor.class );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
@@ -114,13 +114,13 @@ public class LockingStatementContextTest
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
         @SuppressWarnings("unchecked")
-        Iterator<IndexRule> rules = mock( Iterator.class );
+        Iterator<IndexDescriptor> rules = mock( Iterator.class );
         when( delegate.getIndexRules() ).thenReturn( rules );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        Iterator<IndexRule> result = context.getIndexRules();
+        Iterator<IndexDescriptor> result = context.getIndexRules();
 
         // then
         assertSame( rules, result );

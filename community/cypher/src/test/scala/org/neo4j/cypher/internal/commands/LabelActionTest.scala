@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.junit.Test
 import values.ResolvedLabel
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
@@ -112,7 +113,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
   def getNodesByLabel(id: Long): Iterator[Node] = ???
 

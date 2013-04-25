@@ -17,32 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.schema;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Function;
 
-/**
- * Definition for an index
- * 
- * NOTE: This is part of the new index API introduced in Neo4j 2.0.
- * The former index API lives in {@link IndexManager}.
- */
-public interface IndexDefinition
+public interface SchemaStateOperations
 {
     /**
-     * @return the {@link Label label} this index definition is associated with.
+     * The schema state is flushed when ever the schema is updated. If you build objects
+     * the rely on the current state of the schema, use this to make sure you don't use
+     * outdated schema information.
+     *
+     * Additionally, schema state entries are evicted using an LRU policy. The size
+     * of the LRU cache is determined by GraphDatabaseSettings.query_cache_size
+     *
+     * NOTE: This currently is solely used by Cypher and might or might not be turned into
+     * a more generic facility in teh future
      */
-    Label getLabel();
-    
+    <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator );
+
     /**
-     * @return the property keys this index was created on.
+     * Check if some key is in the schema state.
      */
-    Iterable<String> getPropertyKeys();
-    
-    /**
-     * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
-     * and any related background jobs and files will be stopped and removed.
-     */
-    void drop();
+    <K> boolean schemaStateContains( K key );
 }

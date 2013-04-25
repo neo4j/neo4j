@@ -17,32 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.schema;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-/**
- * Definition for an index
- * 
- * NOTE: This is part of the new index API introduced in Neo4j 2.0.
- * The former index API lives in {@link IndexManager}.
- */
-public interface IndexDefinition
+public interface SchemaWriteOperations
 {
     /**
-     * @return the {@link Label label} this index definition is associated with.
+     * Adds a {@link IndexDescriptor} to the database which applies globally on both
+     * existing as well as new data.
      */
-    Label getLabel();
-    
+    IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+
     /**
-     * @return the property keys this index was created on.
+     * Drops a {@link IndexDescriptor} from the database
      */
-    Iterable<String> getPropertyKeys();
-    
-    /**
-     * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
-     * and any related background jobs and files will be stopped and removed.
-     */
-    void drop();
+    void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException;
+
+    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId );
+
+    void dropConstraint( UniquenessConstraint constraint );
 }

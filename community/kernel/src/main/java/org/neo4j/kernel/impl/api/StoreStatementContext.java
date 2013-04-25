@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -41,12 +40,12 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -96,11 +95,13 @@ public class StoreStatementContext extends CompositeStatementContext
             }
         }
     };
+    private final SchemaStorage schemaStorage;
 
     public StoreStatementContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                  NodeManager nodeManager, NeoStore neoStore, IndexingService indexService,
-                                  IndexReaderFactory indexReaderFactory )
+                                  NodeManager nodeManager, SchemaStorage schemaStorage, NeoStore neoStore,
+                                  IndexingService indexService, IndexReaderFactory indexReaderFactory )
     {
+        this.schemaStorage = schemaStorage;
         assert neoStore != null : "No neoStore provided";
 
         this.indexService = indexService;
@@ -231,38 +232,18 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexRule getIndexRule( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndexRule( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
     {
-        Iterator<IndexRule> rules = schemaRules(
-                IndexRule.class, SchemaRule.Kind.INDEX_RULE, labelId,
-                new Predicate<IndexRule>()
-                {
-                    @Override
-                    public boolean accept( IndexRule item )
-                    {
-                        return item.getPropertyKey() == propertyKey;
-                    }
-                } );
+        return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
+    }
 
-        if ( !rules.hasNext() )
-            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                    propertyKey + " not found" );
-
-        IndexRule rule = rules.next();
-
-        if ( rules.hasNext() )
-            throw new SchemaRuleNotFoundException( "Found more than one matching index" );
-        return rule;
+    private static IndexDescriptor descriptor( IndexRule ruleRecord )
+    {
+        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
     }
 
     @Override
-    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
-    {
-        return indexService.getIndexDescriptor( indexId );
-    }
-
-    @Override
-    public Iterator<IndexRule> getIndexRules( final long labelId )
+    public Iterator<IndexDescriptor> getIndexRules( final long labelId )
     {
         return toIndexRules( new Predicate<SchemaRule>()
         {
@@ -275,7 +256,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
     
     @Override
-    public Iterator<IndexRule> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexRules()
     {
         return toIndexRules( new Predicate<SchemaRule>()
         {
@@ -287,30 +268,42 @@ public class StoreStatementContext extends CompositeStatementContext
         } );
     }
     
-    private Iterator<IndexRule> toIndexRules( Predicate<SchemaRule> filter )
+    private Iterator<IndexDescriptor> toIndexRules( Predicate<SchemaRule> filter )
     {
         Iterator<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
         
-        return map( new Function<SchemaRule, IndexRule>()
+        return map( new Function<SchemaRule, IndexDescriptor>()
         {
             @Override
-            public IndexRule apply( SchemaRule from )
+            public IndexDescriptor apply( SchemaRule from )
             {
-                return (IndexRule) from;
+                return descriptor( (IndexRule) from );
             }
         }, filtered );
     }
     
     @Override
-    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
-        return indexService.getProxyForRule( indexRule.getId() ).getState();
+        return indexService.getProxyForRule( indexId( indexRule ) ).getState();
+    }
+
+    private long indexId( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
+    {
+        try
+        {
+            return schemaStorage.indexRule( indexRule.getLabelId(), indexRule.getPropertyKeyId() ).getId();
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new IndexNotFoundKernelException( e.getMessage(), e );
+        }
     }
 
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, final long propertyKeyId )
     {
-        return schemaRules(
+        return schemaStorage.schemaRules(
                 new Function<UniquenessConstraintRule, UniquenessConstraint>()
                 {
                     @Override
@@ -331,32 +324,6 @@ public class StoreStatementContext extends CompositeStatementContext
                     }
                 }
         );
-    }
-
-    private <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, SchemaRule.Kind kind,
-                                                            long labelId, Predicate<T> predicate )
-    {
-        assert type == kind.getRuleClass();
-        return schemaRules( Functions.cast( type ), kind, labelId, predicate );
-    }
-
-    private <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final SchemaRule.Kind kind,
-            final long labelId, final Predicate<R> predicate )
-    {
-        @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
-        Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( new Predicate<SchemaRule>()
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            public boolean accept( SchemaRule rule )
-            {
-                return rule.getLabel() == labelId &&
-                       rule.getKind() == kind &&
-                       predicate.accept( (R) rule );
-            }
-        }, neoStore.getSchemaStore().loadAll() ) );
     }
 
     @Override
@@ -480,9 +447,9 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory.newReader( indexId ).lookup( value );
+        return indexReaderFactory.newReader( indexId( index ) ).lookup( value );
     }
 
     @Override

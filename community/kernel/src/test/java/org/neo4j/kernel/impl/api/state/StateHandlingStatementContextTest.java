@@ -27,17 +27,17 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.CompositeStatementContext;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.util.Arrays.asList;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class StateHandlingStatementContextTest
 {
@@ -64,12 +64,12 @@ public class StateHandlingStatementContextTest
         };
 
         StateHandlingStatementContext ctx = new StateHandlingStatementContext( hatesWritesCtx,
-                mock( SchemaOperations.class ), mock( TxState.class ) );
+                mock( SchemaStateOperations.class ), mock( TxState.class ) );
 
         // When
         ctx.addIndexRule( 0l, 0l );
         ctx.addLabelToNode( 0l, 0l );
-        ctx.dropIndexRule( new IndexRule( 0l, 0l, PROVIDER_DESCRIPTOR, 0l ) );
+        ctx.dropIndexRule( new IndexDescriptor( 0l, 0l ) );
         ctx.removeLabelFromNode( 0l, 0l );
 
         // These are kind of in between.. property key ids are created in micro-transactions, so these methods
@@ -84,18 +84,19 @@ public class StateHandlingStatementContextTest
     public void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
     {
         // given
+        UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         StatementContext delegate = mock( StatementContext.class );
         when( delegate.getConstraints( 10, 66 ) )
-                .thenAnswer( asAnswer( asList( new UniquenessConstraint( 10, 66 ) ) ) );
+                .thenAnswer( asAnswer( asList( constraint ) ) );
         TxState state = mock( TxState.class );
         StateHandlingStatementContext context = new StateHandlingStatementContext(
-                delegate, mock( SchemaOperations.class ), state );
+                delegate, mock( SchemaStateOperations.class ), state );
 
         // when
         context.addUniquenessConstraint( 10, 66 );
 
         // then
-        verify( state ).addConstraint( new UniquenessConstraint( 10, 66 ), false );
+        verify( state ).unRemoveConstraint( any( UniquenessConstraint.class ) );
         verifyNoMoreInteractions( state );
     }
 
