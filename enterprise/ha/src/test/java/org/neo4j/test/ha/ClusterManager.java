@@ -430,7 +430,6 @@ public class ClusterManager
 
                 config( graphDatabaseBuilder, name, serverId );
 
-                logger.info( "Starting cluster node " + serverId + " in cluster " + name );
                 final HighlyAvailableGraphDatabaseProxy graphDatabase = new HighlyAvailableGraphDatabaseProxy(
                         graphDatabaseBuilder );
 

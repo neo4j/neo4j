@@ -31,6 +31,7 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.Timeouts;
 
@@ -163,6 +164,14 @@ public enum AtomicBroadcastState
                             {
                                 outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.configurationChanged,
                                         message.getPayload() ) ) );
+                                ClusterMessage.ConfigurationChangeState change = message.getPayload();
+                                if ( change.getJoinUri() != null )
+                                {
+                                    outgoing.offer( message.copyHeadersTo(
+                                            Message.internal( HeartbeatMessage.i_am_alive,
+                                                    new HeartbeatMessage.IAmAliveState( change.getJoin() ) ),
+                                            Message.FROM ) );
+                                }
                             }
                             else
                             {

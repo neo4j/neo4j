@@ -53,10 +53,11 @@ public class QuorumWritesIT
         File root = TargetDirectory.forTest( getClass() ).directory(
                 "testMasterStopsWritesWhenMajorityIsUnavailable", true );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2"
+                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s"
                 ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
@@ -126,11 +127,13 @@ public class QuorumWritesIT
         File root = TargetDirectory.forTest( getClass() ).directory( "testInstanceCanBeReplacedToReestablishQuorum",
                 true );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2" ) );
+                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
+
+        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
 
         doTx( master );
 
