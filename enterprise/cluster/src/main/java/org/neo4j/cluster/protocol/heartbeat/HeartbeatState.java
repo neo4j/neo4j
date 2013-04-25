@@ -152,7 +152,6 @@ public enum HeartbeatState
                                                         .getMyId() ) ) ) );
                                     }
                                 }
-
                             }
                             else
                             {
