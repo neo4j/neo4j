@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -66,28 +64,5 @@ public class Mknode extends GraphDatabaseApp
             out.println( "Node " + getDisplayName( getServer(), session, node, false ) + " created" );
         }
         return Continuation.INPUT_COMPLETE;
-    }
-
-    static Label[] parseLabels( AppCommandParser parser )
-    {
-        String labelValue = parser.option( "l", null );
-        if ( labelValue == null )
-            return new Label[0];
-        
-        labelValue = labelValue.trim();
-        if ( labelValue.startsWith( "[" ) )
-        {
-            Object[] items = parseArray( labelValue );
-            Label[] labels = new Label[items.length];
-            for ( int i = 0; i < items.length; i++ )
-            {
-                labels[i] = DynamicLabel.label( items[i].toString() );
-            }
-            return labels;
-        }
-        else
-        {
-            return new Label[] { DynamicLabel.label( labelValue ) };
-        }
     }
 }

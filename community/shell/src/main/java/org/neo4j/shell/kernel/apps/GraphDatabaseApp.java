@@ -33,9 +33,11 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
@@ -760,4 +762,33 @@ public abstract class GraphDatabaseApp extends AbstractApp
             return Collections.emptyList();
         }
     };
+
+    protected Label[] parseLabels( AppCommandParser parser )
+    {
+        String labelValue = parser.option( "l", null );
+        if ( labelValue == null )
+            return new Label[0];
+        
+        labelValue = labelValue.trim();
+        if ( labelValue.startsWith( "[" ) )
+        {
+            Object[] items = parseArray( labelValue );
+            Label[] labels = new Label[items.length];
+            for ( int i = 0; i < items.length; i++ )
+            {
+                labels[i] = labelWithOrWithoutColon( items[i].toString() );
+            }
+            return labels;
+        }
+        else
+        {
+            return new Label[] { labelWithOrWithoutColon( labelValue ) };
+        }
+    }
+
+    private Label labelWithOrWithoutColon( String label )
+    {
+        String labelName = label.startsWith( ":" ) ? label.substring( 1 ) : label;
+        return DynamicLabel.label( labelName );
+    }
 }

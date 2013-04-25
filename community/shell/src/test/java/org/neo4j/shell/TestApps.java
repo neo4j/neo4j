@@ -274,7 +274,7 @@ public class TestApps extends AbstractShellTest
         tx.finish();
 
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( db );
-        ShellClient client = ShellLobby.newClient( server );
+        ShellClient client = newShellClient( server );
         executeCommand( client, "pwd", Pattern.quote( "(?)" ) );
         executeCommand( client, "ls " + node.getId(), "Test" );
         executeCommand( client, "cd -a " + node.getId() );
@@ -316,7 +316,6 @@ public class TestApps extends AbstractShellTest
     @Test
     public void cypherTiming() throws Exception
     {
-
         beginTx();
         Node node = db.createNode();
         Node otherNode = db.createNode();
@@ -325,8 +324,6 @@ public class TestApps extends AbstractShellTest
 
         executeCommand( "START n = node(" + node.getId() + ") match p=n-[r?*]-m RETURN p;", "\\d+ ms" );
     }
-
-
 
     @Test
     public void filterProperties() throws Exception
@@ -370,9 +367,16 @@ public class TestApps extends AbstractShellTest
     }
     
     @Test
+    public void createNodeWithColonPrefixedLabel() throws Exception
+    {
+        executeCommand( "mknode --cd -l :PERSON" );
+        assertEquals( asSet( "PERSON" ), asSet( names( getCurrentNode().getLabels() ) ) );
+    }
+    
+    @Test
     public void createNodeWithPropertiesAndLabels() throws Exception
     {
-        executeCommand( "mknode --cd --np \"{'name': 'Test'}\" -l \"['PERSON', 'THING']\"" );
+        executeCommand( "mknode --cd --np \"{'name': 'Test'}\" -l \"['PERSON', ':THING']\"" );
         assertEquals( "Test", getCurrentNode().getProperty( "name" ) );
         assertEquals( asSet( "PERSON", "THING" ), asSet( names( getCurrentNode().getLabels() ) ) );
     }
@@ -487,7 +491,6 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
-            System.out.println(e);
             assertTrue( "Expected notice about cause not found in " + e.getMessage(),
                     e.getMessage().contains( NodeStillHasRelationshipsException.class.getSimpleName() ) );
         }
@@ -513,7 +516,7 @@ public class TestApps extends AbstractShellTest
     {
         Map<String, Serializable> values = MapUtil.<String,Serializable>genericMap( "mykey", "myvalue",
                 "my_other_key", "My other value" );
-        ShellClient client = ShellLobby.newClient( shellServer, values );
+        ShellClient client = newShellClient( shellServer, values );
         String[] allStrings = new String[values.size()*2];
         int i = 0;
         for ( Map.Entry<String, Serializable> entry : values.entrySet() )
@@ -550,7 +553,7 @@ public class TestApps extends AbstractShellTest
     public void canExecuteCypherWithShellVariables() throws Exception
     {
         Map<String, Serializable> variables = MapUtil.<String, Serializable>genericMap( "id", 0 );
-        ShellClient client = ShellLobby.newClient( shellServer, variables );
+        ShellClient client = newShellClient( shellServer, variables );
         executeCommand( client, "start n=node({id}) return n;", "1 row" );
     }
 
@@ -708,7 +711,7 @@ public class TestApps extends AbstractShellTest
         db.schema().awaitIndexOnline( index, 10, SECONDS );
 
         // WHEN / THEN
-        executeCommand( "schema --ls", ":PERSON", IndexState.ONLINE.name() );
+        executeCommand( "schema ls", ":PERSON", IndexState.ONLINE.name() );
     }
 
     @Test
@@ -725,26 +728,35 @@ public class TestApps extends AbstractShellTest
         db.schema().awaitIndexOnline( index2, 10, SECONDS );
 
         // WHEN / THEN
-        executeCommand( "schema --ls -l " + label2.name(), ":" + label2.name(),
+        executeCommand( "schema ls -l " + label2.name(), ":" + label2.name(),
                 IndexState.ONLINE.name(), "!:" + label1.name() );
     }
 
     @Test
-    public void canListIndexesForGivenProperty() throws Exception
+    public void canListIndexesForGivenPropertyAndLabel() throws Exception
     {
         // GIVEN
-        Label label = label( "PERSON" );
+        Label label1 = label( "PERSON" );
+        Label label2 = label( "THING" );
         String property1 = "name";
         String property2 = "age";
         beginTx();
-        IndexDefinition index1 = db.schema().indexCreator( label ).on( property1 ).create();
-        IndexDefinition index2 = db.schema().indexCreator( label ).on( property2 ).create();
+        IndexDefinition index1 = db.schema().indexCreator( label1 ).on( property1 ).create();
+        IndexDefinition index2 = db.schema().indexCreator( label1 ).on( property2 ).create();
+        IndexDefinition index3 = db.schema().indexCreator( label2 ).on( property1 ).create();
+        IndexDefinition index4 = db.schema().indexCreator( label2 ).on( property2 ).create();
         finishTx();
         db.schema().awaitIndexOnline( index1, 10, SECONDS );
         db.schema().awaitIndexOnline( index2, 10, SECONDS );
+        db.schema().awaitIndexOnline( index3, 10, SECONDS );
+        db.schema().awaitIndexOnline( index4, 10, SECONDS );
 
         // WHEN / THEN
-        executeCommand( "schema --ls -p " + property1, property1, "!" + property2 );
+        executeCommand( "schema ls" +
+                " -l :" + label2.name() +
+                " -p " + property1,
+                
+                label2.name(), property1, "!" + label1.name(), "!" + property2 );
     }
     
     @Test
@@ -757,8 +769,23 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema --await -l " + label.name() );
+        executeCommand( "schema await -l " + label.name() );
         assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+    }
+    
+    @Test
+    public void canListIndexesWhenNoOptionGiven() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexCreator( label ).on( property ).create();
+        finishTx();
+        db.schema().awaitIndexOnline( index, 10, SECONDS );
+
+        // WHEN / THEN
+        executeCommand( "schema", label.name(), property );
     }
 
     private Iterable<String> names( Iterable<Label> labels )
