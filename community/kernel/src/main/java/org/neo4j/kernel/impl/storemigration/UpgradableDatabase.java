@@ -104,7 +104,7 @@ public class UpgradableDatabase
                     }
                     catch ( IOException e )
                     {
-                        // Ignore exception on close
+                        return;
                     }
                 }
             }

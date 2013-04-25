@@ -45,7 +45,7 @@ public class LogPruneStrategies
         }
     };
     
-    private static interface Threshold
+    private interface Threshold
     {
         boolean reached( File file, long version, LogLoader source );
     }
@@ -202,13 +202,13 @@ public class LogPruneStrategies
                 public boolean reached( File file, long version, LogLoader source )
                 {
                     // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
-                    long tx = source.getFirstCommittedTxId( version ).longValue();
+                    long tx = source.getFirstCommittedTxId( version );
                     if ( highest == null )
                     {
                         highest = source.getLastCommittedTxId();
                         return false;
                     }
-                    return highest.longValue()-tx >= maxTransactionCount;
+                    return highest-tx >= maxTransactionCount;
                 }
             };
         }
@@ -267,10 +267,6 @@ public class LogPruneStrategies
      *   <li>7 days - For keeping last 7 days worth of log data</li>
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
-     * 
-     * @param fileSystem
-     * @param configValue
-     * @return
      */
     public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem, String configValue )
     {

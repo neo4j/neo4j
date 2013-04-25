@@ -239,8 +239,7 @@ public class ArrayMap<K,V>
             {
                 V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( (data), i + 1, (data), i,
-                    arrayCount - i );
+                System.arraycopy( data, i + 1, data, i, arrayCount - i );
                 ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
             }
@@ -277,8 +276,7 @@ public class ArrayMap<K,V>
             {
                 V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( (data), i + 1, (data), i,
-                    arrayCount - i );
+                System.arraycopy( data, i + 1, data, i, arrayCount - i );
                 ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
             }

@@ -94,7 +94,7 @@ public class CurrentDatabase
                     }
                     catch ( IOException e )
                     {
-                        // Ignore exception on close
+                        return true;
                     }
                 }
             }

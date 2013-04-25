@@ -73,10 +73,10 @@ class LuceneIndexAccessor implements IndexAccessor
                 add( update.getNodeId(), update.getValueAfter() );
                 break;
             case CHANGED:
-                change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                change( update.getNodeId(), update.getValueAfter() );
                 break;
             case REMOVED:
-                remove( update.getNodeId(), update.getValueBefore() );
+                remove( update.getNodeId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -98,10 +98,10 @@ class LuceneIndexAccessor implements IndexAccessor
                 addRecovered( update.getNodeId(), update.getValueAfter() );
                 break;
             case CHANGED:
-                change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                change( update.getNodeId(), update.getValueAfter() );
                 break;
             case REMOVED:
-                remove( update.getNodeId(), update.getValueBefore() );
+                remove( update.getNodeId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -129,13 +129,13 @@ class LuceneIndexAccessor implements IndexAccessor
         writer.addDocument( documentLogic.newDocument( nodeId, value ) );
     }
 
-    private void change( long nodeId, Object valueBefore, Object valueAfter ) throws IOException
+    private void change( long nodeId, Object valueAfter ) throws IOException
     {
         writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId ),
                 documentLogic.newDocument( nodeId, valueAfter ) );
     }
     
-    private void remove( long nodeId, Object value ) throws IOException
+    private void remove( long nodeId ) throws IOException
     {
         writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId ) );
     }

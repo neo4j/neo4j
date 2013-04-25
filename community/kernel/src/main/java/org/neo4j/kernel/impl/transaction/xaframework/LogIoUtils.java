@@ -137,7 +137,7 @@ public class LogIoUtils
         long timeWritten = readNextLong( buf, channel );
 
         // re-create the transaction
-        Xid xid = new XidImpl( globalId, branchId, formatId );
+        Xid xid = new XidImpl( globalId, branchId );
         return new LogEntry.Start( xid, identifier, masterId, myId, -1, timeWritten );
     }
 

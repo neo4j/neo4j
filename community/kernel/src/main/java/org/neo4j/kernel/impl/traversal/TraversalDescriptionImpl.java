@@ -100,13 +100,10 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription uniqueness( UniquenessFactory uniqueness,
             Object parameter )
     {
-        if ( this.uniqueness == uniqueness )
+        if ( this.uniqueness == uniqueness &&
+             (uniquenessParameter == null ? parameter == null : uniquenessParameter.equals( parameter )) )
         {
-            if ( uniquenessParameter == null ? parameter == null
-                    : uniquenessParameter.equals( parameter ) )
-            {
-                return this;
-            }
+            return this;
         }
 
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,

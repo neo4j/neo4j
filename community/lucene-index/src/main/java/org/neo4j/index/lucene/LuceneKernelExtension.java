@@ -81,7 +81,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void start() throws Throwable
     {
         LuceneDataSource luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction,
-                xaFactory, txIdGenerator, logging );
+                xaFactory );
 
         xaDataSourceManager.registerDataSource( luceneDataSource );
 

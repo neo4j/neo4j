@@ -50,7 +50,7 @@ public class SchemaRuleCommandTest
     {
         // GIVEN
         Collection<DynamicRecord> records = serialize( rule, id, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
 
         // WHEN
         command.execute();
@@ -65,7 +65,7 @@ public class SchemaRuleCommandTest
     {
         // GIVEN
         Collection<DynamicRecord> records = serialize( rule, id, false );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
 
         // WHEN
         command.execute();
@@ -80,7 +80,7 @@ public class SchemaRuleCommandTest
     {
         // GIVEN
         Collection<DynamicRecord> records = serialize( rule, id, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         NeoStore neoStore = mock( NeoStore.class );
         when( neoStore.getSchemaStore() ).thenReturn( store );

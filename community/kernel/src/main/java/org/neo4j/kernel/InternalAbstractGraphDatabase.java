@@ -514,7 +514,7 @@ public abstract class InternalAbstractGraphDatabase
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
-        xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
+        xaFactory = new XaFactory( txIdGenerator, txManager, logBufferFactory, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 

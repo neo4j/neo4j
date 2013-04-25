@@ -119,12 +119,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         try
         {
             log.logMessage( msg, exception, true );
+            return exception;
         }
         catch ( Throwable t )
         {
-            // ignore
+            return exception;
         }
-        return exception;
     }
 
     private volatile boolean recovered = false;
@@ -265,7 +265,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
-        assertTmOk( "tx begin" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
         {
@@ -285,7 +285,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         tx.setTransactionContext(kernel.newTransactionContext() );
     }
 
-    private void assertTmOk( String source ) throws SystemException
+    private void assertTmOk() throws SystemException
     {
         if ( !tmOk )
         {
@@ -331,7 +331,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         boolean successful = false;
         try
         {
-            assertTmOk( "tx commit" );
+            assertTmOk();
             Thread thread = Thread.currentThread();
             hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
@@ -346,12 +346,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
-                commit( thread, tx );
+                commit( tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
             {
                 rolledBackTxCount.incrementAndGet();
-                rollbackCommit( thread, tx );
+                rollbackCommit( tx );
             }
             else
             {
@@ -370,7 +370,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
-    private void commit( Thread thread, TransactionImpl tx )
+    private void commit( TransactionImpl tx )
             throws SystemException, HeuristicMixedException,
             HeuristicRollbackException
     {
@@ -519,7 +519,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
     }
 
-    private void rollbackCommit( Thread thread, TransactionImpl tx )
+    private void rollbackCommit( TransactionImpl tx )
             throws HeuristicMixedException, RollbackException, SystemException
     {
         try
@@ -573,7 +573,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         boolean hasAnyLocks = false;
         try
         {
-            assertTmOk( "tx rollback" );
+            assertTmOk();
             hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
@@ -646,7 +646,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
 	public Transaction getTransaction() throws SystemException
     {
-        assertTmOk( "get transaction" );
+        assertTmOk();
         return txThreadMap.get();
     }
     
@@ -654,7 +654,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public void resume( Transaction tx ) throws IllegalStateException,
             SystemException
     {
-        assertTmOk( "tx resume" );
+        assertTmOk();
         if ( txThreadMap.get() != null )
         {
             throw new IllegalStateException( "Transaction already associated" );
@@ -678,7 +678,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public Transaction suspend() throws SystemException
     {
-        assertTmOk( "tx suspend" );
+        assertTmOk();
         // check for ACTIVE/MARKED_ROLLBACK?
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
@@ -694,7 +694,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        assertTmOk( "tx set rollback only" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
@@ -706,7 +706,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void setTransactionTimeout( int seconds ) throws SystemException
     {
-        assertTmOk( "tx set timeout" );
+        assertTmOk();
         // ...
     }
 

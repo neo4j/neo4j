@@ -99,7 +99,6 @@ public class XaLogicalLog implements LogLoader
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
-    private long recoveredTxCount;
 
     private final StringLogger msgLog;
 
@@ -451,7 +450,7 @@ public class XaLogicalLog implements LogLoader
         int identifier = entry.getIdentifier();
         if ( identifier >= nextIdentifier )
         {
-            nextIdentifier = (identifier + 1);
+            nextIdentifier = identifier + 1;
         }
         // re-create the transaction
         Xid xid = entry.getXid();
@@ -513,7 +512,6 @@ public class XaLogicalLog implements LogLoader
         if ( doingRecovery )
         {
             lastRecoveredTx = txId;
-            recoveredTxCount++;
         }
     }
 
@@ -1224,14 +1222,12 @@ public class XaLogicalLog implements LogLoader
         logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
                 ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
 
-        long logEntriesFound = 0;
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
-            logEntriesFound++;
         }
         byteChannel.close();
         startEntry = logApplier.getStartEntry();
@@ -1240,7 +1236,6 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( "Unable to find start entry" );
         }
         startEntry.setStartPosition( startEntryPosition );
-//        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
                 xidIdent, nextTxId, System.currentTimeMillis() );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
@@ -1263,22 +1258,16 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( e );
         }
 
-//        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
-//        LogIoUtils.writeLogEntry( done, writeBuffer );
-        // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         scanIsComplete = true;
-//        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+
         logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
 
         checkLogRotation();
-//        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
 
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
             throws IOException
     {
-//        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
-        long logEntriesFound = 0;
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1288,7 +1277,7 @@ public class XaLogicalLog implements LogLoader
         {
             while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
             {
-                logEntriesFound++;
+
             }
             successfullyApplied = true;
         }
@@ -1319,7 +1308,6 @@ public class XaLogicalLog implements LogLoader
         }
         startEntry.setStartPosition( startEntryPosition );
         positionCache.cacheStartPosition( logApplier.getCommitEntry().getTxId(), startEntry, logVersion );
-//        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
         checkLogRotation();
     }
 

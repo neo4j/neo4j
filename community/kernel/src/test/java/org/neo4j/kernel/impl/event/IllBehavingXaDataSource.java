@@ -102,10 +102,6 @@ public class IllBehavingXaDataSource extends XaDataSource
             return UTF8.encode( "554342" );
         }
 
-        public void setBranchId( byte[] branchId )
-        {
-        }
-
         public void commit( Xid xid, boolean onePhase ) throws XAException
         {
             throw new XAException();

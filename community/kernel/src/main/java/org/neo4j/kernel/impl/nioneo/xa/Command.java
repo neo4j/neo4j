@@ -1060,7 +1060,7 @@ public abstract class Command extends XaCommand
         private final Collection<DynamicRecord> records;
         private final SchemaRule schemaRule;
 
-        SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes,
+        SchemaRuleCommand( SchemaStore store, IndexingService indexes,
                 Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
             super( first( records ).getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
@@ -1139,7 +1139,7 @@ public abstract class Command extends XaCommand
                 ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
                 rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
             }
-            return new SchemaRuleCommand( neoStore, neoStore.getSchemaStore(), indexes, records, rule );
+            return new SchemaRuleCommand( neoStore.getSchemaStore(), indexes, records, rule );
         }
     }
     

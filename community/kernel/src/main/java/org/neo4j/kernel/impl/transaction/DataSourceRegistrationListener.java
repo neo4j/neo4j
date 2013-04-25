@@ -27,7 +27,7 @@ public interface DataSourceRegistrationListener
 
     void unregisteredDataSource( XaDataSource ds );
     
-    public static class Adapter implements DataSourceRegistrationListener
+    class Adapter implements DataSourceRegistrationListener
     {
         @Override
         public void registeredDataSource( XaDataSource ds )

@@ -565,7 +565,7 @@ public class RelIdArray implements SizeOf
         @Override
         long transform( int id )
         {
-            return (((long)(id&0xFFFFFFFFL))|(highBits));
+            return (id&0xFFFFFFFFL)|highBits;
         }
         
         @Override

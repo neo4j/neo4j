@@ -35,9 +35,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGenerator, Lifecycle
 {
-//    private NeoStoreXaDataSource xaDs = null;
     private String dataSourceName = null;
-    private NeoStoreTransaction readOnlyResourceConnection;
     private XaDataSourceManager xaDataSourceManager;
 
     public NioNeoDbPersistenceSource(XaDataSourceManager xaDataSourceManager)
@@ -46,33 +44,24 @@ public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGen
         this.xaDataSourceManager = xaDataSourceManager;
     }
 
+    @Override
     public void init()
     {
-        // Do nothing
     }
 
+    @Override
     public void start()
     {
-//        xaDs = xaDataSourceManager.getNeoStoreDataSource();
-//        if ( xaDs == null )
-//        {
-//            throw new IllegalStateException(
-//                "Unable to get nioneodb datasource" );
-//        }
-//        readOnlyResourceConnection = new ReadTransaction( xaDs.getNeoStore() );
     }
 
+    @Override
     public void stop()
     {
-        if (  xaDataSourceManager.getNeoStoreDataSource() != null )
-        {
-            // This close is owned by the XaDS xaDs.close();
-        }
+
     }
 
     @Override
     public void shutdown()
-        throws Throwable
     {
     }
 

@@ -353,7 +353,7 @@ public class TestXa
 
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager,
                 StringLogger.DEV_NULL,
-                new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
+                new XaFactory( TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders(

@@ -166,7 +166,7 @@ public class TestNeoStore
                 fs.get(), StringLogger.DEV_NULL, null );
 
         ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
-                new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
+                new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         new DefaultLogBufferFactory(), fs.get(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),

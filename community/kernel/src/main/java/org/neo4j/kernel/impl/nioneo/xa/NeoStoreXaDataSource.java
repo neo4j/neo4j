@@ -440,7 +440,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    indexingService, lockManager, first );
+                    indexingService, first );
         }
     }
 

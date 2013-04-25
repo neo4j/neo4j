@@ -31,18 +31,13 @@ import org.neo4j.graphdb.traversal.TraversalContext;
 
 public final class FinalTraversalBranch implements TraversalBranch
 {
-    private final Node head;
-    private final Relationship[] path;
 
-    public FinalTraversalBranch( Node head, Relationship... path )
+    public FinalTraversalBranch()
     {
-        this.head = head;
-        this.path = path;
     }
 
     public int length()
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 

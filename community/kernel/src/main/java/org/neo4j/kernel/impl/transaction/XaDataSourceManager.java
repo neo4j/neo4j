@@ -500,12 +500,12 @@ public class XaDataSourceManager
         try
         {
             msgLog.logMessage( msg, exception, true );
+            return exception;
         }
         catch ( Throwable t )
         {
-            // ignore
+            return exception;
         }
-        return exception;
     }
 
     public void rotateLogicalLogs()

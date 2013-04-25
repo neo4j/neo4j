@@ -134,7 +134,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
     }
     
-    private static interface PrimitiveLongPredicate
+    private interface PrimitiveLongPredicate
     {
         boolean accept( long value );
     }

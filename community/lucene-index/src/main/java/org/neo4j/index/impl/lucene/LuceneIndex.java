@@ -290,7 +290,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 cachedIdsMap = service.dataSource().getFromCache(
                         identifier, keyForDirectLookup );
                 foundInCache = fillFromCache( cachedIdsMap, ids,
-                        keyForDirectLookup, valueForDirectLookup.toString(), removedIds );
+                        valueForDirectLookup.toString(), removedIds );
             }
 
             if ( !foundInCache )
@@ -341,7 +341,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     private boolean fillFromCache(
             LruCache<String, Collection<Long>> cachedNodesMap,
-            List<Long> ids, String key, String valueAsString,
+            List<Long> ids, String valueAsString,
             Collection<Long> deletedNodes )
     {
         boolean found = false;
@@ -517,7 +517,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
-            return query( query, (String) null, null, null );
+            return query( query, null, null, null );
         }
 
         @Override
@@ -537,7 +537,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
-            return query( query, (String) null, null, context );
+            return query( query, null, null, context );
         }
 
         private static void addIfNotNull( BooleanQuery query, Node nodeOrNull, String field )

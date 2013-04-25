@@ -79,12 +79,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
                 "Unable to get transaction.", e );
         }
     }
-    
-    @Override
-    public void destroy()
-    {
-        super.destroy();
-    }
 
     private static class NeoStoreXaResource extends XaResourceHelpImpl
     {

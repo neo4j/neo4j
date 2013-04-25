@@ -258,12 +258,12 @@ public class PersistenceManager
                     registerTransactionEventHookIfNeeded( tx );
                 txConnectionMap.put( tx, con );
             }
-            catch ( javax.transaction.RollbackException re )
+            catch ( RollbackException re )
             {
                 String msg = "The transaction is marked for rollback only.";
                 throw new ResourceAcquisitionFailedException( msg, re );
             }
-            catch ( javax.transaction.SystemException se )
+            catch ( SystemException se )
             {
                 String msg = "TM encountered an unexpected error condition.";
                 throw new ResourceAcquisitionFailedException( msg, se );

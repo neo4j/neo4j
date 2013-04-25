@@ -433,18 +433,15 @@ public class XaResourceManager
             if ( onePhase )
             {
                 txStatus.markAsPrepared();
-                if ( !isReadOnly )
+                if ( !isReadOnly && !xaTransaction.isRecovered() )
                 {
-                    if ( !xaTransaction.isRecovered() )
-                    {
-                        xaTransaction.prepare();
+                    xaTransaction.prepare();
 
-                        long txId = txIdGenerator.generate( dataSource,
-                                xaTransaction.getIdentifier() );
-                        xaTransaction.setCommitTxId( txId );
-                        log.commitOnePhase( xaTransaction.getIdentifier(),
-                                xaTransaction.getCommitTxId(), getForceMode() );
-                    }
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitOnePhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId(), getForceMode() );
                 }
             }
             if ( !txStatus.prepared() || txStatus.rollback() )
@@ -454,16 +451,13 @@ public class XaResourceManager
             }
             if ( !isReadOnly )
             {
-                if ( !xaTransaction.isRecovered() )
+                if ( !onePhase && !xaTransaction.isRecovered() )
                 {
-                    if ( !onePhase )
-                    {
-                        long txId = txIdGenerator.generate( dataSource,
-                                xaTransaction.getIdentifier() );
-                        xaTransaction.setCommitTxId( txId );
-                        log.commitTwoPhase( xaTransaction.getIdentifier(),
-                                xaTransaction.getCommitTxId(), getForceMode() );
-                    }
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitTwoPhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId(), getForceMode() );
                 }
                 txStatus.markCommitStarted();
                 if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )

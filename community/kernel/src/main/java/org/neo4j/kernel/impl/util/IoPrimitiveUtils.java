@@ -55,7 +55,7 @@ public abstract class IoPrimitiveUtils
         // 3 bytes to represent the length (4 is a bit overkill)... maybe
         // this space optimization is a bit overkill also :)
         buffer.putShort( (short)chars.length );
-        buffer.put( (byte)((chars.length >> 16)) );
+        buffer.put( (byte)(chars.length >> 16) );
         buffer.put( chars );
     }
     

@@ -408,7 +408,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
-                new XaFactory( new Config( config, GraphDatabaseSettings.class ),
+                new XaFactory(
                         TxIdGenerator.DEFAULT, new PlaceboTm( null, getGraphDbAPI().getTxIdGenerator() ), new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
@@ -476,7 +476,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
-                    new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
+                    new XaFactory( TxIdGenerator.DEFAULT,
                             (AbstractTransactionManager)tm, new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr

@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -101,7 +100,6 @@ import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ClassicLoggingService;
@@ -109,11 +107,9 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 public class BatchInserterImpl implements BatchInserter
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
-    private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
     private final LifeSupport life; 
     private final NeoStore neoStore;
-    private final IndexStoreView storeView;
     private final IndexStore indexStore;
     private final File storeDir;
     private final PropertyIndexHolder indexHolder;
@@ -124,7 +120,6 @@ public class BatchInserterImpl implements BatchInserter
     // TODO use Logging instead
     private final StringLogger msgLog;
     private final FileSystemAbstraction fileSystem;
-    private final CleanupService cleanupService;
     private final SchemaCache schemaCache;
     private final Config config;
     private boolean isShutdown = false;
@@ -179,10 +174,9 @@ public class BatchInserterImpl implements BatchInserter
         typeHolder = new RelationshipTypeHolder( types );
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
-        storeView = new NeoStoreIndexStoreView( neoStore );
         
         ClassicLoggingService logging = new ClassicLoggingService( new Config() );
-        cleanupService = life.add( CleanupService.create( life.add( new Neo4jJobScheduler( msgLog ) ), logging ) );
+//        life.add( CleanupService.create( life.add( new Neo4jJobScheduler( msgLog ) ), logging ) );
         
         KernelExtensions extensions = life.add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
                 UnsatisfiedDependencyStrategies.ignore() ) );
@@ -360,7 +354,7 @@ public class BatchInserterImpl implements BatchInserter
                                              String property )
     {
         PropertyRecord current = null;
-        PropertyBlock target = null;
+        PropertyBlock target;
         long nextProp = primitive.getNextProp();
         int propIndex = indexHolder.getKeyId( property );
         if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() || propIndex == -1 )

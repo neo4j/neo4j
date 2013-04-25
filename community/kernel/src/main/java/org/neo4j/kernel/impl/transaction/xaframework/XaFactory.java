@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 
 import org.neo4j.kernel.TransactionInterceptorProviders;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -33,7 +32,6 @@ import org.neo4j.kernel.logging.Logging;
 */
 public class XaFactory
 {
-    private final Config config;
     private final TxIdGenerator txIdGenerator;
     private final AbstractTransactionManager txManager;
     private final LogBufferFactory logBufferFactory;
@@ -42,11 +40,10 @@ public class XaFactory
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
 
-    public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
-            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
-            Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+    public XaFactory( TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
+                      LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
+                      Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
-        this.config = config;
         this.txIdGenerator = txIdGenerator;
         this.txManager = txManager;
         this.logBufferFactory = logBufferFactory;

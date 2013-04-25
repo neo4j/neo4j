@@ -312,7 +312,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         for ( Pair<Collection<DynamicRecord>, SchemaRule> records : schemaRuleRecords.values() )
         {
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore, neoStore.getSchemaStore(),
+            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore.getSchemaStore(),
                     indexes, records.first(), records.other() );
             schemaRuleCommands.add( command );
             commands.add( command );

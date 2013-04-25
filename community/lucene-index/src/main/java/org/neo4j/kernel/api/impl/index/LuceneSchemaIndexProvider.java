@@ -119,7 +119,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         Document newDocument( long nodeId, Object value )
         {
             Document document = newBaseDocument( nodeId );
-            document.add( new Field( NODE_ID_KEY, "" + nodeId, Store.YES, Index.NOT_ANALYZED ) );
+            document.add( new Field( NODE_ID_KEY, "" + nodeId, Store.YES, NOT_ANALYZED ) );
             document.add( instantiateField( SINGLE_PROPERTY_KEY, value, NOT_ANALYZED ) );
             return document;
         }

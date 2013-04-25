@@ -132,11 +132,6 @@ public abstract class XaResourceHelpImpl implements XaResource
         }
     }
 
-    public void setBranchId( byte branchId[] )
-    {
-        this.branchId = branchId;
-    }
-
     public byte[] getBranchId()
     {
         return this.branchId;

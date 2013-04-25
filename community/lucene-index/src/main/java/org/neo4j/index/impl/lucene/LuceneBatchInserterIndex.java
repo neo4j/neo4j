@@ -380,13 +380,10 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private File getStoreDir( File dbStoreDir )
     {
         File dir = new File( dbStoreDir, "index" );
-        if ( !dir.exists() )
+        if ( !dir.exists() && !dir.mkdirs() )
         {
-            if ( !dir.mkdirs() )
-            {
-                throw new RuntimeException( "Unable to create directory path["
-                        + dir.getAbsolutePath() + "] for Neo4j store." );
-            }
+            throw new RuntimeException( "Unable to create directory path["
+                    + dir.getAbsolutePath() + "] for Neo4j store." );
         }
         return dir;
     }

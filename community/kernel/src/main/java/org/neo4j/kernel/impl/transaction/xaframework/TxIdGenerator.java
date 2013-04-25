@@ -23,7 +23,7 @@ import javax.transaction.xa.XAException;
 
 public interface TxIdGenerator
 {
-    public static final TxIdGenerator DEFAULT = new TxIdGenerator()
+    final TxIdGenerator DEFAULT = new TxIdGenerator()
     {
         public long generate( XaDataSource dataSource, int identifier )
         {

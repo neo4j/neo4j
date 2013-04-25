@@ -363,7 +363,7 @@ public class Traversal
         {
             relationships[i] = iter.next();
         }
-        return new FinalTraversalBranch( tailPath.startNode(), relationships );
+        return new FinalTraversalBranch();
     }
 
     /**
