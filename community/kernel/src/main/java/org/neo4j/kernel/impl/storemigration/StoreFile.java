@@ -42,6 +42,8 @@ public enum StoreFile
     RELATIONSHIP_STORE( "RelationshipStore", StoreFactory.RELATIONSHIP_STORE_NAME ),
     RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
     RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ),
+    LABEL_NAME_STORE( "LabelNameStore", StoreFactory.LABEL_KEY_STORE_NAME, false ),
+    LABEL_NAME_NAMES_STORE( "StringPropertyStore", StoreFactory.LABEL_KEY_NAMES_STORE_NAME, false ),
     SCHEMA_STORE( "SchemaStore", StoreFactory.SCHEMA_STORE_NAME, false );
     
     private final String typeDescriptor;

@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -44,8 +45,11 @@ public interface CheckDecorator
     RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyChecker(
             RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker );
 
-    RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker );
+    RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeNameChecker(
+            RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
+
+    RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelKeyNameChecker(
+            RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> checker );
 
     static CheckDecorator NONE = new CheckDecorator()
     {
@@ -85,8 +89,15 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-                RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeNameChecker(
+                RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        {
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelKeyNameChecker(
+                RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
         {
             return checker;
         }

@@ -45,6 +45,7 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
@@ -273,8 +274,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeNameChecker(
+            RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
         if ( dynamicOwners == null )
@@ -282,12 +283,32 @@ class OwnerCheck implements CheckDecorator
             return checker;
         }
         return new NameCheckerDecorator
-                <RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport>( checker, dynamicOwners )
+                <RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport>( checker, dynamicOwners )
         {
             @Override
             DynamicOwner.NameOwner owner( RelationshipTypeRecord record )
             {
                 return new DynamicOwner.RelationshipLabel( record );
+            }
+        };
+    }
+
+    @Override
+    public RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelKeyNameChecker(
+            RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
+    {
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
+        if ( dynamicOwners == null )
+        {
+            return checker;
+        }
+        return new NameCheckerDecorator
+                <LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport>( checker, dynamicOwners )
+        {
+            @Override
+            DynamicOwner.NameOwner owner( LabelKeyRecord record )
+            {
+                return new DynamicOwner.LabelKey( record );
             }
         };
     }

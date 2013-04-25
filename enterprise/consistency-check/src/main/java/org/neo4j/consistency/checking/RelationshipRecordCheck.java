@@ -52,7 +52,7 @@ class RelationshipRecordCheck
             }
             else
             {
-                report.forReference( records.relationshipLabel( record.getType() ), this );
+                report.forReference( records.relationshipType( record.getType() ), this );
             }
         }
 

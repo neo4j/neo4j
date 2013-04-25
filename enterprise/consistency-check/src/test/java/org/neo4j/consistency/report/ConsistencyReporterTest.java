@@ -36,9 +36,9 @@ import java.util.List;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,6 +55,7 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -294,6 +295,10 @@ public class ConsistencyReporterTest
             if ( type == RelationshipTypeRecord.class )
             {
                 return new RelationshipTypeRecord( 0 );
+            }
+            if ( type == LabelKeyRecord.class )
+            {
+                return new LabelKeyRecord( 0 );
             }
             if ( type == DynamicRecord.class )
             {

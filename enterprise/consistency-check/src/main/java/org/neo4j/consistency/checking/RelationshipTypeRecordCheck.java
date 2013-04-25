@@ -25,23 +25,23 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-class RelationshipLabelRecordCheck
-    extends NameRecordCheck<RelationshipTypeRecord,ConsistencyReport.LabelConsistencyReport>
+class RelationshipTypeRecordCheck
+    extends NameRecordCheck<RelationshipTypeRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )
     {
-        return records.relationshipLabelName( id );
+        return records.relationshipTypeName( id );
     }
 
     @Override
-    void nameNotInUse( ConsistencyReport.LabelConsistencyReport report, DynamicRecord name )
+    void nameNotInUse( ConsistencyReport.RelationshipTypeConsistencyReport report, DynamicRecord name )
     {
         report.nameBlockNotInUse( name );
     }
 
     @Override
-    void emptyName( ConsistencyReport.LabelConsistencyReport report, DynamicRecord name )
+    void emptyName( ConsistencyReport.RelationshipTypeConsistencyReport report, DynamicRecord name )
     {
         report.emptyName( name );
     }

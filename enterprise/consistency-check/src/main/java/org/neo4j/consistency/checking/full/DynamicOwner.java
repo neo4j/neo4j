@@ -30,6 +30,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
@@ -127,7 +128,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             case PROPERTY_KEY_NAME:
                 return records.propertyKeyName( (int)id );
             case RELATIONSHIP_LABEL_NAME:
-                return records.relationshipLabelName( (int)id );
+                return records.relationshipTypeName( (int) id );
             default:
                 return skipReference();
             }
@@ -166,7 +167,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             ConsistencyReport.NameConsistencyReport report = genericReport;
             if ( record instanceof RelationshipTypeRecord )
             {
-                ((ConsistencyReport.LabelConsistencyReport) report)
+                ((ConsistencyReport.RelationshipTypeConsistencyReport) report)
                         .nameMultipleOwners( (RelationshipTypeRecord) record );
             }
             else if ( record instanceof PropertyIndexRecord )
@@ -197,7 +198,23 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    static class RelationshipLabel extends NameOwner<RelationshipTypeRecord,ConsistencyReport.LabelConsistencyReport>
+    static class LabelKey extends NameOwner<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport>
+    {
+        private final int id;
+
+        LabelKey( LabelKeyRecord record )
+        {
+            this.id = record.getId();
+        }
+
+        @Override
+        RecordReference<LabelKeyRecord> record( RecordAccess records )
+        {
+            return records.labelKey( id );
+        }
+    }
+
+    static class RelationshipLabel extends NameOwner<RelationshipTypeRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
     {
         private final int id;
 
@@ -209,7 +226,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         @Override
         RecordReference<RelationshipTypeRecord> record( RecordAccess records )
         {
-            return records.relationshipLabel( id );
+            return records.relationshipType( id );
         }
     }
 

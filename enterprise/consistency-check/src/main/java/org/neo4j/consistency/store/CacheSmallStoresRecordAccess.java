@@ -20,6 +20,7 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -61,7 +62,7 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeRecord> relationshipType( int id )
     {
         if ( id < relationshipLabels.length )
         {
@@ -69,7 +70,7 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
         }
         else
         {
-            return delegate.relationshipLabel( id );
+            return delegate.relationshipType( id );
         }
     }
 
@@ -99,9 +100,21 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
     {
-        return delegate.relationshipLabelName( id );
+        return delegate.relationshipTypeName( id );
+    }
+
+    @Override
+    public RecordReference<LabelKeyRecord> labelKey( int id )
+    {
+        return delegate.labelKey( id );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelKeyName( int id )
+    {
+        return delegate.labelKeyName( id );
     }
 
     @Override

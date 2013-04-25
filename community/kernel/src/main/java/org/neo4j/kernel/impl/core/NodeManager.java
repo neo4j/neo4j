@@ -87,6 +87,7 @@ public class NodeManager
 
     private final AbstractTransactionManager transactionManager;
     private final PropertyIndexManager propertyIndexManager;
+    private final LabelIdHolder labelIdHolder;
     private final RelationshipTypeHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
@@ -152,10 +153,10 @@ public class NodeManager
                         AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
-                        PropertyIndexManager propertyIndexManager, NodeProxy.NodeLookup nodeLookup,
-                        RelationshipProxy.RelationshipLookups relationshipLookups, Cache<NodeImpl> nodeCache,
-                        Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm, ThreadToStatementContextBridge
-            statementCtxProvider )
+                        PropertyIndexManager propertyIndexManager, LabelIdHolder labelIdHolder,
+                        NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+                        Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
+                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
     {
         this.logger = logger;
         this.graphDbService = graphDb;
@@ -163,6 +164,7 @@ public class NodeManager
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
+        this.labelIdHolder = labelIdHolder;
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.relTypeHolder = relationshipTypeHolder;
@@ -849,6 +851,11 @@ public class NodeManager
         propertyIndexManager.addKeyEntries( propertyIndexes );
     }
 
+    void addLabelIds( NameData[] labelIds )
+    {
+        labelIdHolder.addKeyEntries( labelIds );
+    }
+
     PropertyIndex getPropertyIndex( int keyId ) throws KeyNotFoundException
     {
         return propertyIndexManager.getKeyById( keyId );
@@ -1049,6 +1056,11 @@ public class NodeManager
         relTypeHolder.addKeyEntries( type );
     }
 
+    public void addLabelId( NameData type )
+    {
+        labelIdHolder.addKeyEntries( type );
+    }
+
     public void addPropertyIndex( NameData index )
     {
         propertyIndexManager.addKeyEntries( index );
@@ -1164,6 +1176,7 @@ public class NodeManager
                 // Load and cache all keys from persistence manager
                 addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypes() );
                 addPropertyIndexes( persistenceManager.loadPropertyIndexes() );
+                addLabelIds( persistenceManager.loadLabels() );
             }
 
         }

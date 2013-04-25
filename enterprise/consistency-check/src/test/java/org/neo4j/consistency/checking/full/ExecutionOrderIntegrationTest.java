@@ -57,6 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -259,8 +260,14 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-                RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeNameChecker(
+                RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelKeyNameChecker( RecordCheck<LabelKeyRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -425,9 +432,9 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+        public RecordReference<RelationshipTypeRecord> relationshipType( int id )
         {
-            return logging( access.relationshipLabel( id ) );
+            return logging( access.relationshipType( id ) );
         }
 
         @Override
@@ -449,9 +456,21 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<DynamicRecord> relationshipLabelName( int id )
+        public RecordReference<DynamicRecord> relationshipTypeName( int id )
         {
-            return logging( access.relationshipLabelName( id ) );
+            return logging( access.relationshipTypeName( id ) );
+        }
+
+        @Override
+        public RecordReference<LabelKeyRecord> labelKey( int id )
+        {
+            return logging( access.labelKey( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> labelKeyName( int id )
+        {
+            return logging( access.labelKeyName( id ) );
         }
 
         @Override

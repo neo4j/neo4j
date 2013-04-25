@@ -219,14 +219,9 @@ public interface NeoStoreTransaction
      */
     String loadIndex( int id );
 
-    /**
-     * Tries to load as heavy records as many property index records as
-     * specified in the argument.
-     *
-     * @return An array of the PropertyIndexData that were loaded - can be less
-     *         than the number requested.
-     */
     NameData[] loadPropertyIndexes();
+
+    NameData[] loadLabels();
 
     /**
      * Loads the complete property chain for the given node and returns it as a
@@ -260,11 +255,6 @@ public interface NeoStoreTransaction
      */
     RelationshipRecord relLoadLight( long id );
 
-    /**
-     * Loads and returns all the available RelationshipTypes that are stored.
-     *
-     * @return All the stored RelationshipTypes, as a RelationshipTypeData array
-     */
     NameData[] loadRelationshipTypes();
 
     /**
@@ -274,6 +264,14 @@ public interface NeoStoreTransaction
      * @param id The property index record id.
      */
     void createPropertyIndex( String key, int id );
+
+    /**
+     * Creates a property index entry out of the given id and string.
+     *
+     * @param name The key of the property index, as a string.
+     * @param id The property index record id.
+     */
+    void createLabelId( String name, int id );
 
     /**
      * Creates a new RelationshipType record with the given id that has the

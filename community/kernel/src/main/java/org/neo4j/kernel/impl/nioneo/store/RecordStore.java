@@ -115,6 +115,11 @@ public interface RecordStore<R extends AbstractBaseRecord>
             processRecord( PropertyIndexRecord.class, store, record );
         }
 
+        public void processLabelName( RecordStore<LabelKeyRecord> store, LabelKeyRecord record )
+        {
+            processRecord( LabelKeyRecord.class, store, record );
+        }
+
         protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record )
         {
             throw new UnsupportedOperationException( this + " does not process "

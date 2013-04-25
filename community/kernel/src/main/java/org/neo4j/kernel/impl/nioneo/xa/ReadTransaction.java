@@ -34,6 +34,7 @@ import javax.transaction.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyStore;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -263,6 +264,12 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
+    public NameData[] loadLabels()
+    {
+        return neoStore.getLabelKeyStore().getNames( Integer.MAX_VALUE );
+    }
+
+    @Override
     public void setXaConnection( XaConnection connection )
     {
     }
@@ -363,6 +370,12 @@ class ReadTransaction implements NeoStoreTransaction
 
     @Override
     public void createPropertyIndex( String key, int id )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void createLabelId( String name, int id )
     {
         throw readOnlyException();
     }

@@ -20,6 +20,7 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -35,7 +36,7 @@ public interface RecordAccess
 
     RecordReference<PropertyRecord> property( final long id );
 
-    RecordReference<RelationshipTypeRecord> relationshipLabel( final int id );
+    RecordReference<RelationshipTypeRecord> relationshipType( final int id );
 
     RecordReference<PropertyIndexRecord> propertyKey( final int id );
 
@@ -43,7 +44,11 @@ public interface RecordAccess
 
     RecordReference<DynamicRecord> array( final long id );
 
-    RecordReference<DynamicRecord> relationshipLabelName( final int id );
+    RecordReference<DynamicRecord> relationshipTypeName( final int id );
+
+    RecordReference<LabelKeyRecord> labelKey( final int id );
+
+    RecordReference<DynamicRecord> labelKeyName( final int id );
 
     RecordReference<DynamicRecord> propertyKeyName( final int id );
 

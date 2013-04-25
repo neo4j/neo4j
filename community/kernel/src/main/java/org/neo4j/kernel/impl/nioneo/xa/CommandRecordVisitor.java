@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -39,7 +40,9 @@ public interface CommandRecordVisitor
     void visitProperty( PropertyRecord record );
 
     void visitRelationshipType( RelationshipTypeRecord record );
-    
+
+    void visitLabelKey( LabelKeyRecord record );
+
     void visitPropertyIndex( PropertyIndexRecord record );
     
     void visitNeoStore( NeoStoreRecord record );

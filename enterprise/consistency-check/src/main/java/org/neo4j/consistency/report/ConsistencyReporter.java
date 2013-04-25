@@ -38,6 +38,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -69,8 +70,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.RelationshipConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyConsistencyReport> PROPERTY_REPORT =
             ProxyFactory.create( ConsistencyReport.PropertyConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.LabelConsistencyReport> LABEL_REPORT =
-            ProxyFactory.create( ConsistencyReport.LabelConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.RelationshipTypeConsistencyReport> RELATIONSHIP_TYPE_REPORT =
+            ProxyFactory.create( ConsistencyReport.RelationshipTypeConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.LabelNameConsistencyReport> LABEL_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.LabelNameConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyKeyConsistencyReport> PROPERTY_KEY_REPORT =
             ProxyFactory.create( ConsistencyReport.PropertyKeyConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
@@ -383,17 +386,33 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forRelationshipLabel( RelationshipTypeRecord label,
-                                      RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public void forRelationshipTypeName( RelationshipTypeRecord relationshipType,
+                                         RecordCheck<RelationshipTypeRecord,
+                                                 ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatch( RecordType.RELATIONSHIP_LABEL, LABEL_REPORT, label, checker );
+        dispatch( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, relationshipType, checker );
     }
 
     @Override
-    public void forRelationshipLabelChange( RelationshipTypeRecord oldLabel, RelationshipTypeRecord newLabel,
-                                            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public void forRelationshipTypeNameChange( RelationshipTypeRecord oldType, RelationshipTypeRecord newType,
+                                               RecordCheck<RelationshipTypeRecord,
+                                                       ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatchChange( RecordType.RELATIONSHIP_LABEL, LABEL_REPORT, oldLabel, newLabel, checker );
+        dispatchChange( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
+    }
+
+    @Override
+    public void forLabelName( LabelKeyRecord label, RecordCheck<LabelKeyRecord, ConsistencyReport
+            .LabelNameConsistencyReport> checker )
+    {
+        dispatch( RecordType.LABEL_KEY, LABEL_KEY_REPORT, label, checker );
+    }
+
+    @Override
+    public void forLabelNameChange( LabelKeyRecord oldLabel, LabelKeyRecord newLabel, RecordCheck<LabelKeyRecord,
+            ConsistencyReport.LabelNameConsistencyReport> checker )
+    {
+        dispatchChange( RecordType.LABEL_KEY, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
     }
 
     @Override

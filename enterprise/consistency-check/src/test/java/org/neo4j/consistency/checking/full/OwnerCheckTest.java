@@ -666,19 +666,19 @@ public class OwnerCheckTest
         RecordAccessStub records = new RecordAccessStub();
         OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_LABEL );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker =
+                decorator.decorateRelationshipTypeNameChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
         RelationshipTypeRecord record1 = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
         RelationshipTypeRecord record2 = records.add( inUse( new RelationshipTypeRecord( 2 ) ) );
         record1.setNameId( (int) dynamic.getId() );
         record2.setNameId( (int) dynamic.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report1 = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport report1 = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                   checker,record1, records );
-        ConsistencyReport.LabelConsistencyReport report2 = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport report2 = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                   checker,record2, records );
 
         // then
@@ -699,17 +699,17 @@ public class OwnerCheckTest
                         RecordType.RELATIONSHIP_LABEL_NAME,
                         dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_LABEL ) );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> labelCheck =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> labelCheck =
+                decorator.decorateRelationshipTypeNameChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord owned = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        DynamicRecord owned = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 1 ) ) ) );
         RelationshipTypeRecord label = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         label.setNameId( (int) owned.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport labelReport = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport labelReport = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                       labelCheck, label, records );
         ConsistencyReport.DynamicConsistencyReport dynReport = check( ConsistencyReport.DynamicConsistencyReport.class,
                                                                       dynChecker, dynamic, records );
@@ -732,11 +732,11 @@ public class OwnerCheckTest
                         RecordType.RELATIONSHIP_LABEL_NAME,
                         dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_LABEL ) );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> labelCheck =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport> labelCheck =
+                decorator.decorateRelationshipTypeNameChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord owned = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        DynamicRecord owned = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 1 ) ) ) );
         RelationshipTypeRecord label = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         label.setNameId( (int) owned.getId() );
@@ -744,7 +744,7 @@ public class OwnerCheckTest
         // when
         ConsistencyReport.DynamicConsistencyReport dynReport = check( ConsistencyReport.DynamicConsistencyReport.class,
                                                                       dynChecker, dynamic, records );
-        ConsistencyReport.LabelConsistencyReport labelReport = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport labelReport = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                       labelCheck, label, records );
 
         // then

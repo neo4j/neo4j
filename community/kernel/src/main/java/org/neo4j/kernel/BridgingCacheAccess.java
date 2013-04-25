@@ -88,11 +88,17 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
+    public void addLabelId( NameData labelId )
+    {
+        nodeManager.addLabelId( labelId );
+    }
+
+    @Override
     public void addPropertyIndex( NameData index )
     {
         nodeManager.addPropertyIndex( index );
     }
-    
+
     @Override
     public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )

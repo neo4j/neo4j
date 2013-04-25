@@ -31,6 +31,7 @@ import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -346,6 +347,12 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
     public void visitRelationshipType( RelationshipTypeRecord record )
     {
         diffs.visitRelationshipType( record );
+    }
+
+    @Override
+    public void visitLabelKey( LabelKeyRecord record )
+    {
+        diffs.visitLabelKey( record );
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -181,7 +182,13 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     {
         visitNameStore( getRelationshipTypeStore(), getTypeNameStore(), record );
     }
-    
+
+    @Override
+    public void visitLabelKey( LabelKeyRecord record )
+    {
+        visitNameStore( getLabelKeyStore(), getLabelKeyNameStore(), record );
+    }
+
     private <R extends AbstractNameRecord> void visitNameStore( RecordStore<R> store, RecordStore<DynamicRecord> nameStore, R record )
     {
         store.forceUpdateRecord( record );

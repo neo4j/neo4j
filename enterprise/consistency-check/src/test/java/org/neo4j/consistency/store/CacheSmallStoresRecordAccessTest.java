@@ -81,11 +81,11 @@ public class CacheSmallStoresRecordAccessTest
 
         // when
         assertThat( recordAccess.propertyKey( 0 ), isDirectReferenceTo( propertyKey0 ) );
-        assertThat( recordAccess.relationshipLabel( 0 ), isDirectReferenceTo( relationshipLabel0 ) );
+        assertThat( recordAccess.relationshipType( 0 ), isDirectReferenceTo( relationshipLabel0 ) );
         assertThat( recordAccess.propertyKey( 1 ), isDirectReferenceTo( propertyKey1 ) );
-        assertThat( recordAccess.relationshipLabel( 1 ), isDirectReferenceTo( relationshipLabel1 ) );
+        assertThat( recordAccess.relationshipType( 1 ), isDirectReferenceTo( relationshipLabel1 ) );
         assertThat( recordAccess.propertyKey( 2 ), isDirectReferenceTo( propertyKey2 ) );
-        assertThat( recordAccess.relationshipLabel( 2 ), isDirectReferenceTo( relationshipLabel2 ) );
+        assertThat( recordAccess.relationshipType( 2 ), isDirectReferenceTo( relationshipLabel2 ) );
 
         // then
         verifyZeroInteractions( delegate );

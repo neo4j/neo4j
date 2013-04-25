@@ -81,6 +81,7 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     }
 
     @Override
+    // TODO: Remove this method?
     protected void rebuildIdGenerator()
     {
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelKeyRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
@@ -75,11 +76,17 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
                                 RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
-        void forRelationshipLabel( RelationshipTypeRecord label,
-                                   RecordCheck<RelationshipTypeRecord, LabelConsistencyReport> checker );
+        void forRelationshipTypeName( RelationshipTypeRecord label,
+                                      RecordCheck<RelationshipTypeRecord, RelationshipTypeConsistencyReport> checker );
 
-        void forRelationshipLabelChange( RelationshipTypeRecord oldLabel, RelationshipTypeRecord newLabel,
-                                         RecordCheck<RelationshipTypeRecord, LabelConsistencyReport> checker );
+        void forRelationshipTypeNameChange( RelationshipTypeRecord oldType, RelationshipTypeRecord newType,
+                                            RecordCheck<RelationshipTypeRecord, RelationshipTypeConsistencyReport> checker );
+
+        void forLabelName( LabelKeyRecord label,
+                           RecordCheck<LabelKeyRecord, LabelNameConsistencyReport> checker );
+
+        void forLabelNameChange( LabelKeyRecord oldLabel, LabelKeyRecord newLabel,
+                           RecordCheck<LabelKeyRecord, LabelNameConsistencyReport> checker );
 
         void forPropertyKey( PropertyIndexRecord key,
                              RecordCheck<PropertyIndexRecord, PropertyKeyConsistencyReport> checker );
@@ -390,11 +397,18 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         void nameMultipleOwners( DynamicRecord otherOwner );
     }
 
-    interface LabelConsistencyReport extends NameConsistencyReport<RelationshipTypeRecord, LabelConsistencyReport>
+    interface RelationshipTypeConsistencyReport extends NameConsistencyReport<RelationshipTypeRecord, RelationshipTypeConsistencyReport>
     {
-        /** The string record referred from this label is also referred from a another label. */
+        /** The string record referred from this relationship type is also referred from a another relationship type. */
         @Documented
         void nameMultipleOwners( RelationshipTypeRecord otherOwner );
+    }
+
+    interface LabelNameConsistencyReport extends NameConsistencyReport<LabelKeyRecord, LabelNameConsistencyReport>
+    {
+        /** The string record referred from this label name is also referred from a another label name. */
+        @Documented
+        void nameMultipleOwners( LabelKeyRecord otherOwner );
     }
 
     interface PropertyKeyConsistencyReport extends NameConsistencyReport<PropertyIndexRecord, PropertyKeyConsistencyReport>

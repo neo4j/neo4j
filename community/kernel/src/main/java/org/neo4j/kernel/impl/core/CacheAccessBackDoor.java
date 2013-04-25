@@ -38,6 +38,8 @@ public interface CacheAccessBackDoor
 
     void addRelationshipType( NameData type );
 
+    void addLabelId( NameData labelId );
+
     void addPropertyIndex( NameData index );
 
     /**

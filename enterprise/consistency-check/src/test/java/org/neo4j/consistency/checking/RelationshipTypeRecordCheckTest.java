@@ -26,12 +26,12 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-public class RelationshipLabelRecordCheckTest extends
-        RecordCheckTestBase<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport, RelationshipLabelRecordCheck>
+public class RelationshipTypeRecordCheckTest extends
+        RecordCheckTestBase<RelationshipTypeRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeRecordCheck>
 {
-    public RelationshipLabelRecordCheckTest()
+    public RelationshipTypeRecordCheckTest()
     {
-        super( new RelationshipLabelRecordCheck(), ConsistencyReport.LabelConsistencyReport.class );
+        super( new RelationshipTypeRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class );
     }
 
     @Test
@@ -41,7 +41,7 @@ public class RelationshipLabelRecordCheckTest extends
         RelationshipTypeRecord label = notInUse( new RelationshipTypeRecord( 42 ) );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = check( label );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -54,7 +54,7 @@ public class RelationshipLabelRecordCheckTest extends
         RelationshipTypeRecord label = inUse( new RelationshipTypeRecord( 42 ) );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = check( label );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -69,7 +69,7 @@ public class RelationshipLabelRecordCheckTest extends
         label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = check( label );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -85,7 +85,7 @@ public class RelationshipLabelRecordCheckTest extends
         label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = check( label );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).emptyName( name );
@@ -105,7 +105,7 @@ public class RelationshipLabelRecordCheckTest extends
         newRecord.setNameId( (int) name.getId()  );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -121,7 +121,7 @@ public class RelationshipLabelRecordCheckTest extends
         newRecord.setNameId( (int) name.getId()  );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verify( report ).nameBlockNotInUse( name );
