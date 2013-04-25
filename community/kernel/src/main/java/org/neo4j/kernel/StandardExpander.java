@@ -464,7 +464,7 @@ public abstract class StandardExpander implements Expander, PathExpander
         {
             Exclusion excluded = exclusion.get( type.name() );
             final Map<String, Exclusion> newExclusion;
-            if ( ((excluded == null) ? defaultExclusion : excluded).includes( direction ) )
+            if ( (excluded == null ? defaultExclusion : excluded).includes( direction ) )
             {
                 return this;
             }

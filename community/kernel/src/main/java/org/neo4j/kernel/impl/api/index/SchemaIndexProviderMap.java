@@ -27,5 +27,5 @@ public interface SchemaIndexProviderMap extends Function<SchemaIndexProvider.Des
     @Override
     SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
-    public SchemaIndexProvider getDefaultProvider();
+    SchemaIndexProvider getDefaultProvider();
 }

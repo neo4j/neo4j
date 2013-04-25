@@ -33,13 +33,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class BaseConfigurationMigrator implements ConfigurationMigrator {
 
-    public static interface Migration 
+    public interface Migration
     {
-        public boolean appliesTo(Map<String, String> rawConfiguration);
+        boolean appliesTo(Map<String, String> rawConfiguration);
 
-        public Map<String, String> apply(Map<String, String> rawConfiguration);
+        Map<String, String> apply(Map<String, String> rawConfiguration);
         
-        public String getDeprecationMessage();
+        String getDeprecationMessage();
     }
     
     public static abstract class SpecificPropertyMigration implements Migration

@@ -21,5 +21,5 @@ package org.neo4j.kernel.impl.core;
 
 public interface LastTxIdGetter
 {
-    public long getLastTxId();
+    long getLastTxId();
 }

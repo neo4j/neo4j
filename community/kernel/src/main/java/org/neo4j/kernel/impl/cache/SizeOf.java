@@ -24,5 +24,5 @@ public interface SizeOf
     /**
      * @return the size in bytes of the state of this object including its object overhead (16b).
      */
-    public int size();
+    int size();
 }

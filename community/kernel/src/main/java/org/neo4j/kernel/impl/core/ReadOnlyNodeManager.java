@@ -24,7 +24,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -37,7 +36,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
+    public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                 EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                 CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
@@ -46,7 +45,7 @@ public class ReadOnlyNodeManager extends NodeManager
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
-        super( config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
+        super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }

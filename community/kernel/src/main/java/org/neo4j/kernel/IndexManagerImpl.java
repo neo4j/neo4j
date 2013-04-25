@@ -115,7 +115,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         if ( storedConfig != null && suppliedConfig == null )
         {
             // Fill in "provider" if not already filled in, backwards compatibility issue
-            Map<String, String> newConfig = injectDefaultProviderIfMissing( cls, indexName, dbConfig, storedConfig );
+            Map<String, String> newConfig = injectDefaultProviderIfMissing( indexName, dbConfig, storedConfig );
             if ( newConfig != storedConfig )
             {
                 indexStore.set( cls, indexName, newConfig );
@@ -140,14 +140,14 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         }
         indexProvider = getIndexProvider( provider );
         configToUse = indexProvider.fillInDefaults( configToUse );
-        configToUse = injectDefaultProviderIfMissing( cls, indexName, dbConfig, configToUse );
+        configToUse = injectDefaultProviderIfMissing( indexName, dbConfig, configToUse );
 
         // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
         {
             assertConfigMatches( indexProvider, indexName, storedConfig, suppliedConfig );
             // Fill in "provider" if not already filled in, backwards compatibility issue
-            Map<String, String> newConfig = injectDefaultProviderIfMissing( cls, indexName, dbConfig, storedConfig );
+            Map<String, String> newConfig = injectDefaultProviderIfMissing( indexName, dbConfig, storedConfig );
             if ( newConfig != storedConfig )
             {
                 indexStore.set( cls, indexName, newConfig );
@@ -170,8 +170,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         }
     }
 
-    private Map<String, String> injectDefaultProviderIfMissing(
-            Class<? extends PropertyContainer> cls, String indexName, Map<?, ?> dbConfig,
+    private Map<String, String> injectDefaultProviderIfMissing( String indexName, Map<?, ?> dbConfig,
             Map<String, String> config )
     {
         String provider = config.get( PROVIDER );

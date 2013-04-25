@@ -29,14 +29,14 @@ public class Version extends Service
     private static final Version KERNEL_VERSION;
     static
     {
-        Version kernelVersion = null;
+        Version kernelVersion;
         try
         {
             kernelVersion = Service.load( Version.class, KERNEL_ARTIFACT_ID );
         }
         catch ( NoSuchElementException ex )
         {
-            // handled by null check
+            kernelVersion = null; // Be explicit about what we want.
         }
         if ( kernelVersion == null ) kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
         KERNEL_VERSION = kernelVersion;

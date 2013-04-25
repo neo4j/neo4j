@@ -439,7 +439,7 @@ public class Traversal
      * Provides hooks to help build a string representation of a {@link Path}.
      * @param <T> the type of {@link Path}.
      */
-    public static interface PathDescriptor<T extends Path>
+    public interface PathDescriptor<T extends Path>
     {
         /**
          * Returns a string representation of a {@link Node}.

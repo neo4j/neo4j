@@ -183,6 +183,12 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
+        public boolean equals( Object other )
+        {
+            return false;
+        }
+
+        @Override
         public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
         {
             return null;

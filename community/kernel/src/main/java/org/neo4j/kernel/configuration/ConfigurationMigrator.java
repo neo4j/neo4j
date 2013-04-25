@@ -25,5 +25,5 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public interface ConfigurationMigrator
 {
-    public Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log);
+    Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log);
 }

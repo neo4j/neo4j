@@ -447,7 +447,7 @@ public class NodeProxy implements Node
         }
         catch ( LabelNotFoundKernelException e )
         {
-            // OK, no such label... cool
+            return;
         }
         catch ( EntityNotFoundException e )
         {

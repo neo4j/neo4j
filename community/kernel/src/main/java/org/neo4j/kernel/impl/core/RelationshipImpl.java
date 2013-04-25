@@ -57,6 +57,14 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
+    public int hashCode()
+    {
+        int result = super.hashCode();
+        result = 31 * result + (int) (idAndMore ^ (idAndMore >>> 32));
+        return result;
+    }
+
+    @Override
     protected PropertyData changeProperty( NodeManager nodeManager,
             PropertyData property, Object value, TransactionState tx )
     {

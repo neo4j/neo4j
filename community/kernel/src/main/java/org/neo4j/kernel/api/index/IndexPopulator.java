@@ -63,7 +63,7 @@ public interface IndexPopulator
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
     
-    public static class Adapter implements IndexPopulator
+    class Adapter implements IndexPopulator
     {
         @Override
         public void create() throws IOException

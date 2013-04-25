@@ -131,24 +131,13 @@ public class NodeManager
                 return null;
             }
             int typeId = data.getType();
-            RelationshipType type;
-            try
-            {
-                type = getRelationshipTypeById( typeId );
-            }
-            catch ( KeyNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship[" + data.getId()
-                        + "] exist but relationship type[" + typeId
-                        + "] not found." );
-            }
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
-            return newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, false );
+            return newRelationshipImpl( id, startNodeId, endNodeId, typeId, false );
         }
     };
 
-    public NodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
+    public NodeManager( StringLogger logger, GraphDatabaseService graphDb,
                         AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
@@ -284,7 +273,7 @@ public class NodeManager
                     + "] deleted" );
         }
         long id = idGenerator.nextId( Relationship.class );
-        RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, true );
+        RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, typeId, true );
         RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
@@ -318,8 +307,7 @@ public class NodeManager
         }
     }
 
-    private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId,
-                                                  RelationshipType type, int typeId, boolean newRel )
+    private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId, int typeId, boolean newRel)
     {
         return new RelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
     }
@@ -618,19 +606,7 @@ public class NodeManager
                 throw new NotFoundException( format( "Relationship %d not found", relId ) );
             }
             int typeId = data.getType();
-            RelationshipType type = null;
-            try
-            {
-                type = getRelationshipTypeById( typeId );
-            }
-            catch ( KeyNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship[" + data.getId()
-                        + "] exist but relationship type[" + typeId
-                        + "] not found." );
-            }
-            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
-                    type, typeId, false );
+            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(), typeId, false );
             // relCache.put( relId, relationship );
             relCache.put( relationship );
             return relationship;
@@ -650,7 +626,6 @@ public class NodeManager
     {
         relCache.remove( id );
     }
-
 
     public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
                                                long secondNodeNextRelId )
@@ -700,7 +675,6 @@ public class NodeManager
         receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
                 relsList, DirectionWrapper.INCOMING, hasLoops );
 
-        // relCache.putAll( relsMap );
         return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
@@ -712,21 +686,11 @@ public class NodeManager
         {
             long relId = rel.getId();
             RelationshipImpl relImpl = relCache.get( relId );
-            RelationshipType type = null;
             int typeId;
             if ( relImpl == null )
             {
                 typeId = rel.getType();
-                try
-                {
-                    type = getRelationshipTypeById( typeId );
-                }
-                catch ( KeyNotFoundException e )
-                {
-                    throw new AssertionError( "Type of loaded relationships unknown" );
-                }
-                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
-                        typeId, false );
+                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), typeId, false );
                 relsList.add( relImpl );
             }
             else
@@ -742,11 +706,6 @@ public class NodeManager
             relationshipSet.add( relId, dir );
         }
     }
-
-//    void putAllInRelCache( Map<Long,RelationshipImpl> map )
-//    {
-//         relCache.putAll( map );
-//    }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
     {

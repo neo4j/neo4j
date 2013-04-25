@@ -36,7 +36,7 @@ public interface IndexReader extends Closeable
     @Override
     void close();
     
-    public static class Empty implements IndexReader
+    class Empty implements IndexReader
     {
         @Override
         public Iterator<Long> lookup( Object value )

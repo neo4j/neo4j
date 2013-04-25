@@ -71,10 +71,14 @@ public class AutoConfigurator
             mem = (Long) method.invoke( osBean );
         }
         catch ( Exception e )
-        { // ok we tried but probably 1.5 JVM or other class library implementation
+        {
+            // ok we tried but probably 1.5 JVM or other class library implementation
+            mem = -1; // Be explicit about how this error is handled.
         }
         catch ( LinkageError e )
-        { // ok we tried but probably 1.5 JVM or other class library implementation
+        {
+            // ok we tried but probably 1.5 JVM or other class library implementation
+            mem = -1; // Be explicit about how this error is handled.
         }
         return mem;
     }

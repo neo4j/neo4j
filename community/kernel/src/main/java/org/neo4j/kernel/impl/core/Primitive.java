@@ -72,6 +72,10 @@ abstract class Primitive
         return (int) (( id >>> 32 ) ^ id );
     }
 
+    // Force subclasses to implement equals
+    @Override
+    public abstract boolean equals(Object other);
+
     public Iterable<Object> getPropertyValues( NodeManager nodeManager )
     {
         TransactionState tx = nodeManager.getTransactionState();
@@ -298,12 +302,9 @@ abstract class Primitive
             boolean foundInSkipMap = false;
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
-                if ( skipMap != null )
+                if ( skipMap != null && skipMap.remove( cachedIndex.getKeyId() ) != null )
                 {
-                    if ( skipMap.remove( cachedIndex.getKeyId() ) != null )
-                    {
-                        foundInSkipMap = true;
-                    }
+                    foundInSkipMap = true;
                 }
                 index = cachedIndex;
                 property = addMap.get( cachedIndex.getKeyId() );

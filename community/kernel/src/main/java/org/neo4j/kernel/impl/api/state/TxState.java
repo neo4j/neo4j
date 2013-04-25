@@ -69,7 +69,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
  */
 public class TxState
 {
-    public static interface IdGeneration
+    public interface IdGeneration
     {
         // Because we generate id's up-front, rather than on commit, we need this for now.
         // For a rainy day, we should refactor to use tx-local ids before commit and global ids after
@@ -239,11 +239,6 @@ public class TxState
         return nodes;
     }
 
-    public boolean hasSchemaChanges()
-    {
-        return !getIndexRuleDiffSets().getRemoved().isEmpty();
-    }
-
     private LabelState getOrCreateLabelState( long labelId )
     {
         return getState( labelStates, labelId, new StateCreator<LabelState>()
@@ -268,7 +263,7 @@ public class TxState
         } );
     }
 
-    private static interface StateCreator<STATE>
+    private interface StateCreator<STATE>
     {
         STATE newState( long id );
     }

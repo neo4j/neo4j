@@ -252,7 +252,7 @@ public abstract class InternalAbstractGraphDatabase
 
         // Convert IndexProviders into KernelExtensionFactories
         // Remove this when the deprecated IndexProvider is removed
-        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new Function<IndexProvider, KernelExtensionFactory<?>>()
+        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = map( new Function<IndexProvider, KernelExtensionFactory<?>>()
         {
             @Override
             public KernelExtensionFactory<?> apply( IndexProvider from )
@@ -567,12 +567,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
     }
@@ -582,7 +582,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
@@ -631,7 +631,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
@@ -1198,12 +1198,6 @@ public abstract class InternalAbstractGraphDatabase
         public void stop()
                 throws Throwable
         {
-        }
-
-        @Override
-        public void shutdown()
-        {
-            super.shutdown();
         }
     }
 

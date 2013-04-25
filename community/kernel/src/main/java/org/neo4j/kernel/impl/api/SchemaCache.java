@@ -98,8 +98,9 @@ public class SchemaCache
             return;
         
         Map<Long, SchemaRule> rules = rulesByLabelMap.get( rule.getLabel() );
-        if ( rules.remove( id ) != null )
-            if ( rules.isEmpty() )
-                rulesByLabelMap.remove( rule.getLabel() );
+        if ( rules.remove( id ) != null && rules.isEmpty() )
+        {
+            rulesByLabelMap.remove( rule.getLabel() );
+        }
     }
 }

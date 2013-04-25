@@ -71,7 +71,7 @@ public interface IndexAccessor
      */
     IndexReader newReader();
 
-    public static class Adapter implements IndexAccessor
+    class Adapter implements IndexAccessor
     {
         @Override
         public void drop()

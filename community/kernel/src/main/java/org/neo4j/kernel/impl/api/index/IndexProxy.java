@@ -85,7 +85,7 @@ public interface IndexProxy
      */
     IndexReader newReader() throws IndexNotFoundKernelException;
     
-    public static class Adapter implements IndexProxy
+    class Adapter implements IndexProxy
     {
         public static final Adapter EMPTY = new Adapter();
 

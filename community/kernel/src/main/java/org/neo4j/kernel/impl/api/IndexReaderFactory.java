@@ -33,7 +33,7 @@ public interface IndexReaderFactory
 
     void close();
 
-    public static class Caching implements IndexReaderFactory
+    class Caching implements IndexReaderFactory
     {
         private Map<Long,IndexReader> indexReaders = null;
         private final IndexingService indexingService;
