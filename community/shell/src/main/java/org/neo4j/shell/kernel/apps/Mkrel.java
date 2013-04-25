@@ -88,7 +88,7 @@ public class Mkrel extends GraphDatabaseApp
         Node node = null;
         if ( createNode )
         {
-            node = getServer().getDb().createNode( Mknode.parseLabels( parser ) );
+            node = getServer().getDb().createNode( parseLabels( parser ) );
             session.set( KEY_LAST_CREATED_NODE, "" + node.getId() );
             setProperties( node, parser.options().get( "np" ) );
         }

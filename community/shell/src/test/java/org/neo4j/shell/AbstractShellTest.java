@@ -25,11 +25,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -45,7 +46,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.shell.impl.RmiLocation;
+import org.neo4j.shell.impl.RemoteClient;
+import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -67,7 +69,18 @@ public abstract class AbstractShellTest
     {
         db = newDb();
         shellServer = newServer( db );
-        shellClient = ShellLobby.newClient( shellServer, Collections.<String, Serializable>singletonMap( "quiet", true ) );
+        shellClient = newShellClient( shellServer );
+    }
+
+    protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
+    {
+        return newShellClient( server, Collections.<String, Serializable>singletonMap( "quiet", true ) );
+    }
+    
+    protected SameJvmClient newShellClient( ShellServer server, Map<String, Serializable> session )
+            throws ShellException, RemoteException
+    {
+        return new SameJvmClient( session, server, new CollectingOutput() );
     }
     
     protected GraphDatabaseAPI newDb()
@@ -101,13 +114,13 @@ public abstract class AbstractShellTest
     
     protected ShellClient newRemoteClient() throws Exception
     {
-        return newRemoteClient( new HashMap<String, Serializable>() );
+        return newRemoteClient( NO_INITIAL_SESSION );
     }
     
     protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
     {
-        return ShellLobby.newClient( RmiLocation.location( "localhost",
-                remotelyAvailableOnPort.intValue(), AbstractServer.DEFAULT_NAME ), initialSession );
+        return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort.intValue() ),
+                new CollectingOutput() );
     }
 
     protected void makeServerRemotelyAvailable() throws RemoteException
@@ -132,7 +145,7 @@ public abstract class AbstractShellTest
         db = newDb();
         remotelyAvailableOnPort = null;
         shellServer = newServer( db );
-        shellClient = ShellLobby.newClient( shellServer );
+        shellClient = newShellClient( shellServer );
     }
 
     protected void finishTx( boolean success )

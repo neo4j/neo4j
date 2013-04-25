@@ -51,7 +51,7 @@ public class TestTransactionApps
     {
         db = new ImpermanentGraphDatabase();
         shellServer = new FakeShellServer( db );
-        shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer );
+        shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer, new CollectingOutput() );
    }
 
     @After

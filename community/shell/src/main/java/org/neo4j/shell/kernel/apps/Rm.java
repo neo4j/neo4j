@@ -80,7 +80,7 @@ public class Rm extends GraphDatabaseApp
         else
         {
             Node node = thing.asNode();
-            for ( Label label : Mknode.parseLabels( parser ) )
+            for ( Label label : parseLabels( parser ) )
             {
                 node.removeLabel( label );
             }

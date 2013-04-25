@@ -19,19 +19,42 @@
  */
 package org.neo4j.shell;
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.rmi.RemoteException;
 
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-public class DontShutdownClient
+public class SilentLocalOutput implements Output
 {
-    public static void main( String[] args ) throws Exception
+    @Override
+    public Appendable append( CharSequence csq ) throws IOException
     {
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server, new SilentLocalOutput() );
-        server.shutdown();
-        // Intentionally don't shutdown the client
+        return this;
+    }
+
+    @Override
+    public Appendable append( CharSequence csq, int start, int end ) throws IOException
+    {
+        return this;
+    }
+
+    @Override
+    public Appendable append( char c ) throws IOException
+    {
+        return this;
+    }
+
+    @Override
+    public void print( Serializable object ) throws RemoteException
+    {
+    }
+
+    @Override
+    public void println() throws RemoteException
+    {
+    }
+
+    @Override
+    public void println( Serializable object ) throws RemoteException
+    {
     }
 }
