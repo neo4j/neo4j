@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -105,6 +106,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         else if ( property instanceof Character )
         {
             return dispatchCharacterProperty( (Character) property, param );
+        }
+        else if ( property instanceof Map )
+        {
+            return dispatchMapProperty( (Map) property, param );
         }
         else if ( property instanceof String[] )
         {
@@ -270,6 +275,9 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
     
+    @SuppressWarnings( "boxing" )
+    protected abstract T dispatchMapProperty( Map property, K param );
+
     protected T dispatchOtherProperty( Object property, K param) {
         throw new IllegalArgumentException( "Unsupported property array type: "
                 + property.getClass() );

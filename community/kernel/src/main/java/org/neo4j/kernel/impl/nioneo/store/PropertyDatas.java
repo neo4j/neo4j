@@ -37,14 +37,15 @@ public class PropertyDatas
             this.index = index;
             this.id = id;
         }
-        
+
+        @Override
         public int size()
         {
             // all primitives fit in 8 byte value
             // Object + id(long) + index(int) + value(pad)
             return withObjectOverhead( 8 + 8 );
         }
-        
+
         @Override
         public long getId()
         {
@@ -321,7 +322,8 @@ public class PropertyDatas
             super( index, id );
             this.value = value;
         }
-        
+
+        @Override
         public int size()
         {
             return super.size() + 8;
@@ -362,11 +364,12 @@ public class PropertyDatas
             this.value = value;
         }
 
+        @Override
         public int size()
         {
             return super.size() + 8;
         }
-        
+
         @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
@@ -374,7 +377,7 @@ public class PropertyDatas
             return value;
         }
     }
-    
+
     private static int sizeOf( Object value )
     {
         if ( value == null )
@@ -389,12 +392,17 @@ public class PropertyDatas
         {
             return SizeOfs.sizeOfArray( value );
         }
+        else if ( value instanceof Compound )
+        {
+            // TODO
+            return 0;
+        }
         else
         {
-            throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" ); 
+            throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" );
         }
     }
-    
+
     private static class ObjectPropertyData implements PropertyData
     {
         private final long id;
@@ -407,7 +415,8 @@ public class PropertyDatas
             this.id = id;
             this.value = value;
         }
-        
+
+        @Override
         public int size()
         {
             return withObjectOverhead( 8 /*id*/ + SizeOfs.REFERENCE_SIZE /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
@@ -420,6 +429,7 @@ public class PropertyDatas
             return id;
         }
 
+        @Override
         public int getIndex()
         {
             return index;
@@ -503,6 +513,11 @@ public class PropertyDatas
     }
 
     public static PropertyData forStringOrArray( int index, long id, Object value )
+    {
+        return new ObjectPropertyData( index, id, value );
+    }
+
+    public static PropertyData forCompound( int index, long id, Object value )
     {
         return new ObjectPropertyData( index, id, value );
     }

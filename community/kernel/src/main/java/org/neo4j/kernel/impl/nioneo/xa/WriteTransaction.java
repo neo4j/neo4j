@@ -1035,7 +1035,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
             assert valueRecord.inUse();
-            valueRecord.setInUse( false, block.getType().intValue() );
+            assert valueRecord.getType() != 0;
+            valueRecord.setInUse( false );
             propRecord.addDeletedRecord( valueRecord );
         }
         if ( propRecord.size() > 0 )
@@ -1165,7 +1166,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( DynamicRecord record : block.getValueRecords() )
         {
             assert record.inUse();
-            record.setInUse( false, block.getType().intValue() );
+            assert record.getType() != 0;
+            record.setInUse( false );
             propertyRecord.addDeletedRecord( record );
         }
         getPropertyStore().encodeValue( block, propertyData.getIndex(),

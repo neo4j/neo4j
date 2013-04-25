@@ -45,9 +45,9 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-        
+
     }
-    
+
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
@@ -198,6 +198,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
     }
 
+    @Override
     public void updateRecord( PropertyRecord record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
@@ -317,28 +318,55 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
      * in the block - so make sure to call this after checking isHeavy() or
      * you will end up with duplicates.
      */
-    public void makeHeavy( PropertyBlock record )
+    public void makeHeavy( PropertyBlock block )
     {
-        if ( record.getType() == PropertyType.STRING )
+        if ( block.getType() == PropertyType.STRING )
         {
-            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSingleValueLong() );
+            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
             for ( DynamicRecord stringRecord : stringRecords )
             {
                 stringRecord.setType( PropertyType.STRING.intValue() );
-                record.addValueRecord( stringRecord );
+                block.addValueRecord( stringRecord );
             }
         }
-        else if ( record.getType() == PropertyType.ARRAY )
+        else if ( block.getType() == PropertyType.ARRAY )
         {
-            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSingleValueLong() );
+            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
                 arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                record.addValueRecord( arrayRecord );
+                block.addValueRecord( arrayRecord );
+            }
+        }
+        else if ( block.getType() == PropertyType.COMPOUND )
+        {
+            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
+            for ( DynamicRecord arrayRecord : arrayRecords )
+            {
+                arrayRecord.setType( PropertyType.ARRAY.intValue() );
+                block.addValueRecord( arrayRecord );
+            }
+            assert block.getValueBlocks()[1] == arrayRecords.size();
+
+            byte[] bytes = readFullByteArray( block.getSingleValueLong(), block.getValueRecords(),
+                    arrayPropertyStore, PropertyType.ARRAY ).other();
+
+            CompoundCodec.Decoder decoder = new CompoundCodec.Decoder( bytes );
+            while( decoder.hasNext() )
+            {
+                CompoundCodec.Property p = decoder.next();
+
+                PropertyBlock b = new PropertyBlock();
+                b.setValueBlocks( p.getValueBlocks() );
+
+                makeHeavy( b );
+
+                block.addValueRecords( b.getValueRecords() );
             }
         }
     }
 
+    @Override
     public PropertyRecord getRecord( long id )
     {
         PropertyRecord record;
@@ -354,24 +382,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         for ( PropertyBlock block : record.getPropertyBlocks() )
         {
             // assert block.inUse();
-            if ( block.getType() == PropertyType.STRING )
-            {
-                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord stringRecord : stringRecords )
-                {
-                    stringRecord.setType( PropertyType.STRING.intValue() );
-                    block.addValueRecord( stringRecord );
-                }
-            }
-            else if ( block.getType() == PropertyType.ARRAY )
-            {
-                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord arrayRecord : arrayRecords )
-                {
-                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                    block.addValueRecord( arrayRecord );
-                }
-            }
+            makeHeavy( block );
         }
         return record;
     }
@@ -379,7 +390,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -577,11 +588,46 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 block.addValueRecord( valueRecord );
             }
         }
+        else if ( value instanceof Compound )
+        {
+            long[] valueBlocks = new long[2];
+            block.setValueBlocks( valueBlocks );
+
+            Pair<byte[], List<DynamicRecord>> encoded = encodeCompoundValue( (Compound) value );
+
+            long arrayBlockId = nextArrayBlockId();
+            Collection<DynamicRecord> arrayRecords = allocateArrayRecords( arrayBlockId, encoded.first() );
+            for ( DynamicRecord valueRecord : arrayRecords )
+            {
+                valueRecord.setType( PropertyType.ARRAY.intValue() );
+                block.addValueRecord( valueRecord );
+            }
+            valueBlocks[0] =  keyId | (((long) PropertyType.COMPOUND.intValue()) << 24) | (arrayBlockId << 28) ;
+            valueBlocks[1] = arrayRecords.size();
+            block.addValueRecords( encoded.other() );
+        }
         else
         {
             throw new IllegalArgumentException( "Unknown property type on: "
                 + value + ", " + value.getClass() );
         }
+    }
+
+    private Pair<byte[], List<DynamicRecord>> encodeCompoundValue( Compound c )
+    {
+        List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
+
+        CompoundCodec.Coder coder = new CompoundCodec.Coder( c.properties.size() );
+        for ( Map.Entry<Integer, Object> e : c.properties.entrySet() )
+        {
+            PropertyBlock block = new PropertyBlock();
+            encodeValue( block, e.getKey(), e.getValue() );
+
+            coder.add( e.getKey(), block.getValueBlocks(), block.getValueRecords().size() );
+
+            valueRecords.addAll( block.getValueRecords() );
+        }
+        return Pair.of( coder.getBytes(), valueRecords );
     }
 
     private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
@@ -630,15 +676,47 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 readFullByteArray( startRecord, records, arrayPropertyStore, PropertyType.ARRAY ) );
     }
 
+    public Object getCompoundFor( PropertyBlock propertyBlock )
+    {
+        assert !propertyBlock.isLight();
+
+        int selfRecordsSize = (int)( propertyBlock.getValueBlocks()[1] );
+        List<DynamicRecord> valueRecords = propertyBlock.getValueRecords();
+
+        byte[] bytes = readFullByteArray( propertyBlock.getSingleValueLong(),
+                valueRecords.subList( 0, selfRecordsSize ), arrayPropertyStore, PropertyType.ARRAY ).other();
+
+        Compound c = new Compound();
+        int valueRecordsOffset = selfRecordsSize;
+
+        CompoundCodec.Decoder decoder = new CompoundCodec.Decoder( bytes );
+        while( decoder.hasNext() )
+        {
+            CompoundCodec.Property p = decoder.next();
+
+            PropertyBlock b = new PropertyBlock();
+            b.setValueBlocks( p.getValueBlocks() );
+
+            if ( p.getValueRecordCount() > 0 )
+            {
+                b.addValueRecords( valueRecords.subList( valueRecordsOffset, valueRecordsOffset + p.getValueRecordCount() ) );
+                valueRecordsOffset += p.getValueRecordCount();
+            }
+            c.properties.put( p.getKey(), b.getType().getValue( b, this ) );
+        }
+        return c;
+    }
+
     public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
             long startRecord, Iterable<DynamicRecord> records, AbstractDynamicStore store, PropertyType propertyType )
     {
         long recordToFind = startRecord;
-        Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
+        Map<Long, DynamicRecord> recordsMap = new HashMap<Long, DynamicRecord>();
         for ( DynamicRecord record : records )
         {
             recordsMap.put( record.getId(), record );
         }
+
         byte[] header = null;
         List<byte[]> byteList = new LinkedList<byte[]>();
         int totalSize = 0;
@@ -649,14 +727,14 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             {
                 store.makeHeavy( record );
             }
-            
+
             int offset = 0;
             if ( recordToFind == startRecord )
             {   // This is the first one, read out the header separately
                 header = propertyType.readDynamicRecordHeader( record.getData() );
                 offset = header.length;
             }
-            
+
             byteList.add( record.getData() );
             totalSize += (record.getData().length-offset);
             recordToFind = record.getNextBlock();

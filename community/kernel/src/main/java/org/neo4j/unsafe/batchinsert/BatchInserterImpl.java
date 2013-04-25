@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.Compound;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -100,7 +102,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         this( storeDir, new DefaultFileSystemAbstraction(), stringParams );
     }
-    
+
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams )
     {
@@ -313,6 +315,11 @@ public class BatchInserterImpl implements BatchInserter
             index = createNewPropertyIndex( name );
         }
         PropertyBlock block = new PropertyBlock();
+        if ( value instanceof Map )
+        {
+            Map<String, Object> m = (Map<String, Object>)value;
+            value = Compound.create( m, resolveCompoundKeys( m ) );
+        }
         getPropertyStore().encodeValue( block, index, value );
         int size = block.getSize();
 
@@ -839,6 +846,11 @@ public class BatchInserterImpl implements BatchInserter
                 PropertyData propertyData = propBlock.newPropertyData( propRecord );
                 Object value = propertyData.getValue() != null ? propertyData.getValue() :
                         propBlock.getType().getValue( propBlock, getPropertyStore() );
+                if ( value instanceof Compound )
+                {
+                    Compound c = (Compound)value;
+                    value = Compound.toMap( c, resolveCompoundNames( c ) );
+                }
                 properties.put( key, value );
             }
             nextProp = propRecord.getNextProp();
@@ -996,4 +1008,30 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
+    private Map<String, Integer> resolveCompoundKeys( Map<String, Object> value )
+    {
+        Set<String> keys = Compound.collectPropertyNames( value );
+        Map<String, Integer> result = new HashMap<String, Integer>( keys.size() );
+        for ( String k : keys )
+        {
+            int index = indexHolder.getKeyId( k );
+            if ( index == -1 )
+                index = createNewPropertyIndex( k );
+
+            result.put( k, index );
+        }
+        return result;
+    }
+
+    private Map<Integer, String> resolveCompoundNames( Compound c )
+    {
+        Set<Integer> keys = Compound.collectPropertyKeys( c );
+        Map<Integer, String> result = new HashMap<Integer, String>( keys.size() );
+        for ( Integer k : keys )
+        {
+            String name = indexHolder.getStringKey( k );
+            result.put( k, name );
+        }
+        return result;
+    }
 }
