@@ -21,7 +21,6 @@ package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
 
 /**
  * A builder for entering details about a constraint to create. After all details have been entered

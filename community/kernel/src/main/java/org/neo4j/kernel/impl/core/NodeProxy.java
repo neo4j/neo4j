@@ -518,7 +518,7 @@ public class NodeProxy implements Node
                                     ", but the returned label " + labelId + " doesn't exist anymore" );
                         }
                     }
-                }, labels), ctx );
+                }, labels ), ctx );
             }
         };
     }

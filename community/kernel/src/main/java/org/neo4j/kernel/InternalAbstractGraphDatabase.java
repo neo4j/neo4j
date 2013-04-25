@@ -35,10 +35,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import javax.transaction.NotSupportedException;
+import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -65,6 +65,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
@@ -153,6 +154,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -399,7 +402,7 @@ public abstract class InternalAbstractGraphDatabase
 
         jobScheduler =
             life.add( new Neo4jJobScheduler( this.toString(), logging.getMessagesLog( Neo4jJobScheduler.class ) ));
-        cleanupService = life.add( CleanupService.create( jobScheduler, logging ) );
+        cleanupService = life.add( createCleanupService() );
 
         kernelEventHandlers = new KernelEventHandlers();
 
@@ -541,6 +544,28 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     protected abstract boolean isHighlyAvailable();
+
+    protected CleanupService createCleanupService()
+    {
+        return CleanupService.create( jobScheduler, logging, new Thunk<Boolean>()
+        {
+            @Override
+            public Boolean evaluate()
+            {
+                try
+                {
+                    // Return true if we aren't in a tx, so that the cleanup
+                    // service gets it.
+                    return txManager.getStatus() == Status.STATUS_NO_TRANSACTION;
+                }
+                catch ( SystemException e )
+                {
+                    // TODO correct to just return false here?
+                    return false;
+                }
+            }
+        } );
+    }
 
     private Map<Object, Object> newSchemaStateMap() {
         return new HashMap<Object, Object>();

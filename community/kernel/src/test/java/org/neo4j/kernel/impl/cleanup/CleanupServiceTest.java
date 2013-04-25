@@ -19,9 +19,17 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Thunks.TRUE;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.Closeable;
 import java.util.Iterator;
@@ -32,6 +40,8 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Thunk;
+import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -42,7 +52,8 @@ public class CleanupServiceTest
     public void shouldScheduleCleanupTaskWhenStarted() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
 
         verifyZeroInteractions( scheduler );
 
@@ -57,7 +68,8 @@ public class CleanupServiceTest
     public void shouldCleanupCollectedReferences() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Runnable cleanupTask = acquireCleanupTask();
         CleanupReference collectedReference = mock(CleanupReference.class);
@@ -74,10 +86,11 @@ public class CleanupServiceTest
     public void shouldInvokeHandlerWhenCleaningUpReferenceManually() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler,mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Closeable handler = mock(Closeable.class);
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator(), handler );
 
         // WHEN
         reference.close();
@@ -93,11 +106,11 @@ public class CleanupServiceTest
         Logging logging = mock(Logging.class);
         StringLogger logger = mock(StringLogger.class);
         when(logging.getMessagesLog(any(Class.class))).thenReturn(logger);
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, logging, referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, logging, referenceQueue, TRUE );
         service.start();
         Runnable cleanupTask = acquireCleanupTask();
         Closeable handler = mock( Closeable.class );
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator(), handler );
         when( referenceQueue.remove() )
                 .thenReturn(((AutoCleanupResourceIterator) reference).cleanup)
                 .thenReturn(null);
@@ -114,11 +127,12 @@ public class CleanupServiceTest
     public void shouldOnlyInvokeHandlerOnce() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Runnable cleanupTask = acquireCleanupTask();
         Closeable handler = mock( Closeable.class );
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator(), handler );
         when( referenceQueue.remove() )
                 .thenReturn(((AutoCleanupResourceIterator) reference).cleanup)
                 .thenReturn(null);
@@ -136,10 +150,11 @@ public class CleanupServiceTest
     public void shouldCleanUpWhenEmptyIteratorIsDepleted() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Closeable handler = mock(Closeable.class);
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator(), handler );
 
         // WHEN
         assertFalse(reference.hasNext());
@@ -152,10 +167,11 @@ public class CleanupServiceTest
     public void shouldCleanUpWhenFilledIteratorIsDepleted() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Closeable handler = mock( Closeable.class );
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(1, 2, 3), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator( 1, 2, 3 ), handler );
 
         // WHEN
         while( reference.hasNext() )
@@ -169,10 +185,11 @@ public class CleanupServiceTest
     public void shouldNotCleanUpIfIteratorIsNotDepleted() throws Throwable
     {
         // GIVEN
-        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock(Logging.class), referenceQueue );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, mock( Logging.class ),
+                referenceQueue, TRUE );
         service.start();
         Closeable handler = mock( Closeable.class );
-        ResourceIterator<Object> reference = service.resourceIterator(new StubIterator(1, 2, 3), handler);
+        ResourceIterator<Object> reference = service.resourceIterator( new StubIterator( 1, 2, 3 ), handler );
 
         // WHEN
         while( reference.hasNext() )
@@ -183,6 +200,31 @@ public class CleanupServiceTest
 
         // THEN
         verify(handler, never()).close();
+    }
+
+    @Test
+    public void shouldSkipCleanupRegistrationIfNotNecessary() throws Throwable
+    {
+        // GIVEN
+        @SuppressWarnings( "unchecked" )
+        Thunk<Boolean> cleanupNecessity = mock( Thunk.class );
+        when( cleanupNecessity.evaluate() ).thenReturn( false );
+        Logging logging = mock( Logging.class );
+        when( logging.getMessagesLog( Matchers.<Class<?>> any() ) ).thenReturn( DEV_NULL );
+        CleanupService service = new ReferenceQueueBasedCleanupService( scheduler, logging,
+                referenceQueue, cleanupNecessity );
+        service.start();
+        Iterator<Integer> iterator = new ArrayIterator<Integer>( new Integer[] { 1, 2, 3 } );
+
+        // WHEN
+        Closeable closer = mock( Closeable.class );
+        ResourceIterator<Integer> resourceIterator = service.resourceIterator( iterator, closer );
+        resourceIterator.next(); // Don't exhaust it
+        service.stop();
+
+        // THEN
+        verify( cleanupNecessity, times( 1 ) ).evaluate();
+        verifyZeroInteractions( closer );
     }
 
     private final JobScheduler scheduler = mock( JobScheduler.class );
