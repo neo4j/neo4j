@@ -19,14 +19,13 @@
  */
 package org.neo4j.shell;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class SessionTest
 {
-
     private Session session;
 
     @Before

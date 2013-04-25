@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.indexOf;
 import static org.neo4j.helpers.collection.Iterables.sort;
@@ -29,6 +28,7 @@ import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Function;
@@ -54,47 +54,45 @@ public class Schema extends GraphDatabaseApp
     };
     
     {
-        addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE, "Lists all schema rules" ) );
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which label selected operation is about" ) );
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which property selected operation is about" ) );
-        addOptionDefinition( "await", new OptionDefinition( OptionValueType.NONE,
-                "Awaits indexes matching given label and property" ) );
     }
     
     @Override
     public String getDescription()
     {
-        return "Accesses db schema";
+        return "Accesses db schema. Usage: schema <action> <options...>\n" +
+                "Listing indexes\n" +
+                "  schema ls\n" +
+                "  schema ls -l :Person\n" +
+                "Awaiting indexes to come online\n" +
+                "  schema await -l Person -p name";
     }
     
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
+        String action = parser.argumentWithDefault( 0, "ls" );
         org.neo4j.graphdb.schema.Schema schema = getServer().getDb().schema();
-        String label = parser.option( "l", null );
+        Label[] labels = parseLabels( parser );
         String property = parser.option( "p", null );
         
-        // List schema rules (currently only indexes)
-        if ( parser.options().containsKey( "ls" ) )
-        {
-            listIndexes( out, schema, label, property );
-        }
-        
-        // Await an index to become online
-        if ( parser.options().containsKey( "await" ) )
-        {
-            awaitIndexes( out, schema, label, property );
-        }
+        if ( action.equals( "await" ) )
+            // Await an index to come online
+            awaitIndexes( out, schema, labels, property );
+        else if ( action.equals( "ls" ) )
+            // List schema rules (currently only indexes)
+            listIndexes( out, schema, labels, property );
         
         return INPUT_COMPLETE;
     }
 
-    private void awaitIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, String label, String property )
+    private void awaitIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property )
             throws RemoteException
     {
-        for ( IndexDefinition index : indexesByLabelAndProperty( schema, label, property ) )
+        for ( IndexDefinition index : indexesByLabelAndProperty( schema, labels, property ) )
         {
             if ( schema.getIndexState( index ) != IndexState.ONLINE )
             {
@@ -105,27 +103,31 @@ public class Schema extends GraphDatabaseApp
         }
     }
 
-    private void listIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, String label,
+    private void listIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
             final String property ) throws RemoteException
     {
         ColumnPrinter printer = new ColumnPrinter( "  :", "ON ", "" );
-        Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, label, property );
-                
-        out.println( "Indexes" );
+        Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
+
+        int i = 0;
         for ( IndexDefinition index : sort( indexes, LABEL_COMPARE_FUNCTION ) )
         {
+            if ( i == 0 )
+                out.println( "Indexes" );
             printer.add( index.getLabel().name(), toList( index.getPropertyKeys() ),
                     schema.getIndexState( index ) );
+            i++;
         }
+        if ( i == 0 )
+            out.println( "No indexes" );
+        
         printer.print( out );
     }
 
-    private Iterable<IndexDefinition> indexesByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema, String label,
-            final String property )
+    private Iterable<IndexDefinition> indexesByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
+            Label[] labels, final String property )
     {
-        Iterable<IndexDefinition> indexes = label != null ?
-                schema.getIndexes( label( label ) ) :
-                schema.getIndexes();
+        Iterable<IndexDefinition> indexes = indexesByLabel( schema, labels );
         if ( property != null )
         {
             indexes = filter( new Predicate<IndexDefinition>()
@@ -134,6 +136,23 @@ public class Schema extends GraphDatabaseApp
                 public boolean accept( IndexDefinition index )
                 {
                     return indexOf( property, index.getPropertyKeys() ) != -1;
+                }
+            }, indexes );
+        }
+        return indexes;
+    }
+
+    private Iterable<IndexDefinition> indexesByLabel( org.neo4j.graphdb.schema.Schema schema, Label[] labels )
+    {
+        Iterable<IndexDefinition> indexes = schema.getIndexes();
+        for ( final Label label : labels )
+        {
+            indexes = filter( new Predicate<IndexDefinition>()
+            {
+                @Override
+                public boolean accept( IndexDefinition item )
+                {
+                    return item.getLabel().name().equals( label.name() );
                 }
             }, indexes );
         }

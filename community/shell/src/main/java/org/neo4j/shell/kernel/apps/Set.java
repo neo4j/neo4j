@@ -190,7 +190,7 @@ public class Set extends GraphDatabaseApp
         else
         {   // Label
             Node node = getCurrent( session ).asNode();
-            for ( Label label : Mknode.parseLabels( parser ) )
+            for ( Label label : parseLabels( parser ) )
             {
                 node.addLabel( label );
             }

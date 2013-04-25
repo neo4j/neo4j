@@ -41,7 +41,7 @@ public class TestTransactionSoak
 {
     protected ImpermanentGraphDatabase db;
     private ShellServer server;
-    private Random r = new Random( System.currentTimeMillis() );
+    private final Random r = new Random( System.currentTimeMillis() );
 
     @Before
     public void doBefore() throws Exception
@@ -190,8 +190,9 @@ public class TestTransactionSoak
         {
             try
             {
-                client = new SameJvmClient( new HashMap<String, Serializable>(), server );
-            } catch ( ShellException e )
+                client = new SameJvmClient( new HashMap<String, Serializable>(), server, new SilentLocalOutput() );
+            }
+            catch ( ShellException e )
             {
                 throw new RuntimeException( "Error starting client", e );
             }

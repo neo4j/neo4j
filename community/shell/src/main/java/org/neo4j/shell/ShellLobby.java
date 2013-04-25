@@ -20,6 +20,7 @@
 package org.neo4j.shell;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +35,9 @@ import org.neo4j.shell.impl.SameJvmClient;
  */
 public abstract class ShellLobby
 {
+    public static final Map<String, Serializable> NO_INITIAL_SESSION = Collections.unmodifiableMap(
+            Collections.<String,Serializable>emptyMap() );
+    
 	/**
 	 * To get rid of the RemoteException, uses a constructor without arguments.
 	 * @param cls the class of the server to instantiate.
@@ -185,4 +189,19 @@ public abstract class ShellLobby
 	{
         return newClient( "localhost", AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
 	}
+	
+    public static RmiLocation remoteLocation()
+    {
+        return remoteLocation( AbstractServer.DEFAULT_PORT );
+    }
+    
+	public static RmiLocation remoteLocation( int port )
+	{
+	    return remoteLocation( port, AbstractServer.DEFAULT_NAME );
+	}
+
+    public static RmiLocation remoteLocation( int port, String rmiName )
+    {
+        return RmiLocation.location( "localhost", port, rmiName );
+    }
 }
