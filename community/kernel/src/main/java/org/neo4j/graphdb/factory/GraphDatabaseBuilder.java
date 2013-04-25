@@ -36,7 +36,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 
 /**
- * Builder for GraphDatabaseServices that allows for setting and loading configuration.
+ * Builder for {@link GraphDatabaseService}s that allows for setting and loading
+ * configuration.
  */
 public class GraphDatabaseBuilder
 {
@@ -79,12 +80,13 @@ public class GraphDatabaseBuilder
     }
 
     /**
+     * Set an unvalidated configuration option.
+     * 
      * @param name
      * @param value
      * @return the builder
-     * @deprecated Use setConfig with explicit GraphDatabaseSetting instead
-     *             <p/>
-     *             Set unvalidated config option
+     * @deprecated Use setConfig with explicit {@link GraphDatabaseSetting}
+     *             instead
      */
     @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )

@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
   @Test def create_single_node_with_properties() {
     testQuery(
       title = "Create single node and set properties",
-      text = "The values for the properties can be any scalar expressions.",
+      text = "The values for the properties can be any scalar expressions.\n\nCAUTION: This syntax has been deprecated, please use the one in <<create-return-created-node>>.",
       queryText = "create n = {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})

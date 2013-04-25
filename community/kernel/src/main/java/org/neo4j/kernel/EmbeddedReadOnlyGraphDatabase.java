@@ -36,6 +36,19 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
+ * <p/>
+ * Create an instance this way:
+ * 
+ * <pre>
+ * <code>
+ * Map<String, String> config = new HashMap<String, String>();
+ * config.put( "read_only", "true" );
+ * graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+ *         "var/graphdb" )
+ *         .setConfig( config )
+ *         .newGraphDatabase();
+ * </code>
+ * </pre>
  */
 public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -47,29 +60,39 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
     }
 
     /**
+     * A non-standard way of creating an embedded read-only
+     * {@link GraphDatabaseService} with a set of configuration parameters. Will
+     * most likely be removed in future releases.
+     * <p/>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
      * store an exception will be thrown.
-     *
+     * 
+     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * 
      * @param storeDir the store directory for the Neo4j store files
      */
+    @Deprecated
     public EmbeddedReadOnlyGraphDatabase( String storeDir )
     {
         this( storeDir, readOnlyParams );
     }
 
     /**
-     * A non-standard way of creating an embedded {@link GraphDatabaseService}
-     * with a set of configuration parameters. Will most likely be removed in
-     * future releases.
+     * A non-standard way of creating an embedded read-only
+     * {@link GraphDatabaseService} with a set of configuration parameters. Will
+     * most likely be removed in future releases.
      * <p/>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
      * store an exception will be thrown.
-     *
+     * 
+     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * 
      * @param storeDir the store directory for the db files
-     * @param params   configuration parameters
+     * @param params configuration parameters
      */
+    @Deprecated
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
                                           Map<String, String> params )
     {

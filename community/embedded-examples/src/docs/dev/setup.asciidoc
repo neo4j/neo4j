@@ -185,7 +185,7 @@ classifier=test-sources
 tag=createReadOnlyInstance
 ----
 
-Obviously the database has to exist already in this case.
+Obviously the database has to already exist in this case.
 
 NOTE: Concurrent access to the same database files by multiple (read-only or write) instances is not supported.
 

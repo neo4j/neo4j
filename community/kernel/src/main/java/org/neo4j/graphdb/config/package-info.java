@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * The core graph database API.
+ * Configuration.
  */
-package org.neo4j.graphdb;
-
+package org.neo4j.graphdb.config;
