@@ -25,6 +25,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -72,6 +75,23 @@ public class ImdbDocTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
+    
+    /*
+     * Since this is a doc test, the code in here will be publically visible in e.g. a manual.
+     * This test desires to print something to System.out and there's no point in this test,
+     * when executed, actually printing anything to System.out. So we fool it by creating this
+     * inner class with the same name and looks which it uses instead.
+     */
+    private static class System
+    {
+        static PrintStream out = new PrintStream( new OutputStream()
+        {
+            @Override
+            public void write( int b ) throws IOException
+            {
+            }
+        } );
+    }
 
     @BeforeClass
     public static void setUpDb()
