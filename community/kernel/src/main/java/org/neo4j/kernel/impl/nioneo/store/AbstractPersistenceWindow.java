@@ -28,7 +28,6 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     private final int recordSize;
     private final long position;
     private Buffer buffer = null;
-    private final int totalSize;
     private final int windowSize;
 
     AbstractPersistenceWindow( long position, int recordSize, int totalSize, 
@@ -42,7 +41,6 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         
         this.position = position;
         this.recordSize = recordSize;
-        this.totalSize = totalSize;
         this.windowSize = totalSize / recordSize;
         this.buffer = new Buffer( this, byteBuffer );
         // this.buffer.setByteBuffer( byteBuffer );
@@ -112,7 +110,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
                 int writtenThisTime = getFileChannel().write( byteBuffer, position * recordSize + written );
 
                 if (writtenThisTime == 0)
-                    throw new IOException( "Unable to write to disk, reported bytes written was " + writtenThisTime );
+                    throw new IOException( "Unable to write to disk, reported bytes written was 0" );
 
                 written += writtenThisTime;
             }
