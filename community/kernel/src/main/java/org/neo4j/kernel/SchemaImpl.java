@@ -45,18 +45,18 @@ import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
-import org.neo4j.kernel.impl.core.KeyHolder;
-import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class SchemaImpl implements Schema
 {
     private final ThreadToStatementContextBridge ctxProvider;
-    private final KeyHolder<PropertyIndex> propertyKeyManager;
+    private final TokenHolder<PropertyKeyToken> propertyKeyManager;
     private final CleanupService cleanupService;
 
     public SchemaImpl( ThreadToStatementContextBridge ctxProvider, CleanupService cleanupService,
-                       KeyHolder<PropertyIndex> propertyKeyManager )
+                       TokenHolder<PropertyKeyToken> propertyKeyManager )
     {
         this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;
@@ -113,7 +113,7 @@ public class SchemaImpl implements Schema
             public IndexDefinition apply(IndexRule rule) {
                 try {
                     return new IndexDefinitionImpl(ctxProvider, label(context.getLabelName(rule.getLabel())),
-                            propertyKeyManager.getKeyByIdOrNull((int) rule.getPropertyKey()).getKey());
+                            propertyKeyManager.getTokenByIdOrNull( (int) rule.getPropertyKey() ).getKey());
                 } catch (LabelNotFoundKernelException e) {
                     throw new RuntimeException(e);
                 }

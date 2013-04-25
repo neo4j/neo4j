@@ -23,11 +23,11 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
-abstract class NameRecordCheck<RECORD extends AbstractNameRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+abstract class NameRecordCheck<RECORD extends TokenRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
         implements RecordCheck<RECORD, REPORT>, ComparativeRecordChecker<RECORD, DynamicRecord, REPORT>
 {
     @Override

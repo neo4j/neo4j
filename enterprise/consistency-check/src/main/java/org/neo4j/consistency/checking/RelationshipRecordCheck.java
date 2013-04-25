@@ -24,7 +24,7 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 class RelationshipRecordCheck
         extends PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
@@ -38,7 +38,7 @@ class RelationshipRecordCheck
 
     private enum Label implements
             RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
-            ComparativeRecordChecker<RelationshipRecord, RelationshipTypeRecord, ConsistencyReport.RelationshipConsistencyReport>
+            ComparativeRecordChecker<RelationshipRecord, RelationshipTypeTokenRecord, ConsistencyReport.RelationshipConsistencyReport>
     {
         LABEL;
 
@@ -52,7 +52,7 @@ class RelationshipRecordCheck
             }
             else
             {
-                report.forReference( records.relationshipLabel( record.getType() ), this );
+                report.forReference( records.relationshipType( record.getType() ), this );
             }
         }
 
@@ -70,7 +70,7 @@ class RelationshipRecordCheck
         }
 
         @Override
-        public void checkReference( RelationshipRecord record, RelationshipTypeRecord referred,
+        public void checkReference( RelationshipRecord record, RelationshipTypeTokenRecord referred,
                                     ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
         {
             if ( !referred.inUse() )

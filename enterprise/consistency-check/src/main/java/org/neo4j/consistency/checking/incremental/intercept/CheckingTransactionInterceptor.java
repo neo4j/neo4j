@@ -26,12 +26,13 @@ import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.incremental.DiffCheck;
 import org.neo4j.consistency.store.DiffStore;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
@@ -122,22 +123,32 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
     }
 
     @Override
-    public void visitRelationshipType( RelationshipTypeRecord record )
+    public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
     {
-        diffs.visitRelationshipType( record );
+        diffs.visitRelationshipTypeToken( record );
         if ( next != null )
         {
-            next.visitRelationshipType( record );
+            next.visitRelationshipTypeToken( record );
         }
     }
 
     @Override
-    public void visitPropertyIndex( PropertyIndexRecord record )
+    public void visitLabelToken( LabelTokenRecord record )
     {
-        diffs.visitPropertyIndex( record );
+        diffs.visitLabelToken( record );
         if ( next != null )
         {
-            next.visitPropertyIndex( record );
+            next.visitLabelToken( record );
+        }
+    }
+
+    @Override
+    public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
+    {
+        diffs.visitPropertyKeyToken( record );
+        if ( next != null )
+        {
+            next.visitPropertyKeyToken( record );
         }
     }
 

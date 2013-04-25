@@ -17,38 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.graphdb.Label;
-
-class LabelHolder
+public class LabelTokenHolder extends TokenHolder<LabelToken>
 {
-    private final PropertyIndexHolder indexHolder;
-    private final Map<Long,Label> labelInstances = new HashMap<Long,Label>();
+    public LabelTokenHolder( AbstractTransactionManager transactionManager,
+                             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
+                             TokenCreator tokenCreator )
+    {
+        super( transactionManager, persistenceManager, idGenerator, tokenCreator );
+    }
 
-    LabelHolder( PropertyIndexHolder indexHolder )
+    @Override
+    protected LabelToken newToken( String name, int id )
     {
-        this.indexHolder = indexHolder;
+        return new LabelToken( name, id );
     }
-    
-    long getKeyId( Label label )
+
+    @Override
+    protected String nameOf( LabelToken token )
     {
-        return indexHolder.getKeyId( label.name() );
-    }
-    
-    Label getLabel( long keyId )
-    {
-        Label label = labelInstances.get( keyId );
-        if ( label == null )
-        {
-            label = label( indexHolder.getStringKey( (int)keyId ) );
-            labelInstances.put( keyId, label );
-        }
-        return label;
+        return token.getName();
     }
 }

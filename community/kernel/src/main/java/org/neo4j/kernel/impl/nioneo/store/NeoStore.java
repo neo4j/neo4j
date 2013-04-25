@@ -70,7 +70,8 @@ public class NeoStore extends AbstractStore
     private NodeStore nodeStore;
     private PropertyStore propStore;
     private RelationshipStore relStore;
-    private RelationshipTypeStore relTypeStore;
+    private RelationshipTypeTokenStore relTypeStore;
+    private LabelTokenStore labelTokenStore;
     private SchemaStore schemaStore;
     private final TxHook txHook;
     private boolean isStarted;
@@ -80,18 +81,20 @@ public class NeoStore extends AbstractStore
     private final File fileName;
     private final Config conf;
 
-    public NeoStore(File fileName, Config conf,
-                    IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                    FileSystemAbstraction fileSystemAbstraction,
-                    StringLogger stringLogger, TxHook txHook,
-                    RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore,
-                    NodeStore nodeStore, SchemaStore schemaStore)
+    public NeoStore( File fileName, Config conf,
+                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                     FileSystemAbstraction fileSystemAbstraction,
+                     StringLogger stringLogger, TxHook txHook,
+                     RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
+                     PropertyStore propStore, RelationshipStore relStore,
+                     NodeStore nodeStore, SchemaStore schemaStore )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
         this.fileName = fileName;
         this.conf = conf;
         this.relTypeStore = relTypeStore;
+        this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
         this.relStore = relStore;
         this.nodeStore = nodeStore;
@@ -227,6 +230,11 @@ public class NeoStore extends AbstractStore
             relTypeStore.close();
             relTypeStore = null;
         }
+        if ( labelTokenStore != null )
+        {
+            labelTokenStore.close();
+            labelTokenStore = null;
+        }
         if ( propStore != null )
         {
             propStore.close();
@@ -252,13 +260,14 @@ public class NeoStore extends AbstractStore
     @Override
     public void flushAll()
     {
-        if ( relTypeStore == null || propStore == null || relStore == null ||
+        if ( relTypeStore == null || labelTokenStore == null || propStore == null || relStore == null ||
                 nodeStore == null || schemaStore == null )
         {
             return;
         }
         super.flushAll();
         relTypeStore.flushAll();
+        labelTokenStore.flushAll();
         propStore.flushAll();
         relStore.flushAll();
         nodeStore.flushAll();
@@ -407,6 +416,7 @@ public class NeoStore extends AbstractStore
             propStore.setRecovered();
             relStore.setRecovered();
             relTypeStore.setRecovered();
+            labelTokenStore.setRecovered();
             schemaStore.setRecovered();
         }
         else
@@ -416,6 +426,7 @@ public class NeoStore extends AbstractStore
             propStore.unsetRecovered();
             relStore.unsetRecovered();
             relTypeStore.unsetRecovered();
+            labelTokenStore.unsetRecovered();
             schemaStore.unsetRecovered();
         }
     }
@@ -541,9 +552,19 @@ public class NeoStore extends AbstractStore
      *
      * @return The relationship type store
      */
-    public RelationshipTypeStore getRelationshipTypeStore()
+    public RelationshipTypeTokenStore getRelationshipTypeStore()
     {
         return relTypeStore;
+    }
+
+    /**
+     * Returns the label store.
+     *
+     * @return The label store
+     */
+    public LabelTokenStore getLabelTokenStore()
+    {
+        return labelTokenStore;
     }
 
     /**
@@ -560,6 +581,7 @@ public class NeoStore extends AbstractStore
     public void makeStoreOk()
     {
         relTypeStore.makeStoreOk();
+        labelTokenStore.makeStoreOk();
         propStore.makeStoreOk();
         relStore.makeStoreOk();
         nodeStore.makeStoreOk();
@@ -572,6 +594,7 @@ public class NeoStore extends AbstractStore
     public void rebuildIdGenerators()
     {
         relTypeStore.rebuildIdGenerators();
+        labelTokenStore.rebuildIdGenerators();
         propStore.rebuildIdGenerators();
         relStore.rebuildIdGenerators();
         nodeStore.rebuildIdGenerators();
@@ -583,6 +606,7 @@ public class NeoStore extends AbstractStore
     {
         this.updateHighId();
         relTypeStore.updateIdGenerators();
+        labelTokenStore.updateIdGenerators();
         propStore.updateIdGenerators();
         relStore.updateHighId();
         nodeStore.updateIdGenerators();
@@ -604,6 +628,7 @@ public class NeoStore extends AbstractStore
         list.addAll( propStore.getAllWindowPoolStats() );
         list.addAll( relStore.getAllWindowPoolStats() );
         list.addAll( relTypeStore.getAllWindowPoolStats() );
+        list.addAll( labelTokenStore.getAllWindowPoolStats() );
         return list;
     }
 
@@ -615,12 +640,13 @@ public class NeoStore extends AbstractStore
         nodeStore.logAllWindowPoolStats( logger );
         relStore.logAllWindowPoolStats( logger );
         relTypeStore.logAllWindowPoolStats( logger );
+        labelTokenStore.logAllWindowPoolStats( logger );
         propStore.logAllWindowPoolStats( logger );
     }
 
     public boolean isStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() &&
+        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() &&
             propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk();
     }
 
@@ -634,6 +660,7 @@ public class NeoStore extends AbstractStore
         nodeStore.logVersions( msgLog );
         relStore.logVersions( msgLog );
         relTypeStore.logVersions( msgLog );
+        labelTokenStore.logVersions( msgLog );
         propStore.logVersions( msgLog );
 
         stringLogger.flush();
@@ -647,6 +674,7 @@ public class NeoStore extends AbstractStore
         nodeStore.logIdUsage( msgLog );
         relStore.logIdUsage( msgLog );
         relTypeStore.logIdUsage( msgLog );
+        labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         stringLogger.flush();
     }

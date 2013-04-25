@@ -29,8 +29,8 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public class CacheSmallStoresRecordAccessTest
 {
@@ -61,19 +61,19 @@ public class CacheSmallStoresRecordAccessTest
     {
         // given
         DiffRecordAccess delegate = mock( DiffRecordAccess.class );
-        PropertyIndexRecord propertyKey0 = new PropertyIndexRecord( 0 );
-        RelationshipTypeRecord relationshipLabel0 = new RelationshipTypeRecord( 0 );
-        PropertyIndexRecord propertyKey1 = new PropertyIndexRecord( 1 );
-        RelationshipTypeRecord relationshipLabel1 = new RelationshipTypeRecord( 1 );
-        PropertyIndexRecord propertyKey2 = new PropertyIndexRecord( 2 );
-        RelationshipTypeRecord relationshipLabel2 = new RelationshipTypeRecord( 2 );
+        PropertyKeyTokenRecord propertyKey0 = new PropertyKeyTokenRecord( 0 );
+        RelationshipTypeTokenRecord relationshipLabel0 = new RelationshipTypeTokenRecord( 0 );
+        PropertyKeyTokenRecord propertyKey1 = new PropertyKeyTokenRecord( 1 );
+        RelationshipTypeTokenRecord relationshipLabel1 = new RelationshipTypeTokenRecord( 1 );
+        PropertyKeyTokenRecord propertyKey2 = new PropertyKeyTokenRecord( 2 );
+        RelationshipTypeTokenRecord relationshipLabel2 = new RelationshipTypeTokenRecord( 2 );
 
         CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess(
-                delegate, new PropertyIndexRecord[]{
+                delegate, new PropertyKeyTokenRecord[]{
                 propertyKey0,
                 propertyKey1,
                 propertyKey2,
-        }, new RelationshipTypeRecord[]{
+        }, new RelationshipTypeTokenRecord[]{
                 relationshipLabel0,
                 relationshipLabel1,
                 relationshipLabel2,
@@ -81,11 +81,11 @@ public class CacheSmallStoresRecordAccessTest
 
         // when
         assertThat( recordAccess.propertyKey( 0 ), isDirectReferenceTo( propertyKey0 ) );
-        assertThat( recordAccess.relationshipLabel( 0 ), isDirectReferenceTo( relationshipLabel0 ) );
+        assertThat( recordAccess.relationshipType( 0 ), isDirectReferenceTo( relationshipLabel0 ) );
         assertThat( recordAccess.propertyKey( 1 ), isDirectReferenceTo( propertyKey1 ) );
-        assertThat( recordAccess.relationshipLabel( 1 ), isDirectReferenceTo( relationshipLabel1 ) );
+        assertThat( recordAccess.relationshipType( 1 ), isDirectReferenceTo( relationshipLabel1 ) );
         assertThat( recordAccess.propertyKey( 2 ), isDirectReferenceTo( propertyKey2 ) );
-        assertThat( recordAccess.relationshipLabel( 2 ), isDirectReferenceTo( relationshipLabel2 ) );
+        assertThat( recordAccess.relationshipType( 2 ), isDirectReferenceTo( relationshipLabel2 ) );
 
         // then
         verifyZeroInteractions( delegate );

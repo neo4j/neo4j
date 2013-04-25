@@ -57,12 +57,13 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.GraphStoreFixture;
 
@@ -251,16 +252,23 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>
-        decoratePropertyKeyChecker(
-                RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+        decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-                RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -425,13 +433,13 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+        public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
         {
-            return logging( access.relationshipLabel( id ) );
+            return logging( access.relationshipType( id ) );
         }
 
         @Override
-        public RecordReference<PropertyIndexRecord> propertyKey( int id )
+        public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
         {
             return logging( access.propertyKey( id ) );
         }
@@ -449,9 +457,21 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<DynamicRecord> relationshipLabelName( int id )
+        public RecordReference<DynamicRecord> relationshipTypeName( int id )
         {
-            return logging( access.relationshipLabelName( id ) );
+            return logging( access.relationshipTypeName( id ) );
+        }
+
+        @Override
+        public RecordReference<LabelTokenRecord> label( int id )
+        {
+            return logging( access.label( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> labelName( int id )
+        {
+            return logging( access.labelName( id ) );
         }
 
         @Override

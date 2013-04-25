@@ -29,7 +29,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.index.IndexXaConnection;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
@@ -108,7 +108,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         return neoStore.getPropertyStore();
     }
 
-    public RelationshipTypeStore getRelationshipTypeStore()
+    public RelationshipTypeTokenStore getRelationshipTypeStore()
     {
         return neoStore.getRelationshipTypeStore();
     }

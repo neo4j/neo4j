@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class AbstractNameRecord extends AbstractRecord
+public abstract class TokenRecord extends AbstractRecord
 {
     private int nameId = Record.NO_NEXT_BLOCK.intValue();
     private final List<DynamicRecord> nameRecords = new ArrayList<DynamicRecord>();
     private boolean isLight;
 
-    AbstractNameRecord( int id )
+    TokenRecord( int id )
     {
         super( id );
     }
@@ -67,7 +67,7 @@ public class AbstractNameRecord extends AbstractRecord
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder( getClass().getSimpleName() + "[" );
+        StringBuilder buf = new StringBuilder( simpleName() + "[" );
         buf.append( getId() ).append( "," ).append( inUse() ? "in" : "no" ).append( " use" );
         buf.append( ",nameId=" ).append( nameId );
         additionalToString( buf );
@@ -80,6 +80,8 @@ public class AbstractNameRecord extends AbstractRecord
         }
         return buf.append( ']' ).toString();
     }
+
+    protected abstract String simpleName();
 
     protected void additionalToString( StringBuilder buf )
     {

@@ -26,10 +26,10 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.KeyCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.logging.Logging;
 
-public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<KeyCreator>
+public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
@@ -37,7 +37,7 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<Ke
     private final Logging logging;
 
     public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                                DelegateInvocationHandler<KeyCreator> delegate,
+                                                DelegateInvocationHandler<TokenCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
                                                 Master master, RequestContextFactory requestContextFactory,
                                                 Logging logging
@@ -51,13 +51,13 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<Ke
     }
 
     @Override
-    protected KeyCreator getMasterImpl()
+    protected TokenCreator getMasterImpl()
     {
         return new DefaultRelationshipTypeCreator( logging );
     }
 
     @Override
-    protected KeyCreator getSlaveImpl( URI serverHaUri )
+    protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
         return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
     }

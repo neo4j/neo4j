@@ -24,12 +24,13 @@ import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 class StoreProcessor extends AbstractStoreProcessor
 {
@@ -62,15 +63,25 @@ class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
-    protected void checkRelationshipLabel( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record,
-                                           RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    protected void checkRelationshipTypeName( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record,
+                                              RecordCheck<RelationshipTypeTokenRecord,
+                                                      ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        report.forRelationshipLabelChange( store.forceGetRaw( record ), record, checker );
+        report.forRelationshipTypeNameChange( store.forceGetRaw( record ), record, checker );
     }
 
     @Override
-    protected void checkPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record,
-                                       RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+    protected void checkLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record,
+                                              RecordCheck<LabelTokenRecord,
+                                                      ConsistencyReport.LabelNameConsistencyReport> checker )
+    {
+        report.forLabelNameChange( store.forceGetRaw( record ), record, checker );
+    }
+
+    @Override
+    protected void checkPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
+                                          RecordCheck<PropertyKeyTokenRecord,
+                                                  ConsistencyReport.PropertyKeyConsistencyReport> checker )
     {
         report.forPropertyKeyChange( store.forceGetRaw( record ), record, checker );
     }

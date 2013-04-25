@@ -221,12 +221,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
+    public String getPropertyKeyName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        String result = propertyOperations.getPropertyKeyName( propertyId );
+        String result = propertyOperations.getPropertyKeyName( propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -234,13 +234,13 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Object getNodePropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
+    public Object getNodePropertyValue( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
             PropertyNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        Object result = propertyOperations.getNodePropertyValue( nodeId, propertyId );
+        Object result = propertyOperations.getNodePropertyValue( nodeId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -249,13 +249,13 @@ public class CompositeStatementContext implements StatementContext
 
 
     @Override
-    public boolean nodeHasProperty(long nodeId, long propertyId)
+    public boolean nodeHasProperty(long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        boolean result = propertyOperations.nodeHasProperty(nodeId, propertyId);
+        boolean result = propertyOperations.nodeHasProperty(nodeId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -459,26 +459,26 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        propertyOperations.nodeSetPropertyValue( nodeId, propertyId, value );
+        propertyOperations.nodeSetPropertyValue( nodeId, propertyKeyId, value );
 
         afterWriteOperation();
         afterOperation();
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyId )
+    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        Object result = propertyOperations.nodeRemoveProperty( nodeId, propertyId );
+        Object result = propertyOperations.nodeRemoveProperty( nodeId, propertyKeyId );
 
         afterWriteOperation();
         afterOperation();

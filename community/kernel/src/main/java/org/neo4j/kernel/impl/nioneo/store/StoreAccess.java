@@ -43,13 +43,15 @@ public class StoreAccess
     // Top level stores
     private final RecordStore<NodeRecord> nodeStore;
     private final RecordStore<RelationshipRecord> relStore;
-    private final RecordStore<RelationshipTypeRecord> relTypeStore;
+    private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
+    private final RecordStore<LabelTokenRecord> labelTokenStore;
     private final RecordStore<PropertyRecord> propStore;
     // Transitive stores
     private final RecordStore<DynamicRecord> stringStore, arrayStore;
-    private final RecordStore<PropertyIndexRecord> propIndexStore;
-    private final RecordStore<DynamicRecord> typeNameStore;
-    private final RecordStore<DynamicRecord> propKeyStore;
+    private final RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
+    private final RecordStore<DynamicRecord> relationshipTypeNameStore;
+    private final RecordStore<DynamicRecord> labelNameStore;
+    private final RecordStore<DynamicRecord> propertyKeyNameStore;
     // internal state
     private boolean closeable;
     private NeoStore neoStore;
@@ -67,22 +69,24 @@ public class StoreAccess
     public StoreAccess( NeoStore store )
     {
         this( store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeStore() );
+                store.getRelationshipTypeStore(), store.getLabelTokenStore() );
         this.neoStore = store;
     }
 
     public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-                        RelationshipTypeStore typeStore )
+                        RelationshipTypeTokenStore typeStore, LabelTokenStore labelTokenStore )
     {
         this.nodeStore = wrapStore( nodeStore );
         this.relStore = wrapStore( relStore );
         this.propStore = wrapStore( propStore );
         this.stringStore = wrapStore( propStore.getStringStore() );
         this.arrayStore = wrapStore( propStore.getArrayStore() );
-        this.relTypeStore = wrapStore( typeStore );
-        this.propIndexStore = wrapStore( propStore.getIndexStore() );
-        this.typeNameStore = wrapStore( typeStore.getNameStore() );
-        this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
+        this.relationshipTypeTokenStore = wrapStore( typeStore );
+        this.labelTokenStore = wrapStore( labelTokenStore );
+        this.propertyKeyTokenStore = wrapStore( propStore.getPropertyKeyTokenStore() );
+        this.relationshipTypeNameStore = wrapStore( typeStore.getNameStore() );
+        this.labelNameStore = wrapStore( labelTokenStore.getNameStore() );
+        this.propertyKeyNameStore = wrapStore( propStore.getPropertyKeyTokenStore().getNameStore() );
     }
 
     public StoreAccess( String path )
@@ -147,24 +151,34 @@ public class StoreAccess
         return arrayStore;
     }
 
-    public RecordStore<RelationshipTypeRecord> getRelationshipTypeStore()
+    public RecordStore<RelationshipTypeTokenRecord> getRelationshipTypeTokenStore()
     {
-        return relTypeStore;
+        return relationshipTypeTokenStore;
     }
 
-    public RecordStore<PropertyIndexRecord> getPropertyIndexStore()
+    public RecordStore<LabelTokenRecord> getLabelTokenStore()
     {
-        return propIndexStore;
+        return labelTokenStore;
     }
 
-    public RecordStore<DynamicRecord> getTypeNameStore()
+    public RecordStore<PropertyKeyTokenRecord> getPropertyKeyTokenStore()
     {
-        return typeNameStore;
+        return propertyKeyTokenStore;
     }
 
-    public RecordStore<DynamicRecord> getPropertyKeyStore()
+    public RecordStore<DynamicRecord> getRelationshipTypeNameStore()
     {
-        return propKeyStore;
+        return relationshipTypeNameStore;
+    }
+
+    public RecordStore<DynamicRecord> getLabelNameStore()
+    {
+        return labelNameStore;
+    }
+
+    public RecordStore<DynamicRecord> getPropertyKeyNameStore()
+    {
+        return propertyKeyNameStore;
     }
 
     public final <P extends RecordStore.Processor> P applyToAll( P processor )
@@ -181,12 +195,12 @@ public class StoreAccess
         if ( propStore == null )
         {
             return new RecordStore<?>[]{ // no property stores
-                    nodeStore, relStore, relTypeStore, typeNameStore
+                    nodeStore, relStore, relationshipTypeTokenStore, relationshipTypeNameStore
             };
         }
         return new RecordStore<?>[]{
                 nodeStore, relStore, propStore, stringStore, arrayStore, // basic
-                relTypeStore, propIndexStore, typeNameStore, propKeyStore, // internal
+                relationshipTypeTokenStore, propertyKeyTokenStore, relationshipTypeNameStore, propertyKeyNameStore, // internal
         };
     }
 

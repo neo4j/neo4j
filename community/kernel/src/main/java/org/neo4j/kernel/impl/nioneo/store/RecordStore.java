@@ -105,14 +105,19 @@ public interface RecordStore<R extends AbstractBaseRecord>
             processRecord( DynamicRecord.class, store, record );
         }
 
-        public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record )
         {
-            processRecord( RelationshipTypeRecord.class, store, record );
+            processRecord( RelationshipTypeTokenRecord.class, store, record );
         }
 
-        public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record )
         {
-            processRecord( PropertyIndexRecord.class, store, record );
+            processRecord( PropertyKeyTokenRecord.class, store, record );
+        }
+
+        public void processLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
+        {
+            processRecord( LabelTokenRecord.class, store, record );
         }
 
         protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record )

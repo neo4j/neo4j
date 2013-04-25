@@ -65,7 +65,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
 
     @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
     {
         return nodeManager.graphAddProperty( index, value );
     }

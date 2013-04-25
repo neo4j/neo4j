@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 
 /**
@@ -220,15 +220,15 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         }
 
         @Override
-        public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record )
         {
-            processor.processRelationshipType( (RecordStore<RelationshipTypeRecord>) diffStore, record );
+            processor.processRelationshipType( (RecordStore<RelationshipTypeTokenRecord>) diffStore, record );
         }
 
         @Override
-        public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record )
         {
-            processor.processPropertyIndex( (RecordStore<PropertyIndexRecord>) diffStore, record );
+            processor.processPropertyKeyToken( (RecordStore<PropertyKeyTokenRecord>) diffStore, record );
         }
     }
 }

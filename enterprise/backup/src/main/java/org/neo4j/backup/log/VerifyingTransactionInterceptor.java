@@ -31,13 +31,14 @@ import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
@@ -343,15 +344,21 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
     }
 
     @Override
-    public void visitRelationshipType( RelationshipTypeRecord record )
+    public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
     {
-        diffs.visitRelationshipType( record );
+        diffs.visitRelationshipTypeToken( record );
     }
 
     @Override
-    public void visitPropertyIndex( PropertyIndexRecord record )
+    public void visitLabelToken( LabelTokenRecord record )
     {
-        diffs.visitPropertyIndex( record );
+        diffs.visitLabelToken( record );
+    }
+
+    @Override
+    public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
+    {
+        diffs.visitPropertyKeyToken( record );
     }
 
     @Override

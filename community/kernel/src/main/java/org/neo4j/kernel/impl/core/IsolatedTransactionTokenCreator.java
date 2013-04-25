@@ -36,11 +36,11 @@ import org.neo4j.kernel.logging.Logging;
  * will be alone in a transaction. If there is a running a transaction while calling this
  * it will be temporarily suspended meanwhile.
  */
-public abstract class IsolatedTransactionKeyCreator implements KeyCreator
+public abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {
     private final StringLogger logger;
 
-    public IsolatedTransactionKeyCreator( Logging logging )
+    public IsolatedTransactionTokenCreator( Logging logging )
     {
         this.logger = logging.getMessagesLog( getClass() );
     }

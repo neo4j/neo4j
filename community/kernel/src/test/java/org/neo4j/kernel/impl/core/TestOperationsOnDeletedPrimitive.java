@@ -138,7 +138,7 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
-        protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+        protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
         {
             return null;
         }

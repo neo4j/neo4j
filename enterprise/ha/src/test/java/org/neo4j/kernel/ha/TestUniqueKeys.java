@@ -34,11 +34,11 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.KeyHolder;
-import org.neo4j.kernel.impl.core.KeyNotFoundException;
-import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
@@ -100,12 +100,12 @@ public class TestUniqueKeys extends AbstractClusterTest
             int highestId = 0;
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
-                RelationshipTypeHolder holder = db.getNodeManager().getRelationshipTypeHolder();
+                RelationshipTypeTokenHolder holder = db.getNodeManager().getRelationshipTypeHolder();
                 highestId = highestIdOf( holder, highestId );
                 Set<String> types = new HashSet<String>();
                 for ( int j = 0; j <= highestId; j++ )
                 {
-                    RelationshipType type = holder.getKeyById( j );
+                    RelationshipType type = holder.getTokenById( j );
                     if ( type != null )
                     {
                         assertTrue( type.name() + " already existed for " + db, types.add( type.name() ) );
@@ -172,12 +172,12 @@ public class TestUniqueKeys extends AbstractClusterTest
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
                 System.err.println( db );
-                KeyHolder<PropertyIndex> holder = db.getDependencyResolver().resolveDependency( PropertyIndexManager.class );
+                TokenHolder<PropertyKeyToken> holder = db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
                 highestId = highestIdOf( holder, highestId );
                 Set<String> types = new HashSet<String>();
                 for ( int j = 0; j <= highestId; j++ )
                 {
-                    PropertyIndex type = holder.getKeyById( j );
+                    PropertyKeyToken type = holder.getTokenById( j );
                     if ( type != null )
                     {
                         assertTrue( type.getKey() + " already existed for " + db, types.add( type.getKey() ) );
@@ -196,10 +196,10 @@ public class TestUniqueKeys extends AbstractClusterTest
         cluster.await( masterAvailable() );
     }
 
-    private <KEY> int highestIdOf( KeyHolder<KEY> holder, int high ) throws KeyNotFoundException
+    private <KEY> int highestIdOf( TokenHolder<KEY> holder, int high ) throws TokenNotFoundException
     {
-        for ( KEY type : holder.getAllKeys() )
-            high = Math.max( holder.getIdByKey( type ), high );
+        for ( KEY type : holder.getAllTokens() )
+            high = Math.max( holder.idOf( type ), high );
         return high;
     }
 }

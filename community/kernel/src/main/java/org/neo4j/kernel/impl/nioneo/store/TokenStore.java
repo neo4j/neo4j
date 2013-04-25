@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public abstract class AbstractNameStore<T extends AbstractNameRecord> extends AbstractStore implements Store, RecordStore<T>
+public abstract class TokenStore<T extends TokenRecord> extends AbstractStore implements Store, RecordStore<T>
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -43,10 +43,10 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     private DynamicStringStore nameStore;
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    public AbstractNameStore(File fileName, Config configuration, IdType idType,
-                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                             DynamicStringStore nameStore)
+    public TokenStore( File fileName, Config configuration, IdType idType,
+                       IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                       FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                       DynamicStringStore nameStore )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger );
@@ -120,9 +120,9 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         super.flushAll();
     }
 
-    public NameData[] getNames( int maxCount )
+    public Token[] getNames( int maxCount )
     {
-        LinkedList<NameData> recordList = new LinkedList<NameData>();
+        LinkedList<Token> recordList = new LinkedList<Token>();
         long maxIdInUse = getHighestPossibleIdInUse();
         int found = 0;
         for ( int i = 0; i <= maxIdInUse && found < maxCount; i++ )
@@ -140,26 +140,26 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
             if ( record != null && record.getNameId() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
-                recordList.add( new NameData( i, name ) );
+                recordList.add( new Token( i, name ) );
             }
         }
-        return recordList.toArray( new NameData[recordList.size()] );
+        return recordList.toArray( new Token[recordList.size()] );
     }
 
-    public NameData getName( int id )
+    public Token getName( int id )
     {
         T record = getRecord( id );
-        return new NameData( record.getId(), getStringFor( record ) );
+        return new Token( record.getId(), getStringFor( record ) );
     }
 
-    public NameData getName( int id, boolean recovered )
+    public Token getName( int id, boolean recovered )
     {
         assert recovered;
         try
         {
             setRecovered();
             T record = getRecord( id );
-            return new NameData( record.getId(), getStringFor( record ) );
+            return new Token( record.getId(), getStringFor( record ) );
         }
         finally
         {

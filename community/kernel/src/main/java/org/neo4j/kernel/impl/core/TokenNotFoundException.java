@@ -19,41 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-// TODO: make LRU x elements
-public class PropertyIndex
+public class TokenNotFoundException extends Exception
 {
-    private final String key;
-    private final int keyId;
-
-    public PropertyIndex( String key, int keyId )
+    public TokenNotFoundException( String message )
     {
-        this.key = key;
-        this.keyId = keyId;
-    }
-
-    public String getKey()
-    {
-        return key;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return keyId;
-    }
-
-    public int getKeyId()
-    {
-        return this.keyId;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( o instanceof PropertyIndex )
-        {
-            return keyId == ((PropertyIndex) o).getKeyId();
-        }
-        return false;
+        super( message );
     }
 }

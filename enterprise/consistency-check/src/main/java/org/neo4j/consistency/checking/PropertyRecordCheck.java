@@ -27,7 +27,7 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -289,13 +289,13 @@ class PropertyRecordCheck
         abstract void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property );
     }
 
-    private static ComparativeRecordChecker<PropertyRecord, PropertyIndexRecord, ConsistencyReport.PropertyConsistencyReport>
+    private static ComparativeRecordChecker<PropertyRecord, PropertyKeyTokenRecord, ConsistencyReport.PropertyConsistencyReport>
     propertyKey( final PropertyBlock block )
     {
-        return new ComparativeRecordChecker<PropertyRecord, PropertyIndexRecord, ConsistencyReport.PropertyConsistencyReport>()
+        return new ComparativeRecordChecker<PropertyRecord, PropertyKeyTokenRecord, ConsistencyReport.PropertyConsistencyReport>()
         {
             @Override
-            public void checkReference( PropertyRecord record, PropertyIndexRecord referred,
+            public void checkReference( PropertyRecord record, PropertyKeyTokenRecord referred,
                                         ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
             {
                 if ( !referred.inUse() )

@@ -24,24 +24,24 @@ import static org.mockito.Mockito.verify;
 import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
-public class PropertyKeyRecordCheckTest extends
-                                        RecordCheckTestBase<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport, PropertyKeyRecordCheck>
+public class RelationshipTypeTokenRecordCheckTest extends
+        RecordCheckTestBase<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
 {
-    public PropertyKeyRecordCheckTest()
+    public RelationshipTypeTokenRecordCheckTest()
     {
-        super( new PropertyKeyRecordCheck(), ConsistencyReport.PropertyKeyConsistencyReport.class );
+        super( new RelationshipTypeTokenRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class );
     }
 
     @Test
     public void shouldNotReportAnythingForRecordNotInUse() throws Exception
     {
         // given
-        PropertyIndexRecord key = notInUse( new PropertyIndexRecord( 42 ) );
+        RelationshipTypeTokenRecord label = notInUse( new RelationshipTypeTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = check( key );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -51,10 +51,10 @@ public class PropertyKeyRecordCheckTest extends
     public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock() throws Exception
     {
         // given
-        PropertyIndexRecord key = inUse( new PropertyIndexRecord( 42 ) );
+        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = check( key );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -64,12 +64,12 @@ public class PropertyKeyRecordCheckTest extends
     public void shouldReportDynamicBlockNotInUse() throws Exception
     {
         // given
-        PropertyIndexRecord key = inUse( new PropertyIndexRecord( 42 ) );
-        DynamicRecord name = addKeyName( notInUse( new DynamicRecord( 6 ) ) );
-        key.setNameId( (int) name.getId() );
+        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = check( key );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -80,12 +80,12 @@ public class PropertyKeyRecordCheckTest extends
     public void shouldReportEmptyName() throws Exception
     {
         // given
-        PropertyIndexRecord key = inUse( new PropertyIndexRecord( 42 ) );
-        DynamicRecord name = addKeyName( inUse( new DynamicRecord( 6 ) ) );
-        key.setNameId( (int) name.getId() );
+        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
+        label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = check( key );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).emptyName( name );
@@ -98,14 +98,14 @@ public class PropertyKeyRecordCheckTest extends
     public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
     {
         // given
-        PropertyIndexRecord oldRecord = notInUse( new PropertyIndexRecord( 42 ) );
-        PropertyIndexRecord newRecord = inUse( new PropertyIndexRecord( 42 ) );
-        DynamicRecord name = addKeyName( inUse( new DynamicRecord( 6 ) ) );
+        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
+        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
         name.setData( new byte[1] );
-        newRecord.setNameId( (int) name.getId() );
+        newRecord.setNameId( (int) name.getId()  );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -115,13 +115,13 @@ public class PropertyKeyRecordCheckTest extends
     public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
     {
         // given
-        PropertyIndexRecord oldRecord = notInUse( new PropertyIndexRecord( 42 ) );
-        PropertyIndexRecord newRecord = inUse( new PropertyIndexRecord( 42 ) );
-        DynamicRecord name = addKeyName( notInUse( new DynamicRecord( 6 ) ) );
-        newRecord.setNameId( (int) name.getId() );
+        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
+        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        newRecord.setNameId( (int) name.getId()  );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verify( report ).nameBlockNotInUse( name );

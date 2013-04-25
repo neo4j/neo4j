@@ -80,7 +80,7 @@ public class TestProperties extends AbstractNeo4jTestCase
          * Tries to create a property with an empty string as a property key
          * and then tries to read it back. Uses a separate EmbeddedGraphDatabase
          * with a TargetDirectory because we have to restart to test hitting the
-         * PropertyIndexStore on disk when reading it back.
+         * PropertyKeyTokenStore on disk when reading it back.
          */
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         String path = "empty-string";

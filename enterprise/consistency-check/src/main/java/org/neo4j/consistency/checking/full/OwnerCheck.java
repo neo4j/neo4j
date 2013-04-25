@@ -43,18 +43,19 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 class OwnerCheck implements CheckDecorator
 {
@@ -253,8 +254,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyChecker(
-            RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+    public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyTokenChecker(
+            RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
     {
         ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( PROPERTY_KEY_NAME );
         if ( dynamicOwners == null )
@@ -262,10 +263,10 @@ class OwnerCheck implements CheckDecorator
             return checker;
         }
         return new NameCheckerDecorator
-                <PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>( checker, dynamicOwners )
+                <PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>( checker, dynamicOwners )
         {
             @Override
-            DynamicOwner.NameOwner owner( PropertyIndexRecord record )
+            DynamicOwner.NameOwner owner( PropertyKeyTokenRecord record )
             {
                 return new DynamicOwner.PropertyKey( record );
             }
@@ -273,8 +274,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+            RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
         if ( dynamicOwners == null )
@@ -282,12 +283,32 @@ class OwnerCheck implements CheckDecorator
             return checker;
         }
         return new NameCheckerDecorator
-                <RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport>( checker, dynamicOwners )
+                <RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport>( checker, dynamicOwners )
         {
             @Override
-            DynamicOwner.NameOwner owner( RelationshipTypeRecord record )
+            DynamicOwner.NameOwner owner( RelationshipTypeTokenRecord record )
             {
-                return new DynamicOwner.RelationshipLabel( record );
+                return new DynamicOwner.RelationshipTypeToken( record );
+            }
+        };
+    }
+
+    @Override
+    public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelTokenChecker(
+            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
+    {
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
+        if ( dynamicOwners == null )
+        {
+            return checker;
+        }
+        return new NameCheckerDecorator
+                <LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport>( checker, dynamicOwners )
+        {
+            @Override
+            DynamicOwner.NameOwner owner( LabelTokenRecord record )
+            {
+                return new DynamicOwner.LabelToken( record );
             }
         };
     }
@@ -381,7 +402,7 @@ class OwnerCheck implements CheckDecorator
     }
 
     private static abstract class NameCheckerDecorator
-            <RECORD extends AbstractNameRecord, REPORT extends ConsistencyReport.NameConsistencyReport<RECORD, REPORT>>
+            <RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport<RECORD, REPORT>>
             implements RecordCheck<RECORD, REPORT>
     {
         private final RecordCheck<RECORD, REPORT> checker;

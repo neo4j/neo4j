@@ -130,7 +130,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
     {
         return nodeManager.nodeAddProperty( this, index, value );
     }
@@ -245,7 +245,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
             }
-            catch ( KeyNotFoundException e )
+            catch ( TokenNotFoundException e )
             {
                 // This relationship type doesn't even exist in this database
                 continue;
