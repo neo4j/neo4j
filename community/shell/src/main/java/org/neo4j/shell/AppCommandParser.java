@@ -43,8 +43,8 @@ public class AppCommandParser
 	private final String line;
 	private String appName;
 	private App app;
-	private Map<String, String> options = new HashMap<String, String>();
-	private List<String> arguments = new ArrayList<String>();
+	private final Map<String, String> options = new HashMap<String, String>();
+	private final List<String> arguments = new ArrayList<String>();
 	
 	/**
 	 * @param server the server used to find apps.
@@ -176,6 +176,11 @@ public class AppCommandParser
 		String value = null;
 		OptionDefinition definition =
 		        this.app.getOptionDefinition( optionName );
+		if ( definition == null )
+		{
+		    throw new ShellException( "Unrecognized option '" + optionName + "'" );
+		}
+		
 		OptionValueType type = definition == null ?
 		        OptionValueType.NONE : definition.getType();
 		if ( type == OptionValueType.MUST )

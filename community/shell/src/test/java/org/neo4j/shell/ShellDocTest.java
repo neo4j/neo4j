@@ -19,9 +19,13 @@
  */
 package org.neo4j.shell;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 
 import java.io.PrintWriter;
@@ -30,6 +34,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -53,6 +59,21 @@ public class ShellDocTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
+    
+    @Test
+    public void parsingUnrecognizedOptionShouldFail() throws Exception
+    {
+        String unrecognizedOption = "unrecognized-option";
+        try
+        {
+            parse( "ls --" + unrecognizedOption );
+            fail( "Should fail when encountering unrecognized option" );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( unrecognizedOption ) );
+        }
+    }
 
     @Test
     public void testParserArguments() throws Exception
@@ -64,19 +85,21 @@ public class ShellDocTest
         assertEquals( 2, parser.arguments().size() );
         assertEquals( "key", parser.arguments().get( 0 ) );
         assertEquals( "value", parser.arguments().get( 1 ) );
-        assertException( "set -tsd" );
+        assertShellException( "set -tsd" );
     }
-
+    
     @Test
-    public void testEnableRemoteShell() throws Exception
+    public void testEnableRemoteShellOnCustomPort() throws Exception
     {
         int port = 8085;
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_enabled, "true" ).
                 setConfig( ShellSettings.remote_shell_port, "" + port ).
                 newGraphDatabase();
-        ShellLobby.newClient( port );
+        RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation( port ), new CollectingOutput() );
+        client.evaluate( "help" );
+        client.shutdown();
         graphDb.shutdown();
     }
 
@@ -88,7 +111,9 @@ public class ShellDocTest
                 newGraphDatabase();
         try
         {
-            ShellLobby.newClient();
+            RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation(), new CollectingOutput() );
+            client.evaluate( "help" );
+            client.shutdown();
         }
         finally
         {
@@ -160,7 +185,6 @@ public class ShellDocTest
         server.shutdown();
         db.shutdown();
     }
-
 
     @Test
     public void testMatrix() throws Exception
@@ -234,14 +258,14 @@ public class ShellDocTest
         db.shutdown();
     }
 
-    private void assertException( final String command )
+    private void assertShellException( final String command ) throws Exception
     {
         try
         {
             this.parse( command );
-            fail( "Should fail" );
+            fail( "Should fail with " + ShellException.class.getSimpleName() );
         }
-        catch ( Exception e )
+        catch ( ShellException e )
         {
             // Good
         }

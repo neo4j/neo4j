@@ -87,6 +87,8 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             "Sorts relationships by type." ) );
         addOptionDefinition( "m", new OptionDefinition( OptionValueType.MAY,
             "Display a maximum of M relationships per type (default " + DEFAULT_MAX_RELS_PER_TYPE_LIMIT + " if no value given)" ) );
+        addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
+            "Allows for cd:ing to a node not connected to the current node (e.g. 'absolute')" ) );
     }
 
     @Override
