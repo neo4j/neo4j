@@ -497,10 +497,10 @@ public class TestIdGenerator
         {
             IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
             IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1,
-                    IdType.PROPERTY_INDEX.getMaxValue(), false, 0 );
-            idGenerator.setHighId( IdType.PROPERTY_INDEX.getMaxValue() - 1 );
+                    IdType.PROPERTY_KEY_TOKEN.getMaxValue(), false, 0 );
+            idGenerator.setHighId( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1 );
             long id = idGenerator.nextId();
-            assertEquals( IdType.PROPERTY_INDEX.getMaxValue() - 1, id );
+            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1, id );
             idGenerator.freeId( id );
             try
             {
@@ -511,10 +511,10 @@ public class TestIdGenerator
             { // good, capacity exceeded
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.PROPERTY_INDEX.getMaxValue(), false, 0 );
-            assertEquals( IdType.PROPERTY_INDEX.getMaxValue() + 1, idGenerator.getHighId() );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.PROPERTY_KEY_TOKEN.getMaxValue(), false, 0 );
+            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() + 1, idGenerator.getHighId() );
             id = idGenerator.nextId();
-            assertEquals( IdType.PROPERTY_INDEX.getMaxValue() - 1, id );
+            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1, id );
             try
             {
                 idGenerator.nextId();

@@ -19,28 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class PropertyIndexRecord extends AbstractNameRecord
+public class LabelTokenRecord extends TokenRecord
 {
-    private int propCount = 0;
-
-    public PropertyIndexRecord( int id )
+    public LabelTokenRecord( int id )
     {
         super( id );
     }
 
-    public int getPropertyCount()
-    {
-        return propCount;
-    }
-
-    public void setPropertyCount( int count )
-    {
-        this.propCount = count;
-    }
-
     @Override
-    protected void additionalToString( StringBuilder buf )
+    protected String simpleName()
     {
-        buf.append( ",propCount=" ).append( propCount );
+        return "Label";
     }
 }

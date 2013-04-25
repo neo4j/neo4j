@@ -129,7 +129,7 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
-        return (int) db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore().getPropertyStore().getIndexStore().getHighId();
+        return (int) db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore().getPropertyStore().getPropertyKeyTokenStore().getHighId();
     }
     
     private static class WorkerState

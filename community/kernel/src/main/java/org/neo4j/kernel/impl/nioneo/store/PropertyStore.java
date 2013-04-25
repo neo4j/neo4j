@@ -62,20 +62,20 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     // = 41
 
     private DynamicStringStore stringPropertyStore;
-    private PropertyIndexStore propertyIndexStore;
+    private PropertyKeyTokenStore propertyKeyTokenStore;
     private DynamicArrayStore arrayPropertyStore;
     private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
     public PropertyStore(File fileName, Config configuration,
                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                         DynamicStringStore stringPropertyStore, PropertyIndexStore propertyIndexStore,
+                         DynamicStringStore stringPropertyStore, PropertyKeyTokenStore propertyKeyTokenStore,
                          DynamicArrayStore arrayPropertyStore)
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger );
         this.stringPropertyStore = stringPropertyStore;
-        this.propertyIndexStore = propertyIndexStore;
+        this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
         this.physicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( this );
     }
@@ -101,7 +101,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         super.setRecovered();
         stringPropertyStore.setRecovered();
-        propertyIndexStore.setRecovered();
+        propertyKeyTokenStore.setRecovered();
         arrayPropertyStore.setRecovered();
     }
 
@@ -110,7 +110,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         super.unsetRecovered();
         stringPropertyStore.unsetRecovered();
-        propertyIndexStore.unsetRecovered();
+        propertyKeyTokenStore.unsetRecovered();
         arrayPropertyStore.unsetRecovered();
     }
 
@@ -122,10 +122,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             stringPropertyStore.close();
             stringPropertyStore = null;
         }
-        if ( propertyIndexStore != null )
+        if ( propertyKeyTokenStore != null )
         {
-            propertyIndexStore.close();
-            propertyIndexStore = null;
+            propertyKeyTokenStore.close();
+            propertyKeyTokenStore = null;
         }
         if ( arrayPropertyStore != null )
         {
@@ -138,7 +138,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public void flushAll()
     {
         stringPropertyStore.flushAll();
-        propertyIndexStore.flushAll();
+        propertyKeyTokenStore.flushAll();
         arrayPropertyStore.flushAll();
         super.flushAll();
     }
@@ -171,9 +171,9 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         arrayPropertyStore.freeId( blockId );
     }
 
-    public PropertyIndexStore getIndexStore()
+    public PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
-        return propertyIndexStore;
+        return propertyKeyTokenStore;
     }
 
     @Override
@@ -454,7 +454,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     @Override
     public void makeStoreOk()
     {
-        propertyIndexStore.makeStoreOk();
+        propertyKeyTokenStore.makeStoreOk();
         stringPropertyStore.makeStoreOk();
         arrayPropertyStore.makeStoreOk();
         super.makeStoreOk();
@@ -463,7 +463,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     @Override
     public void rebuildIdGenerators()
     {
-        propertyIndexStore.rebuildIdGenerators();
+        propertyKeyTokenStore.rebuildIdGenerators();
         stringPropertyStore.rebuildIdGenerators();
         arrayPropertyStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
@@ -471,7 +471,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     public void updateIdGenerators()
     {
-        propertyIndexStore.updateIdGenerators();
+        propertyKeyTokenStore.updateIdGenerators();
         stringPropertyStore.updateHighId();
         arrayPropertyStore.updateHighId();
         this.updateHighId();
@@ -599,7 +599,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public void logAllWindowPoolStats( StringLogger.LineLogger logger )
     {
         super.logAllWindowPoolStats( logger );
-        propertyIndexStore.logAllWindowPoolStats( logger );
+        propertyKeyTokenStore.logAllWindowPoolStats( logger );
         logger.logLine( stringPropertyStore.getWindowPoolStats().toString() );
         logger.logLine( arrayPropertyStore.getWindowPoolStats().toString() );
     }
@@ -627,7 +627,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public void logVersions(StringLogger.LineLogger logger )
     {
         super.logVersions( logger );
-        propertyIndexStore.logVersions( logger );
+        propertyKeyTokenStore.logVersions( logger );
         stringPropertyStore.logVersions( logger );
         arrayPropertyStore.logVersions(logger  );
     }
@@ -636,7 +636,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public void logIdUsage(StringLogger.LineLogger logger )
     {
         super.logIdUsage(logger);
-        propertyIndexStore.logIdUsage( logger );
+        propertyKeyTokenStore.logIdUsage( logger );
         stringPropertyStore.logIdUsage( logger );
         arrayPropertyStore.logIdUsage( logger );
     }

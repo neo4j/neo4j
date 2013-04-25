@@ -17,48 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.graphdb.RelationshipType;
-
-class RelationshipTypeImpl implements RelationshipType
+public class Token
 {
-    final String name;
     private final int id;
+    private final String name;
 
-    RelationshipTypeImpl( String name, int id )
+    public Token( int id, String name )
     {
-        assert name != null;
-        this.name = name;
         this.id = id;
+        this.name = name;
     }
 
-    public String name()
-    {
-        return name;
-    }
-    
     public int getId()
     {
-        return id;
+        return this.id;
     }
 
-    public String toString()
+    public String getName()
     {
-        return name;
-    }
-
-    public boolean equals( Object o )
-    {
-        if ( !(o instanceof RelationshipType) )
-        {
-            return false;
-        }
-        return name.equals( ((RelationshipType) o).name() );
-    }
-
-    public int hashCode()
-    {
-        return name.hashCode();
+        return this.name;
     }
 }

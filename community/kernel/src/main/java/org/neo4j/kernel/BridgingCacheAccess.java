@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
@@ -82,17 +82,23 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void addRelationshipType( NameData type )
+    public void addRelationshipTypeToken( Token type )
     {
-        nodeManager.addRelationshipType( type );
+        nodeManager.addRelationshipTypeToken( type );
     }
 
     @Override
-    public void addPropertyIndex( NameData index )
+    public void addLabelToken( Token label )
     {
-        nodeManager.addPropertyIndex( index );
+        nodeManager.addLabelToken( label );
     }
-    
+
+    @Override
+    public void addPropertyKeyToken( Token propertyKey )
+    {
+        nodeManager.addPropertyKeyToken( propertyKey );
+    }
+
     @Override
     public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )

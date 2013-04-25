@@ -20,48 +20,49 @@
 package org.neo4j.unsafe.batchinsert;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class PropertyIndexHolder
+class RelationshipTypeTokenHolder
 {
-    private final ArrayMap<String,Integer> propertyIndexes = 
+    private final ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( (byte)5, false, false);
-    private final ArrayMap<Integer,String> idToIndex = 
+    private final ArrayMap<Integer,String> idToName = 
         new ArrayMap<Integer,String>( (byte)5, false, false);
     
-    PropertyIndexHolder( NameData[] indexes )
+    RelationshipTypeTokenHolder( Token[] types )
     {
-        for ( NameData index : indexes )
+        for ( Token type : types )
         {
-            propertyIndexes.put( index.getName(), index.getId() );
-            idToIndex.put( index.getId(), index.getName() );
+           relTypes.put( type.getName(), type.getId() );
+           idToName.put( type.getId(), type.getName() );
         }
     }
     
-    void addPropertyIndex( String stringKey, int keyId )
+    void addToken( String name, int id )
     {
-        propertyIndexes.put( stringKey, keyId );
-        idToIndex.put( keyId, stringKey );
+        relTypes.put( name, id );
+        idToName.put( id, name );
     }
     
-    int getKeyId( String stringKey )
+    int idOf( String name )
     {
-        Integer keyId = propertyIndexes.get( stringKey );
-        if ( keyId != null )
+        Integer id = relTypes.get( name );
+        if ( id != null )
         {
-            return keyId;
+            return id;
         }
         return -1;
     }
     
-    String getStringKey( int keyId )
+    String nameOf( int id )
     {
-        String stringKey = idToIndex.get( keyId );
-        if ( stringKey == null )
+        String name = idToName.get( id );
+        if ( name == null )
         {
-            throw new NotFoundException( "No such property index[" + keyId + "]" );
+            throw new NotFoundException( "No such relationship type[" + id + 
+                "]" );
         }
-        return stringKey;
+        return name;
     }
 }

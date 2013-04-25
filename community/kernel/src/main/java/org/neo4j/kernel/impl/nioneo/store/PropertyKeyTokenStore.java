@@ -30,47 +30,49 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Implementation of the property store.
  */
-public class PropertyIndexStore extends AbstractNameStore<PropertyIndexRecord>
+public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
 {
     public static abstract class Configuration
-        extends AbstractNameStore.Configuration
+        extends TokenStore.Configuration
     {
 
     }
 
+    // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
+
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
 
-    public PropertyIndexStore(File fileName, Config config,
-                              IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                              FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                              DynamicStringStore nameStore)
+    public PropertyKeyTokenStore( File fileName, Config config,
+                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                                  FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                  DynamicStringStore nameStore )
     {
-        super(fileName, config, IdType.PROPERTY_INDEX, idGeneratorFactory, windowPoolFactory,
+        super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore);
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, PropertyIndexRecord record )
+    public void accept( RecordStore.Processor processor, PropertyKeyTokenRecord record )
     {
-        processor.processPropertyIndex(this, record);
+        processor.processPropertyKeyToken( this, record );
     }
 
     @Override
-    protected PropertyIndexRecord newRecord( int id )
+    protected PropertyKeyTokenRecord newRecord( int id )
     {
-        return new PropertyIndexRecord( id );
+        return new PropertyKeyTokenRecord( id );
     }
     
     @Override
-    protected void readRecord( PropertyIndexRecord record, Buffer buffer )
+    protected void readRecord( PropertyKeyTokenRecord record, Buffer buffer )
     {
         record.setPropertyCount( buffer.getInt() );
         record.setNameId( buffer.getInt() );
     }
     
     @Override
-    protected void writeRecord( PropertyIndexRecord record, Buffer buffer )
+    protected void writeRecord( PropertyKeyTokenRecord record, Buffer buffer )
     {
         buffer.putInt( record.getPropertyCount() );
         buffer.putInt( record.getNameId() );

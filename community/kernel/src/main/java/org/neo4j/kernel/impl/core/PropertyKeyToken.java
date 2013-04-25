@@ -19,22 +19,41 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.logging.Logging;
-
-public class DefaultPropertyKeyCreator extends IsolatedTransactionKeyCreator
+// TODO: make LRU x elements
+public class PropertyKeyToken
 {
-    public DefaultPropertyKeyCreator( Logging logging )
+    private final String key;
+    private final int keyId;
+
+    public PropertyKeyToken( String key, int keyId )
     {
-        super( logging );
+        this.key = key;
+        this.keyId = keyId;
+    }
+
+    public String getKey()
+    {
+        return key;
     }
 
     @Override
-    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
+    public int hashCode()
     {
-        int id = (int) idGenerator.nextId( PropertyIndex.class );
-        persistence.createPropertyIndex( name, id );
-        return id;
+        return keyId;
+    }
+
+    public int getKeyId()
+    {
+        return this.keyId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( o instanceof PropertyKeyToken )
+        {
+            return keyId == ((PropertyKeyToken) o).getKeyId();
+        }
+        return false;
     }
 }

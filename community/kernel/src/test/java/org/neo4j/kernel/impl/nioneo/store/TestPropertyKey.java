@@ -36,7 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class TestPropertyIndex
+public class TestPropertyKey
 {
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception

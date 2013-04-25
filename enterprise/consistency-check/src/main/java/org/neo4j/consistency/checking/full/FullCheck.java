@@ -44,11 +44,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -112,17 +112,17 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<DynamicRecord>(
                 store.getArrayStore(), progress, order,
                 processEverything, processorFactory.createAll( ARRAYS ) ) );
-        tasks.add( new StoreProcessorTask<RelationshipTypeRecord>(
-                store.getRelationshipTypeStore(), progress, order,
+        tasks.add( new StoreProcessorTask<RelationshipTypeTokenRecord>(
+                store.getRelationshipTypeTokenStore(), progress, order,
                 processEverything, processEverything ) );
-        tasks.add( new StoreProcessorTask<PropertyIndexRecord>(
-                store.getPropertyIndexStore(), progress, order,
-                processEverything, processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>(
-                store.getTypeNameStore(), progress, order,
+        tasks.add( new StoreProcessorTask<PropertyKeyTokenRecord>(
+                store.getPropertyKeyTokenStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<DynamicRecord>(
-                store.getPropertyKeyStore(), progress, order,
+                store.getRelationshipTypeNameStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getPropertyKeyNameStore(), progress, order,
                 processEverything, processEverything ) );
 
         order.execute( tasks, progress.build() );
@@ -132,8 +132,8 @@ public class FullCheck
     {
         return new CacheSmallStoresRecordAccess(
                 new DirectRecordAccess( store ),
-                readAllRecords( PropertyIndexRecord.class, store.getPropertyIndexStore() ),
-                readAllRecords( RelationshipTypeRecord.class, store.getRelationshipTypeStore() ) );
+                readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
+                readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ) );
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

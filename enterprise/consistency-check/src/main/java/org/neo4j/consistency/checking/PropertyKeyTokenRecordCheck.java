@@ -23,10 +23,10 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 
-class PropertyKeyRecordCheck
-        extends NameRecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+class PropertyKeyTokenRecordCheck
+        extends NameRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )

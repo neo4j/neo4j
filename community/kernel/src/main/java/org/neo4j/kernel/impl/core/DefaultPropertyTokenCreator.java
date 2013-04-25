@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.logging.Logging;
 
-public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCreator
+public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultRelationshipTypeCreator( Logging logging )
+    public DefaultPropertyTokenCreator( Logging logging )
     {
         super( logging );
     }
@@ -34,8 +33,8 @@ public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCrea
     @Override
     protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
     {
-        int id = (int) idGenerator.nextId( RelationshipType.class );
-        persistence.createRelationshipType( id, name );
+        int id = (int) idGenerator.nextId( PropertyKeyToken.class );
+        persistence.createPropertyKeyToken( name, id );
         return id;
     }
 }

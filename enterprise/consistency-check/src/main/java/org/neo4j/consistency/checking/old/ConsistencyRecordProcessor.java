@@ -79,13 +79,13 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
 @Deprecated
@@ -95,8 +95,8 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
     private final RecordStore<RelationshipRecord> rels;
     private final RecordStore<PropertyRecord> props;
     private final RecordStore<DynamicRecord> strings, arrays;
-    private final RecordStore<PropertyIndexRecord>  propIndexes;
-    private final RecordStore<RelationshipTypeRecord>  relTypes;
+    private final RecordStore<PropertyKeyTokenRecord>  propIndexes;
+    private final RecordStore<RelationshipTypeTokenRecord>  relTypes;
     private final RecordStore<DynamicRecord> propKeys;
     private final RecordStore<DynamicRecord> typeNames;
 
@@ -140,10 +140,10 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         this.props = stores.getPropertyStore();
         this.strings = stores.getStringStore();
         this.arrays = stores.getArrayStore();
-        this.relTypes = stores.getRelationshipTypeStore();
-        this.propIndexes = stores.getPropertyIndexStore();
-        this.propKeys = stores.getPropertyKeyStore();
-        this.typeNames = stores.getTypeNameStore();
+        this.relTypes = stores.getRelationshipTypeTokenStore();
+        this.propIndexes = stores.getPropertyKeyTokenStore();
+        this.propKeys = stores.getPropertyKeyNameStore();
+        this.typeNames = stores.getRelationshipTypeNameStore();
         this.propertyOwners = checkPropertyOwners ? new HashMap<Long, PropertyOwner>() : null;
         this.report = report;
         this.progressFactory = progressFactory;
@@ -183,13 +183,13 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
     }
 
     @Override
-    public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord type )
+    public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord type )
     {
         if ( checkType( type ) ) brokenTypes++;
     }
 
     @Override
-    public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord index )
+    public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord index )
     {
         if ( checkKey( index ) ) brokenKeys++;
     }
@@ -301,7 +301,7 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         if ( rel.getType() < 0 ) fail |= report.inconsistent( rels, rel, INVALID_TYPE_ID );
         else
         {
-            RelationshipTypeRecord type = relTypes.forceGetRecord( rel.getType() );
+            RelationshipTypeTokenRecord type = relTypes.forceGetRecord( rel.getType() );
             if ( !type.inUse() ) fail |= report.inconsistent( rels, rel, relTypes, type, TYPE_NOT_IN_USE );
         }
         for ( RelationshipChainField field : relFields )
@@ -430,7 +430,7 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
             if ( block.getKeyIndexId() < 0 ) fail |= report.inconsistent( props, property, INVALID_PROPERTY_KEY.forBlock( block ) );
             else
             {
-                PropertyIndexRecord key = propIndexes.forceGetRecord( block.getKeyIndexId() );
+                PropertyKeyTokenRecord key = propIndexes.forceGetRecord( block.getKeyIndexId() );
                 if ( !key.inUse() ) fail |= report.inconsistent( props, property, propIndexes, key, UNUSED_PROPERTY_KEY.forBlock(  block ) );
             }
             RecordStore<DynamicRecord> dynStore = null;
@@ -588,7 +588,7 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         return fail;
     }
 
-    private boolean checkType( RelationshipTypeRecord type )
+    private boolean checkType( RelationshipTypeTokenRecord type )
     {
         if ( !type.inUse() ) return false; // no check for unused records
         if ( Record.NO_NEXT_BLOCK.is( type.getNameId() ) ) return false; // accept this
@@ -597,7 +597,7 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         return false;
     }
 
-    private boolean checkKey( PropertyIndexRecord key )
+    private boolean checkKey( PropertyKeyTokenRecord key )
     {
         if ( !key.inUse() ) return false; // no check for unused records
         if ( Record.NO_NEXT_BLOCK.is( key.getNameId() ) ) return false; // accept this

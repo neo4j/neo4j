@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public interface CacheAccessBackDoor
@@ -36,9 +36,11 @@ public interface CacheAccessBackDoor
     
     void removeSchemaRuleFromCache( long id );
 
-    void addRelationshipType( NameData type );
+    void addRelationshipTypeToken( Token type );
 
-    void addPropertyIndex( NameData index );
+    void addLabelToken( Token labelId );
+
+    void addPropertyKeyToken( Token index );
 
     /**
      * Patches the relationship chain loading parts of the start and end nodes of deleted relationships. This is

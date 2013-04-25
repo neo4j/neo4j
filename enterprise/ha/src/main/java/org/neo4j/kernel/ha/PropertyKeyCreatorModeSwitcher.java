@@ -25,11 +25,11 @@ import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
-import org.neo4j.kernel.impl.core.KeyCreator;
+import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.logging.Logging;
 
-public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<KeyCreator>
+public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
@@ -37,7 +37,7 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<KeyCrea
     private final Logging logging;
 
     public PropertyKeyCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                                DelegateInvocationHandler<KeyCreator> delegate,
+                                                DelegateInvocationHandler<TokenCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
                                                 Master master, RequestContextFactory requestContextFactory,
                                                 Logging logging
@@ -51,14 +51,14 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<KeyCrea
     }
 
     @Override
-    protected KeyCreator getMasterImpl()
+    protected TokenCreator getMasterImpl()
     {
-        return new DefaultPropertyKeyCreator( logging );
+        return new DefaultPropertyTokenCreator( logging );
     }
 
     @Override
-    protected KeyCreator getSlaveImpl( URI serverHaUri )
+    protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlavePropertyKeyCreator( master, requestContextFactory, xaDsm );
+        return new SlavePropertyTokenCreator( master, requestContextFactory, xaDsm );
     }
 }

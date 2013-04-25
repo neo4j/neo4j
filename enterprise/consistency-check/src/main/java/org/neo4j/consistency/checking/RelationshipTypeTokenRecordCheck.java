@@ -17,32 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.checking.full;
+package org.neo4j.consistency.checking;
 
-import org.neo4j.consistency.store.DiffRecordAccess;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.consistency.store.SkippingRecordAccess;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
-class SkipAllButCached extends SkippingRecordAccess
+class RelationshipTypeTokenRecordCheck
+    extends NameRecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
 {
-    final DiffRecordAccess recordAccess;
-
-    SkipAllButCached( DiffRecordAccess recordAccess )
+    @Override
+    protected RecordReference<DynamicRecord> name( RecordAccess records, int id )
     {
-        this.recordAccess = recordAccess;
+        return records.relationshipTypeName( id );
     }
 
     @Override
-    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    void nameNotInUse( ConsistencyReport.RelationshipTypeConsistencyReport report, DynamicRecord name )
     {
-        return recordAccess.propertyKey( id );
+        report.nameBlockNotInUse( name );
     }
 
     @Override
-    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
+    void emptyName( ConsistencyReport.RelationshipTypeConsistencyReport report, DynamicRecord name )
     {
-        return recordAccess.relationshipType( id );
+        report.emptyName( name );
     }
 }

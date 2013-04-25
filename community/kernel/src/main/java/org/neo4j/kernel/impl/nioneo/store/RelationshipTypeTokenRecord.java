@@ -19,24 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class NameData
+public class RelationshipTypeTokenRecord extends TokenRecord
 {
-    private final int id;
-    private final String name;
-
-    public NameData( int id, String name )
+    public RelationshipTypeTokenRecord( int id )
     {
-        this.id = id;
-        this.name = name;
+        super( id );
     }
 
-    public int getId()
+    @Override
+    protected String simpleName()
     {
-        return this.id;
-    }
-
-    public String getName()
-    {
-        return this.name;
+        return "RelationshipType";
     }
 }

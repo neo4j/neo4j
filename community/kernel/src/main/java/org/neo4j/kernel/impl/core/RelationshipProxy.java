@@ -111,7 +111,7 @@ public class RelationshipProxy implements Relationship
             return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
                                                                                      .getTypeId() );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -185,7 +185,7 @@ public class RelationshipProxy implements Relationship
         {
             return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId ).getTypeId() ).name().equals( type.name() );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new NotFoundException( e );
         }

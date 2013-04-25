@@ -63,9 +63,9 @@ import org.neo4j.kernel.ha.lock.LockableRelationship;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.IndexLock;
-import org.neo4j.kernel.impl.core.KeyNotFoundException;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -484,10 +484,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         try
         {
-            graphDb.getRelationshipTypeHolder().getOrCreateId( name );
-            return packResponse( context, graphDb.getRelationshipTypeHolder().getIdByKeyName( name ) );
+            graphDb.getRelationshipTypeTokenHolder().getOrCreateId( name );
+            return packResponse( context, graphDb.getRelationshipTypeTokenHolder().getIdByName( name ) );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
         }
@@ -498,11 +498,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         try
         {
-            PropertyIndexManager propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyIndexManager.class );
+            PropertyKeyTokenHolder propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
             propertyKeyHolder.getOrCreateId( name );
-            return packResponse( context, propertyKeyHolder.getIdByKeyName( name ) );
+            return packResponse( context, propertyKeyHolder.getIdByName( name ) );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
         }

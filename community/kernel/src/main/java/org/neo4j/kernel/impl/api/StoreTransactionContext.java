@@ -22,21 +22,24 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class StoreTransactionContext implements TransactionContext
 {
-    private final PropertyIndexManager propertyIndexManager;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final NeoStore neoStore;
     private final IndexingService indexingService;
+    private final LabelTokenHolder labelTokenHolder;
     private final NodeManager nodeManager;
 
-    public StoreTransactionContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-                                    NeoStore neoStore, IndexingService indexingService )
+    public StoreTransactionContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+                                    NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
     {
-        this.propertyIndexManager = propertyIndexManager;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
@@ -45,7 +48,7 @@ public class StoreTransactionContext implements TransactionContext
     @Override
     public StatementContext newStatementContext()
     {
-        return new StoreStatementContext( propertyIndexManager, nodeManager, neoStore, indexingService,
+        return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexingService,
                 new IndexReaderFactory.Caching( indexingService ) );
     }
 

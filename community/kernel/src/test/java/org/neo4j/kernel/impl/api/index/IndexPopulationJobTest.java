@@ -264,8 +264,8 @@ public class IndexPopulationJobTest
 
         // Then
         logger.assertExactly(
-            info( "Index population started for label id 0 on property id 2" ),
-            info( "Index population completed for label id 0 on property id 2, index is now online." )
+            info( "Index population started for label id 0 on property id 0" ),
+            info( "Index population completed for label id 0 on property id 0, index is now online." )
         );
     }
 

@@ -28,11 +28,12 @@ import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 {
@@ -127,7 +128,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             case PROPERTY_KEY_NAME:
                 return records.propertyKeyName( (int)id );
             case RELATIONSHIP_LABEL_NAME:
-                return records.relationshipLabelName( (int)id );
+                return records.relationshipTypeName( (int) id );
             default:
                 return skipReference();
             }
@@ -145,18 +146,18 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             {
                 report.nextMultipleOwners( (DynamicRecord) record );
             }
-            else if ( record instanceof RelationshipTypeRecord )
+            else if ( record instanceof RelationshipTypeTokenRecord )
             {
-                report.nextMultipleOwners( (RelationshipTypeRecord) record );
+                report.nextMultipleOwners( (RelationshipTypeTokenRecord) record );
             }
-            else if ( record instanceof PropertyIndexRecord )
+            else if ( record instanceof PropertyKeyTokenRecord )
             {
-                report.nextMultipleOwners( (PropertyIndexRecord) record );
+                report.nextMultipleOwners( (PropertyKeyTokenRecord) record );
             }
         }
     }
 
-    static abstract class NameOwner<RECORD extends AbstractNameRecord, REPORT extends ConsistencyReport.NameConsistencyReport<RECORD, REPORT>> extends DynamicOwner<RECORD>
+    static abstract class NameOwner<RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport<RECORD, REPORT>> extends DynamicOwner<RECORD>
             implements ComparativeRecordChecker<RECORD, AbstractBaseRecord, REPORT>
     {
         @Override
@@ -164,15 +165,15 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         {
             @SuppressWarnings("UnnecessaryLocalVariable" /* Intellij has issues compiling the generic type */)
             ConsistencyReport.NameConsistencyReport report = genericReport;
-            if ( record instanceof RelationshipTypeRecord )
+            if ( record instanceof RelationshipTypeTokenRecord )
             {
-                ((ConsistencyReport.LabelConsistencyReport) report)
-                        .nameMultipleOwners( (RelationshipTypeRecord) record );
+                ((ConsistencyReport.RelationshipTypeConsistencyReport) report)
+                        .nameMultipleOwners( (RelationshipTypeTokenRecord) record );
             }
-            else if ( record instanceof PropertyIndexRecord )
+            else if ( record instanceof PropertyKeyTokenRecord )
             {
                 ((ConsistencyReport.PropertyKeyConsistencyReport) report)
-                        .nameMultipleOwners( (PropertyIndexRecord) record );
+                        .nameMultipleOwners( (PropertyKeyTokenRecord) record );
             }
             else if ( record instanceof DynamicRecord )
             {
@@ -181,35 +182,51 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    static class PropertyKey extends NameOwner<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+    static class PropertyKey extends NameOwner<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
     {
         private final int id;
 
-        PropertyKey( PropertyIndexRecord record )
+        PropertyKey( PropertyKeyTokenRecord record )
         {
             this.id = record.getId();
         }
 
         @Override
-        RecordReference<PropertyIndexRecord> record( RecordAccess records )
+        RecordReference<PropertyKeyTokenRecord> record( RecordAccess records )
         {
             return records.propertyKey( id );
         }
     }
 
-    static class RelationshipLabel extends NameOwner<RelationshipTypeRecord,ConsistencyReport.LabelConsistencyReport>
+    static class LabelToken extends NameOwner<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport>
     {
         private final int id;
 
-        RelationshipLabel( RelationshipTypeRecord record )
+        LabelToken( LabelTokenRecord record )
         {
             this.id = record.getId();
         }
 
         @Override
-        RecordReference<RelationshipTypeRecord> record( RecordAccess records )
+        RecordReference<LabelTokenRecord> record( RecordAccess records )
         {
-            return records.relationshipLabel( id );
+            return records.label( id );
+        }
+    }
+
+    static class RelationshipTypeToken extends NameOwner<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
+    {
+        private final int id;
+
+        RelationshipTypeToken( RelationshipTypeTokenRecord record )
+        {
+            this.id = record.getId();
+        }
+
+        @Override
+        RecordReference<RelationshipTypeTokenRecord> record( RecordAccess records )
+        {
+            return records.relationshipType( id );
         }
     }
 

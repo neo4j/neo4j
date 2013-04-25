@@ -72,7 +72,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
     }

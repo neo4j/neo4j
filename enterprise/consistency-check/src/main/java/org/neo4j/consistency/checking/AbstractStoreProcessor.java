@@ -26,13 +26,14 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor
 {
@@ -40,8 +41,9 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker;
     private final RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
-    private final RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> propertyKeyChecker;
-    private final RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> relationshipLabelChecker;
+    private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> propertyKeyTokenChecker;
+    private final RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
+    private final RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> labelTokenChecker;
 
     public AbstractStoreProcessor()
     {
@@ -54,28 +56,42 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
         this.nodeChecker = decorator.decorateNodeChecker( new NodeRecordCheck() );
         this.relationshipChecker = decorator.decorateRelationshipChecker( new RelationshipRecordCheck() );
         this.propertyChecker = decorator.decoratePropertyChecker( new PropertyRecordCheck() );
-        this.propertyKeyChecker = decorator.decoratePropertyKeyChecker( new PropertyKeyRecordCheck() );
-        this.relationshipLabelChecker = decorator.decorateLabelChecker( new RelationshipLabelRecordCheck() );
+        this.propertyKeyTokenChecker = decorator.decoratePropertyKeyTokenChecker( new PropertyKeyTokenRecordCheck() );
+        this.relationshipTypeTokenChecker = decorator.decorateRelationshipTypeTokenChecker( new
+                RelationshipTypeTokenRecordCheck() );
+        this.labelTokenChecker = decorator.decorateLabelTokenChecker( new LabelTokenRecordCheck() );
     }
 
-    protected abstract void checkNode( RecordStore<NodeRecord> store, NodeRecord node,
-                                       RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker );
+    protected abstract void checkNode(
+            RecordStore<NodeRecord> store, NodeRecord node,
+            RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker );
 
-    protected abstract void checkRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel,
-                                               RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker );
+    protected abstract void checkRelationship(
+            RecordStore<RelationshipRecord> store, RelationshipRecord rel,
+            RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker );
 
-    protected abstract void checkProperty( RecordStore<PropertyRecord> store, PropertyRecord property,
-                                           RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
+    protected abstract void checkProperty(
+            RecordStore<PropertyRecord> store, PropertyRecord property,
+            RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
 
-    protected abstract void checkRelationshipLabel( RecordStore<RelationshipTypeRecord> store,
-                                                    RelationshipTypeRecord record,
-                                                    RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker );
+    protected abstract void checkRelationshipTypeName(
+            RecordStore<RelationshipTypeTokenRecord> store,
+            RelationshipTypeTokenRecord record,
+            RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
 
-    protected abstract void checkPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record,
-                                                RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker );
+    protected abstract void checkLabelName(
+            RecordStore<LabelTokenRecord> store,
+            LabelTokenRecord record,
+            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker );
 
-    protected abstract void checkDynamic( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
-                                          RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
+    protected abstract void checkPropertyKeyToken(
+            RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
+            RecordCheck<PropertyKeyTokenRecord,
+                    ConsistencyReport.PropertyKeyConsistencyReport> checker );
+
+    protected abstract void checkDynamic(
+            RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
+            RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
 
     @Override
     public final void processNode( RecordStore<NodeRecord> store, NodeRecord node )
@@ -106,11 +122,11 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
             type = RecordType.STRING_PROPERTY;
             dereference = DynamicStore.STRING;
             break;
-        case RELATIONSHIP_TYPE_BLOCK:
+        case RELATIONSHIP_TYPE_TOKEN_NAME:
             type = RecordType.RELATIONSHIP_LABEL_NAME;
             dereference = DynamicStore.RELATIONSHIP_LABEL;
             break;
-        case PROPERTY_INDEX_BLOCK:
+        case PROPERTY_KEY_TOKEN_NAME:
             type = RecordType.PROPERTY_KEY_NAME;
             dereference = DynamicStore.PROPERTY_KEY;
             break;
@@ -127,15 +143,22 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
     }
 
     @Override
-    public final void processRelationshipType( RecordStore<RelationshipTypeRecord> store,
-                                               RelationshipTypeRecord record )
+    public final void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store,
+                                               RelationshipTypeTokenRecord record )
     {
-        checkRelationshipLabel( store, record, relationshipLabelChecker );
+        checkRelationshipTypeName( store, record, relationshipTypeTokenChecker );
     }
 
     @Override
-    public final void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+    public final void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store,
+                                               PropertyKeyTokenRecord record )
     {
-        checkPropertyIndex( store, record, propertyKeyChecker );
+        checkPropertyKeyToken( store, record, propertyKeyTokenChecker );
+    }
+
+    @Override
+    public void processLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
+    {
+        checkLabelName( store, record, labelTokenChecker );
     }
 }

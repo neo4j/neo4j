@@ -26,8 +26,8 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -67,7 +67,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value );
+    PropertyData nodeAddProperty( long nodeId, PropertyKeyToken index, Object value );
 
     /**
      * Changes an existing property of the given node, with the given index to
@@ -131,7 +131,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData relAddProperty( long relId, PropertyIndex index, Object value );
+    PropertyData relAddProperty( long relId, PropertyKeyToken index, Object value );
 
     /**
      * Changes an existing property's value of the given relationship, with the
@@ -180,7 +180,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData graphAddProperty( PropertyIndex index, Object value );
+    PropertyData graphAddProperty( PropertyKeyToken index, Object value );
 
     /**
      * Changes an existing property of the graph, with the given index to
@@ -219,14 +219,9 @@ public interface NeoStoreTransaction
      */
     String loadIndex( int id );
 
-    /**
-     * Tries to load as heavy records as many property index records as
-     * specified in the argument.
-     *
-     * @return An array of the PropertyIndexData that were loaded - can be less
-     *         than the number requested.
-     */
-    NameData[] loadPropertyIndexes();
+    Token[] loadAllPropertyKeyTokens();
+
+    Token[] loadAllLabelTokens();
 
     /**
      * Loads the complete property chain for the given node and returns it as a
@@ -260,12 +255,7 @@ public interface NeoStoreTransaction
      */
     RelationshipRecord relLoadLight( long id );
 
-    /**
-     * Loads and returns all the available RelationshipTypes that are stored.
-     *
-     * @return All the stored RelationshipTypes, as a RelationshipTypeData array
-     */
-    NameData[] loadRelationshipTypes();
+    Token[] loadRelationshipTypes();
 
     /**
      * Creates a property index entry out of the given id and string.
@@ -273,7 +263,15 @@ public interface NeoStoreTransaction
      * @param key The key of the property index, as a string.
      * @param id The property index record id.
      */
-    void createPropertyIndex( String key, int id );
+    void createPropertyKeyToken( String key, int id );
+
+    /**
+     * Creates a property index entry out of the given id and string.
+     *
+     * @param name The key of the property index, as a string.
+     * @param id The property index record id.
+     */
+    void createLabelToken( String name, int id );
 
     /**
      * Creates a new RelationshipType record with the given id that has the
@@ -282,7 +280,7 @@ public interface NeoStoreTransaction
      * @param id The id of the new relationship type record.
      * @param name The name of the relationship type.
      */
-    void createRelationshipType( int id, String name );
+    void createRelationshipTypeToken( int id, String name );
 
     long getRelationshipChainPosition( long nodeId );
 

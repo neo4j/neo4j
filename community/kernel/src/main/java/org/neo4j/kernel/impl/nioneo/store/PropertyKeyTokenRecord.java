@@ -19,10 +19,34 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class RelationshipTypeRecord extends AbstractNameRecord
+public class PropertyKeyTokenRecord extends TokenRecord
 {
-    public RelationshipTypeRecord( int id )
+    private int propCount = 0;
+
+    public PropertyKeyTokenRecord( int id )
     {
         super( id );
+    }
+
+    @Override
+    protected String simpleName()
+    {
+        return "PropertyKey";
+    }
+
+    public int getPropertyCount()
+    {
+        return propCount;
+    }
+
+    public void setPropertyCount( int count )
+    {
+        this.propCount = count;
+    }
+
+    @Override
+    protected void additionalToString( StringBuilder buf )
+    {
+        buf.append( ",propCount=" ).append( propCount );
     }
 }

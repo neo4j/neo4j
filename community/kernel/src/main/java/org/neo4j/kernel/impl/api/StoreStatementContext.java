@@ -44,11 +44,12 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.KeyNotFoundException;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -71,7 +72,8 @@ import org.neo4j.kernel.impl.transaction.LockType;
  */
 public class StoreStatementContext extends CompositeStatementContext
 {
-    private final PropertyIndexManager propertyIndexManager;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final LabelTokenHolder labelTokenHolder;
     private final NodeManager nodeManager;
     private final NeoStore neoStore;
     private final IndexingService indexService;
@@ -91,16 +93,18 @@ public class StoreStatementContext extends CompositeStatementContext
                 throw new ThisShouldNotHappenError( "Jake", "Property key id stored in store should exist." );
             }
         }
-    };;
+    };
 
-    public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
+    public StoreStatementContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+                                  NodeManager nodeManager, NeoStore neoStore, IndexingService indexService,
+                                  IndexReaderFactory indexReaderFactory )
     {
         assert neoStore != null : "No neoStore provided";
 
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
-        this.propertyIndexManager = propertyIndexManager;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.nodeStore = neoStore.getNodeStore();
@@ -123,7 +127,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getOrCreateId( label );
+            return labelTokenHolder.getOrCreateId( label );
         }
         catch ( TransactionFailureException e )
         {
@@ -149,9 +153,9 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( label );
+            return labelTokenHolder.getIdByName( label );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new LabelNotFoundKernelException( label, e );
         }
@@ -189,9 +193,9 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getKeyById( (int) labelId ).getKey();
+            return labelTokenHolder.getTokenById( (int) labelId ).getName();
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new LabelNotFoundKernelException( "Label by id " + labelId, e );
         }
@@ -306,7 +310,7 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public long getOrCreatePropertyKeyId( String propertyKey )
     {
-        return propertyIndexManager.getOrCreateId( propertyKey );
+        return propertyKeyTokenHolder.getOrCreateId( propertyKey );
     }
 
     @Override
@@ -314,24 +318,24 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( propertyKey );
+            return propertyKeyTokenHolder.getIdByName( propertyKey );
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new PropertyKeyNotFoundException( propertyKey, e );
         }
     }
 
     @Override
-    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
+    public String getPropertyKeyName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         try
         {
-            return propertyIndexManager.getKeyById( (int) propertyId ).getKey();
+            return propertyKeyTokenHolder.getTokenById( (int) propertyKeyId ).getKey();
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
-            throw new PropertyKeyIdNotFoundException( propertyId, e );
+            throw new PropertyKeyIdNotFoundException( propertyKeyId, e );
         }
     }
 
@@ -341,7 +345,7 @@ public class StoreStatementContext extends CompositeStatementContext
         // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
         // a first step to move it into the kernel.
         return map( propertyStringToId,
-                    nodeManager.getNodeForProxy( nodeId, null ).getPropertyKeys( nodeManager ).iterator());
+                nodeManager.getNodeForProxy( nodeId, null ).getPropertyKeys( nodeManager ).iterator() );
     }
 
     @Override
@@ -388,13 +392,13 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
             throws PropertyKeyIdNotFoundException,  EntityNotFoundException
     {
         try
         {
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = getPropertyKeyName( propertyId );
+            String propertyKey = getPropertyKeyName( propertyKeyId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy(nodeId, LockType.WRITE);
             NodeProxy nodeProxy = nodeManager.newNodeProxyById(nodeId);
             nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, value );
@@ -406,15 +410,15 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyId )
+    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException,  EntityNotFoundException
     {
         try
         {
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = getPropertyKeyName( propertyId );
+            String propertyKey = getPropertyKeyName( propertyKeyId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy(nodeId, LockType.WRITE);
-            NodeProxy nodeProxy = nodeManager.newNodeProxyById(nodeId);
+            NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
             return nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
         }
         catch (IllegalStateException e)

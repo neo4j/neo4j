@@ -54,7 +54,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -86,8 +86,9 @@ public class NodeManager
     private final CacheProvider cacheProvider;
 
     private final AbstractTransactionManager transactionManager;
-    private final PropertyIndexManager propertyIndexManager;
-    private final RelationshipTypeHolder relTypeHolder;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final LabelTokenHolder labelTokenHolder;
+    private final RelationshipTypeTokenHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
     private final XaDataSourceManager xaDsm;
@@ -140,21 +141,22 @@ public class NodeManager
     public NodeManager( StringLogger logger, GraphDatabaseService graphDb,
                         AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                        RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
-                        PropertyIndexManager propertyIndexManager, NodeProxy.NodeLookup nodeLookup,
-                        RelationshipProxy.RelationshipLookups relationshipLookups, Cache<NodeImpl> nodeCache,
-                        Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm, ThreadToStatementContextBridge
-            statementCtxProvider )
+                        RelationshipTypeTokenHolder relationshipTypeTokenHolder, CacheProvider cacheProvider,
+                        PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+                        NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+                        Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
+                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
     {
         this.logger = logger;
         this.graphDbService = graphDb;
         this.transactionManager = transactionManager;
-        this.propertyIndexManager = propertyIndexManager;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
+        this.labelTokenHolder = labelTokenHolder;
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
-        this.relTypeHolder = relationshipTypeHolder;
+        this.relTypeHolder = relationshipTypeTokenHolder;
 
         this.cacheProvider = cacheProvider;
         this.statementCtxProvider = statementCtxProvider;
@@ -197,7 +199,7 @@ public class NodeManager
         xaDsm.removeDataSourceRegistrationListener( dataSourceListener );
         clearCache();
         relTypeHolder.stop();
-        propertyIndexManager.stop();
+        propertyKeyTokenHolder.stop();
     }
 
     @Override
@@ -575,9 +577,9 @@ public class NodeManager
                 } ) );
     }
 
-    RelationshipType getRelationshipTypeById( int id ) throws KeyNotFoundException
+    RelationshipType getRelationshipTypeById( int id ) throws TokenNotFoundException
     {
-        return relTypeHolder.getKeyById( id );
+        return relTypeHolder.getTokenById( id );
     }
 
     public RelationshipImpl getRelationshipForProxy( long relId, LockType lock )
@@ -800,52 +802,52 @@ public class NodeManager
 
     public void removeRelationshipTypeFromCache( int id )
     {
-        relTypeHolder.removeKeyEntry( id );
+        relTypeHolder.removeToken( id );
     }
 
-    void addPropertyIndexes( NameData[] propertyIndexes )
+    void addPropertyKeyTokens( Token[] propertyKeyTokens )
     {
-        propertyIndexManager.addKeyEntries( propertyIndexes );
+        propertyKeyTokenHolder.addTokens( propertyKeyTokens );
     }
 
-    PropertyIndex getPropertyIndex( int keyId ) throws KeyNotFoundException
+    void addLabelTokens( Token[] labelTokens )
     {
-        return propertyIndexManager.getKeyById( keyId );
+        labelTokenHolder.addTokens( labelTokens );
     }
 
-    PropertyIndex getPropertyIndexOrNull( int keyId )
+    PropertyKeyToken getPropertyKeyToken( int keyId ) throws TokenNotFoundException
     {
-        return propertyIndexManager.getKeyByIdOrNull( keyId );
+        return propertyKeyTokenHolder.getTokenById( keyId );
     }
 
-    PropertyIndex[] index( String key )
+    PropertyKeyToken getPropertyKeyTokenOrNull( int keyId )
     {
-        return propertyIndexManager.index( key );
+        return propertyKeyTokenHolder.getTokenByIdOrNull( keyId );
     }
 
-    boolean hasIndexFor( int keyId )
+    PropertyKeyToken[] getPropertyKeyTokens( String propertyKeyName )
     {
-        return propertyIndexManager.hasKeyById( keyId );
+        return propertyKeyTokenHolder.index( propertyKeyName );
     }
 
-    int getOrCreatePropertyIndex( String key )
+    int getOrCreatePropertyKeyId( String key )
     {
-        return propertyIndexManager.getOrCreateId( key );
+        return propertyKeyTokenHolder.getOrCreateId( key );
     }
 
-    int getRelationshipTypeIdFor( RelationshipType type ) throws KeyNotFoundException
+    int getRelationshipTypeIdFor( RelationshipType type ) throws TokenNotFoundException
     {
-        return relTypeHolder.getIdByKey( type );
+        return relTypeHolder.idOf( type );
     }
 
-    void addRawRelationshipTypes( NameData[] relTypes )
+    void addRawRelationshipTypes( Token[] relTypes )
     {
-        relTypeHolder.addKeyEntries( relTypes );
+        relTypeHolder.addTokens( relTypes );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return relTypeHolder.getAllKeys();
+        return relTypeHolder.getAllTokens();
     }
 
     private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
@@ -858,7 +860,7 @@ public class NodeManager
 
             for ( String key : propertyKeys )
             {
-                Object value = primitive.getProperty( this, propertyIndexManager.index( key )[0].getKeyId() );
+                Object value = primitive.getProperty( this, propertyKeyTokenHolder.index( key )[0].getKeyId() );
                 for ( PropertyTracker<T> tracker : trackers )
                 {
                     tracker.propertyRemoved( proxy, key, value );
@@ -877,7 +879,7 @@ public class NodeManager
         // remove from node cache done via event
     }
 
-    PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
+    PropertyData nodeAddProperty( NodeImpl node, PropertyKeyToken index, Object value )
     {
         if ( !nodePropertyTrackers.isEmpty() )
         {
@@ -899,7 +901,7 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyChanged(
                         getNodeById( node.getId() ),
-                        getPropertyIndexOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
                         property.getValue(), value );
             }
         }
@@ -915,14 +917,14 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyRemoved(
                         getNodeById( node.getId() ),
-                        getPropertyIndexOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
                         property.getValue() );
             }
         }
         persistenceManager.nodeRemoveProperty( node.getId(), property );
     }
 
-    PropertyData graphAddProperty( PropertyIndex index, Object value )
+    PropertyData graphAddProperty( PropertyKeyToken index, Object value )
     {
         return persistenceManager.graphAddProperty( index, value );
     }
@@ -946,7 +948,7 @@ public class NodeManager
         // remove in rel cache done via event
     }
 
-    PropertyData relAddProperty( RelationshipImpl rel, PropertyIndex index,
+    PropertyData relAddProperty( RelationshipImpl rel, PropertyKeyToken index,
                                  Object value )
     {
         if ( !relationshipPropertyTrackers.isEmpty() )
@@ -970,7 +972,7 @@ public class NodeManager
             {
                 relPropertyTracker.propertyChanged(
                         getRelationshipById( rel.getId() ),
-                        getPropertyIndexOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
                         property.getValue(), value );
             }
         }
@@ -986,7 +988,7 @@ public class NodeManager
             {
                 relPropertyTracker.propertyRemoved(
                         getRelationshipById( rel.getId() ),
-                        getPropertyIndexOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
                         property.getValue() );
             }
         }
@@ -1003,14 +1005,19 @@ public class NodeManager
         return relCache.getIfCached( nodeId );
     }
 
-    public void addRelationshipType( NameData type )
+    public void addRelationshipTypeToken( Token type )
     {
-        relTypeHolder.addKeyEntries( type );
+        relTypeHolder.addTokens( type );
     }
 
-    public void addPropertyIndex( NameData index )
+    public void addLabelToken( Token type )
     {
-        propertyIndexManager.addKeyEntries( index );
+        labelTokenHolder.addTokens( type );
+    }
+
+    public void addPropertyKeyToken( Token index )
+    {
+        propertyKeyTokenHolder.addTokens( index );
     }
 
     public String getKeyForProperty( PropertyData property )
@@ -1018,15 +1025,15 @@ public class NodeManager
         // int keyId = persistenceManager.getKeyIdForProperty( property );
         try
         {
-            return propertyIndexManager.getKeyById( property.getIndex() ).getKey();
+            return propertyKeyTokenHolder.getTokenById( property.getIndex() ).getKey();
         }
-        catch ( KeyNotFoundException e )
+        catch ( TokenNotFoundException e )
         {
             throw new ThisShouldNotHappenError( "Mattias", "The key should exist at this point" );
         }
     }
 
-    public RelationshipTypeHolder getRelationshipTypeHolder()
+    public RelationshipTypeTokenHolder getRelationshipTypeHolder()
     {
         return this.relTypeHolder;
     }
@@ -1121,8 +1128,9 @@ public class NodeManager
             if ( ds.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
             {
                 // Load and cache all keys from persistence manager
-                addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypes() );
-                addPropertyIndexes( persistenceManager.loadPropertyIndexes() );
+                addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypeTokens() );
+                addPropertyKeyTokens( persistenceManager.loadAllPropertyKeyTokens() );
+                addLabelTokens( persistenceManager.loadAllLabelTokens() );
             }
 
         }
