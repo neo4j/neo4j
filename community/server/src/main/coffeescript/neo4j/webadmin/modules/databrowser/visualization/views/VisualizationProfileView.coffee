@@ -40,8 +40,9 @@ define(
         
         @profiles = opts.dataBrowserSettings.getVisualizationProfiles()
         @settings = opts.dataBrowserSettings
+        @browserState = opts.dataBrowserState
         @styleViews = []
-        
+
       save : () =>
         name = $('#profile-name',@el).val()
         
@@ -60,12 +61,12 @@ define(
           @profiles.add @profile
           @settings.setCurrentVisualizationProfile(@profile.id)
         @profile.save()
-        
-        window.location = '#/data/'
-        
+
+        Backbone.history.navigate('#/data/search/' + @browserState.getQuery(), true );
+
       cancel : () =>
-        window.location = '#/data/'
-          
+        Backbone.history.navigate('#/data/search/' + @browserState.getQuery(), true );
+
       addStyleRule : () =>
         rule = new StyleRule()
         rule.setOrder @profile.styleRules.size()
