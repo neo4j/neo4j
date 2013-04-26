@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class DeleteTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Delete"
+  val title = "DELETE"
+  val css = "write c2-2 c4-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -52,9 +52,7 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.DELETE
-["refcard", cardcss="write c2-2 c4-4"]
-----
+  def text = """
 ###assertion=delete
 START r = relationship(1)
 CREATE (n)
@@ -71,6 +69,5 @@ DELETE n.property
 ###
 
 Delete a property.
-----
 """
 }

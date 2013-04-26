@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class SetTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Set"
+  val title = "SET"
+  val css = "write c2-2 c4-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -49,9 +49,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.SET
-["refcard", cardcss="write c2-2 c4-4"]
-----
+  def text = """
 ###assertion=set parameters=set
 START n = node(%A%)
 
@@ -70,6 +68,5 @@ RETURN n.property###
 
 Set all properties.
 This will remove any existing properties.
-----
 """
 }

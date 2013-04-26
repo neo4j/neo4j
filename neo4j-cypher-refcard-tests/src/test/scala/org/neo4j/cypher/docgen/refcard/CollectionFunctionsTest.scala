@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Collection Functions"
+  val css = "general c3-3 c4-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -55,9 +55,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
-  def text = """.Collection Functions
-["refcard", cardcss="general c3-3 c4-3"]
-----
+  def text = """
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
@@ -144,6 +142,5 @@ FOREACH (n IN collection : SET n.marked = true)
 ###
 
 Execute a mutating operation for each element in a collection.
-----
 """
 }

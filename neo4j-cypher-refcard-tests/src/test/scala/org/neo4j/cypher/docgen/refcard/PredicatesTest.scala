@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class PredicatesTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Predicates"
+  val css = "general c3-3 c4-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -63,9 +63,7 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
-  def text = """.Predicates
-["refcard", cardcss="general c3-3 c4-2"]
-----
+  def text = """
 ###assertion=returns-one parameters=aname
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
@@ -159,6 +157,5 @@ n.property IN [{value1}, {value2}]
 RETURN n###
 
 Check if an element exists in a collection.
-----
 """
 }

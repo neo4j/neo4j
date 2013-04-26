@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class AggregationTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Aggregation"
+  val css = "general"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -52,9 +52,7 @@ class AggregationTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> 20),
     "C" -> Map("property" -> 30))
 
-  def text = """.Aggregation
-["refcard", cardcss="general"]
-----
+  def text = """
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
@@ -149,6 +147,5 @@ PERCENTILE_CONT(n.property, {percentile})
 ###
 
 Continuous percentile.
-----
 """
 }

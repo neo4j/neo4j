@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class WhereTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
-  val section = "refcard"
-  val title = "Where"
+  val title = "WHERE"
+  val css = "read c2-2 c3-2 c4-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -45,9 +45,7 @@ class WhereTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
-  def text = """.WHERE
-["refcard", cardcss="read c2-2 c3-2 c4-2"]
-----
+  def text = """
 ###assertion=returns-one parameters=aname
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
@@ -57,6 +55,5 @@ WHERE n.property <> {value}
 RETURN n,m###
 
 Use a predicate to filter.
-----
 """
 }

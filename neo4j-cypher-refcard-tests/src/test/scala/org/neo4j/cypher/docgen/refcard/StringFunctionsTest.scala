@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class StringFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "String Functions"
+  val css = "general c2-2 c3-2 c4-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -57,9 +57,7 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("property" -> "Chris"),
     "ROOT" -> Map("property" -> 1))
 
-  def text = """.String Functions
-["refcard", cardcss="general c2-2 c3-2 c4-2"]
-----
+  def text = """
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
 RETURN
@@ -151,6 +149,5 @@ UPPER({original})
 ###
 
 Uppercase.
-----
 """
 }

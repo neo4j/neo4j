@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class CreateUniqueTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Create unique"
+  val title = "CREATE UNIQUE"
+  val css = "write c4-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -47,9 +47,7 @@ class CreateUniqueTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.CREATE UNIQUE
-["refcard", cardcss="write c4-4"]
-----
+  def text = """
 ###assertion=create parameters=aname
 //
 START n=node(%A%)
@@ -61,6 +59,5 @@ RETURN m###
 
 Match pattern or create it if it does not exist.
 The pattern can not include any optional parts.
-----
 """
 }

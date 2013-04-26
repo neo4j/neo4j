@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Predicate Functions"
+  val css = "general c3-3 c4-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -42,9 +42,7 @@ class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
-  def text = """.Predicate Functions
-["refcard", cardcss="general c3-3 c4-3"]
-----
+  def text = """
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
@@ -89,6 +87,5 @@ SINGLE(x IN collection WHERE HAS(x.property))
 RETURN n,m###
 
 Returns `true` if the predicate is `true` for exactly one element in the collection.
-----
 """
 }

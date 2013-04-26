@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class CreateTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Create"
+  val title = "CREATE"
+  val css = "write c4-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -65,9 +65,7 @@ class CreateTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.CREATE
-["refcard", cardcss="write c4-4"]
-----
+  def text = """
 ###assertion=create-node parameters=aname
 //
 
@@ -112,6 +110,5 @@ CREATE (n)-[:LOVES {since: {value}}]->(m)
 RETURN n###
 
 Create a relationship with the given type, direction, and properties.
-----
 """
 }

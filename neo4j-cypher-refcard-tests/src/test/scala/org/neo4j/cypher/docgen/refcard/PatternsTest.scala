@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class PatternsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Patterns"
+  val css = "general c2-2 c3-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -50,9 +50,7 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.Patterns
-["refcard", cardcss="general c2-2 c3-2"]
-----
+  def text = """
 ###assertion=related
 START n=node(%A%), m=node(%B%)
 MATCH
@@ -142,6 +140,5 @@ CREATE UNIQUE
 RETURN m###
 
 Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
-----
 """
 }

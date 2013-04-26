@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class MatchTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
-  val title = "Match"
+  val title = "MATCH"
+  val css = "read c2-2 c3-2 c4-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -45,9 +45,7 @@ class MatchTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.MATCH
-["refcard", cardcss="read c2-2 c3-2 c4-2"]
-----
+  def text = """
 ###assertion=related
 START n=node(%A%), m=node(%B%)
 
@@ -56,6 +54,5 @@ MATCH (n)-->(m)
 RETURN n,m###
 
 Any pattern can be used in `MATCH` except the ones containing property maps.
-----
 """
 }

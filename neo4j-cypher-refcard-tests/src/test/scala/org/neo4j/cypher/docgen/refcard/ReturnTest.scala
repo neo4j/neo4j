@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class ReturnTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Return"
+  val title = "RETURN"
+  val css = "read c3-3 c4-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -60,9 +60,7 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> 20),
     "C" -> Map("property" -> 30))
 
-  def text = """.RETURN
-["refcard", cardcss="read c3-3 c4-3"]
-----
+  def text = """
 ###assertion=all-nodes
 //
 START n=node(*)
@@ -136,6 +134,5 @@ SKIP {skip_number} LIMIT {limit_number}
 ###
 
 Skip results at the top and limit the number of results.
-----
 """
 }

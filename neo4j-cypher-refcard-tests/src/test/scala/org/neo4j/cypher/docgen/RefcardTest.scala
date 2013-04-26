@@ -48,7 +48,8 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
   var dir: File = null
 
   def title: String
-  def section: String
+  def css: String
+  def section: String = "refcard"
   def assert(name: String, result: ExecutionResult)
   def parameters(name: String): Map[String, Any] = Map()
   def graphDescription: List[String]
@@ -102,18 +103,34 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     result
   }
 
-  def header = "[[%s-%s]]".format(section.toLowerCase, title.toLowerCase.replace(" ", "-"))
-
   @Test
   def produceDocumentation() {
     val db = init()
     try {
       val writer: PrintWriter = createWriter(title, dir)
-
       val queryText = includeQueries(text, dir)
-
-      writer.println(header)
-      writer.println(queryText)
+      val queryLines = queryText.split("\n\n")
+      writer.println("++++")
+      writer.println("<div class='col card" + css +
+      		"\'><div class='blk'>")
+      writer.println("++++")
+      writer.println()
+      writer.println("[options=\"header\"]")
+      writer.println("|====")
+      writer.println("|" + title)      
+      for (i <- 0 until queryLines.length by 2) {
+        writer.println("a|[\"source\",\"cypher\"]")
+        writer.println("----")
+        writer.println(queryLines(i).trim().replace("|", "\\|"))
+        writer.println("----")
+        writer.println(queryLines(i + 1).trim())
+      }
+      writer.println("|====")
+      writer.println()
+      writer.println("++++")
+      writer.println("</div></div>")
+      writer.println("++++")
+      writer.println()
       writer.close()
     } finally {
       db.shutdown()

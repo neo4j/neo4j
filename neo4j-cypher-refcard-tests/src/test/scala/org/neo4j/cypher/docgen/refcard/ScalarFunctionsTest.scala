@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val section = "refcard"
   val title = "Scalar Functions"
+  val css = "general c2-2 c3-2 c4-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -50,9 +50,7 @@ class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
-  def text = """.Scalar Functions
-["refcard", cardcss="general c2-2 c3-2 c4-4"]
-----
+  def text = """
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
@@ -117,6 +115,5 @@ RETURN
 ID(node_or_relationship)###
 
 The internal id of the relationship or node.
-----
 """
 }

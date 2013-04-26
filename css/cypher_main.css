@@ -314,7 +314,7 @@ footer div.mid {
   /*table-layout: fixed;*/
 }
 
-.col table tr:nth-child(odd) {
+.col table.tableblock > tbody > tr:nth-child(even) {
   background-color: #f5f5f5;
 }
 

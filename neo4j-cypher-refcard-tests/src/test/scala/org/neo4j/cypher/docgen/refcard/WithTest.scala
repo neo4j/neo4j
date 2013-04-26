@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class WithTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
-  val section = "refcard"
-  val title = "With"
+  val title = "WITH"
+  val css = "read c2-2 c3-3 c4-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -45,9 +45,7 @@ class WithTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.WITH
-["refcard", cardcss="read c2-2 c3-3 c4-3"]
-----
+  def text = """
 ###assertion=friends parameters=name
 //
 
@@ -60,6 +58,5 @@ RETURN user
 
 The `WITH` syntax is similar to `RETURN`.
 It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
-----
 """
 }

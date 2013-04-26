@@ -23,8 +23,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class StartTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val section = "refcard"
-  val title = "Start"
+  val title = "START"
+  val css = "read c2-2 c3-2 c4-2"
   override def indexProps: List[String] = List("value", "name", "key")
 
   override def assert(name: String, result: ExecutionResult) {
@@ -72,9 +72,7 @@ class StartTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20, "name" -> "Bob"),
     "C" -> Map("value" -> 30))
 
-  def text = """.START
-["refcard", cardcss="read c2-2 c3-2 c4-2"]
-----
+  def text = """
 ###assertion=all-nodes
 //
 
@@ -111,7 +109,6 @@ RETURN n###
 
 Query the index with an exact query.
 Use `node_auto_index` for the automatic index.
-----
 """
 }
 
