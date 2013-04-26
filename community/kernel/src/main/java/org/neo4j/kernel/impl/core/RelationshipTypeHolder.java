@@ -60,7 +60,7 @@ public class RelationshipTypeHolder extends LifecycleAdapter
             addRawRelationshipType( types[i] );
         }
     }
-    
+
     void addRawRelationshipType( NameData type )
     {
         RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName(), type.getId() );
