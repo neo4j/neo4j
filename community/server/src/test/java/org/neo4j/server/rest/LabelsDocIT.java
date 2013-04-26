@@ -34,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Label;
@@ -247,6 +248,30 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         List<?> parsed = (List<?>) readJson( result );
         assertEquals( asSet( "bob ross" ), asSet( map( getNameProperty, parsed ) ) );
+    }
+
+    /**
+     * List all labels.
+     */
+    @Test
+    @Documented
+    @GraphDescription.Graph( nodes = {
+            @NODE( name = "a", setNameProperty = true, labels = { @LABEL( "first" ), @LABEL( "second" ) } ),
+            @NODE( name = "b", setNameProperty = true, labels = { @LABEL( "first" ) } ),
+            @NODE( name = "c", setNameProperty = true, labels = { @LABEL( "second" ) } )
+    } )
+    public void list_all_labels() throws JsonParseException
+    {
+        data.get();
+        String uri = getLabelsUri();
+        String body = gen.get()
+                .expectedStatus( 200 )
+                .get( uri )
+                .entity();
+
+        Set<?> parsed = asSet((List<?>) readJson( body ));
+        assertTrue( parsed.contains( "first" ) );
+        assertTrue( parsed.contains( "second" ) );
     }
 
     private Function<Object,String> getNameProperty = new Function<Object, String>()

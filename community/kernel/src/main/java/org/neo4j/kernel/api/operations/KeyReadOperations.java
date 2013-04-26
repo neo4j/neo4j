@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.impl.core.LabelToken;
 
 public interface KeyReadOperations
 {
@@ -42,4 +45,7 @@ public interface KeyReadOperations
 
     /** Returns the name of a property given it's property key id */
     String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
+
+    /** Returns the labels currently stored in the database **/
+    Iterator<LabelToken> listLabels();
 }

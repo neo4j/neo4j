@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.Closeable;
 import java.util.Iterator;
 
@@ -39,8 +41,7 @@ import org.neo4j.kernel.api.operations.KeyOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
+import org.neo4j.kernel.impl.core.LabelToken;
 
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
@@ -383,6 +384,19 @@ public class CompositeStatementContext implements StatementContext
         beforeReadOperation();
 
         Iterator<UniquenessConstraint> result = schemaOperations.getConstraints( labelId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<LabelToken> listLabels()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<LabelToken> result = keyOperations.listLabels();
 
         afterReadOperation();
         afterOperation();

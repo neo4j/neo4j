@@ -19,6 +19,18 @@
  */
 package org.neo4j.server.rest;
 
+import static java.lang.String.format;
+import static java.net.URLEncoder.encode;
+import static org.junit.Assert.*;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,17 +44,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import javax.ws.rs.core.Response.Status;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-
-import static java.lang.String.format;
-import static java.net.URLEncoder.encode;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -224,6 +225,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
+    }
+
+    public String getLabelsUri()
+    {
+        return format( "%slabels", getDataUri() );
     }
 
     public String getNodesWithLabelUri( String label )
