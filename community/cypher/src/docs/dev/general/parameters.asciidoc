@@ -59,6 +59,8 @@ tag=exampleWithParameterForIndexValue
 classifier=test-sources
 ----
 
+CAUTION: Using a parameter for index keys has been deprecated.
+
 .Parameter for index query
 [snippet,java]
 ----

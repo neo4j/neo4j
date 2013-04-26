@@ -115,7 +115,8 @@ define(
       getVisualizationProfileView : =>
         @visualizationProfileView ?= new VisualizationProfileView 
           dataBrowserSettings:@getDataBrowserSettings()
-          
+          dataBrowserState:@dataModel
+
       getDataBrowserSettings : ->
         @dataBrowserSettings ?= new DataBrowserSettings @appState.getSettings()
 

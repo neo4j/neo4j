@@ -36,6 +36,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
+ * 
+ * Use {@link #newEmbeddedDatabase(String)} or
+ * {@link #newEmbeddedDatabaseBuilder(String)} to create a database instance.
  */
 public class GraphDatabaseFactory
 {

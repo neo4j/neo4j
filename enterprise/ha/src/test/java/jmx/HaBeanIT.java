@@ -36,9 +36,11 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -54,7 +56,6 @@ import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
-import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
@@ -63,7 +64,7 @@ import org.neo4j.test.ha.ClusterManager.RepairKit;
 public class HaBeanIT
 {
     @Rule
-    public LoggerRule loggerRule = new LoggerRule();
+    public final TestName testName = new TestName();
 
     private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
     private ManagedCluster cluster;
@@ -71,13 +72,15 @@ public class HaBeanIT
 
     public void startCluster( int size ) throws Throwable
     {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( "dbs", true ), MapUtil.stringMap() )
+        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( testName.getMethodName(), true ), MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
             {
                 builder.setConfig( "jmx.port", "" + ( 9912 + serverId ) );
                 builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId ) );
+                builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId );
+
             }
         };
         clusterManager.start();
@@ -153,7 +156,6 @@ public class HaBeanIT
     }
 
     @Test
-    @Ignore("Ignored because it fails on CI - pending investigation")
     public void testAfterGentleMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
         startCluster( 3 );
@@ -354,19 +356,6 @@ public class HaBeanIT
         }, Arrays.asList( slave.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
         assertTrue( "Slave not available", slave.isAvailable() );
-    }
-
-    private String uri( String scheme, String[] uris )
-    {
-        for ( String uri : uris )
-        {
-            if ( uri.startsWith( scheme ) )
-            {
-                return uri;
-            }
-        }
-        fail( "Couldn't find '" + scheme + "' URI among " + Arrays.toString( uris ) );
-        return null; // it will never get here.
     }
 
     private ClusterMemberInfo member( ClusterMemberInfo[] members, int instanceId )

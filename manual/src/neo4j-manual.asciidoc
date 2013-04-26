@@ -5,6 +5,8 @@
 
 :lucene-version: 3_6_2
 :lucene-version-printed: 3.6.2
+:lucene-base-uri: http://lucene.apache.org/core/{lucene-version}
+:lucene-api-base-uri: {lucene-base-uri}/api/core
 
 :console: 0
 
