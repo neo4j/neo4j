@@ -34,7 +34,7 @@ class ExtractBuilder extends LegacyPlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+    !q.extracted && q.readyToAggregate && !q.aggregateToDo
   }
 
   def priority: Int = PlanBuilder.Extraction

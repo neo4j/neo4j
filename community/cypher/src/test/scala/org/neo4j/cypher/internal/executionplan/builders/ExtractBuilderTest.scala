@@ -70,7 +70,7 @@ class ExtractBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(
       returns = Seq(Unsolved(ReturnItem(Literal("foo"), "foo"))),
-      aggregateQuery = Unsolved(true)
+      aggregateToDo = true
     )
 
     val p = createPipe(nodes = Seq("s"))

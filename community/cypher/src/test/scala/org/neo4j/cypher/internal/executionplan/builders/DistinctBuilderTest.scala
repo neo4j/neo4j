@@ -37,7 +37,7 @@ class DistinctBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq(Unsolved(CountStar())) ,
-      aggregateQuery = Unsolved(true))
+      aggregateToDo = true)
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -47,7 +47,7 @@ class DistinctBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq.empty ,
-      aggregateQuery = Solved(true))
+      aggregateToDo = false)
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -57,7 +57,7 @@ class DistinctBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq.empty,
-      aggregateQuery = Unsolved(true))
+      aggregateToDo = true)
 
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
@@ -69,7 +69,7 @@ class DistinctBuilderTest extends BuilderTest {
       copy(
       returns = Seq(Unsolved(ReturnItem(IdFunction(Identifier("n")), "42"))),
       aggregation = Seq.empty,
-      aggregateQuery = Unsolved(true),
+      aggregateToDo = true,
       sort = Seq(Unsolved(SortItem(IdFunction(Identifier("n")), ascending = false))))
 
     val pipe = new FakePipe(Iterator.empty, ("n", NodeType()))
