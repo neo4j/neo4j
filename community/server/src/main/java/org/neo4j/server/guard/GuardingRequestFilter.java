@@ -19,30 +19,19 @@
  */
 package org.neo4j.server.guard;
 
-import static javax.servlet.http.HttpServletResponse.SC_REQUEST_TIMEOUT;
-
-import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardException;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Timer;
+
+import static javax.servlet.http.HttpServletResponse.SC_REQUEST_TIMEOUT;
+
 public class GuardingRequestFilter implements Filter
 {
-
-    private static final Log LOG = LogFactory.getLog( GuardingRequestFilter.class );
 
     private final Guard guard;
     private final int timeout;
@@ -73,18 +62,6 @@ public class GuardingRequestFilter implements Filter
             } else
             {
                 guard.startTimeout( timeLimit );
-                final TimerTask timerTask = new TimerTask()
-                {
-
-                    @Override
-                    public void run()
-                    {
-                        LOG.warn( "request canceled" );
-                        LOG.error( "TODO: restarting the server is not proper implemented, request was not canceled" );
-                        // TODO current.interrupt(); + restart server
-                    }
-                };
-                timer.schedule( timerTask, timeLimit + 5000 );
 
                 try
                 {
@@ -94,7 +71,6 @@ public class GuardingRequestFilter implements Filter
                     response.setStatus( SC_REQUEST_TIMEOUT );
                 } finally
                 {
-                    timerTask.cancel();
                     guard.stop();
                 }
             }
