@@ -23,19 +23,21 @@ import org.neo4j.graphdb.Direction
 import collection.Map
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.commands.{And, HasLabel, Predicate}
+import org.neo4j.cypher.internal.commands.{AstNode, And, HasLabel, Predicate}
 import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 
-abstract sealed class AbstractPattern {
-  def makeOutgoing:AbstractPattern
+abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
+  def makeOutgoing: AbstractPattern
 
   def parsedEntities: Seq[ParsedEntity]
 
   def parsedLabelPredicates: Seq[Predicate] =
-    parsedEntities.flatMap { (entity: ParsedEntity) =>
-      val ident: Identifier = Identifier(entity.name)
-      val labelPreds: Seq[HasLabel] = entity.labels.map(HasLabel(ident, _))
-      if (labelPreds.isEmpty) None else Some(labelPreds.reduce(And.apply))
+    parsedEntities.flatMap {
+      (entity: ParsedEntity) =>
+        val ident: Identifier = Identifier(entity.name)
+        val labelPreds: Seq[HasLabel] = entity.labels.map(HasLabel(ident, _))
+        if (labelPreds.isEmpty) None else Some(labelPreds.reduce(And.apply))
     }
 }
 
@@ -57,10 +59,15 @@ case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
                         labels: Seq[LabelValue],
-                        bare: Boolean) extends AbstractPattern {
+                        bare: Boolean) extends AbstractPattern with GraphElementPropertyFunctions {
   def makeOutgoing = this
 
   def parsedEntities = Seq(this)
+
+  def children: Seq[AstNode[_]] = Seq(expression) ++ props.values
+
+  def rewrite(f: (Expression) => Expression) =
+    copy(expression = expression.rewrite(f), props = props.rewrite(f), labels = labels.map(_.rewrite(f)))
 }
 
 case class ParsedRelation(name: String,
@@ -69,13 +76,20 @@ case class ParsedRelation(name: String,
                           end: ParsedEntity,
                           typ: Seq[String],
                           dir: Direction,
-                          optional: Boolean) extends PatternWithPathName(name) with Turnable {
+                          optional: Boolean) extends PatternWithPathName(name)
+with Turnable
+with GraphElementPropertyFunctions {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
     copy(start = start, end = end, dir = dir)
 
   def parsedEntities = Seq(start, end)
+
+  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
+
+  def rewrite(f: (Expression) => Expression) =
+    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 }
 
 trait Turnable {
@@ -84,17 +98,19 @@ trait Turnable {
   // It's easier on everything if all relationships are either outgoing or both, but never incoming.
   // So we turn all patterns around, facing the same way
   def dir: Direction
-  def start:ParsedEntity
-  def end:ParsedEntity
 
-  def makeOutgoing : AbstractPattern = {
+  def start: ParsedEntity
+
+  def end: ParsedEntity
+
+  def makeOutgoing: AbstractPattern = {
     dir match {
       case Direction.INCOMING => turn(start = end, end = start, dir = Direction.OUTGOING)
       case Direction.OUTGOING => this.asInstanceOf[AbstractPattern]
       case Direction.BOTH     => (start.expression, end.expression) match {
         case (Identifier(a), Identifier(b)) if a < b  => this.asInstanceOf[AbstractPattern]
         case (Identifier(a), Identifier(b)) if a >= b => turn(start = end, end = start, dir = dir)
-        case _                                => this.asInstanceOf[AbstractPattern]
+        case _                                        => this.asInstanceOf[AbstractPattern]
       }
     }
   }
@@ -111,13 +127,21 @@ case class ParsedVarLengthRelation(name: String,
                                    optional: Boolean,
                                    minHops: Option[Int],
                                    maxHops: Option[Int],
-                                   relIterator: Option[String]) extends PatternWithPathName(name) with Turnable {
+                                   relIterator: Option[String])
+  extends PatternWithPathName(name)
+  with Turnable
+  with GraphElementPropertyFunctions {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
     copy(start = start, end = end, dir = dir)
 
   def parsedEntities = Seq(start, end)
+
+  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
+
+  def rewrite(f: (Expression) => Expression) =
+    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 }
 
 case class ParsedShortestPath(name: String,
@@ -129,12 +153,19 @@ case class ParsedShortestPath(name: String,
                               optional: Boolean,
                               maxDepth: Option[Int],
                               single: Boolean,
-                              relIterator: Option[String]) extends PatternWithPathName(name) {
+                              relIterator: Option[String])
+  extends PatternWithPathName(name) with GraphElementPropertyFunctions{
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def makeOutgoing = this
 
   def parsedEntities = Seq(start, end)
+
+  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
+
+  def rewrite(f: (Expression) => Expression) =
+    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
+
 }
 
 case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends PatternWithPathName(name) {
@@ -143,4 +174,8 @@ case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends P
   def makeOutgoing = this
 
   def parsedEntities = pieces.flatMap(_.parsedEntities)
+
+  def children: Seq[AstNode[_]] = pieces
+
+  def rewrite(f: (Expression) => Expression): AbstractPattern = copy(pieces = pieces.map(_.rewrite(f)))
 }
