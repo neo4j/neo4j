@@ -41,6 +41,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
 
+  def getLabelId(labelName: String): Option[Long] = inner.getLabelId(labelName)
+
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = inner.getRelationshipsFor(node, dir, types)
 
   def nodeOps = inner.nodeOps

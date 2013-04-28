@@ -21,7 +21,6 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
-import org.neo4j.cypher.ExecutionPlan
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -48,6 +47,8 @@ trait QueryContext {
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship]
 
   def getOrCreateLabelId(labelName: String): Long
+
+  def getLabelId(labelName: String): Option[Long]
 
   def getLabelName(id: Long): String
 

@@ -77,13 +77,21 @@ class EntityProducerFactory {
   }
 
   val nodeByLabel: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ NodeByLabel(identifier, label)) if planContext.getLabelId(label).nonEmpty =>
-      val labelId:Long = planContext.getLabelId(label).get
+    // The label exists at compile time - no need to look up the label id for every run
+    case (planContext, startItem@NodeByLabel(identifier, label)) if planContext.getLabelId(label).nonEmpty =>
+      val labelId: Long = planContext.getLabelId(label).get
+      asProducer[Node](startItem) {
+        (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId)
+      }
 
-      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId) }
-
-    //The label does not exist, so we simply let the execution plan always return an empty result
-    case (planContext, NodeByLabel(_, label)) => NO_NODES
+    // The label is missing at compile time - we look it up every time this plan is run
+    case (planContext, startItem@NodeByLabel(identifier, label)) => asProducer(startItem) {
+      (m: ExecutionContext, state: QueryState) =>
+        state.query.getLabelId(label) match {
+          case Some(labelId) => state.query.getNodesByLabel(labelId)
+          case None          => Iterator.empty
+        }
+    }
   }
 
   val nodesAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
@@ -140,7 +148,7 @@ class EntityProducerFactory {
       }
   }
 
-  private val NO_NODES = new EntityProducer[Node] {
+  object NO_NODES extends EntityProducer[Node] {
     def description: Seq[(String, SimpleVal)] = Seq.empty
 
     def name: String = "No nodes"

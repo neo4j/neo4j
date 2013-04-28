@@ -121,4 +121,6 @@ class SnitchingQueryContext extends QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 
   def schemaStateContains(key: String) = ???
+
+  def getLabelId(labelName: String): Option[Long] = labels.get(labelName)
 }

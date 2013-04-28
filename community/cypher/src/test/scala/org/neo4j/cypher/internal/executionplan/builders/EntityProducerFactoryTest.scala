@@ -23,16 +23,18 @@ import org.neo4j.cypher.internal.spi.{QueryContext, PlanContext}
 import org.scalatest.mock.MockitoSugar
 import org.junit.{Before, Test}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
 import org.neo4j.cypher.IndexHintException
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
+  val context = ExecutionContext.empty
 
   @Before
   def init() {
@@ -66,6 +68,23 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
 
     //WHEN
     val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, Some(Literal(value))))
-    assert(func(null, state) === indexResult)
+    assert(func(context, state) === indexResult)
+  }
+
+  @Test
+  def retries_every_time_if_the_label_did_not_exist_at_plan_building() {
+    // given
+    val label: String = "label"
+    val queryContext: QueryContext = mock[QueryContext]
+    when(planContext.getLabelId(label)).thenReturn(None)
+    when(queryContext.getLabelId(label)).thenReturn(None)
+    val state = QueryStateHelper.empty.copy(inner = queryContext)
+
+    // when
+    val func = factory.nodeByLabel(planContext, NodeByLabel("id", label))
+    assert(func(context, state) === Iterator.empty)
+
+    // then
+    verify(queryContext, times(1)).getLabelId(label)
   }
 }
