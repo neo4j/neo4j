@@ -77,7 +77,7 @@ public final class RepresentationType
             NOTHING = new RepresentationType( "void", null ),//
             // System
             EXCEPTION = new RepresentationType( "exception" ),
-            MAP = new RepresentationType( "map", null, Map.class );
+            MAP = new RepresentationType( "map", "maps", Map.class );
 
     final String valueName;
     final String listName;
