@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.mutation.NamedExpectation
 import collection.Map
+import org.neo4j.cypher.internal.parser.{ParsedRelation, ParsedEntity, ParsedNamedPath, AbstractPattern}
 
 trait CreateUnique extends Base with ParserPattern {
   case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])

@@ -32,12 +32,12 @@ import org.neo4j.cypher.internal.mutation.CreateRelationship
 import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
 import org.neo4j.cypher.internal.commands.AllRelationships
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
 import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
 import org.neo4j.cypher.internal.commands.CreateNodeStartItem
 import org.neo4j.cypher.internal.commands.RelationshipByIndex
+import org.neo4j.cypher.internal.parser.{ParsedNamedPath, ParsedRelation, ParsedEntity, AbstractPattern}
 
 
 trait StartClause extends Base with Expressions with CreateUnique {
@@ -87,7 +87,7 @@ trait StartClause extends Base with Expressions with CreateUnique {
         })
       }
 
-    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, True()), ParsedEntity(_, b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
+    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, _, _), ParsedEntity(_, b, endProps, _, _), relType, dir, map) if relType.size == 1 =>
       val (from, to) = if (dir != Direction.INCOMING)
                          (a, b)
                        else
@@ -95,10 +95,10 @@ trait StartClause extends Base with Expressions with CreateUnique {
 
       Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, Seq.empty, bare = true), RelationshipEndpoint(to, endProps, Seq.empty, true), relType.head, props))))
 
-    case ParsedEntity(_, Identifier(name), props, True()) =>
+    case ParsedEntity(_, Identifier(name), props, _, _) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Seq.empty))))
 
-    case ParsedEntity(_, p: ParameterExpression, _, True()) =>
+    case ParsedEntity(_, p: ParameterExpression, _, _, _) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Seq.empty))))
 
     case _ => No(Seq(""))
