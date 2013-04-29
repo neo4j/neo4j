@@ -98,7 +98,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
-    
+
     private void writeContents()
     {
         ByteBuffer byteBuffer = buffer.getBuffer().duplicate();
