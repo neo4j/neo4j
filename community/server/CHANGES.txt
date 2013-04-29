@@ -1,3 +1,8 @@
+1.9.RC2 (2013-04-30)
+--------------------
+o Create unique node with properties that have collection values properly casts them to arrays
+o Data visualization editor now navigates back to the data browser on save and cancel
+
 1.9.RC1 (2013-04-15)
 --------------------
 o Introduces new slash screen containing a guide to Neo4j. Several small aesthetic improvements
