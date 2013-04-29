@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
@@ -365,17 +364,6 @@ public class TestApps extends AbstractShellTest
     {
         // It's JSON coming back from dbinfo command
         executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
-    }
-    
-    @Ignore( "Setting a new reference node isn't persistent" )
-    @Test
-    public void setNewReferenceNode() throws Exception
-    {
-        executeCommandExpectingException( "mknode -r", "exists" );
-        executeCommand( "rmnode" ); // Delete the reference node
-        executeCommand( "mknode -r --cd --np \"{'name':'test'}\"" );
-        executeCommand( "cd" );
-        executeCommand( "ls -p", "name", "test" );
     }
     
     @Test
