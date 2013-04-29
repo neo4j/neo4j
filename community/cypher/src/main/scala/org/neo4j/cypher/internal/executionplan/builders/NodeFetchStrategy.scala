@@ -106,7 +106,7 @@ object IndexSeekStrategy extends NodeStrategy {
     for (
       labelPredicate <- labelPredicates;
       propertyPredicate <- propertyPredicates
-      if (ctx.getIndexRuleId(labelPredicate.solution, propertyPredicate.solution).nonEmpty)
+      if (ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty)
     ) yield RatedStartItem(SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, None), IndexEquality, Seq(labelPredicate.predicate, propertyPredicate.predicate))
   }
 

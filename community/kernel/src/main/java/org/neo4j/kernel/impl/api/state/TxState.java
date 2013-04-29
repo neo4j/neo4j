@@ -24,10 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 /**
@@ -71,42 +70,88 @@ public class TxState
 {
     public interface IdGeneration
     {
-        // Because we generate id's up-front, rather than on commit, we need this for now.
-        // For a rainy day, we should refactor to use tx-local ids before commit and global ids after
-        long newSchemaRuleId();
+        long newNodeId();
 
+        long newRelationshipId();
     }
 
-    // Node ID --> NodeState
-    private final Map<Long, NodeState> nodeStates = new HashMap<Long, NodeState>();
+    public interface Visitor
+    {
+        void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed );
 
-    // Label ID --> LabelState
-    private final Map<Long, LabelState> labelStates = new HashMap<Long, LabelState>();
+        void visitAddedIndex( IndexDescriptor element );
 
-    private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
+        void visitRemovedIndex( IndexDescriptor element );
+
+        void visitAddedConstraint( UniquenessConstraint element );
+
+        void visitRemovedConstraint( UniquenessConstraint element );
+    }
+
+    private final Map<Long/*Node ID*/, NodeState> nodeStates = new HashMap<Long, NodeState>();
+    private final Map<Long/*Label ID*/, LabelState> labelStates = new HashMap<Long, LabelState>();
+    private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
+    private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
     private final DiffSets<Long> nodes = new DiffSets<Long>();
-
 
     private final OldTxStateBridge legacyState;
     private final PersistenceManager persistenceManager;
     private final IdGeneration idGeneration;
-    private final SchemaIndexProviderMap providerMap;
 
     public TxState( OldTxStateBridge legacyState,
                     PersistenceManager legacyTransaction,
-                    IdGeneration idGeneration,
-                    SchemaIndexProviderMap providerMap
-    )
+                    IdGeneration idGeneration )
     {
         this.legacyState = legacyState;
         this.persistenceManager = legacyTransaction;
         this.idGeneration = idGeneration;
-        this.providerMap = providerMap;
+    }
+
+    public void accept( final Visitor visitor )
+    {
+        for ( NodeState node : nodeStates.values() )
+        {
+            DiffSets<Long> labelDiff = node.getLabelDiffSets();
+            visitor.visitNodeLabelChanges( node.getId(), labelDiff.getAdded(), labelDiff.getRemoved() );
+        }
+        indexChanges.accept( new DiffSets.Visitor<IndexDescriptor>()
+        {
+            @Override
+            public void visitAdded( IndexDescriptor element )
+            {
+                visitor.visitAddedIndex( element );
+            }
+
+            @Override
+            public void visitRemoved( IndexDescriptor element )
+            {
+                visitor.visitRemovedIndex( element );
+            }
+        } );
+        constraintsChanges.accept( new DiffSets.Visitor<UniquenessConstraint>()
+        {
+            @Override
+            public void visitAdded( UniquenessConstraint element )
+            {
+                visitor.visitAddedConstraint( element );
+            }
+
+            @Override
+            public void visitRemoved( UniquenessConstraint element )
+            {
+                visitor.visitRemovedConstraint( element );
+            }
+        } );
     }
 
     public boolean hasChanges()
     {
-        return !nodeStates.isEmpty() || !labelStates.isEmpty() || !nodes.isEmpty() || legacyState.hasChanges();
+        return !nodeStates.isEmpty() ||
+               !labelStates.isEmpty() ||
+               !nodes.isEmpty() ||
+               !indexChanges.isEmpty() ||
+               !constraintsChanges.isEmpty() ||
+               legacyState.hasChanges();
     }
 
     public Iterable<NodeState> getNodeStates()
@@ -137,7 +182,7 @@ public class TxState
 
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
-        return legacyState.nodeIsAddedInThisTx(nodeId);
+        return legacyState.nodeIsAddedInThisTx( nodeId );
     }
 
     public void addLabelToNode( long labelId, long nodeId )
@@ -195,38 +240,27 @@ public class TxState
         return state == null ? DiffSets.<Long>emptyDiffSets() : state.getNodeDiffSets();
     }
 
-    public IndexRule addIndexRule( long labelId, long propertyKey )
+    public void addIndexRule( IndexDescriptor rule )
     {
-        SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
-        IndexRule rule = new IndexRule( idGeneration.newSchemaRuleId(), labelId, providerDescriptor, propertyKey );
-
-        persistenceManager.createSchemaRule( rule );
-
-        ruleDiffSets.add( rule );
-        LabelState labelState = getOrCreateLabelState( rule.getLabel() );
-        labelState.getIndexRuleDiffSets().add( rule );
-
-        return rule;
+        indexChanges.add( rule );
+        getOrCreateLabelState( rule.getLabelId() ).indexChanges().add( rule );
     }
 
-    public void dropIndexRule( IndexRule rule )
+    public void dropIndexRule( IndexDescriptor rule )
     {
-        ruleDiffSets.remove( rule );
-        LabelState labelState = getOrCreateLabelState( rule.getLabel() );
-        labelState.getIndexRuleDiffSets().remove( rule );
-
-        persistenceManager.dropSchemaRule( rule.getId() );
+        indexChanges.remove( rule );
+        getOrCreateLabelState( rule.getLabelId() ).indexChanges().remove( rule );
     }
 
-    public DiffSets<IndexRule> getIndexRuleDiffSetsByLabel( long labelId )
+    public DiffSets<IndexDescriptor> getIndexRuleDiffSetsByLabel( long labelId )
     {
         LabelState labelState = getState( labelStates, labelId, null );
-        return labelState != null ? labelState.getIndexRuleDiffSets() : DiffSets.<IndexRule>emptyDiffSets();
+        return labelState != null ? labelState.indexChanges() : DiffSets.<IndexDescriptor>emptyDiffSets();
     }
 
-    public DiffSets<IndexRule> getIndexRuleDiffSets()
+    public DiffSets<IndexDescriptor> getIndexRuleDiffSets()
     {
-        return ruleDiffSets;
+        return indexChanges;
     }
 
     public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
@@ -282,5 +316,27 @@ public class TxState
             states.put( id, result );
         }
         return result;
+    }
+
+    public void addConstraint( UniquenessConstraint constraint )
+    {
+        constraintsChanges.add( constraint );
+        getOrCreateLabelState( constraint.label() ).constraintsChanges().add( constraint );
+    }
+
+    public DiffSets<UniquenessConstraint> constraintsForLabel( long labelId )
+    {
+        return getOrCreateLabelState( labelId ).constraintsChanges();
+    }
+
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        constraintsChanges.remove( constraint );
+        constraintsForLabel( constraint.label() ).remove( constraint );
+    }
+
+    public boolean unRemoveConstraint( UniquenessConstraint constraint )
+    {
+        return constraintsChanges.unRemove( constraint );
     }
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class IndexRuleRepositoryTest
 {

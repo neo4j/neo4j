@@ -108,9 +108,9 @@ class EntityProducerFactory {
 
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, valueExp)) =>
-      val indexIdGetter = planContext.getIndexRuleId(labelName, propertyName)
+      val indexGetter = planContext.getIndexRule(labelName, propertyName)
 
-      val indexId = indexIdGetter getOrElse
+      val index = indexGetter getOrElse
         (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
 
       val expression = valueExp getOrElse
@@ -118,7 +118,7 @@ class EntityProducerFactory {
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val value = expression(m)(state)
-        state.query.exactIndexSearch(indexId, value)
+        state.query.exactIndexSearch(index, value)
       }
   }
 

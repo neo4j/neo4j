@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class ConstraintEvaluatingStatementContext extends CompositeStatementContext
 {
@@ -63,11 +63,11 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
     }
     
     @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( IndexRule existingRule : loop( getIndexRules( labelId ) ) )
+        for ( IndexDescriptor existingRule : loop( getIndexRules( labelId ) ) )
         {
-            if ( existingRule.getPropertyKey() == propertyKey )
+            if ( existingRule.getPropertyKeyId() == propertyKey )
             {
                 throw new ConstraintViolationKernelException("Property " + propertyKey +
                         " is already indexed for label " + labelId + ".");

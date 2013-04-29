@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.AllNodes
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
@@ -109,7 +110,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey, Some(Literal("a"))))))
 
-    when(context.getIndexRuleId(labelName, propertyKey)).thenReturn(Some(1L))
+    when(context.getIndexRule(labelName, propertyKey)).thenReturn(Some(new IndexDescriptor(123,456)))
 
     //THEN
     val producedPlan = assertAccepts(q)
@@ -124,7 +125,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
       where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", "Person", "name", None))))
 
-    when(context.getIndexRuleId(any(), any())).thenReturn(None)
+    when(context.getIndexRule(any(), any())).thenReturn(None)
 
     //THEN
     intercept[IndexHintException](assertAccepts(q))

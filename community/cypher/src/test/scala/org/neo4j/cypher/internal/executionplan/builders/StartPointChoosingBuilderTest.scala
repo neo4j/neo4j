@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.NodeByLabel
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.commands.expressions.Property
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -97,7 +98,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
         Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
     )
 
-    when(context.getIndexRuleId("Person", "prop1")).thenReturn(Some(1337l))
+    when(context.getIndexRule("Person", "prop1")).thenReturn(Some(new IndexDescriptor(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -129,7 +130,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -148,7 +149,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRuleId("Person", "prop")).thenReturn(Some(1337l))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -168,8 +169,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRuleId(label, property)).thenReturn(Some(1337l))
-    when(context.getIndexRuleId(label, otherProperty)).thenReturn(Some(1338l))
+    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579)))
 
     // When
     val result = assertAccepts(query).query
@@ -219,7 +220,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRuleId("Person", "prop")).thenReturn(None)
+    when(context.getIndexRule("Person", "prop")).thenReturn(None)
 
     // When
     val plan = assertAccepts(query)
@@ -258,7 +259,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
         ShortestPath("p", identifier, otherIdentifier, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
     )
 
-    when(context.getIndexRuleId(label, property)).thenReturn(None)
+    when(context.getIndexRule(label, property)).thenReturn(None)
 
     // When
     val plan = assertAccepts(query)

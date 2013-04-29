@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,15 +31,21 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LabelTransactionStateTest
 {
@@ -257,46 +256,9 @@ public class LabelTransactionStateTest
         assertFalse( "Label should have been removed", txContext.removeLabelFromNode( 12, 1337 ) );
     }
 
-
-    private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()
-    {
-        return new ExceptionExpectingFunction<SchemaRuleNotFoundException>()
-        {
-            @Override
-            public void call() throws SchemaRuleNotFoundException
-            {
-                txContext.getIndexRule( labelId1, key1 );
-            }
-        };
-    }
-
-    private interface ExceptionExpectingFunction<E extends Exception>
-    {
-        void call() throws E;
-    }
-
-    private <E extends Exception> void assertException( ExceptionExpectingFunction<E> function,
-                                                        Class<? extends E> exception )
-    {
-        try
-        {
-            function.call();
-            fail( "Should have thrown " + exception.getClass().getName() + " exception" );
-        }
-        catch ( Exception e )
-        {
-            if ( !exception.isAssignableFrom( e.getClass() ) )
-            {
-                throw launderedException( e );
-            }
-        }
-    }
-
     // exists
 
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
-    private final long key1 = 45, key2 = 46, ruleId = 9;
-    private int rulesCreated;
 
     private StatementContext store;
     private OldTxStateBridge oldTxState;
@@ -307,27 +269,26 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexRule>emptyList() ) );
-        when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexRule>emptyList() ) );
-        when( store.getIndexRules() ).then( asAnswer( Collections.<IndexRule>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexRule>()
+        when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
-            public IndexRule answer( InvocationOnMock invocation ) throws Throwable
+            public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
-                return new IndexRule( ruleId + rulesCreated++,
+                return new IndexDescriptor(
                         (Long) invocation.getArguments()[0],
-                        (SchemaIndexProvider.Descriptor) invocation.getArguments()[1],
-                        (Long) invocation.getArguments()[2] );
+                        (Long) invocation.getArguments()[1] );
             }
         } );
 
         oldTxState = mock( OldTxStateBridge.class );
 
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
-                mock( TxState.IdGeneration.class ), new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ) );
+                mock( TxState.IdGeneration.class ) );
 
-        txContext = new StateHandlingStatementContext( store, mock( SchemaOperations.class), state );
+        txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class), state );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

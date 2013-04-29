@@ -19,27 +19,37 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class StoreTransactionContext implements TransactionContext
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final AbstractTransactionManager transactionManager;
     private final NeoStore neoStore;
     private final IndexingService indexingService;
     private final LabelTokenHolder labelTokenHolder;
     private final NodeManager nodeManager;
 
-    public StoreTransactionContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+    public StoreTransactionContext( AbstractTransactionManager transactionManager,
+                                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                     NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+        this.transactionManager = transactionManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
@@ -48,8 +58,9 @@ public class StoreTransactionContext implements TransactionContext
     @Override
     public StatementContext newStatementContext()
     {
-        return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexingService,
-                new IndexReaderFactory.Caching( indexingService ) );
+        return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
+                                          new SchemaStorage( neoStore.getSchemaStore() ), neoStore, indexingService,
+                                          new IndexReaderFactory.Caching( indexingService ) );
     }
 
     @Override
@@ -58,9 +69,32 @@ public class StoreTransactionContext implements TransactionContext
     }
 
     @Override
-    public void commit()
+    public void commit() throws TransactionFailureException
     {
-
+        try
+        {
+            transactionManager.commit();
+        }
+        catch ( HeuristicMixedException e )
+        {
+            throw new TransactionFailureException(e);
+        }
+        catch ( HeuristicRollbackException e )
+        {
+            throw new TransactionFailureException(e);
+        }
+        catch ( RollbackException e )
+        {
+            throw new TransactionFailureException(e);
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException(e);
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new TransactionFailureException( e );
+        }
     }
 
     @Override

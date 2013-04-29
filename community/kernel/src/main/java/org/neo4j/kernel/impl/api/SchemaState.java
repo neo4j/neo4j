@@ -27,5 +27,5 @@ public interface SchemaState {
 
     <K, V> V getOrCreate( K key, Function<K, V> creator );
 
-    void flush();
+    void clear();
 }

@@ -102,7 +102,7 @@ public class IndexPopulationJob implements Runnable
                 {
                     populateFromQueueIfAvailable( Long.MAX_VALUE );
                     populator.close( true );
-                    updateableSchemaState.flush();
+                    updateableSchemaState.clear();
                     return null;
                 }
             };

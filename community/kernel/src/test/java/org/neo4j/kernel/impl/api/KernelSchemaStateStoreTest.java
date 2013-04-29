@@ -50,7 +50,7 @@ public class KernelSchemaStateStoreTest
         stateStore.apply( MapUtil.stringMap( "key", "created_value" ) );
 
         // WHEN
-        stateStore.flush();
+        stateStore.clear();
 
         // THEN
         String result = stateStore.get( "key" );

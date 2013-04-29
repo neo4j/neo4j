@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+
+import static org.neo4j.helpers.collection.Iterables.concat;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -40,6 +40,13 @@ import org.neo4j.helpers.Predicate;
  */
 public class DiffSets<T>
 {
+    public interface Visitor<T>
+    {
+        void visitAdded( T element );
+
+        void visitRemoved( T element );
+    }
+
     @SuppressWarnings(
             {"rawtypes", "unchecked"})
     private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
@@ -61,13 +68,6 @@ public class DiffSets<T>
     private Set<T> removedElements;
     private Predicate<T> filter;
 
-    public static <E> DiffSets<E> fromAdding( E... elems )
-    {
-        Set<E> addedElements = new HashSet<E>( elems.length );
-        Collections.addAll( addedElements, elems );
-        return new DiffSets<E>( addedElements, null );
-    }
-
     public DiffSets()
     {
         this( null, null );
@@ -77,6 +77,24 @@ public class DiffSets<T>
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
+    }
+
+    public void accept( Visitor<T> visitor )
+    {
+        if ( addedElements != null )
+        {
+            for ( T element : addedElements )
+            {
+                visitor.visitAdded( element );
+            }
+        }
+        if ( removedElements != null )
+        {
+            for ( T element : removedElements )
+            {
+                visitor.visitRemoved( element );
+            }
+        }
     }
 
     public boolean add( T elem )
@@ -98,8 +116,7 @@ public class DiffSets<T>
         {
             removedFromAddedElements = addedElements.remove( elem );
         }
-        boolean result = removedFromAddedElements || removedElements.add( elem );
-        return result;
+        return removedFromAddedElements || removedElements.add( elem );
     }
 
     public void addAll( Iterator<T> elems )
@@ -208,4 +225,8 @@ public class DiffSets<T>
         return coll == null ? Collections.<T>emptySet() : Collections.unmodifiableSet( coll );
     }
 
+    public boolean unRemove( T item )
+    {
+        return removedElements != null && removedElements.remove( item );
+    }
 }

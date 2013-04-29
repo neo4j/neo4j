@@ -1149,7 +1149,7 @@ public abstract class Command extends XaCommand
         private final SchemaRule schemaRule;
 
         SchemaRuleCommand( SchemaStore store, IndexingService indexes,
-                Collection<DynamicRecord> records, SchemaRule schemaRule )
+                           Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
             super( first( records ).getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
             this.indexes = indexes;
@@ -1267,8 +1267,7 @@ public abstract class Command extends XaCommand
                 return SchemaRuleCommand.readFromFile( neoStore, indexes, byteChannel, buffer );
             case NONE: return null;
             default:
-                throw new IOException( "Unknown command type[" + commandType
-                    + "]" );
+                throw new IOException( "Unknown command type[" + commandType + "]" );
         }
     }
 }

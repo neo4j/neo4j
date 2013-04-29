@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-
 import java.util.Iterator;
 import java.util.Set;
 
@@ -36,12 +32,16 @@ import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class StateHandlingStatementContext extends CompositeStatementContext
 {
@@ -49,7 +49,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     private final StatementContext delegate;
 
     public StateHandlingStatementContext( StatementContext actual,
-                                          SchemaOperations schemaOperations,
+                                          SchemaStateOperations schemaOperations,
                                           TxState state )
     {
         // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
@@ -78,13 +78,13 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             if ( state.nodeIsAddedInThisTx( nodeId ) )
             {
                 Boolean labelState = state.getLabelState( nodeId, labelId );
-                return labelState != null ? labelState.booleanValue() : false;
+                return labelState != null && labelState;
             }
 
             Boolean labelState = state.getLabelState( nodeId, labelId );
             if ( labelState != null )
             {
-                return labelState.booleanValue();
+                return labelState;
             }
         }
 
@@ -149,21 +149,58 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        return state.addIndexRule( labelId, propertyKey );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
+        state.addIndexRule( rule );
+        return rule;
     }
 
     @Override
-    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
+    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
     {
         state.dropIndexRule( indexRule );
     }
 
     @Override
-    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
     {
-        Iterable<IndexRule> committedRules;
+        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+        if (!state.unRemoveConstraint(constraint)) {
+        for ( Iterator<UniquenessConstraint> it = delegate.getConstraints( labelId, propertyKeyId ); it.hasNext(); )
+        {
+            if ( it.next().equals( labelId, propertyKeyId ) )
+            {
+                return constraint;
+            }
+        }
+        state.addConstraint( constraint );
+        }
+        return constraint;
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        Iterator<UniquenessConstraint> constraints = delegate.getConstraints( labelId, propertyKeyId );
+        DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( labelId );
+        if ( diff != null )
+        {
+            return diff.apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        state.dropConstraint( constraint );
+    }
+
+    @Override
+    public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    {
+        Iterable<IndexDescriptor> committedRules;
         try
         {
             committedRules = option( delegate.getIndexRule( labelId, propertyKey ) );
@@ -172,9 +209,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             committedRules = emptyList();
         }
-        DiffSets<IndexRule> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
-        Iterator<IndexRule> rules = ruleDiffSet.apply( committedRules.iterator() );
-        IndexRule single = singleOrNull( rules );
+        DiffSets<IndexDescriptor> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
+        Iterator<IndexDescriptor> rules = ruleDiffSet.apply( committedRules.iterator() );
+        IndexDescriptor single = singleOrNull( rules );
         if ( single == null )
         {
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
@@ -185,10 +222,10 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
 
     @Override
-    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
-        DiffSets<IndexRule> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabel() );
+        DiffSets<IndexDescriptor> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabelId() );
         if ( diffSet.isAdded( indexRule ) )
         {
             return InternalIndexState.POPULATING;
@@ -197,46 +234,44 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         if ( diffSet.isRemoved( indexRule ) )
         {
             throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
-                    "dropped in this transaction.", indexRule.getLabel(), indexRule.getPropertyKey() ) );
+                    "dropped in this transaction.", indexRule.getLabelId(), indexRule.getPropertyKeyId() ) );
         }
 
         return delegate.getIndexState( indexRule );
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexRules( long labelId )
     {
         return state.getIndexRuleDiffSetsByLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexRules()
     {
         return state.getIndexRuleDiffSets().apply( delegate.getIndexRules() );
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( long indexId, final Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( IndexDescriptor index, final Object value ) throws IndexNotFoundKernelException
     {
-        IndexDescriptor idx = delegate.getIndexDescriptor( indexId );
-
         // Start with nodes where the given property has changed
-        DiffSets<Long> diff = state.getNodesWithChangedProperty( idx.getPropertyKeyId(), value );
+        DiffSets<Long> diff = state.getNodesWithChangedProperty( index.getPropertyKeyId(), value );
 
         // Ensure remaining nodes have the correct label
-        diff = diff.filterAdded( new HasLabelFilter( idx.getLabelId() ) );
+        diff = diff.filterAdded( new HasLabelFilter( index.getLabelId() ) );
 
         // Include newly labeled nodes that already had the correct property
-        HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( idx.getPropertyKeyId(), value );
-        Iterator<Long> addedNodesWithLabel = state.getNodesWithLabelAdded( idx.getLabelId() ).iterator();
+        HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( index.getPropertyKeyId(), value );
+        Iterator<Long> addedNodesWithLabel = state.getNodesWithLabelAdded( index.getLabelId() ).iterator();
         diff.addAll( Iterables.filter( hasPropertyFilter, addedNodesWithLabel ) );
 
         // Remove de-labeled nodes that had the correct value before
-        Set<Long> removedNodesWithLabel = state.getNodesWithLabelChanged( idx.getLabelId() ).getRemoved();
+        Set<Long> removedNodesWithLabel = state.getNodesWithLabelChanged( index.getLabelId() ).getRemoved();
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return state.getDeletedNodes().apply( diff.apply( delegate.exactIndexLookup( indexId, value ) ) );
+        return state.getDeletedNodes().apply( diff.apply( delegate.exactIndexLookup( index, value ) ) );
     }
 
     private class HasPropertyFilter implements Predicate<Long>
