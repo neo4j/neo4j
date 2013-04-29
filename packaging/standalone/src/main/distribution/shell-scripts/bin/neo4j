@@ -282,7 +282,7 @@ console() {
 }
 
 # Modifies neo4j config to set the effective user when running as a service
-# usage: modify_user_config <username> <created=false>
+# usage: modify_user_config <username> [true|false]
 # pass in "true" for created to mark that the user was created (instead than pre-existing)
 modify_user_config() {
   created=${2:-"false"}

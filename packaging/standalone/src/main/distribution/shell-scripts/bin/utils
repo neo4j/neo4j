@@ -259,7 +259,7 @@ remove_user() {
     
     case $yn in
       [Yy]* ) $DELETE_CMD $wrapper_user
-              modify_user_config "" created=true
+              modify_user_config "" "true"
         ;;
       * ) echo "OK, we'll let that user live, for now." 
         ;;
