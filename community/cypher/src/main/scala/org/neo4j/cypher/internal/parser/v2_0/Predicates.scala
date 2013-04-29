@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.commands.NullablePredicate
 import org.neo4j.cypher.internal.commands.GreaterThan
 import org.neo4j.cypher.internal.commands.GreaterThanOrEqual
 import org.neo4j.cypher.internal.commands.SingleInCollection
-import org.neo4j.cypher.internal.commands.NonEmpty
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.LessThanOrEqual
 import org.neo4j.cypher.internal.commands.LiteralRegularExpression
@@ -45,6 +44,7 @@ import org.neo4j.cypher.internal.commands.AnyInCollection
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.Has
 import org.neo4j.cypher.internal.commands.LessThan
+import org.neo4j.cypher.internal.parser.AbstractPattern
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
   def predicate: Parser[Predicate] = predicateLvl1 ~ rep( OR ~> predicateLvl1 ) ^^ {
