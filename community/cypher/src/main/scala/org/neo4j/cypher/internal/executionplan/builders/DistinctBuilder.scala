@@ -40,7 +40,7 @@ class DistinctBuilder extends LegacyPlanBuilder {
 
     //Mark stuff as done
     val query = newQuery.copy(
-      aggregateQuery = Solved(true),
+      aggregateToDo = false,
       extracted = true,
       returns = plan.query.returns.map(_.solve)
     )
@@ -67,7 +67,7 @@ class DistinctBuilder extends LegacyPlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
 
-    plan.query.aggregateQuery == Unsolved(true) && //The parser marks DISTINCT queries as aggregates. Revisit?
+      plan.query.aggregateToDo && //The parser marks DISTINCT queries as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&
       plan.query.returns.exists {

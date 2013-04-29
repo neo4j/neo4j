@@ -31,7 +31,7 @@ sealed abstract class LabelValue extends Expression {
 
   def children = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  def rewrite(f: (Expression) => Expression):LabelValue = f(this).asInstanceOf[LabelValue]
 
   def symbolTableDependencies = Set.empty
 
