@@ -249,6 +249,29 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( asSet( "bob ross" ), asSet( map( getNameProperty, parsed ) ) );
     }
 
+    /**
+     * List all labels.
+     */
+    @Test
+    @Documented
+    @GraphDescription.Graph( nodes = {
+            @NODE( name = "a", setNameProperty = true, labels = { @LABEL( "first" ), @LABEL( "second" ) } ),
+            @NODE( name = "b", setNameProperty = true, labels = { @LABEL( "first" ) } ),
+            @NODE( name = "c", setNameProperty = true, labels = { @LABEL( "second" ) } )
+    } )
+    public void list_all_labels() throws JsonParseException
+    {
+        data.get();
+        String uri = getLabelsUri();
+        String body = gen.get()
+                .expectedStatus( 200 )
+                .get( uri )
+                .entity();
+
+        List<?> parsed = (List<?>) readJson( body );
+        assertEquals( asSet( "first", "second" ), asSet( parsed ) );
+    }
+
     private Function<Object,String> getNameProperty = new Function<Object, String>()
     {
         @Override

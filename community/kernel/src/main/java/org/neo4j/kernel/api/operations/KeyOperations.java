@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
+import org.neo4j.kernel.impl.core.LabelToken;
+
 public interface KeyOperations extends KeyReadOperations, KeyWriteOperations
 {
+
 }

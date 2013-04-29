@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.LabelToken;
 
 public enum UnsupportiveStatementContext implements StatementContext
 {
@@ -106,6 +107,12 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<LabelToken> listLabels()
     {
         throw unsupported();
     }
