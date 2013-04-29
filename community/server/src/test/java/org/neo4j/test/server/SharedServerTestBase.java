@@ -19,13 +19,16 @@
  */
 package org.neo4j.test.server;
 
-import java.io.IOException;
+import java.util.concurrent.Callable;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
+import org.junit.Rule;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.test.Mute;
+
+import static org.neo4j.test.Mute.muteAll;
 
 public class SharedServerTestBase
 {
@@ -57,8 +60,11 @@ public class SharedServerTestBase
         return serverUrl;
     }
 
+	@Rule
+	public Mute mute = muteAll();
+	
     @BeforeClass
-    public static void allocateServer() throws IOException
+    public static void allocateServer() throws Throwable
     {
         if ( useExternal )
         {
@@ -66,19 +72,35 @@ public class SharedServerTestBase
         }
         else
         {
-            server = ServerHolder.allocate();
-            serverUrl = server.baseUri().toString();
+            muteAll().call( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    server = ServerHolder.allocate();
+                    serverUrl = server.baseUri().toString();
+                    return null;
+                }
+            } );
         }
     }
 
     @AfterClass
-    public static void releaseServer()
+    public static void releaseServer() throws Exception
     {
         if ( !useExternal )
         {
             try
             {
-                ServerHolder.release( server );
+                muteAll().call( new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        ServerHolder.release( server );
+                        return null;
+                    }
+                } );
             }
             finally
             {

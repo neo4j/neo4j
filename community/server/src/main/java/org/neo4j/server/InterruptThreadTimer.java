@@ -22,13 +22,11 @@ package org.neo4j.server;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
 /**
  * Interrupts a thread after a given timeout, can be cancelled if needed.
  */
 public abstract class InterruptThreadTimer 
 {
-
     public enum State
     {
         COUNTING,
@@ -37,7 +35,7 @@ public abstract class InterruptThreadTimer
 
     public static class InterruptThreadTask extends TimerTask
 	{
-		private Thread threadToInterrupt;
+		private final Thread threadToInterrupt;
 		private boolean wasExecuted = false;
 
 		public InterruptThreadTask(Thread threadToInterrupt)
@@ -46,10 +44,8 @@ public abstract class InterruptThreadTimer
 		}
 		
 		@Override
-		public void run() {
-            // TODO: Remove. Added because I don't have windows, and need a stack trace from here to fix broken test
-            // Should be removed in 2 hrs or so. /jake
-            new Throwable().printStackTrace(  );
+		public void run()
+		{
 			wasExecuted = true;
 			threadToInterrupt.interrupt();
 		}
@@ -72,9 +68,9 @@ public abstract class InterruptThreadTimer
 	
 	private static class ActualInterruptThreadTimer extends InterruptThreadTimer
 	{
-		private Timer timer = new Timer();
+		private final Timer timer = new Timer();
 		private final InterruptThreadTask task;
-		private long timeout;
+		private final long timeout;
         private State state = State.IDLE;
 		
 		public ActualInterruptThreadTimer(long timeoutMillis, Thread threadToInterrupt)
@@ -100,20 +96,20 @@ public abstract class InterruptThreadTimer
         @Override
         public State getState()
         {
-            switch(state)
+            switch ( state )
             {
-                case IDLE:
-                    return State.IDLE;
-                case COUNTING:
-                default:
-                    // We don't know if the timeout has triggered at this point,
-                    // so we need to check that
-                    if(wasTriggered())
-                    {
-                        state = State.IDLE;
-                    }
+            case IDLE:
+                return State.IDLE;
+            case COUNTING:
+            default:
+                // We don't know if the timeout has triggered at this point,
+                // so we need to check that
+                if ( wasTriggered() )
+                {
+                    state = State.IDLE;
+                }
 
-                    return state;
+                return state;
             }
         }
 		
@@ -169,9 +165,12 @@ public abstract class InterruptThreadTimer
 	}
 	
 	public abstract void startCountdown();
-	public abstract void stopCountdown();
-	public abstract boolean wasTriggered();
-    public abstract State getState();
-	public abstract long getTimeoutMillis();
 	
+	public abstract void stopCountdown();
+	
+	public abstract boolean wasTriggered();
+	
+    public abstract State getState();
+    
+	public abstract long getTimeoutMillis();
 }
