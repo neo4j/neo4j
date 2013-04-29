@@ -17,26 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.commands.expressions
 
-import v2_0.{AbstractPattern, UsingIndex}
+import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.OutOfBoundsException
 
 
-class UsingIndexTest extends UsingIndex with ParserTest {
-  @Test def simple_cases() {
-    implicit val parserToTest = indexHints
+class ElementFromCollectionTest extends Assertions {
 
-    parsing("USING INDEX n:User(name)") shouldGive
-      Seq(SchemaIndex("n", "User", "name", None))
+  implicit val state = QueryStateHelper.empty
+  val ctx = ExecutionContext.empty
+  val collection = Literal(Seq(1, 2, 3, 4))
 
-    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(SchemaIndex(" 1", " 2", " 3", None))
-
-    assertFails("USING INDEX n.user(name)")
-    assertFails("USING INDEX n.user(name, age)")
+  @Test def tests() {
+    assert(idx(0) === 1)
+    assert(idx(1) === 2)
+    assert(idx(2) === 3)
+    assert(idx(3) === 4)
+    assert(idx(-1) === 4)
+    intercept[OutOfBoundsException](idx(4))
   }
 
-  def matchTranslator(abstractPattern: AbstractPattern) = ???
+  private def idx(value: Int) =
+    ElementFromCollection(collection, Literal(value))(ctx)(state)
 }

@@ -320,7 +320,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Then
     plan.query.start match {
       case Seq(Unsolved(MergeNodeStartItem(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_))))) =>
-        true
       case _ =>
         fail("Expected something else, but got this: " + plan.query.start)
     }

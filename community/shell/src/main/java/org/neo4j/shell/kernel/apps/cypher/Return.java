@@ -17,26 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.shell.kernel.apps.cypher;
 
-import v2_0.{AbstractPattern, UsingIndex}
-import org.junit.Test
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 
-
-class UsingIndexTest extends UsingIndex with ParserTest {
-  @Test def simple_cases() {
-    implicit val parserToTest = indexHints
-
-    parsing("USING INDEX n:User(name)") shouldGive
-      Seq(SchemaIndex("n", "User", "name", None))
-
-    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(SchemaIndex(" 1", " 2", " 3", None))
-
-    assertFails("USING INDEX n.user(name)")
-    assertFails("USING INDEX n.user(name, age)")
-  }
-
-  def matchTranslator(abstractPattern: AbstractPattern) = ???
+@Service.Implementation( App.class )
+public class Return extends Start
+{
 }

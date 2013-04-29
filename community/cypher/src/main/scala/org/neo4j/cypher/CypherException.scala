@@ -23,52 +23,57 @@ import internal.commands.expressions.Expression
 import internal.commands.SchemaIndex
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
-  def this(message:String) = this(message, null)
+  def this(message: String) = this(message, null)
 }
 
-class UniquePathNotUniqueException(message:String) extends CypherException(message)
+class UniquePathNotUniqueException(message: String) extends CypherException(message)
 
-class EntityNotFoundException(message:String, cause:Throwable=null) extends CypherException(message, cause)
+class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause)
 
 class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause)
 
-class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String) = this(message, null)
-  def this(expression:Expression) = this("Expected " + expression + " to be an collection, but it is not.", null)
+class IterableRequiredException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String) = this(message, null)
+
+  def this(expression: Expression) = this("Expected " + expression + " to be an collection, but it is not.", null)
 }
 
-class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {
-def this(message:String)=this(message,null)
+class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String) = this(message, null)
 }
 
-class ParameterWrongTypeException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String)=this(message,null)
+class ParameterWrongTypeException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String) = this(message, null)
 }
 
-class PatternException(message:String) extends CypherException(message, null)
+class PatternException(message: String) extends CypherException(message, null)
 
-class InternalException(message:String, inner:Exception=null) extends CypherException(message, inner)
+class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner)
 
-class MissingIndexException(indexName:String) extends CypherException("Index `" + indexName + "` does not exist")
+class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist")
 
-class InvalidAggregateException(message:String) extends CypherException(message)
+class InvalidAggregateException(message: String) extends CypherException(message)
 
-class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable)
+class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
   extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
 
-class IndexAlreadyDefinedException(labelName:String, property:String, cause:Throwable)
+class IndexAlreadyDefinedException(labelName: String, property: String, cause: Throwable)
   extends CypherException(s"Property `$property` is already indexed for label `$labelName`.", cause)
 
-class CouldNotDropIndexException(labelName:String, property:String, cause:Throwable)
+class CouldNotDropIndexException(labelName: String, property: String, cause: Throwable)
   extends CypherException(String.format(s"Unable to drop index on label `$labelName` for property `$property`."), cause)
 
-class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
+class ProfilerStatisticsNotReadyException()
+  extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
 
-class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`${labelName}` does not exist in the store")
+class UnknownLabelException(labelName: String)
+  extends CypherException(s"The provided label :`${labelName}` does not exist in the store")
 
 class IndexHintException(identifier: String, label: String, property: String, message: String)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
-  def this(hint:SchemaIndex, message:String) = this(hint.identifier, hint.label, hint.property, message)
+  def this(hint: SchemaIndex, message: String) = this(hint.identifier, hint.label, hint.property, message)
 }
 
 class UnableToPickStartPointException(message: String) extends CypherException(message)
+
+class OutOfBoundsException(message: String) extends CypherException(message)

@@ -2746,4 +2746,11 @@ RETURN x0.name?
     assert(ts != 0L)
     assert(ts <= System.currentTimeMillis)
   }
+
+  @Test
+  def allow_queries_with_only_return() {
+    val result = parseAndExecute("RETURN 'Andres'").toList
+
+    assert(result === List(Map("'Andres'"->"Andres")))
+  }
 }

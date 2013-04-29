@@ -55,10 +55,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def indexProps: List[String] = List()
   
   def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
-    val result = engine.execute(replaceNodeIds(queryText))
-    result.toList //Let's materialize the result
-    result.dumpToString()
-    result
+    engine.execute(replaceNodeIds(queryText))
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
   }
@@ -93,16 +90,16 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def text: String
 
-  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
+  def expandQuery(query: String, includeResults: Boolean, dir: File, possibleAssertion: Seq[String]) = {
     val name = title.toLowerCase.replace(" ", "-")
     val queryAsciidoc = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
     val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
-    val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
+    val consoleAsciidoc = consoleSnippet(replaceNodeIds(query))
     val consoleText = if (!consoleAsciidoc.isEmpty)
         ".Try this query live\n" + 
         AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-console", consoleAsciidoc)
       else ""
-    val queryOutput = runQuery(emptyGraph, query, possibleAssertion)
+    val queryOutput = runQuery(query, possibleAssertion)
     val resultSnippetAsciiDoc = AsciidocHelper.createQueryResultSnippet(queryOutput)
     val resultSnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-result", resultSnippetAsciiDoc)
 
@@ -122,43 +119,42 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
 
-  def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): String = {
-    val result = if (emptyGraph) {
-      val db = new ImpermanentGraphDatabase()
-      val engine = new ExecutionEngine(db)
-      val result = executeQuery(query)(engine)
-      db.shutdown()
-      result
-    }
-    else
-      executeQuery(query)
+  def runQuery(query: String, possibleAssertion: Seq[String]): String = {
+    val result = executeQuery(query)
 
     possibleAssertion.foreach(name => {
       try {
         assert(name, result)
       } catch {
-        case e:Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
+        case e: Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
       }
     })
 
     result.dumpToString()
   }
 
-  private def consoleSnippet(query: String, empty: Boolean): String = {
-    if (generateConsole) {
-      val create = if (!empty) {
-        val out = new StringWriter()
-        new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
-        out.toString
-      } else "start n=node(*) match n-[r?]->() delete n, r;"
-      """[console]
+  private def consoleSnippet(query: String): String =
+    if (generateConsole)
+      createDatabaseScript(query)
+    else
+      ""
+
+  private def createDatabaseScript(query: String): String = {
+    val createText = {
+      val create = new StringWriter()
+      new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(create))
+      if (create.toString.isEmpty)
+        "start n=node(*) match n-[r?]->() delete n, r;"
+      else
+        create.toString
+    }
+    """[console]
 ----
 %s
 
 %s
 ----
-""".format(create, query)
-    } else ""
+    """.format(createText, query)
   }
 
   def header = "[[%s-%s]]".format(section.toLowerCase, title.toLowerCase.replace(" ", "-"))
@@ -204,12 +200,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
         val firstLine = query.split("\n").head
 
         val includeResults = !firstLine.contains("no-results")
-        val emptyGraph = firstLine.contains("empty-graph")
         val asserts: Seq[String] = assertiongRegEx.findFirstMatchIn(firstLine).toSeq.flatMap(_.subgroups)
 
         val rest = query.split("\n").tail.mkString("\n")
         val q = rest.replaceAll("#", "")
-        producedText = producedText.replace(query, expandQuery(q, includeResults, emptyGraph, dir, asserts))
+        producedText = producedText.replace(query, expandQuery(q, includeResults, dir, asserts))
       }
     }
 

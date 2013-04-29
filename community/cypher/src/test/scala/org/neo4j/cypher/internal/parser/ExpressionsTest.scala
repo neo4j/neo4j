@@ -22,17 +22,12 @@ package org.neo4j.cypher.internal.parser
 import v2_0.{MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.PatternPredicate
-import values.LabelName
-import org.neo4j.cypher.internal.commands.HasLabel
 import org.junit.Test
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
+  implicit val parserToTest = expression
 
   @Test def simple_cases() {
-    implicit val parserToTest = simpleCase
-
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
       SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE"))), None)
 
@@ -53,8 +48,6 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
   }
 
   @Test def generic_cases() {
-    implicit val parserToTest = genericCase
-
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
       GenericCase(Seq((True(), Literal("ONE"))), None)
 
@@ -77,5 +70,62 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
       GenericCase(Seq(alt1, alt2), Some(Literal("OTHER")))
   }
 
-  def createProperty(entity: String, propName: String) = ???
+  @Test def list_comprehension() {
+    val predicate = Equals(Property(Identifier("x"), "prop"), Literal(42))
+    val mapExpression = Property(Identifier("x"), "name")
+
+    parsing("[x in collection WHERE x.prop = 42 : x.name]") shouldGive
+      ExtractFunction(FilterFunction(Identifier("collection"), "x", predicate), "x", mapExpression)
+
+    parsing("[x in collection WHERE x.prop = 42]") shouldGive
+      FilterFunction(Identifier("collection"), "x", predicate)
+
+    parsing("[x in collection : x.name]") shouldGive
+      ExtractFunction(Identifier("collection"), "x", mapExpression)
+  }
+
+  @Test def array_indexing() {
+    val collection = Collection(Literal(1), Literal(2), Literal(3), Literal(4))
+
+    parsing("[1,2,3,4][1..2]") shouldGive
+      SliceExpression(collection, Some(Literal(1)), Some(Literal(2)))
+
+    parsing("[1,2,3,4][1..2][2..3]") shouldGive
+      SliceExpression(SliceExpression(collection, Some(Literal(1)), Some(Literal(2))), Some(Literal(2)), Some(Literal(3)))
+
+    parsing("collection[1..2]") shouldGive
+      SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2)))
+
+    parsing("[1,2,3,4][2]") shouldGive
+      ElementFromCollection(collection, Literal(2))
+
+    parsing("[[1,2]][0][6]") shouldGive
+      ElementFromCollection(ElementFromCollection(Collection(Collection(Literal(1), Literal(2))), Literal(0)), Literal(6))
+
+    parsing("collection[1..2][0]") shouldGive
+      ElementFromCollection(SliceExpression(Identifier("collection"), Some(Literal(1)), Some(Literal(2))), Literal(0))
+  }
+
+  @Test def literal_maps() {
+    parsing("{ name: 'Andres' }") shouldGive
+      LiteralMap(Map("name" -> Literal("Andres")))
+
+    parsing("{ } ") shouldGive
+      LiteralMap(Map())
+
+    parsing("{ meta : { name: 'Andres' } } ") shouldGive
+      LiteralMap(Map("meta" -> LiteralMap(Map("name" -> Literal("Andres")))))
+  }
+
+  @Test def better_map_support() {
+    parsing("map.key1.key2.key3") shouldGive
+      Property(Property(Property(Identifier("map"), "key1"), "key2"), "key3")
+
+    parsing("({ key: 'value' }).key") shouldGive
+      Property(LiteralMap(Map("key" -> Literal("value"))), "key")
+
+    parsing("({ inner1: { inner2: 'Value' } }).key") shouldGive
+      Property(LiteralMap(Map("inner1" -> LiteralMap(Map("inner2" -> Literal("Value"))))), "key")
+
+  }
 }
