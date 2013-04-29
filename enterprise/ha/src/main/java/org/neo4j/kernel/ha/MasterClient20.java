@@ -172,7 +172,28 @@ public class MasterClient20 extends Client<Master> implements MasterClient
             }
         } );
     }
-    
+
+    @Override
+    public Response<Integer> createLabel( RequestContext context, final String name )
+    {
+        return sendRequest( HaRequestType20.CREATE_LABEL, context, new Serializer()
+                {
+                    @Override
+                    public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+                    {
+                writeString( buffer, name );
+            }
+        }, new Deserializer<Integer>()
+        {
+            @Override
+            @SuppressWarnings("boxing")
+            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            {
+                return buffer.readInt();
+            }
+        });
+    }
+
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {

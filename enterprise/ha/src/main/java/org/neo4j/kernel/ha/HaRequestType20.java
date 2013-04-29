@@ -339,7 +339,18 @@ public enum HaRequestType20 implements RequestType<Master>
             return master.createPropertyKey( context, readString( input ) );
         }
     }, INTEGER_SERIALIZER, true ),
-    
+
+    // ====
+    CREATE_LABEL( new TargetCaller<Master, Integer>()
+    {
+        @Override
+        public Response<Integer> call( Master master, RequestContext context, ChannelBuffer input,
+                                       ChannelBuffer target )
+        {
+            return master.createLabel( context, readString( input ) );
+        }
+    }, INTEGER_SERIALIZER, true ),
+
     // ====
     ACQUIRE_SCHEMA_READ_LOCK( new TargetCaller<Master, LockResult>()
     {
