@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.contains;
+
 import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
@@ -40,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.LabelToken;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -55,11 +61,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.LockType;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.contains;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -229,6 +230,12 @@ public class StoreStatementContext extends CompositeStatementContext
                 return null;
             }
         };
+    }
+
+    @Override
+    public Iterator<LabelToken> listLabels()
+    {
+        return labelTokenHolder.getAllTokens().iterator();
     }
 
     @Override

@@ -19,18 +19,17 @@
  */
 package org.neo4j.graphdb;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Rule;
@@ -384,6 +383,31 @@ public class LabelsAcceptanceTest
         // THEN
         assertEquals( asSet( node1, node3 ), nodesWithMyLabel );
         assertEquals( asSet( node1, node2 ), nodesWithMyOtherLabel );
+    }
+
+    @Test
+    public void shouldListLabels() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GlobalGraphOperations globalOps = GlobalGraphOperations.at( db );
+        createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
+        List<Label> labels = null;
+
+        // When
+        Transaction tx = db.beginTx();
+        try
+        {
+            labels = toList( globalOps.getAllLabels() );
+        } finally
+        {
+            tx.finish();
+        }
+
+        // Then
+        assertEquals( 2, labels.size() );
+        assertEquals( Labels.MY_LABEL.name(),       labels.get( 0 ).name());
+        assertEquals( Labels.MY_OTHER_LABEL.name(), labels.get( 1 ).name());
     }
 
     private Iterable<String> asStrings( Iterable<Label> labels )

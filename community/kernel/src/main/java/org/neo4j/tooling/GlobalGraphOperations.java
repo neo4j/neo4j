@@ -19,6 +19,7 @@
  */
 package org.neo4j.tooling;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
@@ -38,6 +39,7 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
+import org.neo4j.kernel.impl.core.LabelToken;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 /**
@@ -117,6 +119,33 @@ public class GlobalGraphOperations
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         return nodeManager.getRelationshipTypes();
+    }
+
+    /**
+     * Returns all labels currently in the underlying store. Labels are added to the store the first
+     * they are used. This method guarantees that it will return all labels currently in use. However,
+     * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
+     *
+     * @return all labels in the underlying store.
+     */
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return new ResourceIterable<Label>()
+        {
+            @Override
+            public ResourceIterator<Label> iterator()
+            {
+                StatementContext ctx = statementCtxProvider.getCtxForReading();
+                return cleanupService.resourceIterator( map( new Function<LabelToken, Label>() {
+
+                    @Override
+                    public Label apply( LabelToken labelToken )
+                    {
+                        return label( labelToken.getName() );
+                    }
+                }, ctx.listLabels() ), ctx );
+            }
+        };
     }
     
     /**

@@ -63,6 +63,7 @@ import org.neo4j.kernel.ha.lock.LockableRelationship;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.IndexLock;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -496,18 +497,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Integer> createPropertyKey( RequestContext context, String name )
     {
-        try
-        {
-            PropertyKeyTokenHolder propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
-            propertyKeyHolder.getOrCreateId( name );
-            return packResponse( context, propertyKeyHolder.getIdByName( name ) );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
-        }
+        PropertyKeyTokenHolder propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
+        return packResponse( context, propertyKeyHolder.getOrCreateId( name ) );
     }
-    
+
+    @Override
+    public Response<Integer> createLabel( RequestContext context, String name )
+    {
+        LabelTokenHolder labels = graphDb.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
+        return packResponse( context, labels.getOrCreateId( name ) );
+    }
+
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {

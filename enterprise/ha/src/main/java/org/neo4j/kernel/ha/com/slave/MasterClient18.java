@@ -160,7 +160,13 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     {
         throw new UnsupportedOperationException( "Should never be called from the client side" );
     }
-    
+
+    @Override
+    public Response<Integer> createLabel( RequestContext context, String name )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
