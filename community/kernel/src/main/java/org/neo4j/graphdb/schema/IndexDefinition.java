@@ -30,7 +30,6 @@ import org.neo4j.graphdb.index.IndexManager;
  */
 public interface IndexDefinition
 {
-
     /**
      * @return the {@link Label label} this index definition is associated with.
      */

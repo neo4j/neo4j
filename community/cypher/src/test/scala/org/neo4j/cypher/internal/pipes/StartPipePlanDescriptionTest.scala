@@ -31,6 +31,7 @@ import org.hamcrest.Matchers._
 import org.neo4j.cypher.PlanDescription
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.NodeByIndex
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class StartPipePlanDescriptionTest extends MockitoSugar {
@@ -45,7 +46,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   def init() {
     planContext = mock[PlanContext]
     factory = new EntityProducerFactory
-    when(planContext.getIndexRuleId(label, prop)).thenReturn(Some(1L))
+    when(planContext.getIndexRule(label, prop)).thenReturn(Some(new IndexDescriptor(123,456)))
     when(planContext.getLabelId(label)).thenReturn(Some(1L))
   }
 

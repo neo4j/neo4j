@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
 /**
  * Description of a single index as needed by the {@link IndexProxy} cake
  *
- * This is a IndexContext cake level representation of {@link IndexRule}
+ * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}
  */
 public class IndexDescriptor
 {
@@ -35,6 +33,29 @@ public class IndexDescriptor
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+        {
+            return true;
+        }
+        if ( obj != null && getClass() == obj.getClass() )
+        {
+            IndexDescriptor that = (IndexDescriptor) obj;
+            return this.labelId == that.labelId && this.propertyKeyId == that.propertyKeyId;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (labelId ^ (labelId >>> 32));
+        result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        return result;
     }
 
     public long getLabelId()

@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.helpers.Function;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.helpers.Function;
+
+/**
+ * Used for the actual storage of "schema state".
+ * Schema state is transient state that should be invalidated when the schema changes.
+ * Examples of things stored in schema state is execution plans for cypher.
+ */
 public class KernelSchemaStateStore implements UpdateableSchemaState
 {
     private Map<Object, Object> state;
@@ -101,7 +106,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
-    public void flush()
+    public void clear()
     {
         lock.writeLock().lock();
         try {

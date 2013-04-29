@@ -38,9 +38,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.util.Iterator;
 import java.util.Set;
 
@@ -48,19 +45,24 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 public class CachingStatementContext extends CompositeStatementContext
 {
-    private static final Function<? super SchemaRule, IndexRule> TO_INDEX_RULE =
-            new Function<SchemaRule, IndexRule>()
+    private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
+            new Function<SchemaRule, IndexDescriptor>()
             {
                 @Override
-                public IndexRule apply( SchemaRule from )
+                public IndexDescriptor apply( SchemaRule from )
                 {
-                    return (IndexRule) from;
+                    IndexRule rule = (IndexRule) from;
+                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
                 }
             };
     private final PersistenceCache persistenceCache;
@@ -99,18 +101,18 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexRules( long labelId )
     {
         return toIndexRules( schemaCache.getSchemaRulesForLabel( labelId ) );
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexRules()
     {
         return toIndexRules( schemaCache.getSchemaRules() );
     }
 
-    private Iterator<IndexRule> toIndexRules( Iterable<SchemaRule> schemaRules )
+    private Iterator<IndexDescriptor> toIndexRules( Iterable<SchemaRule> schemaRules )
     {
         Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {

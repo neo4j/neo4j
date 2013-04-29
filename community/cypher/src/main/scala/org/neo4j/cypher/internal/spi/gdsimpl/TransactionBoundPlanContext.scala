@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.kernel.api.{KernelException, StatementContext}
-import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.InternalIndexState
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
 
-  def getIndexRuleId(labelName: String, propertyKey: String): Option[Long] = try {
+  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
     val labelId = ctx.getLabelId(labelName)
     val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
 
     val rule = ctx.getIndexRule(labelId, propertyKeyId)
     ctx.getIndexState(rule) match {
-      case InternalIndexState.ONLINE => Some(rule.getId)
+      case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
   } catch {

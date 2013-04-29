@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -43,6 +27,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -56,11 +41,24 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StoreStatementContextTest
 {
@@ -248,34 +246,15 @@ public class StoreStatementContextTest
     }
 
     @Test
-    public void should_get_index_descriptor_by_id() throws Exception
-    {
-        // GIVEN
-        IndexDescriptor idxDesc = new IndexDescriptor(1, 2);
-
-        IndexingService mockIndexService = mock(IndexingService.class);
-        when( mockIndexService.getIndexDescriptor( 1337l ) ).thenReturn( idxDesc );
-
-        StoreStatementContext ctx = new StoreStatementContext(
-                null, null, null, mock( NeoStore.class ), mockIndexService, null);
-
-        // WHEN
-        IndexDescriptor idx = ctx.getIndexDescriptor( 1337l );
-
-        // THEN
-        assertEquals( idx, idxDesc );
-    }
-    
-    @Test
     public void should_find_nodes_with_given_label_and_property_via_index() throws Exception
     {
         // GIVEN
-        long indexId = createIndexAndAwaitOnline( label, propertyKey );
+        IndexDescriptor index = createIndexAndAwaitOnline( label, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label );
 
         // WHEN
-        Set<Long> foundNodes = asUniqueSet( statement.exactIndexLookup( indexId, name ) );
+        Set<Long> foundNodes = asUniqueSet( statement.exactIndexLookup( index, name ) );
 
         // THEN
         assertEquals( asSet( mrTaylor.getId() ), foundNodes );
@@ -298,6 +277,7 @@ public class StoreStatementContextTest
                 db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class ),
                 db.getDependencyResolver().resolveDependency( LabelTokenHolder.class ),
                 db.getDependencyResolver().resolveDependency( NodeManager.class ),
+                new SchemaStorage( neoStoreDataSource.getNeoStore().getSchemaStore() ),
                 neoStoreDataSource.getNeoStore(),
                 indexingService, new IndexReaderFactory.Caching( indexingService ));
     }
@@ -325,7 +305,7 @@ public class StoreStatementContextTest
         }
     }
 
-    private long createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
+    private IndexDescriptor createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
     {
         Transaction tx = db.beginTx();
         IndexDefinition index = null;
@@ -341,6 +321,6 @@ public class StoreStatementContextTest
         
         db.schema().awaitIndexOnline( index, 10, SECONDS );
         return statement.getIndexRule( statement.getLabelId( label.name() ),
-                statement.getPropertyKeyId( propertyKey ) ).getId();
+                statement.getPropertyKeyId( propertyKey ) );
     }
 }

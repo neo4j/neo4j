@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -70,7 +71,7 @@ trait QueryContext {
 
   def close(success: Boolean)
 
-  def exactIndexSearch(indexId: Long, value: Any): Iterator[Node]
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
   def getNodesByLabel(id: Long): Iterator[Node]
 

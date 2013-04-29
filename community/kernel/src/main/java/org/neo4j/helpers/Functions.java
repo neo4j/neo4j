@@ -135,4 +135,16 @@ public final class Functions
     private Functions()
     {
     }
+
+    public static <FROM, TO> Function<FROM, TO> cast( final Class<TO> to )
+    {
+        return new Function<FROM, TO>()
+        {
+            @Override
+            public TO apply( FROM from )
+            {
+                return to.cast( from );
+            }
+        };
+    }
 }

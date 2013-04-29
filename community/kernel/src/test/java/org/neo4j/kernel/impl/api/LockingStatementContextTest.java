@@ -19,17 +19,27 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.Iterator;
 
 import org.junit.Test;
+import org.mockito.InOrder;
+
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.transaction.LockType;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class LockingStatementContextTest
 {
@@ -55,4 +65,133 @@ public class LockingStatementContextTest
         verify( lockHolder ).acquireNodeWriteLock( nodeId );
     }
 
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeAddingIndexRule() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        IndexDescriptor rule = mock( IndexDescriptor.class );
+        when( delegate.addIndexRule( 123, 456 ) ).thenReturn( rule );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        IndexDescriptor result = context.addIndexRule( 123, 456 );
+
+        // then
+        assertSame( rule, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaWriteLock();
+        order.verify( delegate ).addIndexRule( 123, 456 );
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        IndexDescriptor rule = mock( IndexDescriptor.class );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        context.dropIndexRule( rule );
+
+        // then
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaWriteLock();
+        order.verify( delegate ).dropIndexRule( rule );
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeRetrievingIndexRule() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        @SuppressWarnings("unchecked")
+        Iterator<IndexDescriptor> rules = mock( Iterator.class );
+        when( delegate.getIndexRules() ).thenReturn( rules );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        Iterator<IndexDescriptor> result = context.getIndexRules();
+
+        // then
+        assertSame( rules, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaReadLock();
+        order.verify( delegate ).getIndexRules();
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeAddingUniquenessConstraint() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        UniquenessConstraint constraint = mock( UniquenessConstraint.class );
+        when( delegate.addUniquenessConstraint( 123, 456 ) ).thenReturn( constraint );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        UniquenessConstraint result = context.addUniquenessConstraint( 123, 456 );
+
+        // then
+        assertEquals( constraint, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaWriteLock();
+        order.verify( delegate ).addUniquenessConstraint( 123, 456 );
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        UniquenessConstraint constraint = mock( UniquenessConstraint.class );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        context.dropConstraint( constraint );
+
+        // then
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaWriteLock();
+        order.verify( delegate ).dropConstraint( constraint );
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeRetrievingConstraints() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        @SuppressWarnings("unchecked")
+        Iterator<UniquenessConstraint> constraints = mock( Iterator.class );
+        when( delegate.getConstraints( 123, 456 ) ).thenReturn( constraints );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        Iterator<UniquenessConstraint> result = context.getConstraints( 123, 456 );
+
+        // then
+        assertEquals( constraints, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaReadLock();
+        order.verify( delegate ).getConstraints( 123, 456 );
+        verifyNoMoreInteractions( lockHolder, delegate );
+    }
 }

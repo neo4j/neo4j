@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaCacheTest
 {
@@ -52,7 +53,7 @@ public class SchemaCacheTest
     @Test
     public void should_add_schema_rules_to_a_label() {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( );
+        Collection<SchemaRule> rules = Arrays.asList( );
         SchemaCache cache = new SchemaCache( rules );
 
         // WHEN
@@ -67,7 +68,7 @@ public class SchemaCacheTest
     public void should_to_retrieve_all_schema_rules()
     {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( );
+        Collection<SchemaRule> rules = Arrays.asList( );
         SchemaCache cache = new SchemaCache( rules );
 
         // WHEN

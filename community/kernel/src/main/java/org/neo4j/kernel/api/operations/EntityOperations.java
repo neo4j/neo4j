@@ -19,31 +19,6 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import java.util.Iterator;
-
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-
-/**
- * Node and Relationship creation, deletion and lookup.
- */
-public interface EntityOperations
+public interface EntityOperations extends EntityReadOperations, EntityWriteOperations
 {
-
-    // Currently, of course, most relevant operations here are still in the old core API implementation.
-
-    /**
-     * @param labelId the label id of the label that returned nodes are guaranteed to have
-     * @return ids of all nodes that have the given label
-     */
-    Iterator<Long> getNodesWithLabel( long labelId );
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.index.IndexNotFoundKernelException
-     *          if no such index found.
-     */
-    Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
-
-    void deleteNode( long nodeId );
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -61,7 +62,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) { inner.dropIndexRule(labelIds, propertyKeyId) }
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = inner.exactIndexSearch(id, value)
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = inner.exactIndexSearch(index, value)
 
   def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
 
