@@ -26,7 +26,11 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.SimpleBindings;
 
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
 import org.neo4j.server.plugins.Parameter;
@@ -36,8 +40,6 @@ import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ObjectToRepresentationConverter;
 import org.neo4j.server.rest.repr.Representation;
-
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 /* This is a class that will represent a server side
  * Gremlin plugin and will return JSON
@@ -54,11 +56,13 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 @Description( "A server side Gremlin plugin for the Neo4j REST server" )
 public class GremlinPlugin extends ServerPlugin
 {
+    private GraphDatabaseSetting<String> replacementDecision = new GraphDatabaseSetting.OptionsSetting("org.neo4j.server.plugin.gremlin.replacement", ScriptCountingEngineReplacementDecision.class.getName(), CountingEngineReplacementDecision.class.getName() )
+    {
+    };
 
     private final String g = "g";
     private volatile ScriptEngine engine;
-    private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(
-            500 );
+    private EngineReplacementDecision engineReplacementDecision = null;
 
     private ScriptEngine createQueryEngine()
     {
@@ -73,6 +77,26 @@ public class GremlinPlugin extends ServerPlugin
             @Description( "The Gremlin script" ) @Parameter( name = "script", optional = false ) final String script,
             @Description( "JSON Map of additional parameters for script variables" ) @Parameter( name = "params", optional = true ) final Map params ) throws BadInputException
     {
+
+        // Initialize engine replacement decision if not done before
+        if (engineReplacementDecision == null)
+        {
+            Config config = ((GraphDatabaseAPI) neo4j).getKernelData().getConfig();
+            String decisionClass;
+            if (config.isSet( replacementDecision ))
+                decisionClass = config.<String>get(replacementDecision);
+            else
+                decisionClass = ScriptCountingEngineReplacementDecision.class.getName();
+
+            try
+            {
+                engineReplacementDecision = (EngineReplacementDecision) getClass().getClassLoader().loadClass( decisionClass ).newInstance();
+            }
+            catch ( Throwable e1 )
+            {
+                engineReplacementDecision = new ScriptCountingEngineReplacementDecision(  );
+            }
+        }
 
         try
         {

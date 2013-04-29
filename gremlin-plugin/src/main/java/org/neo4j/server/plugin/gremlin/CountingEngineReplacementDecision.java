@@ -25,6 +25,11 @@ class CountingEngineReplacementDecision implements EngineReplacementDecision {
     private final AtomicInteger executionCount = new AtomicInteger();
     private final int maxExecutionCount;
 
+    public CountingEngineReplacementDecision()
+    {
+        this(500);
+    }
+
     public CountingEngineReplacementDecision(int maxExecutionCount) {
         this.maxExecutionCount = maxExecutionCount;
     }
