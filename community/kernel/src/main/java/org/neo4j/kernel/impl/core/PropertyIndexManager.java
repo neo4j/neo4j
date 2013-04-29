@@ -58,11 +58,6 @@ public class PropertyIndexManager
         idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
     }
 
-    @Override
-    public void shutdown()
-    {
-    }
-
     public PropertyIndex[] index( String key, TransactionState state )
     {
         PropertyIndex[] existing = null;

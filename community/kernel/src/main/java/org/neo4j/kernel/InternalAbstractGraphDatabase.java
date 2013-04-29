@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,11 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import ch.qos.logback.classic.LoggerContext;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -120,9 +123,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -419,8 +419,8 @@ public abstract class InternalAbstractGraphDatabase
 
         propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
 
-        relationshipTypeHolder = new RelationshipTypeHolder( txManager,
-                persistenceManager, persistenceSource, relationshipTypeCreator );
+        relationshipTypeHolder = life.add( new RelationshipTypeHolder( txManager,
+                persistenceManager, persistenceSource, relationshipTypeCreator ) );
 
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
@@ -430,7 +430,6 @@ public abstract class InternalAbstractGraphDatabase
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
-        life.add( nodeManager );
         stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txHook, txIdGenerator );
 
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
@@ -482,6 +481,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
+
+        life.add( nodeManager );
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );

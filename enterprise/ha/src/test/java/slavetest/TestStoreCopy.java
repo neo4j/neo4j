@@ -19,10 +19,11 @@
  */
 package slavetest;
 
-import static org.apache.commons.io.FileUtils.moveToDirectory;
+import static org.apache.commons.io.FileUtils.copyFileToDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.ha.SlaveStoreWriter.COPY_FROM_MASTER_TEMP;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteFiles;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 
@@ -59,10 +60,12 @@ public class TestStoreCopy extends AbstractClusterTest
 
         long secondNodeId = createIndexedNode( cluster.getMaster(), KEY2, VALUE2 );
 
-        moveToDirectory( new File( slaveDir, "neostore" ), slaveTempCopyDir, false );
-        moveToDirectory( new File( slaveDir, "neostore.propertystore.db" ), slaveTempCopyDir, false );
+        copyFileToDirectory( new File( slaveDir, "neostore" ), slaveTempCopyDir, false );
+        copyFileToDirectory( new File( slaveDir, "neostore.propertystore.db" ), slaveTempCopyDir, false );
         assertEquals( "Found these files:" + filesAsString( slaveTempCopyDir ), 3,
                 slaveTempCopyDir.listFiles( DISREGARD_ACTIVE_LOG_FILES ).length );
+
+        deleteFiles( slaveDir, "neostore.*");
 
         slave = slaveDown.repair();
 
