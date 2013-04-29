@@ -126,6 +126,23 @@ case class Not(a: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies
 }
 
+case class Xor(a: Predicate, b: Predicate) extends Predicate {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = (a.isMatch(m) && !b.isMatch(m)) || (!a.isMatch(m) && b.isMatch(m))
+  def atoms: Seq[Predicate] = Seq(this)
+  override def toString(): String = "(" + a + " XOR " + b + ")"
+  def containsIsNull = a.containsIsNull||b.containsIsNull
+  def rewrite(f: (Expression) => Expression) = Xor(a.rewrite(f), b.rewrite(f))
+
+  def children = Seq(a, b)
+
+  def assertInnerTypes(symbols: SymbolTable) {
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
+  }
+
+  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+}
+
 case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]

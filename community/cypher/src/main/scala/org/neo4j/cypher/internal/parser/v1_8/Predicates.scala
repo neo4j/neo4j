@@ -32,7 +32,11 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
     case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
   }
 
-  def predicateLvl2: Parser[Predicate] = (
+  def predicateLvl2: Parser[Predicate] = predicateLvl3 ~ rep( ignoreCase("xor") ~> predicateLvl3 ) ^^{
+    case head ~ rest => rest.foldLeft(head)((a,b) => Xor(a,b))
+  }
+
+  def predicateLvl3: Parser[Predicate] = (
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
