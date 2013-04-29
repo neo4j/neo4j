@@ -20,6 +20,7 @@
 package org.neo4j.visualization.graphviz;
 
 import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -40,6 +41,24 @@ public class AsciidocHelperTest
         
         String snippet = AsciidocHelper.createCypherSnippet( cypher );
         assertTrue(snippet.contains( "n,\n" ));
+    }
+
+    @Test
+    public void shouldBreakAtTheRightSpotWithOnMatch()
+    {
+        // given
+        String cypher = "merge (a)\non match a set a.foo = 2";
+
+        //when
+        String snippet = AsciidocHelper.createCypherSnippet(cypher);
+
+        //then
+        assertEquals(
+                "[source,cypher]\n" +
+                "----\n" +
+                "MERGE (a)\n" +
+                "ON MATCH a SET a.foo = 2\n" +
+                "----\n", snippet);
     }
 
     @Test
