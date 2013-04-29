@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.Collection;
@@ -1608,6 +1609,21 @@ public class DatabaseActions
         };
 
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
+    }
+
+    public ListRepresentation getAllLabels( )
+    {
+        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label, ValueRepresentation>()
+        {
+            @Override
+            public ValueRepresentation apply( Label label )
+            {
+                return ValueRepresentation.string( label.name() );
+            }
+        }, GlobalGraphOperations.at( graphDb ).getAllLabels() ) );
+
+
+        return new ListRepresentation( RepresentationType.STRING, labelNames );
     }
     
     public IndexDefinitionRepresentation createSchemaIndex( String labelName, Iterable<String> propertyKey )
