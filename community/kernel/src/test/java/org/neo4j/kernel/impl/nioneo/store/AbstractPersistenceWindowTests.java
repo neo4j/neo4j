@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -29,29 +28,25 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
+import java.util.UUID;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
-import org.neo4j.test.TargetDirectory;
 
 public class AbstractPersistenceWindowTests
 {
-    private static final TargetDirectory.TestDirectory directory = testDirForTest( AbstractPersistenceWindowTests.class );
     private static final Random RANDOM = new Random();
     private static final int RECORD_SIZE = 7;
     private static final int NUMBER_OF_RECORDS = 13;
-
-    @Rule
-    public TestName testName = new TestName();
 
     private AbstractPersistenceWindow window;
 
     @Before
     public void before() throws Exception
     {
-        String filename = new File( directory.directory(), testName.getMethodName() ).getAbsolutePath();
+        File directory = new File( "target/test-data" );
+        directory.mkdirs();
+        String filename = new File( directory, UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
         FileChannel channel = file.getChannel();
         window = new AbstractPersistenceWindow( 0, RECORD_SIZE, RECORD_SIZE * NUMBER_OF_RECORDS,

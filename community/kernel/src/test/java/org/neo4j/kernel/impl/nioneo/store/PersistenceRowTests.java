@@ -31,29 +31,21 @@ import java.util.Random;
 import java.util.UUID;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
-import org.neo4j.test.TargetDirectory;
 
 public class PersistenceRowTests
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( PersistenceRowTests.class );
     private static final Random RANDOM = new Random();
     private static final int RECORD_SIZE = 7;
-
-    @Rule
-    public final TargetDirectory.TestDirectory directory = target.testDirectory();
-
-    @Rule
-    public TestName testName = new TestName();
 
     private PersistenceRow window;
 
     @Before
     public void before() throws Exception
     {
-        String filename = new File( directory.directory(), UUID.randomUUID().toString() ).getAbsolutePath();
+        File directory = new File( "target/test-data" );
+        directory.mkdirs();
+        String filename = new File( directory, UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
         FileChannel channel = file.getChannel();
         window = new PersistenceRow( 0, RECORD_SIZE, channel );
