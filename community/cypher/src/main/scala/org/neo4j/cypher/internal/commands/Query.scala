@@ -45,7 +45,8 @@ object Query {
 trait AbstractQuery {
   def queryString: QueryString
   def setQueryText(t:String):AbstractQuery
-  def getQueryText : String = queryString.text
+  def getQueryText: String = queryString.text
+  def verifySemantics() {}
 }
 
 case class Query(returns: Return,

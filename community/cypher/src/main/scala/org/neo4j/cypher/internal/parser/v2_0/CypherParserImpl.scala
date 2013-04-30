@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 class CypherParserImpl extends Base
 with Index
+with Constraint
 with Unions
 with QueryParser
 with Expressions
@@ -50,9 +51,7 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def cypherQuery: Parser[AbstractQuery] = (createIndex | dropIndex | union | query) <~ opt(";")
+  def cypherQuery: Parser[AbstractQuery] = (indexOps | constraintOps | union | query) <~ opt(";")
 
   def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 }
-
-

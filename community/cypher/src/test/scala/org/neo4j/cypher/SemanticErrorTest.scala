@@ -67,7 +67,17 @@ class SemanticErrorTest extends ExecutionEngineHelper {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
       "Unknown identifier `b`")
   }
+  
+  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInCreateConstraint() {
+    expectedError("create constraint on (foo:Foo) bar.name is unique",
+        "Unknown identifier `bar`, was expecting `foo`")
+  }
 
+  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInDropConstraint() {
+    expectedError("drop constraint on (foo:Foo) bar.name is unique",
+        "Unknown identifier `bar`, was expecting `foo`")
+  }
+  
   def expectedError(query: String, message: String) {
     try {
       val result = parseAndExecute(query)
