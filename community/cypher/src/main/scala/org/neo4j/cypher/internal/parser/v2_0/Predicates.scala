@@ -51,12 +51,12 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
     case head ~ rest => rest.foldLeft(head)((a, b) => Or(a, b))
   }
 
-  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep(AND ~> predicateLvl2) ^^ {
-    case head ~ rest => rest.foldLeft(head)((a, b) => And(a, b))
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep(XOR ~> predicateLvl2) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => Xor(a, b))
   }
 
-  def predicateLvl2: Parser[Predicate] = predicateLvl3 ~ rep(XOR ~> predicateLvl3) ^^ {
-    case head ~ rest => rest.foldLeft(head)((a, b) => Xor(a, b))
+  def predicateLvl2: Parser[Predicate] = predicateLvl3 ~ rep(AND ~> predicateLvl3) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => And(a, b))
   }
 
   def predicateLvl3: Parser[Predicate] = (
