@@ -17,16 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.commands.values
 
-import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.pipes.QueryState
 
-trait Labels extends Base {
-  def labelName: Parser[KeyToken] = ":" ~> escapableString ^^ { x => KeyToken.Unresolved(x, TokenType.Label) }
 
-  def labelShortForm: Parser[Seq[KeyToken]] = rep1(labelName)
+object TokenType extends Enumeration {
+  case object Label extends TokenType {
+    def getIdFromName(name: String, state: QueryState): Long = state.query.getOrCreateLabelId(name)
+  }
 
-  def optLabelShortForm: Parser[Seq[KeyToken]] = opt(labelShortForm) ^^ {
-    case optSpec => optSpec.getOrElse(Seq.empty)
+  case object PropertyKey extends TokenType {
+    def getIdFromName(name: String, state: QueryState): Long = state.query.getOrCreatePropertyKeyId(name)
   }
 }
+
+trait TokenType {
+  def getIdFromName(name: String, state: QueryState): Long
+}
+
+

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 /**
  * LabelSpec represent parsed label sets before they are turned into either expressions or predicates
@@ -67,7 +67,7 @@ object LabelSet {
   val empty = LabelSet(Seq.empty)
 }
 
-final case class LabelSet(labelVals: Seq[LabelValue]) extends LabelSpec {
+final case class LabelSet(labelVals: Seq[KeyToken]) extends LabelSpec {
   val bare = labelVals.isEmpty
   def allSets = if (bare) Seq.empty else Seq(this)
   def asLabelSet = this

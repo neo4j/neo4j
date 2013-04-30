@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.CreateConstraint
-import org.neo4j.cypher.internal.commands.CreateConstraint
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.DropConstraint
+import org.neo4j.cypher.internal.commands.{AbstractQuery, CreateUniqueConstraint, DropConstraint}
 
 trait Constraint extends Base with Labels {
-    def createConstraint:Parser[CreateConstraint] =
-      CREATE ~> CONSTRAINT ~> ON ~> parens( identity ~ labelName ) ~ opt( ASSERT ) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
-        case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => CreateConstraint( id, label.name, idForProperty, propertyKey )
-      }
-      
-   def dropConstraint:Parser[DropConstraint] =
-      DROP ~> CONSTRAINT ~> ON ~> parens( identity ~ labelName ) ~ opt( ASSERT ) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
-        case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => DropConstraint( id, label.name, idForProperty, propertyKey )
-      }
-      
-    def constraintOps = createConstraint | dropConstraint
+  def createUniqueConstraint: Parser[CreateUniqueConstraint] =
+    CREATE ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERT) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
+      case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => CreateUniqueConstraint(id, label.name, idForProperty, propertyKey)
+    }
+
+  def dropUniqueConstraint: Parser[DropConstraint] =
+    DROP ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERT) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
+      case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => DropConstraint(id, label.name, idForProperty, propertyKey)
+    }
+
+  def constraintOps: Parser[AbstractQuery] = createUniqueConstraint | dropUniqueConstraint
 }

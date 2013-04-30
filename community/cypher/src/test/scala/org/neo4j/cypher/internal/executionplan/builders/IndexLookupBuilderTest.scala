@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Property, Identifier}
 import org.neo4j.cypher.IndexHintException
 import org.neo4j.cypher.internal.commands.SchemaIndex
-import values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.HasLabel
 
@@ -84,8 +84,8 @@ class IndexLookupBuilderTest extends BuilderTest {
     val property = "prop"
     val valueExpression = Literal(42)
 
-    val label1Predicate = HasLabel(Identifier(identifier), LabelName(label1))
-    val label2Predicate = HasLabel(Identifier(identifier), LabelName(label2))
+    val label1Predicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label1, TokenType.Label))
+    val label2Predicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label2, TokenType.Label))
     val propertyPredicate = Equals(valueExpression, Property(Identifier(identifier), property))
 
     val predicates: Seq[Unsolved[Predicate]] = Seq(
@@ -109,7 +109,7 @@ class IndexLookupBuilderTest extends BuilderTest {
   }
 
   private def test(identifier: String, label: String, property: String, predicate: Equals, valueExpression: Literal) {
-    val labelPredicate = HasLabel(Identifier(identifier), LabelName(label))
+    val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
 
     val q = PartiallySolvedQuery().copy(
       start = Seq(Unsolved(SchemaIndex(identifier, label, property, None))),

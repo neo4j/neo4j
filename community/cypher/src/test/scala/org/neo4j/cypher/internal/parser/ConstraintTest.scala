@@ -25,27 +25,27 @@ import org.neo4j.cypher.internal.mutation.{NamedExpectation, UniqueLink}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.helpers.LabelSupport
 import org.neo4j.cypher.internal.commands.expressions.{Collection, Identifier}
-import org.neo4j.cypher.internal.commands.CreateConstraint
+import org.neo4j.cypher.internal.commands.CreateUniqueConstraint
 import org.neo4j.cypher.internal.commands.DropConstraint
 
 class ConstraintTest extends Constraint with ParserTest {
 
   @Test
   def create_uniqueness_constraint() {
-    implicit val parserToTest = createConstraint
+    implicit val parserToTest = createUniqueConstraint
     
     parsing( "CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE" ) or
     parsing( "CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE" ) or
     parsing( "create constraint on (foo:Foo) assert foo.name is unique" ) shouldGive
-      CreateConstraint( "foo", "Foo", "foo", "name" )
+      CreateUniqueConstraint( "foo", "Foo", "foo", "name" )
     
     parsing( "CREATE CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE" ) shouldGive
-      CreateConstraint( "foo", "Foo", "bar", "name" )
+      CreateUniqueConstraint( "foo", "Foo", "bar", "name" )
   }
 
   @Test
   def drop_uniqueness_constraint() {
-    implicit val parserToTest = dropConstraint
+    implicit val parserToTest = dropUniqueConstraint
     
     parsing( "DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE" ) or
     parsing( "DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE" ) or

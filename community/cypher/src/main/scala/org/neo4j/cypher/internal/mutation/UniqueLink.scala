@@ -29,7 +29,7 @@ import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniq
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
-import values.LabelValue
+import values.KeyToken
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -144,9 +144,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[LabelValue](f)), start.bare)
-    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[LabelValue](f)), end.bare)
-    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[LabelValue](f)), rel.bare)
+    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[KeyToken](f)), start.bare)
+    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[KeyToken](f)), end.bare)
+    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[KeyToken](f)), rel.bare)
     UniqueLink(s, e, r, relType, dir)
   }
 

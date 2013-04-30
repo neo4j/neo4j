@@ -17,24 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.{AbstractQuery, DropIndex, CreateIndex}
+import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.commands.UniqueConstraintOperation
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
+class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken) extends Pipe {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val labelId = label.getId(state)
+    val propertyKeyId = propertyKey.getId(state)
+    state.query.createUniqueConstraint(labelId, propertyKeyId)
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexTail ^^ {
-    case (label, properties) => CreateIndex(label, properties)
+    Iterator.empty
   }
 
-  def dropIndex = DROP ~> indexTail ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
-  
-  def indexOps:Parser[AbstractQuery] = createIndex | dropIndex
+  def symbols = new SymbolTable()
 
-  private def indexTail: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case KeyToken.Unresolved(labelName, TokenType.Label) ~ property => (labelName, List(property))
-  }
+  def executionPlanDescription = PlanDescription(this, "ConstraintOperation")
 }

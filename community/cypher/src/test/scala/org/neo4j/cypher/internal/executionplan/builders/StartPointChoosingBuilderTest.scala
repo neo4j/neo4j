@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.NodeByLabel
 import org.neo4j.cypher.internal.commands.ShortestPath
@@ -94,7 +94,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
-      where = Seq(HasLabel(Identifier(identifier), LabelName("Person")),
+      where = Seq(HasLabel(Identifier(identifier), KeyToken.Unresolved("Person", TokenType.Label)),
         Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
     )
 
@@ -124,7 +124,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_an_index_if_only_one_possible_exists() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), LabelName(label)),
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), property), expression)
     ), patterns = Seq(
       SingleNode(identifier)
@@ -143,7 +143,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_an_index_if_only_one_possible_exists_other_side() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), LabelName(label)),
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(expression, Property(Identifier(identifier), property))
     ), patterns = Seq(
       SingleNode(identifier)
@@ -162,7 +162,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_pick_any_index_available() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), LabelName(label)),
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), property), expression),
       Equals(Property(Identifier(identifier), otherProperty), expression)
     ), patterns = Seq(
@@ -183,7 +183,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_produce_label_start_points_when_no_property_predicate_is_used() {
     // Given MATCH n:Person
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), LabelName(label))
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -214,7 +214,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def should_produce_label_start_points_when_no_matching_index_exist() {
     // Given
     val query = q(where = Seq(
-      HasLabel(Identifier(identifier), LabelName(label)),
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), property), expression)
     ), patterns = Seq(
       SingleNode(identifier)
@@ -251,7 +251,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // MATCH p=shortestPath( (a:Person{prop:42}) -[*]-> (b{prop:666}) )
     val query = q(
       where = Seq(
-        HasLabel(Identifier(identifier), LabelName(label)),
+        HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
         Equals(Property(Identifier(identifier), property), expression1),
         Equals(Property(Identifier(otherIdentifier), property), expression2)),
 
@@ -311,7 +311,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given MERGE (x:Label)
     val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
     val query = q(
-      start = Seq(MergeNodeStartItem(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), LabelName("Label"))), Seq.empty, Seq.empty, None)))
+      start = Seq(MergeNodeStartItem(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)))
     )
     when(context.getLabelId("Label")).thenReturn(Some(42L))
 

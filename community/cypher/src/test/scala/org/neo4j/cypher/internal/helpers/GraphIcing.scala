@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
+import org.neo4j.kernel.api.StatementContext
 
 trait GraphIcing {
 
@@ -52,6 +53,11 @@ trait GraphIcing {
       }
       graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
     }
+
+    def statementContextForReading: StatementContext = graph.
+      getDependencyResolver.
+      resolveDependency(classOf[ThreadToStatementContextBridge]).
+      getCtxForReading
 
     def inTx[T](f:  => T):T = {
       val tx = graph.beginTx()

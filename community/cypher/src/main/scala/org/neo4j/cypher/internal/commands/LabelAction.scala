@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.{CastSupport, CollectionSupport}
-import values.LabelValue
+import values.KeyToken
 
 
 sealed abstract class LabelOp
@@ -35,18 +35,18 @@ case object LabelSetOp extends LabelOp
 case object LabelRemoveOp extends LabelOp
 
 //TODO: Should take single label
-case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[LabelValue])
+case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToken])
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
 
   def children = labels.flatMap(_.children) :+ entity
 
   def rewrite(f: (Expression) => Expression) =
-    LabelAction(entity.rewrite(f), labelOp, labels.map(_.typedRewrite[LabelValue](f)))
+    LabelAction(entity.rewrite(f), labelOp, labels.map(_.typedRewrite[KeyToken](f)))
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context)(state))
     val queryCtx  = state.query
-    val labelIds  = labels.map(_.id(state))
+    val labelIds  = labels.map(_.getId(state))
 
     labelOp match {
       case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds)

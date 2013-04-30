@@ -35,7 +35,7 @@ import org.junit.Test
 import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -2257,7 +2257,7 @@ create a-[r:REL]->b
   @Test def add_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelSetOp, List(LabelName("LabelName")))).
+      updates(LabelAction(Identifier("n"), LabelSetOp, List(KeyToken.Unresolved("LabelName", TokenType.Label)))).
       returns()
 
     test(vFrom2_0, "START n=node(0) set n:LabelName",
@@ -2271,7 +2271,7 @@ create a-[r:REL]->b
   @Test def add_short_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelSetOp, List(LabelName("LabelName")))).
+      updates(LabelAction(Identifier("n"), LabelSetOp, List(KeyToken.Unresolved("LabelName", TokenType.Label)))).
       returns()
 
     test(vFrom2_0, "START n=node(0) SET n:LabelName",
@@ -2360,7 +2360,7 @@ create a-[r:REL]->b
     test(vFrom2_0, "START n=node(0) WHERE n:Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
-        where(HasLabel(Identifier("n"), LabelName("Foo"))).
+        where(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label))).
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
@@ -2369,7 +2369,7 @@ create a-[r:REL]->b
     test(vFrom2_0, "START n=node(0) WHERE n:Foo:Bar RETURN n",
       Query.
         start(NodeById("n", 0)).
-        where(And(HasLabel(Identifier("n"), LabelName("Foo")), HasLabel(Identifier("n"), LabelName("Bar")))).
+        where(And(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label)), HasLabel(Identifier("n"), KeyToken.Unresolved("Bar", TokenType.Label)))).
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
@@ -2391,7 +2391,7 @@ create a-[r:REL]->b
 
   @Test def match_left_with_single_label() {
     val query    = "start a = NODE(1) match a:foo -[r:MARRIED]-> () return a"
-    val pred     = HasLabel(Identifier("a"), LabelName("foo"))
+    val pred     = HasLabel(Identifier("a"), KeyToken.Unresolved("foo", TokenType.Label))
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2404,7 +2404,7 @@ create a-[r:REL]->b
 
   @Test def match_left_with_multiple_labels() {
     val query    = "start a = NODE(1) match a:foo:bar -[r:MARRIED]-> () return a"
-    val pred     = And( HasLabel(Identifier("a"), LabelName("foo")), HasLabel(Identifier("a"), LabelName("bar")) )
+    val pred     = And( HasLabel(Identifier("a"), KeyToken.Unresolved("foo", TokenType.Label)), HasLabel(Identifier("a"), KeyToken.Unresolved("bar", TokenType.Label)) )
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2417,7 +2417,7 @@ create a-[r:REL]->b
 
   @Test def match_right_with_multiple_labels() {
     val query    = "start a = NODE(1) match () -[r:MARRIED]-> a:foo:bar return a"
-    val pred     = And( HasLabel(Identifier("a"), LabelName("foo")), HasLabel(Identifier("a"), LabelName("bar")) )
+    val pred     = And( HasLabel(Identifier("a"), KeyToken.Unresolved("foo", TokenType.Label)), HasLabel(Identifier("a"), KeyToken.Unresolved("bar", TokenType.Label)) )
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2430,8 +2430,8 @@ create a-[r:REL]->b
 
   @Test def match_both_with_labels() {
     val query    = "start a = NODE(1) match b:foo -[r:MARRIED]-> a:bar return a"
-    val pred     = And(HasLabel(Identifier("b"), LabelName("foo")),
-                       HasLabel(Identifier("a"), LabelName("bar")))
+    val pred     = And(HasLabel(Identifier("b"), KeyToken.Unresolved("foo", TokenType.Label)),
+                       HasLabel(Identifier("a"), KeyToken.Unresolved("bar", TokenType.Label)))
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2480,7 +2480,7 @@ create a-[r:REL]->b
       Query.
         start(NodeById("n", 0)).
         matches(RelatedTo("n", "  UNNAMED38", "  UNNAMED26", Seq("WHERE"), Direction.OUTGOING, false)).
-        where(HasLabel(Identifier("n"), LabelName("On"))).
+        where(HasLabel(Identifier("n"), KeyToken.Unresolved("On", TokenType.Label))).
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
@@ -2493,7 +2493,7 @@ create a-[r:REL]->b
   @Test def simple_query_with_index_hint() {
     test(vFrom2_0, "match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo("n", "  UNNAMED18", "  UNNAMED14", Seq(), Direction.OUTGOING, optional = false)).
-        where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), LabelName("Person")))).
+        where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), KeyToken.Unresolved("Person", TokenType.Label)))).
         usingIndex(SchemaIndex("n", "Person", "name", None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
@@ -2511,7 +2511,7 @@ create a-[r:REL]->b
     test(vFrom2_0, "match s:nostart return s",
       Query.
         matches(SingleNode("s")).
-        where(HasLabel(Identifier("s"), LabelName("nostart"))).
+        where(HasLabel(Identifier("s"), KeyToken.Unresolved("nostart", TokenType.Label))).
         returns(ReturnItem(Identifier("s"), "s")))
   }
 

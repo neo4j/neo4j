@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 import expressions.{Property, Identifier}
 import v2_0.{Predicates, MatchClause, Expressions}
-import values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.HasLabel
 
@@ -34,29 +34,24 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     implicit val parserToTest = patternPredicate
 
     parsing("a-->(:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), LabelName("Foo")))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Foo", TokenType.Label)))
 
     parsing("a-->(n:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), LabelName("Foo")))
+      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label)))
 
     parsing("a-->(:Bar:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), LabelName("Bar")), HasLabel(Identifier("  UNNAMED5"),LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Bar", TokenType.Label)), HasLabel(Identifier("  UNNAMED5"),KeyToken.Unresolved("Foo", TokenType.Label))))
 
     val patterns = Seq(
       RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
       RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
 
     val predicate = And(
-      HasLabel(Identifier("  UNNAMED5"), LabelName("First")),
-      HasLabel(Identifier("  UNNAMED16"), LabelName("Second")))
+      HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("First", TokenType.Label)),
+      HasLabel(Identifier("  UNNAMED16"), KeyToken.Unresolved("Second", TokenType.Label)))
 
     parsing("a-->(:First)-->(:Second)") shouldGive
       PatternPredicate(patterns, predicate)
-
-    val orPred = Or(
-      HasLabel(Identifier("  UNNAMED5"), LabelName("Bar")),
-      HasLabel(Identifier("  UNNAMED5"), LabelName("Foo"))
-    )
   }
 
   @Test

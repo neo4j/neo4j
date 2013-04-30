@@ -26,7 +26,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import values.LabelValue
+import values.KeyToken
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx)
@@ -318,14 +318,14 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, label: LabelValue) extends Predicate with CollectionSupport {
+case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val node           = CastSupport.erasureCastOrFail[Node](entity(m))
     val nodeId         = node.getId
     val queryCtx       = state.query
 
     val labelId = try {
-      label.id(state)
+      label.getId(state)
     } catch {
       // If we are running in a query were we can't write changes,
       // just return false for this predicate.
@@ -336,7 +336,7 @@ case class HasLabel(entity: Expression, label: LabelValue) extends Predicate wit
 
   override def toString = s"hasLabel(${entity}: ${label.name})"
 
-  def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[LabelValue](f))
+  def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f))
 
   def children = Seq(label, entity)
 

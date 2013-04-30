@@ -29,9 +29,11 @@ import internal.commands._
 import internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
-import values.ResolvedLabel
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
+
+  type PipeAndIsUpdating = (Pipe, Boolean)
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
@@ -50,19 +52,26 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  def buildPipes(planContext: PlanContext, in: AbstractQuery): (Pipe, Boolean) = in match {
-      case q: Query          => buildQuery(q, planContext)
-      case q: IndexOperation => buildIndexQuery(q)
-      case q: Union          => buildUnionQuery(q, planContext)
-    }
+  def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeAndIsUpdating = in match {
+    case q: Query                     => buildQuery(q, planContext)
+    case q: IndexOperation            => buildIndexQuery(q)
+    case q: UniqueConstraintOperation => buildConstraintQuery(q)
+    case q: Union                     => buildUnionQuery(q, planContext)
+  }
 
   val unionBuilder = new UnionBuilder(this)
 
-  def buildUnionQuery(union: Union, context:PlanContext): (Pipe, Boolean) = unionBuilder.buildUnionQuery(union, context)
+  def buildUnionQuery(union: Union, context:PlanContext): PipeAndIsUpdating = unionBuilder.buildUnionQuery(union, context)
 
-  def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
+  def buildIndexQuery(op: IndexOperation): PipeAndIsUpdating = (new IndexOperationPipe(op), true)
 
-  def buildQuery(inputQuery: Query, context: PlanContext): (Pipe, Boolean) = {
+  def buildConstraintQuery(op: UniqueConstraintOperation): PipeAndIsUpdating = {
+    val label = KeyToken.Unresolved(op.label, TokenType.Label)
+    val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
+    (new ConstraintOperationPipe(op, label, propertyKey), true)
+  }
+
+  def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
     val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution((name) => resolveLabel(name, context)))
 
     var continue = true
@@ -96,8 +105,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     (planInProgress.pipe, planInProgress.isUpdating)
   }
 
-  private def resolveLabel(name: String, context:PlanContext): Option[ResolvedLabel] =
-    context.getLabelId(name).map(id => ResolvedLabel(name, id))
+  private def resolveLabel(name: String, context:PlanContext): Option[KeyToken.Resolved] =
+    context.getLabelId(name).map(id => KeyToken.Resolved(name, id, TokenType.Label))
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
     case in: Query =>

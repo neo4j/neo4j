@@ -198,4 +198,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   }
 
   def schemaStateContains(key: String) = ctx.schemaStateContains(key)
+
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    ctx.addUniquenessConstraint(labelId, propertyKeyId)
+  }
 }

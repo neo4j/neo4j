@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.symbols
 
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.values.LabelName
 import org.scalatest.Assertions
 
 class CypherTypeTest extends Assertions {
   @Test def collections_should_be_typed_correctly() {
-    val value = Seq(Seq(LabelName("foo")))
-    val typ = new CollectionType(new CollectionType(LabelType()))
+    val value = Seq(Seq("Text"))
+    val typ = new CollectionType(new CollectionType(StringType()))
 
     assert(CypherType.fromJava(value) === typ)
   }
-  
+
   @Test
   def testTypeMerge() {
     assertCorrectTypeMerging(NumberType(), NumberType(), NumberType())
@@ -43,8 +42,8 @@ class CypherTypeTest extends Assertions {
 
   def assertCorrectTypeMerging(a: CypherType, b: CypherType, result: CypherType) {
     val simpleMergedType: CypherType = a mergeWith b
-    assert( simpleMergedType === result)
+    assert(simpleMergedType === result)
     val collectionMergedType: CypherType = (new CollectionType(a)) mergeWith (new CollectionType(b))
-    assert( collectionMergedType === (new CollectionType(result)) )
+    assert(collectionMergedType === (new CollectionType(result)))
   }
 }

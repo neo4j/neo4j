@@ -36,20 +36,25 @@ final case class DropIndex(label: String, propertyKeys: Seq[String], queryString
   def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
 }
 
-sealed abstract class ConstraintOperation(id: String, label: String, idForProperty: String, propertyKey: String,
-    queryString: QueryString = QueryString.empty) extends AbstractQuery {
+sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
+    _queryString: QueryString = QueryString.empty) extends AbstractQuery {
   override def verifySemantics() {
-    if ( id != idForProperty )
-      throw new InvalidSemanticsException( "Unknown identifier `" + idForProperty + "`, was expecting `" + id + "`" )
+    if ( _id != _idForProperty )
+      throw new InvalidSemanticsException( "Unknown identifier `" + _idForProperty + "`, was expecting `" + _id + "`" )
   }
+
+  def id:String
+  def label: String
+  def idForProperty: String
+  def propertyKey: String
 }
 
-final case class CreateConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-    queryString: QueryString = QueryString.empty) extends ConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
-  def setQueryText(t: String): CreateConstraint = copy(queryString = QueryString(t))
+final case class CreateUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): CreateUniqueConstraint = copy(queryString = QueryString(t))
 }
 
 final case class DropConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-    queryString: QueryString = QueryString.empty) extends ConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
   def setQueryText(t: String): DropConstraint = copy(queryString = QueryString(t))
 }

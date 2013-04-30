@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
-case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean = true)
+case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean = true)
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport {
@@ -44,7 +44,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.query
-      val labelIds = labels.map(_.id(state))
+      val labelIds = labels.map(_.getId(state))
       queryCtx.setLabelsOnNode(node.getId, labelIds)
 
       val newContext = context.newWith(key -> node)
@@ -86,7 +86,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   override def children = properties.map(_._2).toSeq ++ labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
-    CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[LabelValue](f)), bare)
+    CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     properties throwIfSymbolsMissing symbols

@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Literal, Identifier, ShortestPathExpression}
+import expressions.{Identifier, ShortestPathExpression}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.ExecutionContext
-import values.LabelName
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, NullDecorator, QueryState}
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
 
 class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
@@ -72,7 +71,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     relate(a, c)
 
     val pattern = RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
-    val pred = HasLabel(Identifier("  UNNAMED1"), LabelName("Tror_Inte_Det"))
+    val pred = HasLabel(Identifier("  UNNAMED1"), KeyToken.Unresolved("Tror_Inte_Det", TokenType.Label))
     val expression = PatternPredicate(Seq(pattern), pred)
     val m = createExecutionContext(Map("a" -> a))
 
@@ -85,7 +84,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
   private def state = QueryStateHelper.queryStateFrom(graph)
 
-  private def createExecutionContext(m: Map[String, Any]):ExecutionContext = {
+  private def createExecutionContext(m: Map[String, Any]): ExecutionContext = {
     ExecutionContext().newFrom(m)
   }
 }

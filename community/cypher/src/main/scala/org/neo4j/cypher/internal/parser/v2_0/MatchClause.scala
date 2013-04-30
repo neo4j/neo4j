@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.parser.ParsedEntity
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.commands.values.LabelName
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
 import org.neo4j.cypher.internal.parser.ParsedRelation
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 trait MatchClause extends Base with ParserPattern {
   def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = MATCH ~> usePattern(labelTranslator) ^^ {
@@ -58,9 +58,9 @@ trait MatchClause extends Base with ParserPattern {
         Yes(Seq())
 
     def checkExpressions(x: ParsedEntity): Maybe[T] = x.expression match {
-      case _: Identifier         => Yes(Seq())
-      case Literal(_: LabelName) => Yes(Seq())
-      case e                     => No(Seq(s"MATCH end points have to be node identifiers - found: $e"))
+      case _: Identifier                   => Yes(Seq())
+      case Literal(_: KeyToken.Unresolved) => Yes(Seq())
+      case e                               => No(Seq(s"MATCH end points have to be node identifiers - found: $e"))
     }
 
     val props: Maybe[T] = checkProps(left.props) ++ checkProps(right.props) ++ checkProps(relProps)

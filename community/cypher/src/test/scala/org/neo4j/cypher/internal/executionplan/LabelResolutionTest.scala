@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.executionplan
 
 import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName, ResolvedLabel}
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class LabelResolutionTest extends Assertions {
 
-  val blue  = ResolvedLabel("blue", 42)
-  val green = ResolvedLabel("green", 28)
+  val blue  = KeyToken.Resolved("blue", 42, TokenType.Label)
+  val green = KeyToken.Resolved("green", 28, TokenType.Label)
 
   @Test
   def testResolvedLabelsAreNotTouched() {
@@ -41,7 +41,7 @@ class LabelResolutionTest extends Assertions {
   def testLabelNamesAreResolved() {
     // GIVEN
     val resolver = LabelResolution(mapper("green" -> green))
-    val expr     = LabelName("green")
+    val expr     = KeyToken.Unresolved("green", TokenType.Label)
 
     // WHEN
     assert(green === resolver(expr))
@@ -51,25 +51,25 @@ class LabelResolutionTest extends Assertions {
   def testResolveViaTypedRewrite() {
     // GIVEN
     val resolver = LabelResolution(mapper("green" -> green))
-    val expr     = LabelName("green")
+    val expr     = KeyToken.Unresolved("green", TokenType.Label)
 
     // WHEN
-    assert(green === expr.typedRewrite[LabelValue](resolver))
+    assert(green === expr.typedRewrite[KeyToken](resolver))
   }
 
   @Test
   def testUnknownLabelDefersToLazyResolving() {
     // GIVEN
     val resolver = LabelResolution(mapper("green" -> green))
-    val expr     = LabelName("red")
+    val expr     = KeyToken.Unresolved("red", TokenType.Label)
 
     // WHEN
     assert(expr === resolver(expr))
   }
 
-  def mapper(pairs: (String, ResolvedLabel)*): (String => Option[ResolvedLabel]) = {
-    val mapping: Map[String, ResolvedLabel] = pairs.toMap
-    val fn: (String => Option[ResolvedLabel]) = { (name: String) => mapping.get(name) }
+  def mapper(pairs: (String, KeyToken.Resolved)*): (String => Option[KeyToken.Resolved]) = {
+    val mapping: Map[String, KeyToken.Resolved] = pairs.toMap
+    val fn: (String => Option[KeyToken.Resolved]) = { (name: String) => mapping.get(name) }
     fn
   }
 }

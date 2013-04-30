@@ -71,6 +71,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
   def schemaStateContains(key: String) = inner.schemaStateContains(key)
+
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    inner.createUniqueConstraint(labelId, propertyKeyId)
+  }
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

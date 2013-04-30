@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.symbols
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap}
 
 trait CypherType {
@@ -49,7 +49,6 @@ object CypherType {
     case IsMap(_)                           => MapType()
     case IsCollection(coll) if coll.isEmpty => AnyCollectionType()
     case IsCollection(coll)                 => new CollectionType(coll.map(fromJava).reduce(_ mergeWith _))
-    case _: LabelValue                      => LabelType()
     case _                                  => AnyType()
   }
 }

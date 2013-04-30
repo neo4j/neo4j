@@ -17,16 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.scalatest.Assertions
+import org.junit.Test
+import collection.JavaConverters._
 
-trait Labels extends Base {
-  def labelName: Parser[KeyToken] = ":" ~> escapableString ^^ { x => KeyToken.Unresolved(x, TokenType.Label) }
 
-  def labelShortForm: Parser[Seq[KeyToken]] = rep1(labelName)
+class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
+  @Test
+  def should_add_constraint() {
+    //GIVEN
 
-  def optLabelShortForm: Parser[Seq[KeyToken]] = opt(labelShortForm) ^^ {
-    case optSpec => optSpec.getOrElse(Seq.empty)
+    //WHEN
+    parseAndExecute("create constraint on (identifier:Label) assert identifier.propertyKey is unique")
+
+    //THEN
+    val statementCtx = graph.statementContextForReading
+
+    val prop = statementCtx.getPropertyKeyId("propertyKey")
+    val label = statementCtx.getLabelId("Label")
+
+    val constraints = statementCtx.getConstraints(label, prop).asScala
+
+    assert(constraints.size === 1)
   }
 }

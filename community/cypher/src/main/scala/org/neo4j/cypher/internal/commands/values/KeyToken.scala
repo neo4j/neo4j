@@ -23,15 +23,22 @@ import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.{StringType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import TokenType._
 
-sealed abstract class LabelValue extends Expression {
+
+/*
+Tokens are things with name and id. TokenValue makes it possible to look up the id
+at compile time and embed it into the execution plan if it's available.
+ */
+sealed abstract class KeyToken(typ: TokenType) extends Expression {
+
   def name: String
 
-  def id(state: QueryState): Long
+  def getId(state: QueryState): Long
 
   def children = Seq.empty
 
-  def rewrite(f: (Expression) => Expression):LabelValue = f(this).asInstanceOf[LabelValue]
+  def rewrite(f: (Expression) => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
 
   def symbolTableDependencies = Set.empty
 
@@ -40,11 +47,13 @@ sealed abstract class LabelValue extends Expression {
   protected def calculateType(symbols: SymbolTable) = StringType()
 }
 
+object KeyToken {
+  case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
+    def getId(state: QueryState): Long = typ.getIdFromName(name, state)
+  }
 
-case class LabelName(name: String) extends LabelValue {
-  def id(state: QueryState): Long = state.query.getOrCreateLabelId(name)
+  case class Resolved(name: String, labelId: Long, typ: TokenType) extends KeyToken(typ) {
+    def getId(state: QueryState): Long = labelId
+  }
 }
 
-case class ResolvedLabel(name: String, labelId: Long) extends LabelValue {
-  def id(state: QueryState): Long = labelId
-}

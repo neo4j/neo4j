@@ -23,12 +23,11 @@ import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expr
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.helpers.LabelSupport
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
@@ -39,17 +38,17 @@ object NamedExpectation {
   def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
     new NamedExpectation(name, e, properties, Seq.empty, bare)
 
-  def apply(name: String, properties: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean): NamedExpectation =
+  def apply(name: String, properties: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean): NamedExpectation =
     new NamedExpectation(name, Identifier(name), properties, labels, bare)
 }
 
 case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
-                            labels: Seq[LabelValue], bare: Boolean)
+                            labels: Seq[KeyToken], bare: Boolean)
   extends GraphElementPropertyFunctions
   with CollectionSupport
   with TypeSafe {
 
-  case class DataExpectation(properties: Map[String, Expression], labels: Seq[LabelValue])
+  case class DataExpectation(properties: Map[String, Expression], labels: Seq[KeyToken])
 
   /*
   The expectation expression for a node can either be an expression that returns a node,
@@ -110,7 +109,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
       case node: Node =>
         val qtx      = state.query
         val nodeId   = node.getId
-        val labelIds = labels.map(_.id(state))
+        val labelIds = labels.map(_.getId(state))
         labelIds.forall( qtx.isLabelSetOnNode(_, nodeId) )
       case _ =>
         true

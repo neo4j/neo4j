@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 import scala.collection.Map
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 
 
@@ -60,7 +60,7 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
-                        labels: Seq[LabelValue],
+                        labels: Seq[KeyToken],
                         bare: Boolean) extends AbstractPattern with GraphElementPropertyFunctions {
   def makeOutgoing = this
 

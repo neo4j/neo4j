@@ -82,6 +82,8 @@ trait QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   def schemaStateContains(key: String): Boolean
+
+  def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
 }
 
 trait LockingQueryContext extends QueryContext {
