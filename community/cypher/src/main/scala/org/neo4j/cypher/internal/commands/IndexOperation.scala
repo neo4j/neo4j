@@ -54,7 +54,7 @@ final case class CreateUniqueConstraint(id: String, label: String, idForProperty
   def setQueryText(t: String): CreateUniqueConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+final case class DropUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
     queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
-  def setQueryText(t: String): DropConstraint = copy(queryString = QueryString(t))
+  def setQueryText(t: String): DropUniqueConstraint = copy(queryString = QueryString(t))
 }

@@ -75,6 +75,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
     inner.createUniqueConstraint(labelId, propertyKeyId)
   }
+
+  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    inner.dropUniqueConstraint(labelId, propertyKeyId)
+  }
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

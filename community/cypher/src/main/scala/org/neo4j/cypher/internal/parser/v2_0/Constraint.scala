@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.{AbstractQuery, CreateUniqueConstraint, DropConstraint}
+import org.neo4j.cypher.internal.commands.{AbstractQuery, CreateUniqueConstraint, DropUniqueConstraint}
 
 trait Constraint extends Base with Labels {
   def createUniqueConstraint: Parser[CreateUniqueConstraint] =
@@ -27,9 +27,9 @@ trait Constraint extends Base with Labels {
       case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => CreateUniqueConstraint(id, label.name, idForProperty, propertyKey)
     }
 
-  def dropUniqueConstraint: Parser[DropConstraint] =
+  def dropUniqueConstraint: Parser[DropUniqueConstraint] =
     DROP ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERT) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
-      case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => DropConstraint(id, label.name, idForProperty, propertyKey)
+      case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => DropUniqueConstraint(id, label.name, idForProperty, propertyKey)
     }
 
   def constraintOps: Parser[AbstractQuery] = createUniqueConstraint | dropUniqueConstraint
