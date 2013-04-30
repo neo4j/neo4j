@@ -1476,12 +1476,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("n", 0)).
         where(
         Or(
-          And(
-            Equals(Property(Identifier("n"), "a"), Literal("x")),
-            Xor(
-              Equals(Property(Identifier("n"), "b"), Literal("x")),
-              Equals(Property(Identifier("n"), "c"), Literal("x"))
-            )
+          Xor(
+            And(
+              Equals(Property(Identifier("n"), "a"), Literal("x")),
+              Equals(Property(Identifier("n"), "b"), Literal("x"))
+            ),
+            Equals(Property(Identifier("n"), "c"), Literal("x"))
           ),
           Equals(Property(Identifier("n"), "d"), Literal("x"))
         )
