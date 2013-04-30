@@ -19,14 +19,37 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import org.neo4j.cypher.InvalidSemanticsException
+
+trait SchemaQueries
+
 sealed abstract class IndexOperation extends AbstractQuery {
   val label: String
 }
 
+// TODO use label: LabelValue?
 final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
   def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
 }
 
 final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
   def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
+}
+
+sealed abstract class ConstraintOperation(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends AbstractQuery {
+  override def verifySemantics() {
+    if ( id != idForProperty )
+      throw new InvalidSemanticsException( "Unknown identifier `" + idForProperty + "`, was expecting `" + id + "`" )
+  }
+}
+
+final case class CreateConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends ConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): CreateConstraint = copy(queryString = QueryString(t))
+}
+
+final case class DropConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends ConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): DropConstraint = copy(queryString = QueryString(t))
 }

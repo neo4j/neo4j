@@ -30,6 +30,4 @@ trait Labels extends Base {
   def optLabelShortForm: Parser[Seq[LabelValue]] = opt(labelShortForm) ^^ {
     case optSpec => optSpec.getOrElse(Seq.empty)
   }
-
-  def expression: Parser[Expression]
 }
