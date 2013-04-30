@@ -24,15 +24,17 @@ import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 
 
 trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
+  def createIndex = CREATE ~> indexTail ^^ {
     case (label, properties) => CreateIndex(label, properties)
   }
 
-  def dropIndex = DROP ~> indexOps ^^ {
+  def dropIndex = DROP ~> indexTail ^^ {
     case (label, properties) => DropIndex(label, properties)
   }
+  
+  def indexOps = createIndex | dropIndex
 
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
+  private def indexTail: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
     case LabelName(labelName) ~ property => (labelName, List(property))
   }
 }
