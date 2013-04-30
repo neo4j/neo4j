@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -37,13 +38,10 @@ import org.neo4j.test.TargetDirectory;
 
 public class AbstractPersistenceWindowTests
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( AbstractPersistenceWindowTests.class );
+    private static final TargetDirectory.TestDirectory directory = testDirForTest( AbstractPersistenceWindowTests.class );
     private static final Random RANDOM = new Random();
     private static final int RECORD_SIZE = 7;
     private static final int NUMBER_OF_RECORDS = 13;
-
-    @Rule
-    public final TargetDirectory.TestDirectory directory = target.testDirectory();
 
     @Rule
     public TestName testName = new TestName();

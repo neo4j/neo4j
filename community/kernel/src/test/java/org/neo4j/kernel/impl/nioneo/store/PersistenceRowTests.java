@@ -28,6 +28,7 @@ import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
 import java.nio.channels.FileChannel;
 import java.util.Random;
+import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,7 +53,7 @@ public class PersistenceRowTests
     @Before
     public void before() throws Exception
     {
-        String filename = new File( directory.directory(), testName.getMethodName() ).getAbsolutePath();
+        String filename = new File( directory.directory(), UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
         FileChannel channel = file.getChannel();
         window = new PersistenceRow( 0, RECORD_SIZE, channel );
