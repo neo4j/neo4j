@@ -68,6 +68,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   def buildConstraintQuery(op: UniqueConstraintOperation): PipeAndIsUpdating = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
+
     (new ConstraintOperationPipe(op, label, propertyKey), true)
   }
 
