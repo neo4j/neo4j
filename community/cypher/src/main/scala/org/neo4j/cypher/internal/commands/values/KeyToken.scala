@@ -23,11 +23,10 @@ import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.{StringType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import TokenType._
 
 
 /*
-Tokens are things with name and id. TokenValue makes it possible to look up the id
+KeyTokens are things with name and id. KeyTokens makes it possible to look up the id
 at compile time and embed it into the execution plan if it's available.
  */
 sealed abstract class KeyToken(typ: TokenType) extends Expression {
