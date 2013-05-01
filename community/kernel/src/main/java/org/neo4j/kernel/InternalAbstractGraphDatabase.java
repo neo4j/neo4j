@@ -1471,6 +1471,28 @@ public abstract class InternalAbstractGraphDatabase
         }
     }
 
+
+    @Override
+    public ResourceIterable<Node> findNodesByLabel(final Label myLabel){
+
+            StatementContext ctx = statementContextProvider.getCtxForReading();
+
+            long labelId;
+
+            try
+            {
+                labelId = ctx.getLabelId(myLabel.name());
+            }catch (KernelException e)
+            {
+                ctx.close();
+                return IteratorUtil.emptyIterator();
+            }
+            
+            Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
+
+            return map2nodes(nodesWithLabel, ctx);
+    }
+
     @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )

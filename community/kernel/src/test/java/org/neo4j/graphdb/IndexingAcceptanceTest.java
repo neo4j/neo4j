@@ -328,6 +328,25 @@ public class IndexingAcceptanceTest
         assertThat( sizeAfterDelete, equalTo(2l) );
     }
 
+    @Test
+    public void createdNodesShouldShowUpWhenQueriedByLabel() throws Exception
+    {
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        createNode( beansAPI, map("name", "Mattias"), Labels.MY_LABEL);
+
+        Transaction tx = beansAPI.beginTx();
+
+        long sizeBefore = count (beansAPI.findNodesByLabel(Labels.MY_LABEL));
+        createNode(beansAPI, map("name", "Mattias2"), Labels.MY_LABEL);
+        long sizeAfter = count (beansAPI.findNodesByLabel(Labels.MY_LABEL));
+
+        tx.finish();
+
+        assertThat( sizeBefore, equalTo(1l));
+        assertThat( sizeBefore, equalTo(2l));
+
+    }
+
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
     
     public @Rule
