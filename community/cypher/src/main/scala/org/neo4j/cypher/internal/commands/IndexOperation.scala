@@ -19,14 +19,42 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import org.neo4j.cypher.InvalidSemanticsException
+
+trait SchemaQueries
+
 sealed abstract class IndexOperation extends AbstractQuery {
   val label: String
 }
 
+// TODO use label: LabelValue?
 final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
   def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
 }
 
 final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
   def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
+}
+
+sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
+    _queryString: QueryString = QueryString.empty) extends AbstractQuery {
+  override def verifySemantics() {
+    if ( _id != _idForProperty )
+      throw new InvalidSemanticsException( "Unknown identifier `" + _idForProperty + "`, was expecting `" + _id + "`" )
+  }
+
+  def id:String
+  def label: String
+  def idForProperty: String
+  def propertyKey: String
+}
+
+final case class CreateUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): CreateUniqueConstraint = copy(queryString = QueryString(t))
+}
+
+final case class DropConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): DropConstraint = copy(queryString = QueryString(t))
 }

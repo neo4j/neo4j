@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -41,6 +42,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
 
+  def getLabelId(labelName: String): Option[Long] = inner.getLabelId(labelName)
+
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = inner.getRelationshipsFor(node, dir, types)
 
   def nodeOps = inner.nodeOps
@@ -59,7 +62,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) { inner.dropIndexRule(labelIds, propertyKeyId) }
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = inner.exactIndexSearch(id, value)
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = inner.exactIndexSearch(index, value)
 
   def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
 
@@ -68,6 +71,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
   def schemaStateContains(key: String) = inner.schemaStateContains(key)
+
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    inner.createUniqueConstraint(labelId, propertyKeyId)
+  }
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

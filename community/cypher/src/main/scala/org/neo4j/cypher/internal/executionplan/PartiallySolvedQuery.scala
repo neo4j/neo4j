@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
-import builders.{QueryToken, Solved, Unsolved}
+import builders.{QueryToken, Unsolved}
 import org.neo4j.cypher.internal.commands._
 import scala.collection.Seq
 import expressions.{Expression, AggregationExpression}
@@ -54,10 +54,7 @@ object PartiallySolvedQuery {
       sort = q.sort.map(Unsolved(_)),
       slice = q.slice.map(Unsolved(_)),
       namedPaths = q.namedPaths.map(Unsolved(_)),
-      aggregateQuery = if (q.aggregation.isDefined)
-        Unsolved(true)
-      else
-        Solved(false),
+      aggregateToDo = q.aggregation.isDefined,
       extracted = false,
       tail = q.tail.map(q => PartiallySolvedQuery(q))
     )
@@ -73,7 +70,7 @@ object PartiallySolvedQuery {
     sort = Seq(),
     slice = None,
     namedPaths = Seq(),
-    aggregateQuery = Solved(false),
+    aggregateToDo = false,
     extracted = false,
     tail = None
   )
@@ -96,7 +93,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 sort: Seq[QueryToken[SortItem]],
                                 slice: Option[QueryToken[Slice]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
-                                aggregateQuery: QueryToken[Boolean],
+                                aggregateToDo: Boolean,
                                 extracted: Boolean,
                                 tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 

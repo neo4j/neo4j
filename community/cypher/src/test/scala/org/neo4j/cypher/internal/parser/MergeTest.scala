@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.commands.MergeNodeStartItem
 import org.neo4j.cypher.internal.commands.LabelAction
-import values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.HasLabel
 
@@ -40,8 +40,8 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
     val B = "b"
     val NO_PATHS = Seq.empty
     val NO_PRODUCER = None
-    def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), LabelName("Label"))
-    def setNodeLabels(id: String) = LabelAction(Identifier(id), LabelSetOp, Seq(LabelName("Label")))
+    def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), KeyToken.Unresolved("Label", TokenType.Label))
+    def setNodeLabels(id: String) = LabelAction(Identifier(id), LabelSetOp, Seq(KeyToken.Unresolved("Label", TokenType.Label)))
     def setProperty(id: String) = PropertySetAction(Property(Identifier(id), "property"), TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive

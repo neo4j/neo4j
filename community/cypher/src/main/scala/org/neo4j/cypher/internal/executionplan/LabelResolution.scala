@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.executionplan
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.values.{LabelName, ResolvedLabel}
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
-case class LabelResolution(labelMapper: String => Option[ResolvedLabel]) extends (Expression => Expression) {
+case class LabelResolution(labelMapper: String => Option[KeyToken.Resolved]) extends (Expression => Expression) {
 
   def apply(expr: Expression) = expr match {
-    case label: LabelName => labelMapper(label.name).getOrElse(label)
-    case _                => expr
+    case label: KeyToken.Unresolved => labelMapper(label.name).getOrElse(label)
+    case _                          => expr
   }
 }

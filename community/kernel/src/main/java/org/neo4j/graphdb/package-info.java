@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * The graph database API used by Neo4j.
+ * The core graph database API.
  */
 package org.neo4j.graphdb;
 

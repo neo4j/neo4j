@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,9 +45,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 /**
  * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
- * transactionality. Each index has an {@link IndexRule}, which it uses to filter changes that come into the database.
+ * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter changes that come into the database.
  * Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be replayed to perform
  * recovery after a crash.
  * <p/>
@@ -195,11 +195,6 @@ public class IndexingService extends LifecycleAdapter
             throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
         }
         return indexProxy;
-    }
-
-    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
-    {
-        return getProxyForRule( indexId ).getDescriptor();
     }
 
     /**

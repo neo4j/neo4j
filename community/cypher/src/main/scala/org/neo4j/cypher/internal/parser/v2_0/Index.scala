@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.{AbstractQuery, DropIndex, CreateIndex}
 
 
 trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
+  def createIndex = CREATE ~> indexTail ^^ {
     case (label, properties) => CreateIndex(label, properties)
   }
 
-  def dropIndex = DROP ~> indexOps ^^ {
+  def dropIndex = DROP ~> indexTail ^^ {
     case (label, properties) => DropIndex(label, properties)
   }
+  
+  def indexOps:Parser[AbstractQuery] = createIndex | dropIndex
 
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case LabelName(labelName) ~ property => (labelName, List(property))
+  private def indexTail: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
+    case KeyToken.Unresolved(labelName, TokenType.Label) ~ property => (labelName, List(property))
   }
 }

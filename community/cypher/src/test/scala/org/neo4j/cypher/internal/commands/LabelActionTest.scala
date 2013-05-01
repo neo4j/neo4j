@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.spi.{LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.junit.Test
-import values.ResolvedLabel
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
@@ -38,7 +39,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_single_label_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelSetOp, Seq(ResolvedLabel("green", 12)))
+    val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label)))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -53,7 +54,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_two_labels_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelSetOp, Seq(ResolvedLabel("green", 12), ResolvedLabel("blue", 42)))
+    val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label), KeyToken.Resolved("blue", 42, TokenType.Label)))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -112,7 +113,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
   def getNodesByLabel(id: Long): Iterator[Node] = ???
 
@@ -121,4 +122,8 @@ class SnitchingQueryContext extends QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 
   def schemaStateContains(key: String) = ???
+
+  def getLabelId(labelName: String): Option[Long] = labels.get(labelName)
+
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
 }

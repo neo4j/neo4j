@@ -49,7 +49,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Merge single node with a label",
       text = "Merging a single node with a given label.",
-      queryText = "merge (robert:Critic) return robert, labels(robert)",
+      queryText = "merge (robert:Critic)\nreturn robert, labels(robert)",
       returns = "Because there are no nodes labeled Critic in the database, a new node is created.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1)
     )
@@ -59,7 +59,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Merge single node with properties",
       text = "Merging a single node with properties where not all matches any existing node.",
-      queryText = "merge (charlie {name:'Charlie Sheen', age:10}) return charlie",
+      queryText = "merge (charlie {name:'Charlie Sheen', age:10})\nreturn charlie",
       returns = "A new node with the name Charlie Sheen will be created since not all properties " +
         "matched the existing Charlie Sheen node.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2)
@@ -70,7 +70,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Merge single node specifying both label and property",
       text = "Merging a single node with both label and property matching an existing node.",
-      queryText = "merge (michael:Person {name:'Michael Douglas'}) return michael",
+      queryText = "merge (michael:Person {name:'Michael Douglas'})\nreturn michael",
       returns = "Michael Douglas will be matched and returned",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0)
     )
@@ -80,8 +80,9 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Merge with ON CREATE",
       text = "Merge a node and set properties if the node needs to be created.",
-      queryText = "merge (keanu:Person {name:'Keanu Reeves'}) " +
-        "on create keanu set keanu.created = timestamp() return keanu",
+      queryText = """merge (keanu:Person {name:'Keanu Reeves'})
+on create keanu set keanu.created = timestamp()
+return keanu""",
       returns = "Creates the Keanu node, and sets a timestamp on creation time.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
@@ -91,7 +92,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Merge with ON MATCH",
       text = "Merging nodes and setting properties on found nodes.",
-      queryText = "merge (person:Person) on match person set person.found = true return person",
+      queryText = "merge (person:Person)\non match person set person.found = true\nreturn person",
       returns = "Finds all the :Person nodes, sets a property on them, and returns them.",
       assertions = (p) => assertStats(p, propertiesSet = 5)
     )
@@ -104,7 +105,8 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       queryText =
         """merge (keanu:Person {name:'Keanu Reeves'})
 on create keanu set keanu.created = timestamp()
-on match keanu set keanu.lastSeen = timestamp() return keanu""",
+on match keanu set keanu.lastSeen = timestamp()
+return keanu""",
       returns = "Creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
         "different property would be set",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)

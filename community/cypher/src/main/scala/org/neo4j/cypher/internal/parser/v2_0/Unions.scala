@@ -39,6 +39,6 @@ trait Unions extends Base with QueryParser {
   }
 
   def union: Parser[AbstractQuery] = mixedUnion |
-    rep2sep(query, UNION) ^^ { queries => Union(queries, distinct = true) } |
+    rep2sep(query, UNION)       ^^ { queries => Union(queries, distinct = true) } |
     rep2sep(query, UNION ~ ALL) ^^ { queries => Union(queries, distinct = false) }
 }

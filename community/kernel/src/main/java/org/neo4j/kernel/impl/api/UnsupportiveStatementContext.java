@@ -30,15 +30,15 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.core.LabelToken;
 
-public class UnsupportiveStatementContext implements StatementContext
+public enum UnsupportiveStatementContext implements StatementContext
 {
-
-    private static final UnsupportiveStatementContext INSTANCE = new UnsupportiveStatementContext();
+    INSTANCE;
 
     public static StatementContext instance()
     {
@@ -58,7 +58,7 @@ public class UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
     {
         throw unsupported();
     }
@@ -112,6 +112,12 @@ public class UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<LabelToken> listLabels()
+    {
+        throw unsupported();
+    }
+
+    @Override
     public long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException
     {
         throw unsupported();
@@ -131,14 +137,15 @@ public class UnsupportiveStatementContext implements StatementContext
 
     @Override
     public Object getNodePropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-            PropertyNotFoundException, EntityNotFoundException
+                                                                              PropertyNotFoundException,
+                                                                              EntityNotFoundException
     {
         throw unsupported();
     }
 
     @Override
     public boolean nodeHasProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+                                                                          EntityNotFoundException
     {
         throw unsupported();
     }
@@ -152,7 +159,7 @@ public class UnsupportiveStatementContext implements StatementContext
 
     @Override
     public Object nodeRemoveProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+                                                                            EntityNotFoundException
     {
         throw unsupported();
     }
@@ -170,44 +177,39 @@ public class UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         throw unsupported();
     }
 
     @Override
-    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
         throw unsupported();
     }
 
     @Override
-    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
+    public Iterator<IndexDescriptor> getIndexRules( long labelId )
     {
         throw unsupported();
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexRules()
     {
         throw unsupported();
     }
 
     @Override
-    public Iterator<IndexRule> getIndexRules()
+    public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
         throw unsupported();
     }
 
     @Override
-    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
     {
         throw unsupported();
-    }
-
-    @Override
-    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
-    {
     }
 
     @Override
@@ -222,6 +224,23 @@ public class UnsupportiveStatementContext implements StatementContext
         throw unsupported();
     }
 
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void dropConstraint( UniquenessConstraint constraint )
+    {
+        throw unsupported();
+    }
 
     private UnsupportedOperationException unsupported()
     {

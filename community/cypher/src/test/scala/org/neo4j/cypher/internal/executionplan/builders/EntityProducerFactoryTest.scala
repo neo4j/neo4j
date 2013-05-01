@@ -23,16 +23,19 @@ import org.neo4j.cypher.internal.spi.{QueryContext, PlanContext}
 import org.scalatest.mock.MockitoSugar
 import org.junit.{Before, Test}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
 import org.neo4j.cypher.IndexHintException
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
+  val context = ExecutionContext.empty
 
   @Before
   def init() {
@@ -45,7 +48,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    when(planContext.getIndexRuleId(label, prop)).thenReturn(None)
+    when(planContext.getIndexRule(label, prop)).thenReturn(None)
 
     //WHEN
     intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, None)))
@@ -56,16 +59,33 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    val indexId: Long = 1L
+    val index: IndexDescriptor = new IndexDescriptor(123,456)
     val value = 42
     val queryContext: QueryContext = mock[QueryContext]
-    when(planContext.getIndexRuleId(label, prop)).thenReturn(Some(indexId))
+    when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
     val indexResult = Iterator(null)
-    when(queryContext.exactIndexSearch(indexId, value)).thenReturn(indexResult)
+    when(queryContext.exactIndexSearch(index, value)).thenReturn(indexResult)
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 
     //WHEN
     val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, Some(Literal(value))))
-    assert(func(null, state) === indexResult)
+    assert(func(context, state) === indexResult)
+  }
+
+  @Test
+  def retries_every_time_if_the_label_did_not_exist_at_plan_building() {
+    // given
+    val label: String = "label"
+    val queryContext: QueryContext = mock[QueryContext]
+    when(planContext.getLabelId(label)).thenReturn(None)
+    when(queryContext.getLabelId(label)).thenReturn(None)
+    val state = QueryStateHelper.empty.copy(inner = queryContext)
+
+    // when
+    val func = factory.nodeByLabel(planContext, NodeByLabel("id", label))
+    assert(func(context, state) === Iterator.empty)
+
+    // then
+    verify(queryContext, times(1)).getLabelId(label)
   }
 }

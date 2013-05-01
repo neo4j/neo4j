@@ -474,7 +474,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
         return propertyTokenCreator;
     }
-    
+
+    @Override
+    protected TokenCreator createLabelIdCreator()
+    {
+        DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
+                new DelegateInvocationHandler<TokenCreator>();
+        TokenCreator labelIdCreator =
+                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                        new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
+        new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+        return labelIdCreator;
+    }
+
     @Override
     protected Caches createCaches()
     {

@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
-case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean)
+case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean)
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.map(_.typedRewrite[LabelValue](f)), bare)
+    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     props.throwIfSymbolsMissing(symbols)

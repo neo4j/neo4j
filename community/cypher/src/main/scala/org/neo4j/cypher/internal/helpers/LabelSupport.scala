@@ -19,15 +19,8 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.cypher.internal.commands.values.{ResolvedLabel, LabelValue, LabelName}
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 object LabelSupport extends CollectionSupport {
-  def labelCollection(elems: String*): Seq[LabelValue] = Seq(elems.map(LabelName(_)): _*)
-
-//  def getOrCreateLabelIds(labels: Seq[LabelValue])(implicit ctx: QueryContext): Seq[Long] =
-//    labels.map {
-//      case (r: ResolvedLabel) => r.id
-//      case (l: LabelValue)    => ctx.getOrCreateLabelId(l.name)
-//    }
+  def labelCollection(elems: String*): Seq[KeyToken] = Seq(elems.map(KeyToken.Unresolved(_, TokenType.Label)): _*)
 }

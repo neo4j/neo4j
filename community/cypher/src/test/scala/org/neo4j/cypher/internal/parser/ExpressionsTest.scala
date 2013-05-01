@@ -22,10 +22,6 @@ package org.neo4j.cypher.internal.parser
 import v2_0.{MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.PatternPredicate
-import values.LabelName
-import org.neo4j.cypher.internal.commands.HasLabel
 import org.junit.Test
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {

@@ -37,7 +37,7 @@ class AggregationBuilderTest extends BuilderTest {
       copy(
       aggregation = Seq(Unsolved(CountStar())),
       returns = Seq(Unsolved(ReturnItem(Identifier("n"), "n"))),
-      aggregateQuery = Unsolved(true)
+      aggregateToDo = true
     )
 
     val p = createPipe(nodes = Seq("n"))
@@ -50,7 +50,7 @@ class AggregationBuilderTest extends BuilderTest {
 
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
-      aggregateQuery = q.aggregateQuery.solve,
+      aggregateToDo = false,
       returns = Seq(Solved(ReturnItem(Identifier("n"), "n"))),
       extracted = true
     )

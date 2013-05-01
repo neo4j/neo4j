@@ -43,15 +43,15 @@ public class AsciidocHelper
     private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]";
 
     public static String createGraphViz( String title,
-            GraphDatabaseService graph, String identifier )
+                                         GraphDatabaseService graph, String identifier )
     {
         return createGraphViz( title, graph, identifier,
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
     }
 
     public static String createGraphViz( String title,
-            GraphDatabaseService graph, String identifier,
-            String graphvizOptions )
+                                         GraphDatabaseService graph, String identifier,
+                                         String graphvizOptions )
     {
         return createGraphViz( title, graph, identifier,
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors(),
@@ -59,15 +59,15 @@ public class AsciidocHelper
     }
 
     public static String createGraphVizWithNodeId( String title,
-            GraphDatabaseService graph, String identifier )
+                                                   GraphDatabaseService graph, String identifier )
     {
         return createGraphViz( title, graph, identifier,
                 AsciiDocStyle.withAutomaticRelationshipTypeColors() );
     }
 
     public static String createGraphVizWithNodeId( String title,
-            GraphDatabaseService graph, String identifier,
-            String graphvizOptions )
+                                                   GraphDatabaseService graph, String identifier,
+                                                   String graphvizOptions )
     {
         return createGraphViz( title, graph, identifier,
                 AsciiDocStyle.withAutomaticRelationshipTypeColors(),
@@ -75,15 +75,15 @@ public class AsciidocHelper
     }
 
     public static String createGraphVizDeletingReferenceNode( String title,
-            GraphDatabaseService graph, String identifier )
+                                                              GraphDatabaseService graph, String identifier )
     {
         return createGraphVizDeletingReferenceNode( title, graph, identifier,
                 "" );
     }
 
     public static String createGraphVizDeletingReferenceNode( String title,
-            GraphDatabaseService graph, String identifier,
-            String graphvizOptions )
+                                                              GraphDatabaseService graph, String identifier,
+                                                              String graphvizOptions )
     {
         removeReferenceNode( graph );
         return createGraphViz( title, graph, identifier,
@@ -115,14 +115,14 @@ public class AsciidocHelper
      * coloring.
      */
     public static String createGraphViz( String title,
-            GraphDatabaseService graph, String identifier, GraphStyle graphStyle )
+                                         GraphDatabaseService graph, String identifier, GraphStyle graphStyle )
     {
         return createGraphViz( title, graph, identifier, graphStyle, "" );
     }
 
     public static String createGraphViz( String title,
-            GraphDatabaseService graph, String identifier,
-            GraphStyle graphStyle, String graphvizOptions )
+                                         GraphDatabaseService graph, String identifier,
+                                         GraphStyle graphStyle, String graphvizOptions )
     {
         GraphvizWriter writer = new GraphvizWriter( graphStyle );
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -140,9 +140,9 @@ public class AsciidocHelper
         try
         {
             return "." + title + "\n[\"dot\", \""
-                   + ( safeTitle + "-" + identifier ).replace( " ", "-" )
-                   + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
-                   + "----\n" + out.toString("UTF-8") + "----\n";
+                    + (safeTitle + "-" + identifier).replace( " ", "-" )
+                    + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
+                    + "----\n" + out.toString( "UTF-8" ) + "----\n";
         }
         catch ( UnsupportedEncodingException e )
         {
@@ -172,25 +172,25 @@ public class AsciidocHelper
     public static String createQueryResultSnippet( final String output )
     {
         return "[queryresult]\n----\n" + output
-               + ( output.endsWith( "\n" ) ? "" : "\n" ) + "----\n";
+                + (output.endsWith( "\n" ) ? "" : "\n") + "----\n";
     }
 
     public static String createCypherSnippet( final String query )
     {
-        String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
-        "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-        "desc", "descending", "create", "remove", "drop", "using"};
+        String[] keywordsToBreakOn = new String[]{"start", "create", "unique", "set", "delete", "foreach",
+                "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
+                "desc", "descending", "create", "remove", "drop", "using", "merge", "assert", "constraint"};
 
-        String[] unbreakableKeywords = new String[] {"label", "values", "on", "index"};
+        String[] unbreakableKeywords = new String[]{"label", "values", "on", "index"};
         return createLanguageSnippet( query, "cypher", keywordsToBreakOn, unbreakableKeywords );
     }
 
     public static String createSqlSnippet( final String query )
     {
-        String[] keywordsToBreakOn = new String[] { "select", "from", "where",
+        String[] keywordsToBreakOn = new String[]{"select", "from", "where",
                 "skip", "limit", "order by", "asc", "ascending", "desc",
-                "descending", "join", "group by" };
-        String[] unbreakableKeywords = new String[] {};
+                "descending", "join", "group by"};
+        String[] unbreakableKeywords = new String[]{};
         return createLanguageSnippet( query, "sql", keywordsToBreakOn, unbreakableKeywords );
     }
 
@@ -199,32 +199,60 @@ public class AsciidocHelper
                                                  String[] keywordsToBreakOn,
                                                  String[] unbreakableKeywords )
     {
-        String formattedQuery = uppercaseKeywords( breakOnKeywords( query, keywordsToBreakOn ), unbreakableKeywords );
+        // This is not something I'm proud of. This should be done in Cypher by the parser.
+        // For now, learn to live with it.
+        String formattedQuery;
+        if ( "cypher".equals( language ) && query.contains( "merge" ) )
+        {
+            formattedQuery = uppercaseKeywords( query, keywordsToBreakOn );
+            formattedQuery = uppercaseKeywords( formattedQuery, unbreakableKeywords );
+        } else
+        {
+            formattedQuery = breakOnKeywords( query, keywordsToBreakOn );
+            formattedQuery = uppercaseKeywords( formattedQuery, unbreakableKeywords );
+        }
         String result = "[source," + language + "]\n----\n" + formattedQuery
-                        + ( formattedQuery.endsWith( "\n" ) ? "" : "\n" )
-                        + "----\n";
+                + (formattedQuery.endsWith( "\n" ) ? "" : "\n")
+                + "----\n";
         return limitChars( result );
     }
 
-    private static String breakOnKeywords( String query,
-            String[] keywordsToBreakOn )
+    private static String breakOnKeywords( String query, String[] keywordsToBreakOn )
     {
         String result = query;
         for ( String keyword : keywordsToBreakOn )
         {
             String upperKeyword = keyword.toUpperCase();
+
+            result = ucaseIfFirstInLine( result, keyword, upperKeyword );
+
             result = result.
-                    replace(keyword+" ", upperKeyword + " ").
-                    replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
+                    replace( " " + upperKeyword + " ", "\n" + upperKeyword + " " );
         }
         return result;
     }
 
-    private static String uppercaseKeywords( String query, String[] uppercaseKeywords ) {
+    private static String ucaseIfFirstInLine( String result, String keyword, String upperKeyword )
+    {
+        if ( result.length() > keyword.length() && result.startsWith( keyword + " " ) )
+        {
+            result = upperKeyword + " " + result.substring( keyword.length() + 1 );
+        }
+
+        return result.replace( "\n" + keyword, "\n" + upperKeyword );
+    }
+
+    private static String uppercaseKeywords( String query, String[] uppercaseKeywords )
+    {
         String result = query;
-        for ( String keyword : uppercaseKeywords ) {
+        for ( String keyword : uppercaseKeywords )
+        {
             String upperKeyword = keyword.toUpperCase();
-            result = result.replace(" " + keyword + " ", " " + upperKeyword+" ");
+
+            result = ucaseIfFirstInLine( result, keyword, upperKeyword );
+
+            result = result.
+                    replace( " " + keyword + " ", " " + upperKeyword + " " );
         }
         return result;
     }
@@ -236,7 +264,7 @@ public class AsciidocHelper
         for ( String line : lines )
         {
             line = line.trim();
-            if (line.length() > MAX_CHARS_PER_LINE )
+            if ( line.length() > MAX_CHARS_PER_LINE )
             {
                 line = line.replaceAll( ", ", ",\n      " );
             }

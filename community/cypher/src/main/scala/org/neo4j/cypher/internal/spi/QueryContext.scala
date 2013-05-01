@@ -21,7 +21,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
-import org.neo4j.cypher.ExecutionPlan
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -49,6 +49,8 @@ trait QueryContext {
 
   def getOrCreateLabelId(labelName: String): Long
 
+  def getLabelId(labelName: String): Option[Long]
+
   def getLabelName(id: Long): String
 
   def getLabelsForNode(node: Long): Iterator[Long]
@@ -69,7 +71,7 @@ trait QueryContext {
 
   def close(success: Boolean)
 
-  def exactIndexSearch(indexId: Long, value: Any): Iterator[Node]
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
   def getNodesByLabel(id: Long): Iterator[Node]
 
@@ -80,6 +82,8 @@ trait QueryContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   def schemaStateContains(key: String): Boolean
+
+  def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
 }
 
 trait LockingQueryContext extends QueryContext {

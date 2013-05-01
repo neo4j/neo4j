@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
 /**
- * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.
+ * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
  */
 @Description("Settings for the Community edition of Neo4j")
 public abstract class GraphDatabaseSettings

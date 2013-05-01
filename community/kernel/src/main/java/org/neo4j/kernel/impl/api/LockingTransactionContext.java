@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class LockingTransactionContext extends DelegatingTransactionContext
@@ -41,7 +41,7 @@ public class LockingTransactionContext extends DelegatingTransactionContext
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException( "Unable to get transaction", e );
+            throw new org.neo4j.graphdb.TransactionFailureException( "Unable to get transaction", e );
         }
     }
 
@@ -58,15 +58,27 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     }
 
     @Override
-    public void commit()
+    public void commit() throws TransactionFailureException
     {
+        // TODO: this checking should be removed at some point in the future.
+        // Currently the TxManager will release all locks if the transaction fails to commit.
+        // That should not be the case when the transaction code has been refactored (moved away from JTA).
+        boolean unlock = true;
         try
         {
             super.commit();
         }
+        catch ( TransactionFailureException e )
+        {
+            unlock = false;
+            throw e;
+        }
         finally
         {
-            lockHolder.releaseLocks();
+            if ( unlock )
+            {
+                lockHolder.releaseLocks();
+            }
         }
     }
 

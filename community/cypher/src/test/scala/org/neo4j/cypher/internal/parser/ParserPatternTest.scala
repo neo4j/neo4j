@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.graphdb.Direction
 import v2_0._
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 
 class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
@@ -32,10 +32,10 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = labelShortForm
 
     parsing(":FOO") shouldGive
-      Seq(LabelName("FOO"))
+      Seq(KeyToken.Unresolved("FOO", TokenType.Label))
 
     parsing(":FOO:BAR") shouldGive
-      Seq(LabelName("FOO"), LabelName("BAR"))
+      Seq(KeyToken.Unresolved("FOO", TokenType.Label), KeyToken.Unresolved("BAR", TokenType.Label))
 
     assertFails("[:foo, :bar]")
   }

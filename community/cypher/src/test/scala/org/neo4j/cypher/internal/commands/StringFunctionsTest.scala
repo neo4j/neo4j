@@ -24,8 +24,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
-import values.{ResolvedLabel, LabelName}
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
 
 class StringFunctionsTest extends Assertions {
   @Test def replaceTests() {

@@ -22,9 +22,10 @@ package org.neo4j.kernel.api;
 import java.io.Closeable;
 
 import org.neo4j.kernel.api.operations.EntityOperations;
-import org.neo4j.kernel.api.operations.LabelOperations;
-import org.neo4j.kernel.api.operations.PropertyOperations;
+import org.neo4j.kernel.api.operations.KeyOperations;
+import org.neo4j.kernel.api.operations.ReadOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.WriteOperations;
 
 /**
  * Interface for accessing and modifying the underlying graph.
@@ -39,8 +40,10 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
  * is life cycle of some locks, where read locks can live within one statement,
  * whereas write locks will live for the entire transaction.
  */
-public interface StatementContext extends
-        EntityOperations, PropertyOperations, LabelOperations, SchemaOperations, Closeable
+public interface StatementContext
+        extends ReadOperations, WriteOperations,
+                KeyOperations, EntityOperations, SchemaOperations,
+                Closeable
 {
     /**
      * Closes this statement. Statements must be closed when done and before

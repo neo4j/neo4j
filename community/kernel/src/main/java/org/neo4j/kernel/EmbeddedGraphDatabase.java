@@ -33,13 +33,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
- * in an application. You typically instantiate it by invoking the
- * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes
- * a path to a directory where Neo4j will store its data files, as such:
+ * in an application. You typically instantiate it by using
+ * {@link GraphDatabaseFactory} like so:
  * <p/>
+ * 
  * <pre>
  * <code>
- * GraphDatabaseService graphDb = new EmbeddedGraphDatabase( &quot;var/graphdb&quot; );
+ * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
  * // ... use Neo4j
  * graphDb.shutdown();
  * </code>
@@ -52,9 +52,9 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
-     *
-     * This is deprecated. Use GraphDatabaseFactory instead.
-     *
+     * 
+     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * 
      * @param storeDir the store directory for the Neo4j store files
      */
     @Deprecated
@@ -69,11 +69,11 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * <p/>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
-     *
-     * This is deprecated. Use GraphDatabaseFactory instead.
-     *
+     * 
+     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * 
      * @param storeDir the store directory for the db files
-     * @param params   configuration parameters
+     * @param params configuration parameters
      */
     @Deprecated
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params )

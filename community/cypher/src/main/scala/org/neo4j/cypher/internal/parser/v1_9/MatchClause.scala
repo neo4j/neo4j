@@ -23,6 +23,13 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Identifier, Expression}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.CastSupport.sift
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.commands.SingleNode
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
+import org.neo4j.cypher.internal.parser.ParsedRelation
+import org.neo4j.cypher.internal.commands.ShortestPath
 
 trait MatchClause extends Base with ParserPattern {
 
@@ -72,10 +79,10 @@ trait MatchClause extends Base with ParserPattern {
 
   def matchFunction(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] =
     matchNamePath(transform) orElse
-    matchRelation(transform) orElse
-    matchVarLengthRelation(transform) orElse
-    matchShortestPath(transform) orElse
-    matchEntity(transform)
+      matchRelation(transform) orElse
+      matchVarLengthRelation(transform) orElse
+      matchShortestPath(transform) orElse
+      matchEntity(transform)
 
   def matchNamePath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedNamedPath(name, patterns) =>
@@ -83,26 +90,26 @@ trait MatchClause extends Base with ParserPattern {
   }
 
   def matchRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
+    case ParsedRelation(name, props, left, right, relType, dir, optional) =>
       transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType,
         direction = dir, optional = optional))
   }
 
   def matchVarLengthRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
+    case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, min, max, relIterator) =>
       transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min,
         maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
   }
 
   def matchShortestPath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
+    case ParsedShortestPath(name, props, left, right, relType, dir, optional, max, single, relIterator) =>
       transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType,
         dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator))
 
   }
 
   def matchEntity(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedEntity(name, _, _, _) =>
+    case ParsedEntity(name, _, _, _, _) =>
       Yes(Seq(SingleNode(name)))
   }
 

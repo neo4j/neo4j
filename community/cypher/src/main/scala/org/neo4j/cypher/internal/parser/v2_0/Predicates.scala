@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.commands.NullablePredicate
 import org.neo4j.cypher.internal.commands.GreaterThan
 import org.neo4j.cypher.internal.commands.GreaterThanOrEqual
 import org.neo4j.cypher.internal.commands.SingleInCollection
-import org.neo4j.cypher.internal.commands.NonEmpty
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.LessThanOrEqual
 import org.neo4j.cypher.internal.commands.LiteralRegularExpression
@@ -45,17 +44,22 @@ import org.neo4j.cypher.internal.commands.AnyInCollection
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.Has
 import org.neo4j.cypher.internal.commands.LessThan
+import org.neo4j.cypher.internal.parser.AbstractPattern
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
-  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( OR ~> predicateLvl1 ) ^^ {
-    case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
+  def predicate: Parser[Predicate] = predicateLvl1 ~ rep(OR ~> predicateLvl1) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => Or(a, b))
   }
 
-  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( AND ~> predicateLvl2 ) ^^{
-    case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep(XOR ~> predicateLvl2) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => Xor(a, b))
   }
 
-  def predicateLvl2: Parser[Predicate] = (
+  def predicateLvl2: Parser[Predicate] = predicateLvl3 ~ rep(AND ~> predicateLvl3) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a, b) => And(a, b))
+  }
+
+  def predicateLvl3: Parser[Predicate] = (
         operators
       | TRUE ^^^ True()
       | FALSE ^^^ Not(True())

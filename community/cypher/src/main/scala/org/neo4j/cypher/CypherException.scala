@@ -72,3 +72,5 @@ class IndexHintException(identifier: String, label: String, property: String, me
 }
 
 class UnableToPickStartPointException(message: String) extends CypherException(message)
+
+class InvalidSemanticsException( message: String ) extends CypherException(message)

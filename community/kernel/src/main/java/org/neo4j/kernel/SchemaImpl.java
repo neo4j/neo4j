@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
-import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
-import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -44,10 +35,19 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyToken;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.core.TokenHolder;
+
+import static java.lang.String.format;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
+import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
@@ -106,19 +106,25 @@ public class SchemaImpl implements Schema
     }
     
     private ResourceIterator<IndexDefinition> getIndexDefinitions( final StatementContext context,
-                                                                   Iterator<IndexRule> indexRules )
+                                                                   Iterator<IndexDescriptor> indexRules )
     {
-        return cleanupService.resourceIterator(map(new Function<IndexRule, IndexDefinition>() {
+        return cleanupService.resourceIterator( map( new Function<IndexDescriptor, IndexDefinition>()
+        {
             @Override
-            public IndexDefinition apply(IndexRule rule) {
-                try {
-                    return new IndexDefinitionImpl(ctxProvider, label(context.getLabelName(rule.getLabel())),
-                            propertyKeyManager.getTokenByIdOrNull( (int) rule.getPropertyKey() ).getKey());
-                } catch (LabelNotFoundKernelException e) {
-                    throw new RuntimeException(e);
+            public IndexDefinition apply( IndexDescriptor rule )
+            {
+                try
+                {
+                    Label label = label( context.getLabelName( rule.getLabelId() ) );
+                    String propertyKey = propertyKeyManager.getTokenByIdOrNull( (int) rule.getPropertyKeyId() ).getKey();
+                    return new IndexDefinitionImpl( ctxProvider, label, propertyKey );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
-        }, indexRules), context);
+        }, indexRules ), context );
     }
 
     @Override

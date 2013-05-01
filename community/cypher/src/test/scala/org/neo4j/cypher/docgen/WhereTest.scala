@@ -58,9 +58,9 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Boolean operations",
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`.",
-      queryText = """match n where (n.age < 30 and n.name = "Tobias") or not(n.name = "Tobias" or n.name="Peter")  return n""",
-      returns = """This will return both nodes in the start clause.""",
-      assertions = (p) => assertEquals(List(node("Tobias"), node("Andres")), p.columnAs[Node]("n").toList))
+      queryText = """match n where n.name = 'Peter' xor (n.age < 30 and n.name = "Tobias") or not (n.name = "Tobias" or n.name="Peter") return n""",
+      returns = "This query shows how boolean operators can",
+      assertions = (p) => assertEquals(nodes("Andres", "Tobias", "Peter").toSet, p.columnAs[Node]("n").toSet))
   }
 
   @Test def regular_expressions() {

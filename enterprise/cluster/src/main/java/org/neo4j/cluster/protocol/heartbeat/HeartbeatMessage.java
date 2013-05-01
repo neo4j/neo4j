@@ -52,6 +52,12 @@ public enum HeartbeatMessage
         {
             return server;
         }
+
+        @Override
+        public String toString()
+        {
+            return "i_am_alive[" + server + "]";
+        }
     }
 
     public static class SuspicionsState

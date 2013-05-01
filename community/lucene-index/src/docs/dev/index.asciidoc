@@ -147,7 +147,7 @@ tag=update
 
 An index can be searched in two ways, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
 The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
-For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
+For example the {lucene-base-uri}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
 
 [[indexing-search-get]]
 === Get ===
@@ -289,10 +289,10 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
 |========================================================
 | Parameter                 | Possible values   | Effect
 | type | +exact+, +fulltext+ |
-  +exact+ is the default and uses a Lucene http://lucene.apache.org/core/old_versioned_docs/versions/{lucene-version}/api/core/org/apache/lucene/analysis/KeywordAnalyzer.html[keyword analyzer].
+  +exact+ is the default and uses a Lucene {lucene-api-base-uri}/org/apache/lucene/analysis/KeywordAnalyzer.html[keyword analyzer].
   +fulltext+ uses a white-space tokenizer in its analyzer.
 | to_lower_case | `true`, `false` | This parameter goes together with +type+: +fulltext+ and converts values to lower case during both additions and querying, making the index case insensitive. Defaults to `true`.
-| analyzer | the full class name of an http://lucene.apache.org/core/old_versioned_docs/versions/{lucene-version}/api/core/org/apache/lucene/analysis/Analyzer.html[Analyzer] | Overrides the +type+ so that a custom analyzer can be used.
+| analyzer | the full class name of an {lucene-api-base-uri}/org/apache/lucene/analysis/Analyzer.html[Analyzer] | Overrides the +type+ so that a custom analyzer can be used.
   Note: +to_lower_case+ still affects lowercasing of string queries. 
   If the custom analyzer uppercases the indexed tokens, string queries will not match as expected. 
 |========================================================
@@ -372,7 +372,7 @@ source=examples/ImdbDocTest.java
 tag=termQuery
 ----
 
-Note that the http://lucene.apache.org/core/old_versioned_docs/versions/{lucene-version}/api/core/org/apache/lucene/search/TermQuery.html[TermQuery] is basically the same thing as using the +get+ method on the index.
+Note that the {lucene-api-base-uri}/org/apache/lucene/search/TermQuery.html[TermQuery] is basically the same thing as using the +get+ method on the index.
 
 This is how to perform _wildcard_ searches using Lucene Query Objects:
 

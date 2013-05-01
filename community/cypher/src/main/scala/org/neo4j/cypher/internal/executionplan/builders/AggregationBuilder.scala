@@ -71,7 +71,7 @@ class AggregationBuilder extends LegacyPlanBuilder  {
     //Mark aggregations as Solved.
     val resultQ = planToAggregate.query.copy(
       aggregation = planToAggregate.query.aggregation.map(_.solve),
-      aggregateQuery = planToAggregate.query.aggregateQuery.solve,
+      aggregateToDo = false,
       returns = returnItems,
       extracted = true
     )
@@ -104,9 +104,7 @@ class AggregationBuilder extends LegacyPlanBuilder  {
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
 
-    q.aggregateQuery.token &&
-    q.aggregateQuery.unsolved &&
-    q.readyToAggregate
+    q.aggregateToDo && q.readyToAggregate
   }
 
   def priority: Int = PlanBuilder.Aggregation

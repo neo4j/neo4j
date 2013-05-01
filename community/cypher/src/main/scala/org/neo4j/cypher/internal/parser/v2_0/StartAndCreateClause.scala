@@ -24,6 +24,7 @@ import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation, ParsedNamedPath, AbstractPattern}
 
 trait StartAndCreateClause extends Base with Expressions with CreateUnique with Merge {
   def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart

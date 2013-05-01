@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 trait Locker {
@@ -49,7 +50,8 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
     inner.isLabelSetOnNode(label, node)
   }
 
-  override def exactIndexSearch(id: Long, value: Any): Iterator[Node] = lockAll(inner.exactIndexSearch(id, value))
+  override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
+    lockAll(inner.exactIndexSearch(index, value))
 
   override def getNodesByLabel(id: Long): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
 
