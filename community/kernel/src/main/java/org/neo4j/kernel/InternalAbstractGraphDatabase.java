@@ -1472,39 +1472,60 @@ public abstract class InternalAbstractGraphDatabase
     }
 
 
-    @Override
-    public ResourceIterable<Node> findNodesByLabel(final Label myLabel){
 
-            StatementContext ctx = statementContextProvider.getCtxForReading();
-
-            long labelId;
-
-            try
-            {
-                labelId = ctx.getLabelId(myLabel.name());
-            }catch (KernelException e)
-            {
-                ctx.close();
-                return IteratorUtil.emptyIterator();
-            }
-            
-            Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
-
-            return map2nodes(nodesWithLabel, ctx);
-    }
-
+      private ResourceIterator<Node> nodesByLabel(final Label myLabel){
+  
+              StatementContext ctx = statementContextProvider.getCtxForReading();
+  
+              long labelId;
+  
+              try
+              {
+                  labelId = ctx.getLabelId(myLabel.name());
+              }catch (KernelException e)
+              {
+                  ctx.close();
+                  return IteratorUtil.emptyIterator();
+              }
+              
+              Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
+  
+              return map2nodes(nodesWithLabel, ctx);
+      }
+  
     @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
-        return new ResourceIterable<Node>()
-        {
-            @Override
-            public ResourceIterator<Node> iterator()
+//        if (key == null){
+//            return new ResourceIterable<Node>()
+//            {
+//                @Override
+//                public ResourceIterator<Node> iterator()
+//                {
+//                    return nodesByLabel(myLabel);
+//                }
+//            };
+//        }   
+//        else
+//        {
+
+            return new ResourceIterable<Node>()
             {
-                return nodesByLabelAndProperty( myLabel, key, value );
-            }
-        };
+                @Override
+                public ResourceIterator<Node> iterator()
+                {
+                    if (key == null)
+                    {
+                        return nodesByLabel(myLabel);
+                    }
+                    else
+                    {
+                        return nodesByLabelAndProperty( myLabel, key, value );
+                    }
+                }
+            };
+ //       }
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )

@@ -336,14 +336,14 @@ public class IndexingAcceptanceTest
 
         Transaction tx = beansAPI.beginTx();
 
-        long sizeBefore = count (beansAPI.findNodesByLabel(Labels.MY_LABEL));
+        long sizeBefore = count (beansAPI.findNodesByLabelAndProperty(Labels.MY_LABEL, null, null));
         createNode(beansAPI, map("name", "Mattias2"), Labels.MY_LABEL);
-        long sizeAfter = count (beansAPI.findNodesByLabel(Labels.MY_LABEL));
+        long sizeAfter = count (beansAPI.findNodesByLabelAndProperty(Labels.MY_LABEL, null, null));
 
         tx.finish();
 
         assertThat( sizeBefore, equalTo(1l));
-        assertThat( sizeBefore, equalTo(2l));
+        assertThat( sizeAfter, equalTo(2l));
 
     }
 
