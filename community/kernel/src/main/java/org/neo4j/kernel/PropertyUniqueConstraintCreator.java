@@ -19,27 +19,21 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
 {
-    PropertyUniqueConstraintCreator( ThreadToStatementContextBridge ctxProvider, DependencyResolver dependencyResolver,
-            Label label, String propertyKeyOrNull )
+    PropertyUniqueConstraintCreator( InternalConstraintActions actions, Label label, String propertyKeyOrNull )
     {
-        super( ctxProvider, dependencyResolver, label, propertyKeyOrNull );
+        super( actions, label, propertyKeyOrNull );
     }
 
     @Override
     protected ConstraintCreator doOn( String propertyKey )
     {
-        return new PropertyUniqueConstraintCreator( ctxProvider, dependencyResolver, label, propertyKey );
+        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
@@ -51,22 +45,6 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
     @Override
     protected ConstraintDefinition doCreate()
     {
-        // FINALLY, create something
-        StatementContext context = ctxProvider.getCtxForWriting();
-        try
-        {
-            long labelId = context.getOrCreateLabelId( label.name() );
-            long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
-            UniquenessConstraint constraint = context.addUniquenessConstraint( labelId, propertyKeyId );
-            return new PropertyUniqueConstraintDefinition( ctxProvider, label, constraint );
-        }
-        catch ( ConstraintViolationKernelException e )
-        {
-            throw new ConstraintViolationException( "Unable to create property unique constraint", e );
-        }
-        finally
-        {
-            context.close();
-        }
+        return actions.createPropertyUniquenessConstraint( label, propertyKey );
     }
 }

@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-public class PropertyConstraintCreator extends AbstractConstraintCreator
+public class PropertyConstraintCreator extends BaseConstraintCreator
 {
     // Only single property key supported a.t.m.
     protected final String propertyKey;
 
-    PropertyConstraintCreator( ThreadToStatementContextBridge ctxProvider, DependencyResolver dependencyResolver,
-            Label label, String propertyKeyOrNull )
+    PropertyConstraintCreator( InternalConstraintActions internalCreator, Label label, String propertyKeyOrNull )
     {
-        super( ctxProvider, dependencyResolver, label );
+        super( internalCreator, label );
         this.propertyKey = propertyKeyOrNull;
     }
 
@@ -47,13 +45,13 @@ public class PropertyConstraintCreator extends AbstractConstraintCreator
 
     protected ConstraintCreator doOn( String propertyKey )
     {
-        return new PropertyConstraintCreator( ctxProvider, dependencyResolver, label, propertyKey );
+        return new PropertyConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
     public ConstraintCreator unique()
     {
-        return new PropertyUniqueConstraintCreator( ctxProvider, dependencyResolver, label, propertyKey );
+        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
 
     @Override

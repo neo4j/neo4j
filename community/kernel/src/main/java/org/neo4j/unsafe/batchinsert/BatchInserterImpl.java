@@ -45,17 +45,23 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.BaseConstraintCreator;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.InternalConstraintActions;
+import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -77,7 +83,6 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenStore;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -98,7 +103,9 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
@@ -266,7 +273,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         return new BatchIndexCreator( label );
     }
-
+    
     public void createIndexRule( Label label, String propertyKey )
     {
         // TODO: Do not create duplicate index
@@ -351,6 +358,22 @@ public class BatchInserterImpl implements BatchInserter
             }
         }
         return indexesNeedingPopulation.toArray( new IndexRule[indexesNeedingPopulation.size()] );
+    }
+    
+    @Override
+    public ConstraintCreator createDeferredConstraint( Label label )
+    {
+        return new BaseConstraintCreator( new BatchConstraintsActions(), label );
+    }
+    
+    private void createConstraintRule( UniquenessConstraint constraint )
+    {
+        SchemaStore schemaStore = getSchemaStore();
+        UniquenessConstraintRule rule = new UniquenessConstraintRule( schemaStore.nextId(), constraint.label(),
+                constraint.property() );
+        for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
+            schemaStore.updateRecord( record );
+        schemaCache.addSchemaRule( rule );
     }
 
     private boolean removePrimitiveProperty( PrimitiveRecord primitive,
@@ -1236,7 +1259,24 @@ public class BatchInserterImpl implements BatchInserter
             return new BatchIndexDefinition( label, propertyKey );
         }
     }
+    
+    private class BatchConstraintsActions implements InternalConstraintActions
+    {
+        @Override
+        public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            createConstraintRule( new UniquenessConstraint( getOrCreateLabelId( label.name() ),
+                    getOrCreatePropertyKeyId( propertyKey ) ) );
+            return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
+        }
 
+        @Override
+        public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            throw new UnsupportedOperationException( "Batch inserter doesn't support this" );
+        }
+    }
+    
     private class DependencyResolverImpl extends DependencyResolver.Adapter
     {
         @Override

@@ -19,35 +19,31 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-class AbstractConstraintCreator implements ConstraintCreator
+public class BaseConstraintCreator implements ConstraintCreator
 {
-    protected final ThreadToStatementContextBridge ctxProvider;
-    protected final DependencyResolver dependencyResolver;
+    protected final InternalConstraintActions actions;
     protected final Label label;
 
-    AbstractConstraintCreator( ThreadToStatementContextBridge ctxProvider,
-            DependencyResolver dependencyResolver, Label label )
+    public BaseConstraintCreator( InternalConstraintActions actions, Label label )
     {
-        this.ctxProvider = ctxProvider;
-        this.dependencyResolver = dependencyResolver;
+        this.actions = actions;
         this.label = label;
     }
 
     @Override
     public ConstraintCreator on( String propertyKey )
     {
-        return new PropertyConstraintCreator( ctxProvider, dependencyResolver, label, propertyKey );
+        return new PropertyConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
     public ConstraintCreator unique()
     {
-        return new PropertyUniqueConstraintCreator( ctxProvider, dependencyResolver, label, null );
+        return new PropertyUniqueConstraintCreator( actions, label, null );
     }
 
     @Override

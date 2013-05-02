@@ -41,6 +41,8 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -202,13 +204,13 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintCreator( Label label )
     {
-        return new AbstractConstraintCreator( ctxProvider, null, label );
+        return new BaseConstraintCreator( new ConstraintsActions(), label );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        StatementContext context = ctxProvider.getCtxForReading();
+        final StatementContext context = ctxProvider.getCtxForReading();
         try
         {
             Iterator<UniquenessConstraint> constraints =
@@ -219,7 +221,16 @@ public class SchemaImpl implements Schema
                 @Override
                 public ConstraintDefinition apply( UniquenessConstraint constraint )
                 {
-                    return new PropertyUniqueConstraintDefinition( ctxProvider, label, constraint );
+                    try
+                    {
+                        return new PropertyUniqueConstraintDefinition( new ConstraintsActions(), label,
+                                context.getPropertyKeyName( constraint.property() ) );
+                    }
+                    catch ( PropertyKeyIdNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
+                                constraint.property(), e );
+                    }
                 }
             }, constraints );
             
@@ -233,6 +244,36 @@ public class SchemaImpl implements Schema
         finally
         {
             context.close();
+        }
+    }
+    
+    private class ConstraintsActions implements InternalConstraintActions
+    {
+        @Override
+        public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
+        }
+
+        @Override
+        public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            StatementContext context = ctxProvider.getCtxForWriting();
+            try
+            {
+                long labelId = context.getOrCreateLabelId( label.name() );
+                long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
+                UniquenessConstraint constraint = context.addUniquenessConstraint( labelId, propertyKeyId );
+                context.dropConstraint( constraint );
+            }
+            catch ( ConstraintViolationKernelException e )
+            {
+                throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
+            }
+            finally
+            {
+                context.close();
+            }
         }
     }
 }
