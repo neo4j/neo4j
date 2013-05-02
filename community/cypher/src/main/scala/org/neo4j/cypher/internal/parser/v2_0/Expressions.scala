@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.AbstractPattern
+import org.neo4j.cypher.internal.HasOptionalDefault
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
   def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {
@@ -259,9 +260,17 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   }
 }
 
-trait DefaultTrue
+trait DefaultTrue {
+  self: HasOptionalDefault[Boolean] =>
 
-trait DefaultFalse
+  override def default = Some(true)
+}
+
+trait DefaultFalse {
+  self: HasOptionalDefault[Boolean] =>
+
+  override def default = Some(false)
+}
 
 
 
