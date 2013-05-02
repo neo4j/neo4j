@@ -28,7 +28,7 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
 {
     private final String propertyKey;
 
-    public PropertyUniqueConstraintDefinition( InternalConstraintActions actions, Label label, String propertyKey )
+    public PropertyUniqueConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
         super( actions, label );
         this.propertyKey = propertyKey;

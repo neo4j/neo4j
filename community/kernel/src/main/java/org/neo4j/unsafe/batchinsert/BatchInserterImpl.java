@@ -38,9 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -58,8 +56,10 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.IndexCreatorImpl;
+import org.neo4j.kernel.IndexDefinitionImpl;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.InternalConstraintActions;
+import org.neo4j.kernel.InternalSchemaActions;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -112,7 +112,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ClassicLoggingService;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -142,6 +141,8 @@ public class BatchInserterImpl implements BatchInserter
             return label( labelTokens.nameOf( from ) );
         }
     };
+
+    private final BatchInserterImpl.BatchSchemaActions actions;
 
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
@@ -185,7 +186,7 @@ public class BatchInserterImpl implements BatchInserter
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
         
-        ClassicLoggingService logging = new ClassicLoggingService( new Config() );
+//        ClassicLoggingService logging = new ClassicLoggingService( new Config() );
 //        life.add( CleanupService.create( life.add( new Neo4jJobScheduler( msgLog ) ), logging ) );
         
         KernelExtensions extensions = life.add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
@@ -196,6 +197,7 @@ public class BatchInserterImpl implements BatchInserter
         SchemaIndexProvider provider =
                 extensions.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
+        actions = new BatchSchemaActions();
     }
 
     private Map<String, String> getDefaultParams()
@@ -271,10 +273,10 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public IndexCreator createDeferredSchemaIndex( Label label )
     {
-        return new BatchIndexCreator( label );
+        return new IndexCreatorImpl( actions, label );
     }
     
-    public void createIndexRule( Label label, String propertyKey )
+    private void createIndexRule( Label label, String propertyKey )
     {
         // TODO: Do not create duplicate index
 
@@ -363,11 +365,13 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public ConstraintCreator createDeferredConstraint( Label label )
     {
-        return new BaseConstraintCreator( new BatchConstraintsActions(), label );
+        return new BaseConstraintCreator( new BatchSchemaActions(), label );
     }
     
     private void createConstraintRule( UniquenessConstraint constraint )
     {
+        // TODO: Do not create duplicate index
+
         SchemaStore schemaStore = getSchemaStore();
         UniquenessConstraintRule rule = new UniquenessConstraintRule( schemaStore.nextId(), constraint.label(),
                 constraint.property() );
@@ -477,7 +481,7 @@ public class BatchInserterImpl implements BatchInserter
          * thatFits is the earliest record that can host the block
          * thatHas is the record that already has a block for this index
          */
-        PropertyRecord current = null, thatFits = null, thatHas = null;
+        PropertyRecord current, thatFits = null, thatHas = null;
         /*
          * We keep going while there are records or until we both found the
          * property if it exists and the place to put it, if exists.
@@ -582,7 +586,7 @@ public class BatchInserterImpl implements BatchInserter
             return false;
         }
 
-        PropertyRecord current = null;
+        PropertyRecord current;
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             current = getPropertyStore().getRecord( nextProp );
@@ -1190,15 +1194,6 @@ public class BatchInserterImpl implements BatchInserter
         return -1;
     }
 
-    /**
-     * @deprecated as of Neo4j 1.7
-     */
-    @Deprecated
-    public GraphDatabaseService getBatchGraphDbService()
-    {
-        return new BatchGraphDatabaseImpl( this );
-    }
-
     public IndexStore getIndexStore()
     {
         return this.indexStore;
@@ -1211,57 +1206,31 @@ public class BatchInserterImpl implements BatchInserter
 
     private void dumpConfiguration( Map<String, String> config )
     {
-        for ( Object key : config.keySet() )
+        for ( String key : config.keySet() )
         {
             Object value = config.get( key );
-            if ( value instanceof String )
+            if ( value != null )
             {
                 System.out.println( key + "=" + value );
             }
         }
     }
 
-    private class BatchIndexCreator implements IndexCreator
+    private class BatchSchemaActions implements InternalSchemaActions
     {
-        private final Label label;
-        private final String propertyKey;
-
-        public BatchIndexCreator( Label label, String propertyKey )
-        {
-            if ( label == null )
-                throw new IllegalArgumentException( "Cannot create an index with a null label" );
-            this.label = label;
-            this.propertyKey = propertyKey;
-        }
-
-        private BatchIndexCreator( Label label )
-        {
-            this( label, null );
-        }
-
         @Override
-        public IndexCreator on( String propertyKey )
+        public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
-            if ( null == this.propertyKey )
-                return new BatchIndexCreator( label, propertyKey );
-            else
-                throw new IllegalArgumentException( "Indexes over compound keys are not yet supported" );
-        }
-
-        @Override
-        public IndexDefinition create() throws ConstraintViolationException
-        {
-            if ( propertyKey == null )
-                throw new IllegalStateException( "Need a property key to define an index" );
-            
             createIndexRule( label, propertyKey );
-            
-            return new BatchIndexDefinition( label, propertyKey );
+            return new IndexDefinitionImpl( this, label, propertyKey );
         }
-    }
-    
-    private class BatchConstraintsActions implements InternalConstraintActions
-    {
+
+        @Override
+        public void dropIndexDefinitions( Label label, String propertyKey )
+        {
+            throw new UnsupportedOperationException( "Dropping schema indexes is not supported in batch mode" );
+        }
+
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {

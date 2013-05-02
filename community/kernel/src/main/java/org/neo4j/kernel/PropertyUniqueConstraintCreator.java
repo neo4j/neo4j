@@ -25,7 +25,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 
 public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
 {
-    PropertyUniqueConstraintCreator( InternalConstraintActions actions, Label label, String propertyKeyOrNull )
+    PropertyUniqueConstraintCreator( InternalSchemaActions actions, Label label, String propertyKeyOrNull )
     {
         super( actions, label, propertyKeyOrNull );
     }

@@ -25,10 +25,10 @@ import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
 public abstract class BaseConstraintDefinition implements ConstraintDefinition
 {
-    protected final InternalConstraintActions actions;
+    protected final InternalSchemaActions actions;
     protected final Label label;
 
-    public BaseConstraintDefinition( InternalConstraintActions actions, Label label )
+    public BaseConstraintDefinition( InternalSchemaActions actions, Label label )
     {
         this.actions = actions;
         this.label = label;

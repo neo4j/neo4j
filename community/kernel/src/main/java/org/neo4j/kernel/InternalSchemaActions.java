@@ -21,9 +21,18 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
-public interface InternalConstraintActions
+/**
+ * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseConstraintCreator} for re-use
+ * by both the graph database and the batch inserter.
+ */
+public interface InternalSchemaActions
 {
+    IndexDefinition createIndexDefinition( Label label, String propertyKey );
+
+    void dropIndexDefinitions( Label label, String propertyKey );
+
     ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey );
     
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );

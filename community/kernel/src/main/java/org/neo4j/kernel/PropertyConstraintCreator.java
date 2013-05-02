@@ -28,7 +28,7 @@ public class PropertyConstraintCreator extends BaseConstraintCreator
     // Only single property key supported a.t.m.
     protected final String propertyKey;
 
-    PropertyConstraintCreator( InternalConstraintActions internalCreator, Label label, String propertyKeyOrNull )
+    PropertyConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKeyOrNull )
     {
         super( internalCreator, label );
         this.propertyKey = propertyKeyOrNull;

@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -56,6 +57,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
@@ -825,7 +827,23 @@ public class TestBatchInsert
     }
 
     @Test
-    public void shouldRunPopulationJobAtShutdown() throws Throwable
+    public void shouldCreateDeferredUniquenessConstraintInEmptyDatabase() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        ConstraintDefinition definition =
+                inserter.createDeferredConstraint( label( "Hacker" ) ).on( "handle" ).unique().create();
+
+        // THEN
+        assertEquals( "Hacker", definition.getLabel().name() );
+        assertEquals( ConstraintDefinition.Type.UNIQUENESS, definition.getConstraintType() );
+        assertEquals( "handle", definition.asUniquenessConstraint().getPropertyKey() );
+    }
+
+    @Test
+    public void shouldRunIndexPopulationJobAtShutdown() throws Throwable
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
@@ -838,6 +856,38 @@ public class TestBatchInsert
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+
+        // WHEN
+        inserter.shutdown();
+
+        // THEN
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong() );
+        verify( populator ).create();
+        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
+    }
+
+    @Test @Ignore("once we implement verify constraint on existing data")
+    public void shouldRunConstraintPopulationJobAtShutdown() throws Throwable
+    {
+        // GIVEN
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredConstraint( label("Hacker") ).on( "handle" ).unique().create();
 
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
 

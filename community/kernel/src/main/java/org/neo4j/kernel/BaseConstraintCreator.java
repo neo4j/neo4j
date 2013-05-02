@@ -25,10 +25,10 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 
 public class BaseConstraintCreator implements ConstraintCreator
 {
-    protected final InternalConstraintActions actions;
+    protected final InternalSchemaActions actions;
     protected final Label label;
 
-    public BaseConstraintCreator( InternalConstraintActions actions, Label label )
+    public BaseConstraintCreator( InternalSchemaActions actions, Label label )
     {
         this.actions = actions;
         this.label = label;

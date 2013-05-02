@@ -30,26 +30,23 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.StatementContext;
 
 public class IndexCreatorImpl implements IndexCreator
 {
     private final Collection<String> propertyKeys;
     private final Label label;
-    private final ThreadToStatementContextBridge ctxProvider;
+    private final InternalSchemaActions actions;
 
-    IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider, Label label )
+    public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this.ctxProvider = ctxProvider;
+        this.actions = actions;
         this.label = label;
         this.propertyKeys = new ArrayList<String>();
     }
     
-    private IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider,
-            Label label, Collection<String> propertyKeys )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label label, Collection<String> propertyKeys )
     {
-        this.ctxProvider = ctxProvider;
+        this.actions = actions;
         this.label = label;
         this.propertyKeys = propertyKeys;
     }
@@ -58,9 +55,11 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         if ( !propertyKeys.isEmpty() )
-            throw new UnsupportedOperationException( "Compound indexes are not yet supported, only one property per index is allowed." );
-        return new IndexCreatorImpl( ctxProvider, label,
-                addToCollection( asList( propertyKey ), new ArrayList<String>( propertyKeys ) ) );
+            throw new UnsupportedOperationException(
+                    "Compound indexes are not yet supported, only one property per index is allowed." );
+        return
+            new IndexCreatorImpl( actions, label,
+                                  addToCollection( asList( propertyKey ), new ArrayList<String>( propertyKeys ) ) );
     }
 
     @Override
@@ -68,23 +67,7 @@ public class IndexCreatorImpl implements IndexCreator
     {
         if ( propertyKeys.isEmpty() )
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
-        
-        StatementContext context = ctxProvider.getCtxForWriting();
-        try
-        {
-            String singlePropertyKey = single( propertyKeys );
-            context.addIndexRule( context.getOrCreateLabelId( label.name() ),
-                    context.getOrCreatePropertyKeyId( singlePropertyKey ) );
-            return new IndexDefinitionImpl( ctxProvider, label, singlePropertyKey );
-        }
-        catch ( ConstraintViolationKernelException e )
-        {
-            throw new ConstraintViolationException( String.format(
-                    "Unable to create index for label '%s' on properties %s.", label.name(), propertyKeys ), e );
-        }
-        finally
-        {
-            context.close();
-        }
+
+        return actions.createIndexDefinition( label, single( propertyKeys ) );
     }
 }

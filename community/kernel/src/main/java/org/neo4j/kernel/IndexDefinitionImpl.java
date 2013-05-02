@@ -21,25 +21,19 @@ package org.neo4j.kernel;
 
 import static java.util.Arrays.asList;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
 
-class IndexDefinitionImpl implements IndexDefinition
+public class IndexDefinitionImpl implements IndexDefinition
 {
+    private final InternalSchemaActions actions;
+
     private final Label label;
     private final String propertyKey;
-    private final ThreadToStatementContextBridge ctxProvider;
 
-    public IndexDefinitionImpl( ThreadToStatementContextBridge ctxProvider, Label label, String propertyKey )
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        this.ctxProvider = ctxProvider;
+        this.actions = actions;
         this.label = label;
         this.propertyKey = propertyKey;
     }
@@ -59,35 +53,7 @@ class IndexDefinitionImpl implements IndexDefinition
     @Override
     public void drop()
     {
-        StatementContext context = ctxProvider.getCtxForWriting();
-        try
-        {
-            context.dropIndexRule(
-                    context.getIndexRule( context.getLabelId( label.name() ),
-                            context.getPropertyKeyId( propertyKey ) ) );
-        }
-        catch ( ConstraintViolationKernelException e )
-        {
-            throw new ConstraintViolationException( String.format(
-                    "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Label " + label.name() + " should exist here" );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist here" );
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new ConstraintViolationException( String.format(
-                    "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
-        }
-        finally
-        {
-            context.close();
-        }
+        actions.dropIndexDefinitions( label, propertyKey );
     }
     
     @Override
