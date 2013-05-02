@@ -21,12 +21,8 @@ package org.neo4j.cypher.internal.parser
 
 import v2_0._
 import org.junit.Test
-import org.neo4j.cypher.internal.mutation.{NamedExpectation, UniqueLink}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.helpers.LabelSupport
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Identifier}
 import org.neo4j.cypher.internal.commands.CreateUniqueConstraint
-import org.neo4j.cypher.internal.commands.DropConstraint
+import org.neo4j.cypher.internal.commands.DropUniqueConstraint
 
 class ConstraintTest extends Constraint with ParserTest {
 
@@ -50,9 +46,9 @@ class ConstraintTest extends Constraint with ParserTest {
     parsing( "DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE" ) or
     parsing( "DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE" ) or
     parsing( "drop constraint on (foo:Foo) assert foo.name is unique" ) shouldGive
-      DropConstraint( "foo", "Foo", "foo", "name" )
+      DropUniqueConstraint( "foo", "Foo", "foo", "name" )
     
     parsing( "DROP CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE" ) shouldGive
-      DropConstraint( "foo", "Foo", "bar", "name" )
+      DropUniqueConstraint( "foo", "Foo", "bar", "name" )
   }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.PlanDescription
-import org.neo4j.cypher.internal.commands.UniqueConstraintOperation
+import org.neo4j.cypher.internal.commands.{DropUniqueConstraint, CreateUniqueConstraint, UniqueConstraintOperation}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
@@ -29,7 +29,11 @@ class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, pr
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val labelId = label.getId(state)
     val propertyKeyId = propertyKey.getId(state)
-    state.query.createUniqueConstraint(labelId, propertyKeyId)
+
+    op match {
+      case _: CreateUniqueConstraint => state.query.createUniqueConstraint(labelId, propertyKeyId)
+      case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(labelId, propertyKeyId)
+    }
 
     Iterator.empty
   }

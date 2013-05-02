@@ -126,4 +126,6 @@ class SnitchingQueryContext extends QueryContext {
   def getLabelId(labelName: String): Option[Long] = labels.get(labelName)
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
+
+  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
 }

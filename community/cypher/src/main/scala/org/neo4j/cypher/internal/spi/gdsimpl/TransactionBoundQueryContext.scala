@@ -29,6 +29,7 @@ import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, In
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.helpers.collection.IteratorUtil
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
@@ -201,5 +202,10 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
     ctx.addUniquenessConstraint(labelId, propertyKeyId)
+  }
+
+  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    val constraint = IteratorUtil.single(ctx.getConstraints(labelId, propertyKeyId))
+    ctx.dropConstraint(constraint)
   }
 }
