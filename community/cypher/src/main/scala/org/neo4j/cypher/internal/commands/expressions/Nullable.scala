@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.{HasOptionalDefault, ExecutionContext}
 import org.neo4j.cypher.internal.pipes.QueryState
 
-case class Nullable(expression: Expression) extends Expression {
+case class Nullable(expression: Expression) extends Expression with HasOptionalDefault[Boolean] {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = try {
     expression.apply(ctx)
   } catch {

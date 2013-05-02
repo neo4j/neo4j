@@ -20,29 +20,19 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands._
-import expressions.Identifier
-import org.neo4j.cypher.internal.spi.PlanContext
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions._
+import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.parser.v2_0.DefaultFalse
 import org.neo4j.cypher.internal.pipes.FakePipe
+import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.symbols.NodeType
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.expressions.IdFunction
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.commands.MergeNodeStartItem
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.SchemaIndex
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.NodeByLabel
-import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.expressions.Property
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.scalatest.mock.MockitoSugar
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -156,6 +146,44 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === List(Unsolved(SchemaIndex(identifier, label, property, None))))
+  }
+
+  @Test
+  def should_pick_an_index_if_only_one_possible_nullable_property_exists() {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(new Nullable(Property(Identifier(identifier), property)) with DefaultFalse, expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, None))))
+  }
+
+  @Test
+  def should_pick_an_index_if_only_one_possible_nullable_property_exists_other_side() {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(expression, new Nullable(Property(Identifier(identifier), property)) with DefaultFalse)
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, None))))
   }
 
   @Test
@@ -321,7 +349,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Then
     plan.query.start match {
       case Seq(Unsolved(MergeNodeStartItem(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_))))) =>
-        true
+        return
       case _ =>
         fail("Expected something else, but got this: " + plan.query.start)
     }

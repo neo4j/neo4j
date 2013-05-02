@@ -20,14 +20,8 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.commands.expressions.{Literal, IdFunction, Property, Identifier}
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.SchemaIndex
-import org.neo4j.cypher.internal.commands.NodeByLabel
-import org.neo4j.cypher.internal.commands.HasLabel
-
-
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -115,6 +109,8 @@ object IndexSeekStrategy extends NodeStrategy {
     where.collect {
       case predicate@Equals(Property(Identifier(id), propertyName), expression) if id == identifier => SolvedPredicate(propertyName, predicate)
       case predicate@Equals(expression, Property(Identifier(id), propertyName)) if id == identifier => SolvedPredicate(propertyName, predicate)
+      case predicate@Equals(nullable @ Nullable(Property(Identifier(id), propertyName)), expression) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyName, predicate)
+      case predicate@Equals(expression, nullable @ Nullable(Property(Identifier(id), propertyName))) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyName, predicate)
     }
 }
 

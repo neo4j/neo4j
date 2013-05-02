@@ -33,7 +33,7 @@ choosing a start point to use.
 To do this, three things are done.
   * every disconnected part of the pattern is found
   * for each pattern:
-    * find the best strategy for retreiving nodes for every pattern node
+    * find the best strategy for retrieving nodes for every pattern node
     * for each pattern, find the best start points
  */
 
