@@ -99,4 +99,11 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
         }
         return false;
     }
+    
+    // This method exists as long as only single property keys are supported
+    public long getPropertyKey()
+    {
+        // Property key "singleness" is checked elsewhere, in the constructor and when deserializing.
+        return propertyKeyIds[0];
+    }
 }

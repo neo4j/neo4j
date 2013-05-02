@@ -391,6 +391,19 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<UniquenessConstraint> result = schemaOperations.getConstraints( labelId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+    
+    @Override
     public Iterator<LabelToken> listLabels()
     {
         beforeOperation();

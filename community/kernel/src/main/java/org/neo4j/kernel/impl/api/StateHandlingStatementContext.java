@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+
 import java.util.Iterator;
 import java.util.Set;
 
@@ -38,10 +42,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
-
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class StateHandlingStatementContext extends CompositeStatementContext
 {
@@ -182,7 +182,18 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
     {
-        Iterator<UniquenessConstraint> constraints = delegate.getConstraints( labelId, propertyKeyId );
+        return applyConstraintsDiff( delegate.getConstraints( labelId, propertyKeyId ), labelId );
+    }
+    
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        return applyConstraintsDiff( delegate.getConstraints( labelId ), labelId );
+    }
+    
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
+            long labelId )
+    {
         DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( labelId );
         if ( diff != null )
         {
@@ -190,7 +201,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         }
         return constraints;
     }
-
+    
     @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {

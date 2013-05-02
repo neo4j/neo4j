@@ -19,96 +19,88 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
-import org.neo4j.kernel.impl.core.TokenHolder;
-
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class SchemaImpl implements Schema
 {
     private final ThreadToStatementContextBridge ctxProvider;
-    private final TokenHolder<PropertyKeyToken> propertyKeyManager;
-    private final CleanupService cleanupService;
 
-    public SchemaImpl( ThreadToStatementContextBridge ctxProvider, CleanupService cleanupService,
-                       TokenHolder<PropertyKeyToken> propertyKeyManager )
+    public SchemaImpl( ThreadToStatementContextBridge ctxProvider )
     {
         this.ctxProvider = ctxProvider;
-        this.propertyKeyManager = propertyKeyManager;
-        this.cleanupService = cleanupService;
     }
 
     @Override
     public IndexCreator indexCreator( Label label )
     {
-        return new IndexCreatorImpl( ctxProvider, propertyKeyManager, label );
+        return new IndexCreatorImpl( ctxProvider, label );
     }
 
     @Override
-    public ResourceIterable<IndexDefinition> getIndexes( final Label label )
+    public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        return new ResourceIterable<IndexDefinition>()
+        StatementContext context = ctxProvider.getCtxForReading();
+        try
         {
-            @Override
-            public ResourceIterator<IndexDefinition> iterator()
-            {
-                StatementContext context = ctxProvider.getCtxForReading();
-                try
-                {
-                    return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
-                }
-                catch ( LabelNotFoundKernelException e )
-                {
-                    context.close();
-                    return emptyIterator();
-                }
-            }
-        };
+            return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            return emptyList();
+        }
+        finally
+        {
+            context.close();
+        }
     }
 
     @Override
-    public ResourceIterable<IndexDefinition> getIndexes()
+    public Iterable<IndexDefinition> getIndexes()
     {
-        return new ResourceIterable<IndexDefinition>()
+        StatementContext context = ctxProvider.getCtxForReading();
+        try
         {
-            @Override
-            public ResourceIterator<IndexDefinition> iterator()
-            {
-                StatementContext context = ctxProvider.getCtxForReading();
-                return getIndexDefinitions( context, context.getIndexRules() );
-            }
-        };
+            return getIndexDefinitions( context, context.getIndexRules() );
+        }
+        finally
+        {
+            context.close();
+        }
     }
     
-    private ResourceIterator<IndexDefinition> getIndexDefinitions( final StatementContext context,
+    private Collection<IndexDefinition> getIndexDefinitions( final StatementContext context,
                                                                    Iterator<IndexDescriptor> indexRules )
     {
-        return cleanupService.resourceIterator( map( new Function<IndexDescriptor, IndexDefinition>()
+        Iterator<IndexDefinition> eagerDefinitions = map( new Function<IndexDescriptor, IndexDefinition>()
         {
             @Override
             public IndexDefinition apply( IndexDescriptor rule )
@@ -116,15 +108,20 @@ public class SchemaImpl implements Schema
                 try
                 {
                     Label label = label( context.getLabelName( rule.getLabelId() ) );
-                    String propertyKey = propertyKeyManager.getTokenByIdOrNull( (int) rule.getPropertyKeyId() ).getKey();
+                    String propertyKey = context.getPropertyKeyName( rule.getPropertyKeyId() );
                     return new IndexDefinitionImpl( ctxProvider, label, propertyKey );
                 }
                 catch ( LabelNotFoundKernelException e )
                 {
                     throw new RuntimeException( e );
                 }
+                catch ( PropertyKeyIdNotFoundException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
-        }, indexRules ), context );
+        }, indexRules );
+        return asCollection( eagerDefinitions );
     }
 
     @Override
@@ -195,6 +192,43 @@ public class SchemaImpl implements Schema
         {
             throw new NotFoundException( format( "No index for label %s on property %s",
                     index.getLabel().name(), propertyKey ), e );
+        }
+        finally
+        {
+            context.close();
+        }
+    }
+    
+    @Override
+    public ConstraintCreator constraintCreator( Label label )
+    {
+        return new AbstractConstraintCreator( ctxProvider, null, label );
+    }
+
+    @Override
+    public Iterable<ConstraintDefinition> getConstraints( final Label label )
+    {
+        StatementContext context = ctxProvider.getCtxForReading();
+        try
+        {
+            Iterator<UniquenessConstraint> constraints =
+                    context.getConstraints( context.getLabelId( label.name() ) );
+            Iterator<ConstraintDefinition> definitions =
+                    map( new Function<UniquenessConstraint, ConstraintDefinition>()
+            {
+                @Override
+                public ConstraintDefinition apply( UniquenessConstraint constraint )
+                {
+                    return new PropertyUniqueConstraintDefinition( ctxProvider, label, constraint );
+                }
+            }, constraints );
+            
+            // Intentionally iterator over it so that we can close the statement context within this method
+            return asCollection( definitions );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            return emptyList();
         }
         finally
         {

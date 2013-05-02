@@ -19,22 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.Iterator;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+
+import java.util.Iterator;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 public class UniquenessConstraintIT extends KernelIntegrationTest
 {
@@ -48,22 +47,18 @@ public class UniquenessConstraintIT extends KernelIntegrationTest
         UniquenessConstraint constraint = statement.addUniquenessConstraint( label, propertyKey );
 
         // then
-        Iterator<UniquenessConstraint> constraints = statement.getConstraints( label, propertyKey );
-        assertTrue( "should have at least one constraint", constraints.hasNext() );
-        assertEquals( "should have the constraint we created", constraint, constraints.next() );
-        assertFalse( "should have no more than one constraint", constraints.hasNext() );
+        assertEquals( constraint, single( statement.getConstraints( label, propertyKey ) ) );
+        assertEquals( constraint, single( statement.getConstraints( label ) ) );
 
         // given
         commit();
         newTransaction();
 
         // when
-        constraints = statement.getConstraints( label, propertyKey );
+        Iterator<UniquenessConstraint> constraints = statement.getConstraints( label, propertyKey );
 
         // then
-        assertTrue( "should have at least one constraint", constraints.hasNext() );
-        assertEquals( "should have the constraint we created", constraint, constraints.next() );
-        assertFalse( "should have no more than one constraint", constraints.hasNext() );
+        assertEquals( constraint, single( constraints ) );
     }
 
     @Test

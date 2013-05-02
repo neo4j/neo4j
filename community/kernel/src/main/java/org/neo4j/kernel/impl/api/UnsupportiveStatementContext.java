@@ -237,6 +237,12 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        throw unsupported();
+    }
+    
+    @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {
         throw unsupported();

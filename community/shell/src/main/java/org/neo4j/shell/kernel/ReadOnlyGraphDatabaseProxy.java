@@ -56,6 +56,8 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -1026,13 +1028,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public ResourceIterable<IndexDefinition> getIndexes( Label label )
+        public Iterable<IndexDefinition> getIndexes( Label label )
         {
             return actual.getIndexes( label );
         }
 
         @Override
-        public ResourceIterable<IndexDefinition> getIndexes()
+        public Iterable<IndexDefinition> getIndexes()
         {
             return actual.getIndexes();
         }
@@ -1047,6 +1049,18 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
         {
             actual.awaitIndexOnline( index, duration, unit );
+        }
+
+        @Override
+        public ConstraintCreator constraintCreator( Label label )
+        {
+            throw readOnlyException();
+        }
+
+        @Override
+        public Iterable<ConstraintDefinition> getConstraints( Label label )
+        {
+            return actual.getConstraints( label );
         }
     }
 

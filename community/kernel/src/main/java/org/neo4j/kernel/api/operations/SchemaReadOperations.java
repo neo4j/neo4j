@@ -49,5 +49,15 @@ public interface SchemaReadOperations
      */
     InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException;
 
+    /**
+     * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
+     * for the time being.
+     */
     Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId );
+
+    /**
+     * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
+     * for the time being.
+     */
+    Iterator<UniquenessConstraint> getConstraints( long labelId );
 }
