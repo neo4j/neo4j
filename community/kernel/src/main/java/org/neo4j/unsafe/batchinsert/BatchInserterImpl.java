@@ -1265,8 +1265,9 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            createConstraintRule( new UniquenessConstraint( getOrCreateLabelId( label.name() ),
-                    getOrCreatePropertyKeyId( propertyKey ) ) );
+            long labelId = getOrCreateLabelId( label.name() );
+            int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+            createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
             return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
         }
 
