@@ -44,7 +44,6 @@ class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with Statisti
 
     assert(constraints.size === 1)
   }
-
   @Test
   def should_drop_constraint() {
     //GIVEN
