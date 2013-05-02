@@ -30,6 +30,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -94,6 +95,18 @@ public class StoreStatementContext extends CompositeStatementContext
             {
                 throw new ThisShouldNotHappenError( "Jake", "Property key id stored in store should exist." );
             }
+        }
+    };
+    private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
+            new Function<UniquenessConstraintRule, UniquenessConstraint>()
+    {
+        @Override
+        public UniquenessConstraint apply( UniquenessConstraintRule rule )
+        {
+            // We can use propertyKeyId straight up here, without reading from the record, since we have
+            // verified that it has that propertyKeyId in the predicate. And since we currently only support
+            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+            return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
         }
     };
     private final SchemaStorage schemaStorage;
@@ -310,19 +323,8 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, final long propertyKeyId )
     {
-        return schemaStorage.schemaRules(
-                new Function<UniquenessConstraintRule, UniquenessConstraint>()
-                {
-                    @Override
-                    public UniquenessConstraint apply( UniquenessConstraintRule rule )
-                    {
-                        // We can use propertyKeyId straight up here, without reading from the record, since we have
-                        // verified that it has that propertyKeyId in the predicate. And since we currently only support
-                        // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-                        return new UniquenessConstraint( rule.getLabel(), propertyKeyId );
-                    }
-                }, SchemaRule.Kind.UNIQUENESS_CONSTRAINT, labelId,
-                new Predicate<UniquenessConstraintRule>()
+        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
+                labelId, new Predicate<UniquenessConstraintRule>()
                 {
                     @Override
                     public boolean accept( UniquenessConstraintRule rule )
@@ -333,6 +335,13 @@ public class StoreStatementContext extends CompositeStatementContext
         );
     }
 
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
+                labelId, Predicates.<UniquenessConstraintRule>TRUE() );
+    }
+    
     @Override
     public long getOrCreatePropertyKeyId( String propertyKey )
     {

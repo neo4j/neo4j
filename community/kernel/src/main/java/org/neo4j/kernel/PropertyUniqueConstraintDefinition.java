@@ -19,50 +19,51 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
-public class IndexDefinitionImpl implements IndexDefinition
+public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements UniquenessConstraintDefinition
 {
-    private final InternalSchemaActions actions;
-
-    private final Label label;
     private final String propertyKey;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey )
+    public PropertyUniqueConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        this.actions = actions;
-        this.label = label;
+        super( actions, label );
         this.propertyKey = propertyKey;
     }
 
     @Override
-    public Label getLabel()
+    public Type getConstraintType()
     {
-        return label;
+        return Type.UNIQUENESS;
+    }
+    
+    @Override
+    public void drop()
+    {
+        actions.dropPropertyUniquenessConstraint( label, propertyKey );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        return asList( propertyKey );
+        return singletonList( propertyKey );
     }
 
     @Override
-    public void drop()
+    public UniquenessConstraintDefinition asUniquenessConstraint()
     {
-        actions.dropIndexDefinitions( label, propertyKey );
+        return this;
     }
-    
+
     @Override
     public int hashCode()
     {
         final int prime = 31;
-        int result = 1;
-        result = prime * result + label.name().hashCode();
-        result = prime * result + propertyKey.hashCode();
+        int result = super.hashCode();
+        result = prime * result + ((propertyKey == null) ? 0 : propertyKey.hashCode());
         return result;
     }
 
@@ -71,21 +72,18 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         if ( this == obj )
             return true;
-        if ( obj == null )
+        if ( !super.equals( obj ) )
             return false;
         if ( getClass() != obj.getClass() )
             return false;
-        IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        if ( !label.name().equals( other.label.name() ) )
-            return false;
-        if ( !propertyKey.equals( other.propertyKey ) )
+        PropertyUniqueConstraintDefinition other = (PropertyUniqueConstraintDefinition) obj;
+        if ( propertyKey == null )
+        {
+            if ( other.propertyKey != null )
+                return false;
+        }
+        else if ( !propertyKey.equals( other.propertyKey ) )
             return false;
         return true;
-    }
-    
-    @Override
-    public String toString()
-    {
-        return "IndexDefinition[label:" + label + ", on:" + propertyKey + "]";
     }
 }

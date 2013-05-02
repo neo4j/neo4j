@@ -17,43 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-public class BatchIndexDefinition implements IndexDefinition
+public class BaseConstraintCreator implements ConstraintCreator
 {
-    private final Label label;
-    private final Collection<String> propertyKeys;
+    protected final InternalSchemaActions actions;
+    protected final Label label;
 
-    public BatchIndexDefinition( Label label, String... propertyKeys )
+    public BaseConstraintCreator( InternalSchemaActions actions, Label label )
     {
+        this.actions = actions;
         this.label = label;
-        this.propertyKeys = new ArrayList<String>( );
-        for ( String propertyKey : propertyKeys )
-            this.propertyKeys.add( propertyKey );
     }
 
     @Override
-    public Label getLabel()
+    public ConstraintCreator on( String propertyKey )
     {
-        return label;
+        return new PropertyConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
+    public ConstraintCreator unique()
     {
-        return Collections.unmodifiableCollection( propertyKeys );
+        return new PropertyUniqueConstraintCreator( actions, label, null );
     }
 
     @Override
-    public void drop()
+    public ConstraintDefinition create()
     {
-        throw new UnsupportedOperationException( "Dropping schema indexes is not supported in batch mode" );
+        throw new IllegalStateException( "Not constraint assertions specified" );
     }
 }

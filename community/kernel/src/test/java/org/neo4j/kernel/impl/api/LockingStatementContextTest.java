@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Iterator;
-
-import org.junit.Test;
-import org.mockito.InOrder;
-
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.transaction.LockType;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -40,6 +28,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.Iterator;
+
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.transaction.LockType;
 
 public class LockingStatementContextTest
 {
@@ -193,5 +192,8 @@ public class LockingStatementContextTest
         order.verify( lockHolder ).acquireSchemaReadLock();
         order.verify( delegate ).getConstraints( 123, 456 );
         verifyNoMoreInteractions( lockHolder, delegate );
+        
+        // cleanup
+        context.close();
     }
 }

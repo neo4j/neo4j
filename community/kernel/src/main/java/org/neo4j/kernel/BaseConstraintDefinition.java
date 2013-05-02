@@ -19,23 +19,19 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Arrays.asList;
-
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
-public class IndexDefinitionImpl implements IndexDefinition
+public abstract class BaseConstraintDefinition implements ConstraintDefinition
 {
-    private final InternalSchemaActions actions;
+    protected final InternalSchemaActions actions;
+    protected final Label label;
 
-    private final Label label;
-    private final String propertyKey;
-
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey )
+    public BaseConstraintDefinition( InternalSchemaActions actions, Label label )
     {
         this.actions = actions;
         this.label = label;
-        this.propertyKey = propertyKey;
     }
 
     @Override
@@ -45,24 +41,17 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
+    public UniquenessConstraintDefinition asUniquenessConstraint()
     {
-        return asList( propertyKey );
+        throw new UnsupportedOperationException( this + " is of type " + getClass().getSimpleName() );
     }
 
-    @Override
-    public void drop()
-    {
-        actions.dropIndexDefinitions( label, propertyKey );
-    }
-    
     @Override
     public int hashCode()
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + label.name().hashCode();
-        result = prime * result + propertyKey.hashCode();
+        result = prime * result + ((label == null) ? 0 : label.hashCode());
         return result;
     }
 
@@ -75,17 +64,14 @@ public class IndexDefinitionImpl implements IndexDefinition
             return false;
         if ( getClass() != obj.getClass() )
             return false;
-        IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        if ( !label.name().equals( other.label.name() ) )
-            return false;
-        if ( !propertyKey.equals( other.propertyKey ) )
+        BaseConstraintDefinition other = (BaseConstraintDefinition) obj;
+        if ( label == null )
+        {
+            if ( other.label != null )
+                return false;
+        }
+        else if ( !label.equals( other.label ) )
             return false;
         return true;
-    }
-    
-    @Override
-    public String toString()
-    {
-        return "IndexDefinition[label:" + label + ", on:" + propertyKey + "]";
     }
 }
