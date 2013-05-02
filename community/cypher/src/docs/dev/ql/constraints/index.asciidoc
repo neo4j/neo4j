@@ -6,14 +6,13 @@ Constraints
 Neo4j helps enforcing data integrity with the use of constraints.
 
 You can use unique constraints to ensure that property values are unique for all nodes with a specific label.
-Unique constraints do not mean that all nodes have to have a unique value for properties - nodes without the property
-are not subject to this rule.
+Unique constraints do not mean that all nodes have to have a unique value for the properties -- nodes without the property are not subject to this rule.
 
-Remember that adding constraints is an atomic operation that can take a while - all existing data has to be scanned
-before Neo4j can turn the constraint "on".
+Remember that adding constraints is an atomic operation that can take a while -- all existing data has to be scanned before Neo4j can turn the constraint ``on''.
 
 You can have multiple unique constraints for a given label.
 
 include::create-uniqueness-constraint.asciidoc[]
 
 include::drop-uniqueness-constraint.asciidoc[]
+
