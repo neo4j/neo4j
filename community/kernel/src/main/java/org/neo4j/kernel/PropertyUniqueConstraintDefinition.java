@@ -47,7 +47,7 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     }
 
     @Override
-    public Iterable<String> getPropertyKey()
+    public Iterable<String> getPropertyKeys()
     {
         return singletonList( propertyKey );
     }

@@ -27,5 +27,5 @@ public interface UniquenessConstraintDefinition extends ConstraintDefinition
     /**
      * @return the property keys this constraint is about.
      */
-    Iterable<String> getPropertyKey();
+    Iterable<String> getPropertyKeys();
 }

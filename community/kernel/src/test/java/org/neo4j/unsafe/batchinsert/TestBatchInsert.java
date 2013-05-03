@@ -839,7 +839,7 @@ public class TestBatchInsert
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintDefinition.Type.UNIQUENESS, definition.getConstraintType() );
-        assertEquals( "handle", definition.asUniquenessConstraint().getPropertyKey() );
+        assertEquals( asSet( "handle" ), asSet( definition.asUniquenessConstraint().getPropertyKeys() ) );
     }
 
     @Test

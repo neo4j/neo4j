@@ -307,7 +307,7 @@ public class SchemaAcceptanceTest
         
         UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
         assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
-        assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKey() ) );
+        assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
     }
     
     @Test
