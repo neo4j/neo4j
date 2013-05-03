@@ -60,30 +60,18 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     @Override
     public void commit() throws TransactionFailureException
     {
-        // TODO: this checking should be removed at some point in the future.
-        // Currently the TxManager will release all locks if the transaction fails to commit.
-        // That should not be the case when the transaction code has been refactored (moved away from JTA).
-        boolean unlock = true;
         try
         {
             super.commit();
         }
-        catch ( TransactionFailureException e )
-        {
-            unlock = false;
-            throw e;
-        }
         finally
         {
-            if ( unlock )
-            {
-                lockHolder.releaseLocks();
-            }
+            lockHolder.releaseLocks();
         }
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
         try
         {

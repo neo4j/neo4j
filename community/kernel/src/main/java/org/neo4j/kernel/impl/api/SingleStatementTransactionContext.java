@@ -62,7 +62,7 @@ public class SingleStatementTransactionContext extends DelegatingTransactionCont
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
         closeShop();
         super.rollback();
