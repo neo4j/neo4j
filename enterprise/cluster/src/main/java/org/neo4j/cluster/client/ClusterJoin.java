@@ -291,7 +291,7 @@ public class ClusterJoin
                     return;
                 }
             }
-            logger.warn( "Member " + member + " joined cluster but was not part of initial hosts (" +
+            logger.info( "Member " + member + " joined cluster but was not part of initial hosts (" +
                     initialHosts + ")" );
         }
 
