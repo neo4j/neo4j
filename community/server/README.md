@@ -18,6 +18,7 @@ Run the server using:
 
 If this fails, ensure you are not missing neo4j-home/conf/neo4j-server.properties
 with a line containing 'org.neo4j.server.database.location=<path-to-database-files>'.
+This may happen if you delete neo4j-home during development to reset the database.
 
 ## Webadmin development
 
