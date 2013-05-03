@@ -16,6 +16,9 @@ Run the server using:
 
     mvn exec:java
 
+If this fails, ensure you are not missing neo4j-home/conf/neo4j-server.properties
+with a line containing 'org.neo4j.server.database.location=<path-to-database-files>'.
+
 ## Webadmin development
 
 The web administration interface, webadmin, can be found in two places of the source tree:
