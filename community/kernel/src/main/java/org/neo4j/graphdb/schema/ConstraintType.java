@@ -17,25 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.schema;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.helpers.Predicate;
 
 /**
- * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseConstraintCreator} for re-use
- * by both the graph database and the batch inserter.
+ * Constraint type. Used with {@link ConstraintDefinition#getConstraintType()} to see
+ * of which type a constraint is.
  */
-public interface InternalSchemaActions
+public enum ConstraintType implements Predicate<ConstraintDefinition>
 {
-    IndexDefinition createIndexDefinition( Label label, String propertyKey );
+    /**
+     * @see ConstraintDefinition#asUniquenessConstraint()
+     */
+    UNIQUENESS;
 
-    void dropIndexDefinitions( Label label, String propertyKey );
-
-    ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey ) 
-            throws ConstraintViolationKernelException;
-    
-    void dropPropertyUniquenessConstraint( Label label, String propertyKey );
+	@Override
+	public boolean accept( ConstraintDefinition item ) {
+		return item.isConstraintType( this );
+	}
 }

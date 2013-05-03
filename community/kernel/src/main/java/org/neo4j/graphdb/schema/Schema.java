@@ -99,6 +99,11 @@ public interface Schema
     ConstraintCreator constraintCreator( Label label );
     
     /**
+     * @return all constraints
+     */
+    Iterable<ConstraintDefinition> getConstraints();
+
+    /**
      * @param label the label to get constraints for.
      * @return all constraints for the given label.
      */

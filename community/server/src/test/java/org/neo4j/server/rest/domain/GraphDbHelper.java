@@ -20,10 +20,12 @@
 package org.neo4j.server.rest.domain;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,8 +37,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.Database;
 
@@ -440,6 +447,54 @@ public class GraphDbHelper
             IndexDefinition index = database.getGraph().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
             tx.success();
             return index;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public Iterable<ConstraintDefinition> getPropertyUniquenessConstraints( String labelName, final String propertyKey )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
+            {
+
+                @Override
+                public boolean accept( ConstraintDefinition item )
+                {
+                    if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
+                    {
+                        Iterable<String> keys = item.asUniquenessConstraint().getPropertyKeys();
+                        return single( keys ).equals( propertyKey );
+                    }
+                    else
+                        return false;
+
+                }
+            }, database.getGraph().schema().getConstraints( label( labelName ) ) );
+            tx.success();
+            return definitions;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            ConstraintCreator creator = database.getGraph().schema().constraintCreator( label( labelName ) ).unique();
+            for ( String propertyKey : propertyKeys )
+                creator = creator.on( propertyKey );
+            ConstraintDefinition result = creator.create();
+            tx.success();
+            return result;
         }
         finally
         {

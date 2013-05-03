@@ -19,30 +19,38 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.CompositeStatementContext;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
-import static java.util.Arrays.asList;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class StateHandlingStatementContextTest
 {
-    // Note: Most of the behavior of this class is tested in separate classes, based on the category of state being
-    // tested. This contains general tests or things that are common to all types of state.
+    // Note: Most of the behavior of this class is tested in separate classes,
+    // based on the category of state being
+    // tested. This contains general tests or things that are common to all
+    // types of state.
 
     @Test
     public void shouldNeverDelegateWrites() throws Exception
@@ -72,10 +80,12 @@ public class StateHandlingStatementContextTest
         ctx.dropIndexRule( new IndexDescriptor( 0l, 0l ) );
         ctx.removeLabelFromNode( 0l, 0l );
 
-        // These are kind of in between.. property key ids are created in micro-transactions, so these methods
-        // circumvent the normal state of affairs. We may want to rub the genius-bumps over this at some point.
-        //   ctx.getOrCreateLabelId("0");
-        //   ctx.getOrCreatePropertyKeyId("0");
+        // These are kind of in between.. property key ids are created in
+        // micro-transactions, so these methods
+        // circumvent the normal state of affairs. We may want to rub the
+        // genius-bumps over this at some point.
+        // ctx.getOrCreateLabelId("0");
+        // ctx.getOrCreatePropertyKeyId("0");
 
         // Then no exception should have been thrown
     }
@@ -86,11 +96,10 @@ public class StateHandlingStatementContextTest
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         StatementContext delegate = mock( StatementContext.class );
-        when( delegate.getConstraints( 10, 66 ) )
-                .thenAnswer( asAnswer( asList( constraint ) ) );
+        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( asList( constraint ) ) );
         TxState state = mock( TxState.class );
-        StateHandlingStatementContext context = new StateHandlingStatementContext(
-                delegate, mock( SchemaStateOperations.class ), state );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
+                mock( SchemaStateOperations.class ), state );
 
         // when
         context.addUniquenessConstraint( 10, 66 );
@@ -98,6 +107,80 @@ public class StateHandlingStatementContextTest
         // then
         verify( state ).unRemoveConstraint( any( UniquenessConstraint.class ) );
         verifyNoMoreInteractions( state );
+    }
+
+    @Test
+    public void shouldGetConstraintsByLabelAndProperty() throws Exception
+    {
+        // given
+        UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
+
+        StatementContext delegate = mock( StatementContext.class );
+        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
+                mock( IdGeneration.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
+                mock( SchemaStateOperations.class ), state );
+        context.addUniquenessConstraint( 10, 66 );
+
+        // when
+        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints( 10, 66 ) ) );
+
+        // then
+        assertEquals( asSet( constraint ), result );
+    }
+
+    @Test
+    public void shouldGetConstraintsByLabel() throws Exception
+    {
+        // given
+        UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
+        UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
+        UniquenessConstraint constraint3 = new UniquenessConstraint( 11, 88 );
+
+        StatementContext delegate = mock( StatementContext.class );
+        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints( 11, 88 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints( 10 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints( 11 ) ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
+                mock( IdGeneration.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
+                mock( SchemaStateOperations.class ), state );
+        context.addUniquenessConstraint( 10, 66 );
+        context.addUniquenessConstraint( 11, 88 );
+
+        // when
+        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints( 11 ) ) );
+
+        // then
+        assertEquals( asSet( constraint2, constraint3 ), result );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldGetAllConstraints() throws Exception
+    {
+        // given
+        UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
+        UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
+
+        StatementContext delegate = mock( StatementContext.class );
+        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.getConstraints() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
+                mock( IdGeneration.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
+                mock( SchemaStateOperations.class ), state );
+        context.addUniquenessConstraint( 10, 66 );
+
+        // when
+        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints() ) );
+
+        // then
+        assertEquals( asSet( constraint1, constraint2 ), result );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

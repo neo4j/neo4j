@@ -36,7 +36,8 @@ public interface SchemaWriteOperations
      */
     void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException;
 
-    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId );
+    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException;
 
     void dropConstraint( UniquenessConstraint constraint );
 }

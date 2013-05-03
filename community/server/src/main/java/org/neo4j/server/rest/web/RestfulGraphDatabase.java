@@ -136,6 +136,11 @@ public class RestfulGraphDatabase
     public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
     public static final String PATH_SCHEMA_INDEX_LABEL_PROPERTY = PATH_SCHEMA_INDEX_LABEL + "/{property}";
 
+    public static final String PATH_SCHEMA_CONSTRAINT = PATH_SCHEMA + "/constraint";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL = PATH_SCHEMA_CONSTRAINT + "/{label}";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS = PATH_SCHEMA_CONSTRAINT_LABEL + "/uniqueness";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
+
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
 
@@ -1594,13 +1599,7 @@ public class RestfulGraphDatabase
         try
         {
             Map<String, Object> data = input.readMap( body, "property_keys" );
-            Object propertyKeys = data.get( "property_keys" );
-            Iterable<String> singlePropertyKey = null;
-            if ( propertyKeys instanceof List )
-                singlePropertyKey = (List<String>) propertyKeys;
-            else if ( propertyKeys instanceof String )
-                singlePropertyKey = Arrays.asList((String)propertyKeys);
-            
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
             if ( singlePropertyKey == null )
             {
                 return output.badRequest( new IllegalArgumentException(
@@ -1620,6 +1619,17 @@ public class RestfulGraphDatabase
         {
             return output.conflict( e );
         }
+    }
+
+    private Iterable<String> singleOrList( Map<String, Object> data, String key )
+    {
+        Object propertyKeys = data.get( key );
+        Iterable<String> singlePropertyKey = null;
+        if ( propertyKeys instanceof List )
+            singlePropertyKey = (List<String>) propertyKeys;
+        else if ( propertyKeys instanceof String )
+            singlePropertyKey = Arrays.asList((String)propertyKeys);
+        return singlePropertyKey;
     }
     
     @DELETE
@@ -1653,9 +1663,92 @@ public class RestfulGraphDatabase
     {
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
+    
+    @POST
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+    public Response createPropertyUniquenessConstraint( @PathParam( "label" ) String labelName, String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createPropertyUniquenessConstraint( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @DELETE
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+    public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
+                return nothing();
+            else
+                return output.notFound();
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT )
+    public Response getSchemaConstraints()
+    {
+        return output.ok( actions.getConstraints() );
+    }
 
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL )
+    public Response getSchemaConstraintsForLabel( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelConstraints( labelName ) );
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+    public Response getSchemaConstraintsForLabelAndUniqueness( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelUniquenessConstraints( labelName ) );
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+    public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+        	ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
+    		return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        	return output.notFound( e );
+        }
+    }
 
-    private Function<Map.Entry<String,List<String>>,Pair<String,Object>> queryParamsToProperties =
+    private final Function<Map.Entry<String,List<String>>,Pair<String,Object>> queryParamsToProperties =
             new Function<Map.Entry<String, List<String>>, Pair<String, Object>>()
     {
         @Override

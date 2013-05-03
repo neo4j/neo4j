@@ -96,6 +96,24 @@ public class SchemaStorage
         }, schemaStore.loadAll() ) );
     }
 
+    public <R extends SchemaRule, T> Iterator<T> schemaRules(
+            Function<? super R, T> conversion, final SchemaRule.Kind kind,
+            final Predicate<R> predicate )
+    {
+        @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
+        Function<SchemaRule, T> ruleConversion = (Function) conversion;
+        return map( ruleConversion, filter( new Predicate<SchemaRule>()
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return rule.getKind() == kind &&
+                       predicate.accept( (R) rule );
+            }
+        }, schemaStore.loadAll() ) );
+    }
+
     public long newRuleId()
     {
         return schemaStore.nextId();
