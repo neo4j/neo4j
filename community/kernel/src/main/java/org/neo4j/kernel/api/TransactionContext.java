@@ -66,6 +66,7 @@ public interface TransactionContext
 
     /**
      * Roll back this transaction, undoing any changes that have been made.
+     * @throws TransactionFailureException 
      */
-    void rollback();
+    void rollback() throws TransactionFailureException;
 }

@@ -45,6 +45,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -968,6 +969,21 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public void setKernel(KernelAPI kernel)
     {
         this.kernel = kernel;
+    }
+    
+    @Override
+    public TransactionContext getTransactionContext()
+    {
+        Transaction tx;
+        try
+        {
+            tx = getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return tx != null ? ((TransactionImpl)tx).getTransactionContext() : null;
     }
     
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener

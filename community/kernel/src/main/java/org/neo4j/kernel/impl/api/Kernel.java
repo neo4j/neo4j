@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.synchronizedList;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -43,9 +46,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.Collections.synchronizedList;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -88,6 +88,16 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  * change, and the implementation of that API is responsible for keeping caches in sync.
  *
  * Please expand and update this as you learn things or find errors in the text above.
+ * 
+ * The current interaction with the TransactionManager looks like this:
+ * 
+ * <ol>
+ * <li>
+ * tx.finish() --> TransactionImpl.commit() --> TransactionContext.commit() --> TxManager.commit()
+ * </li>
+ * <li>
+ * TxManager.commit() --> TransactionImpl.doCommit() --> dataSource.commit()
+ * </li>
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {

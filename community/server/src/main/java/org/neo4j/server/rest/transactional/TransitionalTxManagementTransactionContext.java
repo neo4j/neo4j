@@ -24,6 +24,7 @@ import javax.transaction.Transaction;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
 class TransitionalTxManagementTransactionContext implements TransactionContext
@@ -52,29 +53,15 @@ class TransitionalTxManagementTransactionContext implements TransactionContext
     }
 
     @Override
-    public void commit()
+    public void commit() throws TransactionFailureException
     {
-        try
-        {
-            txManager.commit();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        ctx.commit();
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
-        try
-        {
-            txManager.rollback();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        ctx.rollback();
     }
 
     public void suspendSinceTransactionsAreStillThreadBound()

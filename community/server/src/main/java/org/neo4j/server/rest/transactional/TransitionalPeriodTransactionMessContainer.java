@@ -27,22 +27,23 @@ import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class TransitionalPeriodTransactionMessContainer implements KernelAPI
 {
-
-    private final KernelAPI kernel;
     private final GraphDatabaseAPI db;
     private final TxManager txManager;
 
     public TransitionalPeriodTransactionMessContainer( GraphDatabaseAPI db )
     {
         this.db = db;
-        this.kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         this.txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
     }
 
+    @Override
     public TransactionContext newTransactionContext()
     {
         db.beginTx();
-        return new TransitionalTxManagementTransactionContext( kernel.newTransactionContext(), txManager );
+        
+        // Get and use the TransactionContext created in db.beginTx(). The role of creating
+        // TransactionContexts will be reversed soonish.
+        return new TransitionalTxManagementTransactionContext( txManager.getTransactionContext(), txManager );
     }
 
     @Override
