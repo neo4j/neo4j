@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
@@ -67,6 +68,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new InvalidConcurrentTransactionAccess();
         }
 
+        @Override
         boolean isSuspended()
         {
             return false;
@@ -90,6 +92,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             return this;
         }
 
+        @Override
         boolean isSuspended()
         {
             return true;
@@ -232,10 +235,19 @@ public class TransactionHandleRegistry implements TransactionRegistry
                 // Allow this - someone snatched the transaction from under our feet,
                 continue;
             }
-            handle.forceRollback();
-            forget( id );
-
-            log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
+            try
+            {
+                handle.forceRollback();
+                log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
+            }
+            catch ( TransactionFailureException e )
+            {
+                log.error( format( "Transaction with id %d failed to roll back.", id ), e );
+            }
+            finally
+            {
+                forget( id );
+            }
         }
     }
 }

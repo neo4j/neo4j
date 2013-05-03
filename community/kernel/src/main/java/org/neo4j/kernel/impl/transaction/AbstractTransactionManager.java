@@ -25,6 +25,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -83,15 +84,29 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
      *         can do this using the kernel api that is provided at startup through the (ick) setKernel method.
      */
     @Deprecated
-    public StatementContext getStatementContext() {
+    public StatementContext getStatementContext()
+    {
         throw new UnsupportedOperationException( "The current transaction manager implementation does not support the " +
                 "new StatementContext interface. This is an intermediary problem during transition to a new internal API." );
     }
-
+    
     /**
      * Temporarily here during transition to Kernel API
      * @param kernel
      */
     @Deprecated
     public abstract void setKernel( KernelAPI kernel );
+    
+    /**
+     * Temporarily here during transition to Kernel API.
+     *
+     * @return an open transaction context for the current transaction. If none exists, it should create one. It
+     *         can do this using the kernel api that is provided at startup through the (ick) setKernel method.
+     */
+    @Deprecated
+    public TransactionContext getTransactionContext()
+    {
+        throw new UnsupportedOperationException( "The current transaction manager implementation does not support the " +
+                "new TransactionContext interface. This is an intermediary problem during transition to a new internal API." );
+    }
 }

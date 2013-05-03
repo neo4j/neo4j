@@ -53,7 +53,7 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
         statementContextOwner.closeAllStatements();
         delegate.rollback();

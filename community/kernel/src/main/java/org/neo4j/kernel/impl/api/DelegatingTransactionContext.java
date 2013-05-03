@@ -51,7 +51,7 @@ public class DelegatingTransactionContext implements TransactionContext
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
         delegate.rollback();
     }

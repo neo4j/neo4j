@@ -29,6 +29,7 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -138,7 +139,7 @@ public class TransactionHandle
         }
     }
 
-    public void forceRollback()
+    public void forceRollback() throws TransactionFailureException
     {
         context.resumeSinceTransactionsAreStillThreadBound();
         context.rollback();
@@ -193,7 +194,7 @@ public class TransactionHandle
                 {
                     context.commit();
                 }
-                catch ( RuntimeException e )
+                catch ( Exception e )
                 {
                     log.error( "Failed to commit transaction.", e );
                     errors.add( new Neo4jError( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR, e ) );
@@ -205,7 +206,7 @@ public class TransactionHandle
                 {
                     context.rollback();
                 }
-                catch ( RuntimeException e )
+                catch ( Exception e )
                 {
                     log.error( "Failed to rollback transaction.", e );
                     errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );
@@ -224,7 +225,7 @@ public class TransactionHandle
         {
             context.rollback();
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             log.error( "Failed to rollback transaction.", e );
             errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );

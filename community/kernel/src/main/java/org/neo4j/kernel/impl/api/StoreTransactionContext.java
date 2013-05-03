@@ -98,7 +98,23 @@ public class StoreTransactionContext implements TransactionContext
     }
 
     @Override
-    public void rollback()
+    public void rollback() throws TransactionFailureException
     {
+        try
+        {
+            transactionManager.rollback();
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new TransactionFailureException( e );
+        }
+        catch ( SecurityException e )
+        {
+            throw new TransactionFailureException( e );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( e );
+        }
     }
 }

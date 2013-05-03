@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
+import static org.neo4j.helpers.Exceptions.withCause;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
+import javax.transaction.xa.XAException;
 
 public class TransactionFailureException extends Exception
 {
@@ -58,15 +61,35 @@ public class TransactionFailureException extends Exception
         rethrow = Rethrow.RUNTIME;
     }
 
-    public RuntimeException unBoxed()
+    public RuntimeException unBoxedForCommit()
             throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SystemException
     {
         return rethrow.exception( this.getCause() );
     }
-
+    
+    public RuntimeException unBoxedForRollback() throws SystemException
+    {
+        try
+        {
+            return rethrow.exception( this.getCause() );
+        }
+        catch ( HeuristicMixedException e )
+        {
+            throw withCause( new SystemException( rethrow.xaCode ), e );
+        }
+        catch ( HeuristicRollbackException e )
+        {
+            throw withCause( new SystemException( rethrow.xaCode ), e );
+        }
+        catch ( RollbackException e )
+        {
+            throw withCause( new SystemException( rethrow.xaCode ), e );
+        }
+    }
+    
     private enum Rethrow
     {
-        HEURISTIC_MIXED
+        HEURISTIC_MIXED( XAException.XA_HEURMIX )
         {
             @Override
             RuntimeException exception( Throwable exception ) throws HeuristicMixedException
@@ -74,7 +97,7 @@ public class TransactionFailureException extends Exception
                 throw (HeuristicMixedException) exception;
             }
         },
-        HEURISTIC_ROLLBACK
+        HEURISTIC_ROLLBACK( XAException.XA_HEURRB )
         {
             @Override
             RuntimeException exception( Throwable exception ) throws HeuristicRollbackException
@@ -82,7 +105,7 @@ public class TransactionFailureException extends Exception
                 throw (HeuristicRollbackException) exception;
             }
         },
-        ROLLBACK
+        ROLLBACK( XAException.XA_RBROLLBACK )
         {
             @Override
             RuntimeException exception( Throwable exception ) throws RollbackException
@@ -90,7 +113,7 @@ public class TransactionFailureException extends Exception
                 throw (RollbackException) exception;
             }
         },
-        SYSTEM
+        SYSTEM( XAException.XAER_RMERR )
         {
             @Override
             RuntimeException exception( Throwable exception ) throws SystemException
@@ -98,14 +121,21 @@ public class TransactionFailureException extends Exception
                 throw (SystemException) exception;
             }
         },
-        RUNTIME
+        RUNTIME( XAException.XAER_RMERR )
         {
             @Override
             RuntimeException exception( Throwable exception )
             {
                 return (RuntimeException) exception;
             }
-        },;
+        };
+        
+        int xaCode;
+        
+        private Rethrow( int xaCode )
+        {
+            this.xaCode = xaCode;
+        }
 
         abstract RuntimeException exception( Throwable exception )
                 throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SystemException;

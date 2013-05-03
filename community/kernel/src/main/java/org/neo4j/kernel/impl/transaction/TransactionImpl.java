@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -126,7 +127,7 @@ class TransactionImpl implements Transaction
         }
         catch ( TransactionFailureException e )
         {
-            throw e.unBoxed();
+            throw e.unBoxedForCommit();
         }
     }
 
@@ -140,7 +141,14 @@ class TransactionImpl implements Transaction
             SystemException
     {
         // make sure tx not suspended
-        txManager.rollback();
+        try
+        {
+            transactionContext.rollback();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw e.unBoxedForRollback();
+        }
     }
 
     @Override
@@ -585,8 +593,6 @@ class TransactionImpl implements Transaction
             }
         }
         status = Status.STATUS_ROLLEDBACK;
-
-        transactionContext.rollback();
     }
 
     public StatementContext newStatementContext()
@@ -733,5 +739,10 @@ class TransactionImpl implements Transaction
     public void finish( boolean successful )
     {
         getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
+    }
+
+    public TransactionContext getTransactionContext()
+    {
+        return transactionContext;
     }
 }
