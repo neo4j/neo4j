@@ -53,14 +53,26 @@ public class RemoveOrphanConstraintIndexesOnStartup extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
+        // TODO: come up with a better phase in the life cycle to do this, where we can perform a tx, before db starts.
         if ( txManager.getRecoveryError() != null )
         {
             // Recovery failed - bail out, we aren't going to be able to begin a transaction.
             // TODO: it seems wrong that we let all components start before we check if recovery failed...
             return;
         }
-        txManager.begin( ForceMode.unforced );
-        TransactionContext tx = kernel.newTransactionContext();
+        TransactionContext tx;
+        try
+        {
+            txManager.begin( ForceMode.unforced );
+            tx = kernel.newTransactionContext();
+        }
+        catch ( Exception e )
+        {
+            // Unforeseen issue, apparently the contract seems to be that we continue the startup process even if things
+            // are broken. And throwing an exception from here does not go down well with the rest of the system, so the
+            // best we can do is to bail out.
+            return; // TODO: do better handling of failure in the kernel!!!
+        }
         boolean success = false;
         try
         {
