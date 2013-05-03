@@ -19,36 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -80,6 +62,24 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 public class WriteTransactionTest
 {
 
@@ -93,7 +93,7 @@ public class WriteTransactionTest
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        IndexRule schemaRule = new IndexRule( ruleId, 10, PROVIDER_DESCRIPTOR, 8 );
+        IndexRule schemaRule = IndexRule.indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
         writeTransaction.commit();
@@ -108,7 +108,7 @@ public class WriteTransactionTest
         // GIVEN
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long labelId = 10, propertyKey = 10;
-        IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, PROVIDER_DESCRIPTOR, propertyKey );
+        IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
             schemaStore.updateRecord( record );
@@ -132,7 +132,7 @@ public class WriteTransactionTest
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, PROVIDER_DESCRIPTOR, 7 ) );
+        writeTransaction.createSchemaRule( IndexRule.indexRule( ruleId, 10, 7, PROVIDER_DESCRIPTOR ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
 
@@ -420,13 +420,13 @@ public class WriteTransactionTest
         tx.createRelationshipTypeToken( relationshipType, "type" );
         tx.relationshipCreate( relId, 0, nodeId, nodeId );
         tx.relAddProperty( relId, propertyKeyToken,
-                new long[] {1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60, 1 << 60} );
+                new long[] {1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60} );
         tx.createPropertyKeyToken( propertyKeyToken.getKey(), propertyKeyToken.getKeyId() );
         tx.nodeAddProperty( nodeId, propertyKeyToken,
                 "something long and nasty that requires dynamic records for sure I would think and hope. Ok then åäö%!=" );
         for ( int i = 0; i < 10; i++ )
             tx.addLabelToNode( 10000 + i, nodeId );
-        tx.createSchemaRule( new IndexRule( ruleId, 100, PROVIDER_DESCRIPTOR, propertyKeyId ) );
+        tx.createSchemaRule( IndexRule.indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         prepareAndCommit( tx );
 
         // THEN
@@ -452,7 +452,7 @@ public class WriteTransactionTest
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
         long ruleId = 0, labelId = 5, propertyKeyId = 7;
-        SchemaRule rule = new IndexRule( ruleId, labelId, PROVIDER_DESCRIPTOR, propertyKeyId );
+        SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
 
         // WHEN
         tx.createSchemaRule( rule );

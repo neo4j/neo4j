@@ -71,18 +71,18 @@ public class LockingStatementContextTest
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
         IndexDescriptor rule = mock( IndexDescriptor.class );
-        when( delegate.addIndexRule( 123, 456 ) ).thenReturn( rule );
+        when( delegate.addIndexRule( 123, 456, false ) ).thenReturn( rule );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        IndexDescriptor result = context.addIndexRule( 123, 456 );
+        IndexDescriptor result = context.addIndexRule( 123, 456, false );
 
         // then
         assertSame( rule, result );
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaWriteLock();
-        order.verify( delegate ).addIndexRule( 123, 456 );
+        order.verify( delegate ).addIndexRule( 123, 456, false );
         verifyNoMoreInteractions( lockHolder, delegate );
     }
 

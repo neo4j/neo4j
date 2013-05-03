@@ -19,21 +19,31 @@
  */
 package org.neo4j.kernel.api;
 
-/**
- * A super class of checked exceptions coming from the {@link KernelAPI Kernel API}.
- */
-public class KernelException extends Exception
+/** A super class of checked exceptions coming from the {@link KernelAPI Kernel API}. */
+public abstract class KernelException extends Exception
 {
+    protected KernelException( Throwable cause, String message, Object... parameters )
+    {
+        super( String.format( message, parameters ) );
+        if ( cause != null )
+        {
+            initCause( cause );
+        }
+    }
+
+    @Deprecated
     public KernelException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
+    @Deprecated
     public KernelException( String message )
     {
         super( message );
     }
 
+    @Deprecated
     public KernelException( Throwable cause )
     {
         super( cause );

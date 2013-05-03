@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.Iterator;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -27,15 +36,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-import java.util.Iterator;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-
-public class UniquenessConstraintIT extends KernelIntegrationTest
+public class ConstraintsCreationIT extends KernelIntegrationTest
 {
     @Test
     public void shouldBeAbleToStoreAndRetrieveUniquenessConstraintRule() throws Exception

@@ -110,7 +110,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey, Some(Literal("a"))))))
 
-    when(context.getIndexRule(labelName, propertyKey)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyKey)).thenReturn(Some(new IndexDescriptor(123,456,false)))
 
     //THEN
     val producedPlan = assertAccepts(q)

@@ -21,37 +21,29 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class IndexIT
+public class IndexIT extends KernelIntegrationTest
 {
+    long labelId = 5, propertyKey = 8;
 
     @Test
     public void createANewIndex() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        StatementContext statement = ctxProvider.getCtxForWriting();
-        long labelId = 5, propertyKey = 8;
+        newTransaction();
 
         // WHEN
-        IndexDescriptor rule = statement.addIndexRule( labelId, propertyKey );
-        statement.close();
-        tx.success();
-        tx.finish();
+        IndexDescriptor rule = statement.addIndexRule( labelId, propertyKey, false );
+        commit();
 
         // AND WHEN the index is created
         awaitIndexOnline( rule );
@@ -63,44 +55,33 @@ public class IndexIT
     public void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        StatementContext statement = ctxProvider.getCtxForWriting();
-        long labelId = 5, propertyKey = 8;
+        newTransaction();
 
         // WHEN
-        IndexDescriptor expectedRule = statement.addIndexRule( labelId, propertyKey );
-        statement.close();
-        tx.success();
-        tx.finish();
+        IndexDescriptor expectedRule = statement.addIndexRule( labelId, propertyKey, false );
+        commit();
 
         // THEN
-        statement = ctxProvider.getCtxForReading();
+        StatementContext roStatement = readOnlyContext();
         assertEquals( asSet( expectedRule ),
-                asSet( statement.getIndexRules( labelId ) ) );
-        assertEquals( expectedRule , statement.getIndexRule( labelId, propertyKey ) );
+                asSet( roStatement.getIndexRules( labelId ) ) );
+        assertEquals( expectedRule, roStatement.getIndexRule( labelId, propertyKey ) );
     }
 
     @Test
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
-        long labelId = 5, propertyKey = 8;
-        Transaction tx = db.beginTx();
-        StatementContext statement = ctxProvider.getCtxForWriting();
-        IndexDescriptor existingRule = statement.addIndexRule( labelId, propertyKey );
-        statement.close();
-        tx.success();
-        tx.finish();
+        newTransaction();
+        IndexDescriptor existingRule = statement.addIndexRule( labelId, propertyKey, false );
+        commit();
 
         // WHEN
-        tx = db.beginTx();
-        statement = ctxProvider.getCtxForWriting();
+        newTransaction();
         long propertyKey2 = 10;
-        IndexDescriptor addedRule = statement.addIndexRule( labelId, propertyKey2 );
+        IndexDescriptor addedRule = statement.addIndexRule( labelId, propertyKey2, false );
         Set<IndexDescriptor> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
-        statement.close();
-        tx.success();
-        tx.finish();
+        commit();
 
         // THEN
         assertEquals( asSet( existingRule, addedRule ), indexRulesInTx );
@@ -110,24 +91,37 @@ public class IndexIT
     public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
-        long labelId = 5, propertyKey = 11;
-        Transaction tx = db.beginTx();
-        StatementContext statement = ctxProvider.getCtxForWriting();
+        newTransaction();
 
         // WHEN
-        statement.addIndexRule( labelId, propertyKey );
+        statement.addIndexRule( labelId, propertyKey, false );
         statement.close();
         // don't mark as success
-        tx.finish();
+        rollback();
 
         // THEN
-        assertEquals( asSet(), asSet( ctxProvider.getCtxForReading().getIndexRules( labelId ) ) );
+        assertEquals( asSet(), asSet( readOnlyContext().getIndexRules( labelId ) ) );
     }
 
+    @Test
+    public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
+    {
+        // given
+        newTransaction();
+        IndexDescriptor index = statement.addIndexRule( labelId, propertyKey, true );
+        commit();
+        awaitIndexOnline( index );
+
+        // when
+        restartDb();
+
+        // then
+        assertEquals( asSet(), asSet( readOnlyContext().getIndexRules( labelId ) ) );
+    }
 
     private void awaitIndexOnline( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
-        StatementContext ctx = ctxProvider.getCtxForReading();
+        StatementContext ctx = readOnlyContext();
         long start = System.currentTimeMillis();
         while(true)
         {
@@ -141,23 +135,6 @@ public class IndexIT
                throw new RuntimeException( "Index didn't come online within a reasonable time." );
            }
         }
-    }
-
-    private GraphDatabaseAPI db;
-    private ThreadToStatementContextBridge ctxProvider;
-
-    @Before
-    public void before() throws Exception
-    {
-        db = new ImpermanentGraphDatabase();
-        ctxProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        db.shutdown();
     }
 
 }

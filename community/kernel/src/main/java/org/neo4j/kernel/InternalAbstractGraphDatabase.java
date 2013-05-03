@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -328,8 +329,8 @@ public abstract class InternalAbstractGraphDatabase
             {
                 // TODO do not explicitly depend on order of start() calls in txManager and XaDatasourceManager
                 // use two booleans instead
-                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
-                        instanceof TxManager )
+                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) &&
+                     txManager instanceof TxManager )
                 {
                     InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
                 }
@@ -522,6 +523,8 @@ public abstract class InternalAbstractGraphDatabase
                 fileSystem, keepLogicalLogsConfig ) );
 
         createNeoDataSource();
+
+        life.add( new RemoveOrphanConstraintIndexesOnStartup( txManager, kernelAPI ) );
 
         life.add( new MonitorGc( config, msgLog ) );
 

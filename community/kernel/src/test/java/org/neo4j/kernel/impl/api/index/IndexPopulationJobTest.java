@@ -55,6 +55,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertEquals;
@@ -426,7 +427,7 @@ public class IndexPopulationJobTest
     @Before
     public void before() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         context = ctxProvider.getCtxForReading();
         populator = mock( IndexPopulator.class );
@@ -462,7 +463,7 @@ public class IndexPopulationJobTest
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexDescriptor descriptor = new IndexDescriptor( context.getLabelId( label.name() ),
-                                                          context.getPropertyKeyId( propertyKey ) );
+                                                          context.getPropertyKeyId( propertyKey ), false );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return
             new IndexPopulationJob( descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,

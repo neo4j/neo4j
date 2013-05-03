@@ -27,7 +27,7 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
     private FileSystemAbstraction fileSystem;
     private boolean systemOutLogging;
 
-    public TestGraphDatabaseFactoryState( )
+    public TestGraphDatabaseFactoryState()
     {
         fileSystem = null;
         systemOutLogging = false;

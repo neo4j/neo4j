@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -30,6 +26,14 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.TokenHolder;
+
+import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class IndexCreatorImpl implements IndexCreator
 {

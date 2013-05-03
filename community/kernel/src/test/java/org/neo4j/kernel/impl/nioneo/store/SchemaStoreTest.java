@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,10 +27,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static java.nio.ByteBuffer.wrap;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class SchemaStoreTest
 {
@@ -48,7 +49,7 @@ public class SchemaStoreTest
         // GIVEN
         long propertyKey = 4;
         int labelId = 1;
-        IndexRule indexRule = new IndexRule( store.nextId(), labelId, PROVIDER_DESCRIPTOR, propertyKey );
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
         
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
@@ -67,9 +68,9 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                new IndexRule( store.nextId(), 0, PROVIDER_DESCRIPTOR, 5 ),
-                new IndexRule( store.nextId(), 1, PROVIDER_DESCRIPTOR, 6 ),
-                new IndexRule( store.nextId(), 1, PROVIDER_DESCRIPTOR, 7 ) );
+                IndexRule.indexRule( store.nextId(), 0, 5, PROVIDER_DESCRIPTOR ),
+                IndexRule.indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
+                IndexRule.indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 

@@ -202,7 +202,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       persistenceManager, schemaState );
 
         // + Constraint evaluation
-        result = new ConstraintEvaluatingTransactionContext( result );
+        result = new ConstraintValidatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time

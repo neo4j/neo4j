@@ -267,7 +267,7 @@ public class SchemaImpl implements Schema
             {
                 long labelId = context.getOrCreateLabelId( label.name() );
                 long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
-                context.addIndexRule( labelId, propertyKeyId );
+                context.addIndexRule( labelId, propertyKeyId, false );
                 return new IndexDefinitionImpl( this, label, propertyKey );
             }
             catch ( ConstraintViolationKernelException e )

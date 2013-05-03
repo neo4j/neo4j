@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -272,14 +273,14 @@ public class LabelTransactionStateTest
         when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.addIndexRule( anyLong(), anyLong(), anyBoolean() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
                 return new IndexDescriptor(
                         (Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1] );
+                        (Long) invocation.getArguments()[1], false );
             }
         } );
 

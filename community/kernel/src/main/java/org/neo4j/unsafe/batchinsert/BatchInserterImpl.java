@@ -19,14 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,6 +66,7 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -100,7 +93,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.Token;
@@ -110,8 +102,17 @@ import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -185,10 +186,7 @@ public class BatchInserterImpl implements BatchInserter
         relationshipTypeTokens = new RelationshipTypeTokenHolder( types );
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
-        
-//        ClassicLoggingService logging = new ClassicLoggingService( new Config() );
-//        life.add( CleanupService.create( life.add( new Neo4jJobScheduler( msgLog ) ), logging ) );
-        
+
         KernelExtensions extensions = life.add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
                 UnsatisfiedDependencyStrategies.ignore() ) );
 
@@ -281,9 +279,10 @@ public class BatchInserterImpl implements BatchInserter
         // TODO: Do not create duplicate index
 
         SchemaStore schemaStore = getSchemaStore();
-        IndexRule schemaRule = new IndexRule( schemaStore.nextId(), getOrCreateLabelId( label.name() ),
-                this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
-                getOrCreatePropertyKeyId( propertyKey ) );
+        IndexRule schemaRule = IndexRule.indexRule( schemaStore.nextId(), getOrCreateLabelId( label.name() ),
+                                                    getOrCreatePropertyKeyId( propertyKey ),
+                                                    this.schemaIndexProviders.getDefaultProvider()
+                                                                             .getProviderDescriptor() );
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
             schemaStore.updateRecord( record );
         schemaCache.addSchemaRule( schemaRule );
@@ -348,7 +347,7 @@ public class BatchInserterImpl implements BatchInserter
         List<IndexRule> indexesNeedingPopulation = new ArrayList<IndexRule>();
         for ( SchemaRule rule : schemaCache.getSchemaRules() )
         {
-            if ( rule.getKind() == Kind.INDEX_RULE )
+            if ( rule.getKind().isIndex() )
             {
                 IndexRule indexRule = (IndexRule) rule;
                 SchemaIndexProvider provider =

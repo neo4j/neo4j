@@ -107,7 +107,7 @@ public class TestRecoveryVerification
         }
         catch ( RuntimeException e )
         {
-            assertEquals( RecoveryVerificationException.class, e.getCause().getClass() );
+            assertEquals( e.getMessage(), RecoveryVerificationException.class, e.getCause().getClass() );
         }
     }
 

@@ -98,7 +98,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
         Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
     )
 
-    when(context.getIndexRule("Person", "prop1")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop1")).thenReturn(Some(new IndexDescriptor(123,456,false)))
 
     // When
     val plan = assertAccepts(query)
@@ -130,7 +130,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456,false)))
 
     // When
     val plan = assertAccepts(query)
@@ -149,7 +149,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456,false)))
 
     // When
     val plan = assertAccepts(query)
@@ -169,8 +169,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       SingleNode(identifier)
     ))
 
-    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579)))
+    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456,false)))
+    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579,false)))
 
     // When
     val result = assertAccepts(query).query

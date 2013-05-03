@@ -25,12 +25,12 @@ import org.neo4j.kernel.api.TransactionContext;
 /**
  * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
  */
-public class ConstraintEvaluatingTransactionContext extends DelegatingTransactionContext
+public class ConstraintValidatingTransactionContext extends DelegatingTransactionContext
 {
     // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
     // both user and system level constraints.
 
-    public ConstraintEvaluatingTransactionContext( TransactionContext delegate )
+    public ConstraintValidatingTransactionContext( TransactionContext delegate )
     {
         super( delegate );
     }
@@ -40,7 +40,7 @@ public class ConstraintEvaluatingTransactionContext extends DelegatingTransactio
     {
         StatementContext result = super.newStatementContext();
         // + Constraints
-        result = new ConstraintEvaluatingStatementContext( result );
+        result = new DataIntegrityValidatingStatementContext( result );
 
         return result;
     }

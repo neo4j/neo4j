@@ -25,11 +25,11 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
-public class ConstraintEvaluatingStatementContext extends CompositeStatementContext
+public class DataIntegrityValidatingStatementContext extends CompositeStatementContext
 {
     private final StatementContext delegate;
 
-    public ConstraintEvaluatingStatementContext( StatementContext delegate )
+    public DataIntegrityValidatingStatementContext( StatementContext delegate )
     {
         super( delegate );
         this.delegate = delegate;
@@ -63,7 +63,7 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
     }
     
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
     {
         for ( IndexDescriptor existingRule : loop( getIndexRules( labelId ) ) )
         {
@@ -73,6 +73,6 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
                         " is already indexed for label " + labelId + ".");
             }
         }
-        return delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey, constraintIndex );
     }
 }

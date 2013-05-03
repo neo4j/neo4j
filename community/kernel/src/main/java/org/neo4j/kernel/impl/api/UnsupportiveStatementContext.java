@@ -177,7 +177,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
     {
         throw unsupported();
     }
@@ -241,7 +241,13 @@ public enum UnsupportiveStatementContext implements StatementContext
     {
         throw unsupported();
     }
-    
+
+    @Override
+    public Long getOwningConstraint( IndexDescriptor index )
+    {
+        throw unsupported();
+    }
+
     @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {
