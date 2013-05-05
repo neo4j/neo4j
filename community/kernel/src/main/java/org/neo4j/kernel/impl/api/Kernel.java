@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
@@ -120,6 +121,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private NeoStore neoStore;
     private NodeManager nodeManager;
     private PersistenceCache persistenceCache;
+    private boolean isShutdown = false;
 
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -187,11 +189,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void stop() throws Throwable
     {
         statementContextOwners.close();
+        isShutdown = true;
     }
 
     @Override
     public TransactionContext newTransactionContext()
     {
+        checkIfShutdown();
+
+
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
@@ -221,14 +227,25 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         return result;
     }
 
+    private void checkIfShutdown()
+    {
+        if ( isShutdown )
+        {
+            throw new DatabaseShutdownException();
+        }
+    }
+
     @Override
     public StatementContext newReadOnlyStatementContext()
     {
+        checkIfShutdown();
         return statementContextOwners.get().getStatementContext();
     }
 
     private StatementContext createReadOnlyStatementContext()
     {
+        checkIfShutdown();
+
         // I/O
         SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         StatementContext result = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,

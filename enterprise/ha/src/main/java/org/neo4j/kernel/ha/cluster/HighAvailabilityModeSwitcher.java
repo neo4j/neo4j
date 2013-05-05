@@ -444,21 +444,19 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
-            try
-            {
-                nioneoDataSource = new NeoStoreXaDataSource( config,
-                        resolver.resolveDependency( StoreFactory.class ),
-                        resolver.resolveDependency( LockManager.class ),
-                        resolver.resolveDependency( StringLogger.class ),
-                        resolver.resolveDependency( XaFactory.class ),
-                        resolver.resolveDependency( TransactionStateFactory.class ),
-                        resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver.resolveDependency( JobScheduler.class ),
-                        logging,
-                        updateableSchemaState,
-                        resolver.resolveDependency( NodeManager.class ),
-                        resolver );
-                xaDataSourceManager.registerDataSource( nioneoDataSource );
+            nioneoDataSource = new NeoStoreXaDataSource( config,
+                    resolver.resolveDependency( StoreFactory.class ),
+                    resolver.resolveDependency( LockManager.class ),
+                    resolver.resolveDependency( StringLogger.class ),
+                    resolver.resolveDependency( XaFactory.class ),
+                    resolver.resolveDependency( TransactionStateFactory.class ),
+                    resolver.resolveDependency( TransactionInterceptorProviders.class ),
+                    resolver.resolveDependency( JobScheduler.class ),
+                    logging,
+                    updateableSchemaState,
+                    resolver.resolveDependency( NodeManager.class ),
+                    resolver );
+            xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential
                  * emotional breakdown. On the plus side, it is correct.
@@ -467,13 +465,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                  * register the datasource with the DsMgr we need to make sure that NodeManager re-reads the reltype
                  * and propindex information. Normally, we would have shutdown everything before getting here.
                  */
-                resolver.resolveDependency( NodeManager.class ).start();
-            }
-            catch ( IOException e )
-            {
-                msgLog.logMessage( "Failed while trying to create datasource", e );
-                throw e;
-            }
+            resolver.resolveDependency( NodeManager.class ).start();
         }
         return nioneoDataSource;
     }

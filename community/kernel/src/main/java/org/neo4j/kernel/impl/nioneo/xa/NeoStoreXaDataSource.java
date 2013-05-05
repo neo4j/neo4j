@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -87,10 +91,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -237,7 +237,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                                  JobScheduler scheduler, Logging logging,
                                  UpdateableSchemaState updateableSchemaState, NodeManager nodeManager,
                                  DependencyResolver dependencyResolver )
-            throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -254,7 +253,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
         this.updateableSchemaState = updateableSchemaState;
-
     }
 
     @Override

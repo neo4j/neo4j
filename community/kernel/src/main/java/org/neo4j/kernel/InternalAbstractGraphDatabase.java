@@ -25,7 +25,6 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,6 +38,7 @@ import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -154,8 +154,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -477,8 +475,7 @@ public abstract class InternalAbstractGraphDatabase
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager
-        ) );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -883,19 +880,11 @@ public abstract class InternalAbstractGraphDatabase
     protected void createNeoDataSource()
     {
         // Create DataSource
-        try
-        {
-            // TODO IO stuff should be done in lifecycle. Refactor!
-            neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, lockManager, logging.getMessagesLog( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                    updateableSchemaState, nodeManager, dependencyResolver );
-            xaDataSourceManager.registerDataSource( neoDataSource );
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Could not create Neo XA datasource", e );
-        }
+        neoDataSource = new NeoStoreXaDataSource( config,
+                storeFactory, lockManager, logging.getMessagesLog( NeoStoreXaDataSource.class ),
+                xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
+                updateableSchemaState, nodeManager, dependencyResolver );
+        xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
     @Override
