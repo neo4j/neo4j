@@ -43,19 +43,13 @@ public interface ConstraintDefinition
     UniquenessConstraintDefinition asUniquenessConstraint();
     
     /**
-     * @return the {@link Type} of constraint.
+     * @return the {@link ConstraintType} of constraint.
      */
-    Type getConstraintType();
+    ConstraintType getConstraintType();
 
     /**
-     * Constraint type. Used with {@link ConstraintDefinition#getConstraintType()} to see
-     * of which type a constraint is.
+     * @param type a constraint type
+     * @return true if this constraint definition's type is equal to the provided type
      */
-    public static enum Type
-    {
-        /**
-         * @see ConstraintDefinition#asUniquenessConstraint()
-         */
-        UNIQUENESS;
-    }
+    boolean isConstraintType( ConstraintType type );
 }

@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 
 public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
 {
@@ -45,6 +49,14 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
     @Override
     protected ConstraintDefinition doCreate()
     {
-        return actions.createPropertyUniquenessConstraint( label, propertyKey );
+        try
+        {
+            return actions.createPropertyUniquenessConstraint( label, propertyKey );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            throw new ConstraintViolationException( 
+              format("Could not create property uniqueness constraint on :%s(%s)", label, propertyKey), e );
+        }
     }
 }

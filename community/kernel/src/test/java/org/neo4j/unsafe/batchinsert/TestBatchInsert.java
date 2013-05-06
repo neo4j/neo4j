@@ -58,6 +58,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
@@ -838,7 +839,7 @@ public class TestBatchInsert
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
-        assertEquals( ConstraintDefinition.Type.UNIQUENESS, definition.getConstraintType() );
+        assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
         assertEquals( asSet( "handle" ), asSet( definition.asUniquenessConstraint().getPropertyKeys() ) );
     }
 

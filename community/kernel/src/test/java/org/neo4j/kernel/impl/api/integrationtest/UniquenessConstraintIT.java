@@ -23,6 +23,9 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -31,6 +34,7 @@ import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -108,22 +112,21 @@ public class UniquenessConstraintIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addUniquenessConstraint( label, propertyKey );
+        UniquenessConstraint existingConstraint = statement.addUniquenessConstraint( label, propertyKey );
         commit();
-        newTransaction();
-
+        
         // when
-        UniquenessConstraint constraint = statement.addUniquenessConstraint( label, propertyKey );
-
-        // then
-        assertEquals( singleton( constraint ), asSet( statement.getConstraints( label, propertyKey ) ) );
-
-        // when
-        commit();
         newTransaction();
-
-        // then
-        assertEquals( singletonList( constraint ), asCollection( statement.getConstraints( label, propertyKey ) ) );
+        try 
+        {
+            statement.addUniquenessConstraint( label, propertyKey );
+            fail( "Should not have validated" );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            String message = e.getMessage();
+            assertTrue( message.contains( "already has a uniqueness constraint" ) );
+        }
     }
 
     @Test

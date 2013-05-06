@@ -182,7 +182,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
     {
-        return applyConstraintsDiff( delegate.getConstraints( labelId, propertyKeyId ), labelId );
+        return applyConstraintsDiff( delegate.getConstraints( labelId, propertyKeyId ), labelId, propertyKeyId );
     }
     
     @Override
@@ -191,10 +191,28 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         return applyConstraintsDiff( delegate.getConstraints( labelId ), labelId );
     }
     
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        return applyConstraintsDiff( delegate.getConstraints() );
+    }
+
+
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints, 
+            long labelId, long propertyKeyId )
+    {
+        DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabelAndProperty( labelId, propertyKeyId );
+        if ( diff != null )
+        {
+            return diff.apply( constraints );
+        }
+        return constraints;
+    }
+
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints, 
             long labelId )
     {
-        DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( labelId );
+        DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( labelId );
         if ( diff != null )
         {
             return diff.apply( constraints );
@@ -202,6 +220,16 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         return constraints;
     }
     
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints )
+    {
+        DiffSets<UniquenessConstraint> diff = state.constraintsChanges();
+        if ( diff != null )
+        {
+            return diff.apply( constraints );
+        }
+        return constraints;
+    }
+
     @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {

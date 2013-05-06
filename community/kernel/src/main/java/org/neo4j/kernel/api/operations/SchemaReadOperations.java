@@ -60,4 +60,11 @@ public interface SchemaReadOperations
      * for the time being.
      */
     Iterator<UniquenessConstraint> getConstraints( long labelId );
+
+
+    /**
+     * Get all constraints. There are only {@link UniquenessConstraint}
+     * for the time being.
+     */
+    Iterator<UniquenessConstraint> getConstraints();
 }

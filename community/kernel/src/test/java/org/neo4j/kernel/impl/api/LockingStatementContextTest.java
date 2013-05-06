@@ -172,7 +172,7 @@ public class LockingStatementContextTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeRetrievingConstraints() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeRetrievingConstraintsByLabelAndProperty() throws Exception
     {
         // given
         StatementContext delegate = mock( StatementContext.class );
@@ -191,6 +191,58 @@ public class LockingStatementContextTest
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaReadLock();
         order.verify( delegate ).getConstraints( 123, 456 );
+        verifyNoMoreInteractions( lockHolder, delegate );
+        
+        // cleanup
+        context.close();
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeRetrievingConstraintsByLabel() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        @SuppressWarnings("unchecked")
+        Iterator<UniquenessConstraint> constraints = mock( Iterator.class );
+        when( delegate.getConstraints( 123 ) ).thenReturn( constraints );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        Iterator<UniquenessConstraint> result = context.getConstraints( 123 );
+
+        // then
+        assertEquals( constraints, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaReadLock();
+        order.verify( delegate ).getConstraints( 123 );
+        verifyNoMoreInteractions( lockHolder, delegate );
+        
+        // cleanup
+        context.close();
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeRetrievingAllConstraintsl() throws Exception
+    {
+        // given
+        StatementContext delegate = mock( StatementContext.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        @SuppressWarnings("unchecked")
+        Iterator<UniquenessConstraint> constraints = mock( Iterator.class );
+        when( delegate.getConstraints( ) ).thenReturn( constraints );
+
+        LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
+
+        // when
+        Iterator<UniquenessConstraint> result = context.getConstraints( );
+
+        // then
+        assertEquals( constraints, result );
+        InOrder order = inOrder( lockHolder, delegate );
+        order.verify( lockHolder ).acquireSchemaReadLock();
+        order.verify( delegate ).getConstraints( );
         verifyNoMoreInteractions( lockHolder, delegate );
         
         // cleanup

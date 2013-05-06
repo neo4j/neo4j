@@ -20,14 +20,14 @@
 package org.neo4j.server.rest.web;
 
 import static java.util.Arrays.asList;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -55,6 +55,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
@@ -1197,5 +1198,53 @@ public class DatabaseActionsTest
         Map<?,?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( asList( propertyKey ), definition.get( "property-keys" ) );
+    }
+
+    @Test
+    public void shouldCreatePropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "person", propertyKey = "name";
+
+        // WHEN
+        actions.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
+        assertEquals( asSet( propertyKey ), asSet( single( defs ).asUniquenessConstraint().getPropertyKeys() ) );
+    }
+
+    @Test
+    public void shouldDropPropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        ConstraintDefinition index = graphdbHelper.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // WHEN
+        actions.dropPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        assertFalse( "Constraint should have been dropped",
+                asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
+    }
+
+    @Test
+    public void shouldGetPropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel", propertyKey = "name";
+        graphdbHelper.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // WHEN
+        ListRepresentation indexes = actions.getPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        List<Object> serialized = serialize( indexes );
+        assertEquals( 1, serialized.size() );
+        Map<?,?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( labelName, definition.get( "label" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property-keys" ) );
+        assertEquals( "UNIQUENESS", definition.get( "type" ) );
     }
 }

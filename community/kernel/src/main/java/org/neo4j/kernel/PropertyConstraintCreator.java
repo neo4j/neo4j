@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 
 public class PropertyConstraintCreator extends BaseConstraintCreator
 {

@@ -343,6 +343,14 @@ public class StoreStatementContext extends CompositeStatementContext
     }
     
     @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT, 
+        		Predicates.<UniquenessConstraintRule>TRUE() );
+    }
+    
+
+    @Override
     public long getOrCreatePropertyKeyId( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
