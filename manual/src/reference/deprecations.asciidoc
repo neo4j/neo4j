@@ -12,7 +12,7 @@ Use the keys in verbatim instead.
 This also makes the execution plan caching more efficient.
 
 The `!` property operator in Cypher::
-Expressions like `node.property! = "value"` have been deprecated, please use `has(node.property) AND node.property = "expected value"` instead.
+Expressions like `node.property! = "value"` have been deprecated, please use `has(node.property) AND node.property = "value"` instead.
 
 Cypher CREATE syntax::
 The `CREATE a={foo:’bar’}` syntax has been deprecated.

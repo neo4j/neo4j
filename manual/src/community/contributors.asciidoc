@@ -83,5 +83,8 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |German Borbolla|https://github.com/germanborbolla[germanborbolla]
 |Laurent Raufaste|https://github.com/lra[lra]
 |Thomas Häfele|https://github.com/Perfect-Pixel[Perfect-Pixel]
+|Sevki Hasirci|https://github.com/Sevki[Sevki]
+|Max De Marzi|https://github.com/maxdemarzi[maxdemarzi]
+|Pieter-Jan Van Aeken|https://github.com/PieterJanVanAeken[PieterJanVanAeken]
 |=======
 

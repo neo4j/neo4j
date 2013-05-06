@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -104,8 +103,6 @@ public class NodeManager
     private final ReentrantLock loadLocks[] =
             new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
-
-    private NodeManagerDatasourceListener dataSourceListener;
 
     private final LockStripedCache.Loader<NodeImpl> nodeLoader = new LockStripedCache.Loader<NodeImpl>()
     {
@@ -190,16 +187,22 @@ public class NodeManager
     @Override
     public void start()
     {
-        xaDsm.addDataSourceRegistrationListener( (dataSourceListener = new NodeManagerDatasourceListener()) );
+        for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
+        {
+            if ( ds.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+            {
+                // Load and cache all keys from persistence manager
+                addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypeTokens() );
+                addPropertyKeyTokens( persistenceManager.loadAllPropertyKeyTokens() );
+                addLabelTokens( persistenceManager.loadAllLabelTokens() );
+            }
+        }
     }
 
     @Override
     public void stop()
     {
-        xaDsm.removeDataSourceRegistrationListener( dataSourceListener );
         clearCache();
-        relTypeHolder.stop();
-        propertyKeyTokenHolder.stop();
     }
 
     @Override
@@ -1118,26 +1121,5 @@ public class NodeManager
     public TransactionState getTransactionState()
     {
         return transactionManager.getTransactionState();
-    }
-
-    private class NodeManagerDatasourceListener implements DataSourceRegistrationListener
-    {
-        @Override
-        public void registeredDataSource( XaDataSource ds )
-        {
-            if ( ds.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
-            {
-                // Load and cache all keys from persistence manager
-                addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypeTokens() );
-                addPropertyKeyTokens( persistenceManager.loadAllPropertyKeyTokens() );
-                addLabelTokens( persistenceManager.loadAllLabelTokens() );
-            }
-
-        }
-
-        @Override
-        public void unregisteredDataSource( XaDataSource ds )
-        {
-        }
     }
 }

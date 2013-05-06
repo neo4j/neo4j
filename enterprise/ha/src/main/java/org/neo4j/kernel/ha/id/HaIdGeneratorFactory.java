@@ -156,7 +156,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 logger.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
+            {
                 logger.debug( "Keeps " + delegate );
+            }
 
             state = IdGeneratorState.MASTER;
         }

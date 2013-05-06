@@ -366,10 +366,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
              * down on switchover
              */
             compatibilityLifecycle.add( memberStateMachine );
-//            compatibilityLifecycle.add( highAvailabilityModeSwitcher );
             compatibilityLifecycle.add( (Lifecycle) clusterEvents );
             life.add( memberStateMachine );
-//            life.add( highAvailabilityModeSwitcher );
             life.add( clusterEvents );
         }
         /*
@@ -423,16 +421,23 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState );
         /*
-        * We always need the mode switcher and we need it to restart on switchover. So:
-        * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
-        * 2) if not in compatibility mode it must be added in paxosLife, which is started anyway.
-        */
+         * We always need the mode switcher and we need it to restart on switchover. So:
+         * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
+         * 2) if not in compatibility mode it must be added in paxosLife, which is started anyway.
+         */
         paxosLife.add( highAvailabilityModeSwitcher );
         if ( compatibilityMode )
         {
             compatibilityLifecycle.add( 1, highAvailabilityModeSwitcher );
             life.add( highAvailabilityModeSwitcher );
         }
+
+        /*
+         * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
+         * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
+         * happen until events start arriving and that will set us to the proper state anyway.
+         */
+        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
 
         return idGeneratorFactory;
     }
@@ -492,12 +497,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected Caches createCaches()
     {
         return new HaCaches( logging.getMessagesLog( Caches.class ) );
-    }
-
-    @Override
-    protected void createNeoDataSource()
-    {
-        // no op, we must wait to join the cluster to do stuff
     }
 
     @Override

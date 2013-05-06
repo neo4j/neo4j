@@ -135,7 +135,7 @@ public class ShellDocTest
                 "LIKES, create the end node with the node properties specified." );
         doc.add( "ls", "1", "where are we?" );
         doc.add( "cd 1", "", "change to the newly created node" );
-        doc.add( "ls -avr", "LIKES", "list relationships, including relationshship id" );
+        doc.add( "ls -avr", "LIKES", "list relationships, including relationship id" );
 
         doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the " +
                 "end node" );
@@ -212,7 +212,7 @@ public class ShellDocTest
 
         doc.add( "set -t int age 3", "", "set the age property on the relationship" );
         doc.add( "cd ..", "", "back to Morpheus" );
-        doc.add( "cd -r 3", "", "next relationsip" );
+        doc.add( "cd -r 3", "", "next relationship" );
         doc.add( "set -t int age 90", "", "set the age property on the relationship" );
         doc.add( "cd start", "", "position to the start node of the current relationship" );
 
