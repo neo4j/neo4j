@@ -2,9 +2,6 @@
 Languages
 =========
 
-The table below lists community contributed language- and framework bindings for using Neo4j in embedded mode.
+Please see http://www.neo4j.org/drivers for the current set of drivers!
 
-include::{docdir}/community/embedded-drivers.asciidoc[]
-
-For information on REST clients for different languages, see <<tutorials-rest>>.
 

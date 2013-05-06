@@ -156,6 +156,25 @@ public class PropertySettingStrategy
         }
     }
 
+    public Object convert( Object value ) throws PropertyValueException
+    {
+        if ( !(value instanceof Collection) )
+        {
+            return value;
+        }
+
+        if ( ((Collection<?>) value).size() == 0 )
+        {
+            throw new PropertyValueException(
+                    "Unable to convert '" + value + "' to an empty array, " +
+                            "because, since there are no values of any type in it, " +
+                            "and no pre-existing collection to infer type from, it is not possible " +
+                            "to determine what type of array to store." );
+        }
+
+        return convertToNativeArray( (Collection<?>) value );
+    }
+
     private Object emptyArrayOfType( Class<?> cls ) throws PropertyValueException
     {
        return Array.newInstance( cls, 0);

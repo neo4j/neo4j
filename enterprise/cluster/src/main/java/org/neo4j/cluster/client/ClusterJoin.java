@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
@@ -60,6 +61,8 @@ public class ClusterJoin
         String getClusterName();
 
         boolean isAllowedToCreateCluster();
+
+        long getClusterJoinTimeout();
     }
 
     private final Configuration config;
@@ -152,7 +155,7 @@ public class ClusterJoin
         }
     }
 
-    private void joinByConfig()
+    private void joinByConfig() throws TimeoutException
     {
         List<HostnamePort> hosts = config.getInitialHosts();
 
@@ -188,34 +191,70 @@ public class ClusterJoin
                 console.log( "Attempting to join cluster of " + hosts.toString() );
                 Future<ClusterConfiguration> clusterConfig =
                         cluster.join( this.config.getClusterName(), memberURIs );
-                try
-                {
-                    console.log( "Joined cluster:" + clusterConfig.get() );
-                    return;
-                }
-                catch ( InterruptedException e )
-                {
-                    console.log( "Could not join cluster, interrupted. Retrying..." );
-                    continue;
-                }
-                catch ( ExecutionException e )
-                {
-                    logger.debug( "Could not join cluster " + this.config.getClusterName() );
-                    if ( e.getCause() instanceof IllegalStateException )
-                    {
-                        throw ((IllegalStateException) e.getCause());
-                    }
 
-                    if ( config.isAllowedToCreateCluster() )
+                if (config.getClusterJoinTimeout() > 0)
+                {
+                    try
                     {
-                        // Failed to join cluster, create new one
-                        console.log( "Could not join cluster of " + hosts.toString() );
-                        console.log( format( "Creating new cluster with name [%s]...", config.getClusterName() ) );
-                        cluster.create( config.getClusterName() );
-                        break;
+                        console.log( "Joined cluster:" + clusterConfig.get(config.getClusterJoinTimeout(), TimeUnit.MILLISECONDS ));
+                        return;
                     }
+                    catch ( InterruptedException e )
+                    {
+                        console.log( "Could not join cluster, interrupted. Retrying..." );
+                        continue;
+                    }
+                    catch ( ExecutionException e )
+                    {
+                        logger.debug( "Could not join cluster " + this.config.getClusterName() );
+                        if ( e.getCause() instanceof IllegalStateException )
+                        {
+                            throw ((IllegalStateException) e.getCause());
+                        }
 
-                    console.log( "Could not join cluster, timed out. Retrying..." );
+                        if ( config.isAllowedToCreateCluster() )
+                        {
+                            // Failed to join cluster, create new one
+                            console.log( "Could not join cluster of " + hosts.toString() );
+                            console.log( format( "Creating new cluster with name [%s]...", config.getClusterName() ) );
+                            cluster.create( config.getClusterName() );
+                            break;
+                        }
+
+                        console.log( "Could not join cluster, timed out. Retrying..." );
+                    }
+                } else
+                {
+
+                    try
+                    {
+                        console.log( "Joined cluster:" + clusterConfig.get() );
+                        return;
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        console.log( "Could not join cluster, interrupted. Retrying..." );
+                        continue;
+                    }
+                    catch ( ExecutionException e )
+                    {
+                        logger.debug( "Could not join cluster " + this.config.getClusterName() );
+                        if ( e.getCause() instanceof IllegalStateException )
+                        {
+                            throw ((IllegalStateException) e.getCause());
+                        }
+
+                        if ( config.isAllowedToCreateCluster() )
+                        {
+                            // Failed to join cluster, create new one
+                            console.log( "Could not join cluster of " + hosts.toString() );
+                            console.log( format( "Creating new cluster with name [%s]...", config.getClusterName() ) );
+                            cluster.create( config.getClusterName() );
+                            break;
+                        }
+
+                        console.log( "Could not join cluster, timed out. Retrying..." );
+                    }
                 }
             }
         }
@@ -252,7 +291,7 @@ public class ClusterJoin
                     return;
                 }
             }
-            logger.warn( "Member " + member + " joined cluster but was not part of initial hosts (" +
+            logger.info( "Member " + member + " joined cluster but was not part of initial hosts (" +
                     initialHosts + ")" );
         }
 

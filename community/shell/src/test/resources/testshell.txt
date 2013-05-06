@@ -1,0 +1,3 @@
+mknode
+cd -a 1
+set "foo" "bar"

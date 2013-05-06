@@ -37,7 +37,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-public class TestTransactionSoak
+public class TransactionSoakIT
 {
     protected ImpermanentGraphDatabase db;
     private ShellServer server;
