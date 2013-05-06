@@ -26,7 +26,7 @@ From Version,To Version,Upgrade Type
 1.5,1.6,Explicit
 1.6,1.7,Automatic
 1.7,1.8,Automatic
-1.8,1.9.M02,Automatic
+1.8,1.9,Automatic
 |====
 
 [NOTE]
@@ -56,7 +56,7 @@ To perform a special upgrade (for significant changes to the database store):
 . information about the upgrade and progress indicator is printed in +messages.log+
 
 [[deployment-upgrading-one-nine]]
-== Upgrade 1.8 -> 1.9.M02 ==
+== Upgrade 1.8 -> 1.9 ==
 
 There are no store format changes between these versions so upgrading standalone instances simply consists of starting the database with the newer version.
 In the case of High Availability (HA) installations, the communication protocol and the master election algorithm have changed and a new "rolling upgrade"

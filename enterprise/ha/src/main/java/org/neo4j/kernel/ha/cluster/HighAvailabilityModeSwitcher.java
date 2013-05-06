@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -84,6 +79,11 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
@@ -94,11 +94,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
     private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
-        XaDataSourceManager.class,
-        TxManager.class,
-        NodeManager.class,
-        IndexStore.class,
-        StoreLockerLifecycleAdapter.class
+            StoreLockerLifecycleAdapter.class,
+            XaDataSourceManager.class,
+            TxManager.class,
+            NodeManager.class,
+            IndexStore.class
     };
 
     public static final String MASTER = "master";
@@ -251,14 +251,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( masterImpl );
             life.add( masterServer );
             delegateHandler.setDelegate( masterImpl );
-            DependencyResolver resolver = graphDb.getDependencyResolver();
-            HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
-            
+
             idGeneratorFactory.switchToMaster();
-            synchronized ( xaDsm )
-            {
-                ensureDataSourceStarted( xaDsm, resolver );
-            }
             life.start();
 
             URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
@@ -298,7 +292,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         if ( !copyStoreFromMaster( masterUri ) )
                             continue; // to the outer loop for a retry
                     }
-                    
+
+                    /*
+                     * We get here either with a fresh store from the master copy above so we need to start the ds
+                     * or we already had a store, so we have already started the ds. Either way, make sure it's there.
+                     */
                     NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
                     if ( !checkDataConsistency( xaDataSourceManager, nioneoDataSource, masterUri ) )
                         continue; // to the outer loop for a retry
@@ -461,6 +459,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( NodeManager.class ),
                         resolver );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
+                /*
+                 * CAUTION: The next line may cause severe eye irritation, mental instability and potential
+                 * emotional breakdown. On the plus side, it is correct.
+                 * See, it is quite possible to get here without the NodeManager having stopped, because we don't
+                 * properly manage lifecycle in this class (this is the cause of this ugliness). So, after we
+                 * register the datasource with the DsMgr we need to make sure that NodeManager re-reads the reltype
+                 * and propindex information. Normally, we would have shutdown everything before getting here.
+                 */
+                resolver.resolveDependency( NodeManager.class ).start();
             }
             catch ( IOException e )
             {
@@ -507,7 +514,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         @SuppressWarnings( "rawtypes" )
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
     }
@@ -516,26 +522,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
             throws Throwable
     {
-        for ( Class<Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
+
+        List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        Collections.reverse( services );
+        for ( Class<Lifecycle> serviceClass : services )
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).stop();
         
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
-
-    /* Those left here for posterity, all data source start-stop cycles must happen through XaDSManager
-    private void startOtherDataSources() throws Throwable
-    {
-        LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-        lucene.start();
-    }
-
-    private void stopOtherDataSources() throws Throwable
-    {
-        LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-        lucene.stop();
-    } */
 
     private void checkDataConsistencyWithMaster( Master master, NeoStoreXaDataSource nioneoDataSource )
     {

@@ -187,7 +187,7 @@ startit() {
         -Djava.util.logging.config.file=\"${NEO4J_CONFIG}/logging.properties\" \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> ${CONSOLE_LOG} 2>&1 & echo \$! > \"$PID_FILE\" "
+        org.neo4j.server.Bootstrapper >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
@@ -196,7 +196,7 @@ startit() {
         -Djava.util.logging.config.file="${NEO4J_CONFIG}/logging.properties" \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> ${CONSOLE_LOG} 2>&1 & echo $! > "${PID_FILE}"
+        org.neo4j.server.Bootstrapper >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
     fi
 
     STARTED_PID=$( cat "$PID_FILE" )
@@ -282,7 +282,7 @@ console() {
 }
 
 # Modifies neo4j config to set the effective user when running as a service
-# usage: modify_user_config <username> <created=false>
+# usage: modify_user_config <username> [true|false]
 # pass in "true" for created to mark that the user was created (instead than pre-existing)
 modify_user_config() {
   created=${2:-"false"}

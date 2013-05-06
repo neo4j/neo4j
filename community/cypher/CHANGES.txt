@@ -17,8 +17,8 @@ o START now is optional when using index hints or there is exactly one useable i
 o Cypher now uses the label-based indexes to perform lookups
 o Profiler now shows which entity producers have been chosen
 
-1.9
----
+1.9.RC2 (2013-04-30)
+--------------------
 o Fixes problem when sending down custom queries to index providers
 
 1.9.RC1 (2013-04-15)

@@ -95,7 +95,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
-    
+
     private void writeContents()
     {
         ByteBuffer byteBuffer = buffer.getBuffer().duplicate();
@@ -109,7 +109,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
                 int writtenThisTime = getFileChannel().write( byteBuffer, position * recordSize + written );
 
                 if (writtenThisTime == 0)
-                    throw new IOException( "Unable to write to disk, reported bytes written was " + writtenThisTime );
+                    throw new IOException( "Unable to write to disk, reported bytes written was 0" );
 
                 written += writtenThisTime;
             }

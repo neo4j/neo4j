@@ -59,7 +59,6 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-// import org.neo4j.kernel.ha.HaSettings;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -70,6 +69,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
  */
 public class UdcExtensionImplTest
 {
+    private static final String VersionPattern = "\\d\\.\\d+((\\.|\\-).*)?";
+
     @Rule
     public TestName testName = new TestName();
 
@@ -372,7 +373,7 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get( VERSION );
-        assertTrue( version.matches( "\\d\\.\\d(((\\.|\\-).*)|GA)?" ) );
+        assertTrue( version.matches( VersionPattern ) );
 
         destroy( graphdb );
     }
@@ -380,17 +381,17 @@ public class UdcExtensionImplTest
     @Test
     public void shouldMatchAllValidVersions() throws Exception
     {
-        String pattern = "\\d\\.\\d+((\\.|\\-).*)?";
-        assertTrue( "1.8.M07".matches( pattern ) );
-        assertTrue( "1.8.RC1".matches( pattern ) );
-        assertTrue( "1.8.GA".matches( pattern ) );
-        assertTrue( "1.8".matches( pattern ) );
-        assertTrue( "1.9".matches( pattern ) );
-        assertTrue( "2.0-SNAPSHOT".matches( pattern ) );
-        assertTrue( "1.9.M01".matches( pattern ) );
-        assertTrue( "1.10".matches( pattern ) );
-        assertTrue( "1.10-SNAPSHOT".matches( pattern ) );
-        assertTrue( "1.10.M01".matches( pattern ) );
+        assertTrue( "1.8.M07".matches( VersionPattern ) );
+        assertTrue( "1.8.RC1".matches( VersionPattern ) );
+        assertTrue( "1.8.GA".matches( VersionPattern ) );
+        assertTrue( "1.8".matches( VersionPattern ) );
+        assertTrue( "1.9".matches( VersionPattern ) );
+        assertTrue( "1.9-SNAPSHOT".matches( VersionPattern ) );
+        assertTrue( "2.0-SNAPSHOT".matches( VersionPattern ) );
+        assertTrue( "1.9.M01".matches( VersionPattern ) );
+        assertTrue( "1.10".matches( VersionPattern ) );
+        assertTrue( "1.10-SNAPSHOT".matches( VersionPattern ) );
+        assertTrue( "1.10.M01".matches( VersionPattern ) );
     }
 
     @Test

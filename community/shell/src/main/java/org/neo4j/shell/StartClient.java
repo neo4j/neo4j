@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,6 +39,9 @@ import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
 
 /**
  * Can start clients, either remotely to another JVM running a server
@@ -142,7 +142,6 @@ public class StartClient
                     "You should either supply only " + ARG_PATH +
                     " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
                     "remote shell client can be started" );
-            return;
         }
         // Local
         else if ( path != null )
@@ -335,13 +334,18 @@ public class StartClient
     private static void executeFile( ShellClient client, File file ) throws IOException, ShellException
     {
         BufferedReader reader = newBufferedFileReader( file, UTF_8 );
-        String line;
-        while ( ( line = reader.readLine() ) != null )
+        try
         {
-            client.evaluate( line );
+            for ( String line; ( line = reader.readLine() ) != null; )
+            {
+                client.evaluate( line );
+            }
         }
-        client.shutdown();
-        reader.close();
+        finally
+        {
+            client.shutdown();
+            reader.close();
+        }
     }
 
     static Map<String, Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException

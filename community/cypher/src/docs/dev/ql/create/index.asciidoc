@@ -9,13 +9,13 @@ Read <<introduction-pattern>> for an introduction.
 
 include::create-single-node.asciidoc[]
 
-include::create-single-node-and-set-properties.asciidoc[]
-
 include::create-node-and-add-labels.asciidoc[]
 
 include::create-node-and-add-labels-and-properties.asciidoc[]
 
 include::return-created-node.asciidoc[]
+
+include::create-single-node-and-set-properties.asciidoc[]
 
 include::create-a-relationship-between-two-nodes.asciidoc[]
 

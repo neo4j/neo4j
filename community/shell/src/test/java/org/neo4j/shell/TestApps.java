@@ -406,17 +406,6 @@ public class TestApps extends AbstractShellTest
         executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
     }
     
-    @Ignore( "Setting a new reference node isn't persistent" )
-    @Test
-    public void setNewReferenceNode() throws Exception
-    {
-        executeCommandExpectingException( "mknode -r", "exists" );
-        executeCommand( "rmnode" ); // Delete the reference node
-        executeCommand( "mknode -r --cd --np \"{'name':'test'}\"" );
-        executeCommand( "cd" );
-        executeCommand( "ls -p", "name", "test" );
-    }
-    
     @Test
     public void evalOneLinerExecutesImmediately() throws Exception
     {
