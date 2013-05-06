@@ -32,89 +32,95 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class DelegatingSchemaOperations implements SchemaOperations
 {
-    private final SchemaOperations schemaOperations;
+    private final SchemaOperations delegate;
 
-    public DelegatingSchemaOperations( SchemaOperations schemaOperations )
+    public DelegatingSchemaOperations( SchemaOperations delegate )
     {
-        this.schemaOperations = schemaOperations;
+        this.delegate = delegate;
     }
 
     @Override
     public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        return schemaOperations.getIndexRule( labelId, propertyKey );
+        return delegate.getIndexRule( labelId, propertyKey );
     }
 
     @Override
     public Iterator<IndexDescriptor> getIndexRules( long labelId )
     {
-        return schemaOperations.getIndexRules( labelId );
+        return delegate.getIndexRules( labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor> getIndexRules()
     {
-        return schemaOperations.getIndexRules();
+        return delegate.getIndexRules();
     }
 
     @Override
     public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
-        return schemaOperations.getIndexState( indexRule );
+        return delegate.getIndexState( indexRule );
     }
 
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
     {
-        return schemaOperations.getConstraints( labelId, propertyKeyId );
+        return delegate.getConstraints( labelId, propertyKeyId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId )
     {
-        return schemaOperations.getConstraints( labelId );
+        return delegate.getConstraints( labelId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> getConstraints()
     {
-        return schemaOperations.getConstraints();
+        return delegate.getConstraints();
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        return schemaOperations.addIndexRule( labelId, propertyKey );
+        return delegate.getOwningConstraint( index );
+    }
+
+    @Override
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
+    {
+        return delegate.addIndexRule( labelId, propertyKey, constraintIndex );
     }
 
     @Override
     public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
     {
-        schemaOperations.dropIndexRule( indexRule );
+        delegate.dropIndexRule( indexRule );
     }
 
     @Override
     public UniquenessConstraint addUniquenessConstraint( long labelId,
                                                          long propertyKeyId ) throws ConstraintViolationKernelException
     {
-        return schemaOperations.addUniquenessConstraint( labelId, propertyKeyId );
+        return delegate.addUniquenessConstraint( labelId, propertyKeyId );
     }
 
     @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {
-        schemaOperations.dropConstraint( constraint );
+        delegate.dropConstraint( constraint );
     }
 
     @Override
     public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
     {
-        return schemaOperations.getOrCreateFromSchemaState( key, creator );
+        return delegate.getOrCreateFromSchemaState( key, creator );
     }
 
     @Override
     public <K> boolean schemaStateContains( K key )
     {
-        return schemaOperations.schemaStateContains( key );
+        return delegate.schemaStateContains( key );
     }
 }
