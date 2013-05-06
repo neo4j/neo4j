@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-
 import java.util.Iterator;
 import java.util.Set;
 
@@ -42,6 +38,10 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
+
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class StateHandlingStatementContext extends CompositeStatementContext
 {
@@ -149,9 +149,10 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex )
+            throws ConstraintViolationKernelException
     {
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey, constraintIndex );
         state.addIndexRule( rule );
         return rule;
     }

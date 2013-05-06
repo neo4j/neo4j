@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.synchronizedList;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -46,6 +43,9 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.util.Collections.synchronizedList;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -202,7 +202,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       persistenceManager, schemaState );
 
         // + Constraint evaluation
-        result = new ConstraintEvaluatingTransactionContext( result );
+        result = new ConstraintValidatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time

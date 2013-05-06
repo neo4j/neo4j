@@ -17,27 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api.constraints;
 
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public interface SchemaWriteOperations
+public class ConstraintVerificationFailedKernelException extends KernelException
 {
-    /**
-     * Adds a {@link IndexDescriptor} to the database which applies globally on both
-     * existing as well as new data.
-     */
-    IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException;
-
-    /**
-     * Drops a {@link IndexDescriptor} from the database
-     */
-    void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException;
-
-    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
-            throws ConstraintViolationKernelException;
-
-    void dropConstraint( UniquenessConstraint constraint );
+    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint )
+    {
+        super( null, "Existing data does not match %s.", constraint );
+    }
 }

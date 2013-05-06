@@ -19,22 +19,14 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -52,6 +44,14 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
 public class TestRecoveryVerification
 {
@@ -107,7 +107,7 @@ public class TestRecoveryVerification
         }
         catch ( RuntimeException e )
         {
-            assertEquals( RecoveryVerificationException.class, e.getCause().getClass() );
+            assertEquals( e.getMessage(), RecoveryVerificationException.class, e.getCause().getClass() );
         }
     }
 
@@ -122,7 +122,7 @@ public class TestRecoveryVerification
         verifyOrderedRecords( dir, count );
     }
 
-    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws FileNotFoundException, IOException
+    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws IOException
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
         RandomAccessFile file = new RandomAccessFile( new File( storeDir, "nioneo_logical.log.v0" ), "r" );
@@ -134,7 +134,7 @@ public class TestRecoveryVerification
             readLogHeader( buffer, channel, true );
             long lastOne = -1;
             int counted = 0;
-            for ( LogEntry entry = null; (entry = readEntry( buffer, channel, cf )) != null; )
+            for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
             {
                 if ( entry instanceof TwoPhaseCommit )
                 {

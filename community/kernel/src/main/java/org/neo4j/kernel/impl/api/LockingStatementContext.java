@@ -55,10 +55,10 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        return delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey, constraintIndex );
     }
 
     @Override

@@ -19,6 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Iterator;
+
+import org.junit.Test;
+import org.mockito.InOrder;
+
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.transaction.LockType;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -28,17 +40,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import java.util.Iterator;
-
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.transaction.LockType;
 
 public class LockingStatementContextTest
 {
@@ -71,18 +72,18 @@ public class LockingStatementContextTest
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
         IndexDescriptor rule = mock( IndexDescriptor.class );
-        when( delegate.addIndexRule( 123, 456 ) ).thenReturn( rule );
+        when( delegate.addIndexRule( 123, 456, false ) ).thenReturn( rule );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        IndexDescriptor result = context.addIndexRule( 123, 456 );
+        IndexDescriptor result = context.addIndexRule( 123, 456, false );
 
         // then
         assertSame( rule, result );
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaWriteLock();
-        order.verify( delegate ).addIndexRule( 123, 456 );
+        order.verify( delegate ).addIndexRule( 123, 456, false );
         verifyNoMoreInteractions( lockHolder, delegate );
     }
 

@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
-import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
-import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +42,16 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+
+import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
+import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
@@ -289,7 +289,7 @@ public class SchemaImpl implements Schema
             {
                 long labelId = context.getOrCreateLabelId( label.name() );
                 long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
-                context.addIndexRule( labelId, propertyKeyId );
+                context.addIndexRule( labelId, propertyKeyId, false );
                 return new IndexDefinitionImpl( this, label, propertyKey );
             }
             catch ( ConstraintViolationKernelException e )

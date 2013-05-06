@@ -59,7 +59,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    val index: IndexDescriptor = new IndexDescriptor(123,456)
+    val index: IndexDescriptor = new IndexDescriptor(123,456, false)
     val value = 42
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
