@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import ch.qos.logback.classic.LoggerContext;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -148,11 +153,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -469,7 +469,8 @@ public abstract class InternalAbstractGraphDatabase
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         kernelAPI = life.add( new Kernel( txManager, propertyKeyTokenHolder, labelTokenHolder, persistenceManager,
-                xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver ) );
+                xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
+                this.isHighlyAvailable() ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -538,6 +539,8 @@ public abstract class InternalAbstractGraphDatabase
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
     }
+
+    protected abstract boolean isHighlyAvailable();
 
     private Map<Object, Object> newSchemaStateMap() {
         return new HashMap<Object, Object>();

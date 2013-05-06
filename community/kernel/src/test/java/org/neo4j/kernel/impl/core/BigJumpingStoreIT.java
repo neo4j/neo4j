@@ -74,6 +74,12 @@ public class BigJumpingStoreIT
         }
 
         @Override
+        protected boolean isHighlyAvailable()
+        {
+            return false;
+        }
+
+        @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
             return life.add( new JumpingFileSystemAbstraction( SIZE_PER_JUMP ) );

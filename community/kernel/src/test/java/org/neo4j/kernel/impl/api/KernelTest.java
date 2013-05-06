@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -36,40 +40,55 @@ public class KernelTest
         // GIVEN
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-//        LifeSupport life = new LifeSupport();
-//        DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
-//        {
-//            @Override
-//            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
-//            {
-//                return mock( type );
-//            }
-//        };
-//        Kernel kernel = life.add( new Kernel(
-//                mock( AbstractTransactionManager.class ),
-//                mock( PropertyIndexManager.class ),
-//                mock( PersistenceManager.class ),
-//                mock( XaDataSourceManager.class ),
-//                mock( LockManager.class ),
-//                mock( SchemaCache.class ),
-//                mock( UpdateableSchemaState.class ),
-//                dependencyResolver ) );
-//        life.start();
         DoubleLatch latch = new DoubleLatch( 10 );
         List<Worker> workers = new ArrayList<Worker>();
         for ( int i = 0; i < latch.getNumberOfContestants(); i++ )
+        {
             workers.add( new Worker( kernel, latch ) );
+        }
         latch.awaitFinish();
 
         // WHEN
 
         // THEN
         for ( Worker worker : workers )
+        {
             if ( worker.failure != null )
+            {
                 throw new RuntimeException( "Worker failed", worker.failure );
+            }
+        }
         db.shutdown();
     }
-    
+
+    @Test
+    public void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
+    {
+        GraphDatabaseAPI db = new FakeHaDatabase();
+        KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        db.beginTx();
+        TransactionContext tx = kernelAPI.newTransactionContext();
+        StatementContext ctx = tx.newStatementContext();
+        try
+        {
+            ctx.addUniquenessConstraint( 1, 1 );
+            fail("expected exception here");
+        }
+        catch ( UnsupportedSchemaModificationException e )
+        { //Good
+        }
+        db.shutdown();
+    }
+
+    class FakeHaDatabase extends ImpermanentGraphDatabase
+    {
+        @Override
+        protected boolean isHighlyAvailable()
+        {
+            return true;
+        }
+    }
+
     private static class Worker extends Thread
     {
         private final KernelAPI kernel;
@@ -82,7 +101,7 @@ public class KernelTest
             this.latch = latch;
             start();
         }
-        
+
         @Override
         public void run()
         {

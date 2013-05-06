@@ -73,6 +73,11 @@ public class CompositeStatementContext implements StatementContext
         this( delegate, delegate, delegate, schemaStateOperations, delegate );
     }
 
+    public CompositeStatementContext( StatementContext delegate, SchemaOperations schemaOperations )
+    {
+        this( delegate, delegate, schemaOperations, delegate, delegate );
+    }
+
     private CompositeStatementContext( KeyOperations keyOperations, EntityOperations entityOperations,
                                        SchemaOperations schemaOperations, SchemaStateOperations schemaStateOperations,
                                        Closeable delegateToClose )

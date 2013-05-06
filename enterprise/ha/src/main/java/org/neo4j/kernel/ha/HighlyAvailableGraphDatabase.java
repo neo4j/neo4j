@@ -179,6 +179,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
     }
 
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return true;
+    }
+
     public void start()
     {
         life.start();

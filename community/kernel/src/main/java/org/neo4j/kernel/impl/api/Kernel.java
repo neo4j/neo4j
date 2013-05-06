@@ -110,6 +110,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DependencyResolver dependencyResolver;
     private SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
+    private final boolean highlyAvailableInstance;
     private final StatementContextOwners statementContextOwners = new StatementContextOwners();
     private SchemaIndexProviderMap providerMap = null;
 
@@ -124,7 +125,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                    PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
                    LockManager lockManager, UpdateableSchemaState schemaState,
-                   DependencyResolver dependencyResolver )
+                   DependencyResolver dependencyResolver, boolean highlyAvailable )
     {
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
@@ -134,6 +135,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaState = schemaState;
+        highlyAvailableInstance = highlyAvailable;
     }
 
     @Override
@@ -205,6 +207,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         result = new ConstraintValidatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
+
+        if ( highlyAvailableInstance )
+        {
+            // + Stop HA from creating constraints
+            result = new UniquenessConstraintStoppingTransactionContext( result );
+        }
+
         // + Single statement at a time
         result = new ReferenceCountingTransactionContext( result );
 
