@@ -243,6 +243,12 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
     
     @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        throw unsupported();
+    }
+
+    @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {
         throw unsupported();

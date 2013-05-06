@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -75,4 +77,19 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
         }
         return delegate.addIndexRule( labelId, propertyKey );
     }
+
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKey ) 
+            throws ConstraintViolationKernelException 
+    {
+        if ( getConstraints( labelId, propertyKey ).hasNext() )
+        {
+            throw new ConstraintViolationKernelException("Property " + propertyKey +
+                    " already has a uniqueness constraint for label " + labelId + ".");
+        }
+            
+        return delegate.addUniquenessConstraint( labelId, propertyKey );
+    }
+    
+    
 }

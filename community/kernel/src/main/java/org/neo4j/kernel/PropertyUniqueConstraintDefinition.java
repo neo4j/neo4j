@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import static java.util.Collections.singletonList;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
 public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements UniquenessConstraintDefinition
@@ -35,9 +36,9 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     }
 
     @Override
-    public Type getConstraintType()
+    public ConstraintType getConstraintType()
     {
-        return Type.UNIQUENESS;
+        return ConstraintType.UNIQUENESS;
     }
     
     @Override

@@ -211,34 +211,29 @@ public class SchemaImpl implements Schema
     }
 
     @Override
+    public Iterable<ConstraintDefinition> getConstraints()
+    {
+        final StatementContext context = ctxProvider.getCtxForReading();
+        try
+        {
+            Iterator<UniquenessConstraint> constraints = context.getConstraints();
+            return asConstraintDefinitions(context, constraints);
+        }
+        finally
+        {
+            context.close();
+        }
+    }
+	
+
+    @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
         final StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            Iterator<UniquenessConstraint> constraints =
-                    context.getConstraints( context.getLabelId( label.name() ) );
-            Iterator<ConstraintDefinition> definitions =
-                    map( new Function<UniquenessConstraint, ConstraintDefinition>()
-                    {
-                        @Override
-                        public ConstraintDefinition apply( UniquenessConstraint constraint )
-                        {
-                            try
-                            {
-                                return new PropertyUniqueConstraintDefinition( actions, label,
-                                        context.getPropertyKeyName( constraint.property() ) );
-                            }
-                            catch ( PropertyKeyIdNotFoundException e )
-                            {
-                                throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
-                                        constraint.property(), e );
-                            }
-                        }
-                    }, constraints );
-            
-            // Intentionally iterator over it so that we can close the statement context within this method
-            return asCollection( definitions );
+            Iterator<UniquenessConstraint> constraints = context.getConstraints( context.getLabelId( label.name() ) );
+            return asConstraintDefinitions(context, constraints);
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -249,6 +244,33 @@ public class SchemaImpl implements Schema
             context.close();
         }
     }
+    
+    private Iterable<ConstraintDefinition> asConstraintDefinitions(final StatementContext context, Iterator<UniquenessConstraint> constraints) 
+	{
+		Iterator<ConstraintDefinition> definitions =
+		        map( new Function<UniquenessConstraint, ConstraintDefinition>()
+		        {
+		            @Override
+		            public ConstraintDefinition apply( UniquenessConstraint constraint )
+		            {
+		            	long labelId = constraint.label();
+		            	try
+		                {		                	
+							Label label = label( context.getLabelName( labelId ) );
+		                    return new PropertyUniqueConstraintDefinition( actions, label, context.getPropertyKeyName( constraint.property() ) );
+		                }
+		                catch ( PropertyKeyIdNotFoundException e )
+		                {
+		                    throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " + constraint.property(), e );
+		                } catch ( LabelNotFoundKernelException e ) {
+		                	throw new ThisShouldNotHappenError( "Stefan", "Couldn't find label name for label id " + labelId, e );
+						}
+		            }
+		        }, constraints );
+		
+		// Intentionally iterator over it so that we can close the statement context within this method
+		return asCollection( definitions );
+	}
     
     private static class GDBSchemaActions implements InternalSchemaActions
     {
@@ -316,7 +338,8 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
+        public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey ) 
+                throws ConstraintViolationKernelException        
         {
             StatementContext context = ctxProvider.getCtxForWriting();
             try
@@ -325,10 +348,6 @@ public class SchemaImpl implements Schema
                 long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
                 context.addUniquenessConstraint( labelId, propertyKeyId );
                 return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
-            }
-            catch ( ConstraintViolationKernelException e )
-            {
-                throw new ThisShouldNotHappenError( "Mattias", "Unable to create property unique constraint" );
             }
             finally
             {

@@ -104,7 +104,8 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.addUniquenessConstraint( labelId, propertyKeyId );
@@ -115,6 +116,20 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getConstraints( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraints( labelId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraints();
     }
 
     @Override

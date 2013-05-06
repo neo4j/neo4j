@@ -229,7 +229,7 @@ public class TxStateTest
         state.addConstraint( constraint );
 
         // then
-        DiffSets<UniquenessConstraint> diff = state.constraintsForLabel( 1 );
+        DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( 1 );
         assertEquals( Collections.singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );
     }
@@ -247,7 +247,7 @@ public class TxStateTest
 
         // then
         assertEquals( constraint1, constraint2 );
-        assertEquals( Collections.singleton( constraint1 ), state.constraintsForLabel( 1 ).getAdded() );
+        assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
     }
 
     @Test
@@ -260,8 +260,8 @@ public class TxStateTest
         state.addConstraint( constraint2 );
 
         // then
-        assertEquals( Collections.singleton( constraint1 ), state.constraintsForLabel( 1 ).getAdded() );
-        assertEquals( Collections.singleton( constraint2 ), state.constraintsForLabel( 2 ).getAdded() );
+        assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
+        assertEquals( Collections.singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
     }
 
     private TxState state;

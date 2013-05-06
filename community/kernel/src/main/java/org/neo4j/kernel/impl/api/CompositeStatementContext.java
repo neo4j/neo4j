@@ -404,6 +404,19 @@ public class CompositeStatementContext implements StatementContext
     }
     
     @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<UniquenessConstraint> result = schemaOperations.getConstraints();
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
     public Iterator<LabelToken> listLabels()
     {
         beforeOperation();
@@ -486,7 +499,8 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();

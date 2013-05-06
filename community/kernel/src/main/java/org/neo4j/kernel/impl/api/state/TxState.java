@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -324,15 +325,32 @@ public class TxState
         getOrCreateLabelState( constraint.label() ).constraintsChanges().add( constraint );
     }
 
-    public DiffSets<UniquenessConstraint> constraintsForLabel( long labelId )
+
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( long labelId, final long propertyKey )
+    {
+        return getOrCreateLabelState( labelId ).constraintsChanges().filterAdded( new Predicate<UniquenessConstraint>() {
+
+			@Override
+			public boolean accept( UniquenessConstraint item ) {
+				return item.property() == propertyKey;
+			}        	
+        });
+    }
+    
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
     {
         return getOrCreateLabelState( labelId ).constraintsChanges();
+    }
+
+    public DiffSets<UniquenessConstraint> constraintsChanges()
+    {
+        return constraintsChanges;
     }
 
     public void dropConstraint( UniquenessConstraint constraint )
     {
         constraintsChanges.remove( constraint );
-        constraintsForLabel( constraint.label() ).remove( constraint );
+        constraintsChangesForLabel( constraint.label() ).remove( constraint );
     }
 
     public boolean unRemoveConstraint( UniquenessConstraint constraint )
