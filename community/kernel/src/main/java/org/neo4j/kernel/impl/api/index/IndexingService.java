@@ -402,7 +402,7 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexDescriptor createDescriptor( IndexRule rule )
     {
-        return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey(), rule.isConstraintIndex() );
+        return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
     }
 
     private void awaitIndexFuture( Future<Void> future ) throws Exception

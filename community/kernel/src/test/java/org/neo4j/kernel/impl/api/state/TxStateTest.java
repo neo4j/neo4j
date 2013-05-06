@@ -145,9 +145,9 @@ public class TxStateTest
         long labelId = 2, labelId2 = 5, propertyKey = 3;
 
         // WHEN
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey, false );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
-        state.addIndexRule( new IndexDescriptor( labelId2, propertyKey, false ) );
+        state.addIndexRule( new IndexDescriptor( labelId2, propertyKey ) );
 
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSetsByLabel( labelId ).getAdded() );
@@ -160,7 +160,7 @@ public class TxStateTest
         long labelId = 2, propertyKey = 3;
 
         // WHEN
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey, false );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
 
         // THEN

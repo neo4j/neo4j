@@ -94,7 +94,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings("deprecation")
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 return new ImpermanentGraphDatabase( storeDir, config,
@@ -103,6 +102,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                         state.getCacheProviders(),
                         state.getTransactionInterceptorProviders() )
                 {
+
+
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {

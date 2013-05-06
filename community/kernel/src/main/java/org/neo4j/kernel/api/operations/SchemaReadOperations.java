@@ -60,9 +60,4 @@ public interface SchemaReadOperations
      * for the time being.
      */
     Iterator<UniquenessConstraint> getConstraints( long labelId );
-
-    /**
-     * Get the owning constraint for a constraint index.
-     */
-    Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

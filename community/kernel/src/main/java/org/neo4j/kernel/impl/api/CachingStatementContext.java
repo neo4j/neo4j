@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -61,7 +62,7 @@ public class CachingStatementContext extends CompositeStatementContext
                 public IndexDescriptor apply( SchemaRule from )
                 {
                     IndexRule rule = (IndexRule) from;
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey(), rule.isConstraintIndex() );
+                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
                 }
             };
     private final PersistenceCache persistenceCache;
@@ -118,7 +119,7 @@ public class CachingStatementContext extends CompositeStatementContext
             @Override
             public boolean accept( SchemaRule item )
             {
-                return item.getKind().isIndex();
+                return item.getKind() == Kind.INDEX_RULE;
             }
         }, schemaRules.iterator() );
         return map( TO_INDEX_RULE, filteredRules );

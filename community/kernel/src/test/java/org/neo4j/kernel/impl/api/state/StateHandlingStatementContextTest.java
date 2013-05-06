@@ -67,9 +67,9 @@ public class StateHandlingStatementContextTest
                 mock( SchemaStateOperations.class ), mock( TxState.class ) );
 
         // When
-        ctx.addIndexRule( 0l, 0l, false );
+        ctx.addIndexRule( 0l, 0l );
         ctx.addLabelToNode( 0l, 0l );
-        ctx.dropIndexRule( new IndexDescriptor( 0l, 0l, false ) );
+        ctx.dropIndexRule( new IndexDescriptor( 0l, 0l ) );
         ctx.removeLabelFromNode( 0l, 0l );
 
         // These are kind of in between.. property key ids are created in micro-transactions, so these methods

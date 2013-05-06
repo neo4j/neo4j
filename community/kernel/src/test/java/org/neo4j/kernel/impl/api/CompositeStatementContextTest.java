@@ -184,10 +184,6 @@ public class CompositeStatementContextTest
                 }
                 return result.toString();
             }
-            if ( type == Long.class )
-            {
-                return random.nextLong();
-            }
             return mock( type );
         }
         throw new UnsupportedOperationException( "doesn't support " + type + " please add support for it." );

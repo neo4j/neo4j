@@ -47,18 +47,10 @@ public interface SchemaRule extends RecordSerializable
             @Override
             protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
             {
-                return IndexRule.readIndexRule( id, false, labelId, buffer );
+                return new IndexRule( id, labelId, buffer );
             }
         },
-        CONSTRAINT_INDEX_RULE( 2, IndexRule.class )
-        {
-            @Override
-            protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
-            {
-                return IndexRule.readIndexRule( id, true, labelId, buffer );
-            }
-        },
-        UNIQUENESS_CONSTRAINT( 3, UniquenessConstraintRule.class )
+        UNIQUENESS_CONSTRAINT( 2, UniquenessConstraintRule.class )
         {
             @Override
             protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
@@ -108,16 +100,10 @@ public interface SchemaRule extends RecordSerializable
             switch ( id )
             {
             case 1: return INDEX_RULE;
-            case 2: return CONSTRAINT_INDEX_RULE;
-            case 3: return UNIQUENESS_CONSTRAINT;
+            case 2: return UNIQUENESS_CONSTRAINT;
             default:
                 throw new IllegalArgumentException( "Unknown kind id " + id );
             }
-        }
-
-        public boolean isIndex()
-        {
-            return ruleClass == IndexRule.class;
         }
     }
 }

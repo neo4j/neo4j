@@ -94,17 +94,8 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             public void visitAddedIndex( IndexDescriptor element )
             {
                 SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
-                IndexRule rule;
-                if ( element.isConstraintIndex() )
-                {
-                    rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                          element.getPropertyKeyId(), providerDescriptor, null );
-                }
-                else
-                {
-                    rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                element.getPropertyKeyId(), providerDescriptor );
-                }
+                IndexRule rule = new IndexRule( schemaStorage.newRuleId(), element.getLabelId(), providerDescriptor,
+                                                element.getPropertyKeyId() );
                 persistenceManager.createSchemaRule( rule );
             }
 

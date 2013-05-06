@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.contains;
+
 import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
@@ -57,11 +62,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.LockType;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.contains;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -259,18 +259,18 @@ public class StoreStatementContext extends CompositeStatementContext
 
     private static IndexDescriptor descriptor( IndexRule ruleRecord )
     {
-        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey(), ruleRecord.isConstraintIndex() );
+        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
     }
 
     @Override
     public Iterator<IndexDescriptor> getIndexRules( final long labelId )
     {
-        return toIndexDescriptors( new Predicate<SchemaRule>()
+        return toIndexRules( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule rule )
             {
-                return rule.getLabel() == labelId && rule.getKind().isIndex();
+                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
             }
         } );
     }
@@ -278,17 +278,17 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public Iterator<IndexDescriptor> getIndexRules()
     {
-        return toIndexDescriptors( new Predicate<SchemaRule>()
+        return toIndexRules( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule rule )
             {
-                return rule.getKind().isIndex();
+                return rule.getKind() == SchemaRule.Kind.INDEX_RULE;
             }
         } );
     }
     
-    private Iterator<IndexDescriptor> toIndexDescriptors( Predicate<SchemaRule> filter )
+    private Iterator<IndexDescriptor> toIndexRules( Predicate<SchemaRule> filter )
     {
         Iterator<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
         
@@ -301,13 +301,7 @@ public class StoreStatementContext extends CompositeStatementContext
             }
         }, filtered );
     }
-
-    @Override
-    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
-    }
-
+    
     @Override
     public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
@@ -329,7 +323,7 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId, final long propertyKeyId )
     {
-        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
+        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                 labelId, new Predicate<UniquenessConstraintRule>()
                 {
                     @Override
@@ -344,7 +338,7 @@ public class StoreStatementContext extends CompositeStatementContext
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId )
     {
-        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
+        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                 labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
     

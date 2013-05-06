@@ -45,7 +45,7 @@ public class SchemaStorage
     public IndexRule indexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
     {
         Iterator<IndexRule> rules = schemaRules(
-                IndexRule.class, labelId,
+                IndexRule.class, SchemaRule.Kind.INDEX_RULE, labelId,
                 new Predicate<IndexRule>()
                 {
                     @Override
@@ -70,13 +70,15 @@ public class SchemaStorage
         return rule;
     }
 
-    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, long labelId, Predicate<T> predicate )
+    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, SchemaRule.Kind kind,
+                                                            long labelId, Predicate<T> predicate )
     {
-        return schemaRules( Functions.cast( type ), type, labelId, predicate );
+        assert type == kind.getRuleClass();
+        return schemaRules( Functions.cast( type ), kind, labelId, predicate );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final Class<R> ruleType,
+            Function<? super R, T> conversion, final SchemaRule.Kind kind,
             final long labelId, final Predicate<R> predicate )
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
@@ -88,7 +90,7 @@ public class SchemaStorage
             public boolean accept( SchemaRule rule )
             {
                 return rule.getLabel() == labelId &&
-                       rule.getKind().getRuleClass() == ruleType &&
+                       rule.getKind() == kind &&
                        predicate.accept( (R) rule );
             }
         }, schemaStore.loadAll() ) );
@@ -103,7 +105,7 @@ public class SchemaStorage
             throws SchemaRuleNotFoundException
     {
         Iterator<UniquenessConstraintRule> rules = schemaRules(
-                UniquenessConstraintRule.class, labelId,
+                UniquenessConstraintRule.class, SchemaRule.Kind.UNIQUENESS_CONSTRAINT, labelId,
                 new Predicate<UniquenessConstraintRule>()
                 {
                     @Override

@@ -21,31 +21,26 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
-
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-public abstract class KernelIntegrationTest
+public class KernelIntegrationTest
 {
-    protected GraphDatabaseAPI db;
-    protected StatementContext statement;
-    protected KernelAPI kernel;
-    protected ThreadToStatementContextBridge statementContextProvider;
+
+    public GraphDatabaseAPI db;
+    public StatementContext statement;
+    public KernelAPI kernel;
+    public ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
     private TransactionContext tx;
-    private EphemeralFileSystemAbstraction fs;
 
-    protected TransactionContext newTransaction()
+    public TransactionContext newTransaction()
     {
         beansTx = db.beginTx();
         tx = kernel.newTransactionContext();
@@ -53,62 +48,33 @@ public abstract class KernelIntegrationTest
         return tx;
     }
 
-    protected StatementContext readOnlyContext()
-    {
-        return statementContextProvider.getCtxForReading();
-    }
-
-    protected void commit()
+    public void commit()
     {
         statement.close();
         beansTx.success();
         beansTx.finish();
     }
 
-    protected void rollback()
+    public void rollback()
     {
         beansTx.failure();
         beansTx.finish();
     }
 
     @Before
-    public void setup()
+    public void before() throws Exception
     {
-        fs = new EphemeralFileSystemAbstraction();
-        startDb();
+        db = new ImpermanentGraphDatabase();
+        statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
+        kernel = db.getDependencyResolver().resolveDependency(
+                KernelAPI.class );
     }
 
     @After
-    public void cleanup() throws Exception
-    {
-        stopDb();
-        fs.shutdown();
-    }
-
-    protected void startDb()
-    {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
-        statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-    }
-
-    protected void stopDb()
+    public void after() throws Exception
     {
         db.shutdown();
     }
 
-    protected void restartDb()
-    {
-        stopDb();
-        startDb();
-    }
-
-    protected void awaitAllIndexesOnline()
-    {
-        for ( IndexDefinition index : db.schema().getIndexes() )
-        {
-            db.schema().awaitIndexOnline( index, 1, SECONDS );
-        }
-    }
 }

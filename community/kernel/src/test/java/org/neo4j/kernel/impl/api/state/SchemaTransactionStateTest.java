@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -63,7 +62,7 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1, false );
+        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1 );
 
         // THEN
         assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
@@ -82,8 +81,8 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1, false );
-        IndexDescriptor rule2 = txContext.addIndexRule( labelId2, key2, false );
+        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1 );
+        IndexDescriptor rule2 = txContext.addIndexRule( labelId2, key2 );
 
         // THEN
         assertEquals( asSet( rule1 ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
@@ -105,8 +104,8 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1, false );
-        IndexDescriptor rule2 = txContext.addIndexRule( labelId1, key2, false );
+        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1 );
+        IndexDescriptor rule2 = txContext.addIndexRule( labelId1, key2 );
 
         // THEN
         assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
@@ -117,7 +116,7 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         commitLabels( labelId1 );
-        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1, false );
+        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1 );
 
         // THEN
         assertEquals( InternalIndexState.POPULATING, txContext.getIndexState( rule ) );
@@ -128,14 +127,14 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- non-existent rule added in the transaction
-        txContext.addIndexRule( labelId1, key1, false );
+        txContext.addIndexRule( labelId1, key1 );
 
         // WHEN
         IndexDescriptor rule = txContext.getIndexRule( labelId1, key1 );
         Iterator<IndexDescriptor> labelRules = txContext.getIndexRules( labelId1 );
 
         // THEN
-        IndexDescriptor expectedRule = new IndexDescriptor( labelId1, key1, false );
+        IndexDescriptor expectedRule = new IndexDescriptor( labelId1, key1 );
         assertEquals( expectedRule, rule );
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
     }
@@ -145,7 +144,7 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- a rule that exists in the store
-        IndexDescriptor rule = new IndexDescriptor( labelId1, key1, false );
+        IndexDescriptor rule = new IndexDescriptor( labelId1, key1 );
         when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.dropIndexRule( rule );
@@ -209,13 +208,13 @@ public class SchemaTransactionStateTest
         when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong(), anyBoolean() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
                 return new IndexDescriptor((Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1], false );
+                        (Long) invocation.getArguments()[1] );
             }
         } );
 

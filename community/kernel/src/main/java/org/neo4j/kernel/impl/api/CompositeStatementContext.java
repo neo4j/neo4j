@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.Closeable;
 import java.util.Iterator;
 
@@ -40,8 +42,6 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.LabelToken;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
@@ -402,20 +402,7 @@ public class CompositeStatementContext implements StatementContext
         afterOperation();
         return result;
     }
-
-    @Override
-    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        beforeOperation();
-        beforeReadOperation();
-
-        Long result = schemaOperations.getOwningConstraint( index );
-
-        afterReadOperation();
-        afterOperation();
-        return result;
-    }
-
+    
     @Override
     public Iterator<LabelToken> listLabels()
     {
@@ -486,12 +473,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        IndexDescriptor result = schemaOperations.addIndexRule( labelId, propertyKey, constraintIndex );
+        IndexDescriptor result = schemaOperations.addIndexRule( labelId, propertyKey );
 
         afterWriteOperation();
         afterOperation();

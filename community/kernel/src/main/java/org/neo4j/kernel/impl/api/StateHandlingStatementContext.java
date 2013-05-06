@@ -149,10 +149,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex )
-            throws ConstraintViolationKernelException
+    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey, constraintIndex );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
         return rule;
     }

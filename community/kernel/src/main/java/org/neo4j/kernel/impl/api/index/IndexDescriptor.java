@@ -28,13 +28,11 @@ public class IndexDescriptor
 {
     private final long labelId;
     private final long propertyKeyId;
-    private final boolean constraintIndex;
 
-    public IndexDescriptor( long labelId, long propertyKeyId, boolean constraintIndex )
+    public IndexDescriptor( long labelId, long propertyKeyId )
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
-        this.constraintIndex = constraintIndex;
     }
 
     @Override
@@ -47,9 +45,7 @@ public class IndexDescriptor
         if ( obj != null && getClass() == obj.getClass() )
         {
             IndexDescriptor that = (IndexDescriptor) obj;
-            return this.labelId == that.labelId &&
-                   this.propertyKeyId == that.propertyKeyId &&
-                   this.constraintIndex == that.constraintIndex;
+            return this.labelId == that.labelId && this.propertyKeyId == that.propertyKeyId;
         }
         return false;
     }
@@ -75,12 +71,6 @@ public class IndexDescriptor
     @Override
     public String toString()
     {
-        return String.format( "%s[label:%d, property:%d, constraintIndex:%s]", getClass().getSimpleName(),
-                              labelId, propertyKeyId, constraintIndex );
-    }
-
-    public boolean isConstraintIndex()
-    {
-        return constraintIndex;
+        return getClass().getSimpleName() + "[label:" + labelId + ", property:" + propertyKeyId + "]";
     }
 }

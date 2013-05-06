@@ -29,7 +29,7 @@ public interface SchemaWriteOperations
      * Adds a {@link IndexDescriptor} to the database which applies globally on both
      * existing as well as new data.
      */
-    IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException;
+    IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
 
     /**
      * Drops a {@link IndexDescriptor} from the database
