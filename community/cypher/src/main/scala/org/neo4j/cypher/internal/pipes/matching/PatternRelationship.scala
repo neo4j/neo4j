@@ -110,7 +110,7 @@ class VariableLengthPatternRelationship(pathName: String,
   override def identifiers2: Map[String, CypherType] =
     Map(startNode.key -> NodeType(),
       endNode.key -> NodeType(),
-      key -> new CollectionType(RelationshipType())) ++ relIterable.map(_ -> new CollectionType(RelationshipType())).toMap
+      key -> CollectionType(RelationshipType())) ++ relIterable.map(_ -> CollectionType(RelationshipType())).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 

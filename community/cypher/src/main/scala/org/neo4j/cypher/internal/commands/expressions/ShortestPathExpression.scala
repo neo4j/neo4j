@@ -102,5 +102,5 @@ class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestP
     finder.findAllPaths(start, end).asScala.toStream
   }
 
-  def typ = new CollectionType(PathType())
+  def typ = CollectionType(PathType())
 }

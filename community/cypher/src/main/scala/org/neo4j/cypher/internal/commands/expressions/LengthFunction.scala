@@ -40,7 +40,7 @@ with ExpressionWInnerExpression {
   def children = Seq(inner)
 
   val myType = LongType()
-  val expectedInnerType = AnyCollectionType()
+  val expectedInnerType = CollectionType(AnyType())
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

@@ -38,7 +38,7 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
 
   def calculateType(symbols: SymbolTable) = {
     path.evaluateType(PathType(), symbols)
-    new CollectionType(RelationshipType())
+    CollectionType(RelationshipType())
   }
 
   def symbolTableDependencies = path.symbolTableDependencies

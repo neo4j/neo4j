@@ -25,7 +25,7 @@ import org.scalatest.Assertions
 class CypherTypeTest extends Assertions {
   @Test def collections_should_be_typed_correctly() {
     val value = Seq(Seq("Text"))
-    val typ = new CollectionType(new CollectionType(StringType()))
+    val typ = CollectionType(CollectionType(StringType()))
 
     assert(CypherType.fromJava(value) === typ)
   }
@@ -35,7 +35,7 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMerging(NumberType(), NumberType(), NumberType())
     assertCorrectTypeMerging(NumberType(), ScalarType(), ScalarType())
     assertCorrectTypeMerging(NumberType(), StringType(), ScalarType())
-    assertCorrectTypeMerging(NumberType(), AnyCollectionType(), AnyType())
+    assertCorrectTypeMerging(NumberType(), CollectionType(AnyType()), AnyType())
     assertCorrectTypeMerging(LongType(), DoubleType(), NumberType())
     assertCorrectTypeMerging(MapType(), DoubleType(), ScalarType())
   }
@@ -43,7 +43,7 @@ class CypherTypeTest extends Assertions {
   def assertCorrectTypeMerging(a: CypherType, b: CypherType, result: CypherType) {
     val simpleMergedType: CypherType = a mergeWith b
     assert(simpleMergedType === result)
-    val collectionMergedType: CypherType = (new CollectionType(a)) mergeWith (new CollectionType(b))
-    assert(collectionMergedType === (new CollectionType(result)))
+    val collectionMergedType: CypherType = (CollectionType(a)) mergeWith (CollectionType(b))
+    assert(collectionMergedType === CollectionType(result))
   }
 }

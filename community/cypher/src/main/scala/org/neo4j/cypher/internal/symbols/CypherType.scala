@@ -47,8 +47,8 @@ object CypherType {
     case _: Number                          => NumberType()
     case _: Boolean                         => BooleanType()
     case IsMap(_)                           => MapType()
-    case IsCollection(coll) if coll.isEmpty => AnyCollectionType()
-    case IsCollection(coll)                 => new CollectionType(coll.map(fromJava).reduce(_ mergeWith _))
+    case IsCollection(coll) if coll.isEmpty => CollectionType(AnyType())
+    case IsCollection(coll)                 => CollectionType(coll.map(fromJava).reduce(_ mergeWith _))
     case _                                  => AnyType()
   }
 }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation._
-import org.neo4j.cypher.internal.symbols.{AnyCollectionType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{CollectionType, AnyType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
 import collection.mutable
 import expressions.Identifier
@@ -115,7 +115,7 @@ trait UpdateCommandExpander {
 
     val missingCreateNodeActions = commands.flatMap {
       case ForeachAction(coll, id, actions) =>
-        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols).iteratedType))
+        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(CollectionType(AnyType()), symbols).iteratedType))
         Seq(ForeachAction(coll, id, expandedCommands))
 
       case createRel: CreateRelationship =>

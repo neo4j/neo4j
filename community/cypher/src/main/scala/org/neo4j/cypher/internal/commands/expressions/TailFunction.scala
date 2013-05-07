@@ -18,7 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyCollectionType}
+
+import org.neo4j.cypher.internal.symbols.{SymbolTable, CollectionType, AnyType}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
@@ -36,7 +37,7 @@ case class TailFunction(collection: Expression) extends NullInNullOutExpression(
 
   def children = Seq(collection)
 
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyCollectionType(), symbols)
+  def calculateType(symbols: SymbolTable) = collection.evaluateType(CollectionType(AnyType()), symbols)
 
   def symbolTableDependencies = collection.symbolTableDependencies
 }

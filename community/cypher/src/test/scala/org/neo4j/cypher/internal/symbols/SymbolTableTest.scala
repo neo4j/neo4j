@@ -86,19 +86,19 @@ class SymbolTableTest extends Assertions {
   @Test def adding_to_string_collection() {
     //given
     val symbolTable = createSymbols()
-    val exp = new Add(new FakeExpression(new CollectionType(StringType())), new FakeExpression(StringType()))
+    val exp = new Add(new FakeExpression(CollectionType(StringType())), new FakeExpression(StringType()))
 
     //when
     val returnType = exp.evaluateType(AnyType(), symbolTable)
 
     //then
-    assert(returnType === new CollectionType(StringType()))
+    assert(returnType === CollectionType(StringType()))
   }
 
   @Test def covariance() {
     //given
-    val actual = new CollectionType(NodeType())
-    val expected = new CollectionType(MapType())
+    val actual = CollectionType(NodeType())
+    val expected = CollectionType(MapType())
 
     //then
     assert(expected.isAssignableFrom(actual))

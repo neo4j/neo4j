@@ -67,7 +67,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[CollectionType]
     val mergedInnerType = collectionType.iteratedType.mergeWith(singleElement)
-    new CollectionType(mergedInnerType)
+    CollectionType(mergedInnerType)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies

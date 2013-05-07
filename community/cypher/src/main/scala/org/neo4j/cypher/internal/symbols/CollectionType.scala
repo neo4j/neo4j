@@ -19,6 +19,11 @@
  */
 package org.neo4j.cypher.internal.symbols
 
+object CollectionType {
+  val anyCollectionTypeInstance = new CollectionType(AnyType())
+
+  def apply(iteratedType: CypherType) = if (iteratedType == AnyType()) anyCollectionTypeInstance else new CollectionType(iteratedType)
+}
 
 class CollectionType(override val iteratedType: CypherType) extends AnyType {
 
@@ -29,7 +34,7 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
 
   override def mergeWith(other: CypherType) = other match {
     case otherCollection: CollectionType =>
-      new CollectionType(iteratedType mergeWith otherCollection.iteratedType)
+      CollectionType(iteratedType mergeWith otherCollection.iteratedType)
     case _ =>
       super.mergeWith(other)
   }
@@ -42,5 +47,5 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
     case _ => false
   }
 
-  override def rewrite(f: CypherType => CypherType) = f(new CollectionType(this.iteratedType.rewrite(f)))
+  override def rewrite(f: CypherType => CypherType) = f(CollectionType(this.iteratedType.rewrite(f)))
 }
