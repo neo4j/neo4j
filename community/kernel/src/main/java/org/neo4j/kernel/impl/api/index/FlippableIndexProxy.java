@@ -44,7 +44,7 @@ public class FlippableIndexProxy implements IndexProxy
             super( message, cause );
         }
     }
-    
+
     private static final Callable<Void> NO_OP = new Callable<Void>()
     {
         @Override
@@ -54,7 +54,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
     };
 
-    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     private IndexProxyFactory flipTarget;
     private IndexProxy delegate;
 
@@ -67,7 +67,7 @@ public class FlippableIndexProxy implements IndexProxy
     {
         this.delegate = originalDelegate;
     }
-    
+
     @Override
     public void start() throws IOException
     {
@@ -81,7 +81,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
@@ -95,7 +95,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
@@ -110,7 +110,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public Future<Void> drop() throws IOException
     {
@@ -125,7 +125,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public void force() throws IOException
     {
@@ -181,7 +181,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public Future<Void> close() throws IOException
     {
@@ -196,7 +196,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public IndexReader newReader() throws IndexNotFoundKernelException
     {
@@ -210,10 +210,14 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
-    public IndexProxy getDelegate()
+
+    @Override
+    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
     {
-        return delegate;
+        this.lock.readLock().lock();
+        IndexProxy proxy = delegate;
+        this.lock.readLock().unlock();
+        proxy.awaitPopulationCompleted();
     }
 
     public void setFlipTarget( IndexProxyFactory flipTarget )
@@ -238,7 +242,7 @@ public class FlippableIndexProxy implements IndexProxy
         catch ( FlipFailedKernelException e )
         {
             throw new ThisShouldNotHappenError( "Mattias",
-                    "Flipping without a particular action should not fail this way" );
+                                                "Flipping without a particular action should not fail this way" );
         }
     }
 
@@ -246,7 +250,7 @@ public class FlippableIndexProxy implements IndexProxy
     {
         flip( actionDuringFlip, delegate );
     }
-    
+
     public void flip( Callable<Void> actionDuringFlip, IndexProxy failureFlipTarget ) throws FlipFailedKernelException
     {
         lock.writeLock().lock();
@@ -261,7 +265,8 @@ public class FlippableIndexProxy implements IndexProxy
             catch ( Exception e )
             {
                 this.delegate = failureFlipTarget;
-                throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );
+                throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.",
+                                                     e );
             }
         }
         finally
@@ -280,7 +285,8 @@ public class FlippableIndexProxy implements IndexProxy
     {
         if ( closed )
         {
-            throw new IllegalStateException( this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
+            throw new IllegalStateException(
+                    this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
         }
     }
 }

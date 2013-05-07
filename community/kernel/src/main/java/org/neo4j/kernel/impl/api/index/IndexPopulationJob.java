@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.kernel.impl.api.index.IndexingService.singleProxy;
-
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -40,6 +34,12 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.kernel.impl.api.index.IndexingService.singleProxy;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -210,5 +210,10 @@ public class IndexPopulationJob implements Runnable
     public String toString()
     {
         return getClass().getSimpleName() + "[populator:" + populator + ",descriptor:" + descriptor + "]";
+    }
+
+    public void awaitCompletion() throws InterruptedException
+    {
+        doneSignal.await();
     }
 }

@@ -26,17 +26,20 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionalException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
@@ -47,16 +50,19 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 {
     private final TxState state;
     private final StatementContext delegate;
+    private final ConstraintIndexCreator constraintIndexCreator;
 
     public StateHandlingStatementContext( StatementContext actual,
                                           SchemaStateOperations schemaOperations,
-                                          TxState state )
+                                          TxState state,
+                                          ConstraintIndexCreator constraintIndexCreator )
     {
         // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
         // and so having it here along with transactional state makes little sense to me. Reconsider and refactor.
         super( actual, schemaOperations );
         this.state = state;
         this.delegate = actual;
+        this.constraintIndexCreator = constraintIndexCreator;
     }
 
     @Override
@@ -150,7 +156,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
     @Override
     public IndexDescriptor addIndex( long labelId, long propertyKey )
-            throws ConstraintViolationKernelException
+            throws DataIntegrityKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
@@ -159,7 +165,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws ConstraintViolationKernelException
+            throws DataIntegrityKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addConstraintIndexRule( rule );
@@ -167,19 +173,20 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         state.dropIndex( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         state.dropConstraintIndex( descriptor );
     }
 
     @Override
     public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+            throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         if ( !state.unRemoveConstraint( constraint ) )
@@ -191,7 +198,27 @@ public class StateHandlingStatementContext extends CompositeStatementContext
                     return constraint;
                 }
             }
-            state.addConstraint( constraint );
+            long indexId;
+            try
+            {
+                indexId = constraintIndexCreator.createUniquenessConstraintIndex( this, labelId, propertyKeyId );
+            }
+            catch ( TransactionalException e )
+            {
+                throw new ConstraintCreationKernelException( constraint, e );
+            }
+            catch ( IndexPopulationFailedKernelException e )
+            {
+                if ( e.getCause() instanceof ConstraintViolationKernelException )
+                {
+                    throw new ConstraintCreationKernelException( constraint, e.getCause() );
+                }
+                else
+                {
+                    throw new ConstraintCreationKernelException( constraint, e );
+                }
+            }
+            state.addConstraint( constraint, indexId );
         }
         return constraint;
     }
@@ -201,22 +228,21 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     {
         return applyConstraintsDiff( delegate.getConstraints( labelId, propertyKeyId ), labelId, propertyKeyId );
     }
-    
+
     @Override
     public Iterator<UniquenessConstraint> getConstraints( long labelId )
     {
         return applyConstraintsDiff( delegate.getConstraints( labelId ), labelId );
     }
-    
+
     @Override
     public Iterator<UniquenessConstraint> getConstraints()
     {
         return applyConstraintsDiff( delegate.getConstraints() );
     }
 
-
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints, 
-            long labelId, long propertyKeyId )
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
+                                                                 long labelId, long propertyKeyId )
     {
         DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabelAndProperty( labelId, propertyKeyId );
         if ( diff != null )
@@ -226,8 +252,8 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         return constraints;
     }
 
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints, 
-            long labelId )
+    private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
+                                                                 long labelId )
     {
         DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( labelId );
         if ( diff != null )
@@ -236,7 +262,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         }
         return constraints;
     }
-    
+
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints )
     {
         DiffSets<UniquenessConstraint> diff = state.constraintsChanges();
@@ -254,12 +280,12 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
         Iterable<IndexDescriptor> committedRules;
         try
         {
-            committedRules = option( delegate.getIndexRule( labelId, propertyKey ) );
+            committedRules = option( delegate.getIndex( labelId, propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -271,11 +297,10 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         if ( single == null )
         {
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                    propertyKey + " not found" );
+                                                   propertyKey + " not found" );
         }
         return single;
     }
-
 
     @Override
     public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
@@ -303,7 +328,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         if ( diffSet.isRemoved( indexRule ) )
         {
             throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
-                    "dropped in this transaction.", indexRule.getLabelId(), indexRule.getPropertyKeyId() ) );
+                                                                   "dropped in this transaction.",
+                                                                   indexRule.getLabelId(),
+                                                                   indexRule.getPropertyKeyId() ) );
         }
         return false;
     }
@@ -333,7 +360,8 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( IndexDescriptor index, final Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( IndexDescriptor index, final Object value )
+            throws IndexNotFoundKernelException
     {
         // Start with nodes where the given property has changed
         DiffSets<Long> diff = state.getNodesWithChangedProperty( index.getPropertyKeyId(), value );

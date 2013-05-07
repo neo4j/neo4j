@@ -69,6 +69,9 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
  */
 public class TxState
 {
+    /**
+     * Ability to generate the leaking id types (node ids and relationship ids).
+     */
     public interface IdGeneration
     {
         long newNodeId();
@@ -84,7 +87,7 @@ public class TxState
 
         void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
-        void visitAddedConstraint( UniquenessConstraint element );
+        void visitAddedConstraint( UniquenessConstraint element, long indexId );
 
         void visitRemovedConstraint( UniquenessConstraint element );
     }
@@ -95,10 +98,11 @@ public class TxState
     private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
     private final DiffSets<Long> nodes = new DiffSets<Long>();
+    private final Map<UniquenessConstraint, Long> createdConstraintIndexes = new HashMap<UniquenessConstraint, Long>();
 
     private final OldTxStateBridge legacyState;
-    private final PersistenceManager persistenceManager;
-    private final IdGeneration idGeneration;
+    private final PersistenceManager persistenceManager; // should go away dammit!
+    private final IdGeneration idGeneration; // needed when we move createNode() and createRelationship() to here...
 
     public TxState( OldTxStateBridge legacyState,
                     PersistenceManager legacyTransaction,
@@ -123,7 +127,7 @@ public class TxState
             @Override
             public void visitAdded( UniquenessConstraint element )
             {
-                visitor.visitAddedConstraint( element );
+                visitor.visitAddedConstraint( element, createdConstraintIndexes.get( element ) );
             }
 
             @Override
@@ -349,22 +353,24 @@ public class TxState
         return result;
     }
 
-    public void addConstraint( UniquenessConstraint constraint )
+    public void addConstraint( UniquenessConstraint constraint, long indexId )
     {
         constraintsChanges.add( constraint );
+        createdConstraintIndexes.put( constraint, indexId );
         getOrCreateLabelState( constraint.label() ).constraintsChanges().add( constraint );
     }
 
 
     public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( long labelId, final long propertyKey )
     {
-        return getOrCreateLabelState( labelId ).constraintsChanges().filterAdded( new Predicate<UniquenessConstraint>() {
-
-			@Override
-			public boolean accept( UniquenessConstraint item ) {
-				return item.property() == propertyKey;
-			}        	
-        });
+        return getOrCreateLabelState( labelId ).constraintsChanges().filterAdded( new Predicate<UniquenessConstraint>()
+        {
+            @Override
+            public boolean accept( UniquenessConstraint item )
+            {
+                return item.property() == propertyKey;
+            }
+        } );
     }
     
     public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
@@ -379,7 +385,12 @@ public class TxState
 
     public void dropConstraint( UniquenessConstraint constraint )
     {
-        constraintsChanges.remove( constraint );
+        if ( constraintsChanges.remove( constraint ) )
+        {
+            createdConstraintIndexes.remove( constraint );
+            // TODO: someone needs to make sure that the index we created gets dropped.
+            // I think this can wait until commit/rollback, but we need to be able to know that the index was created...
+        }
         constraintsChangesForLabel( constraint.label() ).remove( constraint );
     }
 

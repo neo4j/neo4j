@@ -226,7 +226,7 @@ public class TxStateTest
     {
         // when
         UniquenessConstraint constraint = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint );
+        state.addConstraint( constraint, 7 );
 
         // then
         DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( 1 );
@@ -239,11 +239,11 @@ public class TxStateTest
     {
         // given
         UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint1 );
+        state.addConstraint( constraint1, 7 );
 
         // when
         UniquenessConstraint constraint2 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint2 );
+        state.addConstraint( constraint2, 19 );
 
         // then
         assertEquals( constraint1, constraint2 );
@@ -255,9 +255,9 @@ public class TxStateTest
     {
         // when
         UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint1 );
+        state.addConstraint( constraint1, 7 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 2, 17 );
-        state.addConstraint( constraint2 );
+        state.addConstraint( constraint2, 19 );
 
         // then
         assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );

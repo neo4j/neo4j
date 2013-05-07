@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -42,7 +38,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -52,6 +48,10 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeProxy implements Node
 {
@@ -190,7 +190,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( e );
         }
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -218,7 +218,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( e );
         }
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -356,11 +356,7 @@ public class NodeProxy implements Node
     @Override
     public boolean equals( Object o )
     {
-        if ( !(o instanceof Node) )
-        {
-            return false;
-        }
-        return this.getId() == ((Node) o).getId();
+        return o instanceof Node && this.getId() == ((Node) o).getId();
     }
 
     @Override
@@ -423,7 +419,7 @@ public class NodeProxy implements Node
         {
             ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
         }
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
         }

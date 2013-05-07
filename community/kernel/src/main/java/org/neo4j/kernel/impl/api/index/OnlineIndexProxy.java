@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
-
 import java.io.IOException;
 import java.util.concurrent.Future;
 
@@ -29,6 +27,8 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+
+import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -104,7 +104,13 @@ public class OnlineIndexProxy implements IndexProxy
     {
         return accessor.newReader();
     }
-    
+
+    @Override
+    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    {
+        // the index is already populated
+    }
+
     @Override
     public String toString()
     {

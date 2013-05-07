@@ -32,7 +32,7 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
     val labelId = ctx.getLabelId(labelName)
     val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
 
-    val rule = ctx.getIndexRule(labelId, propertyKeyId)
+    val rule = ctx.getIndex(labelId, propertyKeyId)
     ctx.getIndexState(rule) match {
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
