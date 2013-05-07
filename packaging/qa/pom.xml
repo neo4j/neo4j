@@ -4,7 +4,27 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.qa</groupId>
   <artifactId>neo4j-server-qa</artifactId>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <version>1.0</version>
 
+  <build>
+        <plugins>
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <executions>
+                    <execution>
+                        <id>Execute Rake</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>rake</executable>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
