@@ -484,7 +484,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         newTransaction();
-        statement.dropIndexRule( idx );
+        statement.dropIndex( idx );
         commit();
 
         // THEN
@@ -493,8 +493,8 @@ public class KernelIT extends KernelIntegrationTest
 
     private IndexDescriptor createIndex( ) throws ConstraintViolationKernelException
     {
-        return statement.addIndexRule( statement.getOrCreateLabelId( "hello" ),
-                    statement.getOrCreatePropertyKeyId( "hepp" ), false );
+        return statement.addIndex( statement.getOrCreateLabelId( "hello" ),
+                                   statement.getOrCreatePropertyKeyId( "hepp" ) );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )

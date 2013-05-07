@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,7 +53,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
@@ -75,7 +74,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
@@ -97,7 +96,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
@@ -121,7 +120,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
@@ -145,7 +144,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
 
@@ -169,7 +168,7 @@ public class IndexQueryTransactionStateTest
         long propertyKeyId = 3l;
         String value = "My Value";
 
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId, false );
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.exactIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
@@ -197,17 +196,17 @@ public class IndexQueryTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong(), anyBoolean() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.getIndexes( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.addIndex( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
                 return new IndexDescriptor(
                         (Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1], false );
+                        (Long) invocation.getArguments()[1] );
             }
         } );
 

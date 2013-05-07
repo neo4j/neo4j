@@ -403,6 +403,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             nextProp = current.getNextProp();
         }
+        assert current != null : "the if statement above prevents it";
         if ( current.size() > 0 )
         {
             getPropertyStore().updateRecord( current );
@@ -1222,7 +1223,7 @@ public class BatchInserterImpl implements BatchInserter
         public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
             createIndexRule( label, propertyKey );
-            return new IndexDefinitionImpl( this, label, propertyKey );
+            return new IndexDefinitionImpl( this, label, propertyKey, false );
         }
 
         @Override

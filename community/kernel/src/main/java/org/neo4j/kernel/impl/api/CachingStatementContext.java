@@ -61,7 +61,7 @@ public class CachingStatementContext extends CompositeStatementContext
                 public IndexDescriptor apply( SchemaRule from )
                 {
                     IndexRule rule = (IndexRule) from;
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey(), rule.isConstraintIndex() );
+                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
                 }
             };
     private final PersistenceCache persistenceCache;
@@ -100,27 +100,39 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
-        return toIndexRules( schemaCache.getSchemaRulesForLabel( labelId ) );
+        return toIndexRules( schemaCache.getSchemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
     {
-        return toIndexRules( schemaCache.getSchemaRules() );
+        return toIndexRules( schemaCache.getSchemaRules(), SchemaRule.Kind.INDEX_RULE );
     }
 
-    private Iterator<IndexDescriptor> toIndexRules( Iterable<SchemaRule> schemaRules )
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        return toIndexRules( schemaCache.getSchemaRulesForLabel( labelId ), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        return toIndexRules( schemaCache.getSchemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+    }
+
+    private static Iterator<IndexDescriptor> toIndexRules( Iterable<SchemaRule> rules, final SchemaRule.Kind kind )
     {
         Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule item )
             {
-                return item.getKind().isIndex();
+                return item.getKind() == kind;
             }
-        }, schemaRules.iterator() );
+        }, rules.iterator() );
         return map( TO_INDEX_RULE, filteredRules );
     }
 }

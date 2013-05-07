@@ -149,33 +149,49 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex )
+    public IndexDescriptor addIndex( long labelId, long propertyKey )
             throws ConstraintViolationKernelException
     {
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey, constraintIndex );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
         return rule;
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
     {
-        state.dropIndexRule( indexRule );
+        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
+        state.addConstraintIndexRule( rule );
+        return rule;
+    }
+
+    @Override
+    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        state.dropIndex( descriptor );
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        state.dropConstraintIndex( descriptor );
     }
 
     @Override
     public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-        if (!state.unRemoveConstraint(constraint)) {
-        for ( Iterator<UniquenessConstraint> it = delegate.getConstraints( labelId, propertyKeyId ); it.hasNext(); )
+        if ( !state.unRemoveConstraint( constraint ) )
         {
-            if ( it.next().equals( labelId, propertyKeyId ) )
+            for ( Iterator<UniquenessConstraint> it = delegate.getConstraints( labelId, propertyKeyId ); it.hasNext(); )
             {
-                return constraint;
+                if ( it.next().equals( labelId, propertyKeyId ) )
+                {
+                    return constraint;
+                }
             }
-        }
-        state.addConstraint( constraint );
+            state.addConstraint( constraint );
         }
         return constraint;
     }
@@ -249,7 +265,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             committedRules = emptyList();
         }
-        DiffSets<IndexDescriptor> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
+        DiffSets<IndexDescriptor> ruleDiffSet = state.getIndexDiffSetsByLabel( labelId );
         Iterator<IndexDescriptor> rules = ruleDiffSet.apply( committedRules.iterator() );
         IndexDescriptor single = singleOrNull( rules );
         if ( single == null )
@@ -265,31 +281,55 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
-        DiffSets<IndexDescriptor> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabelId() );
-        if ( diffSet.isAdded( indexRule ) )
+        if ( checkIndexState( indexRule, state.getIndexDiffSetsByLabel( indexRule.getLabelId() ) ) )
         {
             return InternalIndexState.POPULATING;
         }
-
-        if ( diffSet.isRemoved( indexRule ) )
+        if ( checkIndexState( indexRule, state.getConstraintIndexDiffSetsByLabel( indexRule.getLabelId() ) ) )
         {
-            throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
-                    "dropped in this transaction.", indexRule.getLabelId(), indexRule.getPropertyKeyId() ) );
+            return InternalIndexState.POPULATING;
         }
 
         return delegate.getIndexState( indexRule );
     }
 
-    @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    private boolean checkIndexState( IndexDescriptor indexRule, DiffSets<IndexDescriptor> diffSet )
+            throws IndexNotFoundKernelException
     {
-        return state.getIndexRuleDiffSetsByLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
+        if ( diffSet.isAdded( indexRule ) )
+        {
+            return true;
+        }
+        if ( diffSet.isRemoved( indexRule ) )
+        {
+            throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
+                    "dropped in this transaction.", indexRule.getLabelId(), indexRule.getPropertyKeyId() ) );
+        }
+        return false;
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
-        return state.getIndexRuleDiffSets().apply( delegate.getIndexRules() );
+        return state.getIndexDiffSetsByLabel( labelId ).apply( delegate.getIndexes( labelId ) );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getIndexes()
+    {
+        return state.getIndexDiffSets().apply( delegate.getIndexes() );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        return state.getConstraintIndexDiffSetsByLabel( labelId ).apply( delegate.getConstraintIndexes( labelId ) );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        return state.getConstraintIndexDiffSets().apply( delegate.getConstraintIndexes() );
     }
 
     @Override

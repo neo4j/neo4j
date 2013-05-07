@@ -344,12 +344,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterator<IndexDescriptor> result = schemaOperations.getIndexRules( labelId );
+        Iterator<IndexDescriptor> result = schemaOperations.getIndexes( labelId );
 
         afterReadOperation();
         afterOperation();
@@ -357,12 +357,38 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterator<IndexDescriptor> result = schemaOperations.getIndexRules();
+        Iterator<IndexDescriptor> result = schemaOperations.getIndexes();
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<IndexDescriptor> result = schemaOperations.getConstraintIndexes( labelId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<IndexDescriptor> result = schemaOperations.getConstraintIndexes();
 
         afterReadOperation();
         afterOperation();
@@ -504,12 +530,26 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        IndexDescriptor result = schemaOperations.addIndexRule( labelId, propertyKey, constraintIndex );
+        IndexDescriptor result = schemaOperations.addIndex( labelId, propertyKey );
+
+        afterWriteOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        IndexDescriptor result = schemaOperations.addConstraintIndex( labelId, propertyKey );
 
         afterWriteOperation();
         afterOperation();
@@ -543,12 +583,24 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        schemaOperations.dropIndexRule( indexRule );
+        schemaOperations.dropIndex( descriptor );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        schemaOperations.dropConstraintIndex( descriptor );
 
         afterWriteOperation();
         afterOperation();

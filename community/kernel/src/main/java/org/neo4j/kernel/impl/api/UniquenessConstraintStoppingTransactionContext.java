@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class UniquenessConstraintStoppingTransactionContext extends DelegatingTransactionContext
 {
@@ -61,10 +62,22 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
             throw unsupportedOperation();
         }
 
+        @Override
+        public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+                throws ConstraintViolationKernelException
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+        {
+            throw unsupportedOperation();
+        }
+
         private RuntimeException unsupportedOperation()
         {
             return new UnsupportedSchemaModificationException();
         }
-
     }
 }

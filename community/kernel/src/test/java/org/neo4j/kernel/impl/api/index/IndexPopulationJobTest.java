@@ -463,7 +463,7 @@ public class IndexPopulationJobTest
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexDescriptor descriptor = new IndexDescriptor( context.getLabelId( label.name() ),
-                                                          context.getPropertyKeyId( propertyKey ), false );
+                                                          context.getPropertyKeyId( propertyKey ) );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return
             new IndexPopulationJob( descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,

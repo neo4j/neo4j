@@ -67,9 +67,9 @@ public class IndexingServiceTest
 
         // then
         logger.assertExactly(
-                info( "IndexingService.initIndexes: IndexDescriptor[label:1, property:1, constraintIndex:false] is ONLINE" ),
-                info( "IndexingService.initIndexes: IndexDescriptor[label:2, property:2, constraintIndex:false] is POPULATING" ),
-                info( "IndexingService.initIndexes: IndexDescriptor[label:3, property:3, constraintIndex:false] is FAILED" )
+                info( "IndexingService.initIndexes: IndexDescriptor[label:1, property:1] is ONLINE" ),
+                info( "IndexingService.initIndexes: IndexDescriptor[label:2, property:2] is POPULATING" ),
+                info( "IndexingService.initIndexes: IndexDescriptor[label:3, property:3] is FAILED" )
         );
     }
 
@@ -104,11 +104,11 @@ public class IndexingServiceTest
 
         // then
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:1, property:1, constraintIndex:false] is ONLINE" ) );
+                info( "IndexingService.start: IndexDescriptor[label:1, property:1] is ONLINE" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:2, property:2, constraintIndex:false] is POPULATING" ) );
+                info( "IndexingService.start: IndexDescriptor[label:2, property:2] is POPULATING" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:3, property:3, constraintIndex:false] is FAILED" ) );
+                info( "IndexingService.start: IndexDescriptor[label:3, property:3] is FAILED" ) );
     }
 
     private static Logging mockLogging( TestLogger logger )

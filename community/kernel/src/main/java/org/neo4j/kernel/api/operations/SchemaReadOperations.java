@@ -37,12 +37,22 @@ public interface SchemaReadOperations
     /**
      * Get all indexes for a label.
      */
-    Iterator<IndexDescriptor> getIndexRules( long labelId );
+    Iterator<IndexDescriptor> getIndexes( long labelId );
 
     /**
-     * Returns all index rules.
+     * Returns all indexes.
      */
-    Iterator<IndexDescriptor> getIndexRules();
+    Iterator<IndexDescriptor> getIndexes();
+
+    /**
+     * Get all constraint indexes for a label.
+     */
+    Iterator<IndexDescriptor> getConstraintIndexes( long labelId );
+
+    /**
+     * Returns all constraint indexes.
+     */
+    Iterator<IndexDescriptor> getConstraintIndexes();
 
     /**
      * Retrieve the state of an index.

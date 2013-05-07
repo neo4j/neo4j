@@ -19,6 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.CompositeStatementContext;
+import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -28,22 +45,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.impl.api.CompositeStatementContext;
-import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class StateHandlingStatementContextTest
 {
@@ -75,9 +76,9 @@ public class StateHandlingStatementContextTest
                 mock( SchemaStateOperations.class ), mock( TxState.class ) );
 
         // When
-        ctx.addIndexRule( 0l, 0l, false );
+        ctx.addIndex( 0l, 0l );
         ctx.addLabelToNode( 0l, 0l );
-        ctx.dropIndexRule( new IndexDescriptor( 0l, 0l, false ) );
+        ctx.dropIndex( new IndexDescriptor( 0l, 0l ) );
         ctx.removeLabelFromNode( 0l, 0l );
 
         // These are kind of in between.. property key ids are created in
@@ -134,28 +135,26 @@ public class StateHandlingStatementContextTest
     public void shouldGetConstraintsByLabel() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
+        UniquenessConstraint constraint1 = new UniquenessConstraint( 11, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
-        UniquenessConstraint constraint3 = new UniquenessConstraint( 11, 88 );
 
         StatementContext delegate = mock( StatementContext.class );
         when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 11, 88 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
         when( delegate.getConstraints( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
         when( delegate.getConstraints( 10 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 11 ) ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        when( delegate.getConstraints( 11 ) ).thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
                 mock( SchemaStateOperations.class ), state );
         context.addUniquenessConstraint( 10, 66 );
-        context.addUniquenessConstraint( 11, 88 );
+        context.addUniquenessConstraint( 11, 99 );
 
         // when
         Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints( 11 ) ) );
 
         // then
-        assertEquals( asSet( constraint2, constraint3 ), result );
+        assertEquals( asSet( constraint1, constraint2 ), result );
     }
 
     @SuppressWarnings( "unchecked" )

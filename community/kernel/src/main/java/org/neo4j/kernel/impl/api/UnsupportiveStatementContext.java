@@ -177,7 +177,14 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
     {
         throw unsupported();
     }
@@ -189,13 +196,25 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
         throw unsupported();
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
     {
         throw unsupported();
     }
@@ -207,7 +226,13 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
     {
         throw unsupported();
     }

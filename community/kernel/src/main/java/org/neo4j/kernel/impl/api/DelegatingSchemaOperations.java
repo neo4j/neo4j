@@ -46,15 +46,27 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
-        return delegate.getIndexRules( labelId );
+        return delegate.getIndexes( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
     {
-        return delegate.getIndexRules();
+        return delegate.getIndexes();
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        return delegate.getConstraintIndexes( labelId );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        return delegate.getConstraintIndexes();
     }
 
     @Override
@@ -88,15 +100,28 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey, boolean constraintIndex ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        return delegate.addIndexRule( labelId, propertyKey, constraintIndex );
+        return delegate.addIndex( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
     {
-        delegate.dropIndexRule( indexRule );
+        return delegate.addConstraintIndex( labelId, propertyKey );
+    }
+
+    @Override
+    public void dropIndex( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    {
+        delegate.dropIndex( indexRule );
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        delegate.dropConstraintIndex( descriptor );
     }
 
     @Override

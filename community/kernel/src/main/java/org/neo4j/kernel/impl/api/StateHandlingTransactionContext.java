@@ -91,11 +91,11 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             }
 
             @Override
-            public void visitAddedIndex( IndexDescriptor element )
+            public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
             {
                 SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
                 IndexRule rule;
-                if ( element.isConstraintIndex() )
+                if ( isConstraintIndex )
                 {
                     rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
                                                           element.getPropertyKeyId(), providerDescriptor, null );
@@ -109,7 +109,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             }
 
             @Override
-            public void visitRemovedIndex( IndexDescriptor element )
+            public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
             {
                 try
                 {

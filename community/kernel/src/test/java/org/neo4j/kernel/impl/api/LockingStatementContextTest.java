@@ -72,18 +72,18 @@ public class LockingStatementContextTest
         StatementContext delegate = mock( StatementContext.class );
         LockHolder lockHolder = mock( LockHolder.class );
         IndexDescriptor rule = mock( IndexDescriptor.class );
-        when( delegate.addIndexRule( 123, 456, false ) ).thenReturn( rule );
+        when( delegate.addIndex( 123, 456 ) ).thenReturn( rule );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        IndexDescriptor result = context.addIndexRule( 123, 456, false );
+        IndexDescriptor result = context.addIndex( 123, 456 );
 
         // then
         assertSame( rule, result );
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaWriteLock();
-        order.verify( delegate ).addIndexRule( 123, 456, false );
+        order.verify( delegate ).addIndex( 123, 456 );
         verifyNoMoreInteractions( lockHolder, delegate );
     }
 
@@ -98,12 +98,12 @@ public class LockingStatementContextTest
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        context.dropIndexRule( rule );
+        context.dropIndex( rule );
 
         // then
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaWriteLock();
-        order.verify( delegate ).dropIndexRule( rule );
+        order.verify( delegate ).dropIndex( rule );
         verifyNoMoreInteractions( lockHolder, delegate );
     }
 
@@ -115,18 +115,18 @@ public class LockingStatementContextTest
         LockHolder lockHolder = mock( LockHolder.class );
         @SuppressWarnings("unchecked")
         Iterator<IndexDescriptor> rules = mock( Iterator.class );
-        when( delegate.getIndexRules() ).thenReturn( rules );
+        when( delegate.getIndexes() ).thenReturn( rules );
 
         LockingStatementContext context = new LockingStatementContext( delegate, lockHolder );
 
         // when
-        Iterator<IndexDescriptor> result = context.getIndexRules();
+        Iterator<IndexDescriptor> result = context.getIndexes();
 
         // then
         assertSame( rules, result );
         InOrder order = inOrder( lockHolder, delegate );
         order.verify( lockHolder ).acquireSchemaReadLock();
-        order.verify( delegate ).getIndexRules();
+        order.verify( delegate ).getIndexes();
         verifyNoMoreInteractions( lockHolder, delegate );
     }
 

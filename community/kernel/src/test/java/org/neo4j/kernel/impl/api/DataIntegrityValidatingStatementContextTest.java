@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,15 +44,15 @@ public class DataIntegrityValidatingStatementContextTest
     {
         // GIVEN
         long label = 0, propertyKey = 7;
-        IndexDescriptor rule = new IndexDescriptor( label, propertyKey, false );
+        IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.getIndexRules( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( inner.getIndexes( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.addIndexRule( label, propertyKey, false );
+            ctx.addIndex( label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationKernelException e )
@@ -61,7 +60,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).addIndexRule( anyLong(), anyLong(), anyBoolean() );
+        verify( inner, never() ).addIndex( anyLong(), anyLong() );
     }
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
