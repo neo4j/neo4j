@@ -25,10 +25,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -85,8 +85,6 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldNotStoreUniquenessConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
-        SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
-
         newTransaction();
 
         UniquenessConstraint constraint = statement.addUniquenessConstraint( label, propertyKey );
@@ -103,7 +101,6 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         // then
         assertFalse( "should not have any constraints", statement.getConstraints( label, propertyKey ).hasNext() );
-        schemaState.assertNotCleared();
     }
 
     @Test
@@ -122,7 +119,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             fail( "Should not have validated" );
         }
         // then
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             String message = e.getMessage();
             assertTrue( message.contains( "already has a uniqueness constraint" ) );
@@ -188,10 +185,23 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         schemaState.assertCleared();
     }
 
+    @Test
+    public void shouldCreateAnIndexToGoAlongWithAUniquenessConstraint() throws Exception
+    {
+        // when
+        newTransaction();
+        statement.addUniquenessConstraint( label, propertyKey );
+        commit();
+
+        // then
+        newTransaction();
+        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.getConstraintIndexes() ) );
+    }
+
     private long label, propertyKey;
 
     @Before
-    public void createKeys() throws ConstraintViolationKernelException
+    public void createKeys() throws DataIntegrityKernelException
     {
         newTransaction();
         this.label = statement.getOrCreateLabelId( "Foo" );

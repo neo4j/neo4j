@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-
-public interface KeyWriteOperations
+/**
+ * Signals that some constraint has been violated in a {@link KernelAPI kernel interaction},
+ * for example a name containing invalid characters or length.
+ */
+public class DataIntegrityKernelException extends KernelException
 {
-    /**
-     * Returns a label id for a label name. If the label doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreateLabelId( String label ) throws DataIntegrityKernelException;
+    public DataIntegrityKernelException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 
-    /**
-     * Returns a property key id for a property key. If the key doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException;
+    public DataIntegrityKernelException( String message )
+    {
+        super( message );
+    }
 }

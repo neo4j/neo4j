@@ -32,7 +32,7 @@ public interface SchemaReadOperations
     /**
      * Returns the index rule for the given labelId and propertyKey.
      */
-    IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
+    IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
 
     /**
      * Get all indexes for a label.
@@ -81,4 +81,10 @@ public interface SchemaReadOperations
      * Get the owning constraint for a constraint index.
      */
     Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+
+    /**
+     * Get the index id (the id or the schema rule record) for a committed index
+     * - throws exception for indexes that aren't committed.
+     */
+    long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

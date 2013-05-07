@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -268,7 +267,7 @@ public class StoreStatementContextTest
     @Before
     public void before()
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         @SuppressWarnings("deprecation")// Ooh, jucky
         NeoStoreXaDataSource neoStoreDataSource = db.getDependencyResolver()
@@ -320,7 +319,7 @@ public class StoreStatementContextTest
         }
         
         db.schema().awaitIndexOnline( index, 10, SECONDS );
-        return statement.getIndexRule( statement.getLabelId( label.name() ),
-                statement.getPropertyKeyId( propertyKey ) );
+        return statement.getIndex( statement.getLabelId( label.name() ),
+                                   statement.getPropertyKeyId( propertyKey ) );
     }
 }

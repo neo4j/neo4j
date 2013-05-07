@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public interface SchemaWriteOperations
@@ -29,19 +30,20 @@ public interface SchemaWriteOperations
      * Adds a {@link IndexDescriptor} to the database which applies globally on both
      * existing as well as new data.
      */
-    IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+    IndexDescriptor addIndex( long labelId, long propertyKey ) throws DataIntegrityKernelException;
 
-    IndexDescriptor addConstraintIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+    IndexDescriptor addConstraintIndex( long labelId, long propertyKey ) throws
+                                                                         DataIntegrityKernelException;
 
     /**
      * Drops a {@link IndexDescriptor} from the database
      */
-    void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException;
+    void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException;
 
-    void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException;
+    void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException;
 
-    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
-            throws ConstraintViolationKernelException;
+    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+            throws DataIntegrityKernelException, ConstraintCreationKernelException;
 
     void dropConstraint( UniquenessConstraint constraint );
 }

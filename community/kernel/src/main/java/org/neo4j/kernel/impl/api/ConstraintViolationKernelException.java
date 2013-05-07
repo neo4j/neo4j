@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.DataIntegrityKernelException;
+import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
-public interface KeyWriteOperations
+public class ConstraintViolationKernelException extends KernelException
 {
-    /**
-     * Returns a label id for a label name. If the label doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreateLabelId( String label ) throws DataIntegrityKernelException;
+    private static final String MESSAGE_TEMPLATE = "The constraint %s has been violated.";
 
-    /**
-     * Returns a property key id for a property key. If the key doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException;
+    public ConstraintViolationKernelException( UniquenessConstraint constraint )
+    {
+        super( null, MESSAGE_TEMPLATE, constraint );
+    }
+
+    public ConstraintViolationKernelException( UniquenessConstraint constraint, Throwable cause )
+    {
+        super( cause, MESSAGE_TEMPLATE, constraint );
+    }
 }
