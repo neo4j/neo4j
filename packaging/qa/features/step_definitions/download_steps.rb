@@ -15,7 +15,7 @@ Given /^Neo4j product based on system property "([^"]*)"$/ do |product_name|
   fail "missing property #{product_name}" if neo4j.product == nil
 end
 
-Given /^set Neo4j Home to "([^"]*)"$/ do |home|
+Given /^Neo4j Home is set to "([^"]*)"$/ do |home|
   neo4j.home = File.expand_path(home)
   neo4j.home = neo4j.home.tr('/', '\\') if (current_platform.windows?)
   puts "using neo4j.home "+neo4j.home

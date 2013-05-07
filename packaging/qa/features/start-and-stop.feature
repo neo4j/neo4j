@@ -4,8 +4,8 @@ Feature: Start and stop Neo4j Server
   Background:
     Given a platform supported by Neo4j
     And a working directory at relative path "target"
-    And set Neo4j Home to "neo4j_home"
-    And Neo4j Home should contain a Neo4j Server installation
+    And Neo4j Home is set to "neo4j_home"
+    And that Neo4j is installed in "neo4j_home"
 
   Scenario: Start Neo4j Server
     When I start Neo4j Server
