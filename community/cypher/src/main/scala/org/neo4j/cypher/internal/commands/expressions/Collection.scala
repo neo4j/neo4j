@@ -38,7 +38,7 @@ case class Collection(children: Expression*) extends Expression {
       case Seq() => CollectionType(AnyType())
 
       case types =>
-        val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeWith _)
+        val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeDown _)
         CollectionType( innerType )
     }
 

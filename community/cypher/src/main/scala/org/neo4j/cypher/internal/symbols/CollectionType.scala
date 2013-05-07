@@ -32,11 +32,18 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
   override def isAssignableFrom(other: CypherType): Boolean = super.isAssignableFrom(other) &&
     iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
 
-  override def mergeWith(other: CypherType) = other match {
+  override def mergeDown(other: CypherType) = other match {
     case otherCollection: CollectionType =>
-      CollectionType(iteratedType mergeWith otherCollection.iteratedType)
+      CollectionType(iteratedType mergeDown otherCollection.iteratedType)
     case _ =>
-      super.mergeWith(other)
+      super.mergeDown(other)
+  }
+
+  override def mergeUp(other: CypherType) = other match {
+    case otherCollection: CollectionType =>
+      for (ctype <- iteratedType mergeUp otherCollection.iteratedType) yield CollectionType(ctype)
+    case _ =>
+      super.mergeUp(other)
   }
 
   override val isCollection = true

@@ -28,10 +28,15 @@ trait CypherType {
 
   def iteratedType: CypherType = throw new CypherTypeException("This is not a collection type")
 
-  def mergeWith(other: CypherType): CypherType =
+  def mergeDown(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this
     else if (other.isAssignableFrom(this)) other
-    else parentType mergeWith other.parentType
+    else parentType mergeDown other.parentType
+
+  def mergeUp(other: CypherType): Option[CypherType] =
+    if (this.isAssignableFrom(other)) Some(other)
+    else if (other.isAssignableFrom(this)) Some(this)
+    else None
 
   def parentType: CypherType
 
@@ -48,7 +53,7 @@ object CypherType {
     case _: Boolean                         => BooleanType()
     case IsMap(_)                           => MapType()
     case IsCollection(coll) if coll.isEmpty => CollectionType(AnyType())
-    case IsCollection(coll)                 => CollectionType(coll.map(fromJava).reduce(_ mergeWith _))
+    case IsCollection(coll)                 => CollectionType(coll.map(fromJava).reduce(_ mergeDown _))
     case _                                  => AnyType()
   }
 }
