@@ -1766,8 +1766,8 @@ public class DatabaseActions
                     filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
             if ( constraints.iterator().hasNext() )
             {
-	            ListRepresentation result = new ListRepresentation( RepresentationType.CONSTRAINT_DEFINITION,
-	                    map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints ) );
+                Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+                ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
 	            tx.success();
 	            return result;
             }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class DataIntegrityValidatingStatementContext extends CompositeStatementContext
 {
