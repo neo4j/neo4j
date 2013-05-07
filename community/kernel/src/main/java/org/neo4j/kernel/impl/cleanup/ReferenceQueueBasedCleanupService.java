@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
+import static org.neo4j.helpers.collection.IteratorUtil.EMPTY_CLOSEABLE;
+
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Thunk;
+import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
@@ -31,21 +35,31 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
 {
     private volatile boolean running;
     private final JobScheduler scheduler;
+    private final Thunk<Boolean> cleanupNecessity;
     final CleanupReferenceQueue collectedReferences;
     CleanupReference first;
 
     ReferenceQueueBasedCleanupService( JobScheduler scheduler, Logging logging,
-                                       CleanupReferenceQueue collectedReferences )
+            CleanupReferenceQueue collectedReferences, Thunk<Boolean> cleanupNecessity )
     {
         super( logging );
         this.scheduler = scheduler;
         this.collectedReferences = collectedReferences;
+        this.cleanupNecessity = cleanupNecessity;
     }
 
     @Override
     public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable )
     {
-        return linked( new AutoCleanupResourceIterator<T>( iterator ), closeable );
+        if ( cleanupNecessity.evaluate() )
+        {
+            return linked( new AutoCleanupResourceIterator<T>( iterator ), closeable );
+        }
+        else
+        {
+            // Just pick the best way of wrapping an Iterator in a ResourceIterator, bypassing cleanup
+            return ResourceClosingIterator.newResourceIterator( EMPTY_CLOSEABLE, iterator );
+        }
     }
 
     private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, Closeable handler )

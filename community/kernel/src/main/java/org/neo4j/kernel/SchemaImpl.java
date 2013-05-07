@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
+import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -43,17 +54,6 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
-import static java.lang.String.format;
-import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
-import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
-import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
