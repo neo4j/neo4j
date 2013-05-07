@@ -79,7 +79,7 @@ Note that all 3 installations have the same configuration, except for the +ha.se
 ha.server_id = 1
 
 # List of other known instances in this cluster
-ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
@@ -105,7 +105,7 @@ org.neo4j.server.database.mode=HA
 ha.server_id = 2
 
 # List of other known instances in this cluster
-ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
@@ -131,7 +131,7 @@ org.neo4j.server.database.mode=HA
 ha.server_id = 3
 
 # List of other known instances in this cluster
-ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
