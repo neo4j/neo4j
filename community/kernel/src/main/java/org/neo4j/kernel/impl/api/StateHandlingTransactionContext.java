@@ -137,6 +137,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             {
                 try
                 {
+                    clearState.set( true );
                     UniquenessConstraintRule rule = schemaStorage
                             .uniquenessConstraint( element.label(), element.property() );
                     persistenceManager.dropSchemaRule( rule.getId() );
