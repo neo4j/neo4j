@@ -31,6 +31,8 @@ case class AnyType() extends CypherType {
       case _         => false
     }
 
+  override def hashCode = 23 * this.getClass.hashCode
+
   override val iteratedType: CypherType = this
 
   def parentType: CypherType = this

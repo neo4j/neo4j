@@ -47,5 +47,7 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
     case _ => false
   }
 
+  override def hashCode = 37 * iteratedType.hashCode
+
   override def rewrite(f: CypherType => CypherType) = f(CollectionType(this.iteratedType.rewrite(f)))
 }
