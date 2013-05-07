@@ -133,7 +133,7 @@ public enum SnapshotState
                              {
                                  InstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
                                          ClusterConfiguration.COORDINATOR );
-                                 if ( coordinator != null )
+                                 if ( coordinator != null && !coordinator.equals( context.getClusterContext().getMyId() ) )
                                  {
                                      // coordinator exists, ask for the snapshot
                                      outgoing.offer( Message.to( SnapshotMessage.sendSnapshot,
