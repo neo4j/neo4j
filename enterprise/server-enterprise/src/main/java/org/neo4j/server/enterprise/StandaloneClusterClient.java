@@ -66,8 +66,9 @@ public class StandaloneClusterClient
 {
     private final LifeSupport life = new LifeSupport();
     
-    private StandaloneClusterClient( ClusterClient clusterClient )
+    private StandaloneClusterClient( Logging logging, ClusterClient clusterClient )
     {
+        life.add( logging );
         life.add( clusterClient );
         addShutdownHook();
         life.start();
@@ -105,14 +106,16 @@ public class StandaloneClusterClient
         verifyConfig( config );
         try
         {
-            new StandaloneClusterClient( new ClusterClient( adapt( new Config( config ) ),
-                    logging(), new NotElectableElectionCredentialsProvider() ) );
+            Logging logging = logging();
+            new StandaloneClusterClient( logging, new ClusterClient( adapt( new Config( config ) ),
+                    logging, new NotElectableElectionCredentialsProvider() ) );
         }
         catch ( LifecycleException e )
         {
             Throwable cause = peel( e, exceptionsOfType( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
-                System.err.println( "ERROR: " + cause.getMessage() + (cause.getCause() != null ? ", caused by:" + cause.getCause().getMessage() : "") );
+                System.err.println( "ERROR: " + cause.getMessage() +
+                        (cause.getCause() != null ? ", caused by:" + cause.getCause().getMessage() : "") );
             else
             {
                 System.err.println( "ERROR: Unknown error" );
@@ -148,15 +151,7 @@ public class StandaloneClusterClient
         {
             moveOver( existingConfig, result, setting );
         }
-        
-//        int[] ports = ClusterSettings.cluster_server.getPorts( existingConfig );
-//        if ( ports != null && ports.length == 1 )
-//        {
-//            System.err.println( "WARNING: single port configured for " + ClusterSettings.cluster_server.name() +
-//                    ". If a Neo4j server is running using this configuration there will be a port conflict. " +
-//                    "Please consider configuring a port range instead." );
-//        }
-        
+
         return result;
     }
 
@@ -170,9 +165,10 @@ public class StandaloneClusterClient
     private static Logging logging()
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
-        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory", new File( new File( home, "data" ), "log" ).getPath() );
+        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
+                new File( new File( new File ( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
-        
+
         // Copied from InternalAbstractGraphDatabase#createStringLogger
         Logging logging;
         try
