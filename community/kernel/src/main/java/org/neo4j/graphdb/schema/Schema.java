@@ -99,27 +99,36 @@ public interface Schema
     ConstraintCreator constraintCreator( Label label );
     
     /**
-     * @return all constraints
-     */
-    Iterable<ConstraintDefinition> getConstraints();
-
-    /**
      * @param label the label to get constraints for.
      * @return all constraints for the given label.
      */
     Iterable<ConstraintDefinition> getConstraints( Label label );
     
     /**
+     * @return all constraints
+     */
+    Iterable<ConstraintDefinition> getConstraints();
+
+    /**
      * Wait until an index comes online
-     *
+     * 
      * @param index the index that we want to wait for
      * @param duration duration to wait for the index to come online
      * @param unit TimeUnit of duration
-     * @throws IllegalStateException if the index did not enter the ONLINE state within the given duration or
-     * if the index entered the FAILED state
+     * @throws IllegalStateException if the index did not enter the ONLINE state
+     *             within the given duration or if the index entered the FAILED
+     *             state
      */
     void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit );
 
-    // Optionally add this
-//    Iterable<ConstraintDefinition> getConstraints( Label label, ConstraintDefinition.Type type );
+    /**
+     * Wait until all indices comes online
+     * 
+     * @param duration duration to wait for all indexes to come online
+     * @param unit TimeUnit of duration
+     * @throws IllegalStateException if some index did not enter the ONLINE
+     *             state within the given duration or if the index entered the
+     *             FAILED state
+     */
+    void awaitIndexesOnline( long duration, TimeUnit unit );
 }

@@ -25,7 +25,6 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -35,7 +34,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -268,6 +266,24 @@ public class SchemaAcceptanceTest
     }
     
     @Test
+    public void awaitingAllIndexesComingOnlineWorks()
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+
+        // WHEN
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+
+        // PASS
+        beansAPI.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
+
+        // THEN
+        assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+    }
+
+    @Test
     public void shouldRecreateDroppedIndex() throws Exception
     {
         // GIVEN
@@ -314,6 +330,23 @@ public class SchemaAcceptanceTest
     }
     
     @Test
+    public void shouldListAddedConstraintsByLabel() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+        String propertyKey = "name";
+        ConstraintDefinition createdConstraint = createConstraint( db,
+                db.schema().constraintCreator( label ).on( propertyKey ).unique() );
+
+        // WHEN
+        Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints( label );
+
+        // THEN
+        assertEquals( createdConstraint, single( listedConstraints ) );
+    }
+
+    @Test
     public void shouldListAddedConstraints() throws Exception
     {
         // GIVEN
@@ -324,13 +357,14 @@ public class SchemaAcceptanceTest
                 createConstraint( db, db.schema().constraintCreator( label ).on( propertyKey ).unique() );
 
         // WHEN
-        Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints( label );
+        Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints();
 
         // THEN
         ConstraintDefinition foundConstraint = single( listedConstraints );
         assertEquals( createdConstraint, foundConstraint );
     }
     
+
     @Test
     public void shouldDropUniquenessConstraint() throws Exception
     {
