@@ -104,7 +104,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
         address = new InetSocketAddress( hostNameOrIp, port );
-        msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" +
+        msgLog.logMessage( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port, true );
     }
 
