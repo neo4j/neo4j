@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Function;
@@ -775,6 +776,48 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema", label.name(), property );
+    }
+
+    @Test
+    public void canListConstraints() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        beginTx();
+        ConstraintDefinition constraint1 = db.schema().constraintCreator( label ).unique().on( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls", constraint1.getLabel().name(), constraint1.getConstraintType().name(),
+                constraint1.toString() );
+    }
+
+    @Test
+    public void canListConstraintsByLabel() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "PERSON" );
+        beginTx();
+        ConstraintDefinition constraint1 = db.schema().constraintCreator( label1 ).unique().on( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -l :PERSON", constraint1.getLabel().name(), constraint1.getConstraintType().name(),
+                constraint1.toString() );
+    }
+
+    @Test
+    public void canListConstraintsByLabelAndProperty() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "PERSON" );
+        beginTx();
+        ConstraintDefinition constraint1 = db.schema().constraintCreator( label1 ).unique().on( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -l :PERSON -p name", constraint1.getLabel().name(), constraint1.getConstraintType()
+                .name(), constraint1.toString() );
     }
 
     private Iterable<String> names( Iterable<Label> labels )

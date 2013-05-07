@@ -71,6 +71,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
  */
 public abstract class GraphDatabaseApp extends AbstractApp
 {
+    private static final Label[] EMPTY_LABELS = new Label[0];
+
     protected static final String[] STANDARD_EVAL_IMPORTS = new String[] {
         "org.neo4j.graphdb",
         "org.neo4j.graphdb.event",
@@ -767,7 +769,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         String labelValue = parser.option( "l", null );
         if ( labelValue == null )
-            return new Label[0];
+            return EMPTY_LABELS;
         
         labelValue = labelValue.trim();
         if ( labelValue.startsWith( "[" ) )

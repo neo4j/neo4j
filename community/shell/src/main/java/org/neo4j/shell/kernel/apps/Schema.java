@@ -29,8 +29,10 @@ import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.shell.AppCommandParser;
@@ -43,6 +45,7 @@ import org.neo4j.shell.Session;
 
 public class Schema extends GraphDatabaseApp
 {
+    private static final Label[] EMPTY_LABELS = new Label[0];
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()
     {
@@ -121,6 +124,16 @@ public class Schema extends GraphDatabaseApp
         if ( i == 0 )
             out.println( "No indexes" );
         
+        int j = 0;
+        for ( ConstraintDefinition constraint : constraintsByLabelAndProperty( schema, labels, property ) )
+        {
+            if ( j == 0 ) out.println( "Constraints" );
+            printer.add( constraint.getLabel().name(), constraint.getConstraintType().name(), constraint.toString() );
+            j++;
+
+        }
+        if ( j == 0 ) out.println( "No constraints" );
+
         printer.print( out );
     }
 
@@ -142,6 +155,61 @@ public class Schema extends GraphDatabaseApp
         return indexes;
     }
 
+    private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
+            final Label[] labels, final String property )
+    {
+        Iterable<ConstraintDefinition> constraints = filter( new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean accept( ConstraintDefinition constraint )
+            {
+                if ( hasLabel( constraint, labels ) )
+                {
+                    return isMatchingConstraint( constraint, property );
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }, schema.getConstraints() );
+
+        return constraints;
+    }
+
+    private boolean hasLabel( ConstraintDefinition constraint, Label[] labels )
+    {
+        if ( labels.length == 0 )
+            return true;
+
+        for ( Label label : labels )
+        {
+            if ( constraint.getLabel().name().equals( label.name() ) )
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    private boolean isMatchingConstraint( ConstraintDefinition constraint, final String property )
+    {
+        if ( property == null )
+        {
+            return true;
+        }
+
+        switch ( constraint.getConstraintType() )
+        {
+        case UNIQUENESS:
+            UniquenessConstraintDefinition typedConstraint = constraint.asUniquenessConstraint();
+            return indexOf( property, typedConstraint.getPropertyKeys() ) != -1;
+        default:
+            return false;
+        }
+    }
+    
     private Iterable<IndexDefinition> indexesByLabel( org.neo4j.graphdb.schema.Schema schema, Label[] labels )
     {
         Iterable<IndexDefinition> indexes = schema.getIndexes();
