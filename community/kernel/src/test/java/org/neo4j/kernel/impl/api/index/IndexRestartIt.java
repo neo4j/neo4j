@@ -19,39 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -59,7 +31,25 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.hamcrest.CoreMatchers;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class IndexRestartIt
 {
@@ -136,7 +126,7 @@ public class IndexRestartIt
     private GraphDatabaseAPI db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
-    private final ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider();
+    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
     
     private void startDb()
@@ -196,72 +186,6 @@ public class IndexRestartIt
         finally
         {
             tx.finish();
-        }
-    }
-
-    public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
-
-    private class ControlledSchemaIndexProvider extends SchemaIndexProvider
-    {
-
-        private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
-        private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
-        private final CountDownLatch writerLatch = new CountDownLatch( 1 );
-        private InternalIndexState initialIndexState = POPULATING;
-        private final AtomicInteger populatorCallCount = new AtomicInteger();
-        private final AtomicInteger writerCallCount = new AtomicInteger();
-        
-        public ControlledSchemaIndexProvider()
-        {
-            super( CONTROLLED_PROVIDER_DESCRIPTOR, 10 );
-            setInitialIndexState( initialIndexState );
-        }
-        
-        DoubleLatch installPopulationJobCompletionLatch()
-        {
-            final DoubleLatch populationCompletionLatch = new DoubleLatch();
-            mockedPopulator = new IndexPopulator.Adapter()
-            {
-                @Override
-                public void create() throws IOException
-                {
-                    populationCompletionLatch.startAndAwaitFinish();
-                    super.create();
-                }
-            };
-            return populationCompletionLatch;
-        }
-        
-        public void awaitFullyPopulated()
-        {
-            awaitLatch( writerLatch );
-        }
-
-        void setInitialIndexState( InternalIndexState initialIndexState )
-        {
-            this.initialIndexState = initialIndexState;
-        }
-
-        @Override
-        public IndexPopulator getPopulator( long indexId )
-        {
-            populatorCallCount.incrementAndGet();
-            return mockedPopulator;
-        }
-
-        @Override
-        public IndexAccessor getOnlineAccessor( long indexId )
-        {
-            writerCallCount.incrementAndGet();
-            writerLatch.countDown();
-            return mockedWriter;
-        }
-
-        @Override
-        public InternalIndexState getInitialState( long indexId )
-        {
-            return initialIndexState;
         }
     }
 }

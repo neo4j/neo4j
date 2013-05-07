@@ -1052,6 +1052,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public void awaitIndexesOnline( long duration, TimeUnit unit )
+        {
+            actual.awaitIndexesOnline( duration, unit );
+        }
+
+        @Override
         public ConstraintCreator constraintCreator( Label label )
         {
             throw readOnlyException();

@@ -1789,6 +1789,12 @@ public class DatabaseActions
 		return filter( filter, constraints );
     }
 
+    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, ConstraintType type )
+    {
+        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
+        return type.filter( constraints );
+    }
+
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
     {
         return new Predicate<ConstraintDefinition>()
