@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -331,12 +331,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        IndexDescriptor result = schemaOperations.getIndexRule( labelId, propertyKey );
+        IndexDescriptor result = schemaOperations.getIndex( labelId, propertyKey );
 
         afterReadOperation();
         afterOperation();
@@ -448,6 +448,19 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        long result = schemaOperations.getCommittedIndexId( index );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
     public Iterator<UniquenessConstraint> getConstraints()
     {
         beforeOperation();
@@ -478,7 +491,7 @@ public class CompositeStatementContext implements StatementContext
     //
 
     @Override
-    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
+    public long getOrCreateLabelId( String label ) throws DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -517,7 +530,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey ) throws ConstraintViolationKernelException
+    public long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -530,7 +543,8 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
+                                                                      DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -544,7 +558,7 @@ public class CompositeStatementContext implements StatementContext
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws ConstraintViolationKernelException
+            throws DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -557,8 +571,8 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
-            throws ConstraintViolationKernelException
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+            throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -583,7 +597,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -595,7 +609,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         beforeOperation();
         beforeWriteOperation();

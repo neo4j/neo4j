@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -68,7 +68,7 @@ public class IndexIT extends KernelIntegrationTest
         StatementContext roStatement = readOnlyContext();
         assertEquals( asSet( expectedRule ),
                       asSet( roStatement.getIndexes( labelId ) ) );
-        assertEquals( expectedRule, roStatement.getIndexRule( labelId, propertyKey ) );
+        assertEquals( expectedRule, roStatement.getIndex( labelId, propertyKey ) );
     }
 
     @Test
@@ -141,7 +141,7 @@ public class IndexIT extends KernelIntegrationTest
             commit();
         }
         // then
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             assertEquals( String.format( "There is no index for property %d for label %d.", propertyKey, labelId ),
                           e.getMessage() );
@@ -166,7 +166,7 @@ public class IndexIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             assertEquals( String.format( "Property %d is already indexed for label %d through a constraint.",
                                          propertyKey, labelId ),
@@ -192,7 +192,7 @@ public class IndexIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintViolationKernelException e )
+        catch ( DataIntegrityKernelException e )
         {
             assertEquals( String.format( "There is no index for property %d for label %d.", propertyKey, labelId ),
                           e.getMessage() );

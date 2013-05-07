@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.TransactionFailureException;
@@ -38,6 +37,8 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -129,7 +130,8 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private UniquenessConstraint createConstraint() throws ConstraintViolationKernelException
+    private UniquenessConstraint createConstraint()
+            throws ConstraintCreationKernelException, DataIntegrityKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -141,7 +143,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor ) throws ConstraintViolationKernelException
+    private void dropConstraint( UniquenessConstraint descriptor )
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -152,7 +154,7 @@ public class KernelSchemaStateFlushingTest
         tx.finish();
     }
 
-    private IndexDescriptor createIndex() throws ConstraintViolationKernelException
+    private IndexDescriptor createIndex() throws DataIntegrityKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -164,7 +166,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    private void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();

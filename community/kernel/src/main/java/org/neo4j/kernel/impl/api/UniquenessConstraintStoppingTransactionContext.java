@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -51,7 +51,7 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
 
         @Override
         public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
-                throws ConstraintViolationKernelException
+                throws DataIntegrityKernelException
         {
             throw unsupportedOperation();
         }
@@ -64,13 +64,14 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
 
         @Override
         public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-                throws ConstraintViolationKernelException
+                throws DataIntegrityKernelException
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+        public void dropConstraintIndex( IndexDescriptor descriptor ) throws
+                                                                      DataIntegrityKernelException
         {
             throw unsupportedOperation();
         }

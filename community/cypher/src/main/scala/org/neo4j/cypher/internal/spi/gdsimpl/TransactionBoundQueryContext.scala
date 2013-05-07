@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{LabelNotFoundKernelException, ConstraintViolationKernelException, StatementContext, SchemaRuleNotFoundException}
+import org.neo4j.kernel.api.{LabelNotFoundKernelException, DataIntegrityKernelException, StatementContext, SchemaRuleNotFoundException}
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
@@ -141,7 +141,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     try {
       ctx.addIndex(labelIds, propertyKeyId)
     } catch {
-      case e: ConstraintViolationKernelException =>
+      case e: DataIntegrityKernelException =>
         val labelName = getLabelName(labelIds)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
         throw new IndexAlreadyDefinedException(labelName, propName, e)
@@ -150,9 +150,9 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndex(ctx.getIndexRule(labelId, propertyKeyId))
+      ctx.dropIndex(ctx.getIndex(labelId, propertyKeyId))
     } catch {
-      case e: ConstraintViolationKernelException =>
+      case e: DataIntegrityKernelException =>
         val labelName = getLabelName(labelId)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
         throw new CouldNotDropIndexException(labelName, propName, e)

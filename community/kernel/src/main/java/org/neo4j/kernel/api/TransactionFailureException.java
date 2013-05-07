@@ -19,15 +19,23 @@
  */
 package org.neo4j.kernel.api;
 
-import static org.neo4j.helpers.Exceptions.withCause;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 
-public class TransactionFailureException extends Exception
+import static org.neo4j.helpers.Exceptions.withCause;
+
+/**
+ * This class (in its current form - 2013-05-07) is a vector for exceptions thrown by a transaction manager, for
+ * carrying the exception through the Kernel API stack to be rethrown on a higher level.
+ *
+ * The intention is that when the dependency on a transaction manager is gone, this class will either disappear, or
+ * change into something completely different. Most likely this different thing will emerge alongside this exception
+ * type while the transaction system is being refactored, and thus this class will disappear.
+ */
+public class TransactionFailureException extends TransactionalException
 {
     private final Rethrow rethrow;
 
@@ -66,27 +74,12 @@ public class TransactionFailureException extends Exception
     {
         return rethrow.exception( this.getCause() );
     }
-    
+
     public RuntimeException unBoxedForRollback() throws SystemException
     {
-        try
-        {
-            return rethrow.exception( this.getCause() );
-        }
-        catch ( HeuristicMixedException e )
-        {
-            throw withCause( new SystemException( rethrow.xaCode ), e );
-        }
-        catch ( HeuristicRollbackException e )
-        {
-            throw withCause( new SystemException( rethrow.xaCode ), e );
-        }
-        catch ( RollbackException e )
-        {
-            throw withCause( new SystemException( rethrow.xaCode ), e );
-        }
+        return rethrow.exceptionForRollback( this.getCause() );
     }
-    
+
     private enum Rethrow
     {
         HEURISTIC_MIXED( XAException.XA_HEURMIX )
@@ -113,31 +106,48 @@ public class TransactionFailureException extends Exception
                 throw (RollbackException) exception;
             }
         },
-        SYSTEM( XAException.XAER_RMERR )
+        SYSTEM( 0 )
         {
             @Override
             RuntimeException exception( Throwable exception ) throws SystemException
             {
                 throw (SystemException) exception;
             }
+
+            @Override
+            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
+            {
+                throw (SystemException) exception;
+            }
         },
-        RUNTIME( XAException.XAER_RMERR )
+        RUNTIME( 0 )
         {
             @Override
             RuntimeException exception( Throwable exception )
             {
                 return (RuntimeException) exception;
             }
+
+            @Override
+            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
+            {
+                return (RuntimeException) exception;
+            }
         };
-        
-        int xaCode;
-        
-        private Rethrow( int xaCode )
+
+        int errorCodeOnRollback;
+
+        private Rethrow( int errorCodeOnRollback )
         {
-            this.xaCode = xaCode;
+            this.errorCodeOnRollback = errorCodeOnRollback;
         }
 
         abstract RuntimeException exception( Throwable exception )
                 throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SystemException;
+
+        RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
+        {
+            throw withCause( new SystemException( errorCodeOnRollback ), exception );
+        }
     }
 }

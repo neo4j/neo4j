@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -46,6 +47,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private final SchemaStorage schemaStorage;
 
     private final UpdateableSchemaState schemaState;
+    private final ConstraintIndexCreator constraintIndexCreator;
 
     public StateHandlingTransactionContext( TransactionContext actual,
                                             SchemaStorage schemaStorage,
@@ -53,7 +55,8 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                                             SchemaIndexProviderMap providerMap,
                                             PersistenceCache persistenceCache,
                                             SchemaCache schemaCache,
-                                            PersistenceManager persistenceManager, UpdateableSchemaState schemaState )
+                                            PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
+                                            ConstraintIndexCreator constraintIndexCreator )
     {
         super( actual );
         this.schemaStorage = schemaStorage;
@@ -63,6 +66,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         this.persistenceManager = persistenceManager;
         this.schemaState = schemaState;
         this.state = state;
+        this.constraintIndexCreator = constraintIndexCreator;
     }
 
     @Override
@@ -73,7 +77,8 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         // + Caching
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Transaction-local state awareness
-        result = new StateHandlingStatementContext( result, new SchemaStateConcern( schemaState ), state );
+        result = new StateHandlingStatementContext( result, new SchemaStateConcern( schemaState ), state,
+                                                    constraintIndexCreator );
         // done
         return result;
     }
@@ -125,11 +130,13 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             }
 
             @Override
-            public void visitAddedConstraint( UniquenessConstraint element )
+            public void visitAddedConstraint( UniquenessConstraint element, long indexId )
             {
                 clearState.set( true );
+                long constraintId = schemaStorage.newRuleId();
                 persistenceManager.createSchemaRule( new UniquenessConstraintRule(
-                        schemaStorage.newRuleId(), element.label(), element.property() ) );
+                        constraintId, element.label(), element.property() ) );
+                // TODO: mark the index with the given 'indexId' as owned by the constraint with the id 'constraintId'
             }
 
             @Override

@@ -29,7 +29,7 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -142,7 +142,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
+    public long getOrCreateLabelId( String label ) throws DataIntegrityKernelException
     {
         try
         {
@@ -157,7 +157,7 @@ public class StoreStatementContext extends CompositeStatementContext
             if ( e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
                  && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
-                throw new ConstraintViolationKernelException(
+                throw new DataIntegrityKernelException(
                         "The maximum number of labels available has been reached, cannot create more labels.", e );
             }
             else
@@ -258,15 +258,14 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor getIndexRule( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndex( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
 
     private static IndexDescriptor descriptor( IndexRule ruleRecord )
     {
-        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey()
-        );
+        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
     }
 
     @Override
@@ -351,6 +350,12 @@ public class StoreStatementContext extends CompositeStatementContext
     public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
+    }
+
+    @Override
+    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
     }
 
     @Override

@@ -112,7 +112,13 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         throw new IndexNotFoundKernelException( descriptor + " is still populating" );
     }
-    
+
+    @Override
+    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    {
+        job.awaitCompletion();
+    }
+
     @Override
     public String toString()
     {

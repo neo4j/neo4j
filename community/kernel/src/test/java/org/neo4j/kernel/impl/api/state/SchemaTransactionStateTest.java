@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
@@ -130,7 +131,7 @@ public class SchemaTransactionStateTest
         txContext.addIndex( labelId1, key1 );
 
         // WHEN
-        IndexDescriptor rule = txContext.getIndexRule( labelId1, key1 );
+        IndexDescriptor rule = txContext.getIndex( labelId1, key1 );
         Iterator<IndexDescriptor> labelRules = txContext.getIndexes( labelId1 );
 
         // THEN
@@ -164,7 +165,7 @@ public class SchemaTransactionStateTest
             @Override
             public void call() throws SchemaRuleNotFoundException
             {
-                txContext.getIndexRule( labelId1, key1 );
+                txContext.getIndex( labelId1, key1 );
             }
         };
     }
@@ -223,7 +224,8 @@ public class SchemaTransactionStateTest
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
 
-        txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class), state );
+        txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class), state,
+                                                       mock( ConstraintIndexCreator.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

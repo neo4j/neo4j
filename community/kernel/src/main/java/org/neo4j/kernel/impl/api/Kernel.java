@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
@@ -201,7 +202,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, new SchemaStorage( neoStore.getSchemaStore() ),
                                                       newTxState(), providerMap, persistenceCache, schemaCache,
-                                                      persistenceManager, schemaState );
+                                                      persistenceManager, schemaState,
+                                                      new ConstraintIndexCreator(
+                                                              new Transactor( transactionManager ), indexService ) );
 
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );

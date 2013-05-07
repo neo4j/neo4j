@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -55,7 +55,8 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
+                                                                      DataIntegrityKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.addIndex( labelId, propertyKey );
@@ -63,21 +64,21 @@ public class LockingStatementContext extends CompositeStatementContext
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws ConstraintViolationKernelException
+            throws DataIntegrityKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.addConstraintIndex( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.dropIndex( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.dropConstraintIndex( descriptor );
@@ -133,8 +134,8 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
-            throws ConstraintViolationKernelException
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+            throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.addUniquenessConstraint( labelId, propertyKeyId );

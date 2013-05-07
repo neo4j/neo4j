@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
@@ -40,9 +40,9 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public IndexDescriptor getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        return delegate.getIndexRule( labelId, propertyKey );
+        return delegate.getIndex( labelId, propertyKey );
     }
 
     @Override
@@ -100,33 +100,40 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        return delegate.getCommittedIndexId( index );
+    }
+
+    @Override
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
+                                                                      DataIntegrityKernelException
     {
         return delegate.addIndex( labelId, propertyKey );
     }
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws ConstraintViolationKernelException
+            throws DataIntegrityKernelException
     {
         return delegate.addConstraintIndex( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndex( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor indexRule ) throws DataIntegrityKernelException
     {
         delegate.dropIndex( indexRule );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         delegate.dropConstraintIndex( descriptor );
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId,
-                                                         long propertyKeyId ) throws ConstraintViolationKernelException
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+            throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
         return delegate.addUniquenessConstraint( labelId, propertyKeyId );
     }

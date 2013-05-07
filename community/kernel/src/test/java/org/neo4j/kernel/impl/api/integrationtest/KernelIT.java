@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
@@ -491,7 +491,7 @@ public class KernelIT extends KernelIntegrationTest
         assertFalse( schemaStateContains("my key") );
     }
 
-    private IndexDescriptor createIndex( ) throws ConstraintViolationKernelException
+    private IndexDescriptor createIndex( ) throws DataIntegrityKernelException
     {
         return statement.addIndex( statement.getOrCreateLabelId( "hello" ),
                                    statement.getOrCreatePropertyKeyId( "hepp" ) );

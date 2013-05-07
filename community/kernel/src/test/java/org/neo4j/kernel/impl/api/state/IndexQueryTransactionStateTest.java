@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
@@ -216,7 +217,7 @@ public class IndexQueryTransactionStateTest
                 mock( TxState.IdGeneration.class ) );
 
         txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class),
-                state );
+                state, mock( ConstraintIndexCreator.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
