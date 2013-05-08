@@ -184,7 +184,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "left" -> func(2, args => LeftFunction(args(0), args(1))),
     "right" -> func(2, args => RightFunction(args(0), args(1))),
     "substring" -> Function(x => x == 2 || x == 3, args =>
-      if(args.size == 2) SubstringFunction(args(0), args(1), None)
+      if (args.size == 2) SubstringFunction(args(0), args(1), None)
       else SubstringFunction(args(0), args(1), Some(args(2)))
     ),
     "lower" -> func(1, args => LowerFunction(args.head)),
@@ -194,6 +194,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "trim" -> func(1, args => TrimFunction(args.head)),
     "str" -> func(1, args => StrFunction(args.head)),
     "timestamp" -> func(0, args => TimestampFunction()),
+    "uuid" -> func(0, args => Uuid()),
     "shortestpath" -> Function(x => false, args => null),
     "range" -> Function(x => x == 2 || x == 3, args => {
       val step = if (args.size == 2) Literal(1) else args(2)
