@@ -19,20 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -98,12 +100,11 @@ public class IndexIT extends KernelIntegrationTest
 
         // WHEN
         statement.addIndex( labelId, propertyKey );
-        statement.close();
         // don't mark as success
         rollback();
 
         // THEN
-        assertEquals( asSet(), asSet( readOnlyContext().getIndexes( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getIndexes( labelId ) ) );
     }
 
     @Test
@@ -119,7 +120,7 @@ public class IndexIT extends KernelIntegrationTest
         restartDb();
 
         // then
-        assertEquals( asSet(), asSet( readOnlyContext().getIndexes( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getIndexes( labelId ) ) );
     }
 
     @Test

@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
 
 public class ReferenceCountingTransactionContextTest
 {
@@ -147,5 +149,79 @@ public class ReferenceCountingTransactionContextTest
             assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
         }
         verify( actualContext, never() ).close();
+    }
+
+    @Test
+    public void shouldCloseAllStatementContextsOnCommit() throws Exception
+    {
+        // given
+        StatementContext context = singleContext.newStatementContext();
+
+        // when
+        singleContext.commit();
+
+        // then
+        try
+        {
+            context.close();
+
+            fail( "expected exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+        }
+        verify( actualContext, times( 1 ) ).close();
+    }
+
+    @Test
+    public void shouldCloseAllStatementContextsOnRollback() throws Exception
+    {
+        // given
+        StatementContext context = singleContext.newStatementContext();
+
+        // when
+        singleContext.rollback();
+
+        // then
+        try
+        {
+            context.close();
+
+            fail( "expected exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+        }
+        verify( actualContext, times( 1 ) ).close();
+    }
+
+    @Test
+    public void shouldBeAbleToOpenNewStatementContextsAfterCommit() throws Exception
+    {
+        // given
+        StatementContext before = singleContext.newStatementContext();
+
+        // when
+        singleContext.commit();
+
+        // then
+        StatementContext after = singleContext.newStatementContext();
+
+        try
+        {
+            before.close();
+
+            fail( "expected exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+        }
+        verify( actualContext, times( 1 ) ).close();
+        verifyZeroInteractions( otherActualContext );
+        after.close();
+        verify( otherActualContext, times( 1 ) ).close();
     }
 }

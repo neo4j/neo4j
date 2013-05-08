@@ -24,11 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * This organizes three disjoint containers of state. The goal is to bring that down to one, but for now, it's three.
@@ -397,5 +400,17 @@ public class TxState
     public boolean unRemoveConstraint( UniquenessConstraint constraint )
     {
         return constraintsChanges.unRemove( constraint );
+    }
+
+    public Iterable<IndexDescriptor> createdConstraintIndexes()
+    {
+        return map( new Function<UniquenessConstraint, IndexDescriptor>()
+        {
+            @Override
+            public IndexDescriptor apply( UniquenessConstraint constraint )
+            {
+                return new IndexDescriptor( constraint.label(), constraint.property() );
+            }
+        }, createdConstraintIndexes.keySet() );
     }
 }

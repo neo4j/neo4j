@@ -23,18 +23,20 @@ import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class ConstraintsCreationIT extends KernelIntegrationTest
@@ -195,6 +197,40 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // then
         newTransaction();
         assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.getConstraintIndexes() ) );
+    }
+
+    @Test
+    public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
+    {
+        // given
+        newTransaction();
+        statement.addUniquenessConstraint( label, propertyKey );
+        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.getConstraintIndexes() ) );
+
+        // when
+        rollback();
+
+        // then
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getConstraintIndexes() ) );
+    }
+
+    @Test
+    public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
+    {
+        // given
+        newTransaction();
+        UniquenessConstraint constraint = statement.addUniquenessConstraint( label, propertyKey );
+        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.getConstraintIndexes() ) );
+        commit();
+
+
+        // when
+        newTransaction();
+        statement.dropConstraint( constraint );
+        commit();
+
+        // then
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getConstraintIndexes() ) );
     }
 
     private long label, propertyKey;

@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.api.StatementContext;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import org.junit.Test;
-import org.neo4j.kernel.api.StatementContext;
 
 public class InteractionStoppingStatementContextTest
 {
@@ -31,7 +32,7 @@ public class InteractionStoppingStatementContextTest
     public void shouldDisallowInteractionAfterBeingClosed() throws Exception
     {
         // GIVEN
-        StatementContext statement = new InteractionStoppingStatementContext( mock( StatementContext.class ) );
+        StatementContext statement = new SimpleInteractionStoppingStatementContext( mock( StatementContext.class ) );
         statement.close();
 
         // WHEN
@@ -45,12 +46,34 @@ public class InteractionStoppingStatementContextTest
         int labelId = 10;
         int nodeId = 20;
         StatementContext actual = mock( StatementContext.class );
-        StatementContext statement = new InteractionStoppingStatementContext( actual );
+        StatementContext statement = new SimpleInteractionStoppingStatementContext( actual );
 
         // WHEN
         statement.addLabelToNode( labelId, nodeId );
 
         // THEN
         verify( actual ).addLabelToNode( labelId, nodeId );
+    }
+
+    private static class SimpleInteractionStoppingStatementContext extends InteractionStoppingStatementContext
+    {
+        private boolean open = true;
+
+        SimpleInteractionStoppingStatementContext( StatementContext delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        protected void markAsClosed()
+        {
+            open = false;
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return open;
+        }
     }
 }

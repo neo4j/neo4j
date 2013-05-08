@@ -28,7 +28,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -42,15 +41,12 @@ public abstract class KernelIntegrationTest
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
-    private TransactionContext tx;
     private EphemeralFileSystemAbstraction fs;
 
-    protected TransactionContext newTransaction()
+    protected void newTransaction()
     {
         beansTx = db.beginTx();
-        tx = kernel.newTransactionContext();
         statement = statementContextProvider.getCtxForWriting();
-        return tx;
     }
 
     protected StatementContext readOnlyContext()
@@ -61,12 +57,15 @@ public abstract class KernelIntegrationTest
     protected void commit()
     {
         statement.close();
+        statement = null;
         beansTx.success();
         beansTx.finish();
     }
 
     protected void rollback()
     {
+        statement.close();
+        statement = null;
         beansTx.failure();
         beansTx.finish();
     }

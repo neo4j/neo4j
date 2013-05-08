@@ -23,56 +23,81 @@ import org.neo4j.kernel.api.StatementContext;
 
 public abstract class StatementContextOwner
 {
-    private StatementContext statementContext;
-    public int count;
+    private ReferencedStatementContext reference;
 
     public StatementContext getStatementContext()
     {
-        if ( statementContext == null )
+        if ( reference == null )
         {
-            statementContext = createStatementContext();
+            reference = new ReferencedStatementContext( createStatementContext() );
         }
-        count++;
-        return new StatementContextReference( statementContext );
+        return reference.new StatementContextReference();
     }
 
     protected abstract StatementContext createStatementContext();
 
     public void closeAllStatements()
     {
-        if ( statementContext != null )
+        if ( reference != null )
         {
-            statementContext.close();
-            statementContext = null;
+            reference.close();
+            reference = null;
         }
-
-        count = 0;
     }
 
-    private class StatementContextReference extends InteractionStoppingStatementContext
+    private class ReferencedStatementContext
     {
-        public StatementContextReference( StatementContext delegate )
+        private int count;
+        private final StatementContext statementContext;
+
+        ReferencedStatementContext( StatementContext statementContext )
         {
-            super( delegate );
+            this.statementContext = statementContext;
         }
 
-        @Override
-        public void close()
+        void close()
         {
-            markAsClosed();
-            count--;
-            if ( count == 0 )
+            if ( count > 0 )
             {
                 statementContext.close();
-                statementContext = null;
+                reference = null;
+            }
+            count = 0;
+        }
+
+        class StatementContextReference extends InteractionStoppingStatementContext
+        {
+            private boolean open = true;
+
+            StatementContextReference()
+            {
+                super( statementContext );
+                count++;
             }
 
-            if ( statementContext != null && count < 0 )
+            @Override
+            protected void markAsClosed()
             {
-                throw new IllegalStateException( "Lost track of at least one StatementContext" );
+                open = false;
+                count--;
+                if ( count == 0 )
+                {
+                    statementContext.close();
+                    reference = null;
+                }
             }
-            // If we see that count < 0 and statementContext == null we've called closeAllStatements()
-            // and this would be a cleanup, which is a best effort either way.
+
+            @Override
+            public boolean isOpen()
+            {
+                return open && count > 0;
+            }
+
+            @Override
+            protected void doClose()
+            {
+                // do nothing - we close when the count reaches 0
+            }
         }
     }
 }

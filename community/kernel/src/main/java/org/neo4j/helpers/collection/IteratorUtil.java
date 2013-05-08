@@ -19,17 +19,13 @@
  */
 package org.neo4j.helpers.collection;
 
-import static java.util.Arrays.asList;
-import static java.util.EnumSet.allOf;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,6 +35,10 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+
+import static java.util.Arrays.asList;
+import static java.util.EnumSet.allOf;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -67,7 +67,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the first element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T first( Iterator<T> iterator )
     {
@@ -100,7 +100,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the last element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T last( Iterator<T> iterator )
     {
@@ -116,8 +116,7 @@ public abstract class IteratorUtil
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code null} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T singleOrNull( Iterator<T> iterator )
     {
@@ -132,8 +131,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if there isn't exactly one
-     * element.
+     * @throws NoSuchElementException if there isn't exactly one element.
      */
     public static <T> T single( Iterator<T> iterator )
     {
@@ -183,10 +181,6 @@ public abstract class IteratorUtil
     /**
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
-     *
-     * @param first
-     * @param other
-     * @return
      */
     public static boolean iteratorsEqual(Iterator<?> first, Iterator<?> other)
     {
@@ -235,7 +229,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T first( Iterable<T> iterable )
     {
@@ -263,7 +257,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the last element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T last( Iterable<T> iterable )
     {
@@ -279,8 +273,7 @@ public abstract class IteratorUtil
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T singleOrNull( Iterable<T> iterable )
     {
@@ -295,8 +288,7 @@ public abstract class IteratorUtil
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if there isn't exactly one
-     * element.
+     * @throws NoSuchElementException if there isn't exactly one element.
      */
     public static <T> T single( Iterable<T> iterable )
     {
@@ -312,8 +304,7 @@ public abstract class IteratorUtil
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T single( Iterable<T> iterable, T itemIfNone )
     {
@@ -329,8 +320,7 @@ public abstract class IteratorUtil
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code itemIfNone} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T single( Iterator<T> iterator, T itemIfNone )
     {
@@ -343,22 +333,7 @@ public abstract class IteratorUtil
         }
         return result;
     }
-    
-    /**
-     * Returns the iterator's n:th item from the end of the iteration.
-     * If the iterator has got less than n-1 items in it {@code null} is returned.
-     * 
-     * @param <T> the type of elements in {@code iterator}.
-     * @param iterable the {@link Iterable} to get elements from.
-     * @param countFromEnd the n:th item from the end to get.
-     * @return the iterator's n:th item from the end of the iteration,
-     * or {@code null} if the iterator doesn't contain that many items.
-     */
-    public static <T> T fromEndOrNull( Iterable<T> iterable, int countFromEnd )
-    {
-        return fromEndOrNull( iterable.iterator(), countFromEnd );
-    }
-    
+
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
@@ -580,6 +555,11 @@ public abstract class IteratorUtil
         return new HashSet<T>( asList( items ) );
     }
 
+    public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
+    {
+        return Collections.emptySet();
+    }
+
     /**
      * Alias for asSet()
      */
@@ -698,42 +678,6 @@ public abstract class IteratorUtil
     {
         return new LinesOfFileIterator( file, encoding );
     }
-    
-    public static <T> void streamToFile( Iterable<T> iterable, File file, String encoding ) throws IOException
-    {
-        streamToFile( iterable.iterator(), file, encoding );
-    }
-
-    public static <T> void streamToFile( Iterator<T> iterator, File file, String encoding ) throws IOException
-    {
-        if ( file.exists() ) throw new IOException( "File '" + file + "' already exists" );
-        PrintStream out = null;
-        try
-        {
-            out = new PrintStream( file, encoding );
-            while ( iterator.hasNext() ) out.println( iterator.next().toString() );
-        }
-        finally
-        {
-            safeClose( out );
-        }
-    }
-    
-    private static void safeClose( Closeable closeable )
-    {
-        if ( closeable != null )
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch ( IOException e )
-            {
-                // What can we do?
-                e.printStackTrace();
-            }
-        }
-    }
 
     public static Iterable<Long> asIterable( final long... array )
     {
@@ -803,7 +747,7 @@ public abstract class IteratorUtil
 
     public static <T> Iterator<T> iterator( T ... items )
     {
-        return asIterator(items);
+        return asIterator( items );
     }
 
     @SuppressWarnings("unchecked")

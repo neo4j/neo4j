@@ -38,6 +38,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class ConstraintIndexCreatorTest
@@ -114,6 +115,27 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( constraintCreationContext );
         verify( indexDestructionContext ).dropConstraintIndex( descriptor );
         verifyNoMoreInteractions( indexDestructionContext );
+    }
+
+    @Test
+    public void shouldDropIndexInAnotherTransaction() throws Exception
+    {
+        // given
+        StatementContext indexDestructionTransaction = mock( StatementContext.class );
+        StubTransactor transactor = new StubTransactor( indexDestructionTransaction );
+        IndexingService indexingService = mock( IndexingService.class );
+
+        IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
+
+        // when
+        creator.dropUniquenessConstraintIndex( descriptor );
+
+        // then
+        verifyZeroInteractions( indexingService );
+        verify( indexDestructionTransaction ).dropConstraintIndex( descriptor );
+        verifyNoMoreInteractions( indexDestructionTransaction );
     }
 
     private static class StubTransactor extends Transactor

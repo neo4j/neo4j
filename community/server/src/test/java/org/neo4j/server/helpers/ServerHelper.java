@@ -24,11 +24,13 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -43,37 +45,47 @@ public class ServerHelper
 
         rollbackAllOpenTransactions( server );
 
-        new Transactor( server.getDatabase().getGraph(), new UnitOfWork()
+        cleanTheDatabase( server.getDatabase().getGraph() );
+
+        removeLogs( server );
+    }
+
+    public static void cleanTheDatabase( final GraphDatabaseAPI db )
+    {
+        new Transactor( db, new UnitOfWork()
         {
 
             @Override
             public void doWork()
             {
-                deleteAllNodesAndRelationships( server );
-                deleteAllIndexes( server );
-                deleteAllIndexRules( server );
-                deleteAllConstraints( server );
+                deleteAllNodesAndRelationships();
+                deleteAllIndexes();
+                deleteAllIndexRules();
+                deleteAllConstraints();
             }
 
-            private void deleteAllIndexRules( NeoServer server )
+            private void deleteAllIndexRules()
             {
-                for ( IndexDefinition index : server.getDatabase().getGraph().schema().getIndexes() )
+                for ( IndexDefinition index : db.schema().getIndexes() )
                 {
-                    index.drop();
+                    if ( !index.isConstraintIndex() )
+                    {
+                        index.drop();
+                    }
                 }
             }
 
-            private void deleteAllConstraints( NeoServer server )
+            private void deleteAllConstraints()
             {
-                for ( ConstraintDefinition constraint : server.getDatabase().getGraph().schema().getConstraints() )
+                for ( ConstraintDefinition constraint : db.schema().getConstraints() )
                 {
                     constraint.drop();
                 }
             }
 
-            private void deleteAllNodesAndRelationships( final NeoServer server )
+            private void deleteAllNodesAndRelationships()
             {
-                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().getGraph() ).getAllNodes();
+                Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
                 for ( Node n : allNodes )
                 {
                     Iterable<Relationship> relationships = n.getRelationships();
@@ -83,7 +95,7 @@ public class ServerHelper
                     }
                     if ( n.getId() != 0 )
                     { // Don't delete the reference node - tests depend on it
-                      // :-(
+                        // :-(
                         n.delete();
                     }
                     else
@@ -96,47 +108,51 @@ public class ServerHelper
                 }
             }
 
-            private void deleteAllIndexes( final NeoServer server )
+            private void deleteAllIndexes()
             {
-                IndexManager indexManager = server.getDatabase().getGraph().index();
-                
+                IndexManager indexManager = db.index();
+
                 for ( String indexName : indexManager.nodeIndexNames() )
                 {
-                	try{
-	                    server.getDatabase().getGraph().index()
-	                            .forNodes( indexName )
-	                            .delete();
-                	} catch(UnsupportedOperationException e) {
-                		// Encountered a read-only index.
-                	}
+                    try
+                    {
+                        db.index()
+                              .forNodes( indexName )
+                              .delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
+                        // Encountered a read-only index.
+                    }
                 }
 
                 for ( String indexName : indexManager.relationshipIndexNames() )
                 {
-                	try {
-	                    server.getDatabase().getGraph().index()
-	                            .forRelationships( indexName )
-	                            .delete();
-                	} catch(UnsupportedOperationException e) {
-                		// Encountered a read-only index.
-                	}
+                    try
+                    {
+                        db.index()
+                              .forRelationships( indexName )
+                              .delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
+                        // Encountered a read-only index.
+                    }
                 }
-                
-                for(String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties()) 
+
+                for ( String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties() )
                 {
-                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty(k);
+                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty( k );
                 }
-                indexManager.getNodeAutoIndexer().setEnabled(false);
-                
-                for(String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties()) 
+                indexManager.getNodeAutoIndexer().setEnabled( false );
+
+                for ( String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties() )
                 {
-                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty(k);
+                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty( k );
                 }
-                indexManager.getRelationshipAutoIndexer().setEnabled(false);
+                indexManager.getRelationshipAutoIndexer().setEnabled( false );
             }
         } ).execute();
-
-        removeLogs( server );
     }
 
     private static void removeLogs( NeoServer server )
@@ -157,7 +173,7 @@ public class ServerHelper
         return createServer( false, null );
     }
 
-    public static NeoServer createPersistentServer(File path) throws IOException
+    public static NeoServer createPersistentServer( File path ) throws IOException
     {
         return createServer( true, path );
     }
@@ -166,9 +182,12 @@ public class ServerHelper
     {
         ServerBuilder builder = ServerBuilder.server();
         configureHostname( builder );
-        if ( persistent ) builder = builder.persistent();
+        if ( persistent )
+        {
+            builder = builder.persistent();
+        }
         NeoServer server = builder
-                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null)
+                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null )
                 .build();
         server.start();
         return server;
@@ -177,13 +196,13 @@ public class ServerHelper
     private static void configureHostname( ServerBuilder builder )
     {
         String hostName = System.getProperty( "neo-server.test.hostname" );
-        if (StringUtils.isNotEmpty( hostName )) {
+        if ( StringUtils.isNotEmpty( hostName ) )
+        {
             builder.onHost( hostName );
         }
     }
 
-
-    private static void rollbackAllOpenTransactions(NeoServer server)
+    private static void rollbackAllOpenTransactions( NeoServer server )
     {
         server.getTransactionRegistry().rollbackAllSuspendedTransactions();
     }

@@ -70,10 +70,16 @@ public class ConstraintIndexCreator
         {
             if ( !success )
             {
-                transactor.execute( dropConstraintIndex( descriptor ) );
+                dropUniquenessConstraintIndex( descriptor );
             }
         }
         return indexId;
+    }
+
+    public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
+            throws DataIntegrityKernelException, TransactionalException
+    {
+        transactor.execute( dropConstraintIndex( descriptor ) );
     }
 
     private void awaitIndexPopulation( long indexId ) throws IndexPopulationFailedKernelException, InterruptedException

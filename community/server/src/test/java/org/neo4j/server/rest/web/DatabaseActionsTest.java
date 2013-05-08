@@ -19,6 +19,50 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappedDatabase;
+import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.StartNodeNotFoundException;
+import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasKey;
@@ -37,59 +81,18 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappedDatabase;
-import org.neo4j.server.rest.domain.EndNodeNotFoundException;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.FakeClock;
-import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentationTest;
-import org.neo4j.server.rest.repr.RelationshipRepresentation;
-import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-import org.neo4j.test.ImpermanentGraphDatabase;
-
 public class DatabaseActionsTest
 {
     private static DatabaseActions actions;
     private static GraphDbHelper graphdbHelper;
     private static Database database;
     private static LeaseManager leaseManager;
-    private static ImpermanentGraphDatabase graph;
+    private static AbstractGraphDatabase graph;
 
     @BeforeClass
-    public static void clearDb() throws IOException
+    public static void createDb() throws IOException
     {
-        graph = new ImpermanentGraphDatabase();
+        graph = (AbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         graphdbHelper = new GraphDbHelper( database );
         leaseManager = new LeaseManager( new FakeClock() );
@@ -100,6 +103,12 @@ public class DatabaseActionsTest
     public static void shutdownDatabase() throws Throwable
     {
         graph.shutdown();
+    }
+
+    @After
+    public void clearDb()
+    {
+        ServerHelper.cleanTheDatabase( graph );
     }
 
     private long createNode( Map<String, Object> properties )
@@ -289,7 +298,7 @@ public class DatabaseActionsTest
         actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<Object>() );
 
         // Then
-        Representation val = actions.getNodeProperty( nodeId, "emptyArray" );
+        actions.getNodeProperty( nodeId, "emptyArray" );
     }
 
     @Test
@@ -367,7 +376,7 @@ public class DatabaseActionsTest
     public void shouldNotCreateRelationshipBetweenNonExistentNodes() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = Collections.<String, Object>emptyMap();
+        Map<String, Object> properties = Collections.emptyMap();
         try
         {
             actions.createRelationship( nodeId, nodeId * 1000, "Loves", properties );
@@ -392,7 +401,7 @@ public class DatabaseActionsTest
     public void shouldAllowCreateRelationshipWithSameStartAsEndNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = Collections.<String, Object>emptyMap();
+        Map<String, Object> properties = Collections.emptyMap();
         RelationshipRepresentation rel = actions.createRelationship( nodeId, nodeId, "Loves", properties );
         assertNotNull( rel );
 
@@ -520,7 +529,8 @@ public class DatabaseActionsTest
         graphdbHelper.createRelationship( "HATES", nodeId, graphdbHelper.createNode() );
 
         verifyRelReps( 3,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all, Collections.<String>emptyList() ) );
+                       actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                                                     Collections.<String>emptyList() ) );
         verifyRelReps( 1,
                 actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
         verifyRelReps( 2,
@@ -548,11 +558,14 @@ public class DatabaseActionsTest
         long nodeId = graphdbHelper.createNode();
 
         verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all, Collections.<String>emptyList() ) );
+                       actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                                                     Collections.<String>emptyList() ) );
         verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
+                       actions.getNodeRelationships( nodeId, RelationshipDirection.in,
+                                                     Collections.<String>emptyList() ) );
         verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.out, Collections.<String>emptyList() ) );
+                       actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                                                     Collections.<String>emptyList() ) );
     }
 
     @Test
@@ -573,7 +586,8 @@ public class DatabaseActionsTest
         String key = "foo";
         Object value = "bar";
         actions.setRelationshipProperty( relationshipId, key, value );
-        assertEquals( Collections.singletonMap( key, value ), graphdbHelper.getRelationshipProperties( relationshipId ) );
+        assertEquals( Collections.singletonMap( key, value ),
+                      graphdbHelper.getRelationshipProperties( relationshipId ) );
     }
 
     @Test
@@ -588,7 +602,7 @@ public class DatabaseActionsTest
         actions.removeAllRelationshipProperties( relId );
 
         assertTrue( graphdbHelper.getRelationshipProperties( relId )
-                .isEmpty() );
+                                 .isEmpty() );
     }
 
     @Test
@@ -635,7 +649,7 @@ public class DatabaseActionsTest
         actions.createNodeIndex( MapUtil.map( "name", indexName ) );
 
         assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator()
-                .hasNext() );
+                             .hasNext() );
         actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
     }
@@ -658,14 +672,14 @@ public class DatabaseActionsTest
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "with" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "spaces" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "*spaces*" ) );
-        assertTrue( graphdbHelper.getIndexedNodes( indexName, key, "nohit" )
-                .isEmpty() );
+        assertTrue( graphdbHelper.getIndexedNodes( indexName, key, "nohit" ).isEmpty() );
     }
 
     // TODO remove once reference node is gone
     @Test
     public void shouldBeAbleToGetReferenceNode() throws Exception
     {
+        @SuppressWarnings("deprecation"/*even if reference node is deprecated, we still need to test it*/)
         NodeRepresentation rep = actions.getReferenceNode();
         actions.getNode( rep.getId() );
     }
@@ -682,6 +696,7 @@ public class DatabaseActionsTest
         int counter = 0;
         for ( Object rep : serialize( actions.getIndexedNodes( indexName, key, value ) ) )
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> serialized = (Map<String, Object>) rep;
             NodeRepresentationTest.verifySerialisation( serialized );
             assertNotNull( serialized.get( "indexed" ) );
@@ -711,7 +726,7 @@ public class DatabaseActionsTest
                 .size() );
         actions.removeFromNodeIndex( indexName, key, value2, nodeId );
         assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key, value )
-                .size() );
+                                      .size() );
         assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key, value2 )
                 .size() );
     }
@@ -922,7 +937,9 @@ public class DatabaseActionsTest
         List<Object> hits = serialize( traverse );
         for ( Object hit : hits )
         {
-            RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) hit );
+            @SuppressWarnings( "unchecked" )
+            Map<String, Object> map = (Map<String, Object>) hit;
+            RelationshipRepresentationTest.verifySerialisation( map );
         }
     }
 
@@ -935,6 +952,7 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -951,16 +969,23 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
+            @SuppressWarnings( "unchecked" )
             Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
-            for ( Object relationship : relationships )
+            for ( Object rel : relationships )
             {
-                RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) relationship );
+                @SuppressWarnings( "unchecked" )
+                Map<String, Object> relationship = (Map<String, Object>) rel;
+                RelationshipRepresentationTest.verifySerialisation( relationship );
             }
+            @SuppressWarnings( "unchecked" )
             Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
-            for ( Object node : nodes )
+            for ( Object n : nodes )
             {
-                NodeRepresentationTest.verifySerialisation( (Map<String, Object>) node );
+                @SuppressWarnings( "unchecked" )
+                Map<String, Object> node = (Map<String, Object>) n;
+                NodeRepresentationTest.verifySerialisation( node );
             }
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -1097,7 +1122,9 @@ public class DatabaseActionsTest
         graphdbHelper.addLabelToNode( node, labelName2 );
 
         // WHEN
-        List<Object> labels = serialize( actions.getNodeLabels( node ) );
+
+        @SuppressWarnings( "unchecked" )
+        List<String> labels = (List)serialize( actions.getNodeLabels( node ) );
 
         // THEN
         assertEquals(
@@ -1142,6 +1169,7 @@ public class DatabaseActionsTest
         assertEquals( numPaths, result.size() );
         for ( Object path : result )
         {
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> serialized = (Map<String, Object>) path;
             assertTrue( serialized.get( "start" )
                     .toString()

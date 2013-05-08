@@ -23,10 +23,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.TransactionFailureException;
+import org.neo4j.kernel.api.TransactionalException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -86,6 +88,36 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     @Override
     public void commit() throws TransactionFailureException
     {
+        try
+        {
+            createTransactionCommands();
+        }
+        finally
+        {
+            // - Ensure transaction is committed to disk at this point
+            super.commit();
+        }
+
+        // - commit changes from tx state to the cache
+        // TODO: This should be done by log application, not by this level of the stack.
+        persistenceCache.apply( state );
+    }
+
+    @Override
+    public void rollback() throws TransactionFailureException
+    {
+        try
+        {
+            dropCreatedConstraintIndexes();
+        }
+        finally
+        {
+            super.rollback();
+        }
+    }
+
+    private void createTransactionCommands()
+    {
         final AtomicBoolean clearState = new AtomicBoolean( false );
         state.accept( new TxState.Visitor()
         {
@@ -98,7 +130,8 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             @Override
             public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
             {
-                SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
+                SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
+                                                                               .getProviderDescriptor();
                 IndexRule rule;
                 if ( isConstraintIndex )
                 {
@@ -155,17 +188,38 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                             "Tobias Lindaaker", "Constraint to be removed should exist, since its existence should " +
                                                 "have been validated earlier and the schema should have been locked." );
                 }
+                // Remove the index for the constraint as well
+                visitRemovedIndex( new IndexDescriptor( element.label(), element.property() ), true );
             }
         } );
         if ( clearState.get() )
         {
             schemaState.clear();
         }
-        // - Ensure transaction is committed to disk at this point
-        super.commit();
+    }
 
-        // - commit changes from tx state to the cache
-        // TODO: This should be done by log application, not by this level of the stack.
-        persistenceCache.apply( state );
+    private void dropCreatedConstraintIndexes() throws TransactionFailureException
+    {
+        for ( IndexDescriptor createdConstraintIndex : state.createdConstraintIndexes() )
+        {
+            try
+            {
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
+            }
+            catch ( DataIntegrityKernelException e )
+            {
+                throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
+                                                 "possible to drop during rollback of that transaction.", e );
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw e;
+            }
+            catch ( TransactionalException e )
+            {
+                throw new IllegalStateException( "The transaction manager could not fulfill the transaction for " +
+                                                 "dropping the constraint.", e );
+            }
+        }
     }
 }

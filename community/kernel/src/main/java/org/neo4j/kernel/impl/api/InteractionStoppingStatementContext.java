@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 
-public class InteractionStoppingStatementContext extends CompositeStatementContext
+public abstract class InteractionStoppingStatementContext extends CompositeStatementContext
 {
-    private boolean closed;
-
     public InteractionStoppingStatementContext( StatementContext delegate )
     {
-        super(delegate);
+        super( delegate );
     }
 
     @Override
@@ -39,24 +37,25 @@ public class InteractionStoppingStatementContext extends CompositeStatementConte
     @Override
     public void close()
     {
+        assertOperationsAllowed();
         markAsClosed();
+        doClose();
+    }
+
+    protected void doClose()
+    {
         super.close();
     }
 
-    protected void markAsClosed()
-    {
-        assertOperationsAllowed();
-        closed = true;
-    }
+    protected abstract void markAsClosed();
 
-    public boolean isOpen()
-    {
-        return !closed;
-    }
+    public abstract boolean isOpen();
 
-    private void assertOperationsAllowed()
+    protected final void assertOperationsAllowed()
     {
-        if ( closed )
+        if ( !isOpen() )
+        {
             throw new IllegalStateException( "This StatementContext has been closed. No more interaction allowed" );
+        }
     }
 }
