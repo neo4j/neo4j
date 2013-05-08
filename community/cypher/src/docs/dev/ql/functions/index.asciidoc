@@ -54,6 +54,12 @@ include::last.asciidoc[]
 
 include::timestamp.asciidoc[]
 
+include::uuid.asciidoc[]
+
+include::startnode.asciidoc[]
+
+include::endnode.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-collection]]

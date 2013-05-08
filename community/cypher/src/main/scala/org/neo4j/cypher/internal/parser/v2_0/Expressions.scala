@@ -195,6 +195,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "str" -> func(1, args => StrFunction(args.head)),
     "timestamp" -> func(0, args => TimestampFunction()),
     "uuid" -> func(0, args => Uuid()),
+    "startnode" -> func(1, args => RelationshipEndPoints(args.head, start = true)),
+    "endnode" -> func(1, args => RelationshipEndPoints(args.head, start = false)),
     "shortestpath" -> Function(x => false, args => null),
     "range" -> Function(x => x == 2 || x == 3, args => {
       val step = if (args.size == 2) Literal(1) else args(2)

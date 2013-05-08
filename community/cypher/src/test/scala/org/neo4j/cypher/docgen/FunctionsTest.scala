@@ -545,8 +545,29 @@ END as result""",
         "that will not clash with any other UUID.",
       queryText = "start n=node(1) return uuid()",
       returns = "The time in milliseconds.",
-      assertions = (p) =>
-        assert(p.toList.head("uuid()").isInstanceOf[String], "Expected a string"))
+      assertions = (p) => assert(p.toList.head("uuid()").isInstanceOf[String], "Expected a string"))
+  }
+
+  @Test def startNode() {
+    testThis(
+      title = "STARTNODE",
+      syntax = "STARTNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`STARTNODE` returns the starting node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return startNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("startNode(r)") === node("A")))
+  }
+
+  @Test def endNode() {
+    testThis(
+      title = "ENDNODE",
+      syntax = "ENDNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`ENDNODE` returns the end node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return endNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("endNode(r)") === node("B")))
   }
 
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
