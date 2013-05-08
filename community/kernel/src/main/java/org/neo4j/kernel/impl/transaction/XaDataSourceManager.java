@@ -40,6 +40,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.ShutdownXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -74,6 +75,7 @@ public class XaDataSourceManager
     private LifeSupport life = new LifeSupport();
 
     private final StringLogger msgLog;
+    private boolean isShutdown = false;
 
     public XaDataSourceManager( StringLogger msgLog )
     {
@@ -158,6 +160,7 @@ public class XaDataSourceManager
         dataSources.clear();
         branchIdMapping.clear();
         sourceIdMapping.clear();
+        isShutdown = true;
     }
 
     /**
@@ -169,6 +172,11 @@ public class XaDataSourceManager
      */
     public XaDataSource getXaDataSource( String name )
     {
+        if ( isShutdown )
+        {
+            return new ShutdownXaDataSource();
+        }
+
         return dataSources.get( name );
     }
 
