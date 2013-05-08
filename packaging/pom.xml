@@ -28,6 +28,7 @@
 
   <modules>
     <module>standalone</module>
+    <module>qa</module>
   </modules>
 
   <licenses>

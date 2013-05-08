@@ -39,6 +39,8 @@ To build everything, including running all tests, producing documentation and as
 The Python part of the build requires a working JPype installation.
 For how to make the documentation build go, see: [manual/](https://github.com/neo4j/neo4j/tree/master/manual)
 
+When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
+
 When building code from a different year, you are likely to see failures due to outdated license headers.
 The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
 
