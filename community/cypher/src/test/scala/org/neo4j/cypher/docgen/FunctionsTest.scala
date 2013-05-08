@@ -537,6 +537,28 @@ END as result""",
     )
   }
 
+  @Test def startNode() {
+    testThis(
+      title = "STARTNODE",
+      syntax = "STARTNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`STARTNODE` returns the starting node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return startNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("startNode(r)") === node("A")))
+  }
+
+  @Test def endNode() {
+    testThis(
+      title = "ENDNODE",
+      syntax = "ENDNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`ENDNODE` returns the end node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return endNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("endNode(r)") === node("B")))
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
