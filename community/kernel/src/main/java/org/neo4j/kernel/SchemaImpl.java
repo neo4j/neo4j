@@ -31,6 +31,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -164,6 +165,29 @@ public class SchemaImpl implements Schema
         } while ( System.currentTimeMillis() < timeout );
         throw new IllegalStateException( "Expected index to come online within a reasonable time." );
     }
+
+    @Override
+    public void awaitIndexesOnline( long duration, TimeUnit unit )
+    {
+        long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
+        Collection<IndexDefinition> onlineIndexes = new ArrayList<IndexDefinition>();
+
+        for ( Iterator<IndexDefinition> iter = getIndexes().iterator(); iter.hasNext(); )
+        {
+            if ( millisLeft < 0 )
+                throw new IllegalStateException( "Expected all indexes to come online within a reasonable time."
+                                                 + "Indexes brought online: " + onlineIndexes
+                                                 + ". Indexes not guaranteed to be online: " + asCollection( iter ) );
+
+            IndexDefinition index = iter.next();
+            long millisBefore = System.currentTimeMillis();
+            awaitIndexOnline( index, millisLeft, TimeUnit.MILLISECONDS );
+            millisLeft -= System.currentTimeMillis() - millisBefore;
+
+            onlineIndexes.add( index );
+        }
+    }
+
 
     @Override
     public IndexState getIndexState( IndexDefinition index )

@@ -20,20 +20,30 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Constraint type. Used with {@link ConstraintDefinition#getConstraintType()} to see
  * of which type a constraint is.
  */
-public enum ConstraintType implements Predicate<ConstraintDefinition>
+public enum ConstraintType
 {
     /**
      * @see ConstraintDefinition#asUniquenessConstraint()
      */
     UNIQUENESS;
 
-	@Override
-	public boolean accept( ConstraintDefinition item ) {
-		return item.isConstraintType( this );
-	}
+    public Iterable<ConstraintDefinition> filter( Iterable<ConstraintDefinition> input )
+    {
+        return Iterables.filter( predicate, input );
+    }
+
+    private final Predicate<ConstraintDefinition> predicate = new Predicate<ConstraintDefinition>()
+    {
+        @Override
+        public boolean accept( ConstraintDefinition item )
+        {
+            return item.isConstraintType( ConstraintType.this );
+        }
+    };
 }
