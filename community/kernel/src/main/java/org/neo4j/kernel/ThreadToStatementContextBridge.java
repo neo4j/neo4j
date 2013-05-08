@@ -19,19 +19,22 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
  * will use this to get the appropriate {@link StatementContext} when it performs operations.
  */
-public class ThreadToStatementContextBridge
+public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
     private final KernelAPI kernelAPI;
     private final AbstractTransactionManager txManager;
+    private boolean isShutdown = false;
 
     public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager )
     {
@@ -63,6 +66,23 @@ public class ThreadToStatementContextBridge
 
     private StatementContext getStatementContext()
     {
+        checkIfShutdown();
         return txManager.getStatementContext();
     }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        isShutdown = true;
+    }
+
+    private void checkIfShutdown()
+    {
+        if ( isShutdown )
+        {
+            throw new DatabaseShutdownException();
+        }
+    }
+
+
 }
