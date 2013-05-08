@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
@@ -62,7 +62,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
+        public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
     private final Config conf;
@@ -221,23 +221,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         assert getFileChannel() != null : "Store closed, null file channel";
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
-        DynamicRecord nextRecord = recordsToUseFirst.hasNext() ?
-                recordsToUseFirst.next() : new DynamicRecord( nextId() );
+        DynamicRecord nextRecord = nextUsedRecordOrNew( recordsToUseFirst );
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
         {
             DynamicRecord record = nextRecord;
             record.setStartRecord( srcOffset == 0 );
-            record.setCreated();
-            record.setInUse( true );
             if ( src.length - srcOffset > dataSize )
             {
                 byte data[] = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                nextRecord = recordsToUseFirst.hasNext() ?
-                        recordsToUseFirst.next() : new DynamicRecord( nextId() );
+                nextRecord = nextUsedRecordOrNew( recordsToUseFirst );
                 record.setNextBlock( nextRecord.getId() );
                 srcOffset += dataSize;
             }
@@ -255,6 +251,26 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         while ( nextRecord != null );
         return recordList;
+    }
+
+    private DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+    {
+        DynamicRecord record;
+        if ( recordsToUseFirst.hasNext() )
+        {
+            record = recordsToUseFirst.next();
+            if ( !record.inUse() )
+            {
+                record.setCreated();
+            }
+        }
+        else
+        {
+            record = new DynamicRecord( nextId() );
+            record.setCreated();
+        }
+        record.setInUse( true );
+        return record;
     }
 
     public Collection<DynamicRecord> getLightRecords( long startBlockId )
@@ -383,7 +399,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     public DynamicRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -436,23 +452,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         return recordList;
     }
-    
-    /**
-     * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
-     * if necessary a new larger {@code byte[]} and containing exactly all concatenated data read from records
-     */
-    public static ByteBuffer concatData( Collection<DynamicRecord> records )
-    {
-        return concatData( records, new byte[totalDataLength( records )] );
-    }
-    
-    private static int totalDataLength( Collection<DynamicRecord> records )
-    {
-        int length = 0;
-        for ( DynamicRecord record : records )
-            length += record.getLength();
-        return length;
-    }
 
     /**
      * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
@@ -500,9 +499,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     /**
      * Rebuilds the internal id generator keeping track of what blocks are free
      * or taken.
-     *
-     * @throws IOException
-     *             If unable to rebuild the id generator
      */
     @Override
     protected void rebuildIdGenerator()
@@ -571,11 +567,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         setHighId( highId + 1 );
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
-        if ( stringLogger != null )
-        {
-            stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                    " defragged count=" + defraggedCount, true );
-        }
+        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                " defragged count=" + defraggedCount, true );
         closeIdGenerator();
         openIdGenerator( false );
     }

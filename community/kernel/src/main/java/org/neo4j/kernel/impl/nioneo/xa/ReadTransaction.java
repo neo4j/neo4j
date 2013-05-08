@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyKeyToken;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -48,10 +44,13 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 
 class ReadTransaction implements NeoStoreTransaction
 {
@@ -227,12 +226,6 @@ class ReadTransaction implements NeoStoreTransaction
     public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
     {
         return loadProperties( getPropertyStore(), neoStore.getGraphNextProp() );
-    }
-
-    // Duplicated code
-    public Object propertyGetValueOrNull( PropertyBlock propertyBlock )
-    {
-        return propertyBlock.getType().getValue( propertyBlock, null );
     }
 
     @Override
@@ -446,5 +439,11 @@ class ReadTransaction implements NeoStoreTransaction
     {
         NodeRecord node = getNodeStore().getRecord( nodeId );
         return asIterator( getNodeStore().getLabelsForNode( node ) );
+    }
+
+    @Override
+    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    {
+        throw readOnlyException();
     }
 }

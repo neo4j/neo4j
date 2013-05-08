@@ -28,6 +28,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -101,6 +104,12 @@ public abstract class KernelIntegrationTest
     {
         stopDb();
         startDb();
+    }
+
+    protected NeoStore neoStore()
+    {
+        return ((NeoStoreXaDataSource)db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore();
     }
 
     protected void awaitAllIndexesOnline()

@@ -21,17 +21,16 @@ package org.neo4j.kernel.impl.persistence;
 
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyKeyToken;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -318,4 +317,6 @@ public interface NeoStoreTransaction
     void removeLabelFromNode( long labelId, long nodeId );
 
     Iterator<Long> getLabelsForNode( long nodeId );
+
+    void setConstraintIndexOwner( long constraintIndexId, long constraintId );
 }

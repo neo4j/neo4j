@@ -27,7 +27,10 @@ import org.junit.Test;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.SchemaStorage;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -223,7 +226,6 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.getConstraintIndexes() ) );
         commit();
 
-
         // when
         newTransaction();
         statement.dropConstraint( constraint );
@@ -231,6 +233,22 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         // then
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getConstraintIndexes() ) );
+    }
+
+    @Test
+    public void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
+    {
+        // when
+        newTransaction();
+        statement.addUniquenessConstraint( label, propertyKey );
+        commit();
+
+        // then
+        SchemaStorage schema = new SchemaStorage( neoStore().getSchemaStore() );
+        IndexRule indexRule = schema.indexRule( label, propertyKey );
+        UniquenessConstraintRule constraintRule = schema.uniquenessConstraint( label, propertyKey );
+        assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
+        assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );
     }
 
     private long label, propertyKey;

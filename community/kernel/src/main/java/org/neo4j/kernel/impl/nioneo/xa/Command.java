@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Collections.unmodifiableCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -31,6 +27,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -55,6 +52,10 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -88,6 +89,11 @@ public abstract class Command extends XaCommand
             if ( !created && inUse )
                 return UPDATE;
             throw new IllegalStateException( "A record can't be both created and deleted at the same time." );
+        }
+
+        public static Mode fromRecordState( AbstractBaseRecord record )
+        {
+            return fromRecordState( record.isCreated(), record.inUse() );
         }
     }
 
@@ -123,11 +129,7 @@ public abstract class Command extends XaCommand
     @Override
     public boolean equals( Object o )
     {
-        if ( o == null || !(o.getClass().equals( getClass() )) )
-        {
-            return false;
-        }
-        return getKey() == ((Command) o).getKey();
+        return o != null && o.getClass().equals( getClass() ) && getKey() == ((Command) o).getKey();
     }
 
     private static void writePropertyBlock( LogBuffer buffer,
@@ -137,9 +139,9 @@ public abstract class Command extends XaCommand
         assert blockSize > 0 : blockSize + " is not a valid block size value";
         buffer.put( blockSize ); // 1
         long[] propBlockValues = block.getValueBlocks();
-        for ( int k = 0; k < propBlockValues.length; k++ )
+        for ( long propBlockValue : propBlockValues )
         {
-            buffer.putLong( propBlockValues[k] );
+            buffer.putLong( propBlockValue );
         }
         /*
          * For each block we need to keep its dynamic record chain if
@@ -344,7 +346,7 @@ public abstract class Command extends XaCommand
 
         NodeCommand( NodeStore store, NodeRecord before, NodeRecord after )
         {
-            super( after.getId(), Mode.fromRecordState( after.isCreated(), after.inUse() ) );
+            super( after.getId(), Mode.fromRecordState( after ) );
             this.store = store;
             this.before = before;
             this.after = after;
@@ -475,7 +477,7 @@ public abstract class Command extends XaCommand
 
         RelationshipCommand( RelationshipStore store, RelationshipRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             // the default (common) case is that the record to be written is complete and not from recovery or HA
             this.beforeUpdate = record;
@@ -607,7 +609,7 @@ public abstract class Command extends XaCommand
 
         NeoStoreCommand( NeoStore neoStore, NeoStoreRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record ) );
             this.neoStore = neoStore;
             this.record = record;
         }
@@ -663,7 +665,7 @@ public abstract class Command extends XaCommand
         PropertyKeyTokenCommand( PropertyKeyTokenStore store,
                                  PropertyKeyTokenRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             this.store = store;
         }
@@ -761,7 +763,7 @@ public abstract class Command extends XaCommand
         // so that the cost of deserializing them only applies in recovery/HA
         PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
         {
-            super( after.getId(), Mode.fromRecordState( after.isCreated(), after.inUse() ) );
+            super( after.getId(), Mode.fromRecordState( after ) );
             this.store = store;
             this.before = before;
             this.after = after;
@@ -979,7 +981,7 @@ public abstract class Command extends XaCommand
         RelationshipTypeTokenCommand( RelationshipTypeTokenStore store,
                                       RelationshipTypeTokenRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             this.store = store;
         }
@@ -1064,7 +1066,7 @@ public abstract class Command extends XaCommand
         LabelTokenCommand( LabelTokenStore store,
                            LabelTokenRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             this.store = store;
         }
@@ -1151,7 +1153,7 @@ public abstract class Command extends XaCommand
         SchemaRuleCommand( SchemaStore store, IndexingService indexes,
                            Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
-            super( first( records ).getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
+            super( first( records ).getId(), Mode.fromRecordState( first( records ) ) );
             this.indexes = indexes;
             this.store = store;
             this.records = records;
@@ -1191,14 +1193,16 @@ public abstract class Command extends XaCommand
             {
                 switch ( getMode() )
                 {
-                    case CREATE:
-                        indexes.createIndex( (IndexRule)schemaRule );
-                        break;
-                    case DELETE:
-                        indexes.dropIndex( (IndexRule)schemaRule );
-                        break;
-                    default:
-                        throw new IllegalStateException( getMode().name() );
+                case UPDATE:
+                    break;
+                case CREATE:
+                    indexes.createIndex( (IndexRule)schemaRule );
+                    break;
+                case DELETE:
+                    indexes.dropIndex( (IndexRule)schemaRule );
+                    break;
+                default:
+                    throw new IllegalStateException( getMode().name() );
                 }
             }
         }

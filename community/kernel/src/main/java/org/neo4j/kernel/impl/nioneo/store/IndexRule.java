@@ -188,4 +188,13 @@ public class IndexRule extends AbstractSchemaRule
     {
         return ", provider=" + providerDescriptor + ", properties=" + propertyKey;
     }
+
+    public IndexRule withOwningConstraint( long constraintId )
+    {
+        if (!isConstraintIndex())
+        {
+            throw new IllegalStateException( this + " is not a constraint index" );
+        }
+        return constraintIndexRule( getId(), getLabel(), getPropertyKey(), getProviderDescriptor(), constraintId );
+    }
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.persistence;
 
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
@@ -36,11 +35,11 @@ import org.neo4j.kernel.impl.core.PropertyKeyToken;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -319,6 +318,11 @@ public class PersistenceManager
     public void dropSchemaRule( long ruleId )
     {
         getResource( true ).dropSchemaRule( ruleId );
+    }
+
+    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    {
+        getResource( true ).setConstraintIndexOwner( constraintIndexId, constraintId );
     }
 
     private class TxCommitHook implements Synchronization

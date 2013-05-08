@@ -167,9 +167,9 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             {
                 clearState.set( true );
                 long constraintId = schemaStorage.newRuleId();
-                persistenceManager.createSchemaRule( new UniquenessConstraintRule(
-                        constraintId, element.label(), element.property() ) );
-                // TODO: mark the index with the given 'indexId' as owned by the constraint with the id 'constraintId'
+                persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+                        constraintId, element.label(), element.property(), indexId ) );
+                persistenceManager.setConstraintIndexOwner( indexId, constraintId );
             }
 
             @Override

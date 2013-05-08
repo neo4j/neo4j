@@ -25,21 +25,24 @@ import java.util.Arrays;
 public class UniquenessConstraintRule extends AbstractSchemaRule
 {
     private final long[] propertyKeyIds;
+    private final long ownedIndexRule;
 
     /** We currently only support uniqueness constraints on a single property. */
-    public UniquenessConstraintRule( long id, long labelId, long propertyKeyId )
+    public static UniquenessConstraintRule uniquenessConstraintRule( long id, long labelId, long propertyKeyId,
+                                                                     long ownedIndexRule )
     {
-        this( id, labelId, new long[]{propertyKeyId} );
+        return new UniquenessConstraintRule( id, labelId, new long[] {propertyKeyId}, ownedIndexRule );
     }
 
-    UniquenessConstraintRule( long id, long labelId, ByteBuffer buffer )
+    public static UniquenessConstraintRule readUniquenessConstraintRule( long id, long labelId, ByteBuffer buffer )
     {
-        this( id, labelId, readPropertyKeys( buffer ) );
+        return new UniquenessConstraintRule( id, labelId, readPropertyKeys( buffer ), readOwnedIndexRule( buffer ) );
     }
 
-    private UniquenessConstraintRule( long id, long labelId, long[] propertyKeyIds )
+    private UniquenessConstraintRule( long id, long labelId, long[] propertyKeyIds, long ownedIndexRule )
     {
         super( id, labelId, Kind.UNIQUENESS_CONSTRAINT );
+        this.ownedIndexRule = ownedIndexRule;
         assert propertyKeyIds.length == 1; // Only uniqueness of a single property supported for now
         this.propertyKeyIds = propertyKeyIds;
     }
@@ -67,7 +70,8 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     {
         return super.length() +
                1 +  /* the number of properties that form a unique tuple */
-               8 * propertyKeyIds.length /* the property keys themselves */;
+               8 * propertyKeyIds.length + /* the property keys themselves */
+               8; /* owned index rule */
     }
 
     @Override
@@ -79,6 +83,7 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
         {
             target.putLong( propertyKeyId );
         }
+        target.putLong( ownedIndexRule );
     }
 
     private static long[] readPropertyKeys( ByteBuffer buffer )
@@ -89,6 +94,11 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
             keys[i] = buffer.getLong();
         }
         return keys;
+    }
+
+    private static long readOwnedIndexRule( ByteBuffer buffer )
+    {
+        return buffer.getLong();
     }
 
     public boolean containsPropertyKeyId( long propertyKeyId )
@@ -105,5 +115,10 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     {
         // Property key "singleness" is checked elsewhere, in the constructor and when deserializing.
         return propertyKeyIds[0];
+    }
+
+    public long getOwnedIndex()
+    {
+        return ownedIndexRule;
     }
 }

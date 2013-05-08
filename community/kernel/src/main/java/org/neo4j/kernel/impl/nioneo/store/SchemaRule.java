@@ -63,7 +63,7 @@ public interface SchemaRule extends RecordSerializable
             @Override
             protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
             {
-                return new UniquenessConstraintRule( id, labelId, buffer );
+                return UniquenessConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
             }
         };
 
