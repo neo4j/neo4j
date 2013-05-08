@@ -6,12 +6,12 @@ Given /^a platform supported by Neo4j$/ do
 end
 
 Given /^Neo4j version based on system property "([^"]*)"$/ do |version_name|
-  neo4j.version = ENV[version_name]
+  neo4j.version = ENV[version_name] || ENV["project_version"]
   fail "missing property #{version_name}" if neo4j.version == nil
 end
 
 Given /^Neo4j product based on system property "([^"]*)"$/ do |product_name|
-  neo4j.product = ENV[product_name]
+  neo4j.product = ENV[product_name] || "community"
   fail "missing property #{product_name}" if neo4j.product == nil
 end
 
