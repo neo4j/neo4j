@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,12 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
-import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-
-import ch.qos.logback.classic.LoggerContext;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -61,7 +64,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
@@ -86,6 +88,7 @@ import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.cleanup.CleanupIfOutsideTransaction;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
@@ -151,10 +154,7 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.lang.String.format;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -401,7 +401,6 @@ public abstract class InternalAbstractGraphDatabase
 
         jobScheduler =
             life.add( new Neo4jJobScheduler( this.toString(), logging.getMessagesLog( Neo4jJobScheduler.class ) ));
-        cleanupService = life.add( createCleanupService() );
 
         kernelEventHandlers = new KernelEventHandlers();
 
@@ -442,6 +441,8 @@ public abstract class InternalAbstractGraphDatabase
             }
         }
         life.add( txManager );
+
+        cleanupService = life.add( createCleanupService() );
 
         transactionEventHandlers = new TransactionEventHandlers( txManager );
 
@@ -546,24 +547,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected CleanupService createCleanupService()
     {
-        return CleanupService.create( jobScheduler, logging, new Thunk<Boolean>()
-        {
-            @Override
-            public Boolean evaluate()
-            {
-                try
-                {
-                    // Return true if we aren't in a tx, so that the cleanup
-                    // service gets it.
-                    return txManager.getStatus() == Status.STATUS_NO_TRANSACTION;
-                }
-                catch ( SystemException e )
-                {
-                    // TODO correct to just return false here?
-                    return false;
-                }
-            }
-        } );
+        return CleanupService.create( jobScheduler, logging, new CleanupIfOutsideTransaction( txManager ) );
     }
 
     private Map<Object, Object> newSchemaStateMap() {
