@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.Closeable;
 import java.util.Iterator;
 
@@ -42,6 +40,8 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.LabelToken;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
@@ -71,6 +71,11 @@ public class CompositeStatementContext implements StatementContext
     public CompositeStatementContext( StatementContext delegate, SchemaStateOperations schemaStateOperations )
     {
         this( delegate, delegate, delegate, schemaStateOperations, delegate );
+    }
+
+    public CompositeStatementContext( StatementContext delegate, SchemaOperations schemaOperations )
+    {
+        this( delegate, delegate, schemaOperations, delegate, delegate );
     }
 
     private CompositeStatementContext( KeyOperations keyOperations, EntityOperations entityOperations,
@@ -339,12 +344,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterator<IndexDescriptor> result = schemaOperations.getIndexRules( labelId );
+        Iterator<IndexDescriptor> result = schemaOperations.getIndexes( labelId );
 
         afterReadOperation();
         afterOperation();
@@ -352,12 +357,38 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterator<IndexDescriptor> result = schemaOperations.getIndexRules();
+        Iterator<IndexDescriptor> result = schemaOperations.getIndexes();
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<IndexDescriptor> result = schemaOperations.getConstraintIndexes( labelId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<IndexDescriptor> result = schemaOperations.getConstraintIndexes();
 
         afterReadOperation();
         afterOperation();
@@ -402,7 +433,33 @@ public class CompositeStatementContext implements StatementContext
         afterOperation();
         return result;
     }
-    
+
+    @Override
+    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Long result = schemaOperations.getOwningConstraint( index );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<UniquenessConstraint> result = schemaOperations.getConstraints();
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
     @Override
     public Iterator<LabelToken> listLabels()
     {
@@ -473,12 +530,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        IndexDescriptor result = schemaOperations.addIndexRule( labelId, propertyKey );
+        IndexDescriptor result = schemaOperations.addIndex( labelId, propertyKey );
 
         afterWriteOperation();
         afterOperation();
@@ -486,7 +543,22 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        IndexDescriptor result = schemaOperations.addConstraintIndex( labelId, propertyKey );
+
+        afterWriteOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
@@ -511,12 +583,24 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        schemaOperations.dropIndexRule( indexRule );
+        schemaOperations.dropIndex( descriptor );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        schemaOperations.dropConstraintIndex( descriptor );
 
         afterWriteOperation();
         afterOperation();

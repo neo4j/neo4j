@@ -27,6 +27,7 @@ public class LabelState extends EntityState
 {
     private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
     private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
+    private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
 
     public LabelState( long id )
@@ -42,6 +43,11 @@ public class LabelState extends EntityState
     public DiffSets<IndexDescriptor> indexChanges()
     {
         return indexChanges;
+    }
+
+    public DiffSets<IndexDescriptor> constraintIndexChanges()
+    {
+        return constraintIndexChanges;
     }
 
     public DiffSets<UniquenessConstraint> constraintsChanges()

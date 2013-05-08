@@ -21,6 +21,30 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
+1.9.RC2 (2013-04-30)
+--------------------
+Backup:
+o Reverts default backup port to 6362
+
+Cluster:
+o Upgrades to Netty 3.6.3
+o Elections don't start when a quorum is not available, fixing a certain class of race conditions when quorum is lost
+o The joining of an instance is now interpreted as a heartbeat, fixing a class of race conditions when an instance joins
+  and immediately dies
+
+Com:
+o Upgrades to Netty 3.6.3
+
+Kernel:
+o Fixes race conditions on usage of persistence windows' byte buffers that occasionally led to buffer over/underflows.
+
+Server:
+o Create unique node with properties that have collection values properly casts them to arrays
+o Data visualization editor now navigates back to the data browser on save and cancel
+
+Cypher:
+o Fixes problem when sending down custom queries to index providers
+
 1.9.RC1 (2013-04-15)
 --------------------
 HA:

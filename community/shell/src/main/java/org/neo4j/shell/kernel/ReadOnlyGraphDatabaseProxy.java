@@ -1058,6 +1058,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public Iterable<ConstraintDefinition> getConstraints()
+        {
+            return actual.getConstraints();
+        }
+
+        @Override
         public Iterable<ConstraintDefinition> getConstraints( Label label )
         {
             return actual.getConstraints( label );

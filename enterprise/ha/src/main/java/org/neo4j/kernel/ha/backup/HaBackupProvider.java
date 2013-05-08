@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.backup.BackupExtensionService;
@@ -39,12 +40,15 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
@@ -91,6 +95,7 @@ public final class HaBackupProvider extends BackupExtensionService
         params.put( ClusterSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( ClusterSettings.initial_hosts.name(), from );
+        params.put(ClusterClient.clusterJoinTimeout.name(), "20s");
         final Config config = new Config( params,
                 ClusterSettings.class, OnlineBackupSettings.class );
 
@@ -139,7 +144,8 @@ public final class HaBackupProvider extends BackupExtensionService
             /**
              * Called when new master has been elected. The new master may not be available a.t.m.
              * A call to {@link #memberIsAvailable} will confirm that the master given in
-             * the most recent {@link #coordinatorIsElected(org.neo4j.cluster.InstanceId)} call is up and running as master.
+             * the most recent {@link #coordinatorIsElected(org.neo4j.cluster.InstanceId)} call is up and running as
+             * master.
              *
              * @param coordinatorId the connection information to the master.
              */
@@ -149,10 +155,10 @@ public final class HaBackupProvider extends BackupExtensionService
             }
         } );
 
-        life.start();
-
         try
         {
+            life.start();
+
             if ( !infoReceivedLatch.tryAcquire( 20, TimeUnit.SECONDS ) )
             {
                 throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
@@ -162,6 +168,26 @@ public final class HaBackupProvider extends BackupExtensionService
         catch ( InterruptedException e )
         {
             throw new RuntimeException( e );
+        }
+        catch ( LifecycleException e )
+        {
+            Throwable ex = Exceptions.peel( e, Exceptions.exceptionsOfType( TimeoutException.class ) );
+            if ( ex != null )
+            {
+                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
+                        "operation timed out" );
+            }
+            else
+            {
+                throw new RuntimeException(Exceptions.peel(e, new Predicate<Throwable>()
+                {
+                    @Override
+                    public boolean accept( Throwable item )
+                    {
+                        return !(item instanceof LifecycleException);
+                    }
+                }));
+            }
         }
         finally
         {

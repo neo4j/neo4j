@@ -29,14 +29,19 @@ public interface SchemaWriteOperations
      * Adds a {@link IndexDescriptor} to the database which applies globally on both
      * existing as well as new data.
      */
-    IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+    IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+
+    IndexDescriptor addConstraintIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
 
     /**
      * Drops a {@link IndexDescriptor} from the database
      */
-    void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException;
+    void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException;
 
-    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId );
+    void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException;
+
+    UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException;
 
     void dropConstraint( UniquenessConstraint constraint );
 }

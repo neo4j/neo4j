@@ -81,6 +81,6 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, long label, long propertyKey )
     {
-        return new IndexRule( id, label, PROVIDER_DESCRIPTOR, propertyKey );
+        return IndexRule.indexRule( id, label, propertyKey, PROVIDER_DESCRIPTOR );
     }
 }

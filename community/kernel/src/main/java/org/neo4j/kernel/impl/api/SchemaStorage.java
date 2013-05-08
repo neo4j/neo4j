@@ -45,7 +45,7 @@ public class SchemaStorage
     public IndexRule indexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
     {
         Iterator<IndexRule> rules = schemaRules(
-                IndexRule.class, SchemaRule.Kind.INDEX_RULE, labelId,
+                IndexRule.class, labelId,
                 new Predicate<IndexRule>()
                 {
                     @Override
@@ -70,15 +70,13 @@ public class SchemaStorage
         return rule;
     }
 
-    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, SchemaRule.Kind kind,
-                                                            long labelId, Predicate<T> predicate )
+    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, long labelId, Predicate<T> predicate )
     {
-        assert type == kind.getRuleClass();
-        return schemaRules( Functions.cast( type ), kind, labelId, predicate );
+        return schemaRules( Functions.cast( type ), type, labelId, predicate );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final SchemaRule.Kind kind,
+            Function<? super R, T> conversion, final Class<R> ruleType,
             final long labelId, final Predicate<R> predicate )
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
@@ -90,7 +88,25 @@ public class SchemaStorage
             public boolean accept( SchemaRule rule )
             {
                 return rule.getLabel() == labelId &&
-                       rule.getKind() == kind &&
+                       rule.getKind().getRuleClass() == ruleType &&
+                       predicate.accept( (R) rule );
+            }
+        }, schemaStore.loadAll() ) );
+    }
+
+    public <R extends SchemaRule, T> Iterator<T> schemaRules(
+            Function<? super R, T> conversion, final SchemaRule.Kind kind,
+            final Predicate<R> predicate )
+    {
+        @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
+        Function<SchemaRule, T> ruleConversion = (Function) conversion;
+        return map( ruleConversion, filter( new Predicate<SchemaRule>()
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return rule.getKind() == kind &&
                        predicate.accept( (R) rule );
             }
         }, schemaStore.loadAll() ) );
@@ -105,7 +121,7 @@ public class SchemaStorage
             throws SchemaRuleNotFoundException
     {
         Iterator<UniquenessConstraintRule> rules = schemaRules(
-                UniquenessConstraintRule.class, SchemaRule.Kind.UNIQUENESS_CONSTRAINT, labelId,
+                UniquenessConstraintRule.class, labelId,
                 new Predicate<UniquenessConstraintRule>()
                 {
                     @Override

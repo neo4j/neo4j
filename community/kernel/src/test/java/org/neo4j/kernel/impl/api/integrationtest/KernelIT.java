@@ -317,6 +317,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( "Shouldn't have been added now", added );
+        tx.finish();
     }
 
     @Test
@@ -338,6 +339,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertTrue( "Should have been added now", added );
+        tx.finish();
     }
 
     @Test
@@ -360,6 +362,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertTrue( "Should have been removed now", removed );
+        tx.finish();
     }
 
     @Test
@@ -381,6 +384,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
+        tx.finish();
     }
 
     @Test
@@ -480,7 +484,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         newTransaction();
-        statement.dropIndexRule( idx );
+        statement.dropIndex( idx );
         commit();
 
         // THEN
@@ -489,8 +493,8 @@ public class KernelIT extends KernelIntegrationTest
 
     private IndexDescriptor createIndex( ) throws ConstraintViolationKernelException
     {
-        return statement.addIndexRule( statement.getOrCreateLabelId( "hello" ),
-                    statement.getOrCreatePropertyKeyId( "hepp" ) );
+        return statement.addIndex( statement.getOrCreateLabelId( "hello" ),
+                                   statement.getOrCreatePropertyKeyId( "hepp" ) );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )

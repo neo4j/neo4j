@@ -196,10 +196,10 @@ public class IndexQueryTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.getIndexes( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.addIndex( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable

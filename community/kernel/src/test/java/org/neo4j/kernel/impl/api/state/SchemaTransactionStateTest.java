@@ -62,14 +62,14 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1 );
+        IndexDescriptor rule = txContext.addIndex( labelId1, key1 );
 
         // THEN
-        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
-        verify( store ).getIndexRules( labelId1 );
+        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.getIndexes( labelId1 ) ) );
+        verify( store ).getIndexes( labelId1 );
 
-        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.getIndexRules() ) );
-        verify( store ).getIndexRules();
+        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.getIndexes() ) );
+        verify( store ).getIndexes();
 
         verifyNoMoreInteractions( store );
     }
@@ -81,18 +81,18 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1 );
-        IndexDescriptor rule2 = txContext.addIndexRule( labelId2, key2 );
+        IndexDescriptor rule1 = txContext.addIndex( labelId1, key1 );
+        IndexDescriptor rule2 = txContext.addIndex( labelId2, key2 );
 
         // THEN
-        assertEquals( asSet( rule1 ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
-        verify( store ).getIndexRules( labelId1 );
+        assertEquals( asSet( rule1 ), IteratorUtil.asSet( txContext.getIndexes( labelId1 ) ) );
+        verify( store ).getIndexes( labelId1 );
 
-        assertEquals( asSet( rule2 ), IteratorUtil.asSet( txContext.getIndexRules( labelId2 ) ) );
-        verify( store ).getIndexRules( labelId2 );
+        assertEquals( asSet( rule2 ), IteratorUtil.asSet( txContext.getIndexes( labelId2 ) ) );
+        verify( store ).getIndexes( labelId2 );
 
-        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.getIndexRules() ) );
-        verify( store ).getIndexRules();
+        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.getIndexes() ) );
+        verify( store ).getIndexes();
 
         verifyNoMoreInteractions( store );
     }
@@ -104,11 +104,11 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        IndexDescriptor rule1 = txContext.addIndexRule( labelId1, key1 );
-        IndexDescriptor rule2 = txContext.addIndexRule( labelId1, key2 );
+        IndexDescriptor rule1 = txContext.addIndex( labelId1, key1 );
+        IndexDescriptor rule2 = txContext.addIndex( labelId1, key2 );
 
         // THEN
-        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.getIndexes( labelId1 ) ) );
     }
 
     @Test
@@ -116,7 +116,7 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         commitLabels( labelId1 );
-        IndexDescriptor rule = txContext.addIndexRule( labelId1, key1 );
+        IndexDescriptor rule = txContext.addIndex( labelId1, key1 );
 
         // THEN
         assertEquals( InternalIndexState.POPULATING, txContext.getIndexState( rule ) );
@@ -127,11 +127,11 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- non-existent rule added in the transaction
-        txContext.addIndexRule( labelId1, key1 );
+        txContext.addIndex( labelId1, key1 );
 
         // WHEN
         IndexDescriptor rule = txContext.getIndexRule( labelId1, key1 );
-        Iterator<IndexDescriptor> labelRules = txContext.getIndexRules( labelId1 );
+        Iterator<IndexDescriptor> labelRules = txContext.getIndexes( labelId1 );
 
         // THEN
         IndexDescriptor expectedRule = new IndexDescriptor( labelId1, key1 );
@@ -145,13 +145,13 @@ public class SchemaTransactionStateTest
         // GIVEN
         // -- a rule that exists in the store
         IndexDescriptor rule = new IndexDescriptor( labelId1, key1 );
-        when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ).iterator() );
+        when( store.getIndexes( labelId1 ) ).thenReturn( option( rule ).iterator() );
         // -- that same rule dropped in the transaction
-        txContext.dropIndexRule( rule );
+        txContext.dropIndex( rule );
 
         // WHEN
         assertException( getIndexRule(), SchemaRuleNotFoundException.class );
-        Iterator<IndexDescriptor> rulesByLabel = txContext.getIndexRules( labelId1 );
+        Iterator<IndexDescriptor> rulesByLabel = txContext.getIndexes( labelId1 );
 
         // THEN
         assertEquals( asSet(), asSet( rulesByLabel ) );
@@ -205,10 +205,10 @@ public class SchemaTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexRules() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.getIndexes( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.getIndexes() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.addIndex( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable

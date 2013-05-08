@@ -1,3 +1,7 @@
+1.9.RC2 (2013-04-30)
+--------------------
+o Upgrades to Netty 3.6.3
+
 1.9.M05 (2013-03-05)
 --------------------
 o Shutting down Server now takes proper care of executors and works with multiple versions of netty

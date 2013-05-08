@@ -38,6 +38,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -84,6 +85,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -151,8 +153,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -328,21 +328,24 @@ public abstract class InternalAbstractGraphDatabase
             {
                 // TODO do not explicitly depend on order of start() calls in txManager and XaDatasourceManager
                 // use two booleans instead
-                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
-                        instanceof TxManager )
+                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) &&
+                     txManager instanceof TxManager )
                 {
-                    InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
+                    InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup( true );
                 }
             }
         } );
     }
 
-    protected void doAfterRecoveryAndStartup()
+    protected void doAfterRecoveryAndStartup( boolean isMaster )
     {
         NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
         storeId = neoStoreDataSource.getStoreId();
-        KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this,
-                neoStoreDataSource );
+        KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
+        if ( isMaster )
+        {
+            new RemoveOrphanConstraintIndexesOnStartup( txManager, logging ).perform();
+        }
     }
 
     protected void create()
@@ -458,15 +461,16 @@ public abstract class InternalAbstractGraphDatabase
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( txManager, persistenceManager, persistenceSource, createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( txManager, persistenceManager, persistenceSource, createLabelIdCreator() ) );
 
-        relationshipTypeTokenHolder = new RelationshipTypeTokenHolder( txManager,
-                persistenceManager, persistenceSource, relationshipTypeCreator );
+        relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( txManager,
+                persistenceManager, persistenceSource, relationshipTypeCreator ) );
 
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         kernelAPI = life.add( new Kernel( txManager, propertyKeyTokenHolder, labelTokenHolder, persistenceManager,
-                xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver ) );
+                xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
+                this.isHighlyAvailable() ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -477,7 +481,6 @@ public abstract class InternalAbstractGraphDatabase
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
-        life.add( nodeManager );
         stateFactory.setDependencies( lockManager, nodeManager, txHook, txIdGenerator );
 
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
@@ -531,9 +534,13 @@ public abstract class InternalAbstractGraphDatabase
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
 
+        life.add( nodeManager );
+
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
     }
+
+    protected abstract boolean isHighlyAvailable();
 
     private Map<Object, Object> newSchemaStateMap() {
         return new HashMap<Object, Object>();

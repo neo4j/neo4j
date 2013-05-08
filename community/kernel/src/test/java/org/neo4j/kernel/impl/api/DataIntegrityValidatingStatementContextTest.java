@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 
-public class ConstraintEvaluatingStatementContextTest
+public class DataIntegrityValidatingStatementContextTest
 {
     @Test
     public void shouldDisallowReAddingExistingSchemaRules() throws Exception
@@ -46,13 +46,13 @@ public class ConstraintEvaluatingStatementContextTest
         long label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
-        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
-        when( inner.getIndexRules( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.getIndexes( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.addIndexRule( label, propertyKey );
+            ctx.addIndex( label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationKernelException e )
@@ -60,7 +60,7 @@ public class ConstraintEvaluatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).addIndexRule( anyLong(), anyLong() );
+        verify( inner, never() ).addIndex( anyLong(), anyLong() );
     }
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
@@ -79,7 +79,7 @@ public class ConstraintEvaluatingStatementContextTest
     public void shouldFailInvalidLabelNames() throws Exception
     {
         // Given
-        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( null );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
 
         // When
         ctx.getOrCreateLabelId( "" );
@@ -89,7 +89,7 @@ public class ConstraintEvaluatingStatementContextTest
     public void shouldFailOnNullLabel() throws Exception
     {
         // Given
-        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( null );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
 
         // When
         ctx.getOrCreateLabelId( null );

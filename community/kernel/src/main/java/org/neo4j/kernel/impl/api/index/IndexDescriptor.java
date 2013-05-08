@@ -45,7 +45,8 @@ public class IndexDescriptor
         if ( obj != null && getClass() == obj.getClass() )
         {
             IndexDescriptor that = (IndexDescriptor) obj;
-            return this.labelId == that.labelId && this.propertyKeyId == that.propertyKeyId;
+            return this.labelId == that.labelId &&
+                   this.propertyKeyId == that.propertyKeyId;
         }
         return false;
     }
@@ -71,6 +72,6 @@ public class IndexDescriptor
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[label:" + labelId + ", property:" + propertyKeyId + "]";
+        return String.format( "%s[label:%d, property:%d]", getClass().getSimpleName(), labelId, propertyKeyId );
     }
 }

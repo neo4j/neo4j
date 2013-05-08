@@ -58,4 +58,10 @@ public class HighlyAvailableGraphDatabase
     {
         dependencyResolver.resolveDependency( UpdatePuller.class ).pullUpdates();
     }
+
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return true;
+    }
 }

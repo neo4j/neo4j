@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
 public abstract class BaseConstraintDefinition implements ConstraintDefinition
@@ -38,6 +39,12 @@ public abstract class BaseConstraintDefinition implements ConstraintDefinition
     public Label getLabel()
     {
         return label;
+    }
+
+    @Override
+    public boolean isConstraintType( ConstraintType type )
+    {
+        return getConstraintType().equals( type );
     }
 
     @Override
@@ -70,7 +77,7 @@ public abstract class BaseConstraintDefinition implements ConstraintDefinition
             if ( other.label != null )
                 return false;
         }
-        else if ( !label.equals( other.label ) )
+        else if ( !label.name().equals( other.label.name() ) )
             return false;
         return true;
     }

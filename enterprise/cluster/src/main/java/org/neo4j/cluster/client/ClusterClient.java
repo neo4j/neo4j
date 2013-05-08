@@ -32,11 +32,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
@@ -63,10 +63,12 @@ import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -76,6 +78,8 @@ import org.neo4j.kernel.logging.Logging;
 public class ClusterClient extends LifecycleAdapter
         implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
+    public static Setting<Long> clusterJoinTimeout = Settings.setting("ha.cluster_join_timeout", Settings.DURATION, "0s");
+
     public interface Configuration
     {
         int getServerId();
@@ -112,6 +116,8 @@ public class ClusterClient extends LifecycleAdapter
         long leaveTimeout(); // inherits paxosTimeout
 
         long electionTimeout(); // inherits paxosTimeout
+
+        long clusterJoinTimeout(); // Whether to timeout the whole process or not
     }
 
     public static Configuration adapt( final Config config )
@@ -219,6 +225,12 @@ public class ClusterClient extends LifecycleAdapter
             public long learnTimeout()
             {
                 return config.get( ClusterSettings.learn_timeout );
+            }
+
+            @Override
+            public long clusterJoinTimeout()
+            {
+                return config.get(clusterJoinTimeout);
             }
         };
     }
@@ -367,6 +379,12 @@ public class ClusterClient extends LifecycleAdapter
             public boolean isAllowedToCreateCluster()
             {
                 return config.isAllowedToCreateCluster();
+            }
+
+            @Override
+            public long getClusterJoinTimeout()
+            {
+                return config.clusterJoinTimeout();
             }
         }, server, logging ) );
 

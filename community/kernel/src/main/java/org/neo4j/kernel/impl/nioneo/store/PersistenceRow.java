@@ -164,26 +164,35 @@ class PersistenceRow extends LockableWindow
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
-    
+
     private void writeContents()
     {
-        ByteBuffer byteBuffer = buffer.getBuffer();
         if ( isDirty() )
         {
+            ByteBuffer byteBuffer = buffer.getBuffer().duplicate();
             byteBuffer.clear();
             try
             {
-                int count = getFileChannel().write( byteBuffer,
-                    position * recordSize );
-                assert count == recordSize;
+                int written = 0;
+
+                while ( byteBuffer.hasRemaining() )
+                {
+                    int writtenThisTime = getFileChannel().write( byteBuffer, position * recordSize + written );
+
+                    if ( writtenThisTime == 0 )
+                    {
+                        throw new IOException( "Unable to write to disk, reported bytes written was 0" );
+                    }
+
+                    written += writtenThisTime;
+                }
             }
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException( "Unable to write record["
-                    + position + "] @[" + position * recordSize + "]", e );
+                        + position + "] @[" + position * recordSize + "]", e );
             }
         }
-        byteBuffer.clear();
     }
 
     @Override

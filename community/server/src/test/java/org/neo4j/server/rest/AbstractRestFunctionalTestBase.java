@@ -21,7 +21,7 @@ package org.neo4j.server.rest;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 import java.io.UnsupportedEncodingException;
@@ -250,5 +250,25 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public String getSchemaIndexLabelPropertyUri( String label, String property )
     {
         return getDataUri() + "schema/index/" + label + "/" + property;
+    }
+
+    public String getSchemaConstraintUri()
+    {
+        return getDataUri() + "schema/constraint/";
+    }
+
+    public String getSchemaConstraintLabelUri( String label )
+    {
+        return getDataUri() + "schema/constraint/" + label;
+    }
+
+    public String getSchemaConstraintLabelUniquenessUri( String label )
+    {
+        return getDataUri() + "schema/constraint/" + label + "/uniqueness/";
+    }
+
+    public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
+    {
+        return getDataUri() + "schema/constraint/" + label + "/uniqueness/" + property;
     }
 }

@@ -91,16 +91,25 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             }
 
             @Override
-            public void visitAddedIndex( IndexDescriptor element )
+            public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
             {
                 SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
-                IndexRule rule = new IndexRule( schemaStorage.newRuleId(), element.getLabelId(), providerDescriptor,
-                                                element.getPropertyKeyId() );
+                IndexRule rule;
+                if ( isConstraintIndex )
+                {
+                    rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                                          element.getPropertyKeyId(), providerDescriptor, null );
+                }
+                else
+                {
+                    rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                                element.getPropertyKeyId(), providerDescriptor );
+                }
                 persistenceManager.createSchemaRule( rule );
             }
 
             @Override
-            public void visitRemovedIndex( IndexDescriptor element )
+            public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
             {
                 try
                 {
@@ -128,6 +137,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             {
                 try
                 {
+                    clearState.set( true );
                     UniquenessConstraintRule rule = schemaStorage
                             .uniquenessConstraint( element.label(), element.property() );
                     persistenceManager.dropSchemaRule( rule.getId() );

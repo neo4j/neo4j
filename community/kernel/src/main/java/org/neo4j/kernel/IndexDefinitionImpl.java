@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Arrays.asList;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
+
+import static java.util.Arrays.asList;
 
 public class IndexDefinitionImpl implements IndexDefinition
 {
@@ -30,12 +30,15 @@ public class IndexDefinitionImpl implements IndexDefinition
 
     private final Label label;
     private final String propertyKey;
+    private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey )
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey,
+                                boolean constraintIndex )
     {
         this.actions = actions;
         this.label = label;
         this.propertyKey = propertyKey;
+        this.constraintIndex = constraintIndex;
     }
 
     @Override
@@ -53,9 +56,20 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public void drop()
     {
+        if ( this.isConstraintIndex() )
+        {
+            throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
+                                             "instead drop the owning uniqueness constraint." );
+        }
         actions.dropIndexDefinitions( label, propertyKey );
     }
-    
+
+    @Override
+    public boolean isConstraintIndex()
+    {
+        return constraintIndex;
+    }
+
     @Override
     public int hashCode()
     {
@@ -70,19 +84,21 @@ public class IndexDefinitionImpl implements IndexDefinition
     public boolean equals( Object obj )
     {
         if ( this == obj )
+        {
             return true;
+        }
         if ( obj == null )
+        {
             return false;
+        }
         if ( getClass() != obj.getClass() )
+        {
             return false;
+        }
         IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        if ( !label.name().equals( other.label.name() ) )
-            return false;
-        if ( !propertyKey.equals( other.propertyKey ) )
-            return false;
-        return true;
+        return label.name().equals( other.label.name() ) && propertyKey.equals( other.propertyKey );
     }
-    
+
     @Override
     public String toString()
     {

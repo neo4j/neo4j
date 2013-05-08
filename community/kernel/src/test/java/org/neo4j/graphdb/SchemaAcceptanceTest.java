@@ -25,6 +25,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -34,10 +35,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.schema.Schema.IndexState;
@@ -303,7 +306,7 @@ public class SchemaAcceptanceTest
                 createConstraint( db, db.schema().constraintCreator( label ).on( propertyKey ).unique() );
 
         // THEN
-        assertEquals( ConstraintDefinition.Type.UNIQUENESS, constraint.getConstraintType() );
+        assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
         
         UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
         assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
@@ -324,7 +327,8 @@ public class SchemaAcceptanceTest
         Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints( label );
 
         // THEN
-        assertEquals( createdConstraint, single( listedConstraints ) );
+        ConstraintDefinition foundConstraint = single( listedConstraints );
+        assertEquals( createdConstraint, foundConstraint );
     }
     
     @Test

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -53,9 +54,9 @@ public class IndexingServiceTest
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = new IndexRule( 1, 1, PROVIDER_DESCRIPTOR, 1 );
-        IndexRule populatingIndex = new IndexRule( 2, 2, PROVIDER_DESCRIPTOR, 2 );
-        IndexRule failedIndex = new IndexRule( 3, 3, PROVIDER_DESCRIPTOR, 3 );
+        IndexRule onlineIndex = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
+        IndexRule populatingIndex = IndexRule.indexRule( 2, 2, 2, PROVIDER_DESCRIPTOR );
+        IndexRule failedIndex = IndexRule.indexRule( 3, 3, 3, PROVIDER_DESCRIPTOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -87,9 +88,9 @@ public class IndexingServiceTest
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = new IndexRule( 1, 1, PROVIDER_DESCRIPTOR, 1 );
-        IndexRule populatingIndex = new IndexRule( 2, 2, PROVIDER_DESCRIPTOR, 2 );
-        IndexRule failedIndex = new IndexRule( 3, 3, PROVIDER_DESCRIPTOR,  3 );
+        IndexRule onlineIndex = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
+        IndexRule populatingIndex = IndexRule.indexRule( 2, 2, 2, PROVIDER_DESCRIPTOR );
+        IndexRule failedIndex = IndexRule.indexRule( 3, 3, 3, PROVIDER_DESCRIPTOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -102,9 +103,12 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        logger.assertAtLeastOnce( info( "IndexingService.start: IndexDescriptor[label:1, property:1] is ONLINE" ) );
-        logger.assertAtLeastOnce( info( "IndexingService.start: IndexDescriptor[label:2, property:2] is POPULATING" ) );
-        logger.assertAtLeastOnce( info( "IndexingService.start: IndexDescriptor[label:3, property:3] is FAILED" ) );
+        logger.assertAtLeastOnce(
+                info( "IndexingService.start: IndexDescriptor[label:1, property:1] is ONLINE" ) );
+        logger.assertAtLeastOnce(
+                info( "IndexingService.start: IndexDescriptor[label:2, property:2] is POPULATING" ) );
+        logger.assertAtLeastOnce(
+                info( "IndexingService.start: IndexDescriptor[label:3, property:3] is FAILED" ) );
     }
 
     private static Logging mockLogging( TestLogger logger )

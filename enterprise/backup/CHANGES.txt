@@ -1,3 +1,7 @@
+1.9.RC2 (2013-04-30)
+--------------------
+o Reverts default backup port to 6362
+
 1.9.RC1 (2013-04-15)
 --------------------
 o -full and -incremental backup flags are deprecated, type of backup is

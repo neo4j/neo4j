@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -91,6 +87,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -688,7 +688,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             @Override
             public boolean accept( SchemaRule item )
             {
-                return item.getKind() == SchemaRule.Kind.INDEX_RULE;
+                return item.getKind().isIndex();
             }
         }, neoStore.getSchemaStore().loadAll() ) );
     }

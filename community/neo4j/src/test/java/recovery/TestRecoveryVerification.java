@@ -28,7 +28,6 @@ import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHe
 import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -70,6 +69,12 @@ public class TestRecoveryVerification
         }
 
         @Override
+        protected boolean isHighlyAvailable()
+        {
+            return false;
+        }
+
+        @Override
         protected RecoveryVerifier createRecoveryVerifier()
         {
             return this.verifier;
@@ -107,7 +112,7 @@ public class TestRecoveryVerification
         }
         catch ( RuntimeException e )
         {
-            assertEquals( RecoveryVerificationException.class, e.getCause().getClass() );
+            assertEquals( e.getMessage(), RecoveryVerificationException.class, e.getCause().getClass() );
         }
     }
 
@@ -122,7 +127,7 @@ public class TestRecoveryVerification
         verifyOrderedRecords( dir, count );
     }
 
-    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws FileNotFoundException, IOException
+    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws IOException
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
         RandomAccessFile file = new RandomAccessFile( new File( storeDir, "nioneo_logical.log.v0" ), "r" );
@@ -134,7 +139,7 @@ public class TestRecoveryVerification
             readLogHeader( buffer, channel, true );
             long lastOne = -1;
             int counted = 0;
-            for ( LogEntry entry = null; (entry = readEntry( buffer, channel, cf )) != null; )
+            for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
             {
                 if ( entry instanceof TwoPhaseCommit )
                 {

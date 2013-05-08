@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseConstraintCreator} for re-use
@@ -33,7 +34,8 @@ public interface InternalSchemaActions
 
     void dropIndexDefinitions( Label label, String propertyKey );
 
-    ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey );
+    ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey ) 
+            throws ConstraintViolationKernelException;
     
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 }

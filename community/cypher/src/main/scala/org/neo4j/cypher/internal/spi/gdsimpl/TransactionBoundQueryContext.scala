@@ -139,7 +139,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) {
     try {
-      ctx.addIndexRule(labelIds, propertyKeyId)
+      ctx.addIndex(labelIds, propertyKeyId)
     } catch {
       case e: ConstraintViolationKernelException =>
         val labelName = getLabelName(labelIds)
@@ -150,7 +150,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId))
+      ctx.dropIndex(ctx.getIndexRule(labelId, propertyKeyId))
     } catch {
       case e: ConstraintViolationKernelException =>
         val labelName = getLabelName(labelId)

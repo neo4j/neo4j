@@ -55,17 +55,32 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        return delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndex( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndexRule( IndexDescriptor indexRule ) throws ConstraintViolationKernelException
+    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+            throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.dropIndexRule( indexRule );
+        return delegate.addConstraintIndex( labelId, propertyKey );
+    }
+
+    @Override
+    public void dropIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        lockHolder.acquireSchemaWriteLock();
+        delegate.dropIndex( descriptor );
+    }
+
+    @Override
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws ConstraintViolationKernelException
+    {
+        lockHolder.acquireSchemaWriteLock();
+        delegate.dropConstraintIndex( descriptor );
     }
 
     @Override
@@ -83,17 +98,31 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules( long labelId )
+    public Iterator<IndexDescriptor> getIndexes( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexRules( labelId );
+        return delegate.getIndexes( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexRules()
+    public Iterator<IndexDescriptor> getIndexes()
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexRules();
+        return delegate.getIndexes();
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraintIndexes( labelId );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getConstraintIndexes()
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraintIndexes();
     }
 
     @Override
@@ -104,7 +133,8 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId ) 
+            throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.addUniquenessConstraint( labelId, propertyKeyId );
@@ -115,6 +145,20 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getConstraints( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraints( labelId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> getConstraints()
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getConstraints();
     }
 
     @Override

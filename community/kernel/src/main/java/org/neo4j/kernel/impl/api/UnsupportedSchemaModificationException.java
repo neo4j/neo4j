@@ -19,29 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
-
-/**
- * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
- */
-public class ConstraintEvaluatingTransactionContext extends DelegatingTransactionContext
+public class UnsupportedSchemaModificationException extends RuntimeException
 {
-    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
-    // both user and system level constraints.
-
-    public ConstraintEvaluatingTransactionContext( TransactionContext delegate )
+    UnsupportedSchemaModificationException()
     {
-        super( delegate );
-    }
+        super( "Creation or deletion of constraints is not possible while running in a HA cluster.  " +
+                "In order to do that, please restart in non-HA mode and propagate the database copy to " +
+                "all slaves" );
 
-    @Override
-    public StatementContext newStatementContext()
-    {
-        StatementContext result = super.newStatementContext();
-        // + Constraints
-        result = new ConstraintEvaluatingStatementContext( result );
-
-        return result;
     }
 }

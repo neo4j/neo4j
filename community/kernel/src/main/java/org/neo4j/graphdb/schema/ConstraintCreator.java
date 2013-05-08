@@ -26,10 +26,10 @@ import org.neo4j.graphdb.Label;
  * A builder for entering details about a constraint to create. After all details have been entered
  * {@link #create()} must be called for the constraint to actually be created. A constraint creator knows
  * which {@link Label label} it is to be created for.
- * 
+ *
  * All methods except {@link #create()} will return an {@link ConstraintCreator} which should be
  * used for further interaction.
- * 
+ *
  * @see Schema
  */
 public interface ConstraintCreator
@@ -37,23 +37,23 @@ public interface ConstraintCreator
     /**
      * Specifies that this constraint will be for the given property key. Specifying a
      * property key requires further details to be given, such as {@link #unique() uniqueness}.
-     * 
+     *
      * @param propertyKey the property key this constraint is about.
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator on( String propertyKey );
-    
+
     /**
      * Imposes a uniqueness constraint for the {@link #on(String) given property}, such that
      * there can be at most one node, having the given label, for any set value of that property key.
-     * 
+     *
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator unique();
-    
+
     /**
      * Creates a constraint with the details specified by the other methods in this interface.
-     * 
+     *
      * @return the created {@link ConstraintDefinition constraint}.
      * @throws ConstraintViolationException if creating this constraint would violate any
      * existing constraints.

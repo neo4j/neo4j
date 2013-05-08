@@ -19,19 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import ch.qos.logback.classic.LoggerContext;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -97,6 +94,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -177,6 +177,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
+    }
+
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return true;
     }
 
     public void start()
@@ -366,10 +372,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
              * down on switchover
              */
             compatibilityLifecycle.add( memberStateMachine );
-//            compatibilityLifecycle.add( highAvailabilityModeSwitcher );
             compatibilityLifecycle.add( (Lifecycle) clusterEvents );
             life.add( memberStateMachine );
-//            life.add( highAvailabilityModeSwitcher );
             life.add( clusterEvents );
         }
         /*
@@ -423,16 +427,23 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState );
         /*
-        * We always need the mode switcher and we need it to restart on switchover. So:
-        * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
-        * 2) if not in compatibility mode it must be added in paxosLife, which is started anyway.
-        */
+         * We always need the mode switcher and we need it to restart on switchover. So:
+         * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
+         * 2) if not in compatibility mode it must be added in paxosLife, which is started anyway.
+         */
         paxosLife.add( highAvailabilityModeSwitcher );
         if ( compatibilityMode )
         {
             compatibilityLifecycle.add( 1, highAvailabilityModeSwitcher );
             life.add( highAvailabilityModeSwitcher );
         }
+
+        /*
+         * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
+         * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
+         * happen until events start arriving and that will set us to the proper state anyway.
+         */
+        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
 
         return idGeneratorFactory;
     }
@@ -495,12 +506,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected void createNeoDataSource()
-    {
-        // no op, we must wait to join the cluster to do stuff
-    }
-
-    @Override
     protected KernelData createKernelData()
     {
         this.lastUpdateTime = new LastUpdateTime();
@@ -525,7 +530,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) && event.getNewState().equals(
                         HighAvailabilityMemberState.MASTER ) )
                 {
-                    doAfterRecoveryAndStartup();
+                    doAfterRecoveryAndStartup( true );
                 }
             }
 
@@ -535,7 +540,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) && event.getNewState().equals(
                         HighAvailabilityMemberState.SLAVE ) )
                 {
-                    doAfterRecoveryAndStartup();
+                    doAfterRecoveryAndStartup( false );
                 }
             }
 
@@ -544,13 +549,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
             }
 
-            private void doAfterRecoveryAndStartup()
+            private void doAfterRecoveryAndStartup( boolean isMaster )
             {
                 try
                 {
                     synchronized ( xaDataSourceManager )
                     {
-                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup();
+                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
                     }
                 }
                 catch ( Throwable throwable )

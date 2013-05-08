@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -79,9 +80,9 @@ public class TxState
     {
         void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed );
 
-        void visitAddedIndex( IndexDescriptor element );
+        void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
-        void visitRemovedIndex( IndexDescriptor element );
+        void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
         void visitAddedConstraint( UniquenessConstraint element );
 
@@ -91,6 +92,7 @@ public class TxState
     private final Map<Long/*Node ID*/, NodeState> nodeStates = new HashMap<Long, NodeState>();
     private final Map<Long/*Label ID*/, LabelState> labelStates = new HashMap<Long, LabelState>();
     private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
+    private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
     private final DiffSets<Long> nodes = new DiffSets<Long>();
 
@@ -114,20 +116,8 @@ public class TxState
             DiffSets<Long> labelDiff = node.getLabelDiffSets();
             visitor.visitNodeLabelChanges( node.getId(), labelDiff.getAdded(), labelDiff.getRemoved() );
         }
-        indexChanges.accept( new DiffSets.Visitor<IndexDescriptor>()
-        {
-            @Override
-            public void visitAdded( IndexDescriptor element )
-            {
-                visitor.visitAddedIndex( element );
-            }
-
-            @Override
-            public void visitRemoved( IndexDescriptor element )
-            {
-                visitor.visitRemovedIndex( element );
-            }
-        } );
+        indexChanges.accept( indexVisitor( visitor, false ) );
+        constraintIndexChanges.accept( indexVisitor( visitor, true ) );
         constraintsChanges.accept( new DiffSets.Visitor<UniquenessConstraint>()
         {
             @Override
@@ -142,6 +132,24 @@ public class TxState
                 visitor.visitRemovedConstraint( element );
             }
         } );
+    }
+
+    private static DiffSets.Visitor<IndexDescriptor> indexVisitor( final Visitor visitor, final boolean forConstraint )
+    {
+        return new DiffSets.Visitor<IndexDescriptor>()
+        {
+            @Override
+            public void visitAdded( IndexDescriptor element )
+            {
+                visitor.visitAddedIndex( element, forConstraint );
+            }
+
+            @Override
+            public void visitRemoved( IndexDescriptor element )
+            {
+                visitor.visitRemovedIndex( element, forConstraint );
+            }
+        };
     }
 
     public boolean hasChanges()
@@ -240,27 +248,50 @@ public class TxState
         return state == null ? DiffSets.<Long>emptyDiffSets() : state.getNodeDiffSets();
     }
 
-    public void addIndexRule( IndexDescriptor rule )
+    public void addIndexRule( IndexDescriptor descriptor )
     {
-        indexChanges.add( rule );
-        getOrCreateLabelState( rule.getLabelId() ).indexChanges().add( rule );
+        indexChanges.add( descriptor );
+        getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().add( descriptor );
     }
 
-    public void dropIndexRule( IndexDescriptor rule )
+    public void addConstraintIndexRule( IndexDescriptor descriptor )
     {
-        indexChanges.remove( rule );
-        getOrCreateLabelState( rule.getLabelId() ).indexChanges().remove( rule );
+        constraintIndexChanges.add( descriptor );
+        getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().add( descriptor );
     }
 
-    public DiffSets<IndexDescriptor> getIndexRuleDiffSetsByLabel( long labelId )
+    public void dropIndex( IndexDescriptor descriptor )
+    {
+        indexChanges.remove( descriptor );
+        getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().remove( descriptor );
+    }
+
+    public void dropConstraintIndex( IndexDescriptor descriptor )
+    {
+        constraintIndexChanges.remove( descriptor );
+        getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().remove( descriptor );
+    }
+
+    public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
     {
         LabelState labelState = getState( labelStates, labelId, null );
         return labelState != null ? labelState.indexChanges() : DiffSets.<IndexDescriptor>emptyDiffSets();
     }
 
-    public DiffSets<IndexDescriptor> getIndexRuleDiffSets()
+    public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
+    {
+        LabelState labelState = getState( labelStates, labelId, null );
+        return labelState != null ? labelState.constraintIndexChanges() : DiffSets.<IndexDescriptor>emptyDiffSets();
+    }
+
+    public DiffSets<IndexDescriptor> getIndexDiffSets()
     {
         return indexChanges;
+    }
+
+    public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
+    {
+        return constraintIndexChanges;
     }
 
     public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
@@ -324,15 +355,32 @@ public class TxState
         getOrCreateLabelState( constraint.label() ).constraintsChanges().add( constraint );
     }
 
-    public DiffSets<UniquenessConstraint> constraintsForLabel( long labelId )
+
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( long labelId, final long propertyKey )
+    {
+        return getOrCreateLabelState( labelId ).constraintsChanges().filterAdded( new Predicate<UniquenessConstraint>() {
+
+			@Override
+			public boolean accept( UniquenessConstraint item ) {
+				return item.property() == propertyKey;
+			}        	
+        });
+    }
+    
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
     {
         return getOrCreateLabelState( labelId ).constraintsChanges();
+    }
+
+    public DiffSets<UniquenessConstraint> constraintsChanges()
+    {
+        return constraintsChanges;
     }
 
     public void dropConstraint( UniquenessConstraint constraint )
     {
         constraintsChanges.remove( constraint );
-        constraintsForLabel( constraint.label() ).remove( constraint );
+        constraintsChangesForLabel( constraint.label() ).remove( constraint );
     }
 
     public boolean unRemoveConstraint( UniquenessConstraint constraint )

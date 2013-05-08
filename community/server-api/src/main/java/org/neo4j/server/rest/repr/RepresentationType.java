@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 public final class RepresentationType
@@ -58,6 +59,7 @@ public final class RepresentationType
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
             RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),//
             INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),//
+            CONSTRAINT_DEFINITION = new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class ),//
             PLUGINS = new RepresentationType( "plugins" ),//
             PLUGIN = new RepresentationType( "plugin" ),//
             PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),//
@@ -79,7 +81,7 @@ public final class RepresentationType
             NOTHING = new RepresentationType( "void", null ),//
             // System
             EXCEPTION = new RepresentationType( "exception" ),
-            MAP = new RepresentationType( "map", null, Map.class );
+            MAP = new RepresentationType( "map", "maps", Map.class );
 
     final String valueName;
     final String listName;

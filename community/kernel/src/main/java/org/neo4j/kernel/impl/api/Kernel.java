@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.synchronizedList;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -46,6 +43,9 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.util.Collections.synchronizedList;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -110,6 +110,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DependencyResolver dependencyResolver;
     private SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
+    private final boolean highlyAvailableInstance;
     private final StatementContextOwners statementContextOwners = new StatementContextOwners();
     private SchemaIndexProviderMap providerMap = null;
 
@@ -124,7 +125,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                    PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
                    LockManager lockManager, UpdateableSchemaState schemaState,
-                   DependencyResolver dependencyResolver )
+                   DependencyResolver dependencyResolver, boolean highlyAvailable )
     {
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
@@ -134,6 +135,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaState = schemaState;
+        highlyAvailableInstance = highlyAvailable;
     }
 
     @Override
@@ -202,9 +204,16 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       persistenceManager, schemaState );
 
         // + Constraint evaluation
-        result = new ConstraintEvaluatingTransactionContext( result );
+        result = new ConstraintValidatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
+
+        if ( highlyAvailableInstance )
+        {
+            // + Stop HA from creating constraints
+            result = new UniquenessConstraintStoppingTransactionContext( result );
+        }
+
         // + Single statement at a time
         result = new ReferenceCountingTransactionContext( result );
 
