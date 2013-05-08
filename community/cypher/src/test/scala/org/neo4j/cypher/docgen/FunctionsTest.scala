@@ -518,14 +518,13 @@ END as result""",
     )
   }
 
-  @Test def now() {
+  @Test def timestamp() {
     testThis(
       title = "TIMESTAMP",
       syntax = "TIMESTAMP()",
       arguments = List.empty,
       text = "`TIMESTAMP` returns the difference, measured in milliseconds, between the current time and midnight, " +
-        "January 1, 1970 UTC. It will return the same value during the whole one query, even if the query is a long " +
-        "running one.",
+        "January 1, 1970 UTC. It will return the same value throughout a single query. ",
       queryText = "start n=node(1) return timestamp()",
       returns = "The time in milliseconds.",
       assertions = (p) => assert(
@@ -535,6 +534,40 @@ END as result""",
           case _       => false
         })
     )
+  }
+
+  @Test def uuid() {
+    testThis(
+      title = "UUID",
+      syntax = "UUID()",
+      arguments = List.empty,
+      text = "`UUID()` returns a universally unique identifier. For all intents and purposes, this is an identifier "+
+        "that will not clash with any other UUID.",
+      queryText = "start n=node(1) return uuid()",
+      returns = "The time in milliseconds.",
+      assertions = (p) => assert(p.toList.head("uuid()").isInstanceOf[String], "Expected a string"))
+  }
+
+  @Test def startNode() {
+    testThis(
+      title = "STARTNODE",
+      syntax = "STARTNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`STARTNODE` returns the starting node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return startNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("startNode(r)") === node("A")))
+  }
+
+  @Test def endNode() {
+    testThis(
+      title = "ENDNODE",
+      syntax = "ENDNODE( relationship )",
+      arguments = List("relationship" -> "An expression that returns a relationship"),
+      text = "`ENDNODE` returns the end node of a relationship",
+      queryText = "MATCH (x:foo)-[r]-() return endNode(r)",
+      returns = "",
+      assertions = (p) => assert(p.toList.head("endNode(r)") === node("B")))
   }
 
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
