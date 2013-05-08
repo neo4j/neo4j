@@ -2485,14 +2485,13 @@ RETURN x0.name?
     assert(result.toList === List(Map("count(n)" -> 1, "collect(n)" -> Seq(refNode))))
   }
 
-  def shouldBeAbleToCallNowMS() {
-    val result = engine.execute("START n=node(*) RETURN now('ms')")
-
-    val ts:Long = result.toList.head("now('ms')") match {
-      case x:Long => x
-      case _ => 0L
-    }
-    assert(ts != 0L)
-    assert(ts <= System.currentTimeMillis)
+  @Test
+  def should_be_able_to_coalesce_nodes() {
+    val n = createNode("n")
+    val m = createNode("m")
+    relate(n,m,"link")
+    val result = parseAndExecute("start n=node(1) with coalesce(n,n) as n match n--() return n")
+    
+    assert(result.toList === List(Map("n" -> n)))
   }
 }
