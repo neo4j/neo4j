@@ -67,7 +67,11 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
   private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
     val originalWhere = in.query.where
-    val predicates = trail.predicates.toList
+    val predicates = trail.predicates.toList.filterNot(predicate => {
+      val symbolsNeeded = predicate.symbolTableDependencies
+      symbolsNeeded.contains(trail.start) || symbolsNeeded.contains(trail.end) // The traversal matcher can't handle
+                                                                               // predicates at the ends
+    })
     val (solvedPreds, old) = originalWhere.partition(pred => predicates.contains(pred.token))
 
     old ++ solvedPreds.map(_.solve)
