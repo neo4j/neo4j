@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
@@ -76,13 +76,13 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     pc match {
       case n: Node => map.foreach {
         case (key, value) =>
-          state.query.nodeOps.setProperty(n, key, value)
+          state.query.nodeOps.setProperty(n, key, makeValueNeoSafe(value))
           state.propertySet.increase()
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
-          state.query.relationshipOps.setProperty(r, key, value)
+          state.query.relationshipOps.setProperty(r, key, makeValueNeoSafe(value))
           state.propertySet.increase()
       }
     }
