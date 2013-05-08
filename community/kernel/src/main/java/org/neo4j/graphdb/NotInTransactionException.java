@@ -20,13 +20,7 @@
 package org.neo4j.graphdb;
 
 /**
- * An exception that is thrown whenever an API operation that requires a
- * transaction is executed but no transaction is running.
- * <p>
- * Note, currently this exception is not guaranteed to be thrown. A read only
- * operation may succeed if all the data is already cached. A modifying
- * operation will however always throw this exception if no transaction is
- * running.
+ * Thrown when attempting to modify the graph outside of a transaction.
  * 
  * @see Transaction
  */

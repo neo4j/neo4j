@@ -20,14 +20,16 @@
 package org.neo4j.graphdb;
 
 /**
- * Iterable whose {@link ResourceIterator iterators} have associated resources
- * that must be managed.
- *
- * This interface is similar to { @link Iterable } but adds additional
- * functionality to ensure that resources can be released.
- *
+ * {@link Iterable} whose {@link ResourceIterator iterators} have associated resources
+ * that need to be released.
+ * 
+ * {@link ResourceIterator ResourceIterators} obtained inside a transaction are always
+ * automatically released when the transaction is committed or rolled back. Outside a transaction, 
+ * you must ensure that all returned ResourceIterators are either fully exhausted, 
+ * or explicitly closed. Failure to ensure this may cause indefinitely blocking of write operations.
+ * <p>
  * If you intend to exhaust the returned iterators, you can use conventional
- * code aas you would with a normal Iterable:
+ * code as you would with a normal Iterable:
  *
  * <pre>
  * {@code
@@ -38,8 +40,9 @@ package org.neo4j.graphdb;
  * }
  * }</pre>
  *
- * However, if your code might not exhaust the iterator, you should ensure that
- * you call close on the iterator, using a finally block or try-with-resources.
+ * However, if your code might not exhaust the iterator, (run until {@link java.util.Iterator#hasNext()} 
+ * returns {@code false}), {@link ResourceIterator} provides you with a {@link ResourceIterator#close()} method that 
+ * should be invoked to free its resources, by using a {@code finally}-block, or try-with-resource.
  *
  * <pre>
  * {@code
@@ -62,8 +65,10 @@ package org.neo4j.graphdb;
  * }
  * }</pre>
  *
- * @param <T> the type of values returned through the iterators.
+ * @param <T> the type of values returned through the iterators
+ * 
  * @see ResourceIterator
+ * @see Transaction
  */
 public interface ResourceIterable<T> extends Iterable<T>
 {

@@ -63,9 +63,8 @@ public class GlobalGraphOperations
     /**
      * Get a {@link GlobalGraphOperations} for the given {@code db}.
      * 
-     * @param db
-     *            the {@link GraphDatabaseService} to get global operations for.
-     * @return a {@link GlobalGraphOperations} for the given {@code db}.
+     * @param db the {@link GraphDatabaseService} to get global operations for.
+     * @return {@link GlobalGraphOperations} for the given {@code db}.
      */
     public static GlobalGraphOperations at( GraphDatabaseService db )
     {
@@ -126,6 +125,9 @@ public class GlobalGraphOperations
      * they are used. This method guarantees that it will return all labels currently in use. However,
      * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
      *
+     * If you call this operation outside of a transaction, please take care that the returned 
+     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+     *   
      * @return all labels in the underlying store.
      */
     public ResourceIterable<Label> getAllLabels()
@@ -151,8 +153,11 @@ public class GlobalGraphOperations
     /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
      * 
+     * If you call this operation outside of a transaction, please take care that the returned 
+     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+     *   
      * @param label the {@link Label} to return nodes for.
-     * @return an {@link Iterable} containing nodes with a specific label.
+     * @return {@link Iterable} containing nodes with a specific label.
      */
     public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
     {

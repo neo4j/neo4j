@@ -112,10 +112,13 @@ public interface GraphDatabaseService
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.
-     *
+     * <p>
      * If no indexes exist for the label/property combination, the database will
      * scan all labelled nodes looking for the property value.
      *
+     * If you call this operation outside of a transaction, please take care that the returned 
+     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+     *   
      * @param label consider nodes with this label
      * @param key required property key
      * @param value required property value
@@ -147,7 +150,20 @@ public interface GraphDatabaseService
     void shutdown();
 
     /**
-     * Starts a new transaction and associates it with the current thread.
+     * Starts a new {@link Transaction transaction} and associates it with the current thread.
+     * <p>
+     * <em>All database operations that modify the graph must be wrapped in a transaction.</em> 
+     * <p>
+     * If you attempt to modify the graph outside of a transaction, those operations will throw 
+     * {@link NotInTransactionException}.
+     * <p>
+     * Transactions are not required for read-only operations, however it is recommended to 
+     * enclose read only operations in a transaction, because the database can be more intelligent about managing 
+     * resources. In particular, returned {@link ResourceIterable ResourceIterables} will be automatically released 
+     * at the end of a transaction.
+     * <p>
+     * If you execute read-only operations outside of a transaction, please take care that any returned 
+     * {@link ResourceIterable ResourceIterables} are closed correctly to avoid potential blocking of write operations.  
      * 
      * @return a new transaction instance
      */
@@ -227,6 +243,7 @@ public interface GraphDatabaseService
     /**
      * Returns the {@link IndexManager} paired with this graph database service
      * and is the entry point for managing indexes coupled with this database.
+     * 
      * @return the {@link IndexManager} for this database.
      */
     IndexManager index();

@@ -25,11 +25,15 @@ import java.util.Iterator;
 /**
  * Closeable Iterator with associated resources that needs to be managed.
  * <p/>
- * If the iterator is not depleted (run until {@link #hasNext()} returns {@code false}),
- * the {@link #close()} method should be invoked to free these resources
- * (i.e. in a {@code finally}-block, or try-with-resource).
+ * 
+ * However, if your code might not exhaust the iterator, (run until {@link #hasNext()} returns {@code false}),
+ * {@link ResourceIterator} provides you with a {@link #close()} method that should be invoked to free its
+ * resources, by using a {@code finally}-block, or try-with-resource.
  *
  * @param <T> type of values returned by this Iterator
+ * 
+ * @see ResourceIterable
+ * @see Transaction
  */
 public interface ResourceIterator<T> extends Iterator<T>, Closeable {
     /**
@@ -37,5 +41,6 @@ public interface ResourceIterator<T> extends Iterator<T>, Closeable {
      *
      * It is an error to use the iterator after this has been called.
      */
+    @Override
     void close();
 }
