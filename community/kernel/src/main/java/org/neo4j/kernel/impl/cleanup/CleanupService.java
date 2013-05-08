@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -33,10 +34,18 @@ import org.neo4j.kernel.logging.Logging;
 
 public abstract class CleanupService extends LifecycleAdapter
 {
-    public static CleanupService create( JobScheduler scheduler, Logging logging )
+    /**
+     * @param scheduler {@link JobScheduler} to add the cleanup job on.
+     * @param logging {@link Logging} where cleanup happens.
+     * @param cleanupNecessity {@link Thunk} for deciding what gets registered at this CleanupService and
+     * what doesn't. More specifically 
+     * @return a new {@link CleanupService}.
+     */
+    public static CleanupService create( JobScheduler scheduler, Logging logging, Thunk<Boolean> cleanupNecessity )
     {
         // TODO: implement this by using sun.misc.Cleaner, since those is more efficient than PhantomReferences
-        return new ReferenceQueueBasedCleanupService( scheduler, logging, new CleanupReferenceQueue( 1000 ) );
+        return new ReferenceQueueBasedCleanupService( scheduler, logging, new CleanupReferenceQueue( 1000 ),
+                cleanupNecessity );
     }
 
     private final StringLogger logger;
