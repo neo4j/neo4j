@@ -26,7 +26,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 
 /**
- * A traversal in the node space. A Traverser is an {@link Iterable} that
+ * A traversal in the graph. A Traverser is an {@link Iterable} that
  * encapsulates a number of traversal parameters (defined at traverser creation)
  * and returns an iterator of nodes that match those parameters. It is created
  * by invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the

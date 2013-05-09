@@ -111,7 +111,7 @@ public class GlobalGraphOperations
      * {@link Node#createRelationshipTo node.createRelationshipTo(...)}. Note that this method is
      * guaranteed to return all known relationship types, but it does not guarantee that it won't
      * return <i>more</i> than that (e.g. it can return "historic" relationship types that no longer
-     * have any relationships in the node space).
+     * have any relationships in the graph).
      * 
      * @return all relationship types in the underlying store
      */
