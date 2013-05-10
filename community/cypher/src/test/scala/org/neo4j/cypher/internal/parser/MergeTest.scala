@@ -24,12 +24,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.neo4j.cypher.internal.parser.v2_0.{Updates, StartAndCreateClause, MatchClause}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.commands.MergeNodeStartItem
-import org.neo4j.cypher.internal.commands.LabelAction
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.HasLabel
 
 
 class MergeTest extends StartAndCreateClause with MatchClause with Updates with ParserTest {
@@ -39,49 +34,43 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
     val A = "a"
     val B = "b"
     val NO_PATHS = Seq.empty
-    val NO_PRODUCER = None
-    def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), KeyToken.Unresolved("Label", TokenType.Label))
-    def setNodeLabels(id: String) = LabelAction(Identifier(id), LabelSetOp, Seq(KeyToken.Unresolved("Label", TokenType.Label)))
+    val labelName = KeyToken.Unresolved("Label", TokenType.Label)
     def setProperty(id: String) = PropertySetAction(Property(Identifier(id), "property"), TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive
-      (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq.empty,
-        onCreate = Seq.empty,
-        onMatch = Seq.empty,
-        nodeProducerOption = NO_PRODUCER))), NO_PATHS)
+      (Seq(
+        MergeAst(Seq(
+          ParsedEntity(node, Identifier(node), Map.empty, Seq.empty, bare = true)),
+          Seq.empty)), NO_PATHS)
+
 
     parsing("MERGE (nodeName {prop:42})") shouldGive
-      (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq(Equals(Nullable(Property(Identifier("nodeName"), "prop")), Literal(42))),
-        onCreate = Seq(PropertySetAction(Property(Identifier("nodeName"), "prop"), Literal(42))),
-        onMatch = Seq.empty,
-        nodeProducerOption = NO_PRODUCER))), NO_PATHS)
+      (Seq(
+        MergeAst(Seq(
+          ParsedEntity(node, Identifier(node), Map("prop" -> Literal(42)), Seq.empty, bare = false)),
+          Seq.empty)), NO_PATHS)
 
 
     parsing("MERGE (nodeName:Label)") shouldGive
-      (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq(nodeHasLabelPredicate(node)),
-        onCreate = Seq(setNodeLabels(node)),
-        onMatch = Seq.empty,
-        nodeProducerOption = NO_PRODUCER))),
-        NO_PATHS)
+      (Seq(
+        MergeAst(Seq(
+          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq.empty)), NO_PATHS)
+
 
     parsing("MERGE (nodeName:Label) ON CREATE nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq(nodeHasLabelPredicate(node)),
-        onCreate = Seq(setProperty(node), setNodeLabels(node)),
-        onMatch = Seq.empty,
-        nodeProducerOption = NO_PRODUCER))),
-        NO_PATHS)
+      (Seq(
+        MergeAst(Seq(
+          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq(OnAction(On.Create, node, Seq(setProperty(node)))))), NO_PATHS)
+
 
     parsing("MERGE (nodeName:Label) ON MATCH nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(MergeNodeStartItem(MergeNodeAction(node,
-        expectations = Seq(nodeHasLabelPredicate(node)),
-        onCreate = Seq(setNodeLabels(node)),
-        onMatch = Seq(setProperty(node)),
-        nodeProducerOption = NO_PRODUCER))),
-        NO_PATHS)
+      (Seq(
+        MergeAst(Seq(
+          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq(OnAction(On.Match, node, Seq(setProperty(node)))))), NO_PATHS)
+
 
     parsing(
       """MERGE (a:Label)
@@ -92,18 +81,15 @@ ON CREATE b SET b.property = timestamp()
 ON MATCH b SET b.property = timestamp()
       """) shouldGive
       (Seq(
-        MergeNodeStartItem(MergeNodeAction(A,
-          expectations = Seq(nodeHasLabelPredicate(A)),
-          onCreate = Seq(setProperty(A), setNodeLabels(A)),
-          onMatch = Seq(setProperty(A)),
-          nodeProducerOption = NO_PRODUCER)),
-
-        MergeNodeStartItem(MergeNodeAction(B,
-          expectations = Seq(nodeHasLabelPredicate(B)),
-          onCreate = Seq(setProperty(B), setNodeLabels(B)),
-          onMatch = Seq(setProperty(B)),
-          nodeProducerOption = NO_PRODUCER))),
-        Seq.empty)
+        MergeAst(Seq(
+          ParsedEntity(A, Identifier(A), Map.empty, Seq(labelName), bare = false),
+          ParsedEntity(B, Identifier(B), Map.empty, Seq(labelName), bare = false)),
+          Seq(
+            OnAction(On.Match, A, Seq(setProperty(A))),
+            OnAction(On.Create, A, Seq(setProperty(A))),
+            OnAction(On.Create, B, Seq(setProperty(B))),
+            OnAction(On.Match, B, Seq(setProperty(B)))
+          ))), NO_PATHS)
   }
 
   def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
