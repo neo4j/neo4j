@@ -1194,7 +1194,6 @@ public abstract class Command extends XaCommand
                 switch ( getMode() )
                 {
                 case UPDATE:
-                    indexes.createIndex( (IndexRule)schemaRule );
                     break;
                 case CREATE:
                     indexes.createIndex( (IndexRule)schemaRule );
@@ -1213,6 +1212,7 @@ public abstract class Command extends XaCommand
         {
             buffer.put( SCHEMA_RULE_COMMAND );
             writeDynamicRecords( buffer, records );
+            buffer.put( first( records ).isCreated() ? (byte) 1 : 0);
         }
         
         public SchemaRule getSchemaRule()
@@ -1225,7 +1225,19 @@ public abstract class Command extends XaCommand
         {
             Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
             readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
-            
+
+            if ( !readAndFlip( byteChannel, buffer, 1 ) )
+                throw new IllegalStateException( "Missing SchemaRule.isCreated flag in deserialization" );
+
+            byte isCreated = buffer.get();
+            if ( 1 == isCreated )
+            {
+                for ( DynamicRecord record : records )
+                {
+                    record.setCreated();
+                }
+            }
+
             SchemaRule rule = null;
             if ( first( records ).inUse() )
             {
