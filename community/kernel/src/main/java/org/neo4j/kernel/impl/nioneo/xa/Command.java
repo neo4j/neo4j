@@ -1194,6 +1194,7 @@ public abstract class Command extends XaCommand
                 switch ( getMode() )
                 {
                 case UPDATE:
+                    indexes.createIndex( (IndexRule)schemaRule );
                     break;
                 case CREATE:
                     indexes.createIndex( (IndexRule)schemaRule );
