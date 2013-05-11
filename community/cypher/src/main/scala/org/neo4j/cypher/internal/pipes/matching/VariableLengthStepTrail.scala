@@ -120,7 +120,7 @@ final case class VariableLengthStepTrail(next: Trail,
     //If we have a rel-iterator, let's include it
     relIterator match {
       case None    => symbolTable
-      case Some(r) => symbolTable.add(r, new CollectionType(RelationshipType()))
+      case Some(r) => symbolTable.add(r, CollectionType(RelationshipType()))
     }
   }
 

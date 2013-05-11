@@ -37,7 +37,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   def children = Seq(collection, predicate)
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    val t = collection.evaluateType(AnyCollectionType(), symbols)
+    val t = collection.evaluateType(CollectionType(AnyType()), symbols)
 
     predicate.throwIfSymbolsMissing(symbols.add(id, t.iteratedType))
 

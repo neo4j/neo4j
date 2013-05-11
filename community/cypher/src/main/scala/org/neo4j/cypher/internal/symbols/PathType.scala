@@ -20,6 +20,6 @@
 package org.neo4j.cypher.internal.symbols
 
 object PathType {
-  lazy val instance = new CollectionType(MapType())
+  lazy val instance = CollectionType(MapType())
   def apply() = instance
 }

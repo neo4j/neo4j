@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.symbols.{AnyCollectionType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{CollectionType, AnyType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.ExecutionContext
 
@@ -50,7 +50,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   def identifiers = Nil
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+    val t = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
 

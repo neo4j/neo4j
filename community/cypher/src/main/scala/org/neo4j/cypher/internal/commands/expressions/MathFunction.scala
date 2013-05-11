@@ -69,7 +69,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     start.evaluateType(NumberType(), symbols)
     end.evaluateType(NumberType(), symbols)
     step.evaluateType(NumberType(), symbols)
-    new CollectionType(NumberType())
+    CollectionType(NumberType())
   }
 
   def symbolTableDependencies = start.symbolTableDependencies ++

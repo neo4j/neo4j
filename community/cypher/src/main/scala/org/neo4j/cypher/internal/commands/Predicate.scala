@@ -312,7 +312,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
   def children = Seq(collection)
   def assertInnerTypes(symbols: SymbolTable) {
-    collection.evaluateType(AnyCollectionType(), symbols)
+    collection.evaluateType(CollectionType(AnyType()), symbols)
   }
 
   def symbolTableDependencies = collection.symbolTableDependencies
