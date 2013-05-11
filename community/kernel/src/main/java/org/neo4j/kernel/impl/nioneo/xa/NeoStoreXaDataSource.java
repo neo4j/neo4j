@@ -99,7 +99,7 @@ import org.neo4j.kernel.logging.Logging;
  * The {@link NioNeoDbPersistenceSource} will create a <CODE>NeoStoreXaDataSoruce</CODE>
  * and then Neo4j kernel will use it to create {@link XaConnection XaConnections} and
  * {@link XaResource XaResources} when running transactions and performing
- * operations on the node space.
+ * operations on the graph.
  */
 public class NeoStoreXaDataSource extends LogBackedXaDataSource
 {

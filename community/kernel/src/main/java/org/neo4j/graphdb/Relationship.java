@@ -112,7 +112,7 @@ public interface Relationship extends PropertyContainer
      * A convenience operation that, given a node that is attached to this
      * relationship, returns the other node. For example if <code>node</code> is
      * a start node, the end node will be returned, and vice versa. This is a
-     * very convenient operation when you're manually traversing the node space
+     * very convenient operation when you're manually traversing the graph
      * by invoking one of the {@link Node#getRelationships() getRelationships()}
      * operations on a node. For example, to get the node "at the other end" of
      * a relationship, use the following:
