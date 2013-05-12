@@ -1,3 +1,7 @@
+1.9 (2013-05-13)
+----------------
+o Performance improvement on initial loading of relationship types during startup
+
 1.9.RC2 (2013-04-30)
 --------------------
 o Fixes race conditions on usage of persistence windows' byte buffers that occasionally led to buffer over/underflows.

@@ -1,5 +1,17 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9 (2013-05-13)
+----------------
+Cluster:
+o Coordinator doesn't ask itself for snapshots, solving a bug where starting an arbiter first would make the
+  cluster unresponsive.
+
+Enterprise server:
+o Arbiter instances now log into data/log/arbiter/messages.log
+
+Kernel:
+o Performance improvement on initial loading of relationship types during startup
+
 1.9.RC2 (2013-04-30)
 --------------------
 Backup:
