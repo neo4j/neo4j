@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
-
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
@@ -87,5 +86,23 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
 
     // then
     verify(queryContext, times(1)).getLabelId(label)
+  }
+
+  @Test
+  def should_translate_values_to_neo4j() {
+    //GIVEN
+    val labelName = "Label"
+    val propertyKey = "prop"
+    val index: IndexDescriptor = new IndexDescriptor(123, 456)
+    when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
+    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, Some(Literal(Seq(1,2,3)))))
+    val queryContext: QueryContext = mock[QueryContext]
+    val state = QueryStateHelper.empty.copy(inner = queryContext)
+
+    //WHEN
+    producer.apply(context, state)
+
+    //THEN
+    verify(queryContext, times(1)).exactIndexSearch(index, Array(1,2,3))
   }
 }

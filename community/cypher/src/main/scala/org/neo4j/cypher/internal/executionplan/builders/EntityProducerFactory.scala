@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.data.SimpleVal._
 import org.neo4j.cypher.internal.data.SimpleVal
+import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 
-class EntityProducerFactory {
+class EntityProducerFactory extends GraphElementPropertyFunctions {
 
     private def asProducer[T <: PropertyContainer](startItem: StartItem)
                                                 (f: (ExecutionContext, QueryState) => Iterator[T]) =
@@ -56,7 +57,8 @@ class EntityProducerFactory {
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
           val keyVal = key(m)(state).toString
           val valueVal = value(m)(state)
-          state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
+          val neoValue = makeValueNeoSafe(valueVal)
+          state.query.nodeOps.indexGet(idxName, keyVal, neoValue)
       }
   }
 
@@ -118,7 +120,8 @@ class EntityProducerFactory {
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val value = expression(m)(state)
-        state.query.exactIndexSearch(index, value)
+        val neoValue = makeValueNeoSafe(value)
+        state.query.exactIndexSearch(index, neoValue)
       }
   }
 
@@ -128,7 +131,8 @@ class EntityProducerFactory {
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
+        val neoValue = makeValueNeoSafe(valueVal)
+        state.query.relationshipOps.indexGet(idxName, keyVal, neoValue)
       }
   }
 
