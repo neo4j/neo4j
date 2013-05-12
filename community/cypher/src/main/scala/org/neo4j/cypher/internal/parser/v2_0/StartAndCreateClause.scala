@@ -31,7 +31,7 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique with 
 
   def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = START ~> commaList(startBit) ^^ (x => (x, Seq()))
 
-  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = merge|createUnique|create
+  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = merge | createUnique | create
 
   def create = CREATE ~> commaList(usePattern(translate)) ^^ {
     case matching =>

@@ -17,27 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.parser.{On, OnAction}
 
+case class OnAction(verb: Action, identifier: String, set: Seq[UpdateAction])
 
-trait Merge extends Base with Labels with ParserPattern {
+trait Action
 
-  def merge: Parser[(Seq[StartItem], Seq[NamedPath])] = rep1(MERGE ~> patterns) ~ rep(onCreate | onMatch) ^^ {
-    case nodes ~ actions => (Seq(MergeAst(nodes.flatten.toSeq, actions)), Seq.empty)
-  }
+object On {
 
-  private def onCreate: Parser[OnAction] = ON ~> CREATE ~> identity ~ set ^^ {
-    case id ~ setActions => OnAction(On.Create, id, setActions)
-  }
+  case object Create extends Action
 
-  private def onMatch: Parser[OnAction] = ON ~> MATCH ~> identity ~ set ^^ {
-    case id ~ setActions => OnAction(On.Match, id, setActions)
-  }
+  case object Match extends Action
 
-  def set: Parser[Seq[UpdateAction]]
 }
+
+
+
