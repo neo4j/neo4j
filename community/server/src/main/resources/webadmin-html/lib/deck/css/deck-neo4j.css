@@ -46,3 +46,28 @@
 ul.button-bar.grouped li {
   margin-left: 1em;
 }
+
+.deck-container .slide .deck-arrow {
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 24px;
+  vertical-align: bottom;
+  text-align: center;
+  text-decoration: none;
+  -webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  border-radius: 12px;
+  background-color: #ff0066;
+  color: #fff;
+  display: inline-block;
+}
+
+.deck-container .slide .deck-arrow:hover, .deck-container .slide .deck-arrow:focus {
+  -webkit-box-shadow: 0 0 10px #ff0066, 0 0 5px #fff;
+  -moz-box-shadow: 0 0 10px #ff0066, 0 0 5px #fff;
+  box-shadow: 0 0 10px #ff0066, 0 0 5px #fff;
+  text-decoration: none;
+}

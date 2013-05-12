@@ -27,12 +27,14 @@
         Let's use Cypher to generate the graph described in the 
         <a class="deck-url" href="/webadmin/deck/learn.html">Learn Guide</a>. Starting with Emil:
     </p>
-    <pre>CREATE (ee { name: &quot;Emil&quot;, from: &quot;Sweden&quot; }) RETURN ee;</pre>
+    <pre>CREATE (ee { name: &quot;Emil&quot;, from: &quot;Sweden&quot; }) RETURN ee.name;</pre>
     <ul>
         <li><code>CREATE</code> clause to create data</li>
         <li><code>()</code> parenthesis to indicate a node</li>
+        <li><code>ee</code> a variable for the new node</li>
         <li><code>{}</code> brackets to add properties to the node</li>
         <li><code>RETURN</code> clause indicates what data to return</li>
+        <li><code>ee.name</code> return the name property from the 'ee' node</li>
     </ul>
 </section>
 <section class="slide">
@@ -63,7 +65,7 @@
 (ee)-[:KNOWS {since: 2001}]->(js),(ee)-[:KNOWS {rating: 5}]->(ir),
 (js)-[:KNOWS]->(ir),(js)-[:KNOWS]->(rvb),
 (ir)-[:KNOWS]->(js),(ir)-[:KNOWS]->(ally),
-(rvb)[:KNOWS]->(ally);</pre>
+(rvb)-[:KNOWS]->(ally);</pre>
 </section>
 <section class="slide">
     <h2>Cypher pattern matching</h2>
@@ -72,7 +74,7 @@
         For instance, to find Emil's friends:
     </p>
     <pre>START ee=node(*) MATCH (ee)-[:KNOWS]->(friends) 
-WHERE n.name! = &quot;Emil&quot; RETURN friends;</pre>
+WHERE ee.name! = &quot;Emil&quot; RETURN friends;</pre>
     <ul>
         <li><code>MATCH</code> clause to describe the pattern from known Nodes to found Nodes</li>
         <li><code>(ee)</code> starts the pattern with Emil</li>
@@ -89,9 +91,10 @@ WHERE n.name! = &quot;Emil&quot; RETURN friends;</pre>
     <pre>START js=node(*) 
 MATCH (js)-[:KNOWS]->()-[:KNOWS]->(surfer) 
 WHERE js.name! = &quot;Johan&quot; AND surfer.hobby! = "surfing"
-RETURN surfer;</pre>
+RETURN DISTINCT surfer;</pre>
     <ul>
         <li><code>()</code> empty parenthesis to ignore these nodes</li>
+        <li><code>DISTINCT</code> because more than one path will match the pattern</li>
         <li><code>surfer</code> will contain Allison, a friend of a friend who surfs</li>
     </ul>
 </section>
