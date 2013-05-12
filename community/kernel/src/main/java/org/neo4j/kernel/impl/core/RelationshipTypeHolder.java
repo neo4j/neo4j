@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,13 +56,22 @@ public class RelationshipTypeHolder extends LifecycleAdapter
 
     void addRawRelationshipTypes( NameData[] types )
     {
-        for ( int i = 0; i < types.length; i++ )
+        Map<String, Integer> newTypes = new HashMap<String, Integer>();
+        Map<Integer, RelationshipTypeImpl> newTranslation = new HashMap<Integer, RelationshipTypeImpl>();
+        for ( NameData type : types )
         {
-            addRawRelationshipType( types[i] );
+            addType( type, newTypes, newTranslation );
         }
+        relTypes.putAll( newTypes );
+        relTranslation.putAll( newTranslation );
     }
 
     void addRawRelationshipType( NameData type )
+    {
+        addType( type, relTypes, relTranslation );
+    }
+
+    private void addType( NameData type, Map<String, Integer> relTypes, Map<Integer, RelationshipTypeImpl> relTranslation)
     {
         RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName(), type.getId() );
         relTypes.put( type.getName(), type.getId() );
