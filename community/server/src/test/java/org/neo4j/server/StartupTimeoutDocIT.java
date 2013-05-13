@@ -19,9 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,9 +43,12 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 public class StartupTimeoutDocIT
 {
-
     TargetDirectory target = TargetDirectory.forTest( StartupTimeoutDocIT.class );
     private static final String DIRSEP = File.separator;
 
@@ -60,47 +60,54 @@ public class StartupTimeoutDocIT
     @After
     public void stopServer()
     {
-    	if(server != null)
-    	{
-    		server.stop();
-    		server = null;
-    	}
+        if ( server != null )
+        {
+            server.stop();
+            server = null;
+        }
     }
 
-	@Test
-	public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 1);
-		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-			fail("Should have been interrupted.");
-		} catch(ServerStartupException e) {
-			// ok!
-		}
-		
-	}
-    
+    @Test
+    public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
+    {
+        Configurator configurator = buildProperties();
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 1 );
+        server = createSlowServer( configurator );
+
+        try
+        {
+            server.start();
+            fail( "Should have been interrupted." );
+        }
+        catch ( ServerStartupException e )
+        {
+            // ok!
+        }
+    }
+
 	@Test
 	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException 
 	{
 		Configurator configurator = buildProperties();
 		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 100);
-		server = new CommunityNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				return Arrays.asList();
-			}
-		};
+        server = new CommunityNeoServer( configurator )
+        {
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                return Arrays.asList();
+            }
+        };
 
         // When
-		try {
-			server.start();
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		}
+        try
+        {
+            server.start();
+        }
+        catch ( ServerStartupException e )
+        {
+            fail( "Should not have been interupted." );
+        }
 
         // Then
         InterruptThreadTimer timer = server.getDependencyResolver().resolveDependency( InterruptThreadTimer.class );
@@ -111,9 +118,9 @@ public class StartupTimeoutDocIT
 	@Test
 	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException 
 	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 0);
-		server = createSlowServer(configurator);
+        Configurator configurator = buildProperties();
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 0 );
+        server = createSlowServer( configurator );
 
         // When
         server.start();
@@ -122,50 +129,60 @@ public class StartupTimeoutDocIT
         // No exceptions should have been thrown
 	}
 
-	private CommunityNeoServer createSlowServer(Configurator configurator) {
-		CommunityNeoServer server = new CommunityNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				ServerModule slowModule = new ServerModule() {
-					@Override
-					public void start(StringLogger logger) {
-						try {
-							Thread.sleep(1000 * 5);
-						} catch (InterruptedException e) {
+    private CommunityNeoServer createSlowServer( Configurator configurator )
+    {
+        CommunityNeoServer server = new CommunityNeoServer( configurator )
+        {
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                ServerModule slowModule = new ServerModule()
+                {
+                    @Override
+                    public void start( StringLogger logger )
+                    {
+                        try
+                        {
+                            Thread.sleep( 1000 * 5 );
+                        }
+                        catch ( InterruptedException e )
+                        {
                             throw new RuntimeException( e );
-						}
-					}
+                        }
+                    }
 
-					@Override
-					public void stop() { }
-        		};
-				return Arrays.asList(slowModule);
-			}
-		};
-		return server;
+                    @Override
+                    public void stop()
+                    {
+                    }
+                };
+                return Arrays.asList( slowModule );
+            }
+        };
+        return server;
 	}
 	
-	private Configurator buildProperties() throws IOException
+    private Configurator buildProperties() throws IOException
     {
         new File( test.directory().getAbsolutePath() + DIRSEP + "conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j.properties";
+        String databasePropertiesFileName = test.directory().getAbsolutePath() + DIRSEP + "conf" + DIRSEP
+                + "neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j-server.properties";
+        String serverPropertiesFilename = test.directory().getAbsolutePath() + DIRSEP + "conf" + DIRSEP
+                + "neo4j-server.properties";
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, test.directory().getAbsolutePath()
-                + DIRSEP + "data"+ DIRSEP +"graph.db" );
+                + DIRSEP + "data" + DIRSEP + "graph.db" );
 
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
-        serverProperties.store( new FileWriter(serverPropertiesFilename), null);
-        	
-        return new PropertyFileConfigurator(new File(serverPropertiesFilename));
+        serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
+
+        return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
     }
-
-
 
 
 
@@ -175,23 +192,16 @@ public class StartupTimeoutDocIT
     @Test
     public void shoulWOrk() throws Exception
     {
-
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-
-
         Transaction tx = db.beginTx();
-
         db.createNode();
-
-        tx.success();tx.finish();
-
+        tx.success();
+        tx.finish();
 
         clearAll();
-
+        
         tx = db.beginTx();
-
         db.createNode();
-
         tx.success();tx.finish();
 
         clearAll();
@@ -201,7 +211,6 @@ public class StartupTimeoutDocIT
     {
         new Transactor( dbRule.getGraphDatabaseService(), new UnitOfWork()
         {
-
             @Override
             public void doWork()
             {
@@ -241,39 +250,40 @@ public class StartupTimeoutDocIT
 
                 for ( String indexName : indexManager.nodeIndexNames() )
                 {
-                    try{
-                        db.index()
-                                .forNodes( indexName )
-                                .delete();
-                    } catch(UnsupportedOperationException e) {
+                    try
+                    {
+                        db.index().forNodes( indexName ).delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
                         // Encountered a read-only index.
                     }
                 }
 
                 for ( String indexName : indexManager.relationshipIndexNames() )
                 {
-                    try {
-                        db.index()
-                                .forRelationships( indexName )
-                                .delete();
-                    } catch(UnsupportedOperationException e) {
+                    try
+                    {
+                        db.index().forRelationships( indexName ).delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
                         // Encountered a read-only index.
                     }
                 }
 
-                for(String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties())
+                for ( String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties() )
                 {
-                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty(k);
+                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty( k );
                 }
-                indexManager.getNodeAutoIndexer().setEnabled(false);
+                indexManager.getNodeAutoIndexer().setEnabled( false );
 
-                for(String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties())
+                for ( String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties() )
                 {
-                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty(k);
+                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty( k );
                 }
-                indexManager.getRelationshipAutoIndexer().setEnabled(false);
+                indexManager.getRelationshipAutoIndexer().setEnabled( false );
             }
         } ).execute();
     }
-	
 }

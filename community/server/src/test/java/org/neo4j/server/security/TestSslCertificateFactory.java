@@ -19,32 +19,48 @@
  */
 package org.neo4j.server.security;
 
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-public class TestSslCertificateFactory {
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
+public class TestSslCertificateFactory
+{
+    private File cPath;
+    private File pkPath;
 
     @Test
-    public void shouldCreateASelfSignedCertificate() throws Exception {
-        File cPath = File.createTempFile("cert", "test");
-        File pkPath = File.createTempFile("privatekey", "test");
-        
+    public void shouldCreateASelfSignedCertificate() throws Exception
+    {
         SslCertificateFactory sslFactory = new SslCertificateFactory();
-        sslFactory.createSelfSignedCertificate(cPath, pkPath, "myhost");
-        
+        sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
+
         // Attempt to load certificate
-        Certificate c = sslFactory.loadCertificate(cPath);
-        assertThat(c, notNullValue());
-        
+        Certificate c = sslFactory.loadCertificate( cPath );
+        assertThat( c, notNullValue() );
+
         // Attempt to load private key
-        PrivateKey pk = sslFactory.loadPrivateKey(pkPath);
-        assertThat(pk, notNullValue());
+        PrivateKey pk = sslFactory.loadPrivateKey( pkPath );
+        assertThat( pk, notNullValue() );
     }
     
+    @Before
+    public void createFiles() throws Exception
+    {
+        cPath = File.createTempFile( "cert", "test" );
+        pkPath = File.createTempFile( "privatekey", "test" );
+    }
+
+    @After
+    public void deleteFiles() throws Exception
+    {
+        pkPath.delete();
+        cPath.delete();
+    }
 }

@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -45,6 +38,13 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+
 public class TestCommunityDatabase
 {
     private File databaseDirectory;
@@ -55,8 +55,8 @@ public class TestCommunityDatabase
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
+        Configuration conf = new MapConfiguration( new HashMap<String, String>() );
+        conf.addProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() );
         theDatabase = new CommunityDatabase( conf );
     }
 
@@ -108,8 +108,8 @@ public class TestCommunityDatabase
         deletionFailureOk = true;
         theDatabase.start();
         
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
+        Configuration conf = new MapConfiguration( new HashMap<String, String>() );
+        conf.addProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() );
         CommunityDatabase db = new CommunityDatabase( conf );
 
         try
@@ -136,17 +136,16 @@ public class TestCommunityDatabase
     {
         int customPort = findFreeShellPortToUse( 8881 );
         File tempDir = createTempDir();
-        File tuningProperties = new File(tempDir, "neo4j.properties");
+        File tuningProperties = new File( tempDir, "neo4j.properties" );
         tuningProperties.createNewFile();
         
-        ServerTestUtils.writePropertiesToFile(stringMap(
-            ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
-            ShellSettings.remote_shell_port.name(), ""+customPort ), 
-            tuningProperties);
+        ServerTestUtils.writePropertiesToFile(
+                stringMap( ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
+                        ShellSettings.remote_shell_port.name(), "" + customPort ), tuningProperties );
         
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath());
-        conf.addProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningProperties.getAbsolutePath());
+        Configuration conf = new MapConfiguration( new HashMap<String, String>() );
+        conf.addProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath() );
+        conf.addProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningProperties.getAbsolutePath() );
         
         Database otherDb = new CommunityDatabase( conf );
         otherDb.start();
@@ -163,10 +162,8 @@ public class TestCommunityDatabase
     @Test
     public void shouldBeAbleToGetLocation() throws Throwable
     {
-
         theDatabase.start();
         assertThat( theDatabase.getLocation(), is( theDatabase.getGraph().getStoreDir() ) );
-
     }
 
     private int findFreeShellPortToUse( int startingPort )

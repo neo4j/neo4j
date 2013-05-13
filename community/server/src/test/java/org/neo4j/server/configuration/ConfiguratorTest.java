@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -36,6 +33,9 @@ import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 public class ConfiguratorTest
 {
     @Rule
@@ -44,7 +44,7 @@ public class ConfiguratorTest
     @Test
     public void shouldProvideAConfiguration() throws IOException
     {
-        File configFile = PropertyFileBuilder.builder(folder.newFile())
+        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .build();
         Configuration config = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
         assertNotNull( config );
@@ -53,8 +53,7 @@ public class ConfiguratorTest
     @Test
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
-
-        File configFile = PropertyFileBuilder.builder(folder.newFile())
+        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .build();
 
@@ -67,7 +66,7 @@ public class ConfiguratorTest
     @Test
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
-        File configFile = PropertyFileBuilder.builder(folder.newFile())
+        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .withNameValue( "foo", "bar" )
                 .build();
@@ -83,10 +82,10 @@ public class ConfiguratorTest
     @Test
     public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException
     {
-        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder()
+        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
                 .build();
 
-        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder(folder.newFile())
+        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder( folder.getRoot() )
                 .withDbTuningPropertyFile( databaseTuningPropertyFile )
                 .build();
 
@@ -100,8 +99,7 @@ public class ConfiguratorTest
     @Test
     public void shouldFindThirdPartyJaxRsClasses() throws IOException
     {
-
-        File file = ServerTestUtils.createTempPropertyFile(folder.getRoot());
+        File file = ServerTestUtils.createTempPropertyFile( folder.getRoot() );
 
         FileWriter fstream = new FileWriter( file, true );
         BufferedWriter out = new BufferedWriter( fstream );
