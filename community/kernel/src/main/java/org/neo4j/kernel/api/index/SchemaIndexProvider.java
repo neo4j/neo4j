@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +29,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+
 /**
  * Contract for implementing an index in Neo4j.
  *
@@ -41,7 +41,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Populating the index</h3>
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
- * your {@link SchemaIndexProvider} for a {@link #getPopulator(long) batch index writer}.
+ * your {@link SchemaIndexProvider} for a {@link #getPopulator(long,IndexConfiguration) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -68,8 +68,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
  * is flushed to disk. Failure to do so could produce a situation where, after a crash,
- * an index is believed to be online
- * when it in fact was not yet fully populated. This would break the database recovery process.
+ * an index is believed to be online when it in fact was not yet fully populated. This would break the database
+ * recovery process.
  *
  * If you are implementing this interface, you can choose to not store index state. In that case,
  * you should report index state as {@link InternalIndexState#POPULATING} upon startup.
@@ -85,7 +85,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * <h3>Online operation</h3>
  *
- * Once the index is online, the database will move to using the {@link #getOnlineAccessor(long) online accessor} to
+ * Once the index is online, the database will move to using the {@link #getOnlineAccessor(long,IndexConfiguration) online accessor} to
  * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
@@ -97,13 +97,13 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
         
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId )
+        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
         {
             return singleWriter;
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId )
+        public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
         {
             return singlePopulator;
         }
@@ -144,12 +144,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId );
+    public abstract IndexPopulator getPopulator( long indexId, IndexConfiguration config );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId );
+    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config );
 
     /**
      * Called during startup to find out which state an index is in.

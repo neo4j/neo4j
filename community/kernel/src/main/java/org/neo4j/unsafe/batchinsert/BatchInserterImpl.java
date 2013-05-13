@@ -54,6 +54,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalSchemaActions;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -304,7 +305,8 @@ public class BatchInserterImpl implements BatchInserter
             labelIds[i] = rule.getLabel();
             propertyKeyIds[i] = rule.getPropertyKey();
 
-            populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator( rule.getId() );
+            populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
+                    rule.getId(), new IndexConfiguration( rule.isConstraintIndex() ) );
             populators[i].create();
         }
 

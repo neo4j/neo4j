@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -536,16 +535,16 @@ class TransactionImpl implements Transaction
                     re.setStatus( RS_READONLY );
                 }
             }
-            status = Status.STATUS_PREPARED;
-        }
-        // commit
-        if ( !onePhase && readOnly )
-        {
-            status = Status.STATUS_COMMITTED;
-            return;
-        }
-        if ( !onePhase )
-        {
+            if ( readOnly )
+            {
+                status = Status.STATUS_COMMITTED;
+                return;
+            }
+            else
+            {
+                status = Status.STATUS_PREPARED;
+            }
+            // everyone has prepared - mark as committing
             try
             {
                 txManager.getTxLog().markAsCommitting( getGlobalId(), forceMode );
@@ -555,9 +554,10 @@ class TransactionImpl implements Transaction
                 logger.error( "Error writing transaction log", e );
                 txManager.setTmNotOk( e );
                 throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
-                        + " error writing transaction log" ), e );
+                                                                 + " error writing transaction log" ), e );
             }
         }
+        // commit
         status = Status.STATUS_COMMITTING;
         for ( ResourceElement re : resourceList )
         {

@@ -19,6 +19,39 @@
  */
 package org.neo4j.kernel.api;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.junit.After;
+import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,37 +66,6 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 public class SchemaIndexHaIT
 {
@@ -283,15 +285,15 @@ public class SchemaIndexHaIT
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId )
+        public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
         {
-            return new ControlledIndexPopulator( inMemoryDelegate.getPopulator( indexId ), latch );
+            return new ControlledIndexPopulator( inMemoryDelegate.getPopulator( indexId, config ), latch );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId )
+        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
         {
-            return inMemoryDelegate.getOnlineAccessor( indexId );
+            return inMemoryDelegate.getOnlineAccessor( indexId, config );
         }
 
         @Override

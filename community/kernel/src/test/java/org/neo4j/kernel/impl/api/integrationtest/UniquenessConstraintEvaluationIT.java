@@ -25,15 +25,18 @@ import java.util.concurrent.Executors;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.ConstraintCreationException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 
-@Ignore("2013-05-03: Does not work yet - should work REALLY soon. (so soon that this should never be merged)")
 public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
 {
     @Test
@@ -58,15 +61,25 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( Exception ex )
+        catch ( ConstraintCreationKernelException ex )
         {
-            assertThat( ex, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-            ex.printStackTrace();
-            assertNotNull( ex );
+            assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
+            // TODO: assert about the exception we threw...
+            assertThat( ex.getCause().getCause(), instanceOf( IllegalStateException.class ) );
         }
     }
 
     @Test
+    @Ignore("2013-05-13 Not passing yet - requires work on how to hand over the constraint from pre-phase to live.\n" +
+            "Specifically, we need to be able to fail the transaction if the constraint doesn't hold, have that " +
+            "exception propagate nicely without setting the TM in a bad state.\n" +
+            "Ideas for this currently revolve around doing the final constraint evaluation in prepare() and lock the " +
+            "schema (or the index? - easier, but requires the indexing to be synchronous) to prevent changes until " +
+            "the constraint is live and then make the constraint live and release the locks as part of commit().\n" +
+            "Possibly there is something that can be done with IndexProxy and more states in the flipping impl, make " +
+            "the index enter a state where it operates as if online from an index POV, but adds failures to a queue, " +
+            "this would make the operations synchronous from the indexing POV but the failures would be async, " +
+            "reported when committing the constraint creating transaction.")
     public void shouldFailOnCommitIfConstraintIsBrokenAfterConstraintAdded() throws Exception
     {
         // given
@@ -84,9 +97,16 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
             @Override
             public void run()
             {
-                newTransaction();
-                db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-                commit();
+                Transaction tx = db.beginTx();
+                try
+                {
+                    db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
+                    tx.success();
+                }
+                finally
+                {
+                    tx.finish();
+                }
             }
         } ).get();
         executor.shutdown();
@@ -99,14 +119,14 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( Exception ex ) // TODO: narrow this catch clause
+        catch ( ConstraintCreationException ex )
         {
-            ex.printStackTrace();
-            assertNotNull( ex );
+            assertEquals( "", ex.getMessage() );
         }
     }
 
     @Test
+    @Ignore("2013-05-13 This is to be supported when we implement enforcing constraints")
     public void shouldEnforceUniquenessConstraint() throws Exception
     {
         // given

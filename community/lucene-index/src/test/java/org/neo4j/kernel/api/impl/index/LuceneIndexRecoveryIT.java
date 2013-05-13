@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -42,6 +39,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -50,6 +48,10 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
 public class LuceneIndexRecoveryIT
 {
@@ -245,6 +247,7 @@ public class LuceneIndexRecoveryIT
        directoryFactory.close();
     }
 
+    @SuppressWarnings("deprecation")
     private void rotateLogs()
     {
        db.getXaDataSourceManager().rotateLogicalLogs();
@@ -324,17 +327,17 @@ public class LuceneIndexRecoveryIT
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies ) throws
-                    Throwable
+            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
+                    throws Throwable
             {
                 final LuceneSchemaIndexProvider delegate =
                         new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
                 return new SchemaIndexProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 )
                 {
                     @Override
-                    public IndexPopulator getPopulator( long indexId )
+                    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
                     {
-                        final IndexPopulator populator = delegate.getPopulator( indexId );
+                        final IndexPopulator populator = delegate.getPopulator( indexId, config );
                         return new IndexPopulator()
                         {
                             @Override
@@ -370,9 +373,9 @@ public class LuceneIndexRecoveryIT
                     }
 
                     @Override
-                    public IndexAccessor getOnlineAccessor( long indexId )
+                    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
                     {
-                        return delegate.getOnlineAccessor( indexId );
+                        return delegate.getOnlineAccessor( indexId, config );
                     }
 
                     @Override

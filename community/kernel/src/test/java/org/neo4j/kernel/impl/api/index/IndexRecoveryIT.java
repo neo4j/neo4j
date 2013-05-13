@@ -19,20 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -58,6 +45,7 @@ import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -65,6 +53,21 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class IndexRecoveryIT
 {
@@ -76,7 +79,7 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
         // And Given
@@ -87,7 +90,7 @@ public class IndexRecoveryIT
         // When
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
@@ -97,8 +100,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         latch.countDown();
     }
 
@@ -110,7 +113,7 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogs();
 
@@ -119,7 +122,7 @@ public class IndexRecoveryIT
         latch.countDown();
         killFuture.get();
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
@@ -132,8 +135,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         latch.countDown();
     }
     
@@ -151,7 +154,7 @@ public class IndexRecoveryIT
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor( anyLong() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
 
         // When
         startDb();
@@ -163,8 +166,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
-        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong() );
+        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         assertEquals( expectedUpdates, writer.updates ); 
     }
     
@@ -179,7 +182,7 @@ public class IndexRecoveryIT
         // And Given
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock(IndexPopulator.class) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( mock(IndexPopulator.class) );
 
         // When
         startDb();
@@ -191,7 +194,7 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index ), equalTo( Schema.IndexState.FAILED ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
     }
     
     private GraphDatabaseAPI db;
@@ -258,6 +261,7 @@ public class IndexRecoveryIT
             db.shutdown();
     }
 
+    @SuppressWarnings("deprecation")
     private void rotateLogs()
     {
         db.getXaDataSourceManager().rotateLogicalLogs();
@@ -327,6 +331,7 @@ public class IndexRecoveryIT
                 }
                 catch ( InterruptedException e )
                 {
+                    // fall through and return early
                 }
                 throw new RuntimeException();
             }

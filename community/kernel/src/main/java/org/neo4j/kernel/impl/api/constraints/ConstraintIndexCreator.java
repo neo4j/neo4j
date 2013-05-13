@@ -42,8 +42,7 @@ public class ConstraintIndexCreator
     }
 
     public long createUniquenessConstraintIndex( SchemaReadOperations schema, long labelId, long propertyKeyId )
-            throws DataIntegrityKernelException, IndexPopulationFailedKernelException,
-                   TransactionalException
+            throws DataIntegrityKernelException, IndexPopulationFailedKernelException, TransactionalException
     {
         IndexDescriptor descriptor = transactor.execute( createConstraintIndex( labelId, propertyKeyId ) );
         long indexId;

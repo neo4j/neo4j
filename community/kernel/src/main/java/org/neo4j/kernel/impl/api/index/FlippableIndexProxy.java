@@ -39,9 +39,9 @@ public class FlippableIndexProxy implements IndexProxy
 
     public static final class FlipFailedKernelException extends KernelException
     {
-        public FlipFailedKernelException( String message, Throwable cause )
+        public FlipFailedKernelException( Throwable cause )
         {
-            super( message, cause );
+            super( cause, "Failed to transition index to new context, see nested exception." );
         }
     }
 
@@ -214,10 +214,19 @@ public class FlippableIndexProxy implements IndexProxy
     @Override
     public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
     {
-        this.lock.readLock().lock();
-        IndexProxy proxy = delegate;
-        this.lock.readLock().unlock();
-        proxy.awaitPopulationCompleted();
+        for (; ; )
+        {
+            this.lock.readLock().lock();
+            IndexProxy proxy = delegate;
+            // We do this to make sure that we get any exceptions coming from a failed index proxy
+            if ( proxy.getState() == InternalIndexState.ONLINE )
+            {
+                break;
+            }
+            this.lock.readLock().unlock();
+            // this is where the failed index proxy would throw its exception
+            proxy.awaitPopulationCompleted();
+        }
     }
 
     public void setFlipTarget( IndexProxyFactory flipTarget )
@@ -265,8 +274,7 @@ public class FlippableIndexProxy implements IndexProxy
             catch ( Exception e )
             {
                 this.delegate = failureFlipTarget;
-                throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.",
-                                                     e );
+                throw new FlipFailedKernelException( e );
             }
         }
         finally

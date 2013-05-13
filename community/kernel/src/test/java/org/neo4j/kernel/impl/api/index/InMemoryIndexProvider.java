@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -43,13 +44,20 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     {
         super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 );
     }
-    
+
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
     {
         InMemoryIndex index = indexes.get( indexId );
         if ( index == null || index.state != InternalIndexState.ONLINE )
+        {
             throw new IllegalStateException( "Index " + indexId + " not online yet" );
+        }
+        if ( config.isUnique() && !(index instanceof UniqueInMemoryIndex) )
+        {
+            throw new IllegalStateException( String.format( "The index [%s] was not created as a unique index.",
+                                                            indexId ) );
+        }
         return index;
     }
 
@@ -61,30 +69,19 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId )
+    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
-        InMemoryIndex populator = new InMemoryIndex();
+        InMemoryIndex populator = config.isUnique() ? new UniqueInMemoryIndex() : new MultiValueInMemoryIndex();
         indexes.put( indexId, populator );
         return populator;
     }
-    
-    public static class InMemoryIndex extends IndexAccessor.Adapter implements IndexPopulator
+
+    private static abstract class InMemoryIndex extends IndexAccessor.Adapter implements IndexPopulator
     {
-        private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
         private InternalIndexState state = InternalIndexState.POPULATING;
 
-        @Override
-        public void add( long nodeId, Object propertyValue )
-        {
-            Set<Long> nodes = getLongs( propertyValue );
-            nodes.add( nodeId );
-        }
+        abstract void remove( long nodeId, Object propertyValue );
 
-        private void removed( long nodeId, Object valueBefore )
-        {
-            getLongs( valueBefore ).remove( nodeId );
-        }
-        
         @Override
         public void update( Iterable<NodePropertyUpdate> updates )
         {
@@ -96,24 +93,24 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
                     add( update.getNodeId(), update.getValueAfter() );
                     break;
                 case CHANGED:
-                    removed( update.getNodeId(), update.getValueBefore() );
+                    remove( update.getNodeId(), update.getValueBefore() );
                     add( update.getNodeId(), update.getValueAfter() );
                     break;
                 case REMOVED:
-                    removed( update.getNodeId(), update.getValueBefore() );
+                    remove( update.getNodeId(), update.getValueBefore() );
                     break;
                 default:
                     throw new UnsupportedOperationException();
                 }
             }
         }
-        
+
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {
             update( updates );
         }
-        
+
         @Override
         public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
@@ -123,6 +120,94 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         @Override
         public void force()
         {
+        }
+
+        @Override
+        public void create()
+        {
+            clear();
+        }
+
+        @Override
+        public void drop()
+        {
+            clear();
+        }
+
+        abstract void clear();
+
+        @Override
+        public void close( boolean populationCompletedSuccessfully )
+        {
+            if ( populationCompletedSuccessfully )
+            {
+                state = InternalIndexState.ONLINE;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    }
+
+    private static class UniqueInMemoryIndex extends InMemoryIndex
+    {
+        private final Map<Object, Long> indexData = new HashMap<Object, Long>();
+
+        @Override
+        public void add( long nodeId, Object propertyValue )
+        {
+            Long previous = indexData.get( propertyValue );
+            if ( previous != null )
+            {
+                throw new IllegalStateException( // TODO: better exception type
+                        String.format( "Index already contains [%s] for node: %s.", propertyValue, nodeId ) );
+            }
+            indexData.put( propertyValue, nodeId );
+        }
+
+        @Override
+        void remove( long nodeId, Object propertyValue )
+        {
+            indexData.remove( propertyValue );
+        }
+
+        @Override
+        void clear()
+        {
+            indexData.clear();
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            return new SingleValueReader( indexData );
+        }
+    }
+
+    private static class MultiValueInMemoryIndex extends InMemoryIndex
+    {
+        private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
+
+        @Override
+        public void add( long nodeId, Object propertyValue )
+        {
+            Set<Long> nodes = getLongs( propertyValue );
+            nodes.add( nodeId );
+        }
+
+        @Override
+        void remove( long nodeId, Object propertyValue )
+        {
+            Set<Long> nodes = getLongs( propertyValue );
+            nodes.remove( nodeId );
+        }
+
+        @Override
+        void clear()
+        {
+            indexData.clear();
         }
 
         private Set<Long> getLongs( Object propertyValue )
@@ -137,41 +222,17 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void create()
-        {
-            indexData.clear();
-        }
-
-        @Override
-        public void drop()
-        {
-            indexData.clear();
-        }
-        
-        @Override
-        public void close( boolean populationCompletedSuccessfully )
-        {
-            if ( populationCompletedSuccessfully )
-                state = InternalIndexState.ONLINE;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-        
-        @Override
         public IndexReader newReader()
         {
-            return new InMemoryReader( indexData );
+            return new MultiValueReader( indexData );
         }
     }
-    
-    private static class InMemoryReader implements IndexReader
+
+    private static class MultiValueReader implements IndexReader
     {
         private final HashMap<Object, Set<Long>> indexData;
 
-        InMemoryReader( Map<Object, Set<Long>> indexData )
+        MultiValueReader( Map<Object, Set<Long>> indexData )
         {
             this.indexData = new HashMap<Object, Set<Long>>( indexData );
         }
@@ -181,6 +242,28 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         {
             Set<Long> result = indexData.get( value );
             return result != null ? result.iterator() : IteratorUtil.<Long>emptyIterator();
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    }
+
+    private static class SingleValueReader implements IndexReader
+    {
+        private final HashMap<Object, Long> indexData;
+
+        SingleValueReader( Map<Object, Long> indexData )
+        {
+            this.indexData = new HashMap<Object, Long>( indexData );
+        }
+
+        @Override
+        public Iterator<Long> lookup( Object value )
+        {
+            Long result = indexData.get( value );
+            return result != null ? IteratorUtil.singletonIterator( result ) : IteratorUtil.<Long>emptyIterator();
         }
 
         @Override

@@ -19,19 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -40,13 +32,20 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -223,7 +222,6 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private DirectoryFactory directoryFactory;
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final long indexId = 0;
     private final DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
     
@@ -234,7 +232,7 @@ public class LuceneSchemaIndexPopulatorTest
         directoryFactory = new DirectoryFactory.Single( new DirectoryFactory.UncloseableDirectory(directory) );
         provider = new LuceneSchemaIndexProvider( directoryFactory,
                 new Config( stringMap( store_dir.name(), "whatever" ) ) );
-        index = provider.getPopulator( indexId );
+        index = provider.getPopulator( indexId, new IndexConfiguration( false ) );
         index.create();
     }
 
@@ -264,7 +262,7 @@ public class LuceneSchemaIndexPopulatorTest
         }
     }
 
-    private void switchToVerification() throws CorruptIndexException, IOException
+    private void switchToVerification() throws IOException
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );

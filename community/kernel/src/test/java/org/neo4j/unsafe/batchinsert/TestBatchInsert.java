@@ -19,23 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,6 +32,7 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,11 +46,10 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -75,6 +58,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class TestBatchInsert
 {
@@ -136,33 +137,6 @@ public class TestBatchInsert
         return BatchInserters.batchDatabase( "neo-batch-db", fs.get() );
     }
 
-    private GraphDatabaseService newGraphDatabase()
-    {
-        return newGraphDatabase( Predicates.<TestGraphDatabaseFactory>notNull() );
-    }
-    
-    private GraphDatabaseService newGraphDatabase( final KernelExtensionFactory<?> provider )
-    {
-        return newGraphDatabase( new Predicate<TestGraphDatabaseFactory>()
-        {
-            @Override
-            public boolean accept( TestGraphDatabaseFactory item )
-            {
-                List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
-                item.setKernelExtensions( extensions );
-                return true;
-            }
-        } );
-    }
-    
-    private GraphDatabaseService newGraphDatabase( Predicate<TestGraphDatabaseFactory> modifier )
-    {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
-        modifier.accept( factory );
-        return factory.newImpermanentDatabase( "neo-batch-db" );
-    }
-    
     @Test
     public void testSimple()
     {
@@ -851,7 +825,7 @@ public class TestBatchInsert
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
 
         BatchInserter inserter = newBatchInserter(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
@@ -866,7 +840,7 @@ public class TestBatchInsert
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong() );
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( populator ).create();
         verify( populator ).add( nodeId, "Jakewins" );
         verify( populator ).close( true );
@@ -883,7 +857,7 @@ public class TestBatchInsert
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
 
         BatchInserter inserter = newBatchInserter(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
@@ -898,7 +872,7 @@ public class TestBatchInsert
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong() );
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( populator ).create();
         verify( populator ).add( nodeId, "Jakewins" );
         verify( populator ).close( true );
@@ -917,7 +891,7 @@ public class TestBatchInsert
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
 
         BatchInserter inserter = newBatchInserter(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
@@ -930,7 +904,7 @@ public class TestBatchInsert
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong() );
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( populator ).create();
         verify( populator ).add( jakewins, "Jakewins" );
         verify( populator ).add( boggle, "b0ggl3" );
@@ -946,7 +920,7 @@ public class TestBatchInsert
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong() ) ).thenReturn( populator );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
 
         BatchInserter inserter = newBatchInserter(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
@@ -982,7 +956,7 @@ public class TestBatchInsert
     {
         FIRST,
         SECOND,
-        THIRD;
+        THIRD
     }
 
     private Iterable<String> asNames( Iterable<Label> nodeLabels )

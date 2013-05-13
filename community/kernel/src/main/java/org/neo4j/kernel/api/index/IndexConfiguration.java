@@ -17,23 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-
-public class ConstraintCreationKernelException extends KernelException
+public class IndexConfiguration
 {
-    private final UniquenessConstraint constraint;
+    private final boolean unique;
 
-    public ConstraintCreationKernelException( UniquenessConstraint constraint, Throwable cause )
+    public IndexConfiguration( boolean unique )
     {
-        super( cause, "Failed to create constraint %s: %s", constraint, cause.getMessage() );
-        this.constraint = constraint;
+        this.unique = unique;
     }
 
-    public UniquenessConstraint constraint()
+    public boolean isUnique()
     {
-        return constraint;
+        return unique;
     }
 }

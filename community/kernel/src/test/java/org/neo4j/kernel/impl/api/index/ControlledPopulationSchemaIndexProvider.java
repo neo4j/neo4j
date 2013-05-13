@@ -19,23 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
 
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
+
 public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
 {
-
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
     private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
     private final CountDownLatch writerLatch = new CountDownLatch( 1 );
@@ -73,14 +73,14 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId )
+    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
