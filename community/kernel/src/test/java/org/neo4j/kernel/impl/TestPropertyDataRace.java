@@ -20,14 +20,18 @@
 package org.neo4j.kernel.impl;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -48,6 +52,12 @@ public class TestPropertyDataRace
 {
     @ClassRule
     public static EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
+
+    public static final TargetDirectory targetDir = TargetDirectory.forTest( TestPropertyDataRace.class );
+
+    @Rule
+    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule( "", targetDir.directory( "dumps" ),
+            60, TimeUnit.SECONDS );
 
     @Test
     @EnabledBreakpoints( { "enable breakpoints", "done" } )

@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -32,7 +35,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.TestPropertyDataRace;
+import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -56,6 +62,7 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
 {
     private static final int RelationshipGrabSize = 2;
+
     @ClassRule
     public static EmbeddedDatabaseRule database = new EmbeddedDatabaseRule()
     {
@@ -65,6 +72,12 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
             builder.setConfig( GraphDatabaseSettings.relationship_grab_size, "" + RelationshipGrabSize );
         }
     };
+
+    public static final TargetDirectory targetDir = TargetDirectory.forTest( TestPropertyDataRace.class );
+
+    @Rule
+    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule( "", targetDir.directory( "dumps" ),
+            0, TimeUnit.SECONDS );
 
     private static DebuggedThread committer;
     private static DebuggedThread reader;
