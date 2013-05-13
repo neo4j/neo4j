@@ -25,6 +25,8 @@ import org.neo4j.kernel.api.{KernelException, StatementContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.graphdb.schema.{UniquenessConstraintDefinition, ConstraintDefinition}
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
 
@@ -37,6 +39,16 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
+  } catch {
+    case _: KernelException => None
+  }
+
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
+    val labelId = ctx.getLabelId(labelName)
+    val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
+
+    val matchingConstraints = ctx.getConstraints(labelId, propertyKeyId)
+    if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
   } catch {
     case _: KernelException => None
   }
