@@ -45,7 +45,7 @@ trait ParserPattern extends Base with Labels {
   }
 
   def usePattern[T](translator: AbstractPattern => Maybe[T]): Parser[Seq[T]] = Parser {
-    case in => translate(in, translator, pattern(in))
+    case in => translate(in, translator, patterns(in))
   }
 
   def usePath[T](translator: AbstractPattern => Maybe[T]): Parser[Seq[T]] = Parser {
@@ -68,7 +68,7 @@ trait ParserPattern extends Base with Labels {
     }
   }
 
-  private def pattern: Parser[Seq[AbstractPattern]] = commaList(patternBit) ^^ (patterns => patterns.flatten)
+  def patterns: Parser[Seq[AbstractPattern]] = commaList(patternBit) ^^ (patterns => patterns.flatten)
 
   private def patternBit: Parser[Seq[AbstractPattern]] =
     pathAssignment |
@@ -113,13 +113,13 @@ trait ParserPattern extends Base with Labels {
     in =>
       (generatedName ~ expression).apply(in) match {
         case Success(_ ~ Identifier(name), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq.empty, true), rest)
+          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq.empty, bare = true), rest)
 
         case Success(name ~ Literal(n: KeyToken.Unresolved), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq(n), true), rest)
+          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq(n), bare = true), rest)
 
         case Success(name ~ exp, rest) =>
-          Success(ParsedEntity(name, exp, Map[String, Expression](), Seq.empty, true), rest)
+          Success(ParsedEntity(name, exp, Map[String, Expression](), Seq.empty, bare = true), rest)
 
         case x: Error           => x
         case Failure(msg, rest) => failure("expected an expression that is a node", rest)

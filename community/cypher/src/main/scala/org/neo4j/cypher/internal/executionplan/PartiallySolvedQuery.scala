@@ -44,9 +44,14 @@ object PartiallySolvedQuery {
 
     val items: Seq[StartItem] = q.start ++ q.hints
 
+    val newStart: Seq[QueryToken[StartItem]] = items.map {
+      case ast: MergeAst => ast.nextStep().map(Unsolved(_).asInstanceOf[QueryToken[StartItem]])
+      case startItem     => Seq[QueryToken[StartItem]](Unsolved(startItem))
+    }.flatten
+
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
-      start = items.map(Unsolved(_)),
+      start = newStart,
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
       where = q.where.atoms.map(Unsolved(_)),
