@@ -50,6 +50,8 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=aname" =>
         Map("value" -> "Bob")
+      case "parameters=anothername" =>
+        Map("value" -> "Andrés")
       case "parameters=regex" =>
         Map("regex" -> "Tob.*")
       case "parameters=names" =>
@@ -75,7 +77,7 @@ RETURN n,m###
 
 Use comparison operators.
 
-###assertion=returns-one parameters=aname
+###assertion=returns-one parameters=anothername
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 WHERE

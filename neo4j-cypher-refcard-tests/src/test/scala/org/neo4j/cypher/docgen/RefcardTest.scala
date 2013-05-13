@@ -96,7 +96,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
       try {
         assert(name, result)
       } catch {
-        case e: Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
+        case e: Exception => throw new RuntimeException("Test: %s\nQuery: %sParams: %s\n%s".format(name, query, parametersChoice, e.getMessage), e)
       }
     })
 
