@@ -112,7 +112,7 @@ class ExpressionTest extends Assertions {
     val result = keys.toSeq.map(k => (a.get(k), b.get(k)) match {
       case (Some(x), None)    => k -> x
       case (None, Some(x))    => k -> x
-      case (Some(x), Some(y)) => k -> x.mergeWith(y)
+      case (Some(x), Some(y)) => k -> x.mergeDown(y)
       case (None, None)       => throw new ThisShouldNotHappenError("Andres", "only here to stop warnings")
     }).toMap
 

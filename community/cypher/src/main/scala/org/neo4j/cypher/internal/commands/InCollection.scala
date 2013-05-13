@@ -48,7 +48,7 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   def children = Seq(collection, predicate)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    val innerType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+    val innerType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
     predicate.throwIfSymbolsMissing(symbols.add(id, innerType))
   }
 
