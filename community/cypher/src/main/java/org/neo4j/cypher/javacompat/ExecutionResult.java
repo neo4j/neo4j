@@ -55,6 +55,10 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     /**
      * Provides result objects from a single column of the result set. This method is best used for
      * single column results.
+     * <p>
+     * <b>The Iterator returned must be fully exhausted to ensure that any resources, including transactions, bound
+     * to it, are properly closed.</b>
+     * </p>
      *
      * @param n exact name of the column, as it appeared in the original query
      * @param <T> desired type cast for the result objects
@@ -84,6 +88,11 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     }
 
     /**
+     * Provides a textual representation of the query result.
+     * <p><b>
+     * The execution result represented by this object will be consumed in its entirety after this method is called.
+     * Calling any of the other iterating methods on it should not be expected to return any results.
+     * </b></p>
      * @return Returns the execution result
      */
     public String dumpToString()
@@ -114,6 +123,17 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
         inner.dumpToString( writer );
     }
 
+    /**
+     * Returns an iterator over the <i>return</i> clause of the query. The format is a map that has as keys the names
+     * of the columns or their explicit names (set via 'as') and the value is the calculated value. Each iterator item
+     * is one row of the query result.
+     * <p>
+     * <b>The Iterator returned must be fully exhausted to ensure that any resources, including transactions bound
+     * to it, are properly closed.</b>
+     * </p>
+     *
+     * @return An iterator over the result of the query as a map from projected column name to value
+     */
     @Override
     public Iterator<Map<String, Object>> iterator()
     {

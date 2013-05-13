@@ -19,3 +19,5 @@ This can be used to have multiple queries be committed as a single transaction:
 Note that a query will hold the changes in memory until the whole query has finished executing.
 A large query will consequently need a JVM with lots of heap space.
 
+All iterators returned from an execution result should be exhausted fully to ensure that resources bound to them will be properly closed.
+Resources include transactions started by the query, so failing to do so may, for example, lead to deadlocks or other weird behaviour.
