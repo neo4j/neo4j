@@ -55,7 +55,8 @@ public enum HighAvailabilityMemberState
 //                    assert context.getAvailableMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "this cannot be happening" );
+                        throw new RuntimeException( "Received a MasterIsAvailable event for my InstanceId while in" +
+                                " PENDING state" );
                     }
                     return TO_SLAVE;
                 }
@@ -67,7 +68,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "cannot go from pending to slave" );
+                        throw new RuntimeException( "Cannot go from pending to slave" );
                     }
                     return this;
                 }
@@ -167,7 +168,8 @@ public enum HighAvailabilityMemberState
                     {
                         return MASTER;
                     }
-                    throw new RuntimeException( "i probably missed a masterIsElected event - not really that good" );
+                    throw new RuntimeException( "Received a MasterIsAvailable event for instance " + masterId
+                    + " while in TO_MASTER state");
                 }
 
                 @Override
@@ -177,7 +179,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "cannot be transitioning to master and slave at the same time" );
+                        throw new RuntimeException( "Cannot be transitioning to master and slave at the same time" );
                     }
                     return this;
                 }
@@ -217,7 +219,8 @@ public enum HighAvailabilityMemberState
                         return this;
                     }
                     throw new RuntimeException( "I, " + context.getMyId() + " got a masterIsAvailable for " +
-                            masterHaURI + " (id is " + masterId + " ) while being master. That should not happen" );
+                            masterHaURI + " (id is " + masterId + " ) while in MASTER state. Probably missed a " +
+                            "MasterIsElected event." );
                 }
 
                 @Override
@@ -227,7 +230,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "cannot be master and transition to slave at the same time" );
+                        throw new RuntimeException( "Cannot be master and transition to slave at the same time" );
                     }
                     return this;
                 }
@@ -269,14 +272,16 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "master? i don't think so" );
+                        throw new RuntimeException( "Cannot transition to MASTER directly from SLAVE state" );
                     }
                     else if ( masterId.equals( context.getElectedMasterId() ) )
                     {
                         // this is just someone else that joined the cluster
                         return this;
                     }
-                    throw new RuntimeException( "i probably missed a masterIsElected event, we're not looking good" );
+                    throw new RuntimeException( "Received a MasterIsAvailable event for " + masterId +
+                            " which is different from the current master (" + context.getElectedMasterId() +
+                            ") while in the SLAVE state (probably missed a MasterIsElected event)" );
                 }
 
                 @Override
