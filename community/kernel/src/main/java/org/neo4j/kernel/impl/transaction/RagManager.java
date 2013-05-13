@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  * a deadlock would occur when the transaction would wait for the resource. That
  * will guarantee that a deadlock never occurs on a RWLock basis.
  * <p>
- * Think of the resource allocation graph as a node space. We have two node
+ * Think of the resource allocation graph as a graph. We have two node
  * types, resource nodes (R) and tx/process nodes (T). When a transaction
  * acquires lock on some resource a relationship is added from the resource to
  * the tx (R->T) and when a transaction waits for a resource a relationship is

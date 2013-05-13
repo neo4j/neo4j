@@ -30,7 +30,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
- * persistence source for Neo4j kernel operations that are performed on the node space
+ * persistence source for Neo4j kernel operations that are performed on the graph
  * will be forwarded to this class {@link NeoStoreTransaction} implementation.
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGenerator, Lifecycle

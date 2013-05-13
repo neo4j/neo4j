@@ -100,7 +100,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
     @Override
     public String getDescription()
     {
-    	return "Traverses the node space from your current position (pwd). " +
+    	return "Traverses the graph from your current position (pwd). " +
     		"It's a reflection of the neo4j traverser API with some options for filtering " +
     		"which nodes will be returned.";
     }

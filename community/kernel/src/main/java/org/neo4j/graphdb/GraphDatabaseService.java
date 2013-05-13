@@ -89,7 +89,7 @@ public interface GraphDatabaseService
     /**
      * Returns the reference node, which is a "starting point" in the node
      * space. Usually, a client attaches relationships to this node that leads
-     * into various parts of the node space.
+     * into various parts of the graph.
      *
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node
