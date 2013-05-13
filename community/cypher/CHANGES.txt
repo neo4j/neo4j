@@ -1,5 +1,6 @@
 2.0.0-M03
 ---------
+o Added startNode()/endNode()
 o Fixes #780 - Queries with literal collections fail against schema indexes
 
 2.0.0-M02
