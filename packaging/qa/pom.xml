@@ -12,61 +12,29 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.qa</groupId>
   <artifactId>neo4j-server-qa</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <artifactId>exec-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-        <executions>
-          <execution>
-            <id>Install Bundler</id>
-            <phase>test</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <environmentVariables>
-                <project_version>${project.version}</project_version>
-              </environmentVariables>
-              <executable>gem</executable>
-              <arguments>
-                <argument>install</argument>
-                <argument>bundler</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>Install Gems</id>
-            <phase>test</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <environmentVariables>
-                <project_version>${project.version}</project_version>
-              </environmentVariables>
-              <executable>bundle</executable>
-              <arguments>
-                <argument>install</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>Execute Rake</id>
-            <phase>test</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <environmentVariables>
-                <project_version>${project.version}</project_version>
-              </environmentVariables>
-              <executable>rake</executable>
-            </configuration>
-          </execution>
-        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <project_version>${project.version}</project_version>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
     </plugins>
   </build>
