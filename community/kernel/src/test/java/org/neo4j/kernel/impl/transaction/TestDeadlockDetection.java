@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
