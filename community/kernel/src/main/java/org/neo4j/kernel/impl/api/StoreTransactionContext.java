@@ -54,7 +54,7 @@ public class StoreTransactionContext implements TransactionContext
         this.neoStore = neoStore;
         this.indexingService = indexingService;
     }
-    
+
     @Override
     public StatementContext newStatementContext()
     {
@@ -77,19 +77,19 @@ public class StoreTransactionContext implements TransactionContext
         }
         catch ( HeuristicMixedException e )
         {
-            throw new TransactionFailureException(e);
+            throw new TransactionFailureException( e );
         }
         catch ( HeuristicRollbackException e )
         {
-            throw new TransactionFailureException(e);
+            throw new TransactionFailureException( e );
         }
         catch ( RollbackException e )
         {
-            throw new TransactionFailureException(e);
+            throw new TransactionFailureException( e );
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException(e);
+            throw new TransactionFailureException( e );
         }
         catch ( IllegalStateException e )
         {
@@ -102,7 +102,10 @@ public class StoreTransactionContext implements TransactionContext
     {
         try
         {
-            transactionManager.rollback();
+            if ( transactionManager.getTransaction() != null )
+            {
+                transactionManager.rollback();
+            }
         }
         catch ( IllegalStateException e )
         {

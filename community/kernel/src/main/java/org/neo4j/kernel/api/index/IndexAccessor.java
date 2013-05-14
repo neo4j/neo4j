@@ -38,7 +38,7 @@ public interface IndexAccessor
      * Apply a set of changes to this index.
      * Updates must be visible in {@link #newReader() readers} created after this update.
      */
-    void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException;
+    void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException;
 
     /**
      * Apply a set of changes to this index. This method will be called instead of
@@ -79,7 +79,7 @@ public interface IndexAccessor
         }
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
         {
         }
         

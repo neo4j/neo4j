@@ -44,13 +44,12 @@ public interface IndexPopulator
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
      */
-    void add( long nodeId, Object propertyValue );
+    void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException;
 
     /**
      * Apply a set of changes to this index, generally this will be a set of changes from a transaction.
-     * @param updates
      */
-    void update( Iterable<NodePropertyUpdate> updates );
+    void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException;
 
     // TODO instead of this flag, we should store if population fails and mark indexes as failed internally
     // Rationale: Users should be required to explicitly drop failed indexes
@@ -76,12 +75,12 @@ public interface IndexPopulator
         }
         
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException
         {
         }
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
         {
         }
 

@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.ConstraintCreationException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -36,6 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
 {
@@ -45,8 +50,12 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         // given
         newTransaction();
         // name is not unique for Foo in the existing data
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
+        Node node = db.createNode( label( "Foo" ) );
+        long node1 = node.getId();
+        node.setProperty( "name", "foo" );
+        node = db.createNode( label( "Foo" ) );
+        long node2 = node.getId();
+        node.setProperty( "name", "foo" );
         long foo = statement.getLabelId( "Foo" );
         long name = statement.getPropertyKeyId( "name" );
         commit();
@@ -64,27 +73,22 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         catch ( ConstraintCreationKernelException ex )
         {
             assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
-            // TODO: assert about the exception we threw...
-            assertThat( ex.getCause().getCause(), instanceOf( IllegalStateException.class ) );
+            Throwable cause = ex.getCause();
+            assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+            assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence( node1, "foo", node2 ) ),
+                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
         }
     }
 
     @Test
-    @Ignore("2013-05-13 Not passing yet - requires work on how to hand over the constraint from pre-phase to live.\n" +
-            "Specifically, we need to be able to fail the transaction if the constraint doesn't hold, have that " +
-            "exception propagate nicely without setting the TM in a bad state.\n" +
-            "Ideas for this currently revolve around doing the final constraint evaluation in prepare() and lock the " +
-            "schema (or the index? - easier, but requires the indexing to be synchronous) to prevent changes until " +
-            "the constraint is live and then make the constraint live and release the locks as part of commit().\n" +
-            "Possibly there is something that can be done with IndexProxy and more states in the flipping impl, make " +
-            "the index enter a state where it operates as if online from an index POV, but adds failures to a queue, " +
-            "this would make the operations synchronous from the indexing POV but the failures would be async, " +
-            "reported when committing the constraint creating transaction.")
-    public void shouldFailOnCommitIfConstraintIsBrokenAfterConstraintAdded() throws Exception
+    public void shouldFailOnCommitIfConstraintIsBrokenAfterConstraintAddedButBeforeConstraintCommitted()
+            throws Exception
     {
         // given
         newTransaction();
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
+        Node node = db.createNode( label( "Foo" ) );
+        long node1 = node.getId();
+        node.setProperty( "name", "foo" );
         long foo = statement.getLabelId( "Foo" );
         long name = statement.getPropertyKeyId( "name" );
         commit();
@@ -92,16 +96,18 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         newTransaction();
         statement.addUniquenessConstraint( foo, name );
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.submit( new Runnable()
+        long node2 = executor.submit( new Callable<Long>()
         {
             @Override
-            public void run()
+            public Long call()
             {
                 Transaction tx = db.beginTx();
                 try
                 {
-                    db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
+                    Node node = db.createNode( label( "Foo" ) );
+                    node.setProperty( "name", "foo" );
                     tx.success();
+                    return node.getId();
                 }
                 finally
                 {
@@ -119,9 +125,17 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintCreationException ex )
+        catch ( TransactionFailureException ex )
         {
-            assertEquals( "", ex.getMessage() );
+            Throwable cause = ex.getCause();
+            assertThat( cause, instanceOf( ConstraintCreationException.class ) );
+            ConstraintCreationKernelException creationException = (ConstraintCreationKernelException) cause.getCause();
+
+            assertEquals( new UniquenessConstraint( foo, name ), creationException.constraint() );
+            cause = creationException.getCause();
+            assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+            assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence( node1, "foo", node2 ) ),
+                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
         }
     }
 

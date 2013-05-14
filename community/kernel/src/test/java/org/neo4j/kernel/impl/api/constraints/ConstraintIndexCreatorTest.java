@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
@@ -71,7 +72,7 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( indexCreationContext );
         verify( constraintCreationContext ).getCommittedIndexId( descriptor );
         verifyNoMoreInteractions( constraintCreationContext );
-        verify( indexProxy ).awaitPopulationCompleted();
+        verify( indexProxy ).awaitStoreScanCompleted();
     }
 
     @Test
@@ -91,8 +92,8 @@ public class ConstraintIndexCreatorTest
         when( constraintCreationContext.getCommittedIndexId( descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
-        doThrow( new IndexPopulationFailedKernelException( descriptor, null ) )
-                .when( indexProxy ).awaitPopulationCompleted();
+        doThrow( new IndexPopulationFailedKernelException( descriptor, new IndexEntryConflictException( 1, "a", 2 ) ) )
+                .when( indexProxy ).awaitStoreScanCompleted();
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
 
@@ -104,9 +105,9 @@ public class ConstraintIndexCreatorTest
             fail( "expected exception" );
         }
         // then
-        catch ( IndexPopulationFailedKernelException e )
+        catch ( ConstraintVerificationFailedKernelException e )
         {
-            assertEquals( "Failed to populate index for labelId 123 on propertyKeyId 456",
+            assertEquals( "Existing data does not match UniquenessConstraint{labelId=123, propertyKeyId=456}.",
                           e.getMessage() );
         }
         verify( indexCreationContext ).addConstraintIndex( 123, 456 );

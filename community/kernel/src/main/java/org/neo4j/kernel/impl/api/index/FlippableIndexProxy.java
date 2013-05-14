@@ -212,20 +212,44 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
     {
-        for (; ; )
+        IndexProxy proxy;
+        do
         {
-            this.lock.readLock().lock();
-            IndexProxy proxy = delegate;
-            // We do this to make sure that we get any exceptions coming from a failed index proxy
-            if ( proxy.getState() == InternalIndexState.ONLINE )
-            {
-                break;
-            }
-            this.lock.readLock().unlock();
-            // this is where the failed index proxy would throw its exception
-            proxy.awaitPopulationCompleted();
+            lock.readLock().lock();
+            proxy = delegate;
+            lock.readLock().unlock();
+        } while ( proxy.awaitStoreScanCompleted() );
+        return true;
+    }
+
+    @Override
+    public void activate()
+    {
+        // use write lock, since activate() might call flip*() which acquires a write lock itself.
+        lock.writeLock().lock();
+        try
+        {
+            delegate.activate();
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void validate() throws IndexPopulationFailedKernelException
+    {
+        lock.readLock().lock();
+        try
+        {
+            delegate.validate();
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 
@@ -235,6 +259,19 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             this.flipTarget = flipTarget;
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void flipTo( IndexProxy targetDelegate )
+    {
+        lock.writeLock().lock();
+        try
+        {
+            this.delegate = targetDelegate;
         }
         finally
         {
@@ -260,7 +297,7 @@ public class FlippableIndexProxy implements IndexProxy
         flip( actionDuringFlip, delegate );
     }
 
-    public void flip( Callable<Void> actionDuringFlip, IndexProxy failureFlipTarget ) throws FlipFailedKernelException
+    public void flip( Callable<Void> actionDuringFlip, IndexProxy failureDelegate ) throws FlipFailedKernelException
     {
         lock.writeLock().lock();
         try
@@ -273,7 +310,7 @@ public class FlippableIndexProxy implements IndexProxy
             }
             catch ( Exception e )
             {
-                this.delegate = failureFlipTarget;
+                this.delegate = failureDelegate;
                 throw new FlipFailedKernelException( e );
             }
         }

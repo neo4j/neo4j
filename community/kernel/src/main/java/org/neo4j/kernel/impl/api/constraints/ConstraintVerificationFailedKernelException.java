@@ -19,13 +19,87 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
-    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint )
+    public static final class Evidence
+    {
+        private final long existingNodeId;
+        private final Object propertyValue;
+        private final long addedNodeId;
+
+        public Evidence( IndexEntryConflictException conflict )
+        {
+            this( conflict.getExistingNodeId(), conflict.getPropertyValue(), conflict.getAddedNodeId() );
+        }
+
+        public Evidence( long existingNodeId, Object propertyValue, long addedNodeId )
+        {
+            this.existingNodeId = existingNodeId;
+            this.propertyValue = propertyValue;
+            this.addedNodeId = addedNodeId;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+            {
+                return true;
+            }
+            if ( obj != null && getClass() == obj.getClass() )
+            {
+                Evidence that = (Evidence) obj;
+
+                return this.addedNodeId == that.addedNodeId &&
+                       this.existingNodeId == that.existingNodeId &&
+                       this.propertyValue.equals( that.propertyValue );
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (existingNodeId ^ (existingNodeId >>> 32));
+            result = 31 * result + propertyValue.hashCode();
+            result = 31 * result + (int) (addedNodeId ^ (addedNodeId >>> 32));
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Evidence{" +
+                   "existingNodeId=" + existingNodeId +
+                   ", propertyValue=" + propertyValue +
+                   ", addedNodeId=" + addedNodeId +
+                   '}';
+        }
+    }
+
+    private final Set<Evidence> evidence;
+
+    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
     {
         super( null, "Existing data does not match %s.", constraint );
+        this.evidence = evidence;
+    }
+
+    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable failure )
+    {
+        super( failure, "Failed to verify constraint %s: %s", constraint, failure.getMessage() );
+        this.evidence = null;
+    }
+
+    public Set<Evidence> evidence()
+    {
+        return evidence == null ? Collections.<Evidence>emptySet() : Collections.unmodifiableSet( evidence );
     }
 }

@@ -29,6 +29,7 @@ import java.util.Set;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -83,8 +84,9 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         abstract void remove( long nodeId, Object propertyValue );
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
         {
+            // TODO: unique indexes need the updates ordered... removes before adds.
             for ( NodePropertyUpdate update : updates )
             {
                 switch ( update.getUpdateMode() )
@@ -106,7 +108,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
         {
             update( updates );
         }
@@ -114,7 +116,14 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         @Override
         public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
-            update( updates );
+            try
+            {
+                update( updates );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                throw new IllegalStateException( "Should not report index entry conflicts during recovery!", e );
+            }
         }
 
         @Override
@@ -156,13 +165,12 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         private final Map<Object, Long> indexData = new HashMap<Object, Long>();
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException
         {
             Long previous = indexData.get( propertyValue );
             if ( previous != null )
             {
-                throw new IllegalStateException( // TODO: better exception type
-                        String.format( "Index already contains [%s] for node: %s.", propertyValue, nodeId ) );
+                throw new IndexEntryConflictException( nodeId, propertyValue, previous );
             }
             indexData.put( propertyValue, nodeId );
         }

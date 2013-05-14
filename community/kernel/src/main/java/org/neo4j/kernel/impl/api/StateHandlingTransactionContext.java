@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.ConstraintCreationException;
 import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
@@ -88,14 +89,20 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     @Override
     public void commit() throws TransactionFailureException
     {
+        boolean success = false;
         try
         {
             createTransactionCommands();
+            // - Ensure transaction is committed to disk at this point
+            super.commit();
+            success = true;
         }
         finally
         {
-            // - Ensure transaction is committed to disk at this point
-            super.commit();
+            if ( !success )
+            {
+                dropCreatedConstraintIndexes();
+            }
         }
 
         // - commit changes from tx state to the cache
@@ -165,6 +172,14 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             @Override
             public void visitAddedConstraint( UniquenessConstraint element, long indexId )
             {
+                try
+                {
+                    constraintIndexCreator.validateConstraintIndex( element, indexId );
+                }
+                catch ( ConstraintCreationKernelException e )
+                {
+                    throw new ConstraintCreationException(e);
+                }
                 clearState.set( true );
                 long constraintId = schemaStorage.newRuleId();
                 persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(

@@ -83,7 +83,14 @@ public interface IndexProxy
      */
     IndexReader newReader() throws IndexNotFoundKernelException;
 
-    void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException;
+    /**
+     * @return {@code true} if the call waited, {@code false} if the condition was already reached.
+     */
+    boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException;
+
+    void activate();
+
+    void validate() throws IndexPopulationFailedKernelException;
 
     class Adapter implements IndexProxy
     {
@@ -146,9 +153,19 @@ public interface IndexProxy
         }
 
         @Override
-        public void awaitPopulationCompleted()
+        public boolean awaitStoreScanCompleted()
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void activate()
+        {
+        }
+
+        @Override
+        public void validate()
+        {
         }
     }
 }

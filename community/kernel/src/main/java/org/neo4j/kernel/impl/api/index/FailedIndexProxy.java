@@ -35,7 +35,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                              IndexPopulator populator )
     {
-       this( descriptor, providerDescriptor, populator, null );
+        this( descriptor, providerDescriptor, populator, null );
     }
 
     public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
@@ -59,7 +59,19 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException
+    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
+    {
+        throw new IndexPopulationFailedKernelException( getDescriptor(), getCause() );
+    }
+
+    @Override
+    public void activate()
+    {
+        throw new UnsupportedOperationException( "Cannot activate a failed index." );
+    }
+
+    @Override
+    public void validate() throws IndexPopulationFailedKernelException
     {
         throw new IndexPopulationFailedKernelException( getDescriptor(), getCause() );
     }

@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
@@ -207,16 +207,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             {
                 throw new ConstraintCreationKernelException( constraint, e );
             }
-            catch ( IndexPopulationFailedKernelException e )
+            catch ( ConstraintVerificationFailedKernelException e )
             {
-                if ( e.getCause() instanceof ConstraintViolationKernelException )
-                {
-                    throw new ConstraintCreationKernelException( constraint, e.getCause() );
-                }
-                else
-                {
-                    throw new ConstraintCreationKernelException( constraint, e );
-                }
+                throw new ConstraintCreationKernelException( constraint, e );
             }
             state.addConstraint( constraint, indexId );
         }

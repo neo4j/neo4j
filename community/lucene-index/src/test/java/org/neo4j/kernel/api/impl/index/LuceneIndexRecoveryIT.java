@@ -38,12 +38,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -330,60 +324,7 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                final LuceneSchemaIndexProvider delegate =
-                        new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
-                return new SchemaIndexProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 )
-                {
-                    @Override
-                    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
-                    {
-                        final IndexPopulator populator = delegate.getPopulator( indexId, config );
-                        return new IndexPopulator()
-                        {
-                            @Override
-                            public void create() throws IOException
-                            {
-                                populator.create();
-                            }
-
-                            @Override
-                            public void drop() throws IOException
-                            {
-                                populator.drop();
-                            }
-
-                            @Override
-                            public void add( long nodeId, Object propertyValue )
-                            {
-                                populator.add( nodeId, propertyValue );
-                            }
-
-                            @Override
-                            public void update( Iterable<NodePropertyUpdate> updates )
-                            {
-                                populator.update( updates );
-                            }
-
-                            @Override
-                            public void close( boolean populationCompletedSuccessfully ) throws IOException
-                            {
-                                populator.close( false );
-                            }
-                        };
-                    }
-
-                    @Override
-                    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
-                    {
-                        return delegate.getOnlineAccessor( indexId, config );
-                    }
-
-                    @Override
-                    public InternalIndexState getInitialState( long indexId )
-                    {
-                        return delegate.getInitialState( indexId );
-                    }
-                };
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
             }
         };
     }

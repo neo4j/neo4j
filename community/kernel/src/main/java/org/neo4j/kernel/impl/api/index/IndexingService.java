@@ -319,15 +319,14 @@ public class IndexingService extends LifecycleAdapter
                                                    final SchemaIndexProvider.Descriptor providerDescriptor,
                                                    final boolean unique )
     {
-        FlippableIndexProxy flipper = new FlippableIndexProxy();
+        final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         IndexPopulator populator = getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
                                           populator, flipper, storeView, updateableSchemaState, logging );
-        flipper.setFlipTarget( singleProxy( populatingIndex ) );
-        flipper.flip();
+        flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
         flipper.setFlipTarget( new IndexProxyFactory()
@@ -335,8 +334,15 @@ public class IndexingService extends LifecycleAdapter
             @Override
             public IndexProxy create()
             {
-                return new OnlineIndexProxy( descriptor, providerDescriptor,
-                        getOnlineAccessorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) ) );
+                OnlineIndexProxy onlineProxy = new OnlineIndexProxy( descriptor, providerDescriptor,
+                                                                     getOnlineAccessorFromProvider(
+                                                                             providerDescriptor, ruleId,
+                                                                             new IndexConfiguration( unique ) ) );
+                if ( unique )
+                {
+                    return new TentativeConstraintIndexProxy( flipper, onlineProxy );
+                }
+                return onlineProxy;
             }
         } );
 
@@ -430,6 +436,16 @@ public class IndexingService extends LifecycleAdapter
         {
             indexProxy.drop().get();
         }
+    }
+
+    public void activateIndex( long indexId ) throws IndexNotFoundKernelException
+    {
+        getProxyForRule( indexId ).activate();
+    }
+
+    public void validateIndex( long indexId ) throws IndexNotFoundKernelException, IndexPopulationFailedKernelException
+    {
+        getProxyForRule( indexId ).validate();
     }
 
     class ServiceStateUpdatingIndexProxy extends DelegatingIndexProxy

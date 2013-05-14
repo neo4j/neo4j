@@ -40,9 +40,21 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void awaitPopulationCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
     {
         throw new UnsupportedOperationException( "cannot await population on a recovering index" );
+    }
+
+    @Override
+    public void activate()
+    {
+        throw new UnsupportedOperationException( "Cannot activate recovering index." );
+    }
+
+    @Override
+    public void validate()
+    {
+        throw new UnsupportedOperationException( "Cannot validate recovering index." );
     }
 
     @Override

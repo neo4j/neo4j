@@ -23,12 +23,17 @@ import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionalException;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+
+import static java.util.Collections.singleton;
 
 public class ConstraintIndexCreator
 {
@@ -42,8 +47,9 @@ public class ConstraintIndexCreator
     }
 
     public long createUniquenessConstraintIndex( SchemaReadOperations schema, long labelId, long propertyKeyId )
-            throws DataIntegrityKernelException, IndexPopulationFailedKernelException, TransactionalException
+            throws DataIntegrityKernelException, ConstraintVerificationFailedKernelException, TransactionalException
     {
+        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         IndexDescriptor descriptor = transactor.execute( createConstraintIndex( labelId, propertyKeyId ) );
         long indexId;
         try
@@ -58,12 +64,12 @@ public class ConstraintIndexCreator
         boolean success = false;
         try
         {
-            awaitIndexPopulation( indexId );
+            awaitIndexPopulation( constraint, indexId );
             success = true;
         }
         catch ( InterruptedException exception )
         {
-            throw new IndexPopulationFailedKernelException( descriptor, exception );
+            throw new ConstraintVerificationFailedKernelException( constraint, exception );
         }
         finally
         {
@@ -75,22 +81,67 @@ public class ConstraintIndexCreator
         return indexId;
     }
 
+    public void validateConstraintIndex( UniquenessConstraint constraint, long indexId )
+            throws ConstraintCreationKernelException
+    {
+        try
+        {
+            indexingService.validateIndex( indexId );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new IllegalStateException(
+                    String.format( "Index (indexId=%d) that we just created does not exist.", indexId ) );
+        }
+        catch ( IndexPopulationFailedKernelException e )
+        {
+            Throwable failure = e.getCause();
+            if ( failure instanceof ConstraintVerificationFailedKernelException )
+            {
+                throw new ConstraintCreationKernelException( constraint, failure );
+            }
+            if ( failure instanceof IndexEntryConflictException )
+            {
+                IndexEntryConflictException conflict = (IndexEntryConflictException) failure;
+                throw new ConstraintCreationKernelException(
+                        constraint, new ConstraintVerificationFailedKernelException( constraint, singleton(
+                        new ConstraintVerificationFailedKernelException.Evidence( conflict ) ) ) );
+            }
+            throw new ConstraintCreationKernelException( constraint, failure );
+        }
+    }
+
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws DataIntegrityKernelException, TransactionalException
     {
         transactor.execute( dropConstraintIndex( descriptor ) );
     }
 
-    private void awaitIndexPopulation( long indexId ) throws IndexPopulationFailedKernelException, InterruptedException
+    private void awaitIndexPopulation( UniquenessConstraint constraint, long indexId )
+            throws InterruptedException, ConstraintVerificationFailedKernelException
     {
         try
         {
-            indexingService.getProxyForRule( indexId ).awaitPopulationCompleted();
+            indexingService.getProxyForRule( indexId ).awaitStoreScanCompleted();
         }
         catch ( IndexNotFoundKernelException e )
         {
             throw new IllegalStateException(
                     String.format( "Index (indexId=%d) that we just created does not exist.", indexId ) );
+        }
+        catch ( IndexPopulationFailedKernelException e )
+        {
+            Throwable cause = e.getCause();
+            if ( cause instanceof IndexEntryConflictException )
+            {
+                throw new ConstraintVerificationFailedKernelException( constraint, singleton(
+                        new ConstraintVerificationFailedKernelException.Evidence(
+                                (IndexEntryConflictException) cause ) ) );
+            }
+            else
+            {
+                throw new ConstraintVerificationFailedKernelException( constraint, cause );
+            }
         }
     }
 

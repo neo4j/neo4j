@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
@@ -1194,6 +1195,17 @@ public abstract class Command extends XaCommand
                 switch ( getMode() )
                 {
                 case UPDATE:
+                    if ( ((IndexRule) schemaRule).isConstraintIndex() )
+                    {
+                        try
+                        {
+                            indexes.activateIndex( schemaRule.getId() );
+                        }
+                        catch ( IndexNotFoundKernelException e )
+                        {
+                            throw new IllegalStateException( "Index should have existed.", e );
+                        }
+                    }
                     break;
                 case CREATE:
                     indexes.createIndex( (IndexRule)schemaRule );

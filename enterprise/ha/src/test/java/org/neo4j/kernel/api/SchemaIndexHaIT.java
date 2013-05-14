@@ -40,6 +40,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -255,7 +256,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException
         {
             inMemoryDelegate.add( nodeId, propertyValue );
             latch.startAndAwaitFinish();

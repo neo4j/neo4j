@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.lifecycle;
 
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-public class ConstraintViolationKernelException extends KernelException
+public class LifeRule extends LifeSupport implements TestRule
 {
-    private static final String MESSAGE_TEMPLATE = "The constraint %s has been violated.";
-
-    public ConstraintViolationKernelException( UniquenessConstraint constraint )
+    @Override
+    public Statement apply( final Statement base, Description description )
     {
-        super( null, MESSAGE_TEMPLATE, constraint );
-    }
-
-    public ConstraintViolationKernelException( UniquenessConstraint constraint, Throwable cause )
-    {
-        super( cause, MESSAGE_TEMPLATE, constraint );
+        return new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                try
+                {
+                    base.evaluate();
+                }
+                finally
+                {
+                    LifeRule.this.shutdown();
+                }
+            }
+        };
     }
 }

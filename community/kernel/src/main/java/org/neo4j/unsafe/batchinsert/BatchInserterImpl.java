@@ -55,6 +55,7 @@ import org.neo4j.kernel.InternalSchemaActions;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -326,7 +327,14 @@ public class BatchInserterImpl implements BatchInserter
 
                 if ( update.forLabel( labelIds[i] ) )
                 {
-                    populators[i].add( update.getNodeId(), update.getValueAfter() );
+                    try
+                    {
+                        populators[i].add( update.getNodeId(), update.getValueAfter() );
+                    }
+                    catch ( IndexEntryConflictException conflict )
+                    {
+                        throw conflict.notAllowed( labelIds[i], propertyKeyIds[i] );
+                    }
                     return true;
                 }
                 return false;

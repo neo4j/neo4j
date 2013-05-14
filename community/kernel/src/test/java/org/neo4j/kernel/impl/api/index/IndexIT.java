@@ -112,9 +112,8 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        IndexDescriptor index = statement.addConstraintIndex( labelId, propertyKey );
+        statement.addConstraintIndex( labelId, propertyKey );
         commit();
-        awaitIndexOnline( index );
 
         // when
         restartDb();

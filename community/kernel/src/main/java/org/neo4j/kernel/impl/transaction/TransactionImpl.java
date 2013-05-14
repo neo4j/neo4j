@@ -119,7 +119,6 @@ class TransactionImpl implements Transaction
             HeuristicMixedException, HeuristicRollbackException,
             IllegalStateException, SystemException
     {
-        // make sure tx not suspended
         try
         {
             transactionContext.commit();
@@ -139,7 +138,6 @@ class TransactionImpl implements Transaction
     public synchronized void rollback() throws IllegalStateException,
             SystemException
     {
-        // make sure tx not suspended
         try
         {
             transactionContext.rollback();

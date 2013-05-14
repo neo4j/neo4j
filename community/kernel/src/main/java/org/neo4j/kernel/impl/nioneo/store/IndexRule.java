@@ -186,7 +186,21 @@ public class IndexRule extends AbstractSchemaRule
     @Override
     protected String innerToString()
     {
-        return ", provider=" + providerDescriptor + ", properties=" + propertyKey;
+        StringBuilder result = new StringBuilder( ", provider=" ).append( providerDescriptor ).append( ", properties=" )
+                                                                 .append( propertyKey );
+        if ( owningConstraint != null )
+        {
+            result.append( ", owner=" );
+            if ( owningConstraint == -1 )
+            {
+                result.append( "<not set>" );
+            }
+            else
+            {
+                result.append( owningConstraint );
+            }
+        }
+        return result.toString();
     }
 
     public IndexRule withOwningConstraint( long constraintId )
