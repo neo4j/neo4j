@@ -20,14 +20,14 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
 import java.io.File;
 import java.util.Random;
+import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 
 import javax.transaction.Transaction;
@@ -195,40 +195,37 @@ public class TestDeadlockDetection
                          * try { sleep( rand.nextInt( 100 ) ); } catch (
                          * InterruptedException e ) {}
                          */
-                        while ( !lockStack.isEmpty() )
-                        {
-                            if ( lockStack.pop() == READ )
-                            {
-                                lm.releaseReadLock( resourceStack.pop(), tx );
-                            }
-                            else
-                            {
-                                lm.releaseWriteLock( resourceStack.pop() , tx );
-                            }
-                        }
+                        releaseAllLocks( lockStack, resourceStack );
                     }
                     catch ( DeadlockDetectedException e )
                     {
+                        // This is good
                     }
                     finally
                     {
-                        while ( !lockStack.isEmpty() )
-                        {
-                            if ( lockStack.pop() == READ )
-                            {
-                                lm.releaseReadLock( resourceStack.pop(), tx );
-                            }
-                            else
-                            {
-                                lm.releaseWriteLock( resourceStack.pop(), tx );
-                            }
-                        }
+                        releaseAllLocks( lockStack, resourceStack );
                     }
                 }
             }
             catch ( Exception e )
             {
                 error = e;
+            }
+
+        }
+
+        private void releaseAllLocks( Stack<Object> lockStack, Stack<ResourceObject> resourceStack )
+        {
+            while ( !lockStack.isEmpty() )
+            {
+                if ( lockStack.pop() == READ )
+                {
+                    lm.releaseReadLock( resourceStack.pop(), tx );
+                }
+                else
+                {
+                    lm.releaseWriteLock( resourceStack.pop(), tx );
+                }
             }
         }
 
@@ -253,25 +250,55 @@ public class TestDeadlockDetection
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < stressThreads.length; i++ )
         {
-            stressThreads[i] = new StressThread( "T" + i, 100, 10, 0.80f, lm, startSignal );
+            int numberOfIterations = 100;
+            int depthCount = 10;
+            float readWriteRatio = 0.80f;
+            stressThreads[i] = new StressThread( "T" + i, numberOfIterations, depthCount, readWriteRatio, lm,
+                    startSignal );
         }
         for ( Thread thread : stressThreads )
         {
             thread.start();
         }
         startSignal.countDown();
-        
+
         long end = currentTimeMillis() + SECONDS.toMillis( 10 );
-        boolean anyAlive = true;
+        boolean anyAlive;
         while ( (anyAlive = anyAliveAndAllWell( stressThreads )) && currentTimeMillis() < end )
         {
+            throwErrors( stressThreads );
             sleepALittle();
         }
-        
-        assertFalse( anyAlive );
+
+        if ( anyAlive )
+        {
+            StringBuilder builder = new StringBuilder();
+            for ( StressThread stressThread : stressThreads )
+            {
+                if ( stressThread.isAlive() )
+                {
+                    for ( StackTraceElement element : stressThread.getStackTrace() )
+                    {
+                        builder.append( element.toString() ).append( "\n" );
+                    }
+                }
+                builder.append( "\n" );
+            }
+
+            fail( "Expected all thread to be finished, but some were lingering. These are the bad boys:\n"
+                    + builder.toString() );
+        }
+    }
+
+    private void throwErrors( StressThread[] stressThreads ) throws Exception
+    {
         for ( StressThread stressThread : stressThreads )
+        {
             if ( stressThread.error != null )
+            {
                 throw stressThread.error;
+            }
+        }
     }
 
     private void sleepALittle()
@@ -291,9 +318,13 @@ public class TestDeadlockDetection
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )
+            {
                 return false;
+            }
             if ( stressThread.isAlive() )
+            {
                 return true;
+            }
         }
         return false;
     }
