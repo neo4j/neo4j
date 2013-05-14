@@ -54,9 +54,9 @@ public class Guard
         start( new OperationsCount( maxOps ) );
     }
 
-    public void startTimeout( final long validFor )
+    public void startTimeout( final long validForInMilliSeconds )
     {
-        final Timeout timeout = new Timeout( validFor + currentTimeMillis() );
+        final Timeout timeout = new Timeout( validForInMilliSeconds + currentTimeMillis() );
         start( timeout );
     }
 
