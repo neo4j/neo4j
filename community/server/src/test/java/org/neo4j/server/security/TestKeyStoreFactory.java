@@ -19,12 +19,17 @@
  */
 package org.neo4j.server.security;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 
-import org.junit.Test;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class TestKeyStoreFactory {
 
@@ -45,6 +50,28 @@ public class TestKeyStoreFactory {
         File keyStoreFile = new File(ks.getKeyStorePath());
         assertThat(keyStoreFile.exists(), is(true));
         
+    }
+
+    @Test
+    public void shouldCertFileWithMultipleCertificatesImportAll() throws Exception {
+
+        File keyStorePath = File.createTempFile("keyStore", "test");
+        File privateKeyPath = fileFromResources("/certificates/chained_key.der");
+        File certificatePath = fileFromResources("/certificates/combined.pem");
+        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
+        KeyStoreInformation keyStoreInformation = keyStoreFactory.createKeyStore(keyStorePath, privateKeyPath, certificatePath);
+
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(new FileInputStream(keyStoreInformation.getKeyStorePath()), keyStoreInformation.getKeyStorePassword());
+
+        Certificate[] chain = keyStore.getCertificateChain("key");
+
+        assertThat("expecting more than 1 certificate in chain", chain.length, greaterThan(1));
+    }
+
+    private File fileFromResources(String path) {
+        URL url = this.getClass().getResource(path);
+        return new File(url.getFile());
     }
     
 }

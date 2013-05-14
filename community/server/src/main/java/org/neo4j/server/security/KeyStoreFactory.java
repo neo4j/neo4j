@@ -81,7 +81,7 @@ public class KeyStoreFactory {
                     "key",
                     sslCertificateFactory.loadPrivateKey(privateKeyFile),
                     keyPassword,
-                    new java.security.cert.Certificate[] { sslCertificateFactory.loadCertificate(certFile) });
+                    sslCertificateFactory.loadCertificates(certFile));
 
             fis = new FileOutputStream(keyStorePath.getAbsolutePath());
             keyStore.store(fis, keyStorePassword);
