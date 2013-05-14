@@ -3,11 +3,14 @@ Merge
 =====
 
 == Introduction ==
-+MERGE+ either matches existing nodes and binds them, or it creates new data and binds that. For example, you can
-search for a user node by id, and if the node does not already exist in the database, it will create it.
++MERGE+ ensures that a pattern exists in the graph. Either the pattern already exists, or parts of it need to be
+created.
 
-+MERGE+ is not only used for single nodes - just like +MATCH+, if multiple nodes match, they will all be
-bound to the identifier.
+For example, you can specify that the graph must contain a node for a user with a certain name.
+If there isn't a node with the correct name, a new node will be created and its name property set.
+
+As with +MATCH+, +MERGE+ can match multiple occurrences of a pattern. If there are multiple matches, they will all be
+passed on to later stages of the query.
 
 The following graph is used for the examples below:
 
