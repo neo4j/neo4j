@@ -21,6 +21,11 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
+1.9 (2013-05-13)
+----------------
+Kernel:
+o Performance improvement on initial loading of relationship types during startup
+
 1.9.RC2 (2013-04-30)
 --------------------
 Kernel:

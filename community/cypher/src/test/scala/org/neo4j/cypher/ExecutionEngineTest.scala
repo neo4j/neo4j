@@ -2760,4 +2760,19 @@ RETURN x0.name?
     
     assert(result.toList === List(Map("n" -> n)))
   }
+
+  @Test
+  def multiple_start_points_should_still_honor_predicates() {
+    val e = createNode()
+    val p1 = createNode("value"->567)
+    val p2 = createNode("value"->0)
+    relate(p1,e)
+    relate(p2,e)
+
+    indexNode(p1, "stuff", "key", "value")
+    indexNode(p2, "stuff", "key", "value")
+
+    val result = parseAndExecute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
+    assert(result.toList === List())
+  }
 }

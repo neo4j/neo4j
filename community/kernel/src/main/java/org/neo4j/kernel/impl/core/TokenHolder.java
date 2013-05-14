@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.Token;
@@ -30,7 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
 {
-    private Map<String,Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
+    private Map<String, Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
     private Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<Integer, TOKEN>();
 
     private final AbstractTransactionManager transactionManager;
@@ -47,20 +48,42 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
         this.idGenerator = idGenerator;
         this.tokenCreator = tokenCreator;
     }
-    
+
     void addTokens( Token... tokens )
     {
+        Map<String, Integer> newNameToId = new HashMap<String, Integer>();
+        Map<Integer, TOKEN> newIdToToken = new HashMap<Integer, TOKEN>();
+
         for ( Token token : tokens )
-            addToken( token.getName(), token.getId() );
+        {
+            addToken( token.getName(), token.getId(), newNameToId, newIdToToken );
+            notifyMeOfTokensAdded( token.getName(), token.getId() );
+        }
+
+        nameToId.putAll( newNameToId );
+        idToToken.putAll( newIdToToken );
     }
-    
-    protected void addToken( String name, int id )
+
+    /**
+     * Overload this if you want to know of tokens being added
+     */
+    protected void notifyMeOfTokensAdded( String name, int id )
+    {
+    }
+
+    void addToken( String name, int id )
+    {
+        addToken( name, id, nameToId, idToToken );
+        notifyMeOfTokensAdded( name, id );
+    }
+
+    void addToken( String name, int id, Map<String, Integer> nameToIdMap, Map<Integer, TOKEN> idToTokenMap )
     {
         TOKEN token = newToken( name, id );
-        nameToId.put( name, id );
-        idToToken.put( id, token );
+        nameToIdMap.put( name, id );
+        idToTokenMap.put( id, token );
     }
-    
+
     void removeToken( int id )
     {
         TOKEN token = idToToken.remove( id );
@@ -71,19 +94,23 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
     {
         Integer id = nameToId.get( name );
         if ( id != null )
+        {
             return id;
-        
+        }
+
         // Let's create it
         id = createToken( name );
         return id;
     }
-    
+
     private synchronized int createToken( String name )
     {
         Integer id = nameToId.get( name );
         if ( id != null )
+        {
             return id;
-        
+        }
+
         id = tokenCreator.getOrCreate( transactionManager, idGenerator,
                 persistenceManager, name );
         addToken( name, id );
@@ -96,7 +123,9 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
     {
         TOKEN result = getTokenByIdOrNull( id );
         if ( result == null )
+        {
             throw new TokenNotFoundException( "Token for id " + id );
+        }
         return result;
     }
 
@@ -104,36 +133,38 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
     {
         return idToToken.get( id );
     }
-    
+
     public boolean hasTokenWithId( int id )
     {
         return idToToken.containsKey( id );
     }
-    
+
     public final int idOf( TOKEN token ) throws TokenNotFoundException
     {
         return getIdByName( nameOf( token ) );
     }
-    
+
     public int getIdByName( String name ) throws TokenNotFoundException
     {
         Integer id = nameToId.get( name );
         if ( id == null )
+        {
             throw new TokenNotFoundException( name );
+        }
         return id;
     }
-    
+
     public Iterable<TOKEN> getAllTokens()
     {
         return idToToken.values();
     }
-    
+
     @Override
     public void stop()
     {
         nameToId.clear();
         idToToken.clear();
     }
-    
+
     protected abstract TOKEN newToken( String name, int id );
 }

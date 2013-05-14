@@ -65,16 +65,15 @@ public class PropertyKeyTokenHolder extends TokenHolder<PropertyKeyToken>
         }
         return existing;
     }
-    
+
     /*
      * TODO Since legacy databases can have multiple ids for any given property key
      * this legacy method is left behind and used specifically for property indexes
      * until migration has been added to dedup them.
      */
     @Override
-    protected void addToken( String name, int id )
+    protected void notifyMeOfTokensAdded( String name, int id )
     {
-        super.addToken( name, id );
         PropertyKeyToken[] list = indexMap.get( name );
         PropertyKeyToken key = newToken( name, id );
         if ( list == null )

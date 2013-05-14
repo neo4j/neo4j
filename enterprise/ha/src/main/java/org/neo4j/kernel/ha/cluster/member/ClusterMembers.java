@@ -180,13 +180,15 @@ public class ClusterMembers
         @Override
         public void failed( InstanceId server )
         {
-            members.put( server, getMember( server ).failed() );
+            if (members.containsKey( server ))
+                members.put( server, getMember( server ).failed() );
         }
 
         @Override
         public void alive( InstanceId server )
         {
-            members.put( server, getMember( server ).alive() );
+            if (members.containsKey( server ))
+                members.put( server, getMember( server ).alive() );
         }
     }
 }

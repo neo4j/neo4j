@@ -70,6 +70,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.Neo4jManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -781,6 +782,37 @@ public class ClusterManager
             public String toString()
             {
                 return "Master should see " + count + " members";
+            }
+        };
+    }
+
+    public static Predicate<ManagedCluster> allSeesAllAsAvailable()
+    {
+        return new Predicate<ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster cluster )
+            {
+
+                for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+                {
+                    Neo4jManager jmx = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Kernel.class ) );
+
+                    for ( ClusterMemberInfo clusterMemberInfo : jmx.getHighAvailabilityBean().getInstancesInCluster() )
+                    {
+                        if (!clusterMemberInfo.isAvailable())
+                            return false;
+                    }
+                }
+
+                // Everyone sees everyone else as available!
+                return true;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "All instances should see all others as available";
             }
         };
     }

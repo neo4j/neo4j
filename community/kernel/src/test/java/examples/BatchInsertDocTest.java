@@ -70,8 +70,7 @@ public class BatchInsertDocTest
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchinserter-example" );
         Node mNode = db.getNodeById( mattiasNode );
-        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
-                .getEndNode();
+        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING ).getEndNode();
         assertEquals( "Chris", cNode.getProperty( "name" ) );
         db.shutdown();
     }

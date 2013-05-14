@@ -78,12 +78,12 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     pc match {
       case n: Node => map.foreach {
         case (key, value) =>
-          state.query.nodeOps.setProperty(n, key, value)
+          state.query.nodeOps.setProperty(n, key, makeValueNeoSafe(value))
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
-          state.query.relationshipOps.setProperty(r, key, value)
+          state.query.relationshipOps.setProperty(r, key, makeValueNeoSafe(value))
       }
     }
   }

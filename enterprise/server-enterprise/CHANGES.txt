@@ -1,3 +1,7 @@
+1.9 (2013-05-13)
+----------------
+o Arbiter instances now log into data/log/arbiter/messages.log
+
 1.9.M05 (2013-03-05)
 --------------------
 o HA info REST endpoints now are called /db/manage/server/ha/{ismaster,isslave}, with getMaster no longer existing.

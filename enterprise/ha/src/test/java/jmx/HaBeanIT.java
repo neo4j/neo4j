@@ -167,8 +167,7 @@ public class HaBeanIT
             assertEquals( 2, ha( db ).getInstancesInCluster().length );
         }
         masterShutdown.repair();
-        cluster.await( ClusterManager.masterAvailable() );
-        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             HighAvailability bean = ha( db );

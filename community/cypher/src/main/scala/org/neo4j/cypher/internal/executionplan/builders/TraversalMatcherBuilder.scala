@@ -87,9 +87,11 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
     val originalWhere = in.query.where
 
-    // Let's not look at the predicates for the outer most part of the trail
-    val predicates = trail.predicates.drop(1).dropRight(1).flatten.distinct
-
+    val predicates = trail.predicates.flatten.filterNot(predicate => {
+      val symbolsNeeded = predicate.symbolTableDependencies
+      symbolsNeeded.contains(trail.start) || symbolsNeeded.contains(trail.end) // The traversal matcher can't handle
+                                                                               // predicates at the ends
+    })
     val (solvedPreds, old) = originalWhere.partition(pred => predicates.contains(pred.token))
 
     old ++ solvedPreds.map(_.solve)

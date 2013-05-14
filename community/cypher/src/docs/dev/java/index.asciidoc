@@ -77,6 +77,10 @@ This outputs:
 
 include::java-cypher-queries-rows.asciidoc[]
 
+CAUTION: +dumpToString()+, +columnAs()+ and +iterator()+ cannot be called more than once on the same ExecutionResult object. You should instead use only one and if you need the facilities of the other methods on the same query result instead create a new ExecutionResult.
+
+CAUTION: When using an ExecutionResult, you'll need to exhaust it by using any of the iterating methods (+columnAs()+ and +iterator()+) on it. Failing to do so will not properly clean up resources used by the ExecutionResult, leading to unwanted behaviour, such as leaking transactions.
+
 For more information on the Java interface to Cypher, see the 
 http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].
 
