@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
@@ -149,6 +148,7 @@ public class TestDeadlockDetection
         private final LockManager lm;
         private volatile Exception error;
         private final Transaction tx = mock( Transaction.class );
+        public volatile Long startedWaiting = null;
 
         StressThread( String name, int numberOfIterations, int depthCount,
             float readWriteRatio, LockManager lm, CountDownLatch startSignal )
@@ -181,22 +181,21 @@ public class TestDeadlockDetection
                             int n = rand.nextInt( resources.length );
                             if ( f < readWriteRatio )
                             {
+                                startedWaiting = currentTimeMillis();
                                 lm.getReadLock( resources[n], tx );
+                                startedWaiting = null;
                                 lockStack.push( READ );
                             }
                             else
                             {
+                                startedWaiting = currentTimeMillis();
                                 lm.getWriteLock( resources[n], tx );
+                                startedWaiting = null;
                                 lockStack.push( WRITE );
                             }
                             resourceStack.push( resources[n] );
                         }
                         while ( --depth > 0 );
-                        /*
-                         * try { sleep( rand.nextInt( 100 ) ); } catch (
-                         * InterruptedException e ) {}
-                         */
-                        releaseAllLocks( lockStack, resourceStack );
                     }
                     catch ( DeadlockDetectedException e )
                     {
@@ -240,6 +239,12 @@ public class TestDeadlockDetection
     @Test
     public void testStressMultipleThreads() throws Exception
     {
+        /*
+        This test starts a bunch of threads, and randomly takes read or write locks on random resources.
+        No thread should wait more than five seconds for a lock - if it does, we consider it a failure.
+        Successful outcomes are when threads either finish with all their lock taking and releasing, or
+        are terminated with a DeadlockDetectedException.
+         */
         for ( int i = 0; i < StressThread.resources.length; i++ )
         {
             StressThread.resources[i] = new ResourceObject( "RX" + i );
@@ -263,35 +268,36 @@ public class TestDeadlockDetection
         }
         startSignal.countDown();
 
-        long end = currentTimeMillis() + SECONDS.toMillis( 10 );
-        boolean anyAlive;
-        while ( (anyAlive = anyAliveAndAllWell( stressThreads )) && currentTimeMillis() < end )
+        while ( anyAliveAndAllWell( stressThreads ) )
         {
-            throwErrors( stressThreads );
+            throwErrorsIfAny( stressThreads );
             sleepALittle();
-        }
-
-        if ( anyAlive )
-        {
-            StringBuilder builder = new StringBuilder();
-            for ( StressThread stressThread : stressThreads )
-            {
-                if ( stressThread.isAlive() )
-                {
-                    for ( StackTraceElement element : stressThread.getStackTrace() )
-                    {
-                        builder.append( element.toString() ).append( "\n" );
-                    }
-                }
-                builder.append( "\n" );
-            }
-
-            fail( "Expected all thread to be finished, but some were lingering. These are the bad boys:\n"
-                    + builder.toString() );
         }
     }
 
-    private void throwErrors( StressThread[] stressThreads ) throws Exception
+    private String diagnostics( StressThread culprit, StressThread[] stressThreads, long waited )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( StressThread stressThread : stressThreads )
+        {
+            if ( stressThread.isAlive() )
+            {
+                if ( stressThread == culprit )
+                {
+                    builder.append( "This is the thread that waited too long. It waited: " ).append( waited ).append(
+                            " milliseconds" );
+                }
+                for ( StackTraceElement element : stressThread.getStackTrace() )
+                {
+                    builder.append( element.toString() ).append( "\n" );
+                }
+            }
+            builder.append( "\n" );
+        }
+        return builder.toString();
+    }
+
+    private void throwErrorsIfAny( StressThread[] stressThreads ) throws Exception
     {
         for ( StressThread stressThread : stressThreads )
         {
@@ -306,7 +312,7 @@ public class TestDeadlockDetection
     {
         try
         {
-            Thread.sleep( 100 );
+            Thread.sleep( 1000 );
         }
         catch ( InterruptedException e )
         {
@@ -318,12 +324,18 @@ public class TestDeadlockDetection
     {
         for ( StressThread stressThread : stressThreads )
         {
-            if ( stressThread.error != null )
-            {
-                return false;
-            }
             if ( stressThread.isAlive() )
             {
+                Long startedWaiting = stressThread.startedWaiting;
+                if ( startedWaiting != null )
+                {
+                    long waitingTime = currentTimeMillis() - startedWaiting;
+                    if ( waitingTime > 5000 )
+                    {
+                        fail( "One of the threads waited far too long. Diagnostics: \n" +
+                                diagnostics( stressThread, stressThreads, waitingTime) );
+                    }
+                }
                 return true;
             }
         }
