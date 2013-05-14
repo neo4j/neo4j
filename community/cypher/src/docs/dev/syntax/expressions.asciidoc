@@ -36,3 +36,5 @@ String literals can contain these escape sequences.
 |`\"`|Double quote
 |`\\`|Backslash
 |===================
+
+include::../ql/syntax/index.asciidoc[]
