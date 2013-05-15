@@ -19,37 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import org.neo4j.helpers.collection.ArrayIterator;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.kernel.logging.Logging;
-
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -67,6 +36,36 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.kernel.logging.Logging;
 
 public class IndexingServiceTest
 {
@@ -341,7 +340,7 @@ public class IndexingServiceTest
         @Override
         public StoreScan answer( InvocationOnMock invocation ) throws Throwable
         {
-            final Visitor<NodePropertyUpdate> visitor = visitor( invocation.getArguments()[1] );
+            final Visitor<NodePropertyUpdate, RuntimeException> visitor = visitor( invocation.getArguments()[1] );
             return new StoreScan()
             {
                 @Override
@@ -362,7 +361,7 @@ public class IndexingServiceTest
         }
 
         @SuppressWarnings("unchecked")
-        private static Visitor<NodePropertyUpdate> visitor( Object v )
+        private static Visitor<NodePropertyUpdate, RuntimeException> visitor( Object v )
         {
             return (Visitor) v;
         }

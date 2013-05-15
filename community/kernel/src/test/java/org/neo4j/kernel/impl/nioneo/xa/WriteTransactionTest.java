@@ -19,18 +19,36 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -61,24 +79,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class WriteTransactionTest
 {
@@ -144,7 +144,7 @@ public class WriteTransactionTest
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
         // THEN
-        Visitor<XaCommand> verifier = new Visitor<XaCommand>()
+        Visitor<XaCommand, RuntimeException> verifier = new Visitor<XaCommand, RuntimeException>()
         {
             @Override
             public boolean visit( XaCommand element )
@@ -153,7 +153,7 @@ public class WriteTransactionTest
                 {
                     PropertyRecord before = ((PropertyCommand) element).getBefore();
                     assertFalse( before.inUse() );
-                    assertEquals( Collections.emptyList(), before.getPropertyBlocks() );
+                    assertEquals( Collections.<PropertyBlock>emptyList(), before.getPropertyBlocks() );
 
                     PropertyRecord after = ((PropertyCommand) element).getAfter();
                     assertTrue( after.inUse() );
@@ -447,7 +447,7 @@ public class WriteTransactionTest
     public void createdSchemaRuleRecordMustBeWrittenHeavy() throws Exception
     {
         // THEN
-        Visitor<XaCommand> verifier = heavySchemaRuleVerifier();
+        Visitor<XaCommand, RuntimeException> verifier = heavySchemaRuleVerifier();
         
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
@@ -486,7 +486,7 @@ public class WriteTransactionTest
         prepareAndCommit( tx );
 
         // WHEN
-        Visitor<XaCommand> verifier = new Visitor<XaCommand>()
+        Visitor<XaCommand, RuntimeException> verifier = new Visitor<XaCommand, RuntimeException>()
         {
             @Override
             public boolean visit( XaCommand element )
@@ -548,9 +548,9 @@ public class WriteTransactionTest
     
     private static class VerifyingXaLogicalLog extends XaLogicalLog
     {
-        private final Visitor<XaCommand> verifier;
+        private final Visitor<XaCommand, RuntimeException> verifier;
 
-        public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand> verifier )
+        public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, new DefaultLogBufferFactory(),
                     fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null );
@@ -571,7 +571,7 @@ public class WriteTransactionTest
         return newWriteTransaction( indexing, nullVisitor );
     }
     
-    private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand> verifier )
+    private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand, RuntimeException> verifier )
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
@@ -603,7 +603,7 @@ public class WriteTransactionTest
     
     private static final long[] none = new long[0];
 
-    private static final Visitor<XaCommand> nullVisitor = new Visitor<XaCommand>()
+    private static final Visitor<XaCommand, RuntimeException> nullVisitor = new Visitor<XaCommand, RuntimeException>()
     {
         @Override
         public boolean visit( XaCommand element )
@@ -612,9 +612,9 @@ public class WriteTransactionTest
         }
     };
 
-    private Visitor<XaCommand> heavySchemaRuleVerifier()
+    private Visitor<XaCommand, RuntimeException> heavySchemaRuleVerifier()
     {
-        return new Visitor<XaCommand>()
+        return new Visitor<XaCommand, RuntimeException>()
         {
             @Override
             public boolean visit( XaCommand element )

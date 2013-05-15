@@ -81,7 +81,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, PropertyRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record ) throws FAILURE
     {
         processor.processProperty( this, record );
     }
@@ -283,8 +283,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            PropertyRecord record = getRecord( id, window, RecordLoad.NORMAL );
-            return record;
+            return getRecord( id, window, RecordLoad.NORMAL );
         }
         finally
         {
@@ -343,7 +342,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );

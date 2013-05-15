@@ -64,7 +64,7 @@ import org.neo4j.kernel.info.WaitingThread;
  * starvation and increase performance since only waiting txs that can acquire
  * the lock are notified.
  */
-class RWLock implements Visitor<LineLogger>
+class RWLock implements Visitor<LineLogger, RuntimeException>
 {
     private int writeCount = 0; // total writeCount
     private int readCount = 0; // total readCount
@@ -508,7 +508,7 @@ class RWLock implements Visitor<LineLogger>
         return new LockInfo( type, id, readCount, writeCount, new ArrayList<LockingTransaction>( lockingTxs ), new ArrayList<WaitingThread>( waitingTxs ) );
     }
 
-    synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo> visitor, long waitStart )
+    synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo, RuntimeException> visitor, long waitStart )
     {
         for ( WaitElement thread : waitingThreadList )
         {

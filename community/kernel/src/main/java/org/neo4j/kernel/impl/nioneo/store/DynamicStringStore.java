@@ -45,7 +45,7 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
     
     @Override
-    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
         processor.processString( this, record, idType );
     }

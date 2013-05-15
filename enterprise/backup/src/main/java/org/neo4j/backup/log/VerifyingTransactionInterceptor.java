@@ -53,7 +53,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         FULL( true )
         {
             @Override
-            <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker )
+            <R extends RecordStore.Processor<RuntimeException> & Runnable> void apply( DiffStore diffs, R checker )
             {
                 try
                 {
@@ -68,7 +68,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         DIFF( false )
         {
             @Override
-            <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker )
+            <R extends RecordStore.Processor<RuntimeException> & Runnable> void apply( DiffStore diffs, R checker )
             {
                 diffs.applyToAll( checker );
             }
@@ -80,7 +80,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             this.checkProp = checkProp;
         }
 
-        abstract <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker );
+        abstract <R extends RecordStore.Processor<RuntimeException> & Runnable> void apply( DiffStore diffs, R checker );
     }
 
     private final boolean rejectInconsistentTransactions;
@@ -196,18 +196,18 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
             final String header = messageHeader( "Changes" ).toString();
             StringLogger target = null;
-            Visitor<StringLogger.LineLogger> visitor = null;
+            Visitor<StringLogger.LineLogger, RuntimeException> visitor = null;
             if ( error != null )
             {
                 target = msgLog;
                 if ( difflog != null && difflog != msgLog )
                 {
-                    visitor = new Visitor<StringLogger.LineLogger>()
+                    visitor = new Visitor<StringLogger.LineLogger, RuntimeException>()
                     {
                         @Override
                         public boolean visit( final LineLogger first )
                         {
-                            difflog.logLongMessage( header, new Visitor<StringLogger.LineLogger>()
+                            difflog.logLongMessage( header, new Visitor<StringLogger.LineLogger, RuntimeException>()
                             {
                                 @Override
                                 public boolean visit( final LineLogger other )
@@ -232,7 +232,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
                 }
                 else
                 {
-                    visitor = new Visitor<StringLogger.LineLogger>()
+                    visitor = new Visitor<StringLogger.LineLogger, RuntimeException>()
                     {
                         @Override
                         public boolean visit( LineLogger lines )
@@ -246,7 +246,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             else
             {
                 target = difflog;
-                visitor = new Visitor<StringLogger.LineLogger>()
+                visitor = new Visitor<StringLogger.LineLogger, RuntimeException>()
                 {
                     @Override
                     public boolean visit( LineLogger lines )
@@ -269,7 +269,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
     private void logDiffLines( final LineLogger logger )
     {
-        diffs.applyToAll( new RecordStore.Processor()
+        diffs.applyToAll( new RecordStore.Processor<RuntimeException>()
         {
             @Override
             protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record )

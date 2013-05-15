@@ -81,26 +81,28 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor,
-            Visitor<NodePropertyUpdate> visitor )
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel( IndexDescriptor descriptor,
+            Visitor<NodePropertyUpdate, FAILURE> visitor )
     {
         return visitNodes( singleLongPredicate( descriptor.getPropertyKeyId() ),
                 singleLongPredicate( descriptor.getLabelId() ), visitor );
     }
     
     @Override
-    public StoreScan visitNodes( long[] labelIds, long[] propertyKeyIds, Visitor<NodePropertyUpdate> visitor )
+    public <FAILURE extends Exception> StoreScan<FAILURE>  visitNodes( long[] labelIds, long[] propertyKeyIds,
+                                                                       Visitor<NodePropertyUpdate, FAILURE> visitor )
     {
         return visitNodes( multipleLongPredicate( propertyKeyIds ), multipleLongPredicate( labelIds ), visitor );
     }
 
-    private StoreScan visitNodes( PrimitiveLongPredicate propertyKeyPredicate, PrimitiveLongPredicate labelPredicate,
-            Visitor<NodePropertyUpdate> visitor )
+    private <FAILURE extends Exception> StoreScan<FAILURE>  visitNodes( PrimitiveLongPredicate propertyKeyPredicate,
+                                                                        PrimitiveLongPredicate labelPredicate,
+            Visitor<NodePropertyUpdate, FAILURE> visitor )
     {
         // Create a processor that for each accepted node (containing the desired label) looks through its properties,
         // getting the desired one (if any) and feeds to the index manipulator.
         LabelsReference labelsReference = new LabelsReference();
-        final RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyPredicate,
+        final RecordStore.Processor<FAILURE> processor = new NodeIndexingProcessor<FAILURE>( propertyStore, propertyKeyPredicate,
                 labelsReference, visitor );
 
         // Run the processor for the nodes containing the given label.
@@ -109,7 +111,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 labelsReference );
 
         // Run the processor
-        return new ProcessStoreScan( processor, predicate );
+        return new ProcessStoreScan<FAILURE>( processor, predicate );
     }
     
     /**
@@ -166,16 +168,16 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         };
     }
     
-    private class NodeIndexingProcessor extends RecordStore.Processor
+    private class NodeIndexingProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
     {
         private final PropertyStore propertyStore;
-        private final Visitor<NodePropertyUpdate> visitor;
+        private final Visitor<NodePropertyUpdate, FAILURE> visitor;
         private final PrimitiveLongPredicate propertyKeyPredicate;
         private final LabelsReference labelsReference;
 
         public NodeIndexingProcessor( PropertyStore propertyStore,
                 PrimitiveLongPredicate propertyKeyPredicate, LabelsReference labelsReference,
-                Visitor<NodePropertyUpdate> visitor )
+                Visitor<NodePropertyUpdate, FAILURE> visitor )
         {
             this.propertyStore = propertyStore;
             this.propertyKeyPredicate = propertyKeyPredicate;
@@ -184,7 +186,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
 
         @Override
-        public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node )
+        public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node ) throws FAILURE
         {
             // TODO check cache if that property is in cache and use it, instead of loading it from the store.
             long firstPropertyId = node.getCommittedNextProp();
@@ -270,12 +272,12 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
     }
     
-    private class ProcessStoreScan implements StoreScan
+    private class ProcessStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
     {
-        private final Processor processor;
+        private final Processor<FAILURE> processor;
         private final Predicate<NodeRecord> predicate;
 
-        public ProcessStoreScan( Processor processor, Predicate<NodeRecord> predicate )
+        public ProcessStoreScan( Processor<FAILURE> processor, Predicate<NodeRecord> predicate )
         {
             this.processor = processor;
             this.predicate = predicate;
@@ -283,7 +285,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
         @SuppressWarnings( "unchecked" )
         @Override
-        public void run()
+        public void run() throws FAILURE
         {
             processor.applyFiltered( nodeStore, predicate );
         }

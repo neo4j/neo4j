@@ -22,7 +22,6 @@ package org.neo4j.consistency.store;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
 /**
@@ -60,7 +60,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
 
     /**
      * Overridden to increase visibility to public, it's used from
-     * {@link org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider}.
+     * {@link org.neo4j.backup.log.VerifyingTransactionInterceptor}.
      */
     @Override
     public RecordStore<?>[] allStores()
@@ -69,7 +69,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
-    protected void apply( RecordStore.Processor processor, RecordStore<?> store )
+    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store ) throws FAILURE
     {
         processor.applyById( store, (DiffRecordStore<?>) store );
     }

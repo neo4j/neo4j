@@ -84,7 +84,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         abstract void remove( long nodeId, Object propertyValue );
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
+        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
             // TODO: unique indexes need the updates ordered... removes before adds.
             for ( NodePropertyUpdate update : updates )
@@ -108,7 +108,8 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException,
+                IOException
         {
             update( updates );
         }

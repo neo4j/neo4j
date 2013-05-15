@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
-public class RagManager implements Visitor<LineLogger>
+public class RagManager implements Visitor<LineLogger, RuntimeException>
 {
     // if a runtime exception is thrown from any method it means that the
     // RWLock class hasn't kept the contract to the RagManager
@@ -191,7 +191,7 @@ public class RagManager implements Visitor<LineLogger>
         if ( lockingTx.equals( waitingTx ) )
         {
             StringBuffer circle = null;
-            Object resource = null;
+            Object resource;
             do
             {
                 lockingTx = (Transaction) graphStack.pop();
@@ -199,11 +199,11 @@ public class RagManager implements Visitor<LineLogger>
                 if ( circle == null )
                 {
                     circle = new StringBuffer();
-                    circle.append( lockingTx + " <-[:HELD_BY]- " + resource );
+                    circle.append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
                 }
                 else
                 {
-                    circle.append( " <-[:WAITING_FOR]- " + lockingTx + " <-[:HELD_BY]- " + resource );
+                    circle.append( " <-[:WAITING_FOR]- " ).append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
                 }
             }
             while ( !graphStack.isEmpty() );
@@ -228,16 +228,15 @@ public class RagManager implements Visitor<LineLogger>
             List<Transaction> lockingTxList = resourceMap.get( resource );
             if ( lockingTxList != null )
             {
-                Iterator<Transaction> itr = lockingTxList.iterator();
-                while ( itr.hasNext() )
+                for ( Transaction aLockingTxList : lockingTxList )
                 {
-                    lockingTx = itr.next();
+                    lockingTx = aLockingTxList;
                     // so we don't
                     if ( !checkedTransactions.contains( lockingTx ) )
                     {
                         graphStack.push( lockingTx );
                         checkWaitOnRecursive( lockingTx, waitingTx,
-                            checkedTransactions, graphStack );
+                                checkedTransactions, graphStack );
                         graphStack.pop();
                     }
                 }

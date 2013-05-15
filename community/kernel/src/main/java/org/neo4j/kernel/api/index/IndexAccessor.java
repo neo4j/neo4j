@@ -79,7 +79,8 @@ public interface IndexAccessor
         }
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException,
+                IOException
         {
         }
         

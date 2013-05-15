@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
+import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -32,7 +38,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -40,12 +45,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
-import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -69,7 +68,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
-        // TODO: return a uniqueness enforcing IndexPopulator if config says so
         return new LuceneIndexPopulator( standard(), directoryFactory, dirFile( indexId ), 10000,
                 documentLogic, writerLogic );
     }

@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.logging.LogMarker;
-
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -36,6 +27,15 @@ import static org.neo4j.helpers.Predicates.equalTo;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.logging.LogMarker;
 
 /**
  * A string logger implementation for testing that components log things correctly.
@@ -98,16 +98,9 @@ public class TestLogger extends StringLogger
 
             LogCall logCall = (LogCall) o;
 
-            if ( flush != logCall.flush )
-                return false;
-            if ( level != logCall.level )
-                return false;
-            if ( !message.equals( logCall.message ) )
-                return false;
-            if ( cause != null ? !cause.equals( logCall.cause ) : logCall.cause != null )
-                return false;
-
-            return true;
+            return flush == logCall.flush && level == logCall.level &&
+                    message.equals( logCall.message ) &&
+                    !(cause != null ? !cause.equals( logCall.cause ) : logCall.cause != null);
         }
 
         @Override
@@ -303,7 +296,7 @@ public class TestLogger extends StringLogger
     }
 
     @Override
-    public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+    public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
     {
         source.visit( new LineLoggerImpl( this ) );
     }

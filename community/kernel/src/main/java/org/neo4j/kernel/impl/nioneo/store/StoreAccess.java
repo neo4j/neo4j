@@ -61,6 +61,7 @@ public class StoreAccess
         this( getNeoStoreFrom( graphdb ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
         return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
@@ -181,7 +182,7 @@ public class StoreAccess
         return propertyKeyNameStore;
     }
 
-    public final <P extends RecordStore.Processor> P applyToAll( P processor )
+    public final <F extends Exception, P extends RecordStore.Processor<F>> P applyToAll( P processor ) throws F
     {
         for ( RecordStore<?> store : allStores() )
         {
@@ -210,7 +211,7 @@ public class StoreAccess
     }
 
     @SuppressWarnings("unchecked")
-    protected void apply( RecordStore.Processor processor, RecordStore<?> store )
+    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store ) throws FAILURE
     {
         processor.applyFiltered( store, RecordStore.IN_USE );
     }
@@ -218,13 +219,12 @@ public class StoreAccess
     private static Map<String, String> defaultParams()
     {
         Map<String, String> params = new HashMap<String, String>();
-        params.put( GraphDatabaseSettings.nodestore_mapped_memory.name(), "20M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory.name(), "90M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
-        params.put( GraphDatabaseSettings.strings_mapped_memory.name(), "130M" );
-        params.put( GraphDatabaseSettings.arrays_mapped_memory.name(), "130M" );
-        params.put( GraphDatabaseSettings.relationshipstore_mapped_memory.name(), "100M" );
+        params.put( GraphDatabaseSettings.nodestore_mapped_memory_size.name(), "20M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory_size.name(), "90M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory_size.name(), "1M" );
+        params.put( GraphDatabaseSettings.strings_mapped_memory_size.name(), "130M" );
+        params.put( GraphDatabaseSettings.arrays_mapped_memory_size.name(), "130M" );
+        params.put( GraphDatabaseSettings.relationshipstore_mapped_memory_size.name(), "100M" );
         // if on windows, default no memory mapping
         if ( GraphDatabaseSetting.osIsWindows() )
         {

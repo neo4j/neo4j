@@ -19,6 +19,14 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -105,14 +113,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -311,10 +311,11 @@ public class BatchInserterImpl implements BatchInserter
             populators[i].create();
         }
 
-        StoreScan storeScan = storeView.visitNodes( labelIds, propertyKeyIds, new Visitor<NodePropertyUpdate>()
+        StoreScan<IOException> storeScan = storeView.visitNodes( labelIds, propertyKeyIds,
+                new Visitor<NodePropertyUpdate, IOException>()
         {
             @Override
-            public boolean visit( NodePropertyUpdate update )
+            public boolean visit( NodePropertyUpdate update ) throws IOException
             {
                 int i = indexOf( propertyKeyIds, update.getPropertyKeyId() );
                 if ( i == -1 )

@@ -55,7 +55,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, RelationshipRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipRecord record ) throws FAILURE
     {
         processor.processRelationship( this, record );
     }
@@ -101,7 +101,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -135,7 +135,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
 
     public RelationshipRecord getLightRel( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -147,8 +147,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         }
         try
         {
-            RelationshipRecord record = getRecord( id, window, RecordLoad.CHECK );
-            return record;
+            return getRecord( id, window, RecordLoad.CHECK );
         }
         finally
         {
@@ -326,7 +325,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
 
     public RelationshipRecord getChainRecord( long relId )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( relId, OperationType.READ );

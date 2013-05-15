@@ -90,7 +90,7 @@ public class BufferingLogger extends StringLogger
     }
 
     @Override
-    public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+    public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
     {
         source.visit( new LineLoggerImpl( this ) );
     }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface StoreScan
+public interface StoreScan<FAILURE extends Exception>
 {
-    void run();
+    void run() throws FAILURE;
 
     void stop();
 }

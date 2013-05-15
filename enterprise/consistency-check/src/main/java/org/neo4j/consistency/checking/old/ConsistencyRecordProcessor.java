@@ -89,7 +89,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
 @Deprecated
-public class ConsistencyRecordProcessor extends RecordStore.Processor implements Runnable
+public class ConsistencyRecordProcessor extends RecordStore.Processor<RuntimeException> implements Runnable
 {
     private final RecordStore<NodeRecord> nodes;
     private final RecordStore<RelationshipRecord> rels;

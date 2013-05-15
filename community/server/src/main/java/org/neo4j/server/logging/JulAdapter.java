@@ -39,7 +39,7 @@ public class JulAdapter extends StringLogger
     }
 
     @Override
-    public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+    public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
     {
         throw new UnsupportedOperationException( "TODO" );
     }

@@ -138,8 +138,6 @@ public class LifeSupport
      * <p/>
      * If any instance fails to stop, the rest of the instances will still be stopped,
      * so that the overall status is STOPPED.
-     *
-     * @throws Exception
      */
     @Override
     public synchronized void stop()
@@ -176,8 +174,6 @@ public class LifeSupport
      * <p/>
      * If any instance fails to shutdown, the rest of the instances will still be shut down,
      * so that the overall status is SHUTDOWN.
-     *
-     * @throws Exception
      */
     @Override
     public synchronized void shutdown()
@@ -223,8 +219,7 @@ public class LifeSupport
      * so that they don't try to use it during the restart. A restart is effectively a stop followed
      * by a start.
      *
-     * @param instance
-     * @throws Throwable                if any start or stop fails
+     * @throws LifecycleException       if any start or stop fails
      * @throws IllegalArgumentException if instance is not registered
      */
     public synchronized void restart( Lifecycle instance )
@@ -390,7 +385,8 @@ public class LifeSupport
 
     public synchronized void dump( StringLogger logger )
     {
-        logger.logLongMessage( "Lifecycle status:" + status.name(), new Visitor<StringLogger.LineLogger>()
+        logger.logLongMessage( "Lifecycle status:" + status.name(), new Visitor<StringLogger.LineLogger,
+                RuntimeException>()
         {
             @Override
             public boolean visit( StringLogger.LineLogger element )

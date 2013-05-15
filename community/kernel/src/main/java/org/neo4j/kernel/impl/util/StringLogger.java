@@ -185,7 +185,7 @@ public abstract class StringLogger
         return new StringLogger() {
 
             @Override
-            public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
             {
                 logger1.logLongMessage( msg, source, flush );
                 logger2.logLongMessage( msg, source, flush );
@@ -252,7 +252,7 @@ public abstract class StringLogger
             StringLogger logger = null;
 
             @Override
-            public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
             {
                 createLogger();
                 logger.logLongMessage( msg, source, flush );
@@ -373,7 +373,7 @@ public abstract class StringLogger
         logMessage( msg, throwable );
     }
 
-    public void logLongMessage( String msg, Visitor<LineLogger> source )
+    public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source )
     {
         logLongMessage( msg, source, false );
     }
@@ -395,7 +395,7 @@ public abstract class StringLogger
 
     public void logLongMessage( String msg, final Iterator<String> source, boolean flush )
     {
-        logLongMessage( msg, new Visitor<LineLogger>()
+        logLongMessage( msg, new Visitor<LineLogger, RuntimeException>()
         {
             @Override
             public boolean visit( LineLogger logger )
@@ -409,7 +409,7 @@ public abstract class StringLogger
         }, flush );
     }
 
-    public abstract void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush );
+    public abstract void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush );
 
     public abstract void logMessage( String msg, boolean flush );
 
@@ -443,7 +443,7 @@ public abstract class StringLogger
         }
 
         @Override
-        public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+        public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
         }
 
@@ -555,7 +555,7 @@ public abstract class StringLogger
         }
 
         @Override
-        public synchronized void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+        public synchronized void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
             out.println( time() + " INFO  [org.neo4j]: " + msg );
             source.visit( new LineLoggerImpl( this ) );
@@ -576,7 +576,7 @@ public abstract class StringLogger
 
         private void checkRotation()
         {
-            if ( rotationThreshold != null && fileSystem.getFileSize( file ) > rotationThreshold.intValue() && !doingRotation )
+            if ( rotationThreshold != null && fileSystem.getFileSize( file ) > rotationThreshold && !doingRotation )
             {
                 doRotation();
             }

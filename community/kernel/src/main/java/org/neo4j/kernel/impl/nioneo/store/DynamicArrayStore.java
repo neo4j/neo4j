@@ -59,7 +59,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
     
     @Override
-    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
         processor.processArray( this, record );
     }
@@ -75,7 +75,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
         boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
-        byte[] bytes = null;
         ShortArray type = ShortArray.typeOf( array );
         if ( type == null ) throw new IllegalArgumentException( array + " not a valid array type." );
         
@@ -86,18 +85,18 @@ public class DynamicArrayStore extends AbstractDynamicStore
         int bitsUsedInLastByte = totalBits%8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
-        int length = arrayLength;
+        byte[] bytes;
         if ( isByteArray )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE+length];
+            bytes = new byte[NUMBER_HEADER_SIZE+ arrayLength];
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
-            if ( isPrimitiveByteArray ) arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, length );
+            if ( isPrimitiveByteArray ) arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
             else
             {
                 Byte[] source = (Byte[]) array;
-                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i].byteValue();
+                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i];
             }
         }
         else
@@ -106,7 +105,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bits.put( (byte)type.intValue() );
             bits.put( (byte)bitsUsedInLastByte );
             bits.put( (byte)requiredBits );
-            type.writeAll(array,length,requiredBits,bits);
+            type.writeAll(array, arrayLength,requiredBits,bits);
             bytes = bits.asBytes();
         }
         return allocateRecordsFromBytes( bytes, recordsToUseFirst );
@@ -185,7 +184,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             int requiredBits = header[2];
             if ( requiredBits == 0 )
                 return type.createEmptyArray();
-            Object result = null;
+            Object result;
             if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
             {   // Optimization for byte arrays (probably large ones)
                 result = bArray;

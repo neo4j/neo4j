@@ -55,7 +55,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, RelationshipTypeTokenRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record ) throws FAILURE
     {
         processor.processRelationshipType(this, record);
     }

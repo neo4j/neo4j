@@ -38,7 +38,8 @@ public interface IndexStoreView
      *
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor, Visitor<NodePropertyUpdate> visitor );
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel(
+            IndexDescriptor descriptor, Visitor<NodePropertyUpdate, FAILURE> visitor );
 
     /**
      * Retrieve all nodes in the database which has got one or more of the given labels AND
@@ -46,5 +47,6 @@ public interface IndexStoreView
      *
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    StoreScan visitNodes( long[] labelIds, long[] propertyKeyIds, Visitor<NodePropertyUpdate> visitor );
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( long[] labelIds, long[] propertyKeyIds,
+                                                               Visitor<NodePropertyUpdate, FAILURE> visitor );
 }

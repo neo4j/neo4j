@@ -44,8 +44,8 @@ public class IndexEntryConflictException extends Exception
 
     /**
      * Use this method in cases where {@link IndexEntryConflictException} was caught but it should not have been
-     * allowed
-     * to be thrown in the first place. Typically where the index we performed an operation on is not a unique index.
+     * allowed to be thrown in the first place. Typically where the index we performed an operation on is not a
+     * unique index.
      */
     public RuntimeException notAllowed( long labelId, long propertyKeyId )
     {
@@ -57,11 +57,6 @@ public class IndexEntryConflictException extends Exception
     public RuntimeException notAllowed( IndexDescriptor descriptor )
     {
         return notAllowed( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
-    }
-
-    public Runtime asRuntimeException()
-    {
-        return new Runtime( this );
     }
 
     public long getAddedNodeId()
@@ -77,19 +72,5 @@ public class IndexEntryConflictException extends Exception
     public Object getPropertyValue()
     {
         return propertyValue;
-    }
-
-    public static class Runtime extends RuntimeException
-    {
-        private Runtime( IndexEntryConflictException exception )
-        {
-            super( exception );
-        }
-
-        @Override
-        public IndexEntryConflictException getCause()
-        {
-            return (IndexEntryConflictException) super.getCause();
-        }
     }
 }

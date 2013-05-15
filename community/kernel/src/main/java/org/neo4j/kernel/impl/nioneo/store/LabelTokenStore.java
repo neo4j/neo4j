@@ -51,7 +51,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     }
 
     @Override
-    public void accept( Processor processor, LabelTokenRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, LabelTokenRecord record ) throws FAILURE
     {
         processor.processLabelName( this, record );
     }

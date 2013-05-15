@@ -17,24 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.api.impl.index;
 
-/**
- * A visitor to internalize iteration.
- * 
- * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
- * 
- * @param <E> the element type the visitor accepts.
- */
-public interface Visitor<E, FAILURE extends Exception>
+import org.junit.Ignore;
+import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.configuration.Config;
+
+@Ignore("2013-05-15 The Lucene implementation does not support unique indexes yet.")
+public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
-    /**
-     * Invoked for each element in a collection. Return <code>true</code> to
-     * terminate the iteration, <code>false</code> to continue.
-     * 
-     * @param element an element from the collection.
-     * @return <code>true</code> to terminate the iteration, <code>false</code>
-     *         to continue.
-     */
-    boolean visit( E element ) throws FAILURE;
+    @Override
+    protected LuceneSchemaIndexProvider createIndexProvider()
+    {
+        return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(), new Config() );
+    }
 }
+

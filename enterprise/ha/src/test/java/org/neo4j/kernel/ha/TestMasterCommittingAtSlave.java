@@ -251,7 +251,7 @@ public class TestMasterCommittingAtSlave
         List<Slave> slaves = new ArrayList<Slave>();
         for ( int i = 0; i < count; i++ )
         {
-            slaves.add( new FakeSlave( i < failingSlaves.length ? failingSlaves[i] : false, i ) );
+            slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i ) );
         }
         return slaves;
     }
@@ -357,7 +357,7 @@ public class TestMasterCommittingAtSlave
         private final StringBuilder errors = new StringBuilder();
 
         @Override
-        public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+        public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
             addError( msg );
         }

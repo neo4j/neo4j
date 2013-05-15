@@ -21,5 +21,5 @@ package org.neo4j.helpers.collection;
 
 public interface Visitable<T>
 {
-    void accept(Visitor<T> visitor);
+    void accept(Visitor<T, RuntimeException> visitor);
 }

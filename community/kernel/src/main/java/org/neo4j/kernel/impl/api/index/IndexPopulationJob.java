@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.lang.String.format;
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
+import static org.neo4j.helpers.collection.Iterables.filter;
+
+import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -34,11 +40,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -60,7 +61,7 @@ public class IndexPopulationJob implements Runnable
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
-    private volatile StoreScan storeScan;
+    private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
@@ -116,11 +117,15 @@ public class IndexPopulationJob implements Runnable
         }
         catch ( Throwable t )
         {
-            if ( t instanceof IndexEntryConflictException.Runtime )
+            if ( t instanceof IndexPopulationFailedKernelException )
             {
-                t = ((IndexEntryConflictException.Runtime) t).getCause();
-                // Index conflicts are expected (for unique indexes) so we don't need to log them.
+                Throwable cause = t.getCause();
+                if ( cause instanceof IndexEntryConflictException )
+                {
+                    t = cause;
+                }
             }
+            // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
                 log.error( "Failed to populate index.", t );
@@ -156,21 +161,22 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes()
+    private void indexAllNodes() throws IndexPopulationFailedKernelException
     {
-        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate>()
+        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate,
+                IndexPopulationFailedKernelException>()
         {
             @Override
-            public boolean visit( NodePropertyUpdate update )
+            public boolean visit( NodePropertyUpdate update ) throws IndexPopulationFailedKernelException
             {
                 try
                 {
                     populator.add( update.getNodeId(), update.getValueAfter() );
                     populateFromQueueIfAvailable( update.getNodeId() );
                 }
-                catch ( IndexEntryConflictException conflict )
+                catch ( Exception conflict )
                 {
-                    throw conflict.asRuntimeException();
+                    throw new IndexPopulationFailedKernelException( descriptor, conflict );
                 }
                 return false;
             }
@@ -178,7 +184,7 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
-    private void populateFromQueueIfAvailable( final long highestIndexedNodeId ) throws IndexEntryConflictException
+    private void populateFromQueueIfAvailable( final long highestIndexedNodeId ) throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {

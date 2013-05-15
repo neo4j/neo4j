@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  *
  * @param <T>
  */
-public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger>
+public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger, RuntimeException>
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
     protected final T state;
@@ -61,7 +61,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     {
         REQUESTED_EXECUTION,
         EXECUTING,
-        EXECUTED;
+        EXECUTED
     }
 
     public OtherThreadExecutor( String name, T initialState )
@@ -169,8 +169,9 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
         Set<Thread.State> seenStates = new HashSet<Thread.State>();
-        Thread.State state = null;
-        while ( !stateSet.contains( (state = thread.getState()) ) || executionState == ExecutionState.REQUESTED_EXECUTION )
+        for ( Thread.State state;
+              !stateSet.contains( (state = thread.getState()) ) ||
+                      executionState == ExecutionState.REQUESTED_EXECUTION; )
         {
             seenStates.add( state );
             try

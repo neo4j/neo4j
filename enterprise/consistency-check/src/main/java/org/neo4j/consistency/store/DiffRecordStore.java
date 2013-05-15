@@ -154,9 +154,9 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, R record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, R record ) throws FAILURE
     {
-        actual.accept( new DispatchProcessor( this, processor ), record );
+        actual.accept( new DispatchProcessor<FAILURE>( this, processor ), record );
     }
 
     @Override
@@ -178,55 +178,55 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @SuppressWarnings( "unchecked" )
-    private static class DispatchProcessor extends RecordStore.Processor
+    private static class DispatchProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
     {
         private final DiffRecordStore<?> diffStore;
-        private final RecordStore.Processor processor;
+        private final RecordStore.Processor<FAILURE> processor;
 
-        DispatchProcessor( DiffRecordStore<?> diffStore, RecordStore.Processor processor )
+        DispatchProcessor( DiffRecordStore<?> diffStore, RecordStore.Processor<FAILURE> processor )
         {
             this.diffStore = diffStore;
             this.processor = processor;
         }
 
         @Override
-        public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+        public void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE
         {
             processor.processNode( (RecordStore<NodeRecord>) diffStore, node );
         }
 
         @Override
-        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel ) throws FAILURE
         {
             processor.processRelationship( (RecordStore<RelationshipRecord>) diffStore, rel );
         }
 
         @Override
-        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property ) throws FAILURE
         {
             processor.processProperty( (RecordStore<PropertyRecord>) diffStore, property );
         }
 
         @Override
-        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType ) throws FAILURE
         {
             processor.processString( (RecordStore<DynamicRecord>) diffStore, string, idType );
         }
 
         @Override
-        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
         {
             processor.processArray( (RecordStore<DynamicRecord>) diffStore, array );
         }
 
         @Override
-        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record )
+        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record ) throws FAILURE
         {
             processor.processRelationshipType( (RecordStore<RelationshipTypeTokenRecord>) diffStore, record );
         }
 
         @Override
-        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record )
+        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record ) throws FAILURE
         {
             processor.processPropertyKeyToken( (RecordStore<PropertyKeyTokenRecord>) diffStore, record );
         }

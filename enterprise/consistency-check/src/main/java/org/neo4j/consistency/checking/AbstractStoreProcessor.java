@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
-public abstract class AbstractStoreProcessor extends RecordStore.Processor
+public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
     private final RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreChecker;
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker;

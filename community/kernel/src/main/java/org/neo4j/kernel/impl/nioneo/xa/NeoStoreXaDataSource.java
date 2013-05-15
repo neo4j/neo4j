@@ -194,7 +194,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             if ( applicable( phase ) )
             {
-                log.logLongMessage( message, new Visitor<StringLogger.LineLogger>()
+                log.logLongMessage( message, new Visitor<StringLogger.LineLogger, RuntimeException>()
                 {
                     @Override
                     public boolean visit( StringLogger.LineLogger logger )
@@ -227,9 +227,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * <CODE>IOException</CODE> is thrown. If any problem is found with that
      * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
-     *
-     * @throws IOException
-     *             If unable to create data source
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,

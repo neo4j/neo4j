@@ -87,7 +87,7 @@ public class LockManagerImpl implements LockManager
     {
         assertValidArguments( resource, tx );
 
-        RWLock lock = null;
+        RWLock lock;
         synchronized ( resourceLockMap )
         {
             lock = resourceLockMap.get( resource );
@@ -119,7 +119,7 @@ public class LockManagerImpl implements LockManager
     {
         assertValidArguments( resource, tx );
 
-        RWLock lock = null;
+        RWLock lock;
         synchronized ( resourceLockMap )
         {
             lock = resourceLockMap.get( resource );
@@ -157,7 +157,7 @@ public class LockManagerImpl implements LockManager
     {
         assertValidArguments( resource, tx );
 
-        RWLock lock = null;
+        RWLock lock;
         synchronized ( resourceLockMap )
         {
             lock = resourceLockMap.get( resource );
@@ -192,7 +192,7 @@ public class LockManagerImpl implements LockManager
     {
         assertValidArguments( resource, tx );
 
-        RWLock lock = null;
+        RWLock lock;
         synchronized ( resourceLockMap )
         {
             lock = resourceLockMap.get( resource );
@@ -215,14 +215,12 @@ public class LockManagerImpl implements LockManager
     /**
      * Utility method for debugging. Dumps info to console of txs having locks
      * on resources.
-     *
-     * @param resource
      */
     @Override
     public void dumpLocksOnResource( Object resource, Logging logging )
     {
         StringLogger logger = logging.getMessagesLog( LockManager.class );
-        RWLock lock = null;
+        RWLock lock;
         synchronized ( resourceLockMap )
         {
             if ( !resourceLockMap.containsKey( resource ) )
@@ -254,7 +252,7 @@ public class LockManagerImpl implements LockManager
      * 
      * @param visitor visitor for visiting each lock.
      */
-    private <V extends Visitor<LockInfo>> V eachLock( V visitor )
+    private <V extends Visitor<LockInfo, RuntimeException>> V eachLock( V visitor )
     {
         synchronized ( resourceLockMap )
         {
@@ -277,7 +275,7 @@ public class LockManagerImpl implements LockManager
      * @param minWaitTime the number of milliseconds a thread should have waited
      *            on a lock for it to be visited.
      */
-    private <V extends Visitor<LockInfo>> V eachAwaitedLock( V visitor, long minWaitTime )
+    private <V extends Visitor<LockInfo, RuntimeException>> V eachAwaitedLock( V visitor, long minWaitTime )
     {
         long waitStart = System.currentTimeMillis() - minWaitTime;
         synchronized ( resourceLockMap )
@@ -311,7 +309,7 @@ public class LockManagerImpl implements LockManager
         dump.done();
     }
 
-    private static class ListAppendingVisitor implements Visitor<LockInfo>
+    private static class ListAppendingVisitor implements Visitor<LockInfo, RuntimeException>
     {
         private final List<LockInfo> result = new ArrayList<LockInfo>();
 
@@ -323,7 +321,7 @@ public class LockManagerImpl implements LockManager
         }
     }
     
-    private static class DumpVisitor implements Visitor<LockInfo>
+    private static class DumpVisitor implements Visitor<LockInfo, RuntimeException>
     {
         private final StringLogger logger;
         

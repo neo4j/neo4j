@@ -353,7 +353,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
-            log.logLongMessage( message, new Visitor<StringLogger.LineLogger>()
+            log.logLongMessage( message, new Visitor<StringLogger.LineLogger, RuntimeException>()
             {
                 @Override
                 public boolean visit( LineLogger logger )
