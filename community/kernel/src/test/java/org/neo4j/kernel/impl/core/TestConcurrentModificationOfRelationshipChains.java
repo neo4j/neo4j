@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Iterator;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -65,12 +64,6 @@ public class TestConcurrentModificationOfRelationshipChains
             builder.setConfig( GraphDatabaseSettings.relationship_grab_size, ""+RelationshipGrabSize );
         }
     };
-
-    @After
-    public void shutdown()
-    {
-        graphDb.shutdown();
-    }
 
     @Test
     public void relationshipChainPositionCachePoisoningFromSameThreadReReadNode()

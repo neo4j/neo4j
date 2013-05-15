@@ -19,38 +19,40 @@
  */
 package org.neo4j.server.database;
 
-import java.util.HashMap;
+import java.io.IOException;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.rrd4j.core.RrdDb;
 
-public class EphemeralDatabase extends CommunityDatabase
+/**
+ * This provider exists because {@link RrdDb} is inflexible w/ regards to different
+ * file system abstractions and {@link RrdDb} being a class makes it hard to override
+ * closing it where the backing file should be deleted in, say an ephemeral environment.
+ */
+public interface RrdDbWrapper
 {
-    public EphemeralDatabase()
+    RrdDb get();
+    
+    void close() throws IOException;
+    
+    static class Plain implements RrdDbWrapper
     {
-        this( new MapConfiguration( new HashMap<String, String>() ) );
-    }
+        private final RrdDb db;
 
-    public EphemeralDatabase( Configuration serverConfig )
-    {
-        super( serverConfig );
-    }
-
-    @Override
-    protected AbstractGraphDatabase createDb()
-    {
-        return (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( loadNeo4jProperties() ).newGraphDatabase();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        if ( this.graph != null )
+        public Plain( RrdDb db )
         {
-            this.graph.shutdown();
+            this.db = db;
+        }
+        
+        @Override
+        public RrdDb get()
+        {
+            return db;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            db.close();
         }
     }
 }

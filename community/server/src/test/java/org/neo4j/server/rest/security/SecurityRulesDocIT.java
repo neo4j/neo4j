@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.rest.security;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
@@ -41,6 +37,10 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 public class SecurityRulesDocIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
@@ -54,7 +54,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     @After
     public void stopServer()
     {
-        if (server != null)
+        if ( server != null )
         {
             server.stop();
         }

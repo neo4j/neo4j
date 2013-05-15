@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 public abstract class DatabaseRule extends ExternalResource
 {
@@ -56,7 +57,7 @@ public abstract class DatabaseRule extends ExternalResource
             configure( builder );
             database = (GraphDatabaseAPI) builder.newGraphDatabase();
         }
-        catch( RuntimeException e )
+        catch ( RuntimeException e )
         {
             deleteResources();
             throw e;
@@ -99,7 +100,7 @@ public abstract class DatabaseRule extends ExternalResource
     {
         try
         {
-            if (database != null)
+            if ( database != null )
                 database.shutdown();
         }
         finally
@@ -111,6 +112,6 @@ public abstract class DatabaseRule extends ExternalResource
     
     public void clearCache()
     {
-        getGraphDatabaseAPI().getNodeManager().clearCache();
+        getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 }

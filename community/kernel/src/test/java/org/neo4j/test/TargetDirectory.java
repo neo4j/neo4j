@@ -192,18 +192,6 @@ public class TargetDirectory
         if ( target == null )
         {
             target = new File( "target" );
-//            if ( !( target.exists() && target.isDirectory() ) )
-//            {
-//                // Fall back to temporary directory
-//                try
-//                {
-//                    target = File.createTempFile( "neo4j-test", "target" );
-//                }
-//                catch ( IOException e )
-//                {
-//                    throw new IllegalStateException( "Cannot create target directory" );
-//                }
-//            }
         }
         return new TargetDirectory( fileSystem,
                 new File( new File( target, "test-data" ), owningTest.getName() ) );
@@ -229,11 +217,4 @@ public class TargetDirectory
         fileSystem.deleteRecursively( base );
         fileSystem.mkdirs( base );
     }
-
-    /*
-    public static TargetDirectory forTemporaryFolder( org.junit.rules.TemporaryFolder dir )
-    {
-        return new TargetDirectory( dir.getRoot() );
-    }
-    //*/
 }

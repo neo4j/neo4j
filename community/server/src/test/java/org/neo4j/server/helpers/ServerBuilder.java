@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -52,6 +47,11 @@ import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
+
+import static org.neo4j.server.ServerTestUtils.asOneLine;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 public class ServerBuilder
 {
@@ -91,7 +91,7 @@ public class ServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        File configFile = createPropertiesFiles();
+        final File configFile = createPropertiesFiles();
 
         if ( preflightTasks == null )
         {
@@ -120,7 +120,6 @@ public class ServerBuilder
                 return persistent ?
                         new CommunityDatabase( configurator.configuration() ) :
                         new EphemeralDatabase( configurator.configuration() );
-
             }
 
             @Override
@@ -135,6 +134,13 @@ public class ServerBuilder
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
                                 Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+            }
+
+            @Override
+            public void stop()
+            {
+                super.stop();
+                configFile.delete();
             }
         };
     }
