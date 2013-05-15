@@ -19,26 +19,27 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.apache.commons.configuration.SystemConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.server.EntityOutputFormat;
-import org.rrd4j.core.RrdDb;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 public class MonitorServiceDocTest implements JobScheduler
 {
-    private RrdDb rrdDb;
+    private RrdDbWrapper rrdDb;
     private MonitorService monitorService;
     private Database database;
     private EntityOutputFormat output;
@@ -92,7 +93,7 @@ public class MonitorServiceDocTest implements JobScheduler
         rrdDb = new RrdFactory( new SystemConfiguration() ).createRrdDbAndSampler( database, this );
 
         output = new EntityOutputFormat( new JsonFormat(), URI.create( "http://peteriscool.com:6666/" ), null );
-        monitorService = new MonitorService( rrdDb, output );
+        monitorService = new MonitorService( rrdDb.get(), output );
     }
 
     @After

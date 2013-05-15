@@ -53,7 +53,7 @@ public abstract class Database implements Lifecycle
     @Deprecated
     public AbstractGraphDatabase graph;
 
-    private RrdDb rrdDb;
+    private RrdDbWrapper rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
     /**
@@ -183,7 +183,7 @@ public abstract class Database implements Lifecycle
     @Deprecated
     public RrdDb rrdDb()
     {
-        return rrdDb;
+        return rrdDb.get();
     }
 
     /**
@@ -193,9 +193,14 @@ public abstract class Database implements Lifecycle
      * @return
      */
     @Deprecated
-    public void setRrdDb( RrdDb rrdDb )
+    public void setRrdDb( final RrdDb rrdDb )
     {
-        this.rrdDb = rrdDb;
+        this.rrdDb = new RrdDbWrapper.Plain( rrdDb );
+    }
+    
+    public void setRrdDb( RrdDbWrapper provider )
+    {
+        this.rrdDb = provider;
     }
 
     /**

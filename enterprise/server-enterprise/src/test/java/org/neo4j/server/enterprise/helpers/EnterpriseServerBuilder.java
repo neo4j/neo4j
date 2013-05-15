@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -39,6 +37,8 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
 
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+
 public class EnterpriseServerBuilder extends ServerBuilder
 {
     public static EnterpriseServerBuilder server()
@@ -53,7 +53,7 @@ public class EnterpriseServerBuilder extends ServerBuilder
         {
             this.dbDir = createTempDir().getAbsolutePath();
         }
-        File configFile = createPropertiesFiles();
+        final File configFile = createPropertiesFiles();
 
         if ( preflightTasks == null )
         {
@@ -95,6 +95,12 @@ public class EnterpriseServerBuilder extends ServerBuilder
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
                                 Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+            }
+            
+            @Override
+            public void stop()
+            {
+                configFile.delete();
             }
         };
     }

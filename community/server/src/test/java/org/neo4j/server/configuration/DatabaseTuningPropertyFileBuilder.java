@@ -19,36 +19,31 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
 
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+
 public class DatabaseTuningPropertyFileBuilder
 {
     private File parentDirectory = null;
     private String mappedMemory = null;
 
-    public static DatabaseTuningPropertyFileBuilder builder()
+    public static DatabaseTuningPropertyFileBuilder builder( File directory )
     {
-        return new DatabaseTuningPropertyFileBuilder();
+        return new DatabaseTuningPropertyFileBuilder( directory );
     }
 
-    private DatabaseTuningPropertyFileBuilder()
+    private DatabaseTuningPropertyFileBuilder( File directory )
     {
+        this.parentDirectory = directory;
     }
 
     public File build() throws IOException
     {
-        if ( parentDirectory == null )
-        {
-            parentDirectory = createTempDir();
-        }
-
         File temporaryConfigFile = new File( parentDirectory, "neo4j.properties" );
         Map<String, String> properties = MapUtil.stringMap(
                 "neostore.relationshipstore.db.mapped_memory", "50M",
@@ -67,16 +62,9 @@ public class DatabaseTuningPropertyFileBuilder
         return temporaryConfigFile;
     }
 
-    public DatabaseTuningPropertyFileBuilder inDirectory( File parentDirectory )
-    {
-        this.parentDirectory = parentDirectory;
-        return this;
-    }
-
     public DatabaseTuningPropertyFileBuilder mappedMemory( int i )
     {
         this.mappedMemory = String.valueOf( i ) + "M";
         return this;
     }
-
 }

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,6 +30,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.String.format;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.CannedFileSystemAbstraction.NOTHING;
+import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
+
 public class StoreLockerTest
 {
     private static final TargetDirectory target = TargetDirectory.forTest( StoreLockerTest.class );
@@ -43,7 +45,7 @@ public class StoreLockerTest
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, true );
+        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
         try
@@ -61,7 +63,7 @@ public class StoreLockerTest
     @Test
     public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true );
+        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
         try
@@ -79,7 +81,7 @@ public class StoreLockerTest
     public void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false,
-                new IOException( "store dir could not be created" ), null, true );
+                new IOException( "store dir could not be created" ), null, true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
         File storeDir = target.directory( "unused", true );
 
@@ -100,7 +102,7 @@ public class StoreLockerTest
     {
         Map<String, String> inputParams = new HashMap<String, String>();
         inputParams.put( GraphDatabaseSettings.read_only.name(), "true" );
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true );
+        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config( inputParams ), fileSystemAbstraction );
 
         try
@@ -119,7 +121,7 @@ public class StoreLockerTest
     public void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null,
-                new IOException( "cannot open lock file" ), true );
+                new IOException( "cannot open lock file" ), true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
         File storeDir = target.directory( "unused", true );
 
@@ -139,7 +141,7 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, false );
+        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, false, NOTHING );
         StoreLocker storeLocker = new StoreLocker( new Config(), fileSystemAbstraction );
 
         try

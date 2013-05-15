@@ -19,32 +19,50 @@
  */
 package org.neo4j.server.security;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
-
-import org.junit.Test;
-
-public class TestKeyStoreFactory {
-
+public class TestKeyStoreFactory
+{
     @Test
-    public void shouldCreateKeyStoreForGivenKeyPair() throws Exception {
-
-        File cPath = File.createTempFile("cert", "test");
-        File pkPath = File.createTempFile("privatekey", "test");
-        File keyStorePath = File.createTempFile("keyStore", "test");
-        
+    public void shouldCreateKeyStoreForGivenKeyPair() throws Exception
+    {
         SslCertificateFactory ssl = new SslCertificateFactory();
-        ssl.createSelfSignedCertificate(cPath, pkPath, "asd");
-        
+        ssl.createSelfSignedCertificate( cPath, pkPath, "asd" );
+
         KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
-        
-        KeyStoreInformation ks = keyStoreFactory.createKeyStore(keyStorePath, pkPath, cPath);
-        
-        File keyStoreFile = new File(ks.getKeyStorePath());
-        assertThat(keyStoreFile.exists(), is(true));
-        
+
+        KeyStoreInformation ks = keyStoreFactory.createKeyStore( keyStorePath, pkPath, cPath );
+
+        File keyStoreFile = new File( ks.getKeyStorePath() );
+        assertThat( keyStoreFile.exists(), is( true ) );
+        keyStorePath.delete();
     }
     
+    private File cPath;
+    private File pkPath;
+    private File keyStorePath;
+    
+    @Before
+    public void createFiles() throws IOException
+    {
+        cPath = File.createTempFile( "cert", "test" );
+        pkPath = File.createTempFile( "privatekey", "test" );
+        keyStorePath = File.createTempFile( "keyStore", "test" );
+    }
+    
+    @After
+    public void deleteFiles()
+    {
+        keyStorePath.delete();
+        pkPath.delete();
+        cPath.delete();
+    }
 }
