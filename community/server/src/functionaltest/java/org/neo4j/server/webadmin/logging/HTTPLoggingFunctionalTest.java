@@ -157,8 +157,8 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log file [%s] does not exist",
-                    unwritableLogDir.getAbsolutePath() + File.separator + "http.log" ) ) );
+                containsString( String.format( "HTTP log directory [%s] is not writable",
+                    unwritableLogDir.getAbsolutePath() ) ) );
         }
 
     }
