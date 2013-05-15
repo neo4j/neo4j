@@ -172,7 +172,7 @@ public class StoreFactory
                 stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore );
     }
 
-    private PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFileName )
+    public PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + KEYS_PART ),
                 IdType.PROPERTY_KEY_TOKEN_NAME );

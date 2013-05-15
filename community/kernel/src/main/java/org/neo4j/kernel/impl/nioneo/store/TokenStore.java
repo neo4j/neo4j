@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -120,7 +121,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
         super.flushAll();
     }
 
-    public Token[] getNames( int maxCount )
+    public Token[] getTokens( int maxCount )
     {
         LinkedList<Token> recordList = new LinkedList<Token>();
         long maxIdInUse = getHighestPossibleIdInUse();
@@ -140,26 +141,26 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
             if ( record != null && record.getNameId() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
-                recordList.add( new Token( i, name ) );
+                recordList.add( new Token( name, i ) );
             }
         }
         return recordList.toArray( new Token[recordList.size()] );
     }
 
-    public Token getName( int id )
+    public Token getToken( int id )
     {
         T record = getRecord( id );
-        return new Token( record.getId(), getStringFor( record ) );
+        return new Token( getStringFor( record ), record.getId() );
     }
 
-    public Token getName( int id, boolean recovered )
+    public Token getToken( int id, boolean recovered )
     {
         assert recovered;
         try
         {
             setRecovered();
             T record = getRecord( id );
-            return new Token( record.getId(), getStringFor( record ) );
+            return new Token( getStringFor( record ), record.getId() );
         }
         finally
         {
@@ -179,11 +180,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
         {
             releaseWindow( window );
         }
-        Collection<DynamicRecord> keyRecords = nameStore.getLightRecords( record.getNameId() );
-        for ( DynamicRecord keyRecord : keyRecords )
-        {
-            record.addNameRecord( keyRecord );
-        }
+        record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
         return record;
     }
 
@@ -348,11 +345,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
             return;
 
         record.setIsLight( false );
-        Collection<DynamicRecord> keyRecords = nameStore.getRecords( record.getNameId() );
-        for ( DynamicRecord keyRecord : keyRecords )
-        {
-            record.addNameRecord( keyRecord );
-        }
+        record.addNameRecords( nameStore.getRecords( record.getNameId() ) );
     }
 
     public String getStringFor( T nameRecord )

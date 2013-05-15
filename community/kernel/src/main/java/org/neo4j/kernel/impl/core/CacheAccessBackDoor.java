@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public interface CacheAccessBackDoor

@@ -22,17 +22,16 @@ package org.neo4j.kernel.impl.core;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
+public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 {
-    private Map<String, Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
-    private Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<Integer, TOKEN>();
+    private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
+    private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<Integer, TOKEN>();
 
     private final AbstractTransactionManager transactionManager;
     protected final PersistenceManager persistenceManager;
@@ -56,8 +55,8 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
 
         for ( Token token : tokens )
         {
-            addToken( token.getName(), token.getId(), newNameToId, newIdToToken );
-            notifyMeOfTokensAdded( token.getName(), token.getId() );
+            addToken( token.name(), token.id(), newNameToId, newIdToToken );
+            notifyMeOfTokensAdded( token.name(), token.id() );
         }
 
         nameToId.putAll( newNameToId );
@@ -87,7 +86,7 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
     void removeToken( int id )
     {
         TOKEN token = idToToken.remove( id );
-        nameToId.remove( nameOf( token ) );
+        nameToId.remove( token.name() );
     }
 
     public int getOrCreateId( String name )
@@ -117,8 +116,6 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
         return id;
     }
 
-    protected abstract String nameOf( TOKEN token );
-
     public TOKEN getTokenById( int id ) throws TokenNotFoundException
     {
         TOKEN result = getTokenByIdOrNull( id );
@@ -141,7 +138,7 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
 
     public final int idOf( TOKEN token ) throws TokenNotFoundException
     {
-        return getIdByName( nameOf( token ) );
+        return getIdByName( token.name() );
     }
 
     public int getIdByName( String name ) throws TokenNotFoundException
@@ -153,7 +150,21 @@ public abstract class TokenHolder<TOKEN> extends LifecycleAdapter
         }
         return id;
     }
-
+    
+    public TOKEN getTokenByName( String name ) throws TokenNotFoundException
+    {
+        Integer id = nameToId.get( name );
+        if ( id == null )
+            throw new TokenNotFoundException( name );
+        return idToToken.get( id );
+    }
+    
+    public TOKEN getTokenByNameOrNull( String name )
+    {
+        Integer id = nameToId.get( name );
+        return id != null ? idToToken.get( id ) : null;
+    }
+    
     public Iterable<TOKEN> getAllTokens()
     {
         return idToToken.values();

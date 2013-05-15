@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.persistence;
 
 import java.util.Iterator;
 import java.util.Map;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -66,7 +66,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData nodeAddProperty( long nodeId, PropertyKeyToken index, Object value );
+    PropertyData nodeAddProperty( long nodeId, Token index, Object value );
 
     /**
      * Changes an existing property of the given node, with the given index to
@@ -130,7 +130,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData relAddProperty( long relId, PropertyKeyToken index, Object value );
+    PropertyData relAddProperty( long relId, Token index, Object value );
 
     /**
      * Changes an existing property's value of the given relationship, with the
@@ -179,7 +179,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData graphAddProperty( PropertyKeyToken index, Object value );
+    PropertyData graphAddProperty( Token index, Object value );
 
     /**
      * Changes an existing property of the graph, with the given index to

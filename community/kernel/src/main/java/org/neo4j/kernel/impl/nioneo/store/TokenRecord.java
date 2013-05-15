@@ -64,6 +64,14 @@ public abstract class TokenRecord extends AbstractRecord
         nameRecords.add( record );
     }
 
+    public void addNameRecords( Iterable<DynamicRecord> records )
+    {
+        for ( DynamicRecord record : records )
+        {
+            addNameRecord( record );
+        }
+    }
+
     @Override
     public String toString()
     {

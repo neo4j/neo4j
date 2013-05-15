@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-
 import java.util.Iterator;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -39,8 +35,12 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
-import org.neo4j.kernel.impl.core.LabelToken;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Token;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 /**
  * A tool for doing global operations, for example {@link #getAllNodes()}.
@@ -138,12 +138,12 @@ public class GlobalGraphOperations
             public ResourceIterator<Label> iterator()
             {
                 StatementContext ctx = statementCtxProvider.getCtxForReading();
-                return cleanupService.resourceIterator( map( new Function<LabelToken, Label>() {
+                return cleanupService.resourceIterator( map( new Function<Token, Label>() {
 
                     @Override
-                    public Label apply( LabelToken labelToken )
+                    public Label apply( Token labelToken )
                     {
-                        return label( labelToken.getName() );
+                        return label( labelToken.name() );
                     }
                 }, ctx.listLabels() ), ctx );
             }

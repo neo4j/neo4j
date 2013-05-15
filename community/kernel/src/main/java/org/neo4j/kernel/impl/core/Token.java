@@ -19,36 +19,46 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class LabelToken
+public class Token
 {
     private final String name;
-    private final int labelId;
+    private final int id;
 
-    public LabelToken( String name, int labelId )
+    public Token( String name, int id )
     {
         this.name = name;
-        this.labelId = labelId;
+        this.id = id;
     }
 
-    public String getName()
+    public String name()
     {
         return name;
     }
 
-    public int getLabelId()
+    public int id()
     {
-        return this.labelId;
+        return this.id;
     }
 
     @Override
     public int hashCode()
     {
-        return labelId;
+        return id;
     }
 
     @Override
-    public boolean equals( Object o )
+    public boolean equals( Object obj )
     {
-        return o instanceof LabelToken && labelId == ((LabelToken) o).getLabelId();
+        if ( !(obj instanceof Token) )
+        {
+            return false;
+        }
+        return id == ((Token) obj).id;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[name:" + name + ", id:" + id + "]";
     }
 }
