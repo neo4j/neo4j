@@ -165,7 +165,7 @@ public class TestConcurrentModificationOfRelationshipChains
         tx.success();
         tx.finish();
 
-        db.getNodeManager().clearCache();
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         return Triplet.of( node1.getRelationships(), node1.getId(), firstFromSecondBatch );
     }
 }

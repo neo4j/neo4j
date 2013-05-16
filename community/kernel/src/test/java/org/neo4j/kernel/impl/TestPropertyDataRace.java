@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -42,6 +41,11 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import static org.neo4j.helpers.Predicates.or;
+import static org.neo4j.helpers.Predicates.stringContains;
+
 @ForeignBreakpoints( {
                       @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.ArrayBasedPrimitive",
                               method = "setProperties" ),
@@ -55,9 +59,11 @@ public class TestPropertyDataRace
 
     public static final TargetDirectory targetDir = TargetDirectory.forTest( TestPropertyDataRace.class );
 
+    @SuppressWarnings( "unchecked" )
     @Rule
-    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule( "", targetDir.directory( "dumps" ),
-            60, TimeUnit.SECONDS );
+    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule(
+            or( stringContains( "SubProcess" ), stringContains( "TestRunner" ) ),
+            targetDir.directory( "dumps" ), 1, MINUTES );
 
     @Test
     @EnabledBreakpoints( { "enable breakpoints", "done" } )

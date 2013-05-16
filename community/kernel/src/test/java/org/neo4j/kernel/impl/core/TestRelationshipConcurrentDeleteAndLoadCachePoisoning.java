@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
-
-import java.util.concurrent.TimeUnit;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.TestPropertyDataRace;
 import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
@@ -47,6 +41,14 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Predicates.or;
+import static org.neo4j.helpers.Predicates.stringContains;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
 /**
  * This test tests the exact same issue as {@link TestConcurrentModificationOfRelationshipChains}. The difference is
@@ -73,11 +75,14 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         }
     };
 
-    public static final TargetDirectory targetDir = TargetDirectory.forTest( TestPropertyDataRace.class );
+    public static final TargetDirectory targetDir =
+            TargetDirectory.forTest( TestRelationshipConcurrentDeleteAndLoadCachePoisoning.class );
 
+    @SuppressWarnings( "unchecked" )
     @Rule
-    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule( "", targetDir.directory( "dumps" ),
-            0, TimeUnit.SECONDS );
+    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule(
+            or( stringContains( "SubProcess" ), stringContains( "TestRunner" ) ),
+            targetDir.directory( "dumps" ), 1, MINUTES );
 
     private static DebuggedThread committer;
     private static DebuggedThread reader;
@@ -101,7 +106,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         tx.finish();
 
         // This is required, otherwise relChainPosition is never consulted, everything will already be in mem.
-        db.getNodeManager().clearCache();
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
 
         Runnable writer = new Runnable()
         {
@@ -138,11 +143,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         writerThread.join();
 
         // This should pass without any problems.
-        int count = 0;
-        for ( Relationship rel : first.getRelationships() )
-        {
-            count++;
-        }
+        int count = count( first.getRelationships() );
         assertEquals("Should have read relationships created minus one", RelationshipGrabSize, count);
     }
 

@@ -28,23 +28,30 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.rules.ExternalResource;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 
-public class DumpProcessInformationRule extends ExternalResource implements Callable<Void>
+import static org.neo4j.helpers.Predicates.stringContains;
+
+public class DumpProcessInformationRule extends ExternalResource
 {
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool( 2 );
 
-    private final String containing;
     private final File baseDir;
     private final long duration;
     private final TimeUnit timeUnit;
+    private final Predicate<String> processFilter;
 
     private volatile ScheduledFuture<?> thunk = null;
 
     public DumpProcessInformationRule( String containing, File baseDir, long duration, TimeUnit timeUnit )
     {
-        super();
+        this( stringContains( containing ), baseDir, duration, timeUnit );
+    }
 
-        this.containing = containing;
+    public DumpProcessInformationRule( Predicate<String> processFilter, File baseDir, long duration,
+            TimeUnit timeUnit )
+    {
+        this.processFilter = processFilter;
         this.baseDir = baseDir;
         this.duration = duration;
         this.timeUnit = timeUnit;
@@ -56,7 +63,15 @@ public class DumpProcessInformationRule extends ExternalResource implements Call
         if ( null == thunk )
         {
             super.before();
-            thunk = executor.schedule( this, duration, timeUnit );
+            thunk = executor.schedule( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    dump();
+                    return null;
+                }
+            }, duration, timeUnit );
         }
         else
             throw new IllegalStateException( "process dumping thunk already started" );
@@ -71,13 +86,11 @@ public class DumpProcessInformationRule extends ExternalResource implements Call
         super.after();
     }
 
-    @Override
-    public Void call() throws Exception
+    public void dump() throws Exception
     {
-        for ( Pair<Long, String> pair : DumpProcessInformation.getJPids( containing ) )
+        for ( Pair<Long, String> pair : DumpProcessInformation.getJPids( processFilter ) )
         {
             DumpProcessInformation.doThreadDump( pair, baseDir );
         }
-        return null;
     }
 }
