@@ -100,6 +100,7 @@ public class EnterpriseServerBuilder extends ServerBuilder
             @Override
             public void stop()
             {
+                super.stop();
                 configFile.delete();
             }
         };
