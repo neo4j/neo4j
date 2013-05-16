@@ -225,7 +225,8 @@ public class IndexingService extends LifecycleAdapter
                 indexProxy = createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
                 break;
             case FAILED:
-                indexProxy = createFailedIndexProxy( ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex() );
+                indexProxy = createFailedIndexProxy( ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex(),
+                                                     null );
                 break;
             }
             indexes.put( ruleId, indexProxy );
@@ -334,15 +335,22 @@ public class IndexingService extends LifecycleAdapter
             @Override
             public IndexProxy create()
             {
-                OnlineIndexProxy onlineProxy = new OnlineIndexProxy( descriptor, providerDescriptor,
-                                                                     getOnlineAccessorFromProvider(
-                                                                             providerDescriptor, ruleId,
-                                                                             new IndexConfiguration( unique ) ) );
-                if ( unique )
+                try
                 {
-                    return new TentativeConstraintIndexProxy( flipper, onlineProxy );
+                    OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
+                            descriptor, providerDescriptor,
+                            getOnlineAccessorFromProvider( providerDescriptor, ruleId,
+                                                           new IndexConfiguration( unique ) ) );
+                    if ( unique )
+                    {
+                        return new TentativeConstraintIndexProxy( flipper, onlineProxy );
+                    }
+                    return onlineProxy;
                 }
-                return onlineProxy;
+                catch ( IOException e )
+                {
+                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, e );
+                }
             }
         } );
 
@@ -356,21 +364,28 @@ public class IndexingService extends LifecycleAdapter
                                                boolean unique )
     {
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
-        
-        IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
-        IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor );
-        result = contractCheckedProxy( result, true );
-        result = serviceDecoratedProxy( ruleId, result );
-        return result;
+        try
+        {
+            IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( providerDescriptor, ruleId,
+                                                                          new IndexConfiguration( unique ) );
+            IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor );
+            result = contractCheckedProxy( result, true );
+            return serviceDecoratedProxy( ruleId, result );
+        }
+        catch ( IOException e )
+        {
+            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, e );
+        }
     }
 
     private IndexProxy createFailedIndexProxy( long ruleId,
                                                IndexDescriptor descriptor,
-                                               SchemaIndexProvider.Descriptor providerDescriptor, boolean unique )
+                                               SchemaIndexProvider.Descriptor providerDescriptor, boolean unique,
+                                               Throwable cause )
     {
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
                                                                   new IndexConfiguration( unique ) );
-        IndexProxy result = new FailedIndexProxy( descriptor, providerDescriptor, indexPopulator );
+        IndexProxy result = new FailedIndexProxy( descriptor, providerDescriptor, indexPopulator, cause );
         result = contractCheckedProxy( result, true );
         return serviceDecoratedProxy( ruleId, result );
     }
@@ -392,7 +407,7 @@ public class IndexingService extends LifecycleAdapter
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
-                                                         long ruleId, IndexConfiguration config )
+                                                         long ruleId, IndexConfiguration config ) throws IOException
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getOnlineAccessor( ruleId, config );

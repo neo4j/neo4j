@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -149,7 +150,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config );
+    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException;
 
     /**
      * Called during startup to find out which state an index is in.

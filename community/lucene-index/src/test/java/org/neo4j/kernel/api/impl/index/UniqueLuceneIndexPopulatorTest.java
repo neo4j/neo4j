@@ -19,27 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SearcherFactory;
-import org.apache.lucene.search.SearcherManager;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public class UniquenessEnforcingLuceneIndexPopulatorTest
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+
+public class UniqueLuceneIndexPopulatorTest
 {
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -47,10 +41,10 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
         // given
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         File indexDirectory = new File( "whatever" );
-        final LuceneSchemaIndexProvider.DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
-        UniquenessEnforcingLuceneIndexPopulator populator = new UniquenessEnforcingLuceneIndexPopulator( 100,
-                documentLogic, standard(),
-                directoryFactory, indexDirectory );
+        final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
+                documentStructure, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory );
         populator.create();
 
         // when
@@ -60,11 +54,7 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        final IndexSearcher searcher = new SearcherManager(
-                standard().create( directoryFactory.open( indexDirectory ) ), true, new SearcherFactory() ).acquire();
-
-        ArrayList<Long> nodeIds = new ArrayList<Long>();
-        searcher.search( documentLogic.newQuery( "value1" ), new AllNodesCollector( documentLogic, nodeIds ) );
+        List<Long> nodeIds = getAllNodes( documentStructure, directoryFactory.open( indexDirectory ), "value1" );
         assertEquals( asList( 1l ), nodeIds );
     }
 
@@ -74,10 +64,10 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
         // given
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         File indexDirectory = new File( "whatever" );
-        final LuceneSchemaIndexProvider.DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
-        UniquenessEnforcingLuceneIndexPopulator populator = new UniquenessEnforcingLuceneIndexPopulator( 100,
-                documentLogic, standard(),
-                directoryFactory, indexDirectory );
+        final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
+                documentStructure, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory );
         populator.create();
 
         // when
@@ -88,11 +78,7 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        final IndexSearcher searcher = new SearcherManager(
-                standard().create( directoryFactory.open( indexDirectory ) ), true, new SearcherFactory() ).acquire();
-
-        ArrayList<Long> nodeIds = new ArrayList<Long>();
-        searcher.search( documentLogic.newQuery( "value3" ), new AllNodesCollector( documentLogic, nodeIds ) );
+        List<Long> nodeIds = getAllNodes( documentStructure, directoryFactory.open( indexDirectory ), "value3" );
         assertEquals( asList( 3l ), nodeIds );
     }
 
@@ -100,9 +86,10 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
     public void shouldRejectEntryWithAlreadyIndexedValue() throws Exception
     {
         // given
-        UniquenessEnforcingLuceneIndexPopulator populator = new UniquenessEnforcingLuceneIndexPopulator( 100,
-                new LuceneSchemaIndexProvider.DocumentLogic(), standard(),
-                new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ) );
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
+                new LuceneDocumentStructure(), standard(),
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" )
+        );
         populator.create();
         populator.add( 1, "value1" );
 
@@ -127,10 +114,10 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
     {
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         File indexDirectory = new File( "whatever" );
-        final LuceneSchemaIndexProvider.DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
-        UniquenessEnforcingLuceneIndexPopulator populator = new UniquenessEnforcingLuceneIndexPopulator( 2,
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 2,
                 documentLogic, standard(),
-                directoryFactory, indexDirectory );
+                new IndexWriterStatus(), directoryFactory, indexDirectory );
         populator.create();
 
         populator.add( 1, "value1" );
@@ -156,9 +143,10 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
     public void shouldRejectUpdateWithAlreadyIndexedValue() throws Exception
     {
         // given
-        UniquenessEnforcingLuceneIndexPopulator populator = new UniquenessEnforcingLuceneIndexPopulator( 100,
-                new LuceneSchemaIndexProvider.DocumentLogic(), standard(),
-                new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ) );
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
+                new LuceneDocumentStructure(), standard(),
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" )
+        );
         populator.create();
         populator.add( 1, "value1" );
         populator.add( 2, "value2" );
@@ -176,42 +164,6 @@ public class UniquenessEnforcingLuceneIndexPopulatorTest
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
             assertEquals( 2, conflict.getAddedNodeId() );
-        }
-    }
-
-    private static class AllNodesCollector extends Collector
-    {
-        private final List<Long> nodeIds;
-        private final LuceneSchemaIndexProvider.DocumentLogic documentLogic;
-        public IndexReader reader;
-
-        public AllNodesCollector( LuceneSchemaIndexProvider.DocumentLogic documentLogic, ArrayList<Long> nodeIds )
-        {
-            this.documentLogic = documentLogic;
-            this.nodeIds = nodeIds;
-        }
-
-        @Override
-        public void setScorer( Scorer scorer ) throws IOException
-        {
-        }
-
-        @Override
-        public void collect( int doc ) throws IOException
-        {
-            nodeIds.add( documentLogic.getNodeId( reader.document( doc ) ) );
-        }
-
-        @Override
-        public void setNextReader( IndexReader reader, int docBase ) throws IOException
-        {
-            this.reader = reader;
-        }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder()
-        {
-            return true;
         }
     }
 }

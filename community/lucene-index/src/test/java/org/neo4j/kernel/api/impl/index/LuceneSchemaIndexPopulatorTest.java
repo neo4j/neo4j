@@ -33,7 +33,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -223,7 +222,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexSearcher searcher;
     private DirectoryFactory directoryFactory;
     private final long indexId = 0;
-    private final DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
+    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
     
     @Before
     public void before() throws Exception

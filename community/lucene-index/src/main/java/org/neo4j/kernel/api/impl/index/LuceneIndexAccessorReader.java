@@ -19,27 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.index.impl.lucene.HitsIterator;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.index.IndexReader;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
     private final IndexSearcher searcher;
-    private final DocumentLogic documentLogic;
+    private final LuceneDocumentStructure documentLogic;
     private final SearcherManager searcherManager;
 
-    LuceneIndexAccessorReader( SearcherManager searcherManager, DocumentLogic documentLogic )
+    LuceneIndexAccessorReader( SearcherManager searcherManager, LuceneDocumentStructure documentLogic )
     {
         this.searcherManager = searcherManager;
         this.searcher = searcherManager.acquire();

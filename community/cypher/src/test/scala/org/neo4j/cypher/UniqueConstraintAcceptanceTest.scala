@@ -21,9 +21,10 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.scalatest.Assertions
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException
 
 
 class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
@@ -62,16 +63,24 @@ class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with Statisti
 
     assertTrue("No constraints should exist", constraints.isEmpty)
   }
-  @Ignore("2013-05-15 Lucene indexes don't support verifying constraints on index population yet.")
   @Test
   def should_fail_to_add_constraint_when_existing_data_conflicts() {
     // GIVEN
     parseAndExecute("create (a:Person{id:1}), (b:Person{id:1})")
 
     // WHEN
-    parseAndExecute("create constraint on (n:Person) assert n.id is unique")
+    try
+    {
+      parseAndExecute("create constraint on (n:Person) assert n.id is unique")
 
+      fail("expected exception")
+    }
     // THEN
+    catch
+    {
+      case ex: ConstraintCreationKernelException =>
+    }
+
     val statementCtx = graph.statementContextForReading
 
     val prop = statementCtx.getPropertyKeyId("id")

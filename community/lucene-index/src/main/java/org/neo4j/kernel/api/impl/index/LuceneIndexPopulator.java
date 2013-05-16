@@ -21,149 +21,63 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-class LuceneIndexPopulator implements IndexPopulator
+import org.neo4j.kernel.api.index.IndexPopulator;
+
+public abstract class LuceneIndexPopulator implements IndexPopulator
 {
-    private org.apache.lucene.index.IndexWriter writer;
-    private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
-    private final int queueThreshold;
+    protected final LuceneDocumentStructure documentStructure;
     private final LuceneIndexWriterFactory indexWriterFactory;
-    private final DocumentLogic documentLogic;
-    private final WriterLogic writerLogic;
+    private final IndexWriterStatus writerStatus;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
 
+    protected IndexWriter writer;
     private Directory directory;
 
-    LuceneIndexPopulator( LuceneIndexWriterFactory indexWriterFactory, DirectoryFactory dirFactory, File dirFile,
-            int queueThreshold, DocumentLogic documentLogic, WriterLogic writerLogic )
+    LuceneIndexPopulator(
+            LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
+            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
     {
+        this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
-        this.queueThreshold = queueThreshold;
-        this.documentLogic = documentLogic;
-        this.writerLogic = writerLogic;
+        this.writerStatus = writerStatus;
         this.dirFactory = dirFactory;
         this.dirFile = dirFile;
     }
 
-
-    @Override
-    public void create()
+    public void create() throws IOException
     {
-        try
-        {
-            this.directory = dirFactory.open( dirFile );
-            DirectorySupport.deleteDirectoryContents( directory );
-            writer = indexWriterFactory.create( directory );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        this.directory = dirFactory.open( dirFile );
+        DirectorySupport.deleteDirectoryContents( directory );
+        writer = indexWriterFactory.create( directory );
     }
 
-    @Override
-    public void drop()
+    public void drop() throws IOException
     {
-        try
-        {
-            writerLogic.close( writer );
-            DirectorySupport.deleteDirectoryContents( directory );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        writerStatus.close( writer );
+        DirectorySupport.deleteDirectoryContents( directory );
     }
 
-    @Override
-    public void add( long nodeId, Object propertyValue )
-    {
-        try
-        {
-            writer.addDocument( documentLogic.newDocument( nodeId, propertyValue ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
-    {
-        for ( NodePropertyUpdate update : updates )
-            this.updates.add( update );
-        
-        if ( this.updates.size() > queueThreshold )
-        {
-            try
-            {
-                applyQueuedUpdates();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            this.updates.clear();
-        }
-    }
-
-    private void applyQueuedUpdates() throws IOException
-    {
-        for ( NodePropertyUpdate update : this.updates )
-        {
-            long nodeId = update.getNodeId();
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                writer.addDocument( documentLogic.newDocument( nodeId, update.getValueAfter() ) );
-                break;
-            case CHANGED:
-                writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId ),
-                        documentLogic.newDocument( nodeId, update.getValueAfter() ) );
-                break;
-            case REMOVED:
-                writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId ) );
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void close( boolean populationCompletedSuccessfully )
+    public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         try
         {
             if ( populationCompletedSuccessfully )
             {
-                applyQueuedUpdates();
-                writerLogic.forceAndMarkAsOnline( writer );
+                flush();
+                writerStatus.commitAsOnline( writer );
             }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
         finally
         {
-            try
-            {
-                writerLogic.close( writer );
-                directory.close();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            writerStatus.close( writer );
+            directory.close();
         }
     }
+
+    protected abstract void flush() throws IOException;
 }

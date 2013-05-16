@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -158,7 +159,7 @@ public class IndexCRUDIT
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
     
-    private GatheringIndexWriter newWriter( String propertyKey )
+    private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
         when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );

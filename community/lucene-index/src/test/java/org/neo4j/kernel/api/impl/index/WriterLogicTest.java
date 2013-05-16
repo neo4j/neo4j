@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -36,7 +33,9 @@ import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class WriterLogicTest
 {
@@ -47,13 +46,13 @@ public class WriterLogicTest
         // GIVEN
         IndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
-        logic.forceAndMarkAsOnline( writer );
+        logic.commitAsOnline( writer );
         
         // WHEN
         writer.close( true );
 
         // THEN
-        assertTrue( "Should have had online status set", logic.hasOnlineStatus( directory ) );
+        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
     
     @Test
@@ -61,15 +60,15 @@ public class WriterLogicTest
     {
         // GIVEN
         IndexWriter writer = newWriter();
-        logic.forceAndMarkAsOnline( writer );
+        logic.commitAsOnline( writer );
         
         // WHEN
         writer.addDocument( newDocument() );
-        logic.forceAndMarkAsOnline( writer );
+        logic.commitAsOnline( writer );
         writer.close( true );
 
         // THEN
-        assertTrue( "Should have had online status set", logic.hasOnlineStatus( directory ) );
+        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
     
     @Test
@@ -77,7 +76,7 @@ public class WriterLogicTest
     {
         // GIVEN
         IndexWriter writer = newWriter();
-        logic.forceAndMarkAsOnline( writer );
+        logic.commitAsOnline( writer );
         writer.close( true );
         
         // WHEN
@@ -86,10 +85,10 @@ public class WriterLogicTest
         writer.close( true );
 
         // THEN
-        assertTrue( "Should have had online status set", logic.hasOnlineStatus( directory ) );
+        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
     
-    private final WriterLogic logic = new WriterLogic();
+    private final IndexWriterStatus logic = new IndexWriterStatus();
     private Directory directory;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     

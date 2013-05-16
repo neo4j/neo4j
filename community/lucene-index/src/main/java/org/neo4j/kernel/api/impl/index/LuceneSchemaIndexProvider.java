@@ -19,26 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
-import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.neo4j.index.impl.lucene.LuceneUtil;
+
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -46,20 +31,22 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
-    private final DocumentLogic documentLogic = new DocumentLogic();
-    private final WriterLogic writerLogic = new WriterLogic();
+    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+    private final IndexWriterStatus writerStatus = new IndexWriterStatus();
     private final File rootDirectory;
-    
+
     public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         this.rootDirectory = getRootDirectory( config, LuceneSchemaIndexProviderFactory.KEY );
     }
-    
+
     private File dirFile( long indexId )
     {
         return new File( rootDirectory, "" + indexId );
@@ -68,22 +55,32 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
-        return new LuceneIndexPopulator( standard(), directoryFactory, dirFile( indexId ), 10000,
-                documentLogic, writerLogic );
+        if ( config.isUnique() )
+        {
+            return new UniqueLuceneIndexPopulator(
+                    UniqueLuceneIndexPopulator.DEFAULT_BATCH_SIZE, documentStructure, standard(), writerStatus,
+                    directoryFactory, dirFile( indexId ) );
+        }
+        else
+        {
+            return new NonUniqueLuceneIndexPopulator(
+                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
+                    directoryFactory, dirFile( indexId ) );
+        }
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException
     {
-        // TODO: return a uniqueness enforcing IndexAccessor if config says so
-        try
+        if ( config.isUnique() )
         {
-            return new LuceneIndexAccessor( standard(), directoryFactory, dirFile( indexId ),
-                    documentLogic, writerLogic );
+            return new UniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
+                                                  dirFile( indexId ) );
         }
-        catch ( IOException e )
+        else
         {
-            throw new RuntimeException( e );
+            return new NonUniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
+                                                     dirFile( indexId ) );
         }
     }
 
@@ -98,92 +95,19 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         try
         {
             Directory directory = directoryFactory.open( dirFile( indexId ) );
-            try {
-                boolean status = writerLogic.hasOnlineStatus( directory );
+            try
+            {
+                boolean status = writerStatus.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
-            finally {
+            finally
+            {
                 directory.close();
             }
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-    
-    static class DocumentLogic
-    {
-        private static final String NODE_ID_KEY = "_id_";
-        private static final String SINGLE_PROPERTY_KEY = "key";
-        
-        Document newDocument( long nodeId, Object value )
-        {
-            Document document = newBaseDocument( nodeId );
-            document.add( new Field( NODE_ID_KEY, "" + nodeId, Store.YES, NOT_ANALYZED ) );
-            document.add( instantiateField( SINGLE_PROPERTY_KEY, value, NOT_ANALYZED ) );
-            return document;
-        }
-
-        public Query newQuery( Object value )
-        {
-            if ( value instanceof String )
-            {
-                return new TermQuery( new Term( SINGLE_PROPERTY_KEY, (String) value ) );
-            }
-            else if ( value instanceof Number )
-            {
-                Number number = (Number) value;
-                return LuceneUtil.rangeQuery( SINGLE_PROPERTY_KEY, number, number, true, true );
-            }
-            throw new UnsupportedOperationException( value.toString() + ", " + value.getClass() );
-        }
-        
-        public Term newQueryForChangeOrRemove( long nodeId )
-        {
-            return new Term( NODE_ID_KEY, "" + nodeId );
-        }
-
-        public long getNodeId( Document from )
-        {
-            return Long.parseLong( from.get( NODE_ID_KEY ) );
-        }
-    }
-    
-    static class WriterLogic
-    {
-        private static final String KEY_STATUS = "status";
-        private static final String ONLINE = "online";
-        
-        public void forceAndMarkAsOnline( IndexWriter writer ) throws IOException
-        {
-            writer.commit( stringMap( KEY_STATUS, ONLINE ) );
-        }
-        
-        public boolean hasOnlineStatus( Directory directory ) throws IOException
-        {
-            if ( !IndexReader.indexExists( directory ) )
-                return false;
-
-            IndexReader reader = null;
-            try
-            {
-                reader = IndexReader.open( directory );
-                Map<String, String> userData = reader.getIndexCommit().getUserData();
-                return ONLINE.equals( userData.get( KEY_STATUS ) );
-            }
-            finally
-            {
-                if ( reader != null )
-                {
-                    reader.close();
-                }
-            }
-        }
-
-        public void close( IndexWriter writer ) throws IOException
-        {
-            writer.close( true );
         }
     }
 }

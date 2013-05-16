@@ -19,24 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-import static org.neo4j.test.AwaitAnswer.afterAwaiting;
-
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
@@ -49,6 +32,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -66,6 +50,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
 {
@@ -300,7 +302,7 @@ public class IndexingServiceTest
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,
                                                                       IndexAccessor accessor,
-                                                                      DataUpdates data )
+                                                                      DataUpdates data ) throws IOException
     {
         StringLogger logger = mock( StringLogger.class );
         SchemaIndexProvider indexProvider = mock( SchemaIndexProvider.class );

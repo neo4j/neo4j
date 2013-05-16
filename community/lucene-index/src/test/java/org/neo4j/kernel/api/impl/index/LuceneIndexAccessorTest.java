@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
+
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class LuceneIndexAccessorTest
 {
@@ -97,7 +95,7 @@ public class LuceneIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value2 ) ) );
-        assertEquals( asSet(), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
     
@@ -118,11 +116,10 @@ public class LuceneIndexAccessorTest
         reader.close();
     }
     
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
-    private final DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
-    private final WriterLogic writerLogic = new LuceneSchemaIndexProvider.WriterLogic();
+    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+    private final IndexWriterStatus writerLogic = new IndexWriterStatus();
     private final File dir = new File( "dir" );
     private LuceneIndexAccessor accessor;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
@@ -131,7 +128,7 @@ public class LuceneIndexAccessorTest
     public void before() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        accessor = new LuceneIndexAccessor( standard(), dirFactory, dir, documentLogic, writerLogic );
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, dir );
     }
 
     @After

@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.junit.Ignore;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 
-@Ignore("2013-05-15 The Lucene implementation does not support unique indexes yet.")
 public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
     @Override

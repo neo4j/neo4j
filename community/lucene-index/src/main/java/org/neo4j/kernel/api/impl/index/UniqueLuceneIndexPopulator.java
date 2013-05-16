@@ -29,41 +29,24 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
+
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-class UniquenessEnforcingLuceneIndexPopulator implements IndexPopulator
+class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private static final int BATCH_SIZE = 1024;
+    static final int DEFAULT_BATCH_SIZE = 1024;
     private static final float LOAD_FACTOR = 0.75f;
     private final int batchSize;
-    private final LuceneSchemaIndexProvider.DocumentLogic documentLogic;
-    private final LuceneIndexWriterFactory indexWriterFactory;
-    private final DirectoryFactory dirFactory;
-    private final File dirFile;
-
-    private Directory directory;
-    private org.apache.lucene.index.IndexWriter writer;
     private SearcherManager searcherManager;
     private Map<Object, Long> currentBatch = newBatchMap();
 
-    UniquenessEnforcingLuceneIndexPopulator( LuceneIndexWriterFactory indexWriterFactory,
-                                             DirectoryFactory dirFactory, File dirFile )
+    UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
+                                LuceneIndexWriterFactory indexWriterFactory,
+                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
     {
-        this( BATCH_SIZE, new LuceneSchemaIndexProvider.DocumentLogic(), indexWriterFactory, dirFactory, dirFile );
-    }
-
-    UniquenessEnforcingLuceneIndexPopulator( int batchSize, LuceneSchemaIndexProvider.DocumentLogic documentLogic,
-                                             LuceneIndexWriterFactory indexWriterFactory,
-                                             DirectoryFactory dirFactory, File dirFile )
-    {
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
         this.batchSize = batchSize;
-        this.documentLogic = documentLogic;
-        this.indexWriterFactory = indexWriterFactory;
-        this.dirFactory = dirFactory;
-        this.dirFile = dirFile;
     }
 
     private HashMap<Object, Long> newBatchMap()
@@ -74,23 +57,20 @@ class UniquenessEnforcingLuceneIndexPopulator implements IndexPopulator
     @Override
     public void create() throws IOException
     {
-        try
-        {
-            directory = dirFactory.open( dirFile );
-            DirectorySupport.deleteDirectoryContents( directory );
-            writer = indexWriterFactory.create( directory );
-            searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        super.create();
+        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         currentBatch.clear();
+    }
+
+    @Override
+    protected void flush() throws IOException
+    {
+        // no need to do anything yet.
     }
 
     @Override
@@ -102,11 +82,11 @@ class UniquenessEnforcingLuceneIndexPopulator implements IndexPopulator
             IndexSearcher searcher = searcherManager.acquire();
             try
             {
-                TopDocs docs = searcher.search( documentLogic.newQuery( propertyValue ), 1 );
+                TopDocs docs = searcher.search( documentStructure.newQuery( propertyValue ), 1 );
                 if ( docs.totalHits > 0 )
                 {
                     Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
-                    previousEntry = documentLogic.getNodeId( doc );
+                    previousEntry = documentStructure.getNodeId( doc );
                 }
             }
             finally
@@ -124,7 +104,7 @@ class UniquenessEnforcingLuceneIndexPopulator implements IndexPopulator
         else
         {
             currentBatch.put( propertyValue, nodeId );
-            writer.addDocument( documentLogic.newDocument( nodeId, propertyValue ) );
+            writer.addDocument( documentStructure.newDocument( nodeId, propertyValue ) );
             if ( currentBatch.size() >= batchSize )
             {
                 startNewBatch();
@@ -144,35 +124,6 @@ class UniquenessEnforcingLuceneIndexPopulator implements IndexPopulator
         for ( NodePropertyUpdate update : updates )
         {
             add( update.getNodeId(), update.getValueAfter() );
-        }
-    }
-
-    @Override
-    public void close( boolean populationCompletedSuccessfully )
-    {
-        try
-        {
-            if ( populationCompletedSuccessfully )
-            {
-//                applyQueuedUpdates();
-                new LuceneSchemaIndexProvider.WriterLogic().forceAndMarkAsOnline( writer );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            try
-            {
-                new LuceneSchemaIndexProvider.WriterLogic().close( writer );
-                directory.close();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
         }
     }
 }
