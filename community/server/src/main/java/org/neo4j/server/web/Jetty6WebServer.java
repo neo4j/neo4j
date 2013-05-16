@@ -354,11 +354,6 @@ public class Jetty6WebServer implements WebServer
             }
         } );
 
-        if( requestLoggingConfiguration != null )
-        {
-            loadRequestLogging();
-        }
-
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
 
@@ -385,6 +380,12 @@ public class Jetty6WebServer implements WebServer
                 throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
             }
         }
+
+        if( requestLoggingConfiguration != null )
+        {
+            loadRequestLogging();
+        }
+
     }
     
     private void loadRequestLogging() {
