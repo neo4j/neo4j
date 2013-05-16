@@ -155,7 +155,7 @@ public class TestGuard
             // expected
         }
         assertTrue( i > 1 );
-        assertTrue( i < 100 );
+        assertTrue( i < 500 );
         db.shutdown();
     }
 
