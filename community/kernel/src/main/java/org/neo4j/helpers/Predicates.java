@@ -221,4 +221,16 @@ public class Predicates
             return Predicates.or( flatten );
         }
     }
+
+    public static Predicate<String> stringContains( final String string )
+    {
+        return new Predicate<String>()
+        {
+            @Override
+            public boolean accept( String item )
+            {
+                return item.contains( string );
+            }
+        };
+    }
 }

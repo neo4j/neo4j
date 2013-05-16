@@ -29,6 +29,13 @@ import java.util.Collection;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
+
+import static java.lang.Runtime.getRuntime;
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Predicates.stringContains;
 
 public class DumpProcessInformation
 {
@@ -36,30 +43,26 @@ public class DumpProcessInformation
     {
         Args arg = new Args( args == null ? new String[0] : args );
         boolean doHeapDump = arg.getBoolean( "heap", false, true );
-        String containing = arg.orphans().isEmpty() ? null : arg.orphans().get( 0 );
+        Predicate<String> processFilter = arg.orphans().isEmpty() ?
+                Predicates.<String>TRUE() : stringContains( arg.orphans().get( 0 ) );
         String dumpDir = arg.get( "dir", "data" );
         File dirFile = dumpDir != null ? new File( dumpDir ) : null;
         dirFile.mkdirs();
-        for ( Pair<Long, String> pid : getJPids( containing ) )
+        for ( Pair<Long, String> pid : getJPids( processFilter ) )
         {
             doThreadDump( pid, dirFile );
-            if ( doHeapDump ) doHeapDump( pid, dirFile );
+            if ( doHeapDump )
+                doHeapDump( pid, dirFile );
         }
     }
 
-    public static void doThreadDump( Pair<Long, String> pid, File outputDirectory ) throws Exception
+    public static File doThreadDump( Pair<Long, String> pid, File outputDirectory ) throws Exception
     {
         String[] cmdarray = new String[] {"jstack", "" + pid.first()};
-        File outputFile = new File( outputDirectory, "threaddump-" + pid.other() + "-" + System.currentTimeMillis() );
-        Process process = Runtime.getRuntime().exec( cmdarray );
+        File outputFile = new File( outputDirectory, "threaddump-" + pid.other() + "-" + currentTimeMillis() );
+        Process process = getRuntime().exec( cmdarray );
         writeProcessOutputToFile( process, outputFile );
-        reduceThreadDump( outputFile, new File( outputFile.getParentFile(), outputFile.getName() + "-reduced" ) );
-        System.out.println( "Created thread dump " + outputFile.getAbsolutePath() );
-    }
-
-    private static void reduceThreadDump( File outputFile, File file )
-    {
-//        new ReduceThreaddump( IteratorUtil.asIterator( outputFile ) );
+        return outputFile;
     }
 
     private static void writeProcessOutputToFile( Process process, File outputFile ) throws Exception
@@ -77,17 +80,18 @@ public class DumpProcessInformation
 
     private static void doHeapDump( Pair<Long, String> pid, File dir ) throws Exception
     {
-        String[] cmdarray = new String[] {"jmap", "-dump:file=" + new File( dir, "heapdump-" + pid.other() + "-" + System.currentTimeMillis() ).getAbsolutePath(), "" + pid.first() };
-        Runtime.getRuntime().exec( cmdarray ).waitFor();
+        String[] cmdarray = new String[] {"jmap", "-dump:file=" + new File( dir, "heapdump-" + pid.other() +
+                "-" + currentTimeMillis() ).getAbsolutePath(), "" + pid.first() };
+        getRuntime().exec( cmdarray ).waitFor();
     }
     
-    public static Collection<Pair<Long, String>> getJPids( String containing ) throws IOException, InterruptedException
+    public static Collection<Pair<Long, String>> getJPids( Predicate<String> processFilter )
+            throws IOException, InterruptedException
     {
-        Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
+        Process process = getRuntime().exec( new String[] { "jps", "-l" } );
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-        String line = null;
         Collection<Pair<Long, String>> jPids = new ArrayList<Pair<Long,String>>();
-        while ( (line = reader.readLine()) != null )
+        for ( String line = null; (line = reader.readLine()) != null; )
         {
             int spaceIndex = line.indexOf( ' ' );
             String name = line.substring( spaceIndex + 1 );
@@ -106,11 +110,10 @@ public class DumpProcessInformation
             {
                 continue;
             }
-            if ( containing != null && !name.contains( containing ) )
+            if ( processFilter.accept( name ) )
             {
-                continue;
+                jPids.add( Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name ) );
             }
-            jPids.add( Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name ) );
         }
         process.waitFor();
         return jPids;
