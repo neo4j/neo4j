@@ -19,22 +19,9 @@
  */
 package org.neo4j.server.enterprise;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.getProperty;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.cluster.ClusterSettings.cluster_server;
-import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.cluster.client.ClusterClient.adapt;
-import static org.neo4j.helpers.collection.MapUtil.store;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -58,13 +47,31 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.Runtime.getRuntime;
+import static java.lang.System.getProperty;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.cluster.client.ClusterClient.adapt;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
+import static org.neo4j.helpers.collection.MapUtil.store;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 public class StandaloneClusterClientIT
 {
-    // === The tests ===
-    
+    @Rule
+    public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
+
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
     {
@@ -72,9 +79,9 @@ public class StandaloneClusterClientIT
     }
 
     @Test
-    @Ignore("Currently will not properly kill the spawned process, makes every other test fail")
     public void willFailJoinIfIncorrectInitialHostsSet() throws Exception
     {
+        assumeFalse( "Cannot kill processes on windows.", osIsWindows() );
         startAndAssertJoined( null, null, stringMap( initial_hosts.name(), ":5011", server_id.name(), "3" ) );
     }
 
@@ -85,9 +92,9 @@ public class StandaloneClusterClientIT
     }
 
     @Test
-    @Ignore("Currently will not properly kill the spawned process, makes every other test fail")
     public void willFailJoinIfIncorrectInitialHostsSetInConfigFile() throws Exception
     {
+        assumeFalse( "Cannot kill processes on windows.", osIsWindows() );
         startAndAssertJoined( null, configFile( initial_hosts.name(), ":5011" ), stringMap( server_id.name(), "3") );
     }
 
@@ -97,7 +104,7 @@ public class StandaloneClusterClientIT
         startAndAssertJoined( 5003, configFile( initial_hosts.name(), ":5011" ),
                 stringMap( initial_hosts.name(), ":5001", server_id.name(), "3" ) );
     }
-    
+
     @Test
     public void canSetSpecificPort() throws Exception
     {
@@ -106,7 +113,7 @@ public class StandaloneClusterClientIT
                 server_id.name(), "3",
                 cluster_server.name(), ":5010" ) );
     }
-    
+
     @Test
     public void usesPortRangeFromConfigFile() throws Exception
     {
@@ -114,13 +121,13 @@ public class StandaloneClusterClientIT
                 initial_hosts.name(), ":5001",
                 cluster_server.name(), ":5012-5020" ), stringMap( server_id.name(), "3" ) );
     }
-    
+
     // === Everything else ===
-    
+
     private final File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
     private LifeSupport life;
     private ClusterClient[] clients;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -156,7 +163,7 @@ public class StandaloneClusterClientIT
                 {
                     latch.countDown();
                     client.removeClusterListener( this );
-                };
+                }
             } );
             clients[i-1] = life.add( client );
             assertTrue( "Didn't join the cluster", latch.await( 2, SECONDS ) );
@@ -168,7 +175,7 @@ public class StandaloneClusterClientIT
     {
         life.shutdown();
     }
-    
+
     private File configFile( Object... settingsAndValues ) throws IOException
     {
         File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
@@ -209,7 +216,7 @@ public class StandaloneClusterClientIT
         ProcessStreamHandler handler = null;
         try
         {
-            process = getRuntime().exec( args.toArray( new String[0] ) );
+            process = getRuntime().exec( args.toArray( new String[args.size()] ) );
             handler = new ProcessStreamHandler( process, false );
             handler.launch();
             boolean awaitOutcome = latch.await( 5, SECONDS );
@@ -225,9 +232,35 @@ public class StandaloneClusterClientIT
         }
         finally
         {
-            process.destroy();
-            process.waitFor();
-            handler.done();
+            if ( process != null )
+            {
+                kill( process );
+                process.waitFor();
+            }
+            if ( handler != null )
+            {
+                handler.done();
+            }
         }
+    }
+
+    private static void kill( Process process )
+            throws NoSuchFieldException, IllegalAccessException, IOException, InterruptedException
+    {
+        if ( osIsWindows() )
+        {
+            process.destroy();
+        }
+        else
+        {
+            int pid = ((Number) accessible( process.getClass().getDeclaredField( "pid" ) ).get( process )).intValue();
+            new ProcessBuilder( "kill", "-9", "" + pid ).start().waitFor();
+        }
+    }
+
+    private static <T extends AccessibleObject> T accessible( T obj )
+    {
+        obj.setAccessible( true );
+        return obj;
     }
 }
