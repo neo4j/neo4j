@@ -46,8 +46,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute("create n:foo:bar")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 2)
-    assert(stats.removedLabels === 0)
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
   }
 
   @Test def correctLabelStatisticsForAdd() {
@@ -55,8 +55,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute(s"start n=node(${n.getId}) set n:foo:bar")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 2)
-    assert(stats.removedLabels === 0)
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
   }
 
   @Test def correctLabelStatisticsForRemove() {
@@ -65,8 +65,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute(s"start n=node(${n.getId}) remove n:foo:bar")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 0)
-    assert(stats.removedLabels === 2)
+    assert(stats.labelsAdded === 0)
+    assert(stats.labelsRemoved === 2)
   }
 
   @Test def correctLabelStatisticsForAddAndRemove() {
@@ -74,8 +74,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 1)
-    assert(stats.removedLabels === 2)
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 2)
   }
 
 
@@ -84,8 +84,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute(s"start n=node(${n.getId}) set n:bar:baz")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 1)
-    assert(stats.removedLabels === 0)
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 0)
   }
 
   @Test def correctLabelStatisticsForRemovalOfUnsetLabel() {
@@ -93,7 +93,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val result = parseAndExecute(s"start n=node(${n.getId}) remove n:baz:foo")
     val stats  = result.queryStatistics()
 
-    assert(stats.addedLabels === 0)
-    assert(stats.removedLabels === 1)
+    assert(stats.labelsAdded === 0)
+    assert(stats.labelsRemoved === 1)
   }
 }

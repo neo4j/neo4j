@@ -80,16 +80,54 @@ public class QueryStatistics
      * Returns the number of labels added to any node by this query.
      * @return the number of labels added to any node by this query.
      */
-    public int getAddedLabels() {
-        return inner.addedLabels();
+    public int getLabelsAdded()
+    {
+        return inner.labelsAdded();
     }
 
     /**
      * Returns the number of labels removed from any node by this query.
      * @return the number of labels removed from any node by this query.
      */
-    public int getRemovedLabels() {
-        return inner.removedLabels();
+    public int getLabelsRemoved()
+    {
+        return inner.labelsRemoved();
+    }
+
+    /**
+     * Returns the number of indexes added by this query.
+     * @return the number of indexes added by this query.
+     */
+    public int getIndexesAdded()
+    {
+        return inner.indexesAdded();
+    }
+
+    /**
+     * Returns the number of indexes removed by this query.
+     * @return the number of indexes removed by this query.
+     */
+    public int getIndexesRemoved()
+    {
+        return inner.indexesRemoved();
+    }
+
+    /**
+     * Returns the number of constraint added by this query.
+     * @return the number of constraint added by this query.
+     */
+    public int getConstraintsAdded()
+    {
+        return inner.constraintsAdded();
+    }
+
+    /**
+     * Returns the number of constraint removed by this query.
+     * @return the number of constraint removed by this query.
+     */
+    public int getConstraintsRemoved()
+    {
+        return inner.constraintsRemoved();
     }
 
     /**
@@ -99,5 +137,11 @@ public class QueryStatistics
     public boolean containsUpdates()
     {
         return inner.containsUpdates();
+    }
+
+    @Override
+    public String toString()
+    {
+        return inner.toString();
     }
 }

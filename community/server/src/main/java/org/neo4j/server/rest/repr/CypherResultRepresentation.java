@@ -66,8 +66,12 @@ public class CypherResultRepresentation extends MappingRepresentation
                 serializer.putNumber( "properties_set", stats.getPropertiesSet() );
                 serializer.putNumber( "relationships_created", stats.getRelationshipsCreated() );
                 serializer.putNumber( "relationship_deleted", stats.getDeletedRelationships() );
-                serializer.putNumber( "labels_added", stats.getAddedLabels() );
-                serializer.putNumber( "labels_removed", stats.getRemovedLabels() );
+                serializer.putNumber( "labels_added", stats.getLabelsAdded() );
+                serializer.putNumber( "labels_removed", stats.getLabelsRemoved() );
+                serializer.putNumber( "indexes_added", stats.getIndexesAdded() );
+                serializer.putNumber( "indexes_removed", stats.getIndexesRemoved() );
+                serializer.putNumber( "constraints_added", stats.getConstraintsAdded() );
+                serializer.putNumber( "constraints_removed", stats.getConstraintsRemoved() );
             }
         };
     }

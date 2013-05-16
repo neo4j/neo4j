@@ -25,7 +25,6 @@ import org.neo4j.cypher.QueryStatistics
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{Relationship, Node}
 import org.mockito.Mockito.when
-import org.mockito.Mockito
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
@@ -80,17 +79,41 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   }
 
   @Test def add_label() {
-//    when( inner.addLabelsToNode(Matchers.anyLong(), Matchers.any()) ).thenAnswer(answer)
     context.setLabelsOnNode(0, Seq(1,2,3))
-    
-    assert(context.getStatistics === QueryStatistics(addedLabels = 3))
+
+    assert(context.getStatistics === QueryStatistics(labelsAdded = 3))
   }
 
   @Test def remove_label() {
     context.removeLabelsFromNode(0, Seq(1,2,3))
 
-    assert(context.getStatistics === QueryStatistics(removedLabels = 3))
+    assert(context.getStatistics === QueryStatistics(labelsRemoved = 3))
   }
+
+  @Test def add_index() {
+    context.addIndexRule(0, 1)
+
+    assert(context.getStatistics === QueryStatistics(indexesAdded = 1))
+  }
+
+  @Test def remove_index() {
+    context.dropIndexRule(0, 1)
+
+    assert(context.getStatistics === QueryStatistics(indexesRemoved = 1))
+  }
+
+  @Test def create_unique_constraint() {
+    context.createUniqueConstraint(0, 1)
+
+    assert(context.getStatistics === QueryStatistics(constraintsAdded = 1))
+  }
+
+  @Test def constraint_dropped() {
+    context.dropUniqueConstraint(0, 42)
+
+    assert(context.getStatistics === QueryStatistics(constraintsRemoved = 1))
+  }
+
 
   val inner = mock[QueryContext]
   val nodeA = mock[Node]
