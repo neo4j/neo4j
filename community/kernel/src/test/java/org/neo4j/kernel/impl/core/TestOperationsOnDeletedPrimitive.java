@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.Test;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -30,6 +27,9 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * To cover cases where either the primitive that a property belongs to has
@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  */
 public class TestOperationsOnDeletedPrimitive
 {
-    private NodeManager nodeManager = mockTheNodeManager();
-    private PropertyContainer propertyContainer = mock( PropertyContainer.class );
+    private final NodeManager nodeManager = mockTheNodeManager();
+    private final PropertyContainer propertyContainer = mock( PropertyContainer.class );
     Primitive primitive = new PrimitiveThatHasActuallyBeenDeleted( false );
 
     private NodeManager mockTheNodeManager()
@@ -138,7 +138,7 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
-        protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
+        protected PropertyData addProperty( NodeManager nodeManager, Token index, Object value )
         {
             return null;
         }

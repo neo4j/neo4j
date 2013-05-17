@@ -65,7 +65,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
 
     @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, Token index, Object value )
     {
         return nodeManager.graphAddProperty( index, value );
     }
@@ -200,6 +200,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
         return this;
     }
     
+    @Override
     public boolean equals( Object obj )
     {
         if ( !( obj instanceof GraphProperties ) ) return false;

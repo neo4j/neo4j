@@ -21,44 +21,10 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
 
-class RelationshipTypeToken implements RelationshipType
+class RelationshipTypeToken extends Token implements RelationshipType
 {
-    final String name;
-    private final int id;
-
-    RelationshipTypeToken( String name, int id )
+    public RelationshipTypeToken( String name, int id )
     {
-        assert name != null;
-        this.name = name;
-        this.id = id;
-    }
-
-    public String name()
-    {
-        return name;
-    }
-    
-    public int getId()
-    {
-        return id;
-    }
-
-    public String toString()
-    {
-        return name;
-    }
-
-    public boolean equals( Object o )
-    {
-        if ( !(o instanceof RelationshipType) )
-        {
-            return false;
-        }
-        return name.equals( ((RelationshipType) o).name() );
-    }
-
-    public int hashCode()
-    {
-        return name.hashCode();
+        super( name, id );
     }
 }

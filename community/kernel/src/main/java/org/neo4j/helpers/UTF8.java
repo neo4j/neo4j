@@ -55,7 +55,7 @@ public final class UTF8
         }
         catch ( UnsupportedEncodingException e )
         {
-            throw new Error( "UTF-8 should be available on all JVMs", e );
+            throw cantBelieveUtf8IsntAvailableInThisJvmError( e );
         }
     }
 
@@ -67,10 +67,22 @@ public final class UTF8
         }
         catch ( UnsupportedEncodingException e )
         {
-            throw new Error( "UTF-8 should be available on all JVMs", e );
+            throw cantBelieveUtf8IsntAvailableInThisJvmError( e );
         }
     }
 
+    public static String decode( byte[] bytes, int offset, int length )
+    {
+        try
+        {
+            return new String( bytes, offset, length, "UTF-8" );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw cantBelieveUtf8IsntAvailableInThisJvmError( e );
+        }
+    }
+    
     public static String getDecodedStringFrom( ByteBuffer source )
     {
         // Currently only one key is supported although the data format supports multiple
@@ -92,8 +104,14 @@ public final class UTF8
         return encode( text ).length + 4;
     }
 
+    private static Error cantBelieveUtf8IsntAvailableInThisJvmError( UnsupportedEncodingException e )
+    {
+        return new Error( "UTF-8 should be available on all JVMs", e );
+    }
+    
     private UTF8()
     {
         // No need to instantiate, all methods are static
     }
+
 }

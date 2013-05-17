@@ -25,11 +25,12 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -252,13 +252,13 @@ class ReadTransaction implements NeoStoreTransaction
     public Token[] loadAllPropertyKeyTokens()
     {
         PropertyKeyTokenStore indexStore = getPropertyStore().getPropertyKeyTokenStore();
-        return indexStore.getNames( Integer.MAX_VALUE );
+        return indexStore.getTokens( Integer.MAX_VALUE );
     }
 
     @Override
     public Token[] loadAllLabelTokens()
     {
-        return neoStore.getLabelTokenStore().getNames( Integer.MAX_VALUE );
+        return neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE );
     }
 
     @Override
@@ -293,7 +293,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData nodeAddProperty( long nodeId, PropertyKeyToken index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, Token index, Object value )
     {
         throw readOnlyException();
     }
@@ -330,7 +330,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData relAddProperty( long relId, PropertyKeyToken index, Object value )
+    public PropertyData relAddProperty( long relId, Token index, Object value )
     {
         throw readOnlyException();
     }
@@ -351,11 +351,11 @@ class ReadTransaction implements NeoStoreTransaction
     @Override
     public Token[] loadRelationshipTypes()
     {
-        Token relTypeData[] = neoStore.getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
+        Token relTypeData[] = neoStore.getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         Token rawRelTypeData[] = new Token[relTypeData.length];
         for ( int i = 0; i < relTypeData.length; i++ )
         {
-            rawRelTypeData[i] = new Token( relTypeData[i].getId(), relTypeData[i].getName() );
+            rawRelTypeData[i] = new Token( relTypeData[i].name(), relTypeData[i].id() );
         }
         return rawRelTypeData;
     }
@@ -393,7 +393,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData graphAddProperty( PropertyKeyToken index, Object value )
+    public PropertyData graphAddProperty( Token index, Object value )
     {
         throw readOnlyException();
     }

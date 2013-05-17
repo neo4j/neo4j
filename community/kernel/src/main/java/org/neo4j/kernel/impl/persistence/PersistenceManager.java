@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.persistence;
 
 import java.util.Iterator;
 import java.util.Map;
+
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
@@ -31,7 +32,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -149,7 +149,7 @@ public class PersistenceManager
         return getResource( true ).nodeDelete( nodeId );
     }
 
-    public PropertyData nodeAddProperty( long nodeId, PropertyKeyToken index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, Token index, Object value )
     {
         return getResource( true ).nodeAddProperty( nodeId, index, value );
     }
@@ -181,7 +181,7 @@ public class PersistenceManager
         return getResource( true ).relDelete( relId );
     }
 
-    public PropertyData relAddProperty( long relId, PropertyKeyToken index, Object value )
+    public PropertyData relAddProperty( long relId, Token index, Object value )
     {
         return getResource( true ).relAddProperty( relId, index, value );
     }
@@ -197,7 +197,7 @@ public class PersistenceManager
         getResource( true ).relRemoveProperty( relId, data );
     }
 
-    public PropertyData graphAddProperty( PropertyKeyToken index, Object value )
+    public PropertyData graphAddProperty( Token index, Object value )
     {
         return getResource( true ).graphAddProperty( index, value );
     }

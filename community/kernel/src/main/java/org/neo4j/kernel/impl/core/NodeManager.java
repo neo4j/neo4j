@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -54,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -71,6 +67,11 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.collection.Iterables.cast;
 
 public class NodeManager
         implements Lifecycle
@@ -818,21 +819,26 @@ public class NodeManager
         labelTokenHolder.addTokens( labelTokens );
     }
 
-    PropertyKeyToken getPropertyKeyToken( int keyId ) throws TokenNotFoundException
+    Token getPropertyKeyToken( int keyId ) throws TokenNotFoundException
     {
         return propertyKeyTokenHolder.getTokenById( keyId );
     }
 
-    PropertyKeyToken getPropertyKeyTokenOrNull( int keyId )
+    Token getPropertyKeyTokenOrNull( int keyId )
     {
         return propertyKeyTokenHolder.getTokenByIdOrNull( keyId );
     }
 
-    PropertyKeyToken[] getPropertyKeyTokens( String propertyKeyName )
+    Token getPropertyKeyToken( String key ) throws TokenNotFoundException
     {
-        return propertyKeyTokenHolder.index( propertyKeyName );
+        return propertyKeyTokenHolder.getTokenByName( key );
     }
 
+    Token getPropertyKeyTokenOrNull( String key )
+    {
+        return propertyKeyTokenHolder.getTokenByNameOrNull( key );
+    }
+    
     int getOrCreatePropertyKeyId( String key )
     {
         return propertyKeyTokenHolder.getOrCreateId( key );
@@ -840,7 +846,7 @@ public class NodeManager
 
     int getRelationshipTypeIdFor( RelationshipType type ) throws TokenNotFoundException
     {
-        return relTypeHolder.idOf( type );
+        return relTypeHolder.getIdByName( type.name() );
     }
 
     void addRawRelationshipTypes( Token[] relTypes )
@@ -850,7 +856,7 @@ public class NodeManager
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return relTypeHolder.getAllTokens();
+        return cast( relTypeHolder.getAllTokens() );
     }
 
     private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
@@ -863,14 +869,14 @@ public class NodeManager
 
             for ( String key : propertyKeys )
             {
-                Object value = primitive.getProperty( this, propertyKeyTokenHolder.index( key )[0].getKeyId() );
+                Object value = primitive.getProperty( this,
+                        propertyKeyTokenHolder.getTokenByNameOrNull( key ).id() );
                 for ( PropertyTracker<T> tracker : trackers )
                 {
                     tracker.propertyRemoved( proxy, key, value );
                 }
             }
         }
-
     }
 
     public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
@@ -882,14 +888,14 @@ public class NodeManager
         // remove from node cache done via event
     }
 
-    PropertyData nodeAddProperty( NodeImpl node, PropertyKeyToken index, Object value )
+    PropertyData nodeAddProperty( NodeImpl node, Token index, Object value )
     {
         if ( !nodePropertyTrackers.isEmpty() )
         {
             for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
             {
                 nodePropertyTracker.propertyAdded( getNodeById( node.getId() ),
-                        index.getKey(), value );
+                        index.name(), value );
             }
         }
         return persistenceManager.nodeAddProperty( node.getId(), index, value );
@@ -904,7 +910,7 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyChanged(
                         getNodeById( node.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
                         property.getValue(), value );
             }
         }
@@ -920,14 +926,14 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyRemoved(
                         getNodeById( node.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
                         property.getValue() );
             }
         }
         persistenceManager.nodeRemoveProperty( node.getId(), property );
     }
 
-    PropertyData graphAddProperty( PropertyKeyToken index, Object value )
+    PropertyData graphAddProperty( Token index, Object value )
     {
         return persistenceManager.graphAddProperty( index, value );
     }
@@ -951,15 +957,14 @@ public class NodeManager
         // remove in rel cache done via event
     }
 
-    PropertyData relAddProperty( RelationshipImpl rel, PropertyKeyToken index,
-                                 Object value )
+    PropertyData relAddProperty( RelationshipImpl rel, Token index, Object value )
     {
         if ( !relationshipPropertyTrackers.isEmpty() )
         {
             for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
             {
                 relPropertyTracker.propertyAdded(
-                        getRelationshipById( rel.getId() ), index.getKey(),
+                        getRelationshipById( rel.getId() ), index.name(),
                         value );
             }
         }
@@ -975,7 +980,7 @@ public class NodeManager
             {
                 relPropertyTracker.propertyChanged(
                         getRelationshipById( rel.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
                         property.getValue(), value );
             }
         }
@@ -991,7 +996,7 @@ public class NodeManager
             {
                 relPropertyTracker.propertyRemoved(
                         getRelationshipById( rel.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).getKey(),
+                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
                         property.getValue() );
             }
         }
@@ -1028,7 +1033,7 @@ public class NodeManager
         // int keyId = persistenceManager.getKeyIdForProperty( property );
         try
         {
-            return propertyKeyTokenHolder.getTokenById( property.getIndex() ).getKey();
+            return propertyKeyTokenHolder.getTokenById( property.getIndex() ).name();
         }
         catch ( TokenNotFoundException e )
         {

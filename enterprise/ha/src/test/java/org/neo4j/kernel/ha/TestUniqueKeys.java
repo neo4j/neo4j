@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,12 +32,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TestUniqueKeys extends AbstractClusterTest
 {
@@ -172,15 +172,15 @@ public class TestUniqueKeys extends AbstractClusterTest
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
                 System.err.println( db );
-                TokenHolder<PropertyKeyToken> holder = db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
+                TokenHolder<Token> holder = db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
                 highestId = highestIdOf( holder, highestId );
                 Set<String> types = new HashSet<String>();
                 for ( int j = 0; j <= highestId; j++ )
                 {
-                    PropertyKeyToken type = holder.getTokenById( j );
+                    Token type = holder.getTokenById( j );
                     if ( type != null )
                     {
-                        assertTrue( type.getKey() + " already existed for " + db, types.add( type.getKey() ) );
+                        assertTrue( type.name() + " already existed for " + db, types.add( type.name() ) );
                     }
                 }
             }
@@ -196,10 +196,10 @@ public class TestUniqueKeys extends AbstractClusterTest
         cluster.await( masterAvailable() );
     }
 
-    private <KEY> int highestIdOf( TokenHolder<KEY> holder, int high ) throws TokenNotFoundException
+    private <KEY extends Token> int highestIdOf( TokenHolder<KEY> holder, int high ) throws TokenNotFoundException
     {
-        for ( KEY type : holder.getAllTokens() )
-            high = Math.max( holder.idOf( type ), high );
+        for ( Token type : holder.getAllTokens() )
+            high = Math.max( type.id(), high );
         return high;
     }
 }

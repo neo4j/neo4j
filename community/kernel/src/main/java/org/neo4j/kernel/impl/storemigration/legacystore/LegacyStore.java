@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +40,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+
 /**
  * Reader for a database in an older store format version. 
  * 
@@ -55,8 +55,10 @@ public class LegacyStore implements Closeable
     public static final String LEGACY_VERSION = "v0.A.0";
 
     private final File storageFileName;
-    private LegacyNodeStoreReader nodeStoreReader;
     private final Collection<Closeable> allStoreReaders = new ArrayList<Closeable>();
+    private LegacyNodeStoreReader nodeStoreReader;
+    private LegacyPropertyIndexStoreReader propertyIndexReader;
+    private LegacyPropertyStoreReader propertyStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -82,6 +84,8 @@ public class LegacyStore implements Closeable
     protected void initStorage() throws IOException
     {
         allStoreReaders.add( nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
+        allStoreReaders.add( propertyIndexReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
+        allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
     }
 
     public File getStorageFileName()
@@ -190,5 +194,30 @@ public class LegacyStore implements Closeable
     public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
+    }
+    
+    public LegacyPropertyIndexStoreReader getPropertyIndexReader()
+    {
+        return propertyIndexReader;
+    }
+    
+    public LegacyPropertyStoreReader getPropertyStoreReader()
+    {
+        return propertyStoreReader;
+    }
+    
+    static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
+    {
+        buffer.clear();
+        buffer.limit( nrOfBytes );
+        try
+        {
+            fileChannel.read( buffer );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        buffer.flip();
     }
 }

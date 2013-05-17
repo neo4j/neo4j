@@ -23,6 +23,10 @@ public interface IdGenerator
 {
     long nextId();
     IdRange nextIdBatch( int size );
+    
+    /**
+     * @param id the highest in use + 1
+     */
     void setHighId( long id );
     long getHighId();
     void freeId( long id );
