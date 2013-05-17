@@ -72,9 +72,9 @@ public abstract class ProgressListener
         }
     };
 
-    static final class SinglePartProgressListener extends ProgressListener
+    static class SinglePartProgressListener extends ProgressListener
     {
-        private final Indicator indicator;
+        final Indicator indicator;
         private final long totalCount;
         private long value = 0;
         private int lastReported = 0;
@@ -121,10 +121,38 @@ public abstract class ProgressListener
             indicator.failure(e);
         }
 
-        private void update( long progress )
+        void update( long progress )
         {
             started();
             int current = totalCount == 0 ? 0 : (int) ((progress * indicator.reportResolution()) / totalCount);
+            if ( current > lastReported )
+            {
+                indicator.progress( lastReported, current );
+                lastReported = current;
+            }
+        }
+    }
+
+    static final class OpenEndedProgressListener extends SinglePartProgressListener
+    {
+        private int lastReported = 0;
+
+        OpenEndedProgressListener( Indicator indicator )
+        {
+            super( indicator, 0 );
+        }
+
+        @Override
+        public void done()
+        {
+            indicator.completeProcess();
+        }
+
+        @Override
+        void update( long progress )
+        {
+            started();
+            int current = (int) (progress / indicator.reportResolution());
             if ( current > lastReported )
             {
                 indicator.progress( lastReported, current );

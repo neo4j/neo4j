@@ -48,9 +48,9 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -300,23 +300,21 @@ class BackupService
     {
         return new StoreWriter()
         {
-            private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1, "Files copied" );
-            private int totalFiles;
+            private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded( "Files copied", 1 );
 
             @Override
             public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                                boolean hasData ) throws IOException
             {
                 actual.write( path, data, temporaryBuffer, hasData );
-                progress.update( true, 1 );
-                totalFiles++;
+                progress.add( 1 );
             }
 
             @Override
             public void done()
             {
                 actual.done();
-                progress.done( totalFiles );
+                progress.done();
             }
         };
     }
@@ -495,21 +493,18 @@ class BackupService
 
     private static class ProgressTxHandler implements TxHandler
     {
-        private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1000,
-                "Transactions applied" );
-        private long count;
+        private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded( "Transactions applied", 1000 );
 
         @Override
         public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
         {
-            progress.update( true, 1 );
-            count++;
+            progress.add( 1 );
         }
 
         @Override
         public void done()
         {
-            progress.done( count );
+            progress.done();
         }
     }
 }
