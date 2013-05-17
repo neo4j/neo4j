@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class LabelTokenHolder extends TokenHolder<LabelToken>
+public class LabelTokenHolder extends TokenHolder<Token>
 {
     public LabelTokenHolder( AbstractTransactionManager transactionManager,
                              PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
@@ -33,14 +33,8 @@ public class LabelTokenHolder extends TokenHolder<LabelToken>
     }
 
     @Override
-    protected LabelToken newToken( String name, int id )
+    protected Token newToken( String name, int id )
     {
-        return new LabelToken( name, id );
-    }
-
-    @Override
-    protected String nameOf( LabelToken token )
-    {
-        return token.getName();
+        return new Token( name, id );
     }
 }

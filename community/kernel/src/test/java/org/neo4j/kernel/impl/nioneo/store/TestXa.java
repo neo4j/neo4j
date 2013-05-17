@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -58,7 +53,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -77,6 +72,12 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 public class TestXa
 {
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
@@ -85,15 +86,7 @@ public class TestXa
     private NeoStoreXaConnection xaCon;
     private Logger log;
     private Level level;
-    private Map<String, PropertyKeyToken> propertyKeyTokens;
-
-    private static class MyPropertyKeyToken extends PropertyKeyToken
-    {
-        protected MyPropertyKeyToken( String key, int keyId )
-        {
-            super( key, keyId );
-        }
-    }
+    private Map<String, Token> propertyKeyTokens;
 
     private LockManager lockManager;
 
@@ -121,7 +114,7 @@ public class TestXa
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        propertyKeyTokens = new HashMap<String, PropertyKeyToken>();
+        propertyKeyTokens = new HashMap<String, Token>();
 
         StoreFactory sf = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
                 GraphDatabaseSettings.class ), new DefaultIdGeneratorFactory(),
@@ -268,16 +261,16 @@ public class TestXa
         return Pair.of( Pair.of( activeLog, activeLogBackup ), Pair.of( currentLog, currentLogBackup ) );
     }
 
-    private PropertyKeyToken index( String key )
+    private Token index( String key )
     {
-        PropertyKeyToken result = propertyKeyTokens.get( key );
+        Token result = propertyKeyTokens.get( key );
         if ( result != null )
         {
             return result;
         }
 
-        int id = (int) ds.nextId( PropertyKeyToken.class );
-        PropertyKeyToken index = new MyPropertyKeyToken( key, id );
+        int id = (int) ds.nextId( PropertyKeyTokenRecord.class );
+        Token index = new Token( key, id );
         propertyKeyTokens.put( key, index );
         xaCon.getWriteTransaction().createPropertyKeyToken( key, id );
         return index;

@@ -19,18 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,51 +40,52 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.Integer.MAX_VALUE;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
 
 public class StoreMigratorIT
 {
     @Test
     public void shouldMigrate() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
+        // GIVEN
+        LegacyStore legacyStore = new LegacyStore( fs,
+                new File( getClass().getResource( "legacystore/exampledb/neostore" ).getFile() ) );
+        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
 
-        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ) );
-
-        Config config = MigrationTestUtils.defaultConfig();
-        File outputDir = new File( "target/outputDatabase" );
-        FileUtils.deleteRecursively( outputDir );
-        assertTrue( outputDir.mkdirs() );
-
-        String storeFileName = "target/outputDatabase/neostore";
-        StoreFactory factory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
-        NeoStore neoStore = factory.createNeoStore( new File( storeFileName ) );
-
-        ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
-
+        // WHEN
         new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
-
-        neoStore = factory.newNeoStore( new File( storeFileName ) );
+        legacyStore.close();
         
+        // THEN
+        neoStore = storeFactory.newNeoStore( storeFileName );
         verifyNeoStore( neoStore );
-
         neoStore.close();
 
         assertEquals( 100, monitor.events.size() );
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase(outputDir.getPath() );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
         verifier.verifyNodes();
@@ -96,10 +93,84 @@ public class StoreMigratorIT
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
 
+        // CLEANUP
         database.shutdown();
     }
     
+    @Test
+    public void shouldDedupUniquePropertyIndexKeys() throws Exception
+    {
+        // GIVEN
+        // a store that contains two nodes with property "name" of which there are two key tokens
+        // that should be merged in the store migration
+        LegacyStore legacyStore = new LegacyStore( fs,
+                new File( getClass().getResource( "legacystore/propkeydupdb/neostore" ).getFile() ) );
+        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
+
+        // WHEN
+        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
+        legacyStore.close();
+
+        // THEN
+        // verify that the "name" property for both the involved nodes
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        Node nodeA = getNodeWithName( db, "A" );
+        assertEquals( "A", nodeA.getProperty( "name" ) );
+        
+        Node nodeB = getNodeWithName( db, "B" );
+        assertEquals( "B", nodeB.getProperty( "name" ) );
+        
+        Node nodeC = getNodeWithName( db, "C" );
+        assertEquals( "C", nodeC.getProperty( "name" ) );
+        assertEquals( "a value", nodeC.getProperty( "other" ) );
+        assertEquals( "something", nodeC.getProperty( "third" ) );
+        db.shutdown();
+        
+        // THEN
+        // verify that there are no duplicate keys in the store
+        PropertyKeyTokenStore tokenStore =
+                storeFactory.newPropertyKeyTokenStore( new File( storeFileName + PROPERTY_KEY_TOKEN_STORE_NAME ) );
+        Token[] tokens = tokenStore.getTokens( MAX_VALUE );
+        tokenStore.close();
+        assertNuDuplicates( tokens );
+    }
+    
+    private void assertNuDuplicates( Token[] tokens )
+    {
+        Set<String> visited = new HashSet<String>();
+        for ( Token token : tokens )
+        {
+            assertTrue( visited.add( token.name() ) );
+        }
+    }
+
+    private Node getNodeWithName( GraphDatabaseService db, String name )
+    {
+        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        {
+            if ( name.equals( node.getProperty( "name", null ) ) )
+            {
+                return node;
+            }
+        }
+        throw new IllegalArgumentException( name + " not found" );
+    }
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private StoreFactory storeFactory;
+    private File storeFileName;
+    
+    @Before
+    public void setUp()
+    {
+        Config config = MigrationTestUtils.defaultConfig();
+        File outputDir = new File( storeDir );
+        storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
+        storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
+    }
 
     private void verifyNeoStore( NeoStore neoStore )
     {

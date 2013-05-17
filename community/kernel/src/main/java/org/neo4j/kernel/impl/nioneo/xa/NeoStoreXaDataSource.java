@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,6 +32,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -57,13 +54,12 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.LabelToken;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyKeyToken;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.Store;
@@ -91,6 +87,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -323,9 +323,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
             this.idGenerators.put( Relationship.class, neoStore.getRelationshipStore() );
             this.idGenerators.put( RelationshipType.class, neoStore.getRelationshipTypeStore() );
-            this.idGenerators.put( LabelToken.class, neoStore.getLabelTokenStore() );
+            this.idGenerators.put( Label.class, neoStore.getLabelTokenStore() );
             this.idGenerators.put( PropertyStore.class, neoStore.getPropertyStore() );
-            this.idGenerators.put( PropertyKeyToken.class, neoStore.getPropertyStore().getPropertyKeyTokenStore() );
+            this.idGenerators.put( PropertyKeyTokenRecord.class,
+                    neoStore.getPropertyStore().getPropertyKeyTokenStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
 
             life.start();

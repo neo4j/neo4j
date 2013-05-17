@@ -41,12 +41,12 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.LabelToken;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -212,7 +212,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return labelTokenHolder.getTokenById( (int) labelId ).getName();
+            return labelTokenHolder.getTokenById( (int) labelId ).name();
         }
         catch ( TokenNotFoundException e )
         {
@@ -252,7 +252,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<LabelToken> listLabels()
+    public Iterator<Token> listLabels()
     {
         return labelTokenHolder.getAllTokens().iterator();
     }
@@ -429,7 +429,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            return propertyKeyTokenHolder.getTokenById( (int) propertyKeyId ).getKey();
+            return propertyKeyTokenHolder.getTokenById( (int) propertyKeyId ).name();
         }
         catch ( TokenNotFoundException e )
         {

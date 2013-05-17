@@ -27,6 +27,8 @@ import java.util.List;
 
 public class PropertyBlock implements Cloneable
 {
+    private static final long KEY_BITMASK = 0xFFFFFFL;
+    
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
@@ -51,9 +53,15 @@ public class PropertyBlock implements Cloneable
     public int getKeyIndexId()
     {
         // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        return (int) (valueBlocks[0]&0xFFFFFF);
+        return (int) (valueBlocks[0] & KEY_BITMASK);
     }
 
+    public void setKeyIndexId( int key )
+    {
+        valueBlocks[0] &= ~KEY_BITMASK;
+        valueBlocks[0] |= key;
+    }
+    
     public void setSingleBlock( long value )
     {
         valueBlocks = new long[1];

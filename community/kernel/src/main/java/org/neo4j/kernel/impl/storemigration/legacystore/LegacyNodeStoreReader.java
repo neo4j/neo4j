@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -34,10 +32,15 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
+import static java.nio.ByteBuffer.allocateDirect;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
+
 public class LegacyNodeStoreReader implements Closeable
 {
     public static final String FROM_VERSION = "NodeStore " + LegacyStore.LEGACY_VERSION;
-    public static final int RECORD_LENGTH = 9;
+    public static final int RECORD_SIZE = 9;
 
     private final FileChannel fileChannel;
     private final long maxId;
@@ -46,7 +49,7 @@ public class LegacyNodeStoreReader implements Closeable
     {
         fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
+        maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
 
     public long getMaxId()
@@ -54,59 +57,42 @@ public class LegacyNodeStoreReader implements Closeable
         return maxId;
     }
 
-    public Iterable<NodeRecord> readNodeStore() throws IOException
+    public Iterator<NodeRecord> readNodeStore() throws IOException
     {
-        final ByteBuffer buffer = ByteBuffer.allocateDirect( RECORD_LENGTH );
-
-        return new Iterable<NodeRecord>()
+        return new PrefetchingIterator<NodeRecord>()
         {
+            long id = 0;
+            ByteBuffer buffer = allocateDirect( RECORD_SIZE );
+
             @Override
-            public Iterator<NodeRecord> iterator()
+            protected NodeRecord fetchNextOrNull()
             {
-                return new PrefetchingIterator<NodeRecord>()
+                NodeRecord nodeRecord = null;
+                while ( nodeRecord == null && id <= maxId )
                 {
-                    long id = 0;
+                    readIntoBuffer( fileChannel, buffer, RECORD_SIZE );
+                    long inUseByte = buffer.get();
 
-                    @Override
-                    protected NodeRecord fetchNextOrNull()
+                    boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+                    if ( inUse )
                     {
-                        NodeRecord nodeRecord = null;
-                        while ( nodeRecord == null && id <= maxId )
-                        {
-                            buffer.clear();
-                            try
-                            {
-                                fileChannel.read( buffer );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                            buffer.flip();
-                            long inUseByte = buffer.get();
-
-                            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-                            if ( inUse )
-                            {
-                                long nextRel = LegacyStore.getUnsignedInt( buffer );
-                                long relModifier = (inUseByte & 0xEL) << 31;
-                                long nextProp = LegacyStore.getUnsignedInt( buffer );
-                                long propModifier = (inUseByte & 0xF0L) << 28;
-                                nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
-                            }
-                            else nodeRecord = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
-                            nodeRecord.setInUse( inUse );
-                            id++;
-                        }
-                        return nodeRecord;
+                        long nextRel = LegacyStore.getUnsignedInt( buffer );
+                        long relModifier = (inUseByte & 0xEL) << 31;
+                        long nextProp = LegacyStore.getUnsignedInt( buffer );
+                        long propModifier = (inUseByte & 0xF0L) << 28;
+                        nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
                     }
+                    else nodeRecord = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+                    nodeRecord.setInUse( inUse );
+                    id++;
+                }
+                return nodeRecord;
+            }
 
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }

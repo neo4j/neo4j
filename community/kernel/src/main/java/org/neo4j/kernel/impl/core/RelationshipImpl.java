@@ -72,7 +72,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyKeyToken index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, Token index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
     }
@@ -105,12 +105,12 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     
     long getStartNodeId()
     {
-        return (long)(((long)startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
+        return (startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12);
     }
 
     long getEndNodeId()
     {
-        return (long)(((long)endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
+        return (endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8);
     }
     
     int getTypeId()

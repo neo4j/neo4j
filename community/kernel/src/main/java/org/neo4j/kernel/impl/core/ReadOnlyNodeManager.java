@@ -75,7 +75,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyData nodeAddProperty( NodeImpl node, PropertyKeyToken index, Object value )
+    PropertyData nodeAddProperty( NodeImpl node, Token index, Object value )
     {
         throw new ReadOnlyDbException();
     }
@@ -100,7 +100,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyData relAddProperty( RelationshipImpl rel, PropertyKeyToken index, Object value )
+    PropertyData relAddProperty( RelationshipImpl rel, Token index, Object value )
     {
         throw new ReadOnlyDbException();
     }

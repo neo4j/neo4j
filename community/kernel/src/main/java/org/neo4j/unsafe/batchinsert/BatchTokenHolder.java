@@ -20,22 +20,22 @@
 package org.neo4j.unsafe.batchinsert;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.Token;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class PropertyKeyTokenHolder
+class BatchTokenHolder
 {
     private final ArrayMap<String,Integer> nameToId =
         new ArrayMap<String,Integer>( (byte)5, false, false);
     private final ArrayMap<Integer,String> idToName =
         new ArrayMap<Integer,String>( (byte)5, false, false);
     
-    PropertyKeyTokenHolder( Token[] indexes )
+    BatchTokenHolder( Token[] tokens )
     {
-        for ( Token index : indexes )
+        for ( Token token : tokens )
         {
-            nameToId.put( index.getName(), index.getId() );
-            idToName.put( index.getId(), index.getName() );
+            nameToId.put( token.name(), token.id() );
+            idToName.put( token.id(), token.name() );
         }
     }
     
@@ -47,21 +47,21 @@ class PropertyKeyTokenHolder
     
     int idOf( String stringKey )
     {
-        Integer keyId = nameToId.get( stringKey );
-        if ( keyId != null )
+        Integer id = nameToId.get( stringKey );
+        if ( id != null )
         {
-            return keyId;
+            return id;
         }
         return -1;
     }
     
-    String nameOf( int keyId )
+    String nameOf( int id )
     {
-        String stringKey = idToName.get( keyId );
-        if ( stringKey == null )
+        String name = idToName.get( id );
+        if ( name == null )
         {
-            throw new NotFoundException( "No such property index[" + keyId + "]" );
+            throw new NotFoundException( "No token with id:" + id );
         }
-        return stringKey;
+        return name;
     }
 }

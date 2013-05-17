@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.operations.KeyOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.core.LabelToken;
+import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
@@ -474,12 +474,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<LabelToken> listLabels()
+    public Iterator<Token> listLabels()
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterator<LabelToken> result = keyOperations.listLabels();
+        Iterator<Token> result = keyOperations.listLabels();
 
         afterReadOperation();
         afterOperation();

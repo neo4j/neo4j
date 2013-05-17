@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Collections.emptySet;
-
 import java.util.Collection;
 import java.util.Set;
 
@@ -33,10 +31,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
+import static java.util.Collections.emptySet;
+
 public class NoTransactionState implements TransactionState
 {
-    protected final PropertyKeyToken[] EMPTY_PROPERTY_INDEX_ARRAY = new PropertyKeyToken[0];
-
     @Override
     public LockElement acquireWriteLock( Object resource )
     {

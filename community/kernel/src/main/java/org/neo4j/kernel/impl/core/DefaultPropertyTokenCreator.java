@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.logging.Logging;
@@ -33,7 +34,7 @@ public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
     {
-        int id = (int) idGenerator.nextId( PropertyKeyToken.class );
+        int id = (int) idGenerator.nextId( PropertyKeyTokenRecord.class );
         persistence.createPropertyKeyToken( name, id );
         return id;
     }

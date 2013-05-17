@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -51,6 +44,13 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 @Ignore
 public class UpgradeStoreIT
@@ -317,10 +317,7 @@ public class UpgradeStoreIT
             record.setInUse( true );
             Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
             record.setNameId( (int) first( typeRecords ).getId() );
-            for ( DynamicRecord typeRecord : typeRecords )
-            {
-                record.addNameRecord( typeRecord );
-            }
+            record.addNameRecords( typeRecords );
             store.setHighId( store.getHighId()+1 );
             store.updateRecord( record );
         }
