@@ -215,6 +215,11 @@ public class DiffSets<T>
         }
     }
 
+    public int delta()
+    {
+        return (addedElements == null ? 0 : addedElements.size()) - (removedElements == null ? 0 : removedElements.size());
+    }
+
     private Set<T> newSet()
     {
         return new HashSet<T>();

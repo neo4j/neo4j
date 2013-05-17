@@ -21,29 +21,15 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-/**
- * Thrown from update methods (eg. {@link IndexPopulator#add(long, Object)}, {@link IndexPopulator#update(Iterable)},
- * and {@link IndexAccessor#updateAndCommit(Iterable)}) of an index that is unique when a conflicting entry (clashing
- * with an existing value - violating uniqueness) is being added.
- */
-public class IndexEntryConflictException extends Exception
+public abstract class IndexEntryConflictException extends Exception
 {
-    private final long addedNodeId;
-    private final Object propertyValue;
-    private final long existingNodeId;
-
-    public IndexEntryConflictException( long addedNodeId, Object propertyValue, long existingNodeId )
+    public IndexEntryConflictException( String message )
     {
-        super( String.format( "Could not index node with id:%d for propertyValue:[%s], " +
-                              "the unique index already contains an entry with that value for node with id:%d",
-                              addedNodeId, propertyValue, existingNodeId ) );
-        this.addedNodeId = addedNodeId;
-        this.propertyValue = propertyValue;
-        this.existingNodeId = existingNodeId;
+        super( message );
     }
 
     /**
-     * Use this method in cases where {@link IndexEntryConflictException} was caught but it should not have been
+     * Use this method in cases where {@link org.neo4j.kernel.api.index.IndexEntryConflictException} was caught but it should not have been
      * allowed to be thrown in the first place. Typically where the index we performed an operation on is not a
      * unique index.
      */
@@ -59,18 +45,5 @@ public class IndexEntryConflictException extends Exception
         return notAllowed( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
-    public long getAddedNodeId()
-    {
-        return addedNodeId;
-    }
-
-    public long getExistingNodeId()
-    {
-        return existingNodeId;
-    }
-
-    public Object getPropertyValue()
-    {
-        return propertyValue;
-    }
+    public abstract Object getPropertyValue();
 }

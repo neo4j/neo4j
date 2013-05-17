@@ -41,7 +41,9 @@ import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;

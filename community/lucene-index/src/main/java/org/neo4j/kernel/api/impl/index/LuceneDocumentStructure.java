@@ -28,6 +28,7 @@ import org.apache.lucene.search.TermQuery;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+
 import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
 import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
 

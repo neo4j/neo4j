@@ -24,11 +24,12 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class IndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    public IndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public NonUniqueIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite );
     }

@@ -17,18 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.impl.api.index.inmemory;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.index.IndexReader;
+
+class UniqueInMemoryIndexReader implements IndexReader
 {
-    NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
-                                  DirectoryFactory dirFactory, File dirFile ) throws IOException
+    private final HashMap<Object, Long> indexData;
+
+    UniqueInMemoryIndexReader( Map<Object, Long> indexData )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        this.indexData = new HashMap<Object, Long>( indexData );
     }
 
+    @Override
+    public Iterator<Long> lookup( Object value )
+    {
+        Long result = indexData.get( value );
+        return result != null ? IteratorUtil.singletonIterator( result ) : IteratorUtil.<Long>emptyIterator();
+    }
+
+    @Override
+    public void close()
+    {
+    }
 }

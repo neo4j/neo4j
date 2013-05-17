@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -53,18 +56,72 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         this.searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }
 
+    public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
+    {
+        apply( false, updates );
+    }
+
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        apply( true, updates );
+    }
+
+    public void apply( boolean inRecovery, Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        for ( NodePropertyUpdate update : updates )
+        {
+            switch ( update.getUpdateMode() )
+            {
+                case ADDED:
+                    if ( inRecovery )
+                    {
+                        addRecovered( update.getNodeId(), update.getValueAfter() );
+                    }
+                    else
+                    {
+                        add( update.getNodeId(), update.getValueAfter() );
+                    }
+                    break;
+                case CHANGED:
+                    change( update.getNodeId(), update.getValueAfter() );
+                    break;
+                case REMOVED:
+                    remove( update.getNodeId() );
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
+        searcherManager.maybeRefresh();
+    }
+
+    private void addRecovered( long nodeId, Object value ) throws IOException
+    {
+        IndexSearcher searcher = searcherManager.acquire();
+        try
+        {
+            TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
+            if ( hits.totalHits > 0 )
+            {
+                writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                        documentStructure.newDocument( nodeId, value ) );
+            }
+            else
+            {
+                add( nodeId, value );
+            }
+        }
+        finally
+        {
+            searcherManager.release( searcher );
+        }
+    }
     @Override
     public void drop() throws IOException
     {
         closeIndexResources();
         deleteDirectoryContents( dir );
     }
-
-    @Override
-    public abstract void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException;
-
-    @Override
-    public abstract void recover( Iterable<NodePropertyUpdate> updates ) throws IOException;
 
     @Override
     public void force() throws IOException
@@ -89,5 +146,21 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public IndexReader newReader()
     {
         return new LuceneIndexAccessorReader( searcherManager, documentStructure );
+    }
+
+    protected void add( long nodeId, Object value ) throws IOException
+    {
+        writer.addDocument( documentStructure.newDocument( nodeId, value ) );
+    }
+
+    protected void change( long nodeId, Object valueAfter ) throws IOException
+    {
+        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                documentStructure.newDocument( nodeId, valueAfter ) );
+    }
+
+    protected void remove( long nodeId ) throws IOException
+    {
+        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
     }
 }

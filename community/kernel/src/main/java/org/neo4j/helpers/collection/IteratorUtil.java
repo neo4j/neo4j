@@ -19,6 +19,10 @@
  */
 package org.neo4j.helpers.collection;
 
+import static java.util.Arrays.asList;
+import static java.util.EnumSet.allOf;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -29,16 +33,13 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
-
-import static java.util.Arrays.asList;
-import static java.util.EnumSet.allOf;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -558,6 +559,11 @@ public abstract class IteratorUtil
     public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
     {
         return Collections.emptySet();
+    }
+
+    public static <T> List<T> emptyListOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
+    {
+        return Collections.emptyList();
     }
 
     /**

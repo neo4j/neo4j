@@ -35,7 +35,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;

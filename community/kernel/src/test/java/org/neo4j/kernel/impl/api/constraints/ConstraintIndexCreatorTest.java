@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import java.util.Iterator;
-
-import org.junit.Test;
-
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.impl.api.Transactor;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -41,6 +28,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.Iterator;
+
+import org.junit.Test;
+import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.impl.api.Transactor;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 
 public class ConstraintIndexCreatorTest
 {
@@ -92,7 +91,7 @@ public class ConstraintIndexCreatorTest
         when( constraintCreationContext.getCommittedIndexId( descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
-        doThrow( new IndexPopulationFailedKernelException( descriptor, new IndexEntryConflictException( 1, "a", 2 ) ) )
+        doThrow( new IndexPopulationFailedKernelException( descriptor, new PreexistingIndexEntryConflictException( "a", 2, 1 ) ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );

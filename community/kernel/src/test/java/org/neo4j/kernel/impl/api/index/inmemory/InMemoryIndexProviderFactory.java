@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.index.inmemory;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-@Service.Implementation( KernelExtensionFactory.class )
+@Service.Implementation(KernelExtensionFactory.class)
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "in-memory";
@@ -37,18 +37,20 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
     public interface Dependencies
     {
     }
-    
+
     public InMemoryIndexProviderFactory()
     {
         super( KEY );
         this.singleProvider = null;
     }
-    
+
     public InMemoryIndexProviderFactory( InMemoryIndexProvider singleProvider )
     {
         super( KEY );
         if ( singleProvider == null )
+        {
             throw new IllegalArgumentException( "Null provider" );
+        }
         this.singleProvider = singleProvider;
     }
 

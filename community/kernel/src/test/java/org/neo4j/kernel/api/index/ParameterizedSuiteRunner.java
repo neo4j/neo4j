@@ -71,7 +71,7 @@ public class ParameterizedSuiteRunner extends Suite
             if ( !ok )
             {
                 errors.add( new IllegalArgumentException( "Suite class (" + suiteClass.getName() +
-                                                          ") does not have a public zero-arg constructor." ) );
+                        ") does not have a public zero-arg constructor." ) );
             }
             if ( Modifier.isAbstract( suiteClass.getModifiers() ) )
             {

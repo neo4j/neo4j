@@ -32,6 +32,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
+
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSystem

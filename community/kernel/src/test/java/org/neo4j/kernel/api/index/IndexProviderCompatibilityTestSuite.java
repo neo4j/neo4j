@@ -23,9 +23,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(ParameterizedSuiteRunner.class)
-@Suite.SuiteClasses({IndexPopulatorCompatibility.class,
-                     UniqueIndexPopulatorCompatibility.class
-                    })
+@Suite.SuiteClasses({
+        NonUniqueIndexPopulatorCompatibility.class,
+        UniqueIndexPopulatorCompatibility.class,
+        UniqueIndexAccessorCompatibility.class
+})
 public abstract class IndexProviderCompatibilityTestSuite
 {
     protected abstract SchemaIndexProvider createIndexProvider();

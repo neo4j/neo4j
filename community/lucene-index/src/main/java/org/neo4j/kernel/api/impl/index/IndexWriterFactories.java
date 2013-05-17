@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 
 public class IndexWriterFactories

@@ -30,56 +30,31 @@ public class ConstraintVerificationFailedKernelException extends KernelException
 {
     public static final class Evidence
     {
-        private final long existingNodeId;
-        private final Object propertyValue;
-        private final long addedNodeId;
+        private final IndexEntryConflictException conflict;
 
         public Evidence( IndexEntryConflictException conflict )
         {
-            this( conflict.getExistingNodeId(), conflict.getPropertyValue(), conflict.getAddedNodeId() );
-        }
-
-        public Evidence( long existingNodeId, Object propertyValue, long addedNodeId )
-        {
-            this.existingNodeId = existingNodeId;
-            this.propertyValue = propertyValue;
-            this.addedNodeId = addedNodeId;
+            this.conflict = conflict;
         }
 
         @Override
-        public boolean equals( Object obj )
+        public boolean equals( Object o )
         {
-            if ( this == obj )
-            {
-                return true;
-            }
-            if ( obj != null && getClass() == obj.getClass() )
-            {
-                Evidence that = (Evidence) obj;
-
-                return this.addedNodeId == that.addedNodeId &&
-                       this.existingNodeId == that.existingNodeId &&
-                       this.propertyValue.equals( that.propertyValue );
-            }
-            return false;
+            return this == o || !(o == null || getClass() != o.getClass()) &&
+                    conflict.equals( ((Evidence) o).conflict );
         }
 
         @Override
         public int hashCode()
         {
-            int result = (int) (existingNodeId ^ (existingNodeId >>> 32));
-            result = 31 * result + propertyValue.hashCode();
-            result = 31 * result + (int) (addedNodeId ^ (addedNodeId >>> 32));
-            return result;
+            return conflict.hashCode();
         }
 
         @Override
         public String toString()
         {
             return "Evidence{" +
-                   "existingNodeId=" + existingNodeId +
-                   ", propertyValue=" + propertyValue +
-                   ", addedNodeId=" + addedNodeId +
+                   "conflict=" + conflict +
                    '}';
         }
     }

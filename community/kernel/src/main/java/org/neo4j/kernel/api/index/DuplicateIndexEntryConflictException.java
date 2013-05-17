@@ -17,16 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import java.util.Set;
 
-public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
+public class DuplicateIndexEntryConflictException extends IndexEntryConflictException
 {
-    @Override
-    protected SchemaIndexProvider createIndexProvider()
+    private final Object propertyValue;
+    private final Set<Long> conflictingNodeIds;
+
+    public DuplicateIndexEntryConflictException( Object propertyValue, Set<Long> conflictingNodeIds )
     {
-        return new InMemoryIndexProvider();
+        super( String.format( "Attempting to set same property value %s on nodes with ids %s " +
+                "disallowed by unique index.", propertyValue, conflictingNodeIds ) );
+        this.propertyValue = propertyValue;
+        this.conflictingNodeIds = conflictingNodeIds;
+    }
+
+    public Object getPropertyValue()
+    {
+        return propertyValue;
+    }
+
+    public Set<Long> getConflictingNodeIds()
+    {
+        return conflictingNodeIds;
     }
 }

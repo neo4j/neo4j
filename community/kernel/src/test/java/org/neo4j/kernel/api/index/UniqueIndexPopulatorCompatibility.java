@@ -22,8 +22,11 @@ package org.neo4j.kernel.api.index;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -53,7 +56,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             fail( "expected exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -79,7 +82,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             fail( "expected exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -105,7 +108,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             fail( "expected exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -132,18 +135,10 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             fail( "expected exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( DuplicateIndexEntryConflictException conflict )
         {
             assertEquals( "value1", conflict.getPropertyValue() );
-            if ( conflict.getExistingNodeId() == 1 )
-            {
-                assertEquals( 2, conflict.getAddedNodeId() );
-            }
-            else
-            {
-                assertEquals( 2, conflict.getExistingNodeId() );
-                assertEquals( 1, conflict.getAddedNodeId() );
-            }
+            assertEquals( asSet( 1l, 2l ), conflict.getConflictingNodeIds() );
         }
     }
 }

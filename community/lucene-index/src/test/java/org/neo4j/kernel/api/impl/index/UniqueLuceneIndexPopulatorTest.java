@@ -24,12 +24,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
@@ -54,7 +56,7 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        List<Long> nodeIds = getAllNodes( documentStructure, directoryFactory.open( indexDirectory ), "value1" );
+        List<Long> nodeIds = getAllNodes( directoryFactory, indexDirectory, "value1" );
         assertEquals( asList( 1l ), nodeIds );
     }
 
@@ -78,7 +80,7 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        List<Long> nodeIds = getAllNodes( documentStructure, directoryFactory.open( indexDirectory ), "value3" );
+        List<Long> nodeIds = getAllNodes( directoryFactory, indexDirectory, "value3" );
         assertEquals( asList( 3l ), nodeIds );
     }
 
@@ -101,7 +103,7 @@ public class UniqueLuceneIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -131,7 +133,7 @@ public class UniqueLuceneIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -159,7 +161,7 @@ public class UniqueLuceneIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( IndexEntryConflictException conflict )
+        catch ( PreexistingIndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
