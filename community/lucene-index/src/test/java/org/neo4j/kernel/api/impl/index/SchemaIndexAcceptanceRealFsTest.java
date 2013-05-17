@@ -19,23 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class SchemaIndexAcceptanceRealFsTest
 {
@@ -43,6 +45,7 @@ public class SchemaIndexAcceptanceRealFsTest
     public void shouldDropIndexAfterQueriedOutsideTransaction() throws Exception
     {
         // GIVEN
+        String propertyKey = "key";
         IndexDefinition index = createIndex( label, propertyKey );
         createSomeData( label, propertyKey );
         
@@ -54,13 +57,12 @@ public class SchemaIndexAcceptanceRealFsTest
         dropIndex( index );
         
         // THEN
-        assertEquals( asSet(), asSet( db.schema().getIndexes() ) );
+        assertEquals( emptySetOf( IndexDefinition.class ), asSet( db.schema().getIndexes() ) );
     }
  
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
-    private final String propertyKey = "key";
-    
+
     @Before
     public void before() throws Exception
     {
@@ -69,7 +71,8 @@ public class SchemaIndexAcceptanceRealFsTest
 
     private GraphDatabaseService newDb()
     {
-        return new EmbeddedGraphDatabase( forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
+        return new GraphDatabaseFactory().newEmbeddedDatabase(
+                forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
     }
     
     @After

@@ -220,7 +220,6 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexPopulator index;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private DirectoryFactory directoryFactory;
     private final long indexId = 0;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
     
@@ -228,7 +227,8 @@ public class LuceneSchemaIndexPopulatorTest
     public void before() throws Exception
     {
         directory = new RAMDirectory();
-        directoryFactory = new DirectoryFactory.Single( new DirectoryFactory.UncloseableDirectory(directory) );
+        DirectoryFactory directoryFactory = new DirectoryFactory.Single(
+                new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( directoryFactory,
                 new Config( stringMap( store_dir.name(), "whatever" ) ) );
         index = provider.getPopulator( indexId, new IndexConfiguration( false ) );

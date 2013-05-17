@@ -19,10 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.neo4j.helpers.Functions.map;
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -34,6 +30,10 @@ import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+
+import static org.neo4j.helpers.Functions.map;
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Builder for {@link GraphDatabaseService}s that allows for setting and loading
@@ -57,8 +57,6 @@ public class GraphDatabaseBuilder
     /**
      * Set a database setting to a particular value.
      *
-     * @param setting
-     * @param value
      * @return the builder
      */
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
@@ -81,12 +79,7 @@ public class GraphDatabaseBuilder
 
     /**
      * Set an unvalidated configuration option.
-     * 
-     * @param name
-     * @param value
-     * @return the builder
-     * @deprecated Use setConfig with explicit {@link GraphDatabaseSetting}
-     *             instead
+     * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )
@@ -123,10 +116,9 @@ public class GraphDatabaseBuilder
     /**
      * Set a map of config settings into the builder. Overwrites any existing values.
      *
-     * @param config
      * @return the builder
      */
-
+    @SuppressWarnings("deprecation")
     public GraphDatabaseBuilder setConfig( Map<String, String> config )
     {
         for ( Map.Entry<String, String> stringStringEntry : config.entrySet() )
@@ -140,7 +132,6 @@ public class GraphDatabaseBuilder
      * Load a Properties file from a given file, and add the settings to
      * the builder.
      *
-     * @param fileName
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
@@ -150,7 +141,7 @@ public class GraphDatabaseBuilder
     {
         try
         {
-            return loadPropertiesFromURL( new File( fileName ).toURL() );
+            return loadPropertiesFromURL( new File( fileName ).toURI().toURL() );
         }
         catch ( MalformedURLException e )
         {
@@ -162,7 +153,6 @@ public class GraphDatabaseBuilder
      * Load Properties file from a given URL, and add the settings to
      * the builder.
      *
-     * @param url
      * @return the builder
      */
     public GraphDatabaseBuilder loadPropertiesFromURL( URL url )
@@ -225,6 +215,7 @@ public class GraphDatabaseBuilder
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public GraphDatabaseBuilder setConfig( String name, String value )
         {
             actual.setConfig( name, value );

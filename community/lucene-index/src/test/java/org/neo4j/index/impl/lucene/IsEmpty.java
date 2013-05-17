@@ -21,7 +21,7 @@ package org.neo4j.index.impl.lucene;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
 
 public class IsEmpty extends TypeSafeMatcher<Iterable<?>>
 {

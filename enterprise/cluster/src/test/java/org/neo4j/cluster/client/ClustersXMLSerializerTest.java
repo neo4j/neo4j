@@ -21,9 +21,10 @@ package org.neo4j.cluster.client;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import junit.framework.Assert;
 import org.junit.Test;
 import org.w3c.dom.Document;
+
+import static org.junit.Assert.assertEquals;
 
 public class ClustersXMLSerializerTest
 {
@@ -44,6 +45,6 @@ public class ClustersXMLSerializerTest
 
         Clusters clusters2 = serializer.read( doc );
 
-        Assert.assertEquals( clusters, clusters2 );
+        assertEquals( clusters, clusters2 );
     }
 }

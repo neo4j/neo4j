@@ -19,9 +19,16 @@
  */
 package org.neo4j.helpers;
 
-import static junit.framework.Assert.fail;
+import java.io.File;
+import java.util.List;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.config.Setting;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Functions.map;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -38,12 +45,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
-import java.io.File;
-import java.util.List;
-
-import org.junit.Test;
-import org.neo4j.graphdb.config.Setting;
 
 public class SettingsTest
 {

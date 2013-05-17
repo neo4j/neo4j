@@ -19,13 +19,11 @@
  */
 package org.neo4j.ha;
 
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import java.io.File;
 
-import junit.framework.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +34,9 @@ import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 /**
  * Verify that we can run multiple clusters simultaneously
@@ -89,14 +90,14 @@ public class MultipleClusterTest
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster.getAllMembers() )
             {
                 highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-                Assert.assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
+                assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
                         "cluster" ) );
             }
 
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
             {
                 highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-                Assert.assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
+                assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
                         "cluster" ) );
             }
         }

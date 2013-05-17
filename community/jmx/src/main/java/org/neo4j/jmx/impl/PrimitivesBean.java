@@ -20,12 +20,12 @@
 package org.neo4j.jmx.impl;
 
 import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.Primitives;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
@@ -48,7 +48,7 @@ public final class PrimitivesBean extends ManagementBeanProvider
         PrimitivesImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.nodeManager = ((GraphDatabaseAPI)management.getKernelData().graphDatabase()).getNodeManager();
+            this.nodeManager = management.getKernelData().graphDatabase().getNodeManager();
         }
 
         private final NodeManager nodeManager;

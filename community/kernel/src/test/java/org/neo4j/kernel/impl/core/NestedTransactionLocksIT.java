@@ -19,23 +19,25 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
 
 /**
  * Confirms that a nested {@link Transaction} can grab locks with its
@@ -44,12 +46,12 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
  */
 public class NestedTransactionLocksIT
 {
-    private ImpermanentGraphDatabase db;
+    private GraphDatabaseService db;
     
     @Before
     public void before() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After

@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -33,6 +32,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.Settings.osIsWindows;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -222,11 +223,12 @@ public class StoreAccess
         params.put( GraphDatabaseSettings.nodestore_mapped_memory_size.name(), "20M" );
         params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory_size.name(), "90M" );
         params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory_size.name(), "1M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_keys_mapped_memory_size.name(), "1M" );
         params.put( GraphDatabaseSettings.strings_mapped_memory_size.name(), "130M" );
         params.put( GraphDatabaseSettings.arrays_mapped_memory_size.name(), "130M" );
         params.put( GraphDatabaseSettings.relationshipstore_mapped_memory_size.name(), "100M" );
         // if on windows, default no memory mapping
-        if ( GraphDatabaseSetting.osIsWindows() )
+        if ( osIsWindows() )
         {
             params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), "false" );
         }

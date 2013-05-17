@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class SchemaTransactionStateTest
 {
@@ -155,7 +156,7 @@ public class SchemaTransactionStateTest
         Iterator<IndexDescriptor> rulesByLabel = txContext.getIndexes( labelId1 );
 
         // THEN
-        assertEquals( asSet(), asSet( rulesByLabel ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
     }
 
     private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()

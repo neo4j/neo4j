@@ -36,6 +36,12 @@ public abstract class ProgressMonitorFactory
         {
             return Indicator.NONE;
         }
+
+        @Override
+        protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
+        {
+            return Indicator.NONE;
+        }
     };
 
     public static ProgressMonitorFactory textual( final OutputStream out )
@@ -57,14 +63,18 @@ public abstract class ProgressMonitorFactory
             @Override
             protected Indicator newIndicator( String process )
             {
-                if ( out instanceof PrintWriter )
-                {
-                    return new Indicator.Textual( process, (PrintWriter) out );
-                }
-                else
-                {
-                    return new Indicator.Textual( process, new PrintWriter( out ) );
-                }
+                return new Indicator.Textual( process, writer() );
+            }
+
+            @Override
+            protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
+            {
+                return new Indicator.OpenEndedTextual( process, writer(), resolution );
+            }
+
+            private PrintWriter writer()
+            {
+                return out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter( out );
             }
         };
     }
@@ -79,7 +89,14 @@ public abstract class ProgressMonitorFactory
         return new ProgressListener.SinglePartProgressListener( newIndicator( process ), totalCount );
     }
 
+    public final ProgressListener openEnded( String process, int resolution )
+    {
+        return new ProgressListener.OpenEndedProgressListener( newOpenEndedIndicator( process, resolution ) );
+    }
+
     protected abstract Indicator newIndicator( String process );
+
+    protected abstract Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution );
 
     public static final class MultiPartBuilder
     {

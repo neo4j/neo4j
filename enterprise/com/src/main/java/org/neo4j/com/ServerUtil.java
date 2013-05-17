@@ -19,9 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -40,21 +37,21 @@ import java.util.Set;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
 
 public class ServerUtil
 {
@@ -435,33 +432,6 @@ public class ServerUtil
         }
     }
 
-    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSourceManager dataSources,
-                                                      String resource )
-    {
-        return onlyIncludeResource( context, dataSources.getXaDataSource( resource ) );
-    }
-
-    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSource dataSource )
-    {
-        Tx txForDs = null;
-        for ( Tx tx : context.lastAppliedTransactions() )
-        {
-            if ( tx.getDataSourceName().equals( dataSource.getName() ) )
-            {
-                txForDs = tx;
-                break;
-            }
-        }
-        if ( txForDs == null )
-        {   // Should not be able to happen
-            throw new RuntimeException( "Apparently " + context +
-                    " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
-        }
-        return new RequestContext( context.getSessionId(), context.machineId(),
-                context.getEventIdentifier(), new Tx[]{txForDs}, context.getMasterId(),
-                context.getChecksum() );
-    }
-
     public interface TxHandler
     {
         void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource );
@@ -501,50 +471,6 @@ public class ServerUtil
             {   // Do nothing
             }
         };
-    }
-
-    public static RequestContext getRequestContext( XaDataSourceManager dsManager, long sessionId, int machineId,
-                                                    int eventIdentifier )
-    {
-        try
-        {
-            Collection<XaDataSource> dataSources = dsManager.getAllRegisteredDataSources();
-            Tx[] txs = new Tx[dataSources.size()];
-            int i = 0;
-            Pair<Integer, Long> master = null;
-            for ( XaDataSource dataSource : dataSources )
-            {
-                long txId = dataSource.getLastCommittedTxId();
-                if ( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
-                {
-                    master = dataSource.getMasterForCommittedTx( txId );
-                }
-                txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
-            }
-            return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public static RequestContext getRequestContext( XaDataSource dataSource, long sessionId, int machineId,
-                                                    int eventIdentifier )
-    {
-        try
-        {
-            long txId = dataSource.getLastCommittedTxId();
-            Tx[] txs = new Tx[]{RequestContext.lastAppliedTx( dataSource.getName(), txId )};
-            Pair<Integer, Long> master = dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) ?
-                    dataSource.getMasterForCommittedTx( txId ) : Pair.of( XaLogicalLog
-                    .MASTER_ID_REPRESENTING_NO_MASTER, 0L );
-            return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )

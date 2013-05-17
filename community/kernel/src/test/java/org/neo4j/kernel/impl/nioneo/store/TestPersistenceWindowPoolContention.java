@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,13 +31,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
-import junit.framework.Assert;
-
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests or rather measures contention imposed by
@@ -65,7 +66,7 @@ public class TestPersistenceWindowPoolContention
     public void before() throws Exception
     {
         File file = new File( "target/bigfile" );
-        file.delete();
+        assertTrue( "delete " + file, file.delete() );
         channel = new RandomAccessFile( file, "rw" ).getChannel();
         write( channel, fileSize );
         pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize, true, false, StringLogger.DEV_NULL );

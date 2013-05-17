@@ -19,25 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.GraphDescription.LABEL;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +38,18 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.test.GraphDescription.LABEL;
 
 public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
@@ -96,17 +96,18 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Map<String, Object> output = jsonToMap(doCypherRestCall( cypherUri() + "?includeStats=true", script, Status.OK ));
 
         // Then
+        @SuppressWarnings("unchecked")
         Map<String, Object> stats = (Map<String, Object>) output.get( "stats" );
 
-        assertThat( stats, is(Map.class) );
-        assertThat( (Boolean)stats.get( "contains_updates" ), is(true) );
-        assertThat( (Integer)stats.get( "labels_added" ), is(1) );
-        assertThat( (Integer)stats.get( "labels_removed" ), is(1) );
-        assertThat( (Integer)stats.get( "nodes_created" ), is(0) );
-        assertThat( (Integer)stats.get( "nodes_deleted" ), is(0) );
-        assertThat( (Integer)stats.get( "properties_set" ), is(0) );
-        assertThat( (Integer)stats.get( "relationships_created" ), is(0) );
-        assertThat( (Integer)stats.get( "relationship_deleted" ), is(0) );
+        assertThat( stats, isA( Map.class ) );
+        assertThat( (Boolean) stats.get( "contains_updates" ), is( true ) );
+        assertThat( (Integer) stats.get( "labels_added" ), is( 1 ) );
+        assertThat( (Integer) stats.get( "labels_removed" ), is( 1 ) );
+        assertThat( (Integer) stats.get( "nodes_created" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "nodes_deleted" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "properties_set" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "relationships_created" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "relationship_deleted" ), is( 0 ) );
     }
 
     /**
@@ -126,7 +127,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
         String response = cypherRestCall( script, Status.OK );
 
-        assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), CoreMatchers.is( true ));
+        assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), is( true ));
     }
 
     /**
@@ -264,6 +265,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Map<String, Object> des = jsonToMap( response );
         assertThat( des.get( "plan" ), instanceOf( Map.class ));
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> plan = (Map<String, Object>)des.get( "plan" );
         assertThat( plan.get( "name" ), instanceOf( String.class ) );
         assertThat( plan.get( "children" ), instanceOf( Collection.class ));

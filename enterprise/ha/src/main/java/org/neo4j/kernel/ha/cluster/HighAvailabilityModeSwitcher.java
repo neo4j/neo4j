@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -69,7 +64,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -83,6 +77,11 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -265,7 +264,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         catch ( Throwable e )
         {
             msgLog.logMessage( "Failed to switch to master", e );
-            return;
         }
     }
 
@@ -282,9 +280,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 assert masterUri != null; // since we are here it must already have been set from outside
                 DependencyResolver resolver = graphDb.getDependencyResolver();
-                HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
-                        HaXaDataSourceManager.class );
+                HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
                 idGeneratorFactory.switchToSlave();
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized ( xaDataSourceManager )
                 {
                     if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config )
@@ -352,7 +350,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private Server.Configuration serverConfig()
     {
-        Server.Configuration serverConfig = new Server.Configuration()
+        return new Server.Configuration()
         {
             @Override
             public long getOldChannelThreshold()
@@ -378,7 +376,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 return config.get( HaSettings.ha_server );
             }
         };
-        return serverConfig;
     }
 
     private boolean checkDataConsistency( XaDataSourceManager xaDataSourceManager,
@@ -404,7 +401,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             try
             {
                 // Unregistering from a running DSManager stops the datasource
-                xaDataSourceManager.unregisterDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+                xaDataSourceManager.unregisterDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
                 stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
             }
             catch ( IOException e )
@@ -441,12 +438,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             throws IOException
     {
         // Must be called under lock on XaDataSourceManager
-        NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource(
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
             nioneoDataSource = new NeoStoreXaDataSource( config,
                     resolver.resolveDependency( StoreFactory.class ),
-                    resolver.resolveDependency( LockManager.class ),
                     resolver.resolveDependency( StringLogger.class ),
                     resolver.resolveDependency( XaFactory.class ),
                     resolver.resolveDependency( TransactionStateFactory.class ),
@@ -504,17 +501,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void startServicesAgain() throws Throwable
     {
-        @SuppressWarnings( "rawtypes" )
-        List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        @SuppressWarnings( "unchecked" )
+        List<Class<Lifecycle>> services = new ArrayList( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         for ( Class<Lifecycle> serviceClass : services )
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
     }
 
     @SuppressWarnings( "unchecked" )
-    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
-            throws Throwable
+    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )

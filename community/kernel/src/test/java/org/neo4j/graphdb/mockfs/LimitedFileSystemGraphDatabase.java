@@ -22,6 +22,7 @@ package org.neo4j.graphdb.mockfs;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+@SuppressWarnings("deprecation")
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
     private LimitedFilesystemAbstraction fs;
@@ -35,10 +36,5 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     public void runOutOfDiskSpaceNao()
     {
         this.fs.runOutOfDiskSpace();
-    }
-
-    public void limitWritesTo( int bytes )
-    {
-        this.fs.limitWritesTo(bytes);
     }
 }

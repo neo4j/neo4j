@@ -27,10 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Ignore;
-import org.junit.internal.runners.model.MultipleFailureException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 
 @Ignore( "this is not a test, it is a testing utility" )
@@ -234,7 +235,7 @@ public class TestData<T> implements TestRule
             if ( end == lines.length ) end--; // all lines were empty
             // If there still is no title, and the first line looks like a
             // title, take the first line as title
-            if ( title == null && start < end && lines[start + 1] == EMPTY )
+            if ( title == null && start < end && EMPTY.equals( lines[start + 1] ) )
             {
                 title = lines[start].trim();
                 start += 2;
@@ -242,7 +243,7 @@ public class TestData<T> implements TestRule
             StringBuilder documentation = new StringBuilder();
             for ( int i = start; i <= end; i++ )
             {
-                documentation.append( lines[i] == EMPTY ? EMPTY : lines[i].substring( indent ) ).append( "\n" );
+                documentation.append( EMPTY.equals( lines[i] ) ? EMPTY : lines[i].substring( indent ) ).append( "\n" );
             }
             doc = documentation.toString();
         }

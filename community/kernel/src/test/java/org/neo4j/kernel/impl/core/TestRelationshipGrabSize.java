@@ -19,37 +19,42 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-
 import java.util.Collection;
 import java.util.HashSet;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.String.valueOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestRelationshipGrabSize
 {
     private static final int GRAB_SIZE = 10;
-    private static ImpermanentGraphDatabase db;
+    private static GraphDatabaseAPI db;
     private Transaction tx;
 
     @BeforeClass
     public static void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase( stringMap( "relationship_grab_size", String.valueOf( GRAB_SIZE ) ) );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.relationship_grab_size, valueOf( GRAB_SIZE ) )
+                .newGraphDatabase();
     }
     
     @AfterClass
@@ -217,7 +222,7 @@ public class TestRelationshipGrabSize
         clearCacheAndCreateDeleteCount( db, node1, node2, type2, type2, count );
     }
 
-    private void clearCacheAndCreateDeleteCount( InternalAbstractGraphDatabase db, Node node1, Node node2,
+    private void clearCacheAndCreateDeleteCount( GraphDatabaseAPI db, Node node1, Node node2,
             RelationshipType createType, RelationshipType deleteType, int expectedCount )
     {
         Transaction tx = db.beginTx();

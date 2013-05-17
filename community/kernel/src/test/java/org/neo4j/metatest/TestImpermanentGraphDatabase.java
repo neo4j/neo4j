@@ -19,40 +19,43 @@
  */
 package org.neo4j.metatest;
 
-import static junit.framework.Assert.assertEquals;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestImpermanentGraphDatabase
 {
     private ImpermanentGraphDatabase db;
 
     @Before
-	public void Given() {
-		db = new ImpermanentGraphDatabase();
-	}
-    
+    @SuppressWarnings("deprecation")
+    public void Given()
+    {
+        db = new ImpermanentGraphDatabase();
+    }
+
     @After
     public void tearDown()
     {
         db.shutdown();
     }
 
-	@Test
+    @Test
     public void should_keep_data_between_start_and_shutdown()
     {
         createNode();
-        
+
         assertEquals( "Expected one new node, plus reference node", 2, nodeCount() );
     }
-	
-	@Test
+
+    @Test
     public void should_keep_reference_node()
     {
         createNode();
@@ -64,24 +67,27 @@ public class TestImpermanentGraphDatabase
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void data_should_not_survive_shutdown()
     {
         createNode();
         db.shutdown();
 
         db = new ImpermanentGraphDatabase();
-        
+
         assertEquals( "Should not see anything but the default reference node.", 1, nodeCount() );
     }
-    
-	private int nodeCount() {
-		return IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
-	}
 
-	private void createNode() {
-		Transaction tx = db.beginTx();
+    private int nodeCount()
+    {
+        return IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
+    }
+
+    private void createNode()
+    {
+        Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
         tx.finish();
-	}
+    }
 }

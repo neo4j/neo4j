@@ -47,7 +47,6 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -70,11 +70,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.cast;
 
-public class NodeManager
-        implements Lifecycle
+public class NodeManager implements Lifecycle
 {
     private long referenceNodeId = 0;
 
@@ -190,7 +188,7 @@ public class NodeManager
     {
         for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
         {
-            if ( ds.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+            if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
             {
                 // Load and cache all keys from persistence manager
                 addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypeTokens() );
@@ -235,9 +233,9 @@ public class NodeManager
             transactionState.createNode( id );
             if ( labels != null )
             {
-                for ( int i = 0; i < labels.length; i++ )
+                for ( Label label : labels )
                 {
-                    proxy.addLabel( labels[i] );
+                    proxy.addLabel( label );
                 }
             }
 
@@ -281,14 +279,13 @@ public class NodeManager
         long id = idGenerator.nextId( Relationship.class );
         RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, typeId, true );
         RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
-        TransactionState transactionState = getTransactionState();
-        transactionState.acquireWriteLock( proxy );
+        TransactionState tx = getTransactionState();
+        tx.acquireWriteLock( proxy );
         boolean success = false;
-        TransactionState tx = transactionState;
         try
         {
-            transactionState.acquireWriteLock( startNodeProxy );
-            transactionState.acquireWriteLock( endNode );
+            tx.acquireWriteLock( startNodeProxy );
+            tx.acquireWriteLock( endNode );
             persistenceManager.relationshipCreate( id, typeId, startNodeId, endNodeId );
             if ( startNodeId == endNodeId )
             {
@@ -829,11 +826,6 @@ public class NodeManager
         return propertyKeyTokenHolder.getTokenByIdOrNull( keyId );
     }
 
-    Token getPropertyKeyToken( String key ) throws TokenNotFoundException
-    {
-        return propertyKeyTokenHolder.getTokenByName( key );
-    }
-
     Token getPropertyKeyTokenOrNull( String key )
     {
         return propertyKeyTokenHolder.getTokenByNameOrNull( key );
@@ -865,6 +857,7 @@ public class NodeManager
         if ( !trackers.isEmpty() )
         {
             Iterable<String> propertyKeys = primitive.getPropertyKeys( this );
+            @SuppressWarnings("unchecked"/*caller ensures appropriate type*/)
             T proxy = (T) primitive.asProxy( this );
 
             for ( String key : propertyKeys )
@@ -1091,11 +1084,6 @@ public class NodeManager
     public boolean isDeleted( Relationship resource )
     {
         return getTransactionState().relationshipIsDeleted( resource.getId() );
-    }
-
-    PersistenceManager getPersistenceManager()
-    {
-        return persistenceManager;
     }
 
     private GraphProperties instantiateGraphProperties()

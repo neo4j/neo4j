@@ -19,12 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +27,19 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.Contains.contains;
 
 public class TestIndexDeletion
 {
@@ -54,7 +55,7 @@ public class TestIndexDeletion
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
@@ -265,7 +266,7 @@ public class TestIndexDeletion
 
     private WorkThread createWorker( String name )
     {
-        WorkThread workThread = new WorkThread( "other thread", index, graphDb, node );
+        WorkThread workThread = new WorkThread( name, index, graphDb, node );
         workers.add( workThread );
         return workThread;
     }

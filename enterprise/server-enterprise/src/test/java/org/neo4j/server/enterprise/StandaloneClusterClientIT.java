@@ -63,7 +63,7 @@ import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.cluster.client.ClusterClient.adapt;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
+import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

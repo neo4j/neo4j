@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by using
- * {@link GraphDatabaseFactory} like so:
+ * {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} like so:
  * <p/>
  * 
  * <pre>
@@ -53,11 +53,12 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
      * 
-     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * This is deprecated. Use {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} instead.
      * 
      * @param storeDir the store directory for the Neo4j store files
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public EmbeddedGraphDatabase( String storeDir )
     {
         this( storeDir, new HashMap<String, String>() );
@@ -70,7 +71,7 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
      * 
-     * This is deprecated. Use {@link GraphDatabaseFactory} instead.
+     * This is deprecated. Use {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} instead.
      * 
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
@@ -87,13 +88,6 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
 
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
-     *
-     * @param storeDir
-     * @param params
-     * @param indexProviders
-     * @param kernelExtensions
-     * @param cacheProviders
-     * @param txInterceptorProviders
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,

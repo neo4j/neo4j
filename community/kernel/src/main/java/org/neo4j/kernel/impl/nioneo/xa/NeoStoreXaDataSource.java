@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
@@ -88,6 +87,7 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
@@ -131,7 +131,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
 
-    private final LockManager lockManager;
     private File storeDir;
     private boolean readOnly;
 
@@ -228,14 +227,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
      */
-    public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
+    public NeoStoreXaDataSource( Config config, StoreFactory sf,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
                                  UpdateableSchemaState updateableSchemaState, NodeManager nodeManager,
                                  DependencyResolver dependencyResolver )
     {
-        super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
+        super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
         this.stateFactory = stateFactory;
         this.nodeManager = nodeManager;
@@ -245,7 +244,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.logging = logging;
 
         readOnly = config.get( Configuration.read_only );
-        this.lockManager = lockManager;
         msgLog = stringLogger;
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
@@ -554,11 +552,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         return neoStore.incrementVersion();
     }
 
-    public void setCurrentLogVersion( long version )
-    {
-        neoStore.setVersion(version);
-    }
-
     // used for testing, do not use.
     @Override
     public void setLastCommittedTxId( long txId )
@@ -572,11 +565,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             neoStore.setRecoveredStatus( false );
         }
-    }
-
-    ReadTransaction getReadOnlyTransaction()
-    {
-        return new ReadTransaction( neoStore );
     }
 
     public boolean isReadOnly()
@@ -615,7 +603,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
         Pattern logFilePattern = getXaContainer().getLogicalLog().getHistoryFileNamePattern();
-        for ( File dbFile : storeDir.listFiles() )
+        for ( File dbFile : nonNull( storeDir.listFiles() ) )
         {
             String name = dbFile.getName();
             // To filter for "neostore" is quite future proof, but the "index.db" file
@@ -653,16 +641,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             {
             }
         };
-    }
-
-    public void logStoreVersions()
-    {
- // TODO This needs to be reconciled with new Diagnostics       neoStore.logVersions();
-    }
-
-    public void logIdUsage()
-    {
- // TODO This needs to be reconciled with new Diagnostics       neoStore.logIdUsage();
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )

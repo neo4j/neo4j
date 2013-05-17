@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestApplyTransactions
 {
@@ -51,14 +52,15 @@ public class TestApplyTransactions
         tx.success();
         tx.finish();
         XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
-                Config.DEFAULT_DATA_SOURCE_NAME );
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 
         final GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( destStoreDir.getPath() );
-        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource(
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
         origin.shutdown();
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
@@ -75,7 +77,8 @@ public class TestApplyTransactions
          */
         GraphDatabaseAPI newDest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
                 .newImpermanentDatabase( destStoreDir.getPath() );
-        destNeoDataSource = newDest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        destNeoDataSource = newDest.getXaDataSourceManager().getXaDataSource(
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         latestTxId = (int) destNeoDataSource.getLastCommittedTxId();
         theTx = new InMemoryLogBuffer();
         long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );

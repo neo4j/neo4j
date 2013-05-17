@@ -21,8 +21,10 @@ package org.neo4j.shell;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
+
+import static org.neo4j.helpers.SillyUtils.ignore;
 
 public class StartDbWithShell
 {
@@ -31,11 +33,11 @@ public class StartDbWithShell
         String path = args.length > 0 ? args[0] : "target/test-data/shell-db";
         GraphDatabaseService db = new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path ).
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE).
-            setConfig( GraphDatabaseSettings.allow_store_upgrade, GraphDatabaseSetting.TRUE).
+            setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE).
+            setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE).
             newGraphDatabase();
         System.out.println( "db " + path + " started, ENTER to quit" );
-        System.in.read();
+        ignore( System.in.read() );
         db.shutdown();
     }
 }

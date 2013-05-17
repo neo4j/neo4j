@@ -22,7 +22,6 @@ package org.dummy.web.service;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -72,7 +71,7 @@ public class DummyThirdPartyWebService
     @Produces( MediaType.APPLICATION_JSON )
     public Response authHeader( @Context HttpHeaders headers )
     {
-        StringBuffer theEntity = new StringBuffer( "{" );
+        StringBuilder theEntity = new StringBuilder( "{" );
         Iterator<Map.Entry<String, List<String>>> headerIt = headers.getRequestHeaders().entrySet().iterator();
         while ( headerIt.hasNext() )
         {
@@ -82,8 +81,8 @@ public class DummyThirdPartyWebService
                 throw new IllegalArgumentException( "Mutlivalued header: "
                                                     + header.getKey() );
             }
-            theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" ).append(
-                    header.getValue().get( 0 ) + "\"" );
+            theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" )
+                     .append( header.getValue().get( 0 ) ).append( "\"" );
             if ( headerIt.hasNext() )
             {
                 theEntity.append( ", " );
@@ -96,11 +95,8 @@ public class DummyThirdPartyWebService
     private int countNodesIn( GraphDatabaseService db )
     {
         int count = 0;
-        Iterator<Node> nodes = db.getAllNodes()
-                .iterator();
-        while ( nodes.hasNext() )
+        for ( @SuppressWarnings("unused") Node node : db.getAllNodes() )
         {
-            nodes.next();
             count++;
         }
         return count;

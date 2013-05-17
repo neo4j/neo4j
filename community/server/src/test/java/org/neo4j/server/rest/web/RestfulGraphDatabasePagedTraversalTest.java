@@ -19,27 +19,20 @@
  */
 package org.neo4j.server.rest.web;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -48,8 +41,16 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RestfulGraphDatabasePagedTraversalTest
 {
@@ -60,12 +61,12 @@ public class RestfulGraphDatabasePagedTraversalTest
     private EntityOutputFormat output;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
-    private ImpermanentGraphDatabase graph;
+    private AbstractGraphDatabase graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        graph = new ImpermanentGraphDatabase();
+        graph = (AbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
@@ -183,10 +184,9 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         final int SIXTY_SECONDS = 60;
         final int PAGE_SIZE = 10;
-        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
-                SIXTY_SECONDS, description );
 
-        return response;
+        return service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
+                SIXTY_SECONDS, description );
     }
 
     private long createListOfNodes( int numberOfNodes )
@@ -202,6 +202,7 @@ public class RestfulGraphDatabasePagedTraversalTest
                 database.getGraph().getNodeById( previousNodeId )
                         .createRelationshipTo( database.getGraph().getNodeById( currentNodeId ),
                                 DynamicRelationshipType.withName( "PRECEDES" ) );
+                previousNodeId = currentNodeId;
             }
 
             tx.success();

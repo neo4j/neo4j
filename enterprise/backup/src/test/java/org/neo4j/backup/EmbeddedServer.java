@@ -22,7 +22,7 @@ package org.neo4j.backup;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 
 public class EmbeddedServer implements ServerInterface
 {
@@ -31,7 +31,7 @@ public class EmbeddedServer implements ServerInterface
     public EmbeddedServer( String storeDir )
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
-        graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE );
+        graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         this.db = graphDatabaseBuilder.newGraphDatabase();
     }
     

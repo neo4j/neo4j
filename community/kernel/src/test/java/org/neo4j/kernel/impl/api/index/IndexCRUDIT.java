@@ -119,7 +119,6 @@ public class IndexCRUDIT
     }
 
     private GraphDatabaseAPI db;
-    private TestGraphDatabaseFactory factory;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
@@ -152,7 +151,7 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        factory = new TestGraphDatabaseFactory();
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();

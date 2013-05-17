@@ -19,19 +19,14 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 import java.util.Map;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -39,7 +34,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -48,6 +43,7 @@ import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
@@ -56,6 +52,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 
 class RebuildFromLogs
 {
@@ -69,12 +69,11 @@ class RebuildFromLogs
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
     {
-        this.nioneo = getDataSource( graphdb, Config.DEFAULT_DATA_SOURCE_NAME );
+        this.nioneo = getDataSource( graphdb, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         this.stores = new StoreAccess( graphdb );
     }
 
-    // TODO: rewrite to use the new progress indication API
-    RebuildFromLogs applyTransactionsFrom( ProgressIndicator progress, File sourceDir ) throws IOException
+    RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
     {
         LogExtractor extractor = null;
         try
@@ -88,10 +87,7 @@ class RebuildFromLogs
                     break;
                 }
                 applyTransaction( txId, buffer );
-                if ( progress != null )
-                {
-                    progress.update( false, txId );
-                }
+                progress.set( txId );
             }
         }
         finally
@@ -100,6 +96,7 @@ class RebuildFromLogs
             {
                 extractor.close();
             }
+            progress.done();
         }
         return this;
     }
@@ -129,7 +126,8 @@ class RebuildFromLogs
         Args params = new Args( args );
         @SuppressWarnings("boxing")
         boolean full = params.getBoolean( "full", false, true );
-        args = params.orphans().toArray( new String[0] );
+        List<String> orphans = params.orphans();
+        args = orphans.toArray( new String[orphans.size()] );
         if ( args.length != 2 )
         {
             printUsage( "Exactly two positional arguments expected: "
@@ -180,26 +178,23 @@ class RebuildFromLogs
                         ? VerificationLevel.FULL_WITH_LOGGING
                         : VerificationLevel.LOGGING, txdifflog ) );
 
-        ProgressIndicator progress;
+        ProgressMonitorFactory progress;
         if ( txCount < 0 )
         {
-            progress = null;
+            progress = ProgressMonitorFactory.NONE;
             System.err.println( "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
         }
         else
         {
-            progress = textual( System.err, txCount );
-            System.err.printf( "Rebuilding store from %s transactions %n", txCount );
+            progress = ProgressMonitorFactory.textual( System.err );
         }
         try
         {
             try
             {
-                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( progress, source );
-                if ( progress != null )
-                {
-                    progress.done( txCount );
-                }
+                ProgressListener listener = progress
+                        .singlePart( String.format( "Rebuilding store from %s transactions ", txCount ), txCount );
+                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
                 // if we didn't run the full checker for each transaction, run it afterwards
                 if ( !full )
                 {
@@ -216,7 +211,6 @@ class RebuildFromLogs
             System.err.println();
             e.printStackTrace( System.err );
             System.exit( -1 );
-            return;
         }
     }
 

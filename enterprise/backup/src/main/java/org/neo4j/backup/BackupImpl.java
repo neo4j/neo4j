@@ -19,11 +19,11 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.com.ServerUtil;
-import org.neo4j.com.Response;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.Response;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.com.StoreWriter;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
 class BackupImpl implements TheBackupInterface
@@ -55,7 +55,7 @@ class BackupImpl implements TheBackupInterface
         // to catch up on reading them. On Linux/Mac this isn't a due to a more flexible
         // file handling system. Solution: rotate before doing an incremental backup
         // in Windows to avoid running into that problem.
-        if ( GraphDatabaseSetting.osIsWindows() )
+        if ( Settings.osIsWindows() )
         {
             ServerUtil.rotateLogs( graphDb );
         }

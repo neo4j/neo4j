@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -52,6 +50,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -59,11 +58,13 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -358,7 +359,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
     protected void tryToFinishOffChannel( Channel channel )
     {
-        Pair<RequestContext, AtomicLong> slave = null;
+        Pair<RequestContext, AtomicLong> slave;
         synchronized ( connectedSlaveChannels )
         {
             slave = connectedSlaveChannels.remove( channel );
@@ -375,7 +376,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         try
         {
             finishOffChannel( channel, slave );
-            unmapSlave( channel, slave );
+            unmapSlave( channel );
         }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
@@ -456,7 +457,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                 // This is the first chunk in a multi-chunk request
                 RequestType<T> type = getRequestContext( buffer.readByte() );
                 RequestContext context = readContext( buffer );
-                ChannelBuffer targetBuffer = mapSlave( channel, context, type );
+                ChannelBuffer targetBuffer = mapSlave( channel, context );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
                 partialRequests.put( channel, partialRequest );
             }
@@ -465,17 +466,17 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         else
         {
             PartialRequest partialRequest = partialRequests.remove( channel );
-            RequestType<T> type = null;
-            RequestContext context = null;
+            RequestType<T> type;
+            RequestContext context;
             ChannelBuffer targetBuffer;
-            ChannelBuffer bufferToReadFrom = null;
-            ChannelBuffer bufferToWriteTo = null;
+            ChannelBuffer bufferToReadFrom;
+            ChannelBuffer bufferToWriteTo;
             if ( partialRequest == null )
             {
                 // This is the one and single chunk in the request
                 type = getRequestContext( buffer.readByte() );
                 context = readContext( buffer );
-                targetBuffer = mapSlave( channel, context, type );
+                targetBuffer = mapSlave( channel, context );
                 bufferToReadFrom = buffer;
                 bufferToWriteTo = targetBuffer;
             }
@@ -555,7 +556,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                     {
                         response.close();
                     }
-                    unmapSlave( channel, context );
+                    unmapSlave( channel );
                 }
             }
         };
@@ -587,8 +588,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static <T> void writeTransactionStreams( TransactionStream txStream,
-                                                     ChannelBuffer buffer ) throws IOException
+    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer ) throws IOException
     {
         if ( !txStream.hasNext() )
         {
@@ -632,7 +632,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             lastAppliedTransactions[i] = tx;
 
             // Only perform checksum checks on the neo data source.
-            if ( ds.equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+            if ( ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
             {
                 neoTx = tx;
             }
@@ -651,7 +651,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
     protected abstract RequestType<T> getRequestContext( byte id );
 
-    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave, RequestType<T> type )
+    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
         synchronized ( connectedSlaveChannels )
         {
@@ -674,7 +674,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         return ChannelBuffers.dynamicBuffer();
     }
 
-    protected void unmapSlave( Channel channel, RequestContext slave )
+    protected void unmapSlave( Channel channel )
     {
         synchronized ( connectedSlaveChannels )
         {
