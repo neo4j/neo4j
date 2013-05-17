@@ -76,17 +76,18 @@ case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
   with ReadOnlyStartItem
 
+trait Hint
+
 case class SchemaIndex(identifier: String, label: String, property: String, query: Option[Expression])
   extends StartItem(identifier, Map("label" -> label, "property" -> property) ++ query.map("query" -> _.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with Hint
 
 case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Map("name" -> expression.toString()))
   with ReadOnlyStartItem
 
 case class NodeByLabel(varName: String, label: String)
-  extends StartItem(varName, Map("label" -> label.toString))
-  with ReadOnlyStartItem
+  extends StartItem(varName, Map("label" -> label.toString)) with ReadOnlyStartItem with Hint
 
 case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty) with ReadOnlyStartItem
 

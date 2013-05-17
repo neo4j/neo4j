@@ -19,25 +19,41 @@
  */
 package org.neo4j.cypher.internal.executionplan.verifiers
 
-import org.neo4j.cypher.internal.commands.{Equals, SchemaIndex, Query, AbstractQuery}
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Property}
-import org.neo4j.cypher.{SyntaxException, IndexHintException}
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.{LabelScanHintException, IndexHintException, SyntaxException}
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Property
 
-object IndexHintVerifier extends Verifier {
+object HintVerifier extends Verifier {
   override val verifyFunction: PartialFunction[AbstractQuery, Unit] = {
     case query: Query =>
       val predicateAtoms = query.where.atoms
 
-      if ( (! query.hints.isEmpty) && (! query.start.isEmpty) )
+      if ((!query.hints.isEmpty) && (!query.start.isEmpty))
         throw new SyntaxException("Cannot use index hints with start clause")
 
       query.hints.foreach {
+        case NodeByLabel(hintId, hintLabel) =>
+          val valid = predicateAtoms.exists {
+            case HasLabel(Identifier(predicateId), predicateLabel) =>
+              predicateId == hintId && predicateLabel.name == hintLabel
+
+            case x                                                 =>
+              false
+          }
+          if (!valid)
+            throw new LabelScanHintException(hintId, hintLabel,
+              "Can't use a label scan hint without using the label for that identifier in your +MATCH+ or +WHERE+")
+
+
         case SchemaIndex(id, label, prop, _) =>
 
-          val valid = predicateAtoms.exists(_ match {
+          val valid = predicateAtoms.exists {
             case Equals(Property(Identifier(identifier), property), _) => id == identifier && property == prop
             case _                                                     => false
-          })
+          }
 
           if (!valid)
             throw new IndexHintException(id, label, prop,

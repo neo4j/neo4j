@@ -17,15 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import v2_0.Using
+import org.junit.Test
+import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
 
 
-trait UsingIndex extends Expressions {
-  def indexHints: Parser[Seq[SchemaIndex]] = rep(indexHint)
+class UsingTest extends Using with ParserTest {
+  @Test def indexes() {
+    implicit val parserToTest = hints
 
-  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
-    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
+    parsing("USING INDEX n:User(name)") shouldGive
+      Seq(SchemaIndex("n", "User", "name", None))
+
+    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
+      Seq(SchemaIndex(" 1", " 2", " 3", None))
+
+    parsing("USING SCAN n:Person") shouldGive
+      Seq(NodeByLabel("n", "Person"))
+
+    assertFails("USING INDEX n.user(name)")
+    assertFails("USING INDEX n.user(name, age)")
+    assertFails("USING SCAN :Person")
   }
+
+  def createProperty(entity: String, propName: String) = ???
+
+  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

@@ -25,56 +25,62 @@ import org.scalatest.Assertions
 
 class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with GraphIcing {
 
-  @Test(expected = /* THEN */ classOf[SyntaxException])
+  @Test
   def failIfUsingIndexWithStartClause() {
     // GIVEN
     graph.createIndex("Person", "name")
 
-    // WHEN
-    parseAndExecute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n")
+    // WHEN & THEN
+    intercept[SyntaxException](
+      parseAndExecute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n"))
   }
 
-  @Test(expected = /* THEN */ classOf[IndexHintException])
+  @Test
   def failIfUsingAnIdentifierWithLabelNotUsedInMatch() {
     // GIVEN
     graph.createIndex("Person", "name")
 
     // WHEN
-    parseAndExecute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n")
+    intercept[IndexHintException](
+      parseAndExecute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n"))
   }
 
-  @Test(expected = /* THEN */ classOf[IndexHintException])
+  @Test
   def failIfUsingAnHintForANonExistingIndex() {
     // GIVEN: NO INDEX
 
     // WHEN
-    parseAndExecute("match n:Person-->() using index n:Person(name) where n.name = \"kabam\" return n")
+    intercept[IndexHintException](
+      parseAndExecute("match n:Person-->() using index n:Person(name) where n.name = \"kabam\" return n"))
   }
 
-  @Test(expected = /* THEN */ classOf[IndexHintException])
+  @Test
   def failIfUsingAnHintWithAnUnknownIdentifier() {
     // GIVEN: NO INDEX
 
     // WHEN
-    parseAndExecute("match n:Person-->() using index m:Person(name) where n.name = \"kabam\" return n")
+    intercept[IndexHintException](
+      parseAndExecute("match n:Person-->() using index m:Person(name) where n.name = \"kabam\" return n"))
   }
 
-  @Test(expected = /* THEN */ classOf[IndexHintException])
+  @Test
   def failIfUsingHintsWithUnusableEqualityPredicate() {
     // GIVEN
     graph.createIndex("Person", "name")
 
     // WHEN
-    parseAndExecute("match n:Person-->() using index n:Person(name) where n.name <> \"kabam\" return n")
+    intercept[IndexHintException](
+      parseAndExecute("match n:Person-->() using index n:Person(name) where n.name <> \"kabam\" return n"))
   }
 
-  @Test(expected = /* THEN */ classOf[IndexHintException])
+  @Test
   def failIfJoiningIndexHintsInEqualityPredicates() {
     // GIVEN
     graph.createIndex("Person", "name")
     graph.createIndex("Food", "name")
 
     // WHEN
-    parseAndExecute("match n:Person-->m:Food using index n:Person(name) using index m:Food(name) where n.name = m.name return n")
+    intercept[IndexHintException](
+      parseAndExecute("match n:Person-->m:Food using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 }
