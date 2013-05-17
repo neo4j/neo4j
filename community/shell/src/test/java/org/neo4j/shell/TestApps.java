@@ -35,16 +35,16 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -486,21 +486,19 @@ public class TestApps extends AbstractShellTest
         }
     }
 
-    @Ignore
     @Test
-    public void run_query_with_planrebuilding() throws Exception
+    public void use_cypher_merge() throws Exception
     {
-        executeCommand( "create (:Person {name:'Andres'});" );
-        executeCommand( "create (:Person {name:'Stefan'});" );
-        executeCommand( "profile match n:Person-[?]-() where n.name = 'Andres' return n;" );
-        Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexCreator( DynamicLabel.label( "Person" ) ).on( "name" ).create();
-        tx.success();
-        tx.finish();
-        db.schema().awaitIndexOnline( index, 10, SECONDS );
-        executeCommand( "profile match n:Person-[?]-() where n.name = 'Andres' return n;" );
+        executeCommand( "merge (n:Person {name:'Andres'});" );
+        ResourceIterable<Node> iter = db.findNodesByLabelAndProperty( label( "Person" ), "name", "Andres" );
+        ResourceIterator<Node> iterator = iter.iterator();
+
+
+        assertTrue("Did not find expected node", iterator.hasNext());
+        iterator.next();
+        assertFalse("MERGE seems to have created multiple nodes", iterator.hasNext());
     }
-    
+
     @Test
     public void canSetInitialSessionVariables() throws Exception
     {
