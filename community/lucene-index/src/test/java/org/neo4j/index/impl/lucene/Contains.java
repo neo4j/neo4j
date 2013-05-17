@@ -23,7 +23,8 @@ import java.util.Collection;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 

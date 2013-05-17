@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -47,9 +47,9 @@ public class StoreFactory
 {
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.IntegerSetting string_block_size = GraphDatabaseSettings.string_block_size;
-        public static final GraphDatabaseSetting.IntegerSetting array_block_size = GraphDatabaseSettings.array_block_size;
-        public static final GraphDatabaseSetting.IntegerSetting label_block_size = GraphDatabaseSettings.label_block_size;
+        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
+        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
+        public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
     }
     
     private final Config config;
@@ -272,8 +272,6 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new relationship store
-     * @throws IOException
-     *             If unable to create relationship store or name null
      */
     private void createRelationshipStore( File fileName)
     {
@@ -287,8 +285,6 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new property store
-     * @throws IOException
-     *             If unable to create property store or name null
      */
     public void createPropertyStore( File fileName )
     {
@@ -308,8 +304,6 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new relationship type store
-     * @throws IOException
-     *             If unable to create store or name null
      */
     private void createRelationshipTypeStore( File fileName )
     {
@@ -366,9 +360,6 @@ public class StoreFactory
      *            The number of bytes for each block
      * @param typeAndVersionDescriptor
      *            The type and version descriptor that identifies this store
-     *
-     * @throws IOException
-     *             If fileName is null or if file exists or illegal block size
      */
     public void createEmptyDynamicStore( File fileName, int baseBlockSize,
                                             String typeAndVersionDescriptor, IdType idType)

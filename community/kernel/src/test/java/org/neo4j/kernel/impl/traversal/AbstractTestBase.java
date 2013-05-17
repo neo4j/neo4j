@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,6 +30,8 @@ import java.util.Stack;
 
 import org.junit.After;
 import org.junit.Before;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -44,18 +41,22 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public abstract class AbstractTestBase
 {
-    private static ImpermanentGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
     private static Map<String, Node> nodes;
 
     @Before
     public final void createDb()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
@@ -64,17 +65,17 @@ public abstract class AbstractTestBase
         graphdb.shutdown();
     }
 
-    protected static final Node node( String name )
+    protected static Node node( String name )
     {
         return nodes.get( name );
     }
 
-    protected static final Node getNode( long id )
+    protected static Node getNode( long id )
     {
         return graphdb.getNodeById( id );
     }
 
-    protected static final Transaction beginTx()
+    protected static Transaction beginTx()
     {
         return graphdb.beginTx();
     }
@@ -266,13 +267,7 @@ public abstract class AbstractTestBase
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
     }
-    
-    protected static void expectPath( Path path, String pathAsString )
-    {
-        expect( asList( path ), new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION ),
-                pathAsString );
-    }
-    
+
     public static <E> void assertContains( Iterator<E> actual, E... expected )
     {
         assertContains( IteratorUtil.asIterable( actual ), expected );
@@ -315,7 +310,7 @@ public abstract class AbstractTestBase
 
     public static <T> String join( String delimiter, T... items )
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for ( T item : items )
         {
             if ( buffer.length() > 0 )
@@ -325,16 +320,5 @@ public abstract class AbstractTestBase
             buffer.append( item.toString() );
         }
         return buffer.toString();
-    }
-    
-    protected void setRelationshipProperty( String fromNode, String toNode, String key, Object value )
-    {
-        for ( Relationship relationship : getNodeWithName( fromNode ).getRelationships() )
-            if ( relationship.getEndNode().equals( getNodeWithName( toNode ) ) )
-            {
-                relationship.setProperty( key, value );
-                return;
-            }
-        throw new IllegalArgumentException( "No relationship found between " + fromNode + " and " + toNode );
     }
 }

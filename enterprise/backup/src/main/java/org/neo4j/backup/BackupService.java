@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -49,7 +47,6 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Settings;
@@ -66,6 +63,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.util.Collections.emptyMap;
 
 class BackupService
 {
@@ -294,7 +293,7 @@ class BackupService
         {
             txs.add( RequestContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
         }
-        return RequestContext.anonymous( txs.toArray( new Tx[0] ) );
+        return RequestContext.anonymous( txs.toArray( new Tx[txs.size()] ) );
     }
 
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
@@ -330,7 +329,7 @@ class BackupService
     static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
         Map<String, String> config = new HashMap<String, String>();
-        config.put( OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.FALSE );
+        config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         for ( ConfigParam param : params )
         {
             if ( param != null )
@@ -354,7 +353,7 @@ class BackupService
             Long diff = diffPerDataSource.get( dsName );
             if ( diff == null )
             {
-                diff = Long.valueOf( 0L );
+                diff = 0L;
             }
             long newTxId = originalTxId + diff;
             newTxs[i] = RequestContext.lastAppliedTx( dsName, newTxId );
@@ -369,8 +368,6 @@ class BackupService
      * spanning up to the latest of the master, for every data source
      * registered.
      *
-     * @param sourceHostNameOrIp
-     * @param sourcePort
      * @param targetDb           The database that contains a previous full copy
      * @param context            The context, i.e. a mapping of data source name to txid
      *                           which will be the first in the returned stream
@@ -484,16 +481,12 @@ class BackupService
                 return name.equals( StringLogger.DEFAULT_NAME );
             }
         } );
-        File previous = null;
         if ( candidates.length != 1 )
         {
             return false;
         }
         // candidates has a unique member, the right one
-        else
-        {
-            previous = candidates[0];
-        }
+        File previous = candidates[0];
         // Build to, from existing parent + new filename
         File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME
                 + "." + toTimestamp );

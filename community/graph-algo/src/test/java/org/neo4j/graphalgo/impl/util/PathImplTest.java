@@ -19,12 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,6 +34,11 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class PathImplTest
 {
@@ -127,6 +128,7 @@ public class PathImplTest
         }
     }
 
+    @SuppressWarnings("deprecation")
     class MockNode extends MockPropertyContainer implements Node
     {
 
@@ -146,7 +148,7 @@ public class PathImplTest
         @Override
         public boolean equals( Object other )
         {
-            return other != null && ((Node) other).getId() == id;
+            return other instanceof Node && ((Node) other).getId() == id;
         }
 
         // Unimplemented
@@ -291,7 +293,7 @@ public class PathImplTest
         @Override
         public boolean equals( Object other )
         {
-            return ((Relationship) other).getId() == getId();
+            return other instanceof Relationship && ((Relationship) other).getId() == getId();
         }
 
         @Override

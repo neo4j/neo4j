@@ -19,9 +19,6 @@
  */
 package org.neo4j.metatest;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,16 +28,20 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestJavaTestDocsGenerator implements GraphHolder
 {
@@ -156,7 +157,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     @BeforeClass
     public static void setUp()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     
     @AfterClass

@@ -186,16 +186,14 @@ public class IndexQueryTransactionStateTest
 
     // exists
 
-    private final long labelId1 = 10, labelId2 = 12;
-
     private StatementContext store;
     private OldTxStateBridge oldTxState;
-    private TxState state;
     private StateHandlingStatementContext txContext;
 
     @Before
     public void before() throws Exception
     {
+        long labelId1 = 10, labelId2 = 12;
         store = mock( StatementContext.class );
         when( store.getIndexes( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.getIndexes( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
@@ -213,11 +211,11 @@ public class IndexQueryTransactionStateTest
 
         oldTxState = mock( OldTxStateBridge.class );
 
-        state = new TxState( oldTxState, mock( PersistenceManager.class ),
-                mock( TxState.IdGeneration.class ) );
+        TxState state = new TxState( oldTxState, mock( PersistenceManager.class ),
+                                     mock( TxState.IdGeneration.class ) );
 
         txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class),
-                state, mock( ConstraintIndexCreator.class ) );
+                                                       state, mock( ConstraintIndexCreator.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

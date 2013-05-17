@@ -19,8 +19,6 @@
  */
 package org.neo4j.index;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -31,11 +29,14 @@ import java.util.concurrent.Executors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class IndexConstraintsTest
 {
@@ -44,7 +45,7 @@ public class IndexConstraintsTest
     @Before
     public void setup() throws IOException
     {
-        this.graphDb = new ImpermanentGraphDatabase();
+        this.graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After

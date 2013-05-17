@@ -60,26 +60,6 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
         processor.processRelationshipType(this, record);
     }
 
-    void markAsReserved( int id )
-    {
-        PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
-        try
-        {
-            markAsReserved( id, window );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
-    }
-
-    private void markAsReserved( int id, PersistenceWindow window )
-    {
-        Buffer buffer = window.getOffsettedBuffer( id );
-        buffer.put( Record.IN_USE.byteValue() ).putInt(
-            Record.RESERVED.intValue() );
-    }
-
     @Override
     // TODO: Remove this method?
     protected void rebuildIdGenerator()
@@ -93,7 +73,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             assert success;
         }
         createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
-        openIdGenerator( false );
+        openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = -1;
         int recordSize = getRecordSize();
@@ -134,7 +114,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
         setHighId( highId );
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId() );
         closeIdGenerator();
-        openIdGenerator( false );
+        openIdGenerator();
     }
 
     @Override

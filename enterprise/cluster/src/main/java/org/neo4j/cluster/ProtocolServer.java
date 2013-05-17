@@ -120,11 +120,6 @@ public class ProtocolServer implements BindingNotifier
         stateMachines.addStateTransitionListener( stateTransitionListener );
     }
 
-    public void removeStateTransitionListener( StateTransitionListener stateTransitionListener )
-    {
-        stateMachines.removeStateTransitionListener( stateTransitionListener );
-    }
-
     public <T> T newClient( Class<T> clientProxyInterface )
     {
         return proxyFactory.newProxy( clientProxyInterface );
@@ -137,7 +132,7 @@ public class ProtocolServer implements BindingNotifier
         builder.append( "Instance URI: " ).append( boundAt.toString() ).append( "\n" );
         for( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
-            builder.append( "  " + stateMachine).append( "\n" );
+            builder.append( "  " ).append( stateMachine ).append( "\n" );
         }
         return builder.toString();
     }

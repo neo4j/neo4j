@@ -19,10 +19,7 @@
  */
 package org.neo4j.jmx;
 
-import static java.lang.String.format;
-
 import java.lang.management.ManagementFactory;
-
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -34,9 +31,10 @@ import javax.management.ReflectionException;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
+import static java.lang.String.format;
+
 public class JmxUtils
 {
-
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
     public static ObjectName getObjectName( GraphDatabaseAPI database, String name )
@@ -55,6 +53,7 @@ public class JmxUtils
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T getAttribute( ObjectName objectName, String attribute )
     {
         try
@@ -79,6 +78,7 @@ public class JmxUtils
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signatur )
     {
         try

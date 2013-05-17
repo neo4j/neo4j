@@ -19,14 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +26,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -45,6 +38,17 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class LabelsAcceptanceTest
 {
@@ -422,6 +426,7 @@ public class LabelsAcceptanceTest
         };
     }
 
+    @SuppressWarnings("deprecation")
     private GraphDatabaseService beansAPIWithNoMoreLabelIds()
     {
         return new ImpermanentGraphDatabase()

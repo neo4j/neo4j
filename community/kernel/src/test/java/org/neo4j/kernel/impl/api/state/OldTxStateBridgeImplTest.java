@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import static junit.framework.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class OldTxStateBridgeImplTest
 {
@@ -54,7 +56,7 @@ public class OldTxStateBridgeImplTest
 
         // Then
         assertEquals( asSet( nodeId ), nodes.getAdded() );
-        assertEquals( asSet(), nodes.getRemoved() );
+        assertEquals( emptySetOf( Long.class ), nodes.getRemoved() );
     }
 
     @Test
@@ -78,7 +80,7 @@ public class OldTxStateBridgeImplTest
         DiffSets<Long> nodes = bridge.getNodesWithChangedProperty( propertyKey, value );
 
         // Then
-        assertEquals( asSet(), nodes.getAdded() );
+        assertEquals( emptySetOf( Long.class ), nodes.getAdded() );
         assertEquals( asSet( nodeId ), nodes.getRemoved() );
     }
 
@@ -104,7 +106,7 @@ public class OldTxStateBridgeImplTest
         DiffSets<Long> nodes = bridge.getNodesWithChangedProperty( propertyKey, value );
 
         // Then
-        assertEquals( asSet(), nodes.getAdded() );
+        assertEquals( emptySetOf( Long.class ), nodes.getAdded() );
         assertEquals( asSet( nodeId ), nodes.getRemoved() );
     }
 

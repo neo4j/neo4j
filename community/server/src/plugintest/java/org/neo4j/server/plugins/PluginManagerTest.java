@@ -19,32 +19,32 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.formats.NullFormat;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class PluginManagerTest
 {
     private static PluginManager manager;
-    private static InternalAbstractGraphDatabase graphDb;
+    private static GraphDatabaseAPI graphDb;
 
     @BeforeClass
     public static void loadExtensionManager() throws Exception
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         manager = new PluginManager( null, null );
     }
 

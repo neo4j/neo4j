@@ -27,7 +27,7 @@ import java.io.UnsupportedEncodingException;
  * support reporting progress from both a {@link SimpleProgress single source},
  * or for the aggregate of {@link MultiProgress multiple sources}.
  *
- * @deprecated use {@link Progress} instead.
+ * @deprecated use {@link org.neo4j.helpers.progress.ProgressMonitorFactory} instead.
  *
  * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
  */

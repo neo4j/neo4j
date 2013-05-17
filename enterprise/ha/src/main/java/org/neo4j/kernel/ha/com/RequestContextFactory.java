@@ -25,7 +25,7 @@ import java.util.Collection;
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -58,12 +58,13 @@ public class RequestContextFactory
             for ( XaDataSource dataSource : dataSources )
             {
                 long txId = dataSource.getLastCommittedTxId();
-                if( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                if( dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
                 {
                     master = dataSource.getMasterForCommittedTx( txId );
                 }
                 txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
             }
+            assert master != null : "master should not be null, since we should have found " + NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
             return new RequestContext( startupTime, serverId, eventIdentifier, txs, master.first(), master.other() );
         }
         catch ( IOException e )
@@ -83,12 +84,13 @@ public class RequestContextFactory
             for ( XaDataSource dataSource : dataSources )
             {
                 long txId = dataSource.getLastCommittedTxId();
-                if( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                if( dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
                 {
                     master = dataSource.getMasterForCommittedTx( txId );
                 }
                 txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
             }
+            assert master != null : "master should not be null, since we should have found " + NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
             return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
         }
         catch ( IOException e )
@@ -103,7 +105,7 @@ public class RequestContextFactory
         {
             long txId = dataSource.getLastCommittedTxId();
             RequestContext.Tx[] txs = new RequestContext.Tx[] { RequestContext.lastAppliedTx( dataSource.getName(), txId ) };
-            Pair<Integer,Long> master = dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) ?
+            Pair<Integer,Long> master = dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) ?
                     dataSource.getMasterForCommittedTx( txId ) : Pair.of( XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER, 0L );
             return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
         }

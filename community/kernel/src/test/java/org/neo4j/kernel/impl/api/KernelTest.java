@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.fail;
 
 public class KernelTest
 {
@@ -38,7 +40,7 @@ public class KernelTest
     public void readOnlyStatementContextLifecycleShouldBeThredSafe() throws Exception
     {
         // GIVEN
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         DoubleLatch latch = new DoubleLatch( 10 );
         List<Worker> workers = new ArrayList<Worker>();
@@ -80,6 +82,7 @@ public class KernelTest
         db.shutdown();
     }
 
+    @SuppressWarnings("deprecation")
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override

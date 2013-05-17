@@ -22,7 +22,7 @@ package org.neo4j.index.lucene;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.ConnectionBroker;
@@ -35,10 +35,8 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
@@ -50,20 +48,17 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final FileSystemAbstraction fileSystemAbstraction;
     private final XaDataSourceManager xaDataSourceManager;
     private final IndexProviders indexProviders;
-    private final Logging logging;
-    private final TxIdGenerator txIdGenerator;
 
 
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
     }
 
     public LuceneKernelExtension( Config config, GraphDatabaseService gdb, TransactionManager txManager,
                                   IndexStore indexStore, XaFactory xaFactory,
                                   FileSystemAbstraction fileSystemAbstraction,
-                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders,
-                                  TxIdGenerator txIdGenerator, Logging logging )
+                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders )
     {
         this.config = config;
         this.gdb = gdb;
@@ -73,8 +68,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.xaDataSourceManager = xaDataSourceManager;
         this.indexProviders = indexProviders;
-        this.txIdGenerator = txIdGenerator;
-        this.logging = logging;
     }
 
     @Override

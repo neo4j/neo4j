@@ -24,7 +24,7 @@ import org.junit.{Before, After}
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter, File, ByteArrayOutputStream}
 import org.neo4j.graphdb._
-import factory.{GraphDatabaseSetting, GraphDatabaseSettings}
+import factory.GraphDatabaseSettings
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -36,6 +36,7 @@ import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.{GraphDatabaseAPI, AbstractGraphDatabase}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.export.{SubGraphExporter, DatabaseSubGraph}
+import org.neo4j.helpers.Settings
 
 
 trait DocumentationHelper extends GraphIcing {
@@ -55,7 +56,7 @@ trait DocumentationHelper extends GraphIcing {
   }
 
   def createWriter(title: String, dir: File): PrintWriter = {
-    return new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
+    new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
   }
 
   val path: String = "target/docs/dev/ql/"
@@ -63,7 +64,7 @@ trait DocumentationHelper extends GraphIcing {
   val graphvizFileName = "cypher-" + simpleName + "-graph"
 
   def dumpGraphViz(dir: File, graphVizOptions:String) : String = {
-    return emitGraphviz(dir, graphvizFileName, graphVizOptions)
+    emitGraphviz(dir, graphvizFileName, graphVizOptions)
   }
 
   private def emitGraphviz(dir:File, testid:String, graphVizOptions:String): String = {
@@ -77,7 +78,7 @@ trait DocumentationHelper extends GraphIcing {
 ----
 
 """.format(testid, graphVizOptions, out)
-    return ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, testid, graphOutput)
+    ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, testid, graphOutput)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
@@ -107,7 +108,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
         new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
         consoleData = out.toString
       }
-      if (consoleData.isEmpty()) {
+      if (consoleData.isEmpty) {
         consoleData = "(0)"
       }
     }
@@ -224,7 +225,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   def init() {
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
-      setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
+      setConfig( GraphDatabaseSettings.node_auto_indexing, Settings.TRUE ).
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ExecutionEngine(db)
 

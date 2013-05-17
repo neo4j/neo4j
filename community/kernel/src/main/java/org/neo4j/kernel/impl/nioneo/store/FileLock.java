@@ -25,7 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.StoreLocker;
 
 public abstract class FileLock
@@ -50,7 +50,7 @@ public abstract class FileLock
     public static FileLock getOsSpecificFileLock( File fileName, FileChannel channel )
             throws IOException
     {
-        if ( GraphDatabaseSetting.osIsWindows() )
+        if ( Settings.osIsWindows() )
         {
             /*
              * We need to grab only one lock for the whole store. Even though every store will try to grab one

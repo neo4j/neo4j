@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.configuration;
 
-import static java.util.regex.Pattern.quote;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Settings;
+
+import static java.util.regex.Pattern.quote;
 
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator
 {
@@ -47,7 +47,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                         port = args.get( "port", "6362" );
                         port = "0.0.0.0:"+port;
                     }
-                    else if ( Boolean.parseBoolean( value ) == true )
+                    else if ( Boolean.parseBoolean( value ) )
                     {   // Single-value config, true/false
                         port = "0.0.0.0:6362-6372";
                     }
@@ -91,8 +91,8 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new SpecificPropertyMigration( "enable_remote_shell", "neo4j.ext.udc.disable has been replaced with " +
-                "neo4j.ext.udc.enabled" )
+        add( new SpecificPropertyMigration( "enable_remote_shell",
+                                            "enable_remote_shell has been replaced with remote_shell_enabled" )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )

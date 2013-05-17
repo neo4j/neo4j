@@ -19,25 +19,27 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static java.util.Arrays.asList;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 public class StatementDeserializerTest
 {
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldDeserializeSingleStatement() throws Exception
     {
         // Given
@@ -106,6 +108,7 @@ public class StatementDeserializerTest
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldDeserializeMultipleStatements() throws Exception
     {
         // Given

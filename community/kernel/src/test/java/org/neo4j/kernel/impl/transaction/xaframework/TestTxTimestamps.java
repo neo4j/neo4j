@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,16 +28,20 @@ import java.nio.channels.ReadableByteChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestTxTimestamps
 {
@@ -51,7 +52,7 @@ public class TestTxTimestamps
     public void doBefore() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).newGraphDatabase();
     }
     
     @After
@@ -83,10 +84,9 @@ public class TestTxTimestamps
         {
             XaCommandFactory commandFactory = new CommandFactory();
             LogIoUtils.readLogHeader( buffer, channel, true );
-            LogEntry entry = null;
             int foundTxCount = 0;
             skipFirstTransaction( buffer, channel, commandFactory ); // Since it's the property index transaction
-            while ( (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null )
+            for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
@@ -112,8 +112,7 @@ public class TestTxTimestamps
 
     private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandFactory commandFactory ) throws IOException
     {
-        LogEntry entry = null;
-        while ( (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null )
+        for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
             if ( entry instanceof Commit )
                 break;
     }

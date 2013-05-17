@@ -23,6 +23,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
@@ -51,8 +52,7 @@ public class IndexProviderKernelExtensionFactoryTest
         Assert.assertThat(loaded, CoreMatchers.equalTo( true ));
     }
 
-    private class TestIndexProvider
-        extends IndexProvider
+    private class TestIndexProvider extends IndexProvider
     {
         private TestIndexProvider( )
         {

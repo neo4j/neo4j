@@ -19,41 +19,48 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.util.regex.Pattern;
+
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
 
-import java.util.regex.Pattern;
+public class RegularExpressionMatcher extends TypeSafeMatcher<String>
+{
+    private final Pattern pattern;
 
-public class RegularExpressionMatcher extends TypeSafeMatcher<String> {
+    public RegularExpressionMatcher( String pattern )
+    {
+        this( Pattern.compile( pattern ) );
+    }
 
-	private final Pattern pattern;
+    public RegularExpressionMatcher( Pattern pattern )
+    {
+        this.pattern = pattern;
+    }
 
-	public RegularExpressionMatcher(String pattern) {
-		this(Pattern.compile(pattern));
-	}
-	public RegularExpressionMatcher(Pattern pattern) {
-		this.pattern = pattern;
-	}
+    @Override
+    public void describeTo( Description description )
+    {
+        description.appendText( "matches regular expression " ).appendValue( pattern );
+    }
 
-	@Override
-	public void describeTo(Description description) {
-		description.appendText("matches regular expression ").appendValue(pattern);
-	}
+    @Override
+    public boolean matchesSafely( String item )
+    {
+        return pattern.matcher( item ).find();
+    }
 
-	@Override
-	public boolean matchesSafely(String item) {
-		return pattern.matcher(item).find();
-	}
+    @Factory
+    public static Matcher matchesPattern( Pattern pattern )
+    {
+        return new RegularExpressionMatcher( pattern );
+    }
 
-	@Factory
-	public static Matcher matchesPattern(Pattern pattern) {
-		return new RegularExpressionMatcher(pattern);
-	}
-
-	@Factory
-	public static Matcher matchesPattern(String pattern) {
-		return new RegularExpressionMatcher(pattern);
-	}
+    @Factory
+    public static Matcher matchesPattern( String pattern )
+    {
+        return new RegularExpressionMatcher( pattern );
+    }
 }

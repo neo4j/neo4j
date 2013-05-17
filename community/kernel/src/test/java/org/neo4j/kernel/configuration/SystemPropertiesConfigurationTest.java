@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.configuration;
 
-import junit.framework.Assert;
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Test for SystemPropertiesConfiguration
@@ -35,18 +38,20 @@ public class SystemPropertiesConfigurationTest
     {
         try
         {
-            Assert.assertFalse( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE ).equals(
-                                 new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) )));
+            assertFalse( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ).equals(
+                    new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap() ) ) );
 
-            System.setProperty( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE );
+            System.setProperty( GraphDatabaseSettings.read_only.name(), Settings.TRUE );
 
-            Assert.assertEquals( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE ),
-                                 new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
+            assertEquals( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ),
+                          new SystemPropertiesConfiguration( GraphDatabaseSettings.class )
+                                  .apply( MapUtil.stringMap() ) );
 
             System.setProperty( GraphDatabaseSettings.read_only.name(), "foo" );
 
-            Assert.assertEquals( MapUtil.stringMap( ),
-                                 new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
+            assertEquals( MapUtil.stringMap(),
+                          new SystemPropertiesConfiguration( GraphDatabaseSettings.class )
+                                  .apply( MapUtil.stringMap() ) );
         }
         finally
         {
@@ -59,7 +64,7 @@ public class SystemPropertiesConfigurationTest
     {
         System.setProperty( "foo", "bar" );
 
-        Assert.assertEquals( MapUtil.stringMap(  ),
-                             new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
+        assertEquals( MapUtil.stringMap(),
+                      new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap() ) );
     }
 }

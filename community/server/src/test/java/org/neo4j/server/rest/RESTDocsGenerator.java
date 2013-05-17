@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.fail;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -36,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -45,13 +39,16 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
+
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -69,9 +66,9 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
-    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] { "Content-Type", "Location" } );
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( "Content-Type", "Location" );
 
-    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] { "Content-Type", "Accept" } );
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( "Content-Type", "Accept" );
 
     public static final Producer<RESTDocsGenerator> PRODUCER = new Producer<RESTDocsGenerator>()
     {
@@ -390,10 +387,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
-        try {
-        } catch (UniformInterfaceException uie) {
-            //ok
-        }
         if ( response.getType() != null )
         {
             assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
@@ -471,16 +464,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         public String entity()
         {
             return entity;
-        }
-
-        public <T> T deserialize()
-        {
-            try
-            {
-                return (T) JsonHelper.readJson(entity);
-            } catch (JsonParseException e) {
-                throw new RuntimeException(e);
-            }
         }
 
         /**

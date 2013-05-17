@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Test;
@@ -27,21 +26,22 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaCacheTest
 {
-    final IndexRule hans = newIndexRule( 1, 0, 5 );
-    final IndexRule witch = newIndexRule( 2, 3, 6 );
-    final IndexRule gretel = newIndexRule( 3, 0, 7 );
+    final SchemaRule hans = newIndexRule( 1, 0, 5 );
+    final SchemaRule witch = newIndexRule( 2, 3, 6 );
+    final SchemaRule gretel = newIndexRule( 3, 0, 7 );
 
     @Test
     public void should_construct_schema_cache()
     {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( hans, witch, gretel );
+        Collection<SchemaRule> rules = asList( hans, witch, gretel );
         SchemaCache cache = new SchemaCache( rules );
 
         // THEN
@@ -53,7 +53,7 @@ public class SchemaCacheTest
     @Test
     public void should_add_schema_rules_to_a_label() {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.asList( );
+        Collection<SchemaRule> rules = asList();
         SchemaCache cache = new SchemaCache( rules );
 
         // WHEN
@@ -68,7 +68,7 @@ public class SchemaCacheTest
     public void should_to_retrieve_all_schema_rules()
     {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.asList( );
+        Collection<SchemaRule> rules = asList();
         SchemaCache cache = new SchemaCache( rules );
 
         // WHEN

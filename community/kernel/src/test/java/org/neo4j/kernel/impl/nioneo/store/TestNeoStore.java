@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -39,6 +38,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -125,7 +125,7 @@ public class TestNeoStore
         {
             if ( stringToIndex.containsKey( key ) )
             {
-                return Arrays.asList( new Token[]{stringToIndex.get( key )} );
+                return Arrays.asList( stringToIndex.get( key ) );
             }
             return Collections.emptyList();
         }
@@ -162,7 +162,7 @@ public class TestNeoStore
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fs.get(), StringLogger.DEV_NULL, null );
 
-        ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         new DefaultLogBufferFactory(), fs.get(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
@@ -202,7 +202,7 @@ public class TestNeoStore
          }
       };
     }
-    
+
     private Xid dummyXid;
     private byte txCount = (byte) 0;
     XAResource xaResource;
@@ -423,15 +423,15 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( 1 ), data.getValue() );
+                assertEquals( 1, data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop2, new Integer( -1 ) );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( true ), data.getValue() );
-                xaCon.getWriteTransaction().nodeChangeProperty( node, prop3, new Boolean( false ) );
+                assertEquals( true, data.getValue() );
+                xaCon.getWriteTransaction().nodeChangeProperty( node, prop3, false );
             }
             else
             {
@@ -496,15 +496,15 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( 2 ), data.getValue() );
+                assertEquals( 2, data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop2, new Integer( -2 ) );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( false ), data.getValue() );
-                xaCon.getWriteTransaction().nodeChangeProperty( node, prop3, new Boolean( true ) );
+                assertEquals( false, data.getValue() );
+                xaCon.getWriteTransaction().nodeChangeProperty( node, prop3, true );
             }
             else
             {
@@ -569,15 +569,15 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( 1 ), data.getValue() );
+                assertEquals( 1, data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop2, new Integer( -1 ) );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( true ), data.getValue() );
-                xaCon.getWriteTransaction().relChangeProperty( rel, prop3, new Boolean( false ) );
+                assertEquals( true, data.getValue() );
+                xaCon.getWriteTransaction().relChangeProperty( rel, prop3, false );
             }
             else
             {
@@ -616,15 +616,15 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( 2 ), data.getValue() );
+                assertEquals( 2, data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop2, new Integer( -2 ) );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( false ), data.getValue() );
-                xaCon.getWriteTransaction().relChangeProperty( rel, prop3, new Boolean( true ) );
+                assertEquals( false, data.getValue() );
+                xaCon.getWriteTransaction().relChangeProperty( rel, prop3, true );
             }
             else
             {
@@ -692,13 +692,13 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( -1 ), data.getValue() );
+                assertEquals( -1, data.getValue() );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( false ), data.getValue() );
+                assertEquals( false, data.getValue() );
                 xaCon.getWriteTransaction().relRemoveProperty( rel, prop3 );
             }
             else
@@ -747,13 +747,13 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( -2 ), data.getValue() );
+                assertEquals( -2, data.getValue() );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( true ), data.getValue() );
+                assertEquals( true, data.getValue() );
                 xaCon.getWriteTransaction().relRemoveProperty( rel, prop3 );
             }
             else
@@ -799,13 +799,13 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( -1 ), data.getValue() );
+                assertEquals( -1, data.getValue() );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( false ), data.getValue() );
+                assertEquals( false, data.getValue() );
                 xaCon.getWriteTransaction().nodeRemoveProperty( node, prop3 );
             }
             else
@@ -844,13 +844,13 @@ public class TestNeoStore
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Integer( -2 ), data.getValue() );
+                assertEquals( -2, data.getValue() );
             }
             else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( new Boolean( true ), data.getValue() );
+                assertEquals( true, data.getValue() );
                 xaCon.getWriteTransaction().nodeRemoveProperty( node, prop3 );
             }
             else
@@ -990,11 +990,6 @@ public class TestNeoStore
         xaCon.getWriteTransaction().relDelete( rel3 );
         xaCon.getWriteTransaction().relDelete( rel2 );
         xaCon.getWriteTransaction().relDelete( rel5 );
-        // xaCon.getWriteTransaction().nodeDelete( nodeIds[2] );
-        // xaCon.getWriteTransaction().nodeDelete( nodeIds[3] );
-        // xaCon.getWriteTransaction().nodeDelete( nodeIds[1] );
-        // xaCon.getWriteTransaction().nodeDelete( nodeIds[4] );
-        // xaCon.getWriteTransaction().nodeDelete( nodeIds[0] );
         commitTx();
         ds.stop();
     }
@@ -1006,7 +1001,7 @@ public class TestNeoStore
         startTx();
         long nodeId = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( nodeId );
-        long propertyId = pStore.nextId();
+        pStore.nextId();
         PropertyData prop = xaCon.getWriteTransaction().nodeAddProperty(
                 nodeId, index( "nisse" ),
                 new Integer( 10 ) );

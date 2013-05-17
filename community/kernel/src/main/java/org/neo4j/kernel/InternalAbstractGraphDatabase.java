@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import ch.qos.logback.classic.LoggerContext;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -52,7 +47,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
@@ -154,6 +148,12 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -169,9 +169,7 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
-        public static final Setting<Boolean> ephemeral = new GraphDatabaseSetting.BooleanSetting(
-                Settings.setting("ephemeral", Settings.BOOLEAN, Settings.FALSE ) );
-
+        public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
         public static final Setting<File> logical_log = GraphDatabaseSettings.logical_log;
@@ -295,9 +293,10 @@ public abstract class InternalAbstractGraphDatabase
 
             life.start();
 
-            if ( txManager.getRecoveryError() != null )
+            Throwable recoveryError = txManager.getRecoveryError();
+            if ( recoveryError != null )
             {
-                throw txManager.getRecoveryError();
+                throw recoveryError;
             }
         }
         catch ( final Throwable throwable )
@@ -864,7 +863,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         // Create DataSource
         neoDataSource = new NeoStoreXaDataSource( config,
-                storeFactory, lockManager, logging.getMessagesLog( NeoStoreXaDataSource.class ),
+                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, nodeManager, dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
@@ -1155,19 +1154,9 @@ public abstract class InternalAbstractGraphDatabase
         {
             return false;
         }
-
         InternalAbstractGraphDatabase that = (InternalAbstractGraphDatabase) o;
-
-        if ( getStoreId() != null ? !getStoreId().equals( that.getStoreId() ) : that.getStoreId() != null )
-        {
-            return false;
-        }
-        if ( !storeDir.equals( that.storeDir ) )
-        {
-            return false;
-        }
-
-        return true;
+        return (storeId != null ? storeId.equals( that.storeId ) : that.storeId == null) &&
+               storeDir.equals( that.storeDir );
     }
 
     @Override

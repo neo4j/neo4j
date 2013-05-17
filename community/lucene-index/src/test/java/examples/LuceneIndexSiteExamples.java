@@ -23,11 +23,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertNotNull;
 
 public class LuceneIndexSiteExamples
 {
@@ -37,7 +40,7 @@ public class LuceneIndexSiteExamples
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     
     @Before
@@ -77,6 +80,8 @@ public class LuceneIndexSiteExamples
         // START SNIPPET: get
         Node morpheus = persons.get( "name", "Morpheus" ).getSingle();
         // END SNIPPET: get
+
+        assertNotNull( morpheus );
     }
 
     @Test
@@ -91,5 +96,7 @@ public class LuceneIndexSiteExamples
         }
         Node neo = persons.query( "name:*e* AND title:\"The One\"" ).getSingle();
         // END SNIPPET: query
+
+        assertNotNull( neo );
     }
 }

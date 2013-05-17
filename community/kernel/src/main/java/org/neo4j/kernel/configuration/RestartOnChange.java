@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.configuration;
 
-import static org.neo4j.helpers.Predicates.or;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.helpers.Predicates.or;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * When a specified change happens, restart the given LifeSupport instance.
@@ -52,7 +52,7 @@ public class RestartOnChange
             {
                 try
                 {
-                    GraphDatabaseSetting setting = (GraphDatabaseSetting) method.get( null );
+                    Setting setting = (Setting) method.get( null );
                     return Predicates.in( setting.name() );
                 }
                 catch ( IllegalAccessException e )

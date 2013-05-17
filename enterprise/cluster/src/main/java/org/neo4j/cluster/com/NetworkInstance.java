@@ -51,11 +51,13 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.serialization.ClassResolvers;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
@@ -221,6 +223,7 @@ public class NetworkInstance
         processors = Listeners.addListener( processor, processors );
     }
 
+    @SuppressWarnings("unchecked")
     public void receive( Message message )
     {
         for ( MessageProcessor processor : processors )
@@ -327,7 +330,7 @@ public class NetworkInstance
 
     private synchronized void send( final Message message )
     {
-        URI to = null;
+        URI to;
         try
         {
             to = new URI( message.getHeader( Message.TO ) );
@@ -408,11 +411,6 @@ public class NetworkInstance
         } );
     }
 
-    public URI getMe()
-    {
-        return me;
-    }
-
     public Channel getChannel( URI uri )
     {
         return connections.get( uri );
@@ -421,11 +419,6 @@ public class NetworkInstance
     public void addNetworkChannelsListener( NetworkChannelsListener listener )
     {
         listeners = Listeners.addListener( listener, listeners );
-    }
-
-    public void removeNetworkChannelsListener( NetworkChannelsListener listener )
-    {
-        listeners = Listeners.removeListener( listener, listeners );
     }
 
     private Channel openChannel( URI clusterUri )
@@ -472,7 +465,8 @@ public class NetworkInstance
         private void addSerialization( ChannelPipeline pipeline, int frameLength )
         {
             pipeline.addLast( "frameDecoder",
-                    new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+                              new ObjectDecoder( frameLength, ClassResolvers.cacheDisabled(
+                                      NetworkNodePipelineFactory.this.getClass().getClassLoader() ) ) );
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
         }
     }
@@ -516,9 +510,10 @@ public class NetworkInstance
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
-            if ( !(e.getCause() instanceof ConnectException) )
+            Throwable cause = e.getCause();
+            if ( !(cause instanceof ConnectException) )
             {
-                msgLog.error( "Receive exception:", e.getCause() );
+                msgLog.error( "Receive exception:", cause );
             }
         }
     }

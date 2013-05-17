@@ -26,7 +26,7 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -50,7 +50,7 @@ public abstract class AbstractStore extends CommonAbstractStore
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
+        public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
     private final Config conf;
@@ -156,9 +156,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     /**
      * Rebuilds the {@link IdGenerator} by looping through all records and
      * checking if record in use or not.
-     *
-     * @throws IOException
-     *             if unable to rebuild the id generator
      */
     @Override
     protected void rebuildIdGenerator()
@@ -177,7 +174,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             assert success;
         }
         createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
-        openIdGenerator( false );
+        openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;
         long defraggedCount = 0;
@@ -231,7 +228,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();
-        openIdGenerator( false );
+        openIdGenerator();
     }
 
     public abstract List<WindowPoolStats> getAllWindowPoolStats();

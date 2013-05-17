@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,7 +26,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -39,6 +36,8 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -51,9 +50,9 @@ public abstract class CommonAbstractStore
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
         
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
-        public static final GraphDatabaseSetting.BooleanSetting backup_slave = GraphDatabaseSettings.backup_slave;
-        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
+        public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.1";
@@ -93,7 +92,6 @@ public abstract class CommonAbstractStore
      *
      * @param idType
      *            The Id used to index into this store
-     * @param windowPoolFactory
      */
     public CommonAbstractStore( File fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -234,7 +232,7 @@ public abstract class CommonAbstractStore
         {
             if ( !isReadOnly() || isBackupSlave() )
             {
-                openIdGenerator( true );
+                openIdGenerator();
             }
             else
             {
@@ -496,9 +494,9 @@ public abstract class CommonAbstractStore
     /**
      * Opens the {@link IdGenerator} used by this store.
      */
-    protected void openIdGenerator( boolean firstTime )
+    protected void openIdGenerator()
     {
-        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id"), idType.getGrabSize(), firstTime );
+        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id"), idType.getGrabSize() );
 
         /* MP: 2011-11-23
          * There may have been some migration done in the startup process, so if there have been some
@@ -508,7 +506,7 @@ public abstract class CommonAbstractStore
         updateHighId();
     }
 
-    protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
+    protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
         return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
     }

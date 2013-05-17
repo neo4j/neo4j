@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.Iterables.count;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,22 +28,27 @@ import java.util.Random;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class TransactionSoakIT
 {
-    protected ImpermanentGraphDatabase db;
+    protected GraphDatabaseAPI db;
     private ShellServer server;
     private final Random r = new Random( System.currentTimeMillis() );
 
     @Before
     public void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         server = new GraphDatabaseShellServer( db );
     }
 

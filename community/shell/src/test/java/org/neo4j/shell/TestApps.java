@@ -19,23 +19,13 @@
  */
 package org.neo4j.shell;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
+
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -51,10 +41,22 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class TestApps extends AbstractShellTest
 {
@@ -502,8 +504,8 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canSetInitialSessionVariables() throws Exception
     {
-        Map<String, Serializable> values = MapUtil.<String,Serializable>genericMap( "mykey", "myvalue",
-                "my_other_key", "My other value" );
+        Map<String, Serializable> values = genericMap( "mykey", "myvalue",
+                                                       "my_other_key", "My other value" );
         ShellClient client = newShellClient( shellServer, values );
         String[] allStrings = new String[values.size()*2];
         int i = 0;
@@ -518,7 +520,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canDisableWelcomeMessage() throws Exception
     {
-        Map<String, Serializable> values = MapUtil.<String, Serializable>genericMap( "quiet", "true" );
+        Map<String, Serializable> values = genericMap( "quiet", "true" );
         final CollectingOutput out = new CollectingOutput();
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
@@ -529,7 +531,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void doesShowWelcomeMessage() throws Exception
     {
-        Map<String, Serializable> values = MapUtil.<String, Serializable>genericMap();
+        Map<String, Serializable> values = genericMap();
         final CollectingOutput out = new CollectingOutput();
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
@@ -540,7 +542,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canExecuteCypherWithShellVariables() throws Exception
     {
-        Map<String, Serializable> variables = MapUtil.<String, Serializable>genericMap( "id", 0 );
+        Map<String, Serializable> variables = genericMap( "id", 0 );
         ShellClient client = newShellClient( shellServer, variables );
         executeCommand( client, "start n=node({id}) return n;", "1 row" );
     }
@@ -633,7 +635,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "rm -l PERSON" );
 
         // THEN
-        assertEquals( asSet(), asSet( names( node.getLabels() ) ) );
+        assertEquals( emptySetOf( String.class ), asSet( names( node.getLabels() ) ) );
     }
     
     @Test

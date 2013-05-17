@@ -19,25 +19,18 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -53,6 +46,12 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
 @Ignore( "Doesn't work yet" )
 public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
@@ -71,13 +70,12 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
             int pass = letPass--;
-            if ( pass > 0 ) return;
-            else if ( pass == 0 )
+            if ( pass == 0 )
             {
                 committer = debug.thread().suspend( this );
                 commitLatch.countDown();
             }
-            else
+            else if ( pass < 0 )
             {
                 latch.countDown();
             }
@@ -141,6 +139,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             try
             {
                 XaResourceManager resourceManager = graphdb.getXaDataSourceManager().getNeoStoreDataSource().getXaContainer().getResourceManager();
+                @SuppressWarnings("unchecked")
                 ArrayMap<Xid, ?> xidMap = (ArrayMap<Xid, ?>) inaccessibleField( resourceManager, "xidMap" ).get( resourceManager );
                 xidMap.clear();
             }
@@ -172,7 +171,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
         verifyOrderedRecords();
     }
 
-    private void verifyOrderedRecords() throws FileNotFoundException, IOException
+    private void verifyOrderedRecords() throws IOException
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
         RandomAccessFile file = new RandomAccessFile( new File( getStoreDir( this, 0 ), "nioneo_logical.log.v0" ), "r" );
@@ -184,8 +183,9 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             readLogHeader( buffer, channel, true );
             long lastOne = -1;
             int counted = 0;
-            for ( LogEntry entry = null; (entry = readEntry( buffer, channel, cf )) != null; )
+            for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
             {
+                // XXX: the logic here is broken!
                 if ( entry instanceof TwoPhaseCommit )
                 {
                     long txId = ((TwoPhaseCommit) entry).getTxId();

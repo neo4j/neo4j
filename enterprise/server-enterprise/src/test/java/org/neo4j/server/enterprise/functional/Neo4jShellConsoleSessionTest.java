@@ -19,25 +19,20 @@
  */
 package org.neo4j.server.enterprise.functional;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
-
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
@@ -57,6 +52,11 @@ import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @Ignore("Due to fix (62e73bfe8265971cebff166bb9ec8a6de3ab8f39) in community not working")
 public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
 {
@@ -72,7 +72,7 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         TargetDirectory dir = TargetDirectory.forTest( getClass() );
         master = new WrappingDatabase( (AbstractGraphDatabase) new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
-                .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
+                .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .setConfig( ShellSettings.remote_shell_port, "1337" )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( HaSettings.ha_server, "localhost:6361" )
@@ -80,7 +80,7 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         createData( master.getGraph() );
         slave = new WrappingDatabase( (AbstractGraphDatabase) new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( dir.directory( "2", true ).getAbsolutePath() )
-                .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
+                .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .setConfig( ShellSettings.remote_shell_port, "1338" )
                 .setConfig( ClusterSettings.server_id, "2" )
                 .setConfig( HaSettings.ha_server, "localhost:6362" )
@@ -89,6 +89,7 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         this.session = new ShellSession( slave.getGraph() );
     }
 
+    @SuppressWarnings("deprecation")
     private void createData( GraphDatabaseAPI db )
     {
         Transaction tx = db.beginTx();
@@ -153,10 +154,9 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         assertThat( result, containsString( "-[:TEST]->" ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
     {
         return (List<String>) JsonHelper.readJson( new String( (byte[]) response.getEntity(), "UTF-8" ) );
     }
-
-
 }
