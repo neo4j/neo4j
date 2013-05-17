@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -256,7 +257,7 @@ public abstract class IoPrimitiveUtils
             writeLengthAndString( channel, buffer, entry.getValue() );
         }
     }
-    
+
     public static Object[] asArray( Object propertyValue )
     {
         if ( propertyValue.getClass().isArray() )
@@ -274,7 +275,190 @@ public abstract class IoPrimitiveUtils
             return new Object[] { propertyValue };
         }
     }
-    
+
+    /**
+     * Given an array, it returns a copy of it. It also unboxes it if it was a boxed primitive array. If the argument
+     * is not an array or an array of something else than String or primitive (boxed or not) it is returned untouched.
+     */
+    public static Object unboxAndCopyIfArray( Object candidate )
+    {
+        if ( !candidate.getClass().isArray() )
+        {
+            return candidate;
+        }
+        Class arrayComponent = candidate.getClass().getComponentType();
+        if ( arrayComponent.isPrimitive() )
+        {
+            if ( arrayComponent == Boolean.TYPE )
+            {
+                boolean[] original = (boolean[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Byte.TYPE )
+            {
+                byte[] original = (byte[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Character.TYPE )
+            {
+                char[] original = (char[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Short.TYPE )
+            {
+                short[] original = (short[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Integer.TYPE )
+            {
+                int[] original = (int[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Long.TYPE )
+            {
+                long[] original = (long[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Float.TYPE )
+            {
+                float[] original = (float[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+            if ( arrayComponent == Double.TYPE )
+            {
+                double[] original = (double[]) candidate;
+                return Arrays.copyOf( original, original.length );
+            }
+        }
+        if ( arrayComponent == Boolean.class )
+        {
+            Boolean[] original = (Boolean[]) candidate;
+            boolean[] result = new boolean[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Byte.class )
+        {
+            Byte[] original = (Byte[]) candidate;
+            byte[] result = new byte[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Character.class )
+        {
+            Character[] original = (Character[]) candidate;
+            char[] result = new char[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Short.class )
+        {
+            Short[] original = (Short[]) candidate;
+            short[] result = new short[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Integer.class )
+        {
+            Integer[] original = (Integer[]) candidate;
+            int[] result = new int[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Long.class )
+        {
+            Long[] original = (Long[]) candidate;
+            long[] result = new long[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Float.class )
+        {
+            Float[] original = (Float[]) candidate;
+            float[] result = new float[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == Double.class )
+        {
+            Double[] original = (Double[]) candidate;
+            double[] result = new double[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        if ( arrayComponent == String.class )
+        {
+            String[] original = (String[]) candidate;
+            String[] result = new String[original.length];
+            for ( int i = 0; i < original.length; i++ )
+            {
+                if ( original[i] == null )
+                {
+                    throw new NullPointerException( "Null members not allowed in array properties" );
+                }
+                result[i] = original[i];
+            }
+            return result;
+        }
+        throw new IllegalArgumentException( "Unknown component type " + arrayComponent );
+    }
+
     public static Collection<Object> arrayAsCollection( Object arrayValue )
     {
         assert arrayValue.getClass().isArray();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.unboxAndCopyIfArray;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,11 +55,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
-import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.Token;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -892,7 +893,7 @@ public class NodeManager
                         index.getKey(), value );
             }
         }
-        return persistenceManager.nodeAddProperty( node.getId(), index, value );
+        return persistenceManager.nodeAddProperty( node.getId(), index, unboxAndCopyIfArray( value ) );
     }
 
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
@@ -909,7 +910,7 @@ public class NodeManager
             }
         }
         return persistenceManager.nodeChangeProperty( node.getId(), property,
-                value );
+                unboxAndCopyIfArray( value ) );
     }
 
     void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
@@ -929,12 +930,12 @@ public class NodeManager
 
     PropertyData graphAddProperty( PropertyKeyToken index, Object value )
     {
-        return persistenceManager.graphAddProperty( index, value );
+        return persistenceManager.graphAddProperty( index, unboxAndCopyIfArray( value ) );
     }
 
     PropertyData graphChangeProperty( PropertyData property, Object value )
     {
-        return persistenceManager.graphChangeProperty( property, value );
+        return persistenceManager.graphChangeProperty( property, unboxAndCopyIfArray( value ) );
     }
 
     void graphRemoveProperty( PropertyData property )
@@ -963,7 +964,7 @@ public class NodeManager
                         value );
             }
         }
-        return persistenceManager.relAddProperty( rel.getId(), index, value );
+        return persistenceManager.relAddProperty( rel.getId(), index, unboxAndCopyIfArray( value ) );
     }
 
     PropertyData relChangeProperty( RelationshipImpl rel,
@@ -980,7 +981,7 @@ public class NodeManager
             }
         }
         return persistenceManager.relChangeProperty( rel.getId(), property,
-                value );
+                unboxAndCopyIfArray( value ) );
     }
 
     void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
