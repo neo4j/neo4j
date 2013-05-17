@@ -33,7 +33,7 @@ trait QueryParser
   extends Base
   with StartAndCreateClause
   with MatchClause
-  with UsingIndex
+  with Using
   with WhereClause
   with OrderByClause
   with ReturnClause
@@ -95,7 +95,7 @@ trait QueryParser
     else
         opt(parser)
 
-  private def explicitStart(mandatory: Boolean) = optMan(mandatory, readStart) ~ opt(matching) ~ indexHints ~ opt(where) ^^  {
+  private def explicitStart(mandatory: Boolean) = optMan(mandatory, readStart) ~ opt(matching) ~ hints ~ opt(where) ^^  {
     case start ~ matching ~ hints ~ where =>
       val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
       val (startItems, startPaths) = extractItemsAndPaths(start)
@@ -108,7 +108,7 @@ trait QueryParser
 
   def extractItemsAndPaths(starts: Option[(Seq[StartItem], Seq[NamedPath])]) = starts.getOrElse((Seq.empty, Seq.empty))
 
-  private def matchStart(mandatory: Boolean) = optMan(mandatory, matching) ~ indexHints ~ opt(where) ^^ {
+  private def matchStart(mandatory: Boolean) = optMan(mandatory, matching) ~ hints ~ opt(where) ^^ {
     case matching ~ hints ~ where =>
       val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
       val predicate = where.getOrElse(True()).andWith(matchPredicate)
@@ -206,7 +206,7 @@ START clause or a CREATE clause, and the body can be one of three: BodyReturn, B
   case class QueryStart(startItems: Seq[StartItem],
                         namedPaths: Seq[NamedPath],
                         patterns: Seq[Pattern],
-                        hints: Seq[SchemaIndex],
+                        hints: Seq[StartItem with Hint],
                         updates: Seq[UpdateAction],
                         predicate: Predicate)
 

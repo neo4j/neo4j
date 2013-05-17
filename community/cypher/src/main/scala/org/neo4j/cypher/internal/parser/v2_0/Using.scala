@@ -17,28 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0
 
-import v2_0.UsingIndex
-import org.junit.Test
-import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.{StartItem, Hint, NodeByLabel, SchemaIndex}
 
 
-class UsingIndexTest extends UsingIndex with ParserTest {
-  @Test def simple_cases() {
-    implicit val parserToTest = indexHints
+trait Using extends Expressions {
+  def hints: Parser[Seq[StartItem with Hint]] = rep(indexHint|scanHint)
 
-    parsing("USING INDEX n:User(name)") shouldGive
-      Seq(SchemaIndex("n", "User", "name", None))
-
-    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(SchemaIndex(" 1", " 2", " 3", None))
-
-    assertFails("USING INDEX n.user(name)")
-    assertFails("USING INDEX n.user(name, age)")
+  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
+    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
   }
 
-  def createProperty(entity: String, propName: String) = ???
-
-  def matchTranslator(abstractPattern: AbstractPattern) = ???
+  def scanHint: Parser[NodeByLabel] = USING ~> SCAN ~> identity ~ ":" ~ escapableString ^^ {
+    case id ~ ":" ~ label => NodeByLabel(id, label)
+  }
 }

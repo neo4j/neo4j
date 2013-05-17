@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.executionplan.verifier
 import org.scalatest.Assertions
 import org.junit.Test
 
-import org.neo4j.cypher.internal.executionplan.verifiers.IndexHintVerifier
-import org.neo4j.cypher.internal.commands.{SchemaIndex, Equals, Or, Query}
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Property}
-import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.internal.executionplan.verifiers.HintVerifier
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.{LabelScanHintException, IndexHintException}
+import org.neo4j.cypher.internal.commands.Or
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Property
 
-class IndexHintVerifierTest extends Assertions {
-
-  val verifier = IndexHintVerifier
+class HintVerifierTest extends Assertions {
 
   @Test
   def throws_when_the_predicate_is_not_usable_for_index_seek() {
@@ -41,6 +44,16 @@ class IndexHintVerifierTest extends Assertions {
       hints = Seq(SchemaIndex("n", "Person", "name", None)))
 
     //THEN
-    intercept[IndexHintException](verifier.verify(q))
+    intercept[IndexHintException](HintVerifier.verify(q))
+  }
+
+  @Test
+  def throws_when_scan_is_forced_but_label_not_used_in_rest_of_query() {
+    //GIVEN
+    val q = Query.empty.copy(
+      hints = Seq(NodeByLabel("n", "Person")))
+
+    //THEN
+    intercept[LabelScanHintException](HintVerifier.verify(q))
   }
 }
