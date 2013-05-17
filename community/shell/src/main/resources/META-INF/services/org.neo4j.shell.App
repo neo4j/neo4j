@@ -11,6 +11,7 @@ org.neo4j.shell.kernel.apps.cypher.Cypher
 org.neo4j.shell.kernel.apps.cypher.Drop
 org.neo4j.shell.kernel.apps.cypher.Dump
 org.neo4j.shell.kernel.apps.cypher.Match
+org.neo4j.shell.kernel.apps.cypher.Merge
 org.neo4j.shell.kernel.apps.cypher.Start
 org.neo4j.shell.kernel.apps.cypher.Profile
 org.neo4j.shell.kernel.apps.Ls
