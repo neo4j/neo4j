@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,24 +32,25 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-
 class AllNodesCollector extends Collector
 {
-    static List<Long> getAllNodes( LuceneDocumentStructure structure,
-                                   Directory directory, Object propertyValue ) throws IOException
+    static List<Long> getAllNodes( DirectoryFactory directoryFactory, File indexDir, Object propertyValue ) throws IOException
     {
-        SearcherManager manager = new SearcherManager( standard().create( directory ), true, new SearcherFactory() );
+        Directory directory = directoryFactory.open( indexDir );
+        SearcherManager manager = new SearcherManager( directory, new SearcherFactory() );
         IndexSearcher searcher = manager.acquire();
         try
         {
             List<Long> nodes = new ArrayList<Long>();
-            searcher.search( structure.newQuery( propertyValue ), new AllNodesCollector( structure, nodes ) );
+            LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+            searcher.search( documentStructure.newQuery( propertyValue ), new AllNodesCollector( documentStructure, nodes ) );
             return nodes;
         }
         finally
         {
             manager.release( searcher );
+            manager.close();
+            directory.close();
         }
     }
 

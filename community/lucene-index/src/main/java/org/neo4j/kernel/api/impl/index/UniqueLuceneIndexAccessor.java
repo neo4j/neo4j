@@ -21,18 +21,15 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.PropertyUpdateUniquenessValidator;
 
-class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
+class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements PropertyUpdateUniquenessValidator.Lookup
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
@@ -44,124 +41,27 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
     @Override
     public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
     {
-        Map<Object, Long> valueToNodeIdInCurrentTx = new HashMap<Object, Long>();
-        for ( NodePropertyUpdate update : updates )
-        {
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                add( update.getNodeId(), update.getValueAfter(), valueToNodeIdInCurrentTx );
-                break;
-            case CHANGED:
-                change( update.getNodeId(), update.getValueAfter() );
-                break;
-            case REMOVED:
-                remove( update.getNodeId() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-        }
+        PropertyUpdateUniquenessValidator.validateUniqueness( updates, this );
 
-        // Call refresh here since we are guaranteed to be the only thread writing concurrently.
-        searcherManager.maybeRefresh();
+        super.updateAndCommit( updates );
     }
 
-    @Override
-    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        for ( NodePropertyUpdate update : updates )
-        {
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                addRecovered( update.getNodeId(), update.getValueAfter() );
-                break;
-            case CHANGED:
-                change( update.getNodeId(), update.getValueAfter() );
-                break;
-            case REMOVED:
-                remove( update.getNodeId() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-        }
-        searcherManager.maybeRefresh();
-    }
-
-    private void addRecovered( long nodeId, Object value ) throws IOException
+    public Long currentlyIndexedNode( Object value ) throws IOException
     {
         IndexSearcher searcher = searcherManager.acquire();
         try
         {
-            TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
-            if ( hits.totalHits > 0 )
+            TopDocs docs = searcher.search( documentStructure.newQuery( value ), 1 );
+            if ( docs.scoreDocs.length > 0 )
             {
-                writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                       documentStructure.newDocument( nodeId, value ) );
-            }
-            else
-            {
-                try
-                {
-                    add( nodeId, value, new HashMap<Object, Long>() );
-                }
-                catch ( IndexEntryConflictException e )
-                {
-                    throw new IOException( "Should not have conflicting entries during recovery.", e );
-                }
+                Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
+                return documentStructure.getNodeId( doc );
             }
         }
         finally
         {
             searcherManager.release( searcher );
         }
-    }
-
-    private void add( long nodeId, Object value, Map<Object, Long> valueToNodeIdInCurrentTx )
-            throws IOException, IndexEntryConflictException
-    {
-        Long previousEntry = valueToNodeIdInCurrentTx.get( value );
-        if ( previousEntry == null )
-        {
-            IndexSearcher searcher = searcherManager.acquire();
-            try
-            {
-                TopDocs docs = searcher.search( documentStructure.newQuery( value ), 1 );
-                if ( docs.scoreDocs.length > 0 )
-                {
-                    Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
-                    previousEntry = documentStructure.getNodeId( doc );
-                }
-            }
-            finally
-            {
-                searcherManager.release( searcher );
-            }
-        }
-        if ( previousEntry != null )
-        {
-            if ( previousEntry != nodeId )
-            {
-                throw new IndexEntryConflictException( nodeId, value, previousEntry );
-            }
-        }
-        else
-        {
-            valueToNodeIdInCurrentTx.put( value, nodeId );
-            writer.addDocument( documentStructure.newDocument( nodeId, value ) );
-        }
-    }
-
-    private void change( long nodeId, Object valueAfter ) throws IOException
-    {
-        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                               documentStructure.newDocument( nodeId, valueAfter ) );
-    }
-
-    private void remove( long nodeId ) throws IOException
-    {
-        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+        return null;
     }
 }
