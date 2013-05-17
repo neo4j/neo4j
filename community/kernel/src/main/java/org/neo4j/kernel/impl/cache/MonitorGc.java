@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.setting;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.helpers.Settings.DURATION;
+import static org.neo4j.helpers.Settings.setting;
 
 public class MonitorGc implements Lifecycle
 {
     public static class Configuration
     {
-        public static final GraphDatabaseSetting<Long> gc_monitor_wait_time =
-                new GraphDatabaseSetting.TimeSpanSetting( setting( "gc_monitor_wait_time", DURATION, "100ms" ));
-        public static final GraphDatabaseSetting<Long> gc_monitor_threshold =
-                new GraphDatabaseSetting.TimeSpanSetting( setting("gc_monitor_threshold", DURATION, "200ms" ));
+        public static final Setting<Long> gc_monitor_wait_time = setting( "gc_monitor_wait_time", DURATION, "100ms" );
+        public static final Setting<Long> gc_monitor_threshold = setting("gc_monitor_threshold", DURATION, "200ms" );
     }
 
     private final Config config;

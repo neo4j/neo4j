@@ -19,19 +19,20 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static junit.framework.Assert.fail;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RecoveryIT
 {

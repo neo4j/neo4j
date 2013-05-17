@@ -19,6 +19,18 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.GraphDescription;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,18 +41,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.Test;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.GraphDescription;
 
 public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 {
@@ -114,12 +114,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        Collection<String> keyList1 = (Collection<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        Collection<String> keyList2 = (Collection<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }
@@ -148,12 +148,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        Collection<String> keyList1 = (Collection<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        Collection<String> keyList2 = (Collection<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }
@@ -183,12 +183,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName1, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        Collection<String> keyList1 = (Collection<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName2, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        Collection<String> keyList2 = (Collection<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }

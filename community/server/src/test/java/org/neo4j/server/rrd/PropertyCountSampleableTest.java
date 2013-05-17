@@ -19,21 +19,23 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
 import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class PropertyCountSampleableTest
 {
@@ -44,7 +46,7 @@ public class PropertyCountSampleableTest
     @Before
     public void setupReferenceNode()
     {
-        db = new WrappingDatabase( new ImpermanentGraphDatabase() );
+        db = new WrappingDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
         sampleable = new PropertyCountSampleable( db.getGraph().getNodeManager() );
 
         Transaction tx = db.getGraph().beginTx();

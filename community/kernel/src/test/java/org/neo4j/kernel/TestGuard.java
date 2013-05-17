@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
@@ -32,12 +32,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.sleep;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.SillyUtils.ignore;
 
+@SuppressWarnings("deprecation"/*getGuard() is deprecated (GraphDatabaseAPI), and used all throughout this test*/)
 public class TestGuard
 {
     @Test
@@ -53,7 +55,7 @@ public class TestGuard
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
             newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
             newGraphDatabase();
         assertNotNull( db.getGuard() );
         db.shutdown();
@@ -64,7 +66,7 @@ public class TestGuard
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
             newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
             newGraphDatabase();
         db.beginTx();
 
@@ -92,6 +94,7 @@ public class TestGuard
         db.getGuard().startOperationsCount( MAX_VALUE );
         for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) )
         {
+            ignore( position );
         }
         Guard.OperationsCount ops4 = db.getGuard().stop();
         assertEquals( 3, ops4.getOpsCount() );
@@ -103,7 +106,7 @@ public class TestGuard
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
             newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
             newGraphDatabase();
         db.beginTx();
         Guard guard = db.getGuard();
@@ -127,7 +130,7 @@ public class TestGuard
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
-                setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
                 newGraphDatabase();
         db.beginTx();
 
@@ -151,7 +154,7 @@ public class TestGuard
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
-                setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
                 newGraphDatabase();
         db.beginTx();
 

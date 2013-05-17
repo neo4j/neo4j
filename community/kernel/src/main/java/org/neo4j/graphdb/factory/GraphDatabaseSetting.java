@@ -21,9 +21,11 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.net.URI;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Settings;
 
 /**
  * Setting types for Neo4j. Actual settings are in GraphDatabaseSettings.
@@ -47,6 +49,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
     // Implementations of GraphDatabaseSetting
     //
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class StringSetting
             extends SettingWrapper<String>
     {
@@ -56,6 +60,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class IntegerSetting
             extends SettingWrapper<Integer>
     {
@@ -65,6 +71,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class LongSetting
             extends SettingWrapper<Long>
     {
@@ -74,6 +82,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class FloatSetting
             extends SettingWrapper<Float>
     {
@@ -83,6 +93,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class DoubleSetting
             extends SettingWrapper<Double>
     {
@@ -92,6 +104,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class PortSetting
             extends IntegerSetting
     {
@@ -101,6 +115,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class HostnamePortSetting
             extends SettingWrapper<HostnamePort>
     {
@@ -110,6 +126,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class TimeSpanSetting extends SettingWrapper<Long>
     {
         public TimeSpanSetting( Setting<Long> setting )
@@ -118,6 +136,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class OptionsSetting extends SettingWrapper<String>
     {
         public OptionsSetting( Setting<String> setting )
@@ -126,6 +146,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class BooleanSetting
         extends SettingWrapper<Boolean>
     {
@@ -135,6 +157,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class FileSetting
             extends SettingWrapper<File>
     {
@@ -144,6 +168,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class DirectorySetting
             extends SettingWrapper<File>
     {
@@ -153,6 +179,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class NumberOfBytesSetting
             extends SettingWrapper<Long>
     {
@@ -162,6 +190,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class IntegerRangeNumberOfBytesSetting extends SettingWrapper<Integer>
     {
         public IntegerRangeNumberOfBytesSetting( Setting<Integer> setting )
@@ -170,6 +200,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static class URISetting extends SettingWrapper<URI>
     {
         public URISetting( Setting<URI> setting )
@@ -187,8 +219,8 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
      * @param <T>
      */
     @Deprecated
-    public static class SettingWrapper<T>
-        extends GraphDatabaseSetting<T>
+    @SuppressWarnings("deprecation")
+    public static class SettingWrapper<T> extends GraphDatabaseSetting<T>
     {
         private Setting<T> setting;
 
@@ -222,15 +254,15 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         }
     }
 
+    @Deprecated
     public static boolean osIsWindows()
     {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.startsWith( "Windows" );
+        return Settings.osIsWindows();
     }
 
+    @Deprecated
     public static boolean osIsMacOS()
     {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.equalsIgnoreCase( "Mac OS X" );
+        return Settings.osIsMacOS();
     }
 }

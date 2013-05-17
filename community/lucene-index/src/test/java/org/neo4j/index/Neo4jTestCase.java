@@ -19,9 +19,6 @@
  */
 package org.neo4j.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,21 +29,24 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public abstract class Neo4jTestCase
 {
-	private static File basePath = new File( "target/var" );
-    private static File dbPath = new File( basePath, "neo4j-db" );
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
     @BeforeClass
     public static void setUpDb() throws Exception
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     
     @Before
@@ -99,20 +99,6 @@ public abstract class Neo4jTestCase
         graphDb.shutdown();
     }
     
-    protected void beforeShutdown()
-    {
-    }
-    
-    protected File getBasePath()
-    {
-        return basePath;
-    }
-    
-    protected File getDbPath()
-    {
-        return dbPath;
-    }
-    
     public static void deleteFileOrDirectory( File file )
     {
         if ( !file.exists() )
@@ -122,33 +108,14 @@ public abstract class Neo4jTestCase
         
         if ( file.isDirectory() )
         {
-            for ( File child : file.listFiles() )
+            for ( File child : nonNull( file.listFiles() ) )
             {
                 deleteFileOrDirectory( child );
             }
         }
-        file.delete();
+        assertTrue( "delete " + file, file.delete() );
     }
 
-    protected void restartTx()
-    {
-        restartTx( true );
-    }
-    
-    protected void restartTx( boolean success )
-    {
-        if ( success )
-        {
-            tx.success();
-        }
-        else
-        {
-            tx.failure();
-        }
-        tx.finish();
-        tx = graphDb.beginTx();
-    }
-    
     protected static GraphDatabaseService graphDb()
     {
         return graphDb;
@@ -207,7 +174,7 @@ public abstract class Neo4jTestCase
 
     public static <T> String join( String delimiter, T... items )
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for ( T item : items )
         {
             if ( buffer.length() > 0 )
@@ -217,17 +184,5 @@ public abstract class Neo4jTestCase
             buffer.append( item.toString() );
         }
         return buffer.toString();
-    }
-
-    protected <T> int countIterable( Iterable<T> iterable )
-    {
-        int counter = 0;
-        Iterator<T> itr = iterable.iterator();
-        while ( itr.hasNext() )
-        {
-            itr.next();
-            counter++;
-        }
-        return counter;
     }
 }

@@ -19,19 +19,20 @@
  */
 package org.neo4j.consistency.report;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.consistency.report.InconsistencyMessageLogger.LINE_SEPARATOR;
-import static org.neo4j.consistency.report.InconsistencyMessageLogger.TAB;
-
 import java.io.StringWriter;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.assertThat;
+import static org.neo4j.consistency.report.InconsistencyMessageLogger.LINE_SEPARATOR;
+import static org.neo4j.consistency.report.InconsistencyMessageLogger.TAB;
 
 public class MessageConsistencyLoggerTest
 {

@@ -23,33 +23,28 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class WrappingDatabase extends Database
 {
-
-    public WrappingDatabase(AbstractGraphDatabase db) {
-		super(db);
-	}
+    public WrappingDatabase( AbstractGraphDatabase db )
+    {
+        super( db );
+    }
 
     @Override
-	public void init() throws Throwable 
-	{
-		
-	}
+    public void init() throws Throwable
+    {
+    }
 
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
+    @Override
+    public void start() throws Throwable
+    {
+    }
 
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
-	
-	@Override
-	public void shutdown() throws Throwable
-	{
-		
-	}
+    @Override
+    public void stop() throws Throwable
+    {
+    }
 
+    @Override
+    public void shutdown() throws Throwable
+    {
+    }
 }

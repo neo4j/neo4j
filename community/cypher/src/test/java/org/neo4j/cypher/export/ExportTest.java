@@ -19,35 +19,36 @@
  */
 package org.neo4j.cypher.export;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Collections;
-import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
+import static org.junit.Assert.assertEquals;
 
 public class ExportTest {
 
     private final static String NL = System.getProperty( "line.separator" );
-    private ImpermanentGraphDatabase gdb;
+    private GraphDatabaseService gdb;
 
     @Before
     public void setUp() throws Exception {
-        gdb = new ImpermanentGraphDatabase();
+        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         gdb.beginTx();
     }
 
@@ -68,7 +69,7 @@ public class ExportTest {
                      "set _0.`name`=\"Andres\""+NL, doExportGraph(gdb));
     }
 
-    private String doExportGraph(ImpermanentGraphDatabase db) {
+    private String doExportGraph(GraphDatabaseService db) {
         SubGraph graph = DatabaseSubGraph.from(db);
         return doExportGraph(graph);
     }
@@ -155,11 +156,12 @@ public class ExportTest {
                 "create _0-[:`REL`]->_1" + NL, doExportGraph(graph));
     }
 
-    private ExecutionResult result(String column, Object value) {
-        final Map<String, Object> row = Collections.singletonMap(column, value);
-        ExecutionResult result = Mockito.mock(ExecutionResult.class);
-        Mockito.when(result.columns()).thenReturn(asList(column));
-        Mockito.when(result.iterator()).thenReturn(asList(row).iterator());
+    @SuppressWarnings("unchecked")
+    private ExecutionResult result( String column, Object value )
+    {
+        ExecutionResult result = Mockito.mock( ExecutionResult.class );
+        Mockito.when( result.columns() ).thenReturn( asList( column ) );
+        Mockito.when( result.iterator() ).thenReturn( asList( singletonMap( column, value ) ).iterator() );
         return result;
     }
 

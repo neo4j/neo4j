@@ -17,38 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugins;
+package org.neo4j.helpers;
 
-public class TypedInjectable<T> implements Injectable<T> {
-
-    private final T value;
-    private final Class<? extends T> type;
-
-    public static <T> TypedInjectable<T> injectable(T value) {
-        return new TypedInjectable<T>(value);
+/** Utility functions that are helpful for suppressing compiler warnings. */
+public class SillyUtils
+{
+    public static void ignore( @SuppressWarnings("unused") Object value )
+    {
+        // do nothing
     }
 
-    public static <T> TypedInjectable<T> injectable(T value, Class<T> type) {
-        return new TypedInjectable<T>(value, type);
-    }
-
-    private TypedInjectable(T value) {
-        this(value, (Class<T>) value.getClass());
-    }
-
-    private TypedInjectable(T value, Class<? extends T> type) {
-        this.value = value;
-        this.type = type;
-    }
-
-    @Override
-    public T getValue() {
+    public static <T> T nonNull( T value )
+    {
+        if ( value == null )
+        {
+            throw new AssertionError( "expected value to not be null" );
+        }
         return value;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    @Override
-    public Class<T> getType() {
-        return (Class<T>) type;
     }
 }

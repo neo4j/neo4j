@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.test.GraphDescription.PROP;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
@@ -46,6 +36,19 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.LABEL;
 import org.neo4j.test.GraphDescription.NODE;
+
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
+import static org.neo4j.test.GraphDescription.PROP;
 
 public class LabelsDocIT extends AbstractRestFunctionalTestBase
 {
@@ -153,6 +156,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .expectedStatus( 200 )
             .get( nodeUri + "/labels"  )
             .entity();
+        @SuppressWarnings("unchecked")
         List<String> labels = (List<String>) readJson( body );
         assertEquals( asSet( "Me", "You" ), asSet( labels ) );
     }

@@ -45,6 +45,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class KernelIT extends KernelIntegrationTest
 {
@@ -414,8 +415,8 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.finish();
 
-        assertEquals( asSet(), nodes );
-        assertEquals( asSet(), labels );
+        assertEquals( emptySetOf( Long.class ), nodes );
+        assertEquals( emptySetOf( Long.class ), labels );
         assertFalse( "Label should not be set on node here", labelIsSet );
     }
 

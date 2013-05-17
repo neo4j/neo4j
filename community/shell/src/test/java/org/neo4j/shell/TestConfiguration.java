@@ -19,18 +19,18 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
-import static org.neo4j.shell.ShellLobby.remoteLocation;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public class TestConfiguration
 {
@@ -40,7 +40,10 @@ public class TestConfiguration
     @Before
     public void before() throws Exception
     {
-        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "enable_remote_shell", "true" ) );
+        db = new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( "enable_remote_shell", "true" )
+                .newGraphDatabase();
         client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation(), new CollectingOutput() );
     }
 

@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_array_fraction;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_array_fraction;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_size;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -33,6 +28,11 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_array_fraction;
+import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_size;
+import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_array_fraction;
+import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_size;
 
 public class HaCaches implements Caches
 {
@@ -74,11 +74,11 @@ public class HaCaches implements Caches
                 
                 mySettingIsSameAs(config, node_cache_array_fraction ) &&
                 mySettingIsSameAs(config, relationship_cache_array_fraction ) &&
-                mySettingIsSameAs(config, node_cache_size) &&
-        		mySettingIsSameAs(config, relationship_cache_size);
+                mySettingIsSameAs(config, node_cache_size ) &&
+        		mySettingIsSameAs(config, relationship_cache_size );
     }
 
-    private boolean mySettingIsSameAs(Config otherConfig, GraphDatabaseSetting<?> setting) {
+    private boolean mySettingIsSameAs(Config otherConfig, Setting<?> setting) {
 		Object myValue = config.get(setting);
 		Object otherValue = otherConfig.get(setting);
 		

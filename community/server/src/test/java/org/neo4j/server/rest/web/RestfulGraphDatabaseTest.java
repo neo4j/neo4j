@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -38,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -48,9 +38,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -65,8 +57,21 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RestfulGraphDatabaseTest
 {
@@ -79,12 +84,12 @@ public class RestfulGraphDatabaseTest
     private static EntityOutputFormat output;
     private static LeaseManager leaseManager;
     private static final ForceMode FORCE = ForceMode.forced;
-    private static ImpermanentGraphDatabase graph;
+    private static AbstractGraphDatabase graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = new ImpermanentGraphDatabase();
+        graph = (AbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
@@ -129,7 +134,7 @@ public class RestfulGraphDatabaseTest
         {
             service.stopAutoIndexingProperty( type, property );
         }
-        Response enabled = service.setAutoIndexerEnabled( type, "false" );
+        service.setAutoIndexerEnabled( type, "false" );
     }
 
     @AfterClass
@@ -166,12 +171,12 @@ public class RestfulGraphDatabaseTest
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static List<String> entityAsList( Response response )
             throws JsonParseException
     {
         String entity = entityAsString( response );
-        List<String> properties = (List<String>) JsonHelper.readJson( entity );
-        return properties;
+        return (List<String>) JsonHelper.readJson( entity );
     }
 
     @Test
@@ -387,7 +392,7 @@ public class RestfulGraphDatabaseTest
     {
         long nodeId = helper.createNode();
         String key = "foo";
-        String value = "bar";
+        Object value = "bar";
         String json = "\"" + value + "\"";
         service.setNodeProperty( FORCE, nodeId, key, json );
         Map<String, Object> readProperties = helper.getNodeProperties( nodeId );
@@ -589,7 +594,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
         service.deleteNodeProperty( FORCE, nodeId, "foo" );
-        assertEquals( Collections.singletonMap( "number", (Object) new Integer( 15 ) ),
+        assertEquals( Collections.singletonMap( "number", (Object) 15 ),
                 helper.getNodeProperties( nodeId ) );
     }
 
@@ -693,7 +698,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteRelationship( FORCE, relationshipId + 1 * 1000 );
+        Response response = service.deleteRelationship( FORCE, relationshipId + 1000 );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -868,7 +873,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteAllRelationshipProperties( FORCE, relationshipId + 1 * 1000 );
+        Response response = service.deleteAllRelationshipProperties( FORCE, relationshipId + 1000 );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -1118,7 +1123,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
     {
-        URI node = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
+        service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
         Map<String, Object> body = new HashMap<String, Object>();
         body.put( "key", "mykey" );
         body.put( "value", "my/key" );
@@ -1842,6 +1847,7 @@ public class RestfulGraphDatabaseTest
         assertEquals(1, indexResult.size());
     }
 
+    @SuppressWarnings("unchecked")
     private void addRemoveAutoindexProperties(String type) throws JsonParseException {
         Response response = service.getAutoIndexedProperties(type);
         assertEquals(200, response.getStatus());

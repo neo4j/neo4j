@@ -44,7 +44,7 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 {
     public ShutdownXaDataSource()
     {
-        super( new Config(), null, null, null, null, null, null, null, null, null, null, null );
+        super( new Config(), null, null, null, null, null, null, null, null, null, null );
     }
 
     @Override
@@ -103,12 +103,6 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 
     @Override
     public long getRandomIdentifier()
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
-    ReadTransaction getReadOnlyTransaction()
     {
         throw databaseIsShutdownError();
     }
@@ -174,18 +168,6 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
     }
 
     @Override
-    public void logIdUsage()
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
-    public void logStoreVersions()
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
     public long nextId( Class<?> clazz )
     {
         throw databaseIsShutdownError();
@@ -193,12 +175,6 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 
     @Override
     public void registerDiagnosticsWith( DiagnosticsManager manager )
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
-    public void setCurrentLogVersion( long version )
     {
         throw databaseIsShutdownError();
     }

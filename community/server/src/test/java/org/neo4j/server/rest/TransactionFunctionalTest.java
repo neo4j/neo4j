@@ -19,20 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.fail;
-import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.server.HTTP.POST;
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
-import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +28,26 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -291,7 +292,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     private void assertNoStackTrace( Response response )
     {
         Map<String, Object> content = response.content();
-
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = ((List<Map<String, Object>>) content.get( "errors" ));
 
         for ( Map<String, Object> error : errors )

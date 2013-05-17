@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -64,10 +63,10 @@ import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.IndexLock;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.SchemaLock;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -122,13 +121,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             {
                 try
                 {
-                    Map<RequestContext, MasterTransaction> safeTransactions = null;
-                    synchronized ( transactions )
-                    {
-                        safeTransactions = new HashMap<RequestContext, MasterTransaction>( transactions );
-                    }
-
-                    for ( Map.Entry<RequestContext, MasterTransaction> entry : safeTransactions.entrySet() )
+                    for ( Map.Entry<RequestContext, MasterTransaction> entry : transactions() )
                     {
                         long time = entry.getValue().timeLastSuspended.get();
                         if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis)
@@ -160,6 +153,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 catch ( Throwable t )
                 {
                     // The show must go on
+                }
+            }
+
+            /** Create a copy to make iteration safe, while minimizing the duration of the synchronized region. */
+            @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+            private Iterable<Map.Entry<RequestContext, MasterTransaction>> transactions()
+            {
+                Map<RequestContext, MasterTransaction> transactions = MasterImpl.this.transactions;
+                synchronized ( transactions )
+                {
+                    return new HashMap<RequestContext, MasterTransaction>( transactions ).entrySet();
                 }
             }
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
@@ -362,27 +366,27 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, nodesById( nodes ) );
+        return acquireLock( context, READ_LOCK_GRABBER, (Object[])nodesById( nodes ) );
     }
 
     @Override
     public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, nodesById( nodes ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])nodesById( nodes ) );
     }
 
     @Override
     public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
                                                              long... relationships )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, relationshipsById( relationships ) );
+        return acquireLock( context, READ_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
     }
 
     @Override
     public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
                                                               long... relationships )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById( relationships ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
     }
 
     @Override

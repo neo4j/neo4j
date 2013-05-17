@@ -31,11 +31,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Ignored performance test.
@@ -45,16 +48,16 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 public class StreamingJsonFormatPerformanceTest {
 
     public static final String QUERY = "start n=node(*) match p=n-[r:TYPE]->m return n,r,m,p";
-    private ImpermanentGraphDatabase gdb;
+    private GraphDatabaseService gdb;
     private WrappingNeoServer server;
 
     @Before
     public void setUp() {
-        gdb = new ImpermanentGraphDatabase();
-        for (int i=0;i<10;i++) {
+        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        for ( int i = 0; i < 10; i++ ) {
             createData();
         }
-        server = new WrappingNeoServer(gdb);
+        server = new WrappingNeoServer( (AbstractGraphDatabase) gdb );
         server.start();
     }
 

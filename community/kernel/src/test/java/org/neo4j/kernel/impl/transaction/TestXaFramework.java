@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -29,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -38,10 +34,11 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -73,6 +70,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
     private TransactionManager tm;
@@ -90,7 +91,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             throw new RuntimeException( e );
         }
-        file.mkdirs();
+        assertTrue( "create directory: " + file, file.mkdirs() );
         return file;
     }
 
@@ -105,6 +106,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     }
 
     @Before
+    @SuppressWarnings("deprecation")
     public void setUpFramework()
     {
         getTransaction().finish();
@@ -254,6 +256,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         return new NoTransactionState()
                         {
                             @Override
+                            @SuppressWarnings("deprecation")
                             public TxIdGenerator getTxIdGenerator()
                             {
                                 return getGraphDbAPI().getTxIdGenerator();
@@ -272,12 +275,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                             @Override
                             public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
                             {
-                                return (T) new Config( MapUtil.stringMap(
+                                return type.cast( new Config( MapUtil.stringMap(
                                         GraphDatabaseSettings.intercept_committing_transactions.name(),
-                                        GraphDatabaseSetting.FALSE,
+                                        Settings.FALSE,
                                         GraphDatabaseSettings.intercept_deserialized_transactions.name(),
-                                        GraphDatabaseSetting.FALSE
-                                ) );
+                                        Settings.FALSE
+                                ) ) );
                             }
                         } ) );
                 xaContainer.openLogicalLog();
@@ -303,19 +306,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             xaContainer.close();
             // cleanup dummy resource log
-            File dir = new File( "." );
-            File files[] = dir.listFiles( new FilenameFilter()
-            {
-                @Override
-                public boolean accept( File dir, String fileName )
-                {
-                    return fileName.startsWith( resourceFile().getPath() );
-                }
-            } );
-            for ( int i = 0; i < files.length; i++ )
-            {
-                files[i].delete();
-            }
+            deleteAllResourceFiles();
         }
 
         @Override
@@ -347,11 +338,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         @Override
         public boolean isSameRM( XAResource resource )
         {
-            if ( resource instanceof DummyXaResource )
-            {
-                return true;
-            }
-            return false;
+            return resource instanceof DummyXaResource;
         }
     }
 
@@ -450,25 +437,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
         // cleanup dummy resource log
-        File dir = new File( "." );
-        File files[] = dir.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String fileName )
-            {
-                return fileName.startsWith( resourceFile().getPath() );
-            }
-        } );
-        for ( int i = 0; i < files.length; i++ )
-        {
-            files[i].delete();
-        }
+        deleteAllResourceFiles();
     }
 
     @Test
     public void testTxIdGeneration() throws Exception
     {
-        DummyXaDataSource xaDs1 = null;
         DummyXaConnection xaC1 = null;
         try
         {
@@ -479,8 +453,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                     new XaFactory( TxIdGenerator.DEFAULT,
                             (AbstractTransactionManager)tm, new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
-            xaDs1 = (DummyXaDataSource) xaDsMgr
-                    .getXaDataSource( "dummy_datasource1" );
+            DummyXaDataSource xaDs1 = (DummyXaDataSource) xaDsMgr.getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
             tm.begin(); // get
             xaC1.enlistWithTx();
@@ -515,18 +488,26 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
         // cleanup dummy resource log
+        deleteAllResourceFiles();
+    }
+
+    private void deleteAllResourceFiles()
+    {
         File dir = new File( "." );
+        final String prefix = resourceFile().getPath();
         File files[] = dir.listFiles( new FilenameFilter()
         {
             @Override
             public boolean accept( File dir, String fileName )
             {
-                return fileName.startsWith( resourceFile().getPath() );
+                return fileName.startsWith( prefix );
             }
         } );
-        for ( int i = 0; i < files.length; i++ )
+        boolean allDeleted = true;
+        for ( File file : files )
         {
-            files[i].delete();
+            if ( !file.delete() ) allDeleted = false;
         }
+        assertTrue( "delete all files starting with " + prefix, allDeleted );
     }
 }

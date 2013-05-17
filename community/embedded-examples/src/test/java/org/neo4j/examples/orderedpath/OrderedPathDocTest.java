@@ -18,24 +18,25 @@
  */
 package org.neo4j.examples.orderedpath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaDocsGenerator;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class OrderedPathDocTest
 {
@@ -50,7 +51,7 @@ public class OrderedPathDocTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        orderedPath = new OrderedPath( new ImpermanentGraphDatabase() );
+        orderedPath = new OrderedPath( new TestGraphDatabaseFactory().newImpermanentDatabase() );
         gen = new JavaDocsGenerator( "ordered-path-java", "dev" );
     }
 

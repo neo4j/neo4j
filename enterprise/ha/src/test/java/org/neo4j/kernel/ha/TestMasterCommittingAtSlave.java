@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +28,7 @@ import java.util.List;
 import java.util.Queue;
 
 import org.junit.Test;
+
 import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -57,6 +51,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
 public class TestMasterCommittingAtSlave
 {

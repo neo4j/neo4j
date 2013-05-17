@@ -19,37 +19,37 @@
  */
 package org.neo4j.shell;
 
-import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.regex.Pattern;
-
 import javax.transaction.SystemException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.regex.Pattern.compile;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTransactionApps
 {
-    protected ImpermanentGraphDatabase db;
+    protected GraphDatabaseAPI db;
     private FakeShellServer shellServer;
     private ShellClient shellClient;
 
     @Before
     public void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         shellServer = new FakeShellServer( db );
         shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer, new CollectingOutput() );
    }

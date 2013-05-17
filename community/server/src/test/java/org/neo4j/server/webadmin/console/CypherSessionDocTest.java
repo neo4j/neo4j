@@ -40,12 +40,14 @@
 package org.neo4j.server.webadmin.console;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -55,7 +57,7 @@ public class CypherSessionDocTest
     @Test
     public void shouldReturnASingleNode() throws Throwable
     {
-        ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        AbstractGraphDatabase graphdb = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappingDatabase( graphdb );
         CypherExecutor executor = new CypherExecutor( database, StringLogger.DEV_NULL );
         executor.start();

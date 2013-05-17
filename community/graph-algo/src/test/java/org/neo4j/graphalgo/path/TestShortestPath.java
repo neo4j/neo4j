@@ -19,21 +19,6 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
-import static common.SimpleGraphBuilder.KEY_ID;
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +29,7 @@ import java.util.Set;
 import common.Neo4jAlgoTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
@@ -58,6 +44,21 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
+
+import static java.util.Arrays.asList;
+import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
+import static common.SimpleGraphBuilder.KEY_ID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.expanderForAllTypes;
 import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
@@ -574,7 +575,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     {
         void test( PathFinder<Path> finder );
     }
-   
+
     private static class LengthCheckingExpanderWrapper implements PathExpander<Object> {
 
         private PathExpander expander;
@@ -585,6 +586,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         }
         
         @Override
+        @SuppressWarnings("unchecked")
         public Iterable<Relationship> expand( Path path, BranchState<Object> state ) 
         {           
             if ( path.startNode().equals(path.endNode()) ) 

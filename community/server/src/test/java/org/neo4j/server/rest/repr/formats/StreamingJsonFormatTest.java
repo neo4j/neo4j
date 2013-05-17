@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Arrays;
@@ -29,6 +26,8 @@ import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -37,7 +36,10 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StreamingJsonFormatTest
 {
@@ -54,9 +56,17 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatNode() throws Exception
     {
-        final Node refNode = new ImpermanentGraphDatabase().getReferenceNode();
-        json.assemble( new NodeRepresentation( refNode ) );
-        assertTrue(stream.toString().contains("\"self\" : \"http://localhost/node/0\","));
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            final Node refNode = db.getReferenceNode();
+            json.assemble( new NodeRepresentation( refNode ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+        assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }
 
     @Test

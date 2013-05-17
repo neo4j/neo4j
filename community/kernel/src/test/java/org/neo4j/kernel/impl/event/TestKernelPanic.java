@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.FileNotFoundException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -40,13 +36,16 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class TestKernelPanic
 {
     @Test
     public void panicTest() throws Exception
     {
-        String path = "target/var/testdb";
         final AtomicReference<BufferingLogger> logger = new AtomicReference<BufferingLogger>();
+        @SuppressWarnings("deprecation")
         GraphDatabaseService graphDb = new ImpermanentGraphDatabase()
         {
             @Override
@@ -93,11 +92,6 @@ public class TestKernelPanic
         assertTrue( "Log didn't contain expected string",
                 logger.get().toString().contains( "at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest" ) );
         graphDb.shutdown();
-    }
-
-    private void assertMessageLogContains(String log, String exceptionString) throws FileNotFoundException
-    {
-        
     }
 
     private static class Panic implements KernelEventHandler

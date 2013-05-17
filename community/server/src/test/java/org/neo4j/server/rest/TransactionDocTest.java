@@ -19,26 +19,27 @@
  */
 package org.neo4j.server.rest;
 
-import static junit.framework.Assert.fail;
-import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.server.HTTP.GET;
-import static org.neo4j.test.server.HTTP.POST;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.test.server.HTTP.GET;
+import static org.neo4j.test.server.HTTP.POST;
 
 public class TransactionDocTest extends AbstractRestFunctionalTestBase
 {
@@ -216,6 +217,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
     private void assertErrors( Map<String, Object> response, StatusCode... expectedErrors )
     {
+        @SuppressWarnings("unchecked")
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
         Iterator<StatusCode> expected = iterator( expectedErrors );
 

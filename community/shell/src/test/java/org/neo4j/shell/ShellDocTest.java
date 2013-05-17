@@ -19,6 +19,18 @@
  */
 package org.neo4j.shell;
 
+import java.io.PrintWriter;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.RemoteClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -27,18 +39,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
-
-import java.io.PrintWriter;
-
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.shell.impl.RemoteClient;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class ShellDocTest
 {
@@ -107,7 +107,7 @@ public class ShellDocTest
     public void testEnableServerOnDefaultPort() throws Exception
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase();
         try
         {
@@ -124,7 +124,7 @@ public class ShellDocTest
     @Test
     public void testRemoveReferenceNode() throws Exception
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "sample session", server );
@@ -153,7 +153,7 @@ public class ShellDocTest
     @Test
     public void testDumpCypherResultSimple() throws Exception
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "simple cypher result dump", server );
@@ -169,7 +169,7 @@ public class ShellDocTest
     @Test
     public void testDumpDatabase() throws Exception
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "database dump", server );

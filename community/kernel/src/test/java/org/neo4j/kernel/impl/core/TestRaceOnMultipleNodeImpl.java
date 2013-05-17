@@ -26,10 +26,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -165,7 +166,7 @@ public class TestRaceOnMultipleNodeImpl
                         @Override
                         public void run()
                         {
-                            for ( String key : root.getPropertyKeys() )
+                            for ( @SuppressWarnings("unused")String key : root.getPropertyKeys() )
                                 precondition.set( true );
                             offenderSetUp.countDown();
                             root.setProperty( "tx", "offender" );
@@ -203,7 +204,7 @@ public class TestRaceOnMultipleNodeImpl
         }
         catch ( InterruptedException e )
         {
-            continue;
+            // ignore
         }
     }
 
@@ -284,12 +285,12 @@ public class TestRaceOnMultipleNodeImpl
         }
     }
 
-    private InternalAbstractGraphDatabase graphdb;
+    private GraphDatabaseAPI graphdb;
 
     @Before
     public void startDb()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After

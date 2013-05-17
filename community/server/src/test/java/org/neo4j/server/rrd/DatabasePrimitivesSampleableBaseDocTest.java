@@ -19,54 +19,36 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-
 import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertTrue;
 
 public class DatabasePrimitivesSampleableBaseDocTest
 {
     @Test
     public void sampleTest() throws MalformedObjectNameException, IOException
     {
-        InternalAbstractGraphDatabase db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
 
         assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
 
         db.shutdown();
-
-        /*
-        this makes no sense using direct object-references instead of jmx
-        try
-        {
-            database.graph.shutdown();
-            sampleable.getValue();
-            throw new RuntimeException( "Expected UnableToSampleException to be thrown." );
-        }
-        catch ( UnableToSampleException e )
-        {
-            // Skip
-        }
-
-        database.graph = new EmbeddedGraphDatabase( createTempDir().getAbsolutePath() );
-
-        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
-        */
     }
 
     @Test
     public void rrd_uses_temp_dir() throws Exception
     {
-        InternalAbstractGraphDatabase db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
 
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
 

@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.fail;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TransactionHandleRegistryTest
 {

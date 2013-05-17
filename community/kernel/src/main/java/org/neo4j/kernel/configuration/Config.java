@@ -99,9 +99,6 @@ public class Config implements DiagnosticsProvider
 
     /**
      * Retrieve a configuration property.
-     *
-     * @param setting
-     * @return
      */
     public <T> T get( Setting<T> setting )
     {
@@ -110,8 +107,6 @@ public class Config implements DiagnosticsProvider
 
     /**
      * Replace the current set of configuration parameters with another one.
-     *
-     * @param newConfiguration
      */
     public synchronized void applyChanges( Map<String, String> newConfiguration )
     {

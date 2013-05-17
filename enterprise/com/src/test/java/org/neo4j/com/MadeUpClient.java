@@ -19,12 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
-import static org.neo4j.com.Protocol.writeString;
-import static org.neo4j.com.RequestContext.EMPTY;
-import static org.neo4j.com.RequestContext.lastAppliedTx;
-import static org.neo4j.kernel.configuration.Config.DEFAULT_DATA_SOURCE_NAME;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -32,9 +26,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+
+import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
+import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.RequestContext.EMPTY;
+import static org.neo4j.com.RequestContext.lastAppliedTx;
 
 public class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
 {
@@ -85,7 +86,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     private RequestContext getRequestContext()
     {
         return new RequestContext( EMPTY.getSessionId(), EMPTY.machineId(), EMPTY.getEventIdentifier(),
-                new RequestContext.Tx[] { lastAppliedTx( DEFAULT_DATA_SOURCE_NAME, 1 ) }, EMPTY.getMasterId(),
+                new RequestContext.Tx[] { lastAppliedTx( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME, 1 ) }, EMPTY.getMasterId(),
                 EMPTY.getChecksum() );
     }
 

@@ -36,8 +36,8 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyIndexExtensionFactory extends
@@ -92,7 +92,7 @@ public class DummyIndexExtensionFactory extends
     @Override
     public String getDataSourceName()
     {
-        return Config.DEFAULT_DATA_SOURCE_NAME;
+        return NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
     }
 
     @Override

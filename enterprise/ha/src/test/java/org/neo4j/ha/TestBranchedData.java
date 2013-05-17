@@ -19,12 +19,10 @@
  */
 package org.neo4j.ha;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-
 import java.io.File;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -34,6 +32,10 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public class TestBranchedData
 {
@@ -69,10 +71,11 @@ public class TestBranchedData
     {
         long timestamp = System.currentTimeMillis();
         File branchDir = new File( dir, "branched-" + timestamp );
-        branchDir.mkdirs();
-        for ( File file : dir.listFiles() )
+        assertTrue( "create directory: " + branchDir, branchDir.mkdirs() );
+        for ( File file : nonNull( dir.listFiles() ) )
         {
-            if ( !file.equals( StringLogger.DEFAULT_NAME ) && !file.getName().startsWith( "branched-" ) )
+            String fileName = file.getName();
+            if ( !fileName.equals( StringLogger.DEFAULT_NAME ) && !file.getName().startsWith( "branched-" ) )
             {
                 assertTrue( FileUtils.renameFile( file, new File( branchDir, file.getName() ) ) );
             }

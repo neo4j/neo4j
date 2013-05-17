@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel;
 
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class StoreLockerLifecycleAdapterTest
 {
@@ -47,36 +48,16 @@ public class StoreLockerLifecycleAdapterTest
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
     {
-        GraphDatabaseService db = null;
-
-        try
-        {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-
-        try
-        {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
     {
-        GraphDatabaseService db = null;
-
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-
             new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
             fail();
@@ -94,14 +75,11 @@ public class StoreLockerLifecycleAdapterTest
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
     {
-        GraphDatabaseService db = null;
-
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-
             new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir).
-                    setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE ).
+                    setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).
                     newGraphDatabase();
 
             fail();
