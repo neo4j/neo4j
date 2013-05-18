@@ -32,8 +32,16 @@ class SliceBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
+    val sortDone = q.sortedDone
+    val slice = q.slice.exists(_.unsolved)
+    val startPointsDone = !q.start.exists(_.unsolved)
+    val patternsDone = !q.patterns.exists(_.unsolved)
+
+    val noAggregationLeftToDo = !(q.aggregateQuery == Unsolved(true))
+
+    slice && noAggregationLeftToDo && sortDone && startPointsDone && patternsDone
   }
+
 
   def priority: Int = PlanBuilder.Slice
 }
