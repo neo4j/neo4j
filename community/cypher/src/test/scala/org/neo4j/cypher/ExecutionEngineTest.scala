@@ -475,12 +475,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def shouldLimitToTwoHits() {
     createNodes("A", "B", "C", "D", "E")
 
-    val query = Query.
-      start(NodeById("start", nodeIds: _*)).
-      limit(2).
-      returns(ReturnItem(Identifier("start"), "start"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start n=node({nodes}) return n limit 2", "nodes"->nodeIds.toSeq)
 
     assertEquals("Result was not trimmed down", 2, result.size)
   }
@@ -1088,7 +1083,7 @@ return foaf""")
     val b = createNode("B")
     val c = createNode("C")
 
-    val result = parseAndExecute( """
+    val result = parseAndExecute("""
 start a  = node(1,2,3,1)
 return distinct a
 order by a.name""")
@@ -2508,5 +2503,48 @@ RETURN x0.name?
 
     val result = parseAndExecute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     assert(result.toList === List())
+  }
+
+  @Test
+  def should_respect_limit_when_updating() {
+    //GIVEN
+    createNode("a")
+    createNode("b")
+    val c = createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) match n set n.touched = true return n order by n.name? limit 2")
+
+    //THEN c should not have the property set
+    assert(c.getProperty("touched", false) === false, "Should not have had the property set")
+  }
+
+  @Test
+  def should_respect_skip_when_updating() {
+    //GIVEN
+    val a = createNode("a")
+    createNode("b")
+    createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) match n set n.touched = true return n order by n.name? skip 1")
+
+    //THEN a should not have the property set
+    assert(a.getProperty("touched", false) === false, "Should not have had the property set")
+  }
+
+  @Test
+  def should_respect_skip_and_limit_when_updating() {
+    //GIVEN
+    val a = createNode("a")
+    createNode("b")
+    val c = createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) match n set n.touched = true return n order by n.name? skip 1 limit 1")
+
+    //THEN a && c should not have the property set
+    assert(a.getProperty("touched", false) === false, "Should not have had the property set")
+    assert(c.getProperty("touched", false) === false, "Should not have had the property set")
   }
 }

@@ -56,11 +56,15 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    val extracted = q.extracted
-    val unsolvedOrdering = q.sort.filter(_.unsolved).nonEmpty
+    val sortItems = q.sort.filter(_.unsolved)
+    val unsolvedOrdering =
+      sortItems.nonEmpty &&
+      sortItems.forall(_.token.expression.symbolDependenciesMet(plan.pipe.symbols))
     val limited = q.slice.exists(_.token.limit.nonEmpty)
 
-    extracted && unsolvedOrdering && limited
+    val unsolvedAggregationQuery = q.aggregateQuery == Unsolved(true)
+
+    unsolvedOrdering && limited && !unsolvedAggregationQuery
   }
 
   def priority: Int = PlanBuilder.TopX
