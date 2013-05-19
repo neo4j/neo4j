@@ -98,12 +98,13 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     slice.forall(_.solved) &&
     namedPaths.forall(_.solved)
 
-  def sortedDone = sort.filter(_.unsolved).isEmpty
-
   def readyToAggregate = !(start.exists(_.unsolved) ||
     patterns.exists(_.unsolved) ||
     where.exists(_.unsolved) ||
-    namedPaths.exists(_.unsolved))
+    namedPaths.exists(_.unsolved) ||
+    updates.exists(_.unsolved))
+
+  def isUpdating = start.exists(_.token.mutating) || updates.nonEmpty
 
   def rewrite(f: Expression => Expression): PartiallySolvedQuery = {
     this.copy(
