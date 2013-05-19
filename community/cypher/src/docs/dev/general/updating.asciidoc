@@ -50,6 +50,9 @@ Any query can return data. If your query only reads, it has to return data -- it
 After all the parts of the query comes one final `RETURN` statement. `RETURN` is not part of any query part -- it
 is a period symbol after an eloquent statement. When `RETURN` is legal, it's also legal to use `SKIP`/`LIMIT` and `ORDER BY`.
 
+Note that +SKIP+ and +LIMIT+ always works on the returned result, i.e. updates are done on all the matching items, not just
+the ones returned from the query.
+
 If you return graph elements from a query that has just deleted them -- beware, you are holding a pointer that is no
  longer valid. Operations on that node might fail mysteriously and unpredictably.
  

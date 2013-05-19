@@ -2509,4 +2509,62 @@ RETURN x0.name?
     val result = parseAndExecute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     assert(result.toList === List())
   }
+
+  @Test
+  def should_not_respect_limit_when_updating() {
+    //GIVEN
+    createNode("a")
+    createNode("b")
+    val c = createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) set n.touched = true return n limit 2")
+
+    //THEN
+    assert(c.getProperty("touched", false) === true, "Should have had the property set")
+  }
+
+  @Test
+  def should_not_respect_limit_with_sorting_when_updating() {
+    //GIVEN
+    createNode("a")
+    createNode("b")
+    val c = createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) set n.touched = true return n order by n.name? limit 2")
+
+    //THEN
+    assert(c.getProperty("touched", false) === true, "Should have had the property set")
+  }
+
+  @Test
+  def should_not_respect_skip_when_updating() {
+    //GIVEN
+    val a = createNode("a")
+    createNode("b")
+    createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) set n.touched = true return n skip 1")
+
+    //THEN
+    assert(a.getProperty("touched", false) === true, "Should have had the property set")
+  }
+
+  @Test
+  def should_not_respect_skip_and_limit_when_updating() {
+    //GIVEN
+    val a = createNode("a")
+    createNode("b")
+    val c = createNode("c")
+
+    //WHEN
+    parseAndExecute("start n=node(*) match n set n.touched = true return n order by n.name? skip 1 limit 1")
+
+    //THEN
+    assert(a.getProperty("touched", false) === true, "Should have had the property set")
+    assert(c.getProperty("touched", false) === true, "Should have had the property set")
+  }
+
 }
