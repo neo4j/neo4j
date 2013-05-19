@@ -1,8 +1,3 @@
-1.9
----
-o Fixes #795 - Inconsistent behaviour when using ORDER BY and LIMIT while
-  updating the graph
-
 1.9.RC2 (2013-04-30)
 --------------------
 o Fixes problem when sending down custom queries to index providers
