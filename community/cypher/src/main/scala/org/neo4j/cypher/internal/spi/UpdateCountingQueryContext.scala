@@ -23,50 +23,78 @@ import org.neo4j.cypher.QueryStatistics
 import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 
-
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
-  private val createdNodes = new Counter
-  private val createdRelationships = new Counter
-  private val propertySet = new Counter
-  private val deletedNodes = new Counter
-  private val deletedRelationships = new Counter
-  private val addedLabels = new Counter
-  private val removedLabels = new Counter
+  private val nodesCreated = new Counter
+  private val relationshipsCreated = new Counter
+  private val propertiesSet = new Counter
+  private val nodesDeleted = new Counter
+  private val relationshipsDeleted = new Counter
+  private val labelsAdded = new Counter
+  private val labelsRemoved = new Counter
+  private val indexesAdded = new Counter
+  private val indexesRemoved = new Counter
+  private val constraintsAdded = new Counter
+  private val constraintsRemoved = new Counter
 
   def getStatistics: QueryStatistics = QueryStatistics(
-    nodesCreated = createdNodes.count,
-    relationshipsCreated = createdRelationships.count,
-    propertiesSet = propertySet.count,
-    deletedNodes = deletedNodes.count,
-    addedLabels = addedLabels.count,
-    removedLabels = removedLabels.count,
-    deletedRelationships = deletedRelationships.count)
+    nodesCreated = nodesCreated.count,
+    relationshipsCreated = relationshipsCreated.count,
+    propertiesSet = propertiesSet.count,
+    deletedNodes = nodesDeleted.count,
+    labelsAdded = labelsAdded.count,
+    labelsRemoved = labelsRemoved.count,
+    deletedRelationships = relationshipsDeleted.count,
+    indexesAdded = indexesAdded.count,
+    indexesRemoved = indexesRemoved.count,
+    constraintsAdded = constraintsAdded.count,
+    constraintsRemoved = constraintsRemoved.count)
 
   override def createNode() = {
-    createdNodes.increase()
+    nodesCreated.increase()
     inner.createNode()
   }
 
-  override def nodeOps: Operations[Node] = new CountingOps[Node](inner.nodeOps, deletedNodes)
+  override def nodeOps: Operations[Node] = new CountingOps[Node](inner.nodeOps, nodesDeleted)
 
-  override def relationshipOps: Operations[Relationship] = new CountingOps[Relationship](inner.relationshipOps, deletedRelationships)
+  override def relationshipOps: Operations[Relationship] = new CountingOps[Relationship](inner.relationshipOps,
+    relationshipsDeleted)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)
-    addedLabels.increase(added)
+    labelsAdded.increase(added)
     added
   }
 
   override def createRelationship(start: Node, end: Node, relType: String) = {
-    createdRelationships.increase()
+    relationshipsCreated.increase()
     inner.createRelationship(start, end, relType)
   }
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = {
     val removed = inner.removeLabelsFromNode(node, labelIds)
-    removedLabels.increase(removed)
+    labelsRemoved.increase(removed)
     removed
+  }
+
+  override def addIndexRule(labelIds: Long, propertyKeyId: Long) {
+    inner.addIndexRule(labelIds, propertyKeyId)
+    indexesAdded.increase()
+  }
+
+  override def dropIndexRule(labelIds: Long, propertyKeyId: Long) {
+    inner.dropIndexRule(labelIds, propertyKeyId)
+    indexesRemoved.increase()
+  }
+
+  override def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    inner.createUniqueConstraint(labelId, propertyKeyId)
+    constraintsAdded.increase()
+  }
+
+  override def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+    inner.dropUniqueConstraint(labelId, propertyKeyId)
+    constraintsRemoved.increase()
   }
 
   class Counter {
@@ -87,12 +115,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     }
 
     override def removeProperty(obj: T, propertyKey: String) {
-      propertySet.increase()
+      propertiesSet.increase()
       inner.removeProperty(obj, propertyKey)
     }
 
     override def setProperty(obj: T, propertyKey: String, value: Any) {
-      propertySet.increase()
+      propertiesSet.increase()
       inner.setProperty(obj, propertyKey, value)
     }
   }
