@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends PipeWithSource(source) {
+class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression], emptySource:Boolean) extends PipeWithSource(source) {
 
   val symbols = source.symbols
 
@@ -41,7 +41,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
     def asInt(v: Expression): Int = v(first)(state).asInstanceOf[Int]
 
-    (skip, limit) match {
+    val iter = (skip, limit) match {
       case (Some(x), None) => sourceIter.drop(asInt(x))
       case (None, Some(x)) => sourceIter.take(asInt(x))
       case (Some(startAt), Some(count)) => {
@@ -50,6 +50,11 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       }
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
+
+    if(emptySource)
+      new SourceDrainingIterator(iter, sourceIter)
+    else
+      iter
   }
 
   override def executionPlanDescription = {
@@ -79,5 +84,23 @@ class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {
     head
   } else {
     tail.next()
+  }
+}
+
+class SourceDrainingIterator[T](result: Iterator[T], source: Iterator[T]) extends Iterator[T] {
+  def hasNext: Boolean = {
+    val more = result.hasNext
+    if (!more) {
+      while (source.hasNext)
+        source.next()
+    }
+    more
+  }
+
+  def next(): T = {
+    if (hasNext)
+      result.next()
+    else
+      Iterator.empty.next()
   }
 }

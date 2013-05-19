@@ -64,8 +64,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
     val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
     val sitems = extractValidStartItems(plan, plan.pipe).toSeq
 
-    val sliceFirst = !plan.query.slice.exists(_.unsolved)
-    (uas.nonEmpty || sitems.nonEmpty) && sliceFirst
+    uas.nonEmpty || sitems.nonEmpty
   }
 
   def priority = PlanBuilder.Mutation

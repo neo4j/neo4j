@@ -4,6 +4,10 @@ Limit
 
 +LIMIT+ enables the return of only subsets of the total result.
 
+Note that +LIMIT+ always works on the returned result, i.e. updates are done on all the matching items, not just
+the ones returned from the query.
+
+
 .Graph
 include::includes/cypher-limit-graph.asciidoc[]
 
