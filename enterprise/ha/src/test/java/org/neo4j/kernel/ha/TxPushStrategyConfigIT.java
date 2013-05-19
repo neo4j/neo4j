@@ -180,9 +180,9 @@ public class TxPushStrategyConfigIT
 
     private void assertLastTxId( long tx, int serverId )
     {
-        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave(
-        // serverId );
-        assertEquals( tx, db.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
+        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );
+        assertEquals( "tx id on server:" + serverId,
+                      tx, db.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
     }
 
     private void createTransactionOnMaster()

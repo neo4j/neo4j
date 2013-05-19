@@ -222,11 +222,11 @@ public class StandaloneClusterClientIT
             boolean awaitOutcome = latch.await( 5, SECONDS );
             if ( expectedPort == null )
             {
-                assertFalse( awaitOutcome );
+                assertFalse( "expected port null, should not join cluster", awaitOutcome );
             }
             else
             {
-                assertTrue( awaitOutcome );
+                assertTrue( "join cluster within timeout", awaitOutcome );
                 assertEquals( expectedPort.intValue(), port.get() );
             }
         }
