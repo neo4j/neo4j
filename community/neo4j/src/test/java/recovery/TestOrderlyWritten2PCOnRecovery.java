@@ -25,14 +25,16 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.transaction.xa.Xid;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -48,36 +50,36 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
 import static java.nio.ByteBuffer.allocate;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.SillyUtils.ignore;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
-@Ignore( "Doesn't work yet" )
+//@Ignore( "Doesn't work yet" )
 public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
 {
     private static final int TX_COUNT = 10;
-    
-    private DebuggedThread committer;
-    private final CountDownLatch commitLatch = new CountDownLatch( 1 );
-    private final CountDownLatch latch = new CountDownLatch( TX_COUNT );
-    
+
+    private final List<DebuggedThread> committers = new ArrayList<DebuggedThread>();
+    private final CountDownLatch commitLatch = new CountDownLatch( TX_COUNT );
+
     private final BreakPoint commit = new BreakPoint( XaResourceManager.class, "commit", Xid.class, Boolean.TYPE )
     {
-        private volatile int letPass = 1;
-        
+        private volatile int letPass = 1; // index creator transaction
+
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
             int pass = letPass--;
-            if ( pass == 0 )
+            if ( pass <= 0 )
             {
-                committer = debug.thread().suspend( this );
-                commitLatch.countDown();
-            }
-            else if ( pass < 0 )
-            {
-                latch.countDown();
+                if ( commitLatch.getCount() > 0 )
+                {
+                    committers.add( debug.thread().suspend( this ) );
+                    commitLatch.countDown();
+                }
             }
         }
     };
@@ -86,41 +88,50 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
-            System.out.println( "continue" );
-            committer.resume();
-            latch.countDown();
+            for ( DebuggedThread committer : committers )
+            {
+                committer.resume();
+            }
         }
     };
-    
+
     static void pleaseContinue()
-    {   // Triggers breakpoint
+    {
+        // Triggers breakpoint
     }
-    
+
     @Override
     protected BreakPoint[] breakpoints( int id )
     {
         return new BreakPoint[] { commit.enable(), continueCommitting.enable() };
     }
-    
+
     private static class CreateIndexedNodeTask implements Task
     {
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
             try
             {
-                Node node = graphdb.createNode();
-                graphdb.index().forNodes( "index" ).add( node, "key", "value" );
-                tx.success();
+                Transaction tx = graphdb.beginTx();
+                try
+                {
+                    Node node = graphdb.createNode();
+                    graphdb.index().forNodes( "index" ).add( node, "key", "value" );
+                    tx.success();
+                }
+                finally
+                {
+                    tx.finish();
+                }
             }
-            finally
+            catch ( TransactionFailureException mute )
             {
-                tx.finish();
+                ignore( mute );
             }
         }
     }
-    
+
     private static class CommandFactory extends XaCommandFactory
     {
         @Override
@@ -130,7 +141,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
-    
+
     private static class MessUpTask implements Task
     {
         @Override
@@ -140,7 +151,8 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             {
                 XaResourceManager resourceManager = graphdb.getXaDataSourceManager().getNeoStoreDataSource().getXaContainer().getResourceManager();
                 @SuppressWarnings("unchecked")
-                ArrayMap<Xid, ?> xidMap = (ArrayMap<Xid, ?>) inaccessibleField( resourceManager, "xidMap" ).get( resourceManager );
+                ArrayMap<Xid, ?> xidMap = (ArrayMap<Xid, ?>) inaccessibleField( resourceManager, "xidMap" ).get(
+                        resourceManager );
                 xidMap.clear();
             }
             catch ( Exception e )
@@ -153,28 +165,28 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             }
         }
     }
-    
+
     @Test
     public void recovered2PCRecordsShouldBeWrittenInRisingTxIdOrder() throws Exception
     {
         /* Will start many 2PC transactions and halt them right before committing, creating
          * many 2PC transactions which will have to recovered and committed during recovery. */
         for ( int i = 0; i < TX_COUNT; i++ ) runInThread( new CreateIndexedNodeTask() );
-        commitLatch.await();
-        
+        commitLatch.await( 5, SECONDS );
+
         run( new MessUpTask() );
-        latch.await();
-        
+        commit.disable();
+
         /* Restart and recover */
         restart();
-        
+
         verifyOrderedRecords();
     }
 
     private void verifyOrderedRecords() throws IOException
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
-        RandomAccessFile file = new RandomAccessFile( new File( getStoreDir( this, 0 ), "nioneo_logical.log.v0" ), "r" );
+        RandomAccessFile file = new RandomAccessFile( new File( getStoreDir( this, 0, false ), "nioneo_logical.log.v0" ), "r" );
         CommandFactory cf = new CommandFactory();
         try
         {
@@ -185,17 +197,18 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
             int counted = 0;
             for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
             {
-                // XXX: the logic here is broken!
                 if ( entry instanceof TwoPhaseCommit )
                 {
                     long txId = ((TwoPhaseCommit) entry).getTxId();
-                    if ( lastOne == -1 ) txId = lastOne;
-                    else assertEquals( lastOne+1, txId );
+                    if ( lastOne != -1 )
+                    {
+                        assertEquals( "transaction id", lastOne+1, txId );
+                    }
                     lastOne = txId;
                     counted++;
                 }
             }
-            assertEquals( TX_COUNT, counted );
+            assertEquals( "number of transactions", TX_COUNT, counted );
         }
         finally
         {
