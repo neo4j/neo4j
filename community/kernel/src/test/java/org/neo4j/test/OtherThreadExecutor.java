@@ -19,11 +19,6 @@
  */
 package org.neo4j.test;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,6 +32,11 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Executes {@link WorkerCommand}s in another thread. Very useful for writing
@@ -109,6 +109,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         boolean success = false;
         try
         {
+            awaitStartExecuting();
             R result = future.get( timeout, unit );
             success = true;
             return result;
@@ -117,6 +118,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         {
             if ( !success )
                 future.cancel( true );
+        }
+    }
+
+    private void awaitStartExecuting() throws InterruptedException
+    {
+        while ( executionState == ExecutionState.REQUESTED_EXECUTION )
+        {
+            Thread.sleep( 10 );
         }
     }
     
