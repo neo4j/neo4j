@@ -29,48 +29,46 @@ import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.web.WebServer;
 
-public class SecurityRulesModule implements ServerModule {
+public class SecurityRulesModule implements ServerModule
+{
+    private final Logger log = Logger.getLogger( SecurityRulesModule.class );
 
-	private final Logger log = Logger.getLogger( SecurityRulesModule.class );
-	
-	private final WebServer webServer;
-	private final Configuration config;
+    private final WebServer webServer;
+    private final Configuration config;
 
-	private final ArrayList<SecurityFilter> mountedFilters = new ArrayList<SecurityFilter>();
+    private SecurityFilter mountedFilter;
 
-    public SecurityRulesModule(WebServer webServer, Configuration config)
-	{
-		this.webServer = webServer;
-		this.config = config;
-	}
+    public SecurityRulesModule( WebServer webServer, Configuration config )
+    {
+        this.webServer = webServer;
+        this.config = config;
+    }
 
     @Override
-	public void start(StringLogger logger) {
-		for(SecurityRule rule : getSecurityRules())
-		{
-			SecurityFilter filter = new SecurityFilter(rule);
+    public void start( StringLogger logger )
+    {
+        Iterable<SecurityRule> securityRules = getSecurityRules();
+        mountedFilter = new SecurityFilter( securityRules );
 
-			webServer.addFilter(filter, "/*");
+        webServer.addFilter( mountedFilter, "/*" );
 
-			mountedFilters.add(filter);
-	
+        for ( SecurityRule rule : securityRules )
+        {
             log.info( "Security rule [%s] installed on server",
-                rule.getClass().getCanonicalName() );
-            System.out.println( String.format( "Security rule [%s] installed on server",
-                rule.getClass().getCanonicalName() ) );
-		}
-	}
+                    rule.getClass().getCanonicalName() );
+            System.out.println(
+                    String.format( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() ) );
 
-	@Override
-	public void stop() {
-		for(SecurityFilter filter : mountedFilters)
-		{
-			webServer.removeFilter(filter, filter.getRule().forUriPath());
-		}
-		mountedFilters.clear();
-	}
-	
-	private SecurityRule[] getSecurityRules()
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        mountedFilter.destroy();
+    }
+
+    private Iterable<SecurityRule> getSecurityRules()
     {
         ArrayList<SecurityRule> rules = new ArrayList<SecurityRule>();
 
@@ -87,7 +85,6 @@ public class SecurityRulesModule implements ServerModule {
             }
         }
 
-        return rules.toArray( new SecurityRule[rules.size()] );
+        return rules;
     }
-
 }
