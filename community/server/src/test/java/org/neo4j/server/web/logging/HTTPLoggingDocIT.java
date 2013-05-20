@@ -29,21 +29,17 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.preflight.PreflightFailedException;
@@ -54,84 +50,84 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
-    private NeoServer server;
-    private static File logDirectory = null;
-
-    @Before
-    public void setUp() throws IOException
+    @Test
+    public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
-        ServerHelper.cleanTheDatabase( server );
-        removeHttpLogs();
-    }
+        // given
+        File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
+                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-logdir", true );
+        FileUtils.forceMkdir( logDirectory );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory(
+                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-confdir", true );
+        FileUtils.forceMkdir( confDir );
 
-    private void removeHttpLogs() throws IOException
-    {
-        if ( logDirectory != null && logDirectory.exists() )
+        final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
+                HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
+
+        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
+            .withProperty( Configurator.HTTP_LOGGING, "false" )
+            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+            .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+            .build();
+        try
         {
-            FileUtils.deleteDirectory( logDirectory );
-        }
-    }
+            server.start();
+            FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-    @After
-    public void stopServer()
-    {
-        if ( server != null )
+            // when
+            String query = "?implicitlyDisabled" + UUID.randomUUID().toString();
+            JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
+            assertEquals( 200, response.getStatus() );
+            response.close();
+
+            // then
+            assertFalse( occursIn( query, new File( logDirectory, "http.log" ) ) );
+        }
+        finally
         {
             server.stop();
         }
     }
 
     @Test
-    public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
-    {
-        // given
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withProperty( Configurator.HTTP_LOGGING, "false" )
-            .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
-            .build();
-        server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
-
-        // when
-        String query = "?implicitlyDisabled" + UUID.randomUUID().toString();
-        JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-        assertEquals( 200, response.getStatus() );
-        response.close();
-
-        // then
-        assertFalse( occursIn( query, new File( logDirectory + File.separator + "http.log" ) ) );
-    }
-
-    @Test
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
-        logDirectory = TargetDirectory.forTest( this.getClass() ).directory( "logdir" );
+        File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
+                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir", true );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confdir" );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory(
+                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir", true );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
             HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
+        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "true" )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
             .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
             .build();
-        server.start();
+        try
+        {
+            server.start();
 
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
+            FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        // when
-        String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
-        JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-        assertEquals( 200, response.getStatus() );
-        response.close();
+            // when
+            String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
+            JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
+            assertEquals( 200, response.getStatus() );
+            response.close();
 
-        // then
-        final File outputLog = new File( logDirectory + File.separator + "http.log" );
-        assertTrue( occursIn( query, outputLog ) );
+            // then
+            final File outputLog = new File( logDirectory, "http.log" );
+            assertTrue( occursIn( query, outputLog ) );
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 
     @Test
@@ -149,7 +145,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         config.setProperty(Configurator.HTTP_LOGGING, "true");
         config.setProperty(Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath());
         
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
+        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withPreflightTasks( new EnsurePreparedForHttpLogging(config) )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
@@ -168,6 +164,10 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             assertThat( e.getMessage(),
                 containsString( String.format( "HTTP log directory [%s]",
                     unwritableLogDir.getAbsolutePath() ) ) );
+        }
+        finally
+        {
+            server.stop();
         }
     }
 
@@ -211,25 +211,4 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
         return result;
     }
-
-
-//    private String createLogbackConfigFile( File logDirectory )
-//    {
-//        return "<configuration>\n" +
-//            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
-//            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
-//            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
-//            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
-//            "      <maxHistory>30</maxHistory>\n" +
-//            "    </rollingPolicy>\n" +
-//            "\n" +
-//            "    <encoder>\n" +
-//            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
-//            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
-//            "    </encoder>\n" +
-//            "  </appender>\n" +
-//            "\n" +
-//            "  <appender-ref ref=\"FILE\" />\n" +
-//            "</configuration>";
-//    }
 }
