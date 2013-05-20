@@ -19,10 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -78,6 +74,11 @@ import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
 
 import ch.qos.logback.classic.LoggerContext;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -411,8 +412,6 @@ public class ClusterManager
             NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
             network.stop();
             
-            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
-            //db.shutdown();
             return new StartNetworkAgainKit( db, network );
         }
 
