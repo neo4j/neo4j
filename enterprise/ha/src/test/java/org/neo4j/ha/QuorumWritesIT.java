@@ -19,15 +19,12 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.*;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -36,6 +33,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
@@ -44,7 +42,12 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-@Ignore("Waiting for fix in 1.9")
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 public class QuorumWritesIT
 {
     @Test
@@ -90,13 +93,13 @@ public class QuorumWritesIT
             doTx( master );
             fail( "After both slaves fail txs should not go through" );
         }
-        catch ( Exception e )
+        catch ( TransactionFailureException e )
         {
-//            e.printStackTrace();
+            assertEquals( "Timeout waiting for cluster to elect master", e.getMessage() );
         }
 
         // This is not a hack, this simulates a period of inactivity in the cluster.
-        Thread.sleep( 120000 );
+        Thread.sleep( 120000 ); // TODO Define "inactivity" and await that condition instead of 120 seconds.
 
         final CountDownLatch latch3 = new CountDownLatch( 1 );
         final CountDownLatch latch4 = new CountDownLatch( 1 );
@@ -164,13 +167,13 @@ public class QuorumWritesIT
             doTx( master );
             fail( "After both slaves fail txs should not go through" );
         }
-        catch ( Exception e )
+        catch ( TransactionFailureException e )
         {
-//            e.printStackTrace();
+            assertEquals( "Timeout waiting for cluster to elect master", e.getMessage() );
         }
 
         // This is not a hack, this simulates a period of inactivity in the cluster.
-        Thread.sleep( 120000 );
+        Thread.sleep( 120000 ); // TODO Define "inactivity" and await that condition instead of 120 seconds.
 
         final CountDownLatch latch3 = new CountDownLatch( 1 );
         final CountDownLatch latch4 = new CountDownLatch( 1 );

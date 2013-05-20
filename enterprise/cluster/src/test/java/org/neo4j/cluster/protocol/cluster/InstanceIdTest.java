@@ -31,16 +31,12 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterAssertion;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
 
-/**
- * TODO
- */
-@Ignore("Ignored in 2.0, team working on 1.9 is fixing, unignore ASAP once fix is in 1.9.")
 public class InstanceIdTest
         extends ClusterMockTest
 {

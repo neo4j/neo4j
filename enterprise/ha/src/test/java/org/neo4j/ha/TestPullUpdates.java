@@ -19,12 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.*;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +26,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
@@ -43,7 +38,13 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-@Ignore("Broken, being fixed in master branch.")
+import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+
 public class TestPullUpdates
 {
     private ClusterManager.ManagedCluster cluster;
@@ -63,7 +64,7 @@ public class TestPullUpdates
     @Ignore("Breaks more often than it passes - must wait for a fix")
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch", true );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms") );
         clusterManager.start();
@@ -89,7 +90,7 @@ public class TestPullUpdates
     @Test
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates", true );
         Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
         for (int i = 1; i <= 2; i++)
         {
@@ -108,7 +109,6 @@ public class TestPullUpdates
         setProperty( cluster.getMaster(), 1 );
         callPullUpdatesViaShell( 2 );
         assertEquals( 1, cluster.getAnySlave().getReferenceNode().getProperty( "i" ) );
-
     }
 
     private void callPullUpdatesViaShell( int i ) throws ShellException
@@ -132,7 +132,7 @@ public class TestPullUpdates
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 Object value = db.getReferenceNode().getProperty( "i", null );
-                if ( value == null || ((Integer) value).intValue() != i )
+                if ( value == null || (Integer) value != i )
                 {
                     ok = false;
                 }
