@@ -33,21 +33,21 @@ class ConstraintsTest extends DocumentingTestBase {
       title = "Create uniqueness constraint",
       text = "To create a constraint that makes sure that your database will never contain more than one node with a specific" +
         "label and one property value, use the +IS+ +UNIQUE+ syntax.",
-      queryText = "CREATE CONSTRAINT ON (id:LabelName) ASSERT id.property IS UNIQUE",
+      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       returns = "",
-      assertions = (p) => assertConstraintExist("LabelName", "property")
+      assertions = (p) => assertConstraintExist("Book", "isbn")
     )
   }
 
   @Test def drop_unique_constraint() {
-    engine.execute("CREATE CONSTRAINT ON (id:LabelName) ASSERT id.property IS UNIQUE")
+    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
 
     testQuery(
       title = "Drop uniqueness constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
-      queryText = "DROP CONSTRAINT ON (id:LabelName) ASSERT id.property IS UNIQUE",
+      queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       returns = "",
-      assertions = (p) => assertConstraintDoesNotExist("LabelName", "property")
+      assertions = (p) => assertConstraintDoesNotExist("Book", "isbn")
     )
   }
 

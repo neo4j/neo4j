@@ -5,7 +5,6 @@ Indexes
 Cypher allows the creation of indexes over a property for all nodes that have a given label.
 These indexes are automatically managed and kept up to date by the database whenever the graph is changed.
 
-
 :leveloffset: 2
 
 include::create-index-on-a-label.asciidoc[]

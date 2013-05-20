@@ -27,13 +27,15 @@ import collection.JavaConverters._
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException
 
 
-class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
+class UniqueConstraintAcceptanceTest
+  extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
+
   @Test
   def should_add_constraint() {
     //GIVEN
 
     //WHEN
-    parseAndExecute("create constraint on (identifier:Label) assert identifier.propertyKey is unique")
+    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
     val statementCtx = graph.statementContextForReading
@@ -48,10 +50,10 @@ class UniqueConstraintAcceptanceTest extends ExecutionEngineHelper with Statisti
   @Test
   def should_drop_constraint() {
     //GIVEN
-    parseAndExecute("create constraint on (identifier:Label) assert identifier.propertyKey is unique")
+    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //WHEN
-    parseAndExecute("drop constraint on (identifier:Label) assert identifier.propertyKey is unique")
+    parseAndExecute("drop constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
     val statementCtx = graph.statementContextForReading

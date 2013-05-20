@@ -38,10 +38,6 @@ include::schema.asciidoc[]
 
 :leveloffset: 1
 
-include::ql/constraints/index.asciidoc[]
-
-:leveloffset: 1
-
 include::execution-plans.asciidoc[]
 
 :leveloffset: 1
