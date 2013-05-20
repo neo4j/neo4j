@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.impl.api.index.inmemory;
 
-import java.io.File;
-import java.io.IOException;
+import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
-class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
+public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
-    NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
-                                  DirectoryFactory dirFactory, File dirFile ) throws IOException
+    @Override
+    protected SchemaIndexProvider createIndexProvider()
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        return new InMemoryIndexProvider();
     }
-
 }

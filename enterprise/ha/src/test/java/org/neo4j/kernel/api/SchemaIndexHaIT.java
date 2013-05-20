@@ -19,6 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -47,26 +61,11 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class SchemaIndexHaIT
 {
@@ -206,7 +205,7 @@ public class SchemaIndexHaIT
     }
     
     private static void awaitIndexOnline( IndexDefinition index, GraphDatabaseService db,
-            Map<Object, Node> expectedDdata ) throws InterruptedException
+            Map<Object, Node> expectedData ) throws InterruptedException
     {
         long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
         while( !indexOnline( index, db ) )
@@ -218,13 +217,13 @@ public class SchemaIndexHaIT
             }
         }
         
-        assertIndexContents( index, db, expectedDdata );
+        assertIndexContents( index, db, expectedData );
     }
 
     private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db,
-            Map<Object, Node> expectedDdata )
+            Map<Object, Node> expectedData )
     {
-        for ( Map.Entry<Object, Node> entry : expectedDdata.entrySet() )
+        for ( Map.Entry<Object, Node> entry : expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
                     asUniqueSet( db.findNodesByLabelAndProperty( index.getLabel(),

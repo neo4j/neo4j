@@ -29,9 +29,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 
 class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -98,7 +98,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         {
             if ( previousEntry != nodeId )
             {
-                throw new IndexEntryConflictException( nodeId, propertyValue, previousEntry );
+                throw new PreexistingIndexEntryConflictException( propertyValue, previousEntry, nodeId );
             }
         }
         else

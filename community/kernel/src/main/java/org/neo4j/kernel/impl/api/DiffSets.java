@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.concat;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
-
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -213,6 +213,11 @@ public class DiffSets<T>
                 }
             };
         }
+    }
+
+    public int delta()
+    {
+        return (addedElements == null ? 0 : addedElements.size()) - (removedElements == null ? 0 : removedElements.size());
     }
 
     private Set<T> newSet()
