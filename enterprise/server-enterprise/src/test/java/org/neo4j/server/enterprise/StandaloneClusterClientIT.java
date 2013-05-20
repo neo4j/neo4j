@@ -259,9 +259,7 @@ public class StandaloneClusterClientIT
         {
             process = startStandaloneClusterClientProcess( configFile, config );
             startSignalReader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-            // This assertion is here just to be sure the process started OK.
-            // If it didn't there's no point moving forward.
-            assertEquals( START_SIGNAL, startSignalReader.readLine() );
+            awaitLine( startSignalReader, START_SIGNAL );
             startSignalReader.close();
             startSignalReader = null;
             
@@ -288,6 +286,17 @@ public class StandaloneClusterClientIT
             if ( handler != null )
             {
                 handler.done();
+            }
+        }
+    }
+
+    private void awaitLine( BufferedReader reader, String line ) throws IOException
+    {
+        for ( String readLine; (readLine = reader.readLine()) != null; )
+        {
+            if ( line.equals( readLine ) )
+            {
+                return;
             }
         }
     }
