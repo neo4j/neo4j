@@ -207,6 +207,16 @@ public class TargetDirectory
         return testDirForTest( new DefaultFileSystemAbstraction(), owningTest );
     }
 
+    public static TestDirectory cleanTestDirForTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    {
+        return forTest( fileSystem, owningTest ).cleanTestDirectory();
+    }
+
+    public static TestDirectory cleanTestDirForTest( Class<?> owningTest )
+    {
+        return cleanTestDirForTest( new DefaultFileSystemAbstraction(), owningTest );
+    }
+
     public File graphDbDir( boolean clean )
     {
         return directory( "graph-db", clean );
