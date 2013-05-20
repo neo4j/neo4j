@@ -27,6 +27,8 @@ import java.util.List;
 
 import org.neo4j.test.ProcessStreamHandler;
 
+import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
+
 /**
  * TODO
  */
@@ -114,7 +116,7 @@ public class MultiPaxosServerCluster
         public PaxosServer( Process server, String prefix )
         {
             this.server = server;
-            handler = new ProcessStreamHandler( server, false, prefix );
+            handler = new ProcessStreamHandler( server, false, prefix, PRINT_FAILURES );
             handler.launch();
             writer = new BufferedWriter( new OutputStreamWriter(server.getOutputStream()));
         }

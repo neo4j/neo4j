@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.util.ArrayList;
@@ -34,17 +36,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
@@ -52,9 +52,11 @@ import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
+import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -66,64 +68,100 @@ import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.enterprise.StandaloneClusterClientTestProxy.START_SIGNAL;
+import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 
 public class StandaloneClusterClientIT
 {
-    @Rule
-    public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
-
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
     {
-        startAndAssertJoined( 5003, null, stringMap( initial_hosts.name(), ":5001", server_id.name(), "3" ) );
+        startAndAssertJoined( 5003,
+                // Config file
+                stringMap(),
+                // Arguments
+                stringMap( 
+                        initial_hosts.name(), ":5001",
+                        server_id.name(), "3" ) );
     }
 
     @Test
     public void willFailJoinIfIncorrectInitialHostsSet() throws Exception
     {
         assumeFalse( "Cannot kill processes on windows.", osIsWindows() );
-        startAndAssertJoined( null, null, stringMap( initial_hosts.name(), ":5011", server_id.name(), "3" ) );
+        startAndAssertJoined( SHOULD_NOT_JOIN,
+                // Config file
+                stringMap(),
+                // Arguments
+                stringMap(
+                        initial_hosts.name(), ":5011",
+                        server_id.name(), "3" ) );
     }
 
     @Test
     public void canJoinWithInitialHostsInConfigFile() throws Exception
     {
-        startAndAssertJoined( 5003, configFile( initial_hosts.name(), ":5001" ), stringMap(server_id.name(), "3") );
+        startAndAssertJoined( 5003,
+                // Config file
+                stringMap( initial_hosts.name(), ":5001" ),
+                // Arguments
+                stringMap( server_id.name(), "3" ) );
     }
 
     @Test
     public void willFailJoinIfIncorrectInitialHostsSetInConfigFile() throws Exception
     {
         assumeFalse( "Cannot kill processes on windows.", osIsWindows() );
-        startAndAssertJoined( null, configFile( initial_hosts.name(), ":5011" ), stringMap( server_id.name(), "3") );
+        startAndAssertJoined( SHOULD_NOT_JOIN,
+                // Config file
+                stringMap( initial_hosts.name(), ":5011" ),
+                // Arguments
+                stringMap( server_id.name(), "3" ) );
     }
 
     @Test
     public void canOverrideInitialHostsConfigFromConfigFile() throws Exception
     {
-        startAndAssertJoined( 5003, configFile( initial_hosts.name(), ":5011" ),
-                stringMap( initial_hosts.name(), ":5001", server_id.name(), "3" ) );
+        startAndAssertJoined( 5003,
+                // Config file
+                stringMap( initial_hosts.name(), ":5011" ),
+                // Arguments
+                stringMap(
+                        initial_hosts.name(), ":5001",
+                        server_id.name(), "3" ) );
     }
 
     @Test
     public void canSetSpecificPort() throws Exception
     {
-        startAndAssertJoined( 5010, null, stringMap(
-                initial_hosts.name(), ":5001",
-                server_id.name(), "3",
-                cluster_server.name(), ":5010" ) );
+        startAndAssertJoined( 5010,
+                // Config file
+                stringMap(),
+                // Arguments
+                stringMap(
+                        initial_hosts.name(), ":5001",
+                        server_id.name(), "3",
+                        cluster_server.name(), ":5010" ) );
     }
 
     @Test
     public void usesPortRangeFromConfigFile() throws Exception
     {
-        startAndAssertJoined( 5012, configFile(
-                initial_hosts.name(), ":5001",
-                cluster_server.name(), ":5012-5020" ), stringMap( server_id.name(), "3" ) );
+        startAndAssertJoined( 5012,
+                // Config file
+                stringMap(
+                        initial_hosts.name(), ":5001",
+                        cluster_server.name(), ":5012-5020" ),
+                // Arguments
+                stringMap( server_id.name(), "3" ) );
     }
 
     // === Everything else ===
 
+    private static Integer SHOULD_NOT_JOIN = null;
+    
+    @Rule
+    public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
     private final File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
     private LifeSupport life;
     private ClusterClient[] clients;
@@ -140,21 +178,9 @@ public class StandaloneClusterClientIT
             config.put( cluster_server.name(), ":" + (5000+i) );
             config.put( server_id.name(), "" + i );
             config.put( initial_hosts.name(), ":5001" );
-            Logging logging = new Logging()
-            {
-                @Override
-                public StringLogger getMessagesLog( Class loggingClass )
-                {
-                    return StringLogger.DEV_NULL;
-                }
-
-                @Override
-                public ConsoleLogger getConsoleLog( Class loggingClass )
-                {
-                    return new ConsoleLogger( StringLogger.DEV_NULL );
-                }
-            };
-            final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging, new ServerIdElectionCredentialsProvider() );
+            Logging logging = new DevNullLoggingService();
+            final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging,
+                    new ServerIdElectionCredentialsProvider() );
             final CountDownLatch latch = new CountDownLatch( 1 );
             client.addClusterListener( new ClusterListener.Adapter()
             {
@@ -176,21 +202,42 @@ public class StandaloneClusterClientIT
         life.shutdown();
     }
 
-    private File configFile( Object... settingsAndValues ) throws IOException
+    private File configFile( Map<String, String> config ) throws IOException
     {
         File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
         File dbConfigFile = new File( directory, "config-file" );
-        store( MapUtil.<String, String>genericMap( settingsAndValues ), dbConfigFile );
+        store( config, dbConfigFile );
         File serverConfigFile = new File( directory, "server-file" );
-        store( stringMap( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbConfigFile.getAbsolutePath() ), serverConfigFile );
+        store( stringMap( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbConfigFile.getAbsolutePath() ),
+                serverConfigFile );
         return serverConfigFile;
     }
 
-    private void startAndAssertJoined( Integer expectedPort, File configFile, Map<String, String> config ) throws Exception
+    private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> configInConfigFile,
+            Map<String, String> config ) throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch( 1 );
-        final AtomicInteger port = new AtomicInteger();
-        clients[0].addClusterListener( new ClusterListener.Adapter()
+        File configFile = configFile( configInConfigFile );
+        CountDownLatch latch = new CountDownLatch( 1 );
+        AtomicInteger port = new AtomicInteger();
+        clients[0].addClusterListener( joinAwaitingListener( latch, port ) );
+
+        boolean clientStarted = startStandaloneClusterClient( configFile, config, latch );
+        if ( expectedAssignedPort == null )
+        {
+            assertFalse( format( "Should not be able to start cluster client given config file:%s " +
+                    "and arguments:%s", configInConfigFile, config ), clientStarted );
+        }
+        else
+        {
+            assertTrue( format( "Should be able to start client client given config file:%s " +
+                    "and arguments:%s", configInConfigFile, config ), clientStarted );
+            assertEquals( expectedAssignedPort.intValue(), port.get() );
+        }
+    }
+
+    private Adapter joinAwaitingListener( final CountDownLatch latch, final AtomicInteger port )
+    {
+        return new ClusterListener.Adapter()
         {
             @Override
             public void joinedCluster( InstanceId member, URI memberUri )
@@ -199,39 +246,40 @@ public class StandaloneClusterClientIT
                 latch.countDown();
                 clients[0].removeClusterListener( this );
             }
-        } );
-        List<String> args = new ArrayList<String>( asList( "java", "-cp", getProperty( "java.class.path" ) ) );
-        args.add( "-Dneo4j.home=" + directory.getAbsolutePath() );
-        if ( configFile != null )
-        {
-            args.add( "-D" + Configurator.NEO_SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
-        }
-        args.add( StandaloneClusterClient.class.getName() );
+        };
+    }
 
-        for ( Map.Entry<String, String> entry : config.entrySet() )
-        {
-            args.add( "-" + entry.getKey() + "=" + entry.getValue() );
-        }
+    private boolean startStandaloneClusterClient( File configFile, Map<String, String> config, CountDownLatch latch )
+            throws Exception
+    {
         Process process = null;
         ProcessStreamHandler handler = null;
+        BufferedReader startSignalReader = null;
         try
         {
-            process = getRuntime().exec( args.toArray( new String[args.size()] ) );
-            handler = new ProcessStreamHandler( process, false );
+            process = startStandaloneClusterClientProcess( configFile, config );
+            startSignalReader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+            // This assertion is here just to be sure the process started OK.
+            // If it didn't there's no point moving forward.
+            assertEquals( START_SIGNAL, startSignalReader.readLine() );
+            startSignalReader.close();
+            startSignalReader = null;
+            
+            handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
-            boolean awaitOutcome = latch.await( 5, SECONDS );
-            if ( expectedPort == null )
-            {
-                assertFalse( "expected port null, should not join cluster", awaitOutcome );
-            }
-            else
-            {
-                assertTrue( "join cluster within timeout", awaitOutcome );
-                assertEquals( expectedPort.intValue(), port.get() );
-            }
+
+            // Latch is triggered when this cluster client we just spawned joins the cluster,
+            // or rather when the first client sees it as joined. If the latch awaiting times out it
+            // (most likely) means that this cluster client couldn't be started. The reason for not
+            // being able to start is assumed in this test to be that the specified port already is in use.
+            return latch.await( 5, SECONDS );
         }
         finally
         {
+            if ( startSignalReader != null )
+            {
+                startSignalReader.close();
+            }
             if ( process != null )
             {
                 kill( process );
@@ -242,6 +290,24 @@ public class StandaloneClusterClientIT
                 handler.done();
             }
         }
+    }
+
+    private Process startStandaloneClusterClientProcess( File configFile, Map<String, String> config )
+            throws Exception
+    {
+        List<String> args = new ArrayList<String>( asList( "java", "-cp", getProperty( "java.class.path" ),
+                "-Dneo4j.home=" + directory.getAbsolutePath() ) );
+        if ( configFile != null )
+        {
+            args.add( "-D" + Configurator.NEO_SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
+        }
+        args.add( StandaloneClusterClientTestProxy.class.getName() );
+
+        for ( Map.Entry<String, String> entry : config.entrySet() )
+        {
+            args.add( "-" + entry.getKey() + "=" + entry.getValue() );
+        }
+        return getRuntime().exec( args.toArray( new String[args.size()] ) );
     }
 
     private static void kill( Process process )
