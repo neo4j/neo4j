@@ -31,7 +31,19 @@ public enum ConstraintType
     /**
      * @see ConstraintDefinition#asUniquenessConstraint()
      */
-    UNIQUENESS;
+    UNIQUENESS( "Uniqueness" );
+
+    private final String prettyName;
+
+    private ConstraintType( String prettyName )
+    {
+        this.prettyName = prettyName;
+    }
+
+    public String prettyName()
+    {
+        return prettyName;
+    }
 
     public Iterable<ConstraintDefinition> filter( Iterable<ConstraintDefinition> input )
     {

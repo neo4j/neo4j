@@ -31,21 +31,25 @@ public class ColumnPrinter
     public ColumnPrinter( String... columnPrefixes )
     {
         for ( String prefix : columnPrefixes )
+        {
             this.columns.add( new Column( prefix ) );
+        }
     }
-    
+
     public void add( Object... columns )
     {
         Iterator<Column> columnIterator = this.columns.iterator();
         for ( Object column : columns )
+        {
             columnIterator.next().add( column.toString() );
+        }
         if ( columnIterator.hasNext() )
         {
             throw new IllegalArgumentException( "Invalid column count " + columns.length + ", expected " +
                     this.columns.size() );
         }
     }
-    
+
     public void print( Output out ) throws RemoteException
     {
         Column firstColumn = columns.get( 0 );
@@ -53,17 +57,19 @@ public class ColumnPrinter
         {
             firstColumn.print( out, line );
             for ( int col = 1; col < columns.size(); col++ )
+            {
                 columns.get( col ).print( out, line );
+            }
             out.println();
         }
     }
-    
+
     private static class Column
     {
         private int widest = 0;
         private final List<String> cells = new ArrayList<String>();
         private final String prefix;
-        
+
         public Column( String prefix )
         {
             this.prefix = prefix;
@@ -74,12 +80,12 @@ public class ColumnPrinter
             cells.add( cell );
             widest = Math.max( widest, cell.length() );
         }
-        
+
         int size()
         {
             return cells.size();
         }
-        
+
         void print( Output out, int i ) throws RemoteException
         {
             String value = cells.get( i );
@@ -91,7 +97,9 @@ public class ColumnPrinter
     {
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < count; i++ )
+        {
             builder.append( string );
+        }
         return builder.toString();
     }
 }

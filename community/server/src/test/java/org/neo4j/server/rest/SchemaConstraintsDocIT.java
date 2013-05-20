@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
@@ -199,7 +198,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void drop_schema_index() throws Exception
+    public void drop_constraint() throws Exception
     {
         data.get();
 
