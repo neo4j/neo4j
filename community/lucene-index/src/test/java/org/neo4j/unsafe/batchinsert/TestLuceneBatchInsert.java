@@ -19,6 +19,34 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
+import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
+import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
+import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
+import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.test.TargetDirectory;
+
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -36,51 +64,12 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 import static org.neo4j.index.lucene.ValueContext.numeric;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
-import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.kernel.impl.cache.LruCache;
-
 public class TestLuceneBatchInsert
 {
-    private static final String PATH = "target/var/batch-new";
-
-    @Before
-    public void cleanDirectory()
-    {
-        Neo4jTestCase.deleteFileOrDirectory( new File( PATH ) );
-    }
-
     @Test
     public void testSome() throws Exception
     {
-        // Different paths for each tests because there's a bug (on Windows)
-        // causing _0.cfs file to stay open 
-        String path = new File( PATH, "1" ).getAbsolutePath();
-        BatchInserter inserter = inserter( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         String indexName = "users";
         BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
         Map<Integer, Long> ids = new HashMap<Integer, Long>();
@@ -96,15 +85,12 @@ public class TestLuceneBatchInsert
         {
             assertContains( index.get( "name", "Joe" + i ), ids.get( i ) );
         }
-        assertContains( index.query( "name:Joe0 AND other:Schmoe" ),
-                ids.get( 0 ) );
+        assertContains( index.query( "name:Joe0 AND other:Schmoe" ), ids.get( 0 ) );
 
-        assertContains( index.query( "name", "Joe*" ),
-                ids.values().toArray( new Long[ids.size()] ) );
+        assertContains( index.query( "name", "Joe*" ), ids.values().toArray( new Long[ids.size()] ) );
         provider.shutdown();
-        inserter.shutdown();
-
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        
+        switchToGraphDatabaseService();
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );
@@ -112,8 +98,7 @@ public class TestLuceneBatchInsert
         Index<Node> dbIndex = db.index().forNodes( "users" );
         for ( int i = 0; i < count; i++ )
         {
-            assertContains( dbIndex.get( "name", "Joe" + i ),
-                    db.getNodeById( ids.get( i ) ) );
+            assertContains( dbIndex.get( "name", "Joe" + i ), db.getNodeById( ids.get( i ) ) );
         }
 
         Collection<Node> nodes = new ArrayList<Node>();
@@ -121,27 +106,19 @@ public class TestLuceneBatchInsert
         {
             nodes.add( db.getNodeById( id ) );
         }
-        assertContains( dbIndex.query( "name", "Joe*" ),
-                nodes.toArray( new Node[nodes.size()] ) );
-        assertContains( dbIndex.query( "name:Joe0 AND other:Schmoe" ),
-                db.getNodeById( ids.get( 0 ) ) );
-        db.shutdown();
+        assertContains( dbIndex.query( "name", "Joe*" ), nodes.toArray( new Node[nodes.size()] ) );
+        assertContains( dbIndex.query( "name:Joe0 AND other:Schmoe" ), db.getNodeById( ids.get( 0 ) ) );
     }
 
     @Test
     public void testFulltext()
     {
-        String path = new File( PATH, "2" ).getAbsolutePath();
-        BatchInserter inserter = inserter( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         String name = "users";
-        BatchInserterIndex index = provider.nodeIndex( name,
-                stringMap( "type", "fulltext" ) );
+        BatchInserterIndex index = provider.nodeIndex( name, stringMap( "type", "fulltext" ) );
 
         long id1 = inserter.createNode( null );
-        index.add( id1, map( "name", "Mattias Persson", "email",
-                "something@somewhere", "something", "bad" ) );
+        index.add( id1, map( "name", "Mattias Persson", "email", "something@somewhere", "something", "bad" ) );
         long id2 = inserter.createNode( null );
         index.add( id2, map( "name", "Lars PerssoN" ) );
         index.flush();
@@ -156,24 +133,19 @@ public class TestLuceneBatchInsert
         index.flush();
         assertContains( index.get( "name", "What Ever" ), id3 );
         assertContains( index.get( "name", "Anything" ), id3 );
-
         provider.shutdown();
-        inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        switchToGraphDatabaseService();
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
         assertContains( dbIndex.query( "name", "persson" ), node1, node2 );
-        db.shutdown();
     }
 
     @Test
     public void testCanIndexRelationships()
     {
-        BatchInserter inserter = inserter( new File( PATH, "5" ).getAbsolutePath() );
-        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
                 "edgeIndex", stringMap( IndexManager.PROVIDER, "lucene", "type", "exact" ) );
 
@@ -191,15 +163,12 @@ public class TestLuceneBatchInsert
                 edgesIndex.query( "EDGE_TYPE", EdgeType.KNOWS.name() ).getSingle() );
 
         indexProvider.shutdown();
-        inserter.shutdown();
     }
     
     @Test
     public void triggerNPEAfterFlush()
     {
-        BatchInserter inserter = inserter( new File( PATH, "6" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "Node-exact", EXACT_CONFIG );
         
         Map<String, Object> map = map( "name", "Something" );
@@ -209,16 +178,12 @@ public class TestLuceneBatchInsert
         assertContains( index.get( "name", "Something" ), node );
         
         provider.shutdown();
-        inserter.shutdown();
     }
     
     @Test
     public void testNumericValues()
     {
-        String path = new File( PATH, "7" ).getAbsolutePath();
-        BatchInserter inserter = inserter( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
         
         long node1 = inserter.createNode( null );
@@ -229,23 +194,18 @@ public class TestLuceneBatchInsert
                 newIntRange( "number", 21, 50, true, true ) ), node1, node2 );
         
         provider.shutdown();
-        inserter.shutdown();
         
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        switchToGraphDatabaseService();
         Node n1 = db.getNodeById( node1 );
-        Node n2 = db.getNodeById( node2 );
+        db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
         assertContains( idx.query( "number", newIntRange( "number", 21, 45, false, true ) ), n1 );
-        db.shutdown();
     }
 
     @Test
     public void testNumericValueArrays()
     {
-        String path = new File( PATH, "8" ).getAbsolutePath();
-        BatchInserter inserter = inserter( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex batchIndex = provider.nodeIndex( "mine", EXACT_CONFIG );
 
         long nodeId1 = inserter.createNode( null );
@@ -269,13 +229,11 @@ public class TestLuceneBatchInsert
         assertThat( batchIndexResult4, isEmpty() );
 
         provider.shutdown();
-        inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        switchToGraphDatabaseService();
         Node node1 = db.getNodeById( nodeId1 );
         Node node2 = db.getNodeById( nodeId2 );
         Index<Node> index = db.index().forNodes( "mine" );
-
 
         IndexHits<Node> indexResult1 = index.query( "number", newIntRange( "number", 47, 98, true, true ) );
         assertThat(indexResult1, contains(node1, node2));
@@ -291,17 +249,12 @@ public class TestLuceneBatchInsert
 
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
         assertThat( indexResult4, isEmpty() );
-
-        
-        db.shutdown();
     }
     
     @Test
     public void indexNumbers() throws Exception
     {
-        BatchInserter inserter = inserter( new File( PATH, "9" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
         
         long id = inserter.createNode( null );
@@ -314,17 +267,12 @@ public class TestLuceneBatchInsert
         assertEquals( 1, index.get( "key", "123" ).size() );
         
         provider.shutdown();
-        inserter.shutdown();
     }
-
     
     @Test
     public void shouldCreateAutoIndexThatIsUsableInEmbedded() throws Exception
     {
-        String path = new File( PATH, "10" ).getAbsolutePath();
-        BatchInserter inserter = inserter( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "node_auto_index", EXACT_CONFIG );
         
         long id = inserter.createNode( null );
@@ -333,14 +281,12 @@ public class TestLuceneBatchInsert
         index.add( id, props );
         index.flush();
         provider.shutdown();
-        inserter.shutdown();
-        GraphDatabaseService db = new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path ).
-                setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
-                setConfig( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ).
-                setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
-                setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" ).
-                newGraphDatabase();
+        shutdownInserter();
+
+        switchToGraphDatabaseService( configure( GraphDatabaseSettings.node_keys_indexable, "name" ),
+                configure( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ),
+                configure( GraphDatabaseSettings.node_auto_indexing, "true" ),
+                configure( GraphDatabaseSettings.relationship_auto_indexing, "true" ) );
         Transaction tx = db.beginTx();
         try
         {
@@ -353,10 +299,6 @@ public class TestLuceneBatchInsert
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
         finally
         {
             tx.finish();
@@ -364,15 +306,12 @@ public class TestLuceneBatchInsert
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "peter" ).hasNext());
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "bob" ).hasNext());
         assertFalse(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "joe" ).hasNext());
-        
     }
 
     @Test
     public void addOrUpdateFlushBehaviour() throws Exception
     {
-        BatchInserter inserter = inserter( new File( PATH, "9" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "update", EXACT_CONFIG );
         
         long id = inserter.createNode( null );
@@ -405,25 +344,21 @@ public class TestLuceneBatchInsert
         index.flush();
         assertEquals( 1, index.get( "2key", "value2" ).size() );
         provider.shutdown();
-        inserter.shutdown();
     }
 
     @Test
     public void useStandardAnalyzer() throws Exception
     {
-        BatchInserter inserter = inserter( PATH );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
-                inserter );
-        BatchInserterIndex index = provider.nodeIndex( "myindex", stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "myindex",
+                stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
         index.add( 0, map( "name", "Mattias" ) );
         provider.shutdown();
-        inserter.shutdown();
     }
     
     @Test
     public void cachesShouldBeFilledWhenAddToMultipleIndexesCreatedNow() throws Exception
     {
-        BatchInserter inserter = inserter( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "index1", LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( "name", 100000 );
@@ -443,25 +378,23 @@ public class TestLuceneBatchInsert
         assertCacheIsEmpty( index2, nameKey );
         
         provider.shutdown();
-        inserter.shutdown();
     }
     
     @Test
     public void cachesDoesntGetFilledWhenAddingForAnExistingIndex() throws Exception
     {
         // Prepare the test case, i.e. create a store with a populated index.
-        BatchInserter inserter = inserter( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         String indexName = "index";
         BatchInserterIndex index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         String key = "name";
         index.add( 0, map( key, "Mattias" ) );
         provider.shutdown();
-        inserter.shutdown();
+        shutdownInserter();
         
         // Test so that the next run doesn't start caching inserted stuff right away,
         // because that would lead to invalid results being returned.
-        inserter = inserter( PATH );
+        startInserter();
         provider = new LuceneBatchInserterIndexProvider( inserter );
         index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( key, 100000 );
@@ -470,7 +403,6 @@ public class TestLuceneBatchInsert
         assertCacheIsEmpty( index, key );
         assertEquals( 1, index.get( key, "Persson" ).getSingle().intValue() );
         provider.shutdown();
-        inserter.shutdown();
     }
     
     @Test
@@ -479,32 +411,30 @@ public class TestLuceneBatchInsert
         // GIVEN -- a batch insertion creating two indexes
         String indexName1 = "first", indexName2 = "second", key = "name";
         {
-            BatchInserter inserter = BatchInserters.inserter( PATH );
             BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
             BatchInserterIndex index1 = provider.nodeIndex( indexName1, LuceneIndexImplementation.EXACT_CONFIG );
             index1.add( 0, map( key, "Mattias" ) );
             BatchInserterIndex index2 = provider.nodeIndex( indexName1, LuceneIndexImplementation.EXACT_CONFIG );
             index2.add( 0, map( key, "Mattias" ) );
             provider.shutdown();
-            inserter.shutdown();
+            shutdownInserter();
         }
 
         // WHEN -- doing a second insertion, only adding to the second index
         {
-            BatchInserter inserter = BatchInserters.inserter( PATH );
+            startInserter();
             BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
             BatchInserterIndex index2 = provider.nodeIndex( indexName2, LuceneIndexImplementation.EXACT_CONFIG );
             index2.add( 1, map( key, "Mattias" ) );
             provider.shutdown();
-            inserter.shutdown();
+            shutdownInserter();
         }
 
         // THEN -- both indexes should exist when starting up in "graph mode"
         {
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(PATH );
+            switchToGraphDatabaseService();
             assertTrue( indexName1 + " should exist", db.index().existsForNodes( indexName1 ) );
             assertTrue( indexName2 + " should exist", db.index().existsForNodes( indexName2 ) );
-            db.shutdown();
         }
     }
     
@@ -530,6 +460,7 @@ public class TestLuceneBatchInsert
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private Map<String, LruCache<String, Collection<Long>>> getIndexCache( BatchInserterIndex index )
     {
         try
@@ -541,6 +472,64 @@ public class TestLuceneBatchInsert
         catch ( Exception e )
         {
             throw launderedException( e );
+        }
+    }
+
+    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private BatchInserter inserter;
+    private GraphDatabaseService db;
+
+    @Before
+    public void startInserter() throws Exception
+    {
+        inserter = inserter( storeDir );
+    }
+
+    private void switchToGraphDatabaseService( ConfigurationParameter... config )
+    {
+        shutdownInserter();
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        for ( ConfigurationParameter configurationParameter : config )
+        {
+            builder = builder.setConfig( configurationParameter.key, configurationParameter.value );
+        }
+        db = builder.newGraphDatabase();
+    }
+
+    private static ConfigurationParameter configure( Setting<?> key, String value )
+    {
+        return new ConfigurationParameter( key, value );
+    }
+
+    private static class ConfigurationParameter
+    {
+        private final Setting<?> key;
+        private final String value;
+
+        public ConfigurationParameter( Setting<?> key, String value )
+        {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    private void shutdownInserter()
+    {
+        if ( inserter != null )
+        {
+            inserter.shutdown();
+            inserter = null;
+        }
+    }
+
+    @After
+    public void shutdown()
+    {
+        shutdownInserter();
+        if ( db != null )
+        {
+            db.shutdown();
+            db = null;
         }
     }
 }
