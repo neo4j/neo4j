@@ -2494,7 +2494,7 @@ create a-[r:REL]->b
     test(vFrom2_0, "match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo("n", "  UNNAMED18", "  UNNAMED14", Seq(), Direction.OUTGOING, optional = false)).
         where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), KeyToken.Unresolved("Person", TokenType.Label)))).
-        usingIndex(SchemaIndex("n", "Person", "name", None)).
+        using(SchemaIndex("n", "Person", "name", None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
 
@@ -2505,7 +2505,6 @@ create a-[r:REL]->b
         matches(SingleNode("s")).
         returns(ReturnItem(Identifier("s"), "s")))
   }
-
 
   @Test def awesome_single_labeled_node_match_pattern() {
     test(vFrom2_0, "match s:nostart return s",
@@ -2522,6 +2521,15 @@ create a-[r:REL]->b
         matches(SingleNode("s")).
         namedPaths(NamedPath("p", SingleNode("s"))).
         returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+  @Test def label_scan_hint() {
+    test(vFrom2_0, "match p:Person using scan p:Person return p",
+      Query.
+        matches(SingleNode("p")).
+        where(HasLabel(Identifier("p"), KeyToken.Unresolved("Person", TokenType.Label))).
+        using(NodeByLabel("p", "Person")).
+        returns(ReturnItem(Identifier("p"), "p")))
   }
 
 

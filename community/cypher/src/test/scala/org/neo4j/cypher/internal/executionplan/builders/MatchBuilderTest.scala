@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{ShortestPath, NodeById, True, RelatedTo}
+import org.neo4j.cypher.internal.commands.{ShortestPath, NodeById, RelatedTo}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
 
