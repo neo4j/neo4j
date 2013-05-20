@@ -85,7 +85,7 @@ public class HaBeanIT
         };
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterSeesAllSlavesAsAvailable() );
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
     }
 
     @After
