@@ -42,8 +42,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
         // KISS - but refactor into a general purpose constraint checker later on
         if ( propertyKey == null )
         {
-            throw new DataIntegrityKernelException(
-                    String.format( "Null is not a valid property name. Only non-null strings are allowed." ) );
+            throw new DataIntegrityKernelException.IllegalTokenNameException( null );
         }
 
         return delegate.getOrCreatePropertyKeyId( propertyKey );
@@ -55,9 +54,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
         // KISS - but refactor into a general purpose constraint checker later on
         if ( label == null || label.length() == 0 )
         {
-            throw new DataIntegrityKernelException(
-                    String.format( "%s is not a valid label name. Only non-empty strings are allowed.",
-                                   label == null ? "null" : "'" + label + "'" ) );
+            throw new DataIntegrityKernelException.IllegalTokenNameException( label );
         }
 
         return delegate.getOrCreateLabelId( label );
@@ -79,24 +76,20 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
         return delegate.addConstraintIndex( labelId, propertyKey );
     }
 
-    private void checkIndexExistence( long labelId, long propertyKey ) throws
-                                                                       DataIntegrityKernelException
+    private void checkIndexExistence( long labelId, long propertyKey ) throws DataIntegrityKernelException
     {
         for ( IndexDescriptor descriptor : loop( getIndexes( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
-                throw new DataIntegrityKernelException( "Property " + propertyKey +
-                                                              " is already indexed for label " + labelId + "." );
+                throw new DataIntegrityKernelException.AlreadyIndexedException( labelId, propertyKey );
             }
         }
         for ( IndexDescriptor descriptor : loop( getConstraintIndexes( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
-                throw new DataIntegrityKernelException( "Property " + propertyKey +
-                                                              " is already indexed for label " + labelId +
-                                                              " through a constraint." );
+                throw new DataIntegrityKernelException.AlreadyConstrainedException( labelId, propertyKey );
             }
         }
     }
@@ -112,9 +105,8 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
                 return;
             }
         }
-        throw new DataIntegrityKernelException( String.format(
-                "There is no index for property %d for label %d.",
-                descriptor.getPropertyKeyId(), descriptor.getLabelId() ) );
+        throw new DataIntegrityKernelException.
+                NoSuchIndexException( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
     @Override
@@ -128,9 +120,8 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
                 return;
             }
         }
-        throw new DataIntegrityKernelException( String.format(
-                "There is no constraint index for property %d for label %d.",
-                descriptor.getPropertyKeyId(), descriptor.getLabelId() ) );
+        throw new DataIntegrityKernelException.
+                NoSuchIndexException( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
     @Override
@@ -139,9 +130,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     {
         if ( getConstraints( labelId, propertyKey ).hasNext() )
         {
-            throw new DataIntegrityKernelException( "Property " + propertyKey +
-                                                          " already has a uniqueness constraint for label " + labelId +
-                                                          "." );
+            throw new DataIntegrityKernelException.AlreadyConstrainedException( labelId, propertyKey );
         }
 
         return delegate.addUniquenessConstraint( labelId, propertyKey );

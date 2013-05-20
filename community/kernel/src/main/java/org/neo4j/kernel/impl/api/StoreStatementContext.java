@@ -157,8 +157,7 @@ public class StoreStatementContext extends CompositeStatementContext
             if ( e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
                  && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
-                throw new DataIntegrityKernelException(
-                        "The maximum number of labels available has been reached, cannot create more labels.", e );
+                throw new DataIntegrityKernelException.TooManyLabelsException( e );
             }
             else
             {

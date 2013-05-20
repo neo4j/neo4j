@@ -28,6 +28,8 @@ include::node-labels.asciidoc[]
 
 include::indexes.asciidoc[]
 
+include::constraints.asciidoc[]
+
 include::traversals.asciidoc[]
 
 include::graph-algos.asciidoc[]
