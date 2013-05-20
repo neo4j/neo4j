@@ -104,8 +104,6 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     namedPaths.exists(_.unsolved) ||
     updates.exists(_.unsolved))
 
-  def isUpdating = start.exists(_.token.mutating) || updates.nonEmpty
-
   def rewrite(f: Expression => Expression): PartiallySolvedQuery = {
     this.copy(
       returns = returns.map {

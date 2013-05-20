@@ -6,9 +6,6 @@ Skip
 By using +SKIP+, the result set will get trimmed from the top.
 Please note that no guarantees are made on the order of the result unless the query specifies the +ORDER BY+ clause.
 
-Note that +SKIP+ always works on the result, i.e. updates are done on all the matching items, not just
-the ones returned from the query.
-
 .Graph
 include::includes/cypher-skip-graph.asciidoc[]
 
