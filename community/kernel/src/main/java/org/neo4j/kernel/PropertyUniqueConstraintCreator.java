@@ -54,6 +54,17 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
         {
             return actions.createPropertyUniquenessConstraint( label, propertyKey );
         }
+        catch ( DataIntegrityKernelException.AlreadyIndexedException e )
+        {
+            throw new ConstraintViolationException( format( "Can not create an constraint on :%s(%s). An index " +
+                    "already exists for this combination. Drop the index and create the constraint again.", label,
+                    propertyKey ), e );
+        }
+        catch ( DataIntegrityKernelException.AlreadyConstrainedException e )
+        {
+            throw new ConstraintViolationException( format( "A constraint already exists on :%s(%s)", label,
+                    propertyKey ), e );
+        }
         catch ( DataIntegrityKernelException e )
         {
             throw new ConstraintViolationException(

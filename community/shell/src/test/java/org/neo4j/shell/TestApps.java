@@ -19,13 +19,25 @@
  */
 package org.neo4j.shell;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
-
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -44,19 +56,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class TestApps extends AbstractShellTest
 {
@@ -788,8 +787,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls", constraint1.getLabel().name(), constraint1.getConstraintType().name(),
-                constraint1.toString() );
+        executeCommand( "schema ls", constraint1.getLabel().name(), constraint1.getConstraintType().prettyName() );
     }
 
     @Test
@@ -802,8 +800,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -l :PERSON", constraint1.getLabel().name(), constraint1.getConstraintType().name(),
-                constraint1.toString() );
+        executeCommand( "schema ls -l :PERSON", constraint1.getLabel().name(), constraint1.getConstraintType().prettyName());
     }
 
     @Test
@@ -817,7 +814,7 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :PERSON -p name", constraint1.getLabel().name(), constraint1.getConstraintType()
-                .name(), constraint1.toString() );
+                .prettyName() );
     }
 
     private Iterable<String> names( Iterable<Label> labels )

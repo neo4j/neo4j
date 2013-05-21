@@ -19,6 +19,20 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+import org.neo4j.helpers.Function;
+import org.neo4j.test.ImpermanentDatabaseRule;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
@@ -32,24 +46,14 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
-import org.neo4j.helpers.Function;
-import org.neo4j.test.ImpermanentDatabaseRule;
-
 public class SchemaAcceptanceTest
 {
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    private GraphDatabaseService db;
+    private Label label = Labels.MY_LABEL;
+    private String propertyKey = "my_property_key";
+
 
     private enum Labels implements Label
     {
@@ -61,22 +65,19 @@ public class SchemaAcceptanceTest
     public void addingAnIndexingRuleShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Schema schema = beansAPI.schema();
-        String property = "my_property_key";
-        Labels label = Labels.MY_LABEL;
+        Schema schema = db.schema();
 
         // When
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        IndexDefinition index = createIndex( label, propertyKey );
 
         // Then
-        assertEquals( asSet( property ), asSet( singlePropertyKey( schema.getIndexes( label ) ) ) );
+        assertEquals( asSet( propertyKey ), asSet( singlePropertyKey( schema.getIndexes( label ) ) ) );
         assertTrue( asSet( schema.getIndexes( label ) ).contains( index ) );
         
         // Then
         Iterable<IndexDefinition> indexes = schema.getIndexes( Labels.MY_LABEL );
 
-        assertEquals( asSet( property ), asSet( singlePropertyKey( indexes ) ) );
+        assertEquals( asSet( propertyKey ), asSet( singlePropertyKey( indexes ) ) );
         schema.awaitIndexOnline( single( indexes), 5L, TimeUnit.SECONDS );
     }
 
@@ -84,23 +85,22 @@ public class SchemaAcceptanceTest
     public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Schema schema = beansAPI.schema();
-        String property = "my_property_key";
+        Schema schema = db.schema();
 
         // When
-        Transaction tx = beansAPI.beginTx();
+        Transaction tx = db.beginTx();
         try
         {
-            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+            schema.indexCreator( label ).on( propertyKey ).create();
             try
             {
-                schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+                schema.indexCreator( label ).on( propertyKey ).create();
                 fail( "Should not have validated" );
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "Unable to create index" ) );
+                assertEquals( e.getMessage(), "There already exists an index for label 'MY_LABEL' on property" +
+                        " 'my_property_key'." );
             }
             tx.success();
         }
@@ -114,22 +114,20 @@ public class SchemaAcceptanceTest
     public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Schema schema = beansAPI.schema();
-        String property = "my_property_key";
+        Schema schema = db.schema();
 
         // And given
-        Transaction tx = beansAPI.beginTx();
-        schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+        Transaction tx = db.beginTx();
+        schema.indexCreator( label ).on( propertyKey ).create();
         tx.success();
         tx.finish();
 
         // When
         ConstraintViolationException caught = null;
-        tx = beansAPI.beginTx();
+        tx = db.beginTx();
         try
         {
-            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+            schema.indexCreator( label ).on( propertyKey ).create();
             tx.success();
         }
         catch(ConstraintViolationException e)
@@ -149,18 +147,17 @@ public class SchemaAcceptanceTest
     public void shouldThrowConstraintViolationIfAskedToCreateCompoundIdex() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Schema schema = beansAPI.schema();
+        Schema schema = db.schema();
 
         // When
-        Transaction tx = beansAPI.beginTx();
+        Transaction tx = db.beginTx();
         try
         {
-            schema.indexCreator( Labels.MY_LABEL )
+            schema.indexCreator( label )
                     .on( "my_property_key" )
                     .on( "other_property" ).create();
             tx.success();
-            fail( "Should not be able to create index on multiple property keys" );
+            fail( "Should not be able to create index on multiple propertyKey keys" );
         }
         catch ( UnsupportedOperationException e )
         {
@@ -176,29 +173,24 @@ public class SchemaAcceptanceTest
     public void droppingExistingIndexRuleShouldSucceed() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Labels label = Labels.MY_LABEL;
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        IndexDefinition index = createIndex( label, propertyKey );
 
         // WHEN
-        dropIndex( beansAPI, index );
+        dropIndex( index );
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index
+        ) );
     }
 
     @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Labels label = Labels.MY_LABEL;
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        IndexDefinition index = createIndex( label, propertyKey );
 
         // WHEN
-        Transaction tx = beansAPI.beginTx();
+        Transaction tx = db.beginTx();
         try
         {
             index.drop();
@@ -219,23 +211,20 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index ) );
     }
 
     @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Labels label = Labels.MY_LABEL;
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
-        dropIndex( beansAPI, index );
+        IndexDefinition index = createIndex( label, propertyKey );
+        dropIndex( index );
 
         // WHEN
         try
         {
-            dropIndex( beansAPI, index );
+            dropIndex( index );
             fail( "Should not be able to drop index twice" );
         }
         catch ( ConstraintViolationException e )
@@ -244,82 +233,70 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index ) );
     }
 
     @Test
     public void awaitingIndexComingOnlineWorks()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Labels label = Labels.MY_LABEL;
 
         // WHEN
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        IndexDefinition index = createIndex( label, propertyKey );
 
         // PASS
-        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
         // THEN
-        assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+        assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
     }
     
     @Test
     public void awaitingAllIndexesComingOnlineWorks()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Labels label = Labels.MY_LABEL;
 
         // WHEN
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index2 = createIndex( label, "other_property" );
 
         // PASS
-        beansAPI.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
+        db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
 
         // THEN
-        assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+        assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
     }
 
     @Test
     public void shouldRecreateDroppedIndex() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        String property = "name";
-        Label label = Labels.MY_LABEL;
-        Node node = createNode( beansAPI, property, "Neo", label );
-        
+        Node node = createNode( db, propertyKey, "Neo", label );
+
         // create an index
-        IndexDefinition index = createIndexRule( beansAPI, label, property );
-        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
-        
+        IndexDefinition index = createIndex( label, propertyKey );
+        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+
         // delete the index right away
-        dropIndex( beansAPI, index );
+        dropIndex( index );
 
         // WHEN recreating that index
-        createIndexRule( beansAPI, label, property );
-        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        createIndex( label, propertyKey );
+        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
         // THEN it should exist and be usable
-        index = single( beansAPI.schema().getIndexes( label ) );
-        assertEquals( IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
-        assertEquals( asSet( node ), asSet( beansAPI.findNodesByLabelAndProperty( label, property, "Neo" ) ) );
+        index = single( db.schema().getIndexes( label ) );
+        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        assertEquals( asSet( node ), asSet( db.findNodesByLabelAndProperty( label, propertyKey, "Neo" ) ) );
     }
     
     @Test
     public void shouldCreateUniquenessConstraint() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label = Labels.MY_LABEL;
-        String propertyKey = "name";
 
         // WHEN
-        ConstraintDefinition constraint =
-                createConstraint( db, db.schema().constraintCreator( label ).on( propertyKey ).unique() );
+        ConstraintDefinition constraint = createConstraint( label, propertyKey );
 
         // THEN
         assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
@@ -333,11 +310,7 @@ public class SchemaAcceptanceTest
     public void shouldListAddedConstraintsByLabel() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label = Labels.MY_LABEL;
-        String propertyKey = "name";
-        ConstraintDefinition createdConstraint = createConstraint( db,
-                db.schema().constraintCreator( label ).on( propertyKey ).unique() );
+        ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
 
         // WHEN
         Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints( label );
@@ -350,11 +323,7 @@ public class SchemaAcceptanceTest
     public void shouldListAddedConstraints() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label = Labels.MY_LABEL;
-        String propertyKey = "name";
-        ConstraintDefinition createdConstraint =
-                createConstraint( db, db.schema().constraintCreator( label ).on( propertyKey ).unique() );
+        ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
 
         // WHEN
         Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints();
@@ -363,23 +332,99 @@ public class SchemaAcceptanceTest
         ConstraintDefinition foundConstraint = single( listedConstraints );
         assertEquals( createdConstraint, foundConstraint );
     }
-    
 
     @Test
     public void shouldDropUniquenessConstraint() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label = Labels.MY_LABEL;
-        String propertyKey = "name";
-        ConstraintDefinition constraint =
-                createConstraint( db, db.schema().constraintCreator( label ).on( propertyKey ).unique() );
-        
+        ConstraintDefinition constraint = createConstraint( label, propertyKey );
+
         // WHEN
         dropConstraint( db, constraint );
         
         // THEN
         assertEquals( 0, count( db.schema().getConstraints( label ) ) );
+    }
+
+    @Test
+    public void addingConstraintWhenIndexAlreadyExistsGivesNiceError() throws Exception
+    {
+        // GIVEN
+        createIndex( label, propertyKey );
+
+        // WHEN
+        try
+        {
+            createConstraint( label, propertyKey );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals( e.getMessage(), "Can not create an constraint on :MY_LABEL(my_property_key). An index " +
+                    "already exists for this combination. Drop the index and create the constraint again." );
+        }
+    }
+
+    @Test
+    public void addingConstraintWhenAlreadyConstrainedGivesNiceError() throws Exception
+    {
+        // GIVEN
+        createConstraint( label, propertyKey );
+
+        // WHEN
+        try
+        {
+            createConstraint( label, propertyKey );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals( e.getMessage(), "A constraint already exists on :MY_LABEL(my_property_key)" );
+        }
+    }
+
+    @Test
+    public void addingIndexWhenAlreadyConstrained() throws Exception
+    {
+        // GIVEN
+        createConstraint( label, propertyKey );
+
+        // WHEN
+        try
+        {
+            createIndex( label, propertyKey );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals( e.getMessage(), "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint" +
+                    " defined on them, so an index is already created that matches this." );
+        }
+    }
+
+    @Test
+    public void addingIndexWhenAlreadyIndexed() throws Exception
+    {
+        // GIVEN
+        createIndex( label, propertyKey );
+
+        // WHEN
+        try
+        {
+            createIndex( label, propertyKey );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals( e.getMessage(), "There already exists an index for label 'MY_LABEL' on property" +
+                    " 'my_property_key'." );
+        }
+    }
+
+    @Before
+    public void init()
+    {
+        db = dbRule.getGraphDatabaseService();
     }
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )
@@ -396,12 +441,12 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private ConstraintDefinition createConstraint( GraphDatabaseService db, ConstraintCreator constraintCreator )
+    private ConstraintDefinition createConstraint( Label label, String prop )
     {
         Transaction tx = db.beginTx();
         try
         {
-            ConstraintDefinition constraint = constraintCreator.create();
+            ConstraintDefinition constraint = db.schema().constraintCreator( label ).on( prop ).unique().create();
             tx.success();
             return constraint;
         }
@@ -411,12 +456,12 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
+    private IndexDefinition createIndex( Label label, String property )
     {
-        Transaction tx = beansAPI.beginTx();
+        Transaction tx = db.beginTx();
         try
         {
-            IndexDefinition result = beansAPI.schema().indexCreator( label ).on( property ).create();
+            IndexDefinition result = db.schema().indexCreator( label ).on( property ).create();
             tx.success();
             return result;
         }
@@ -426,9 +471,9 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private void dropIndex( GraphDatabaseService beansAPI, IndexDefinition index )
+    private void dropIndex( IndexDefinition index )
     {
-        Transaction tx = beansAPI.beginTx();
+        Transaction tx = db.beginTx();
         try
         {
             index.drop();
