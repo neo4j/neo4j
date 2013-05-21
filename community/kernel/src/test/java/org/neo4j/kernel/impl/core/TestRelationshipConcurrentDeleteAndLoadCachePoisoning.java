@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -30,7 +32,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -40,14 +41,18 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
+import org.neo4j.test.subprocess.SubProcess;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Predicates.or;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Predicates.stringContains;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.qa.tooling.DumpProcessInformation.doThreadDump;
+import static org.neo4j.qa.tooling.DumpVmInformation.dumpVmInfo;
 import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
 /**
@@ -78,18 +83,12 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
     public static final TargetDirectory targetDir =
             TargetDirectory.forTest( TestRelationshipConcurrentDeleteAndLoadCachePoisoning.class );
 
-    @SuppressWarnings( "unchecked" )
-    @Rule
-    public DumpProcessInformationRule dumpingRule = new DumpProcessInformationRule(
-            or( stringContains( "SubProcess" ), stringContains( "TestRunner" ) ),
-            targetDir.directory( "dumps" ), 1, MINUTES );
-
     private static DebuggedThread committer;
     private static DebuggedThread reader;
 
     @Test
     @EnabledBreakpoints( {"doPrepare", "waitForPrepare", "readDone"} )
-    public void theTest() throws InterruptedException
+    public void theTest() throws Exception
     {
         final GraphDatabaseAPI db = database.getGraphDatabaseAPI();
 
@@ -139,12 +138,24 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         readerThread.start();
         writerThread.start();
 
-        readerThread.join();
-        writerThread.join();
+        dumpAndFailIfNotDeadWithin( readerThread, 1, MINUTES );
+        dumpAndFailIfNotDeadWithin( writerThread, 1, MINUTES );
 
         // This should pass without any problems.
         int count = count( first.getRelationships() );
-        assertEquals("Should have read relationships created minus one", RelationshipGrabSize, count);
+        assertEquals( "Should have read relationships created minus one", RelationshipGrabSize, count );
+    }
+
+    private void dumpAndFailIfNotDeadWithin( Thread thread, int duration, TimeUnit unit ) throws Exception
+    {
+        thread.join( MILLISECONDS.convert( duration, unit ) );
+        if ( thread.isAlive() )
+        {
+            File dumpDirectory = targetDir.directory( "dump", true );
+            dumpVmInfo( dumpDirectory );
+            doThreadDump( stringContains( SubProcess.class.getSimpleName() ), dumpDirectory );
+            fail( "Test didn't complete within a reasonable time, dumping process information to " + dumpDirectory );
+        }
     }
 
     @BreakpointHandler( "doPrepare" )

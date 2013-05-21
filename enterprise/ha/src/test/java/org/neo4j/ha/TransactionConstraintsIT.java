@@ -22,8 +22,8 @@ package org.neo4j.ha;
 import java.util.concurrent.Future;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -36,16 +36,20 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
@@ -395,4 +399,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             return tx.acquireWriteLock( node );
         }
     }
+
+    @Rule
+    public DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
 }

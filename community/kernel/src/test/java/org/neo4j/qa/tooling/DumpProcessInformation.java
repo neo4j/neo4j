@@ -37,6 +37,9 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Predicates.stringContains;
 
+/**
+ * Used to dump information (such as thread dump, heap dump) of a java process running on the local machine.
+ */
 public class DumpProcessInformation
 {
     public static void main( String[] args ) throws Exception
@@ -56,6 +59,14 @@ public class DumpProcessInformation
         }
     }
 
+    public static void doThreadDump( Predicate<String> processFilter, File outputDirectory ) throws Exception
+    {
+        for ( Pair<Long,String> pid : getJPids( processFilter ) )
+        {
+            doThreadDump( pid, outputDirectory );
+        }
+    }
+    
     public static File doThreadDump( Pair<Long, String> pid, File outputDirectory ) throws Exception
     {
         String[] cmdarray = new String[] {"jstack", "" + pid.first()};
