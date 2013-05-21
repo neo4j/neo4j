@@ -37,7 +37,7 @@ public class InputStreamAwaiterTest
         // given
         ArtificialClock clock = new ArtificialClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 5, TimeUnit.MILLISECONDS ),
-                "important message\n" ) );
+                "important message" + System.getProperty( "line.separator" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
@@ -50,7 +50,7 @@ public class InputStreamAwaiterTest
         // given
         ArtificialClock clock = new ArtificialClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ),
-                "different content\n", "different message\n" ) );
+                "different content" + System.getProperty( "line.separator" ), "different message\n" ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
