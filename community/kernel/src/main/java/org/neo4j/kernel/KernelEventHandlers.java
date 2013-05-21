@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;

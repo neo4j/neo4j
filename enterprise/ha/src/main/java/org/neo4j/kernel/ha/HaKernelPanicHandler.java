@@ -64,7 +64,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     epoch.incrementAndGet();
                 }
             }
-            catch (Throwable t)
+            catch ( Throwable t )
             {
                 throw new RuntimeException( "error while handling kernel panic for TX_MANAGER_NOT_OK", t );
             }

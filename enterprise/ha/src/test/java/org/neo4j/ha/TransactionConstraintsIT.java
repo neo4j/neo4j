@@ -50,6 +50,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
@@ -64,7 +65,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().setProperty( "name", "slave" );
+            db.createNode().setProperty( "name", "slave" );
             tx.success();
         }
         finally
@@ -73,10 +74,13 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             assertFinishGetsTransactionFailure( tx );
         }
 
-        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( masterAvailable() );
 
         // THEN
         assertEquals( db, cluster.getMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
 
     @Test
@@ -104,6 +108,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
         // THEN
         assertFalse( db.isMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
     
     @Test
@@ -402,4 +409,33 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
     @Rule
     public DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
+
+    private void awaitFullyOperational( GraphDatabaseService db ) throws InterruptedException
+    {
+        while ( true )
+        {
+            try
+            {
+                doABogusTransaction( db );
+                break;
+            }
+            catch ( Exception e )
+            {
+                Thread.sleep( 100 );
+            }
+        }
+    }
+
+    private void doABogusTransaction( GraphDatabaseService db ) throws Exception
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.createNode();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
 }
