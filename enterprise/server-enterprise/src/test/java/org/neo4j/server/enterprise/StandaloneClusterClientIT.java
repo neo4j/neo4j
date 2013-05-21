@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,6 +34,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
+import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
@@ -61,6 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -80,7 +81,7 @@ public class StandaloneClusterClientIT
                 // Config file
                 stringMap(),
                 // Arguments
-                stringMap( 
+                stringMap(
                         initial_hosts.name(), ":5001",
                         server_id.name(), "3" ) );
     }
@@ -159,7 +160,7 @@ public class StandaloneClusterClientIT
     // === Everything else ===
 
     private static Integer SHOULD_NOT_JOIN = null;
-    
+
     @Rule
     public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
     private final File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
@@ -175,7 +176,7 @@ public class StandaloneClusterClientIT
         for ( int i = 1; i <= clients.length; i++ )
         {
             Map<String, String> config = stringMap();
-            config.put( cluster_server.name(), ":" + (5000+i) );
+            config.put( cluster_server.name(), ":" + (5000 + i) );
             config.put( server_id.name(), "" + i );
             config.put( initial_hosts.name(), ":5001" );
             Logging logging = new DevNullLoggingService();
@@ -191,7 +192,7 @@ public class StandaloneClusterClientIT
                     client.removeClusterListener( this );
                 }
             } );
-            clients[i-1] = life.add( client );
+            clients[i - 1] = life.add( client );
             assertTrue( "Didn't join the cluster", latch.await( 2, SECONDS ) );
         }
     }
@@ -214,7 +215,7 @@ public class StandaloneClusterClientIT
     }
 
     private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> configInConfigFile,
-            Map<String, String> config ) throws Exception
+                                       Map<String, String> config ) throws Exception
     {
         File configFile = configFile( configInConfigFile );
         CountDownLatch latch = new CountDownLatch( 1 );
@@ -254,15 +255,10 @@ public class StandaloneClusterClientIT
     {
         Process process = null;
         ProcessStreamHandler handler = null;
-        BufferedReader startSignalReader = null;
         try
         {
             process = startStandaloneClusterClientProcess( configFile, config );
-            startSignalReader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-            awaitLine( startSignalReader, START_SIGNAL );
-            startSignalReader.close();
-            startSignalReader = null;
-            
+            new InputStreamAwaiter( process.getInputStream() ).awaitLine( START_SIGNAL, 20, SECONDS );
             handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
 
@@ -274,10 +270,6 @@ public class StandaloneClusterClientIT
         }
         finally
         {
-            if ( startSignalReader != null )
-            {
-                startSignalReader.close();
-            }
             if ( process != null )
             {
                 kill( process );
@@ -286,17 +278,6 @@ public class StandaloneClusterClientIT
             if ( handler != null )
             {
                 handler.done();
-            }
-        }
-    }
-
-    private void awaitLine( BufferedReader reader, String line ) throws IOException
-    {
-        for ( String readLine; (readLine = reader.readLine()) != null; )
-        {
-            if ( line.equals( readLine ) )
-            {
-                return;
             }
         }
     }

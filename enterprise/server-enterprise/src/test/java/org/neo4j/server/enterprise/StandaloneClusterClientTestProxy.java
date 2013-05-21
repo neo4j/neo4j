@@ -28,7 +28,7 @@ public class StandaloneClusterClientTestProxy
         // This sysout will be intercepted by the parent process and will trigger
         // a start of a timeout. The whole reason for this class to be here is to
         // split awaiting for the process to start and actually awaiting the cluster client to start. 
-        StandaloneClusterClient.main( args );
         System.out.println( START_SIGNAL );
+        StandaloneClusterClient.main( args );
     }
 }
