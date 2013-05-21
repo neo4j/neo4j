@@ -26,8 +26,7 @@ trait Strings extends JavaTokenParsers {
   def KEYWORDS =
     START | CREATE | SET | DELETE | FOREACH | MATCH | WHERE | WITH |
     RETURN | SKIP | LIMIT | ORDER | BY | ASC | DESC | ON | WHEN | CASE | THEN |
-    ELSE | DROP | USING | MERGE | CONSTRAINT | ASSERT | SCAN
-    REMOVE | UNION
+    ELSE | DROP | USING | MERGE | CONSTRAINT | ASSERT | SCAN | REMOVE | UNION
 
   // KEYWORDS
   def START = ignoreCase("start")
@@ -60,11 +59,7 @@ trait Strings extends JavaTokenParsers {
   def REMOVE = ignoreCase("remove")
   def UNION = ignoreCase("union")
 
-  // SHOULD THESE ALSO BE KEYWORDS?  THEY ARE ALL NON-BREAKABLE IN THE PRETTIFIER
-  def EXTRA_KEYWORDS =
-    ALL | NULL | TRUE | FALSE | DISTINCT | END | NOT | HAS | ANY | NONE |
-    SINGLE | OR | XOR | AND | AS | INDEX | IN  | IS | ASSERT | UNIQUE
-
+  // SHOULD THESE ALSO BE KEYWORDS
   def INDEX = ignoreCase("index")
   def IN = ignoreCase("in")
   def IS = ignoreCase("is")
@@ -84,7 +79,6 @@ trait Strings extends JavaTokenParsers {
   def XOR = ignoreCase("xor")
   def AS = ignoreCase("as")
 
-  // SHOULD THESE ALSO BE KEYWORDS?  IGNORED BY THE PRETTIFIER
   def NODE = ignoreCase("node")
   def RELATIONSHIP = (ignoreCase("relationship") | ignoreCase("rel")) ^^^ "rel"
 

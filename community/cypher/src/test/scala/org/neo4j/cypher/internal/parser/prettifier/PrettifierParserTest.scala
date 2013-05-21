@@ -33,7 +33,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
 
     // when then
     parsing[Seq[SyntaxToken]](keyword)(parserToTest) shouldGive
-      Seq(ReservedKeywords(keyword))
+      Seq(BreakingKeywords(keyword))
   }
 
   @Test
@@ -43,7 +43,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
 
     // when then
     parsing[Seq[SyntaxToken]](keyword)(parserToTest) shouldGive
-      Seq(ExtraKeywords(keyword))
+      Seq(NonBreakingKeywords(keyword))
   }
 
   @Test
@@ -88,8 +88,8 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
 
     // when then
     parsing[Seq[SyntaxToken]](input)(parserToTest) shouldGive
-      Seq(ReservedKeywords("match"), AnyText("a-->b"), ReservedKeywords("where"), AnyText("b.name"), AnyText("="),
-          EscapedText("aha!"), ReservedKeywords("return"), AnyText("a.age"))
+      Seq(BreakingKeywords("match"), AnyText("a-->b"), BreakingKeywords("where"), AnyText("b.name"), AnyText("="),
+          EscapedText("aha!"), BreakingKeywords("return"), AnyText("a.age"))
   }
 
   @Test
@@ -99,6 +99,8 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
 
     // when then
     parsing[Seq[SyntaxToken]](input)(parserToTest) shouldGive
-      Seq(ReservedKeywords("merge"), AnyText("n"), ReservedKeywords("on create set"), AnyText("n.age=32"))
+      Seq(
+        BreakingKeywords("merge"), AnyText("n"),
+        BreakingKeywords("on create"), BreakingKeywords("set"), AnyText("n.age=32"))
   }
 }

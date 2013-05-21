@@ -48,7 +48,7 @@ class PrettifierTest extends Assertions {
 
   @Test
   def shouldNotBreakCreateInComplexForeach() {
-    assertEquals( "MATCH p=n\nFOREACH (x IN p : CREATE x--()\nSET x.foo = 'bar')\nRETURN p;", prettifier("match p=n foreach(x in p : create x--() set x.foo = 'bar') return p;") )
+    assertEquals( "MATCH p=n\nFOREACH (x IN p : CREATE x--()\nSET x.foo = 'bar')\nRETURN DISTINCT p;", prettifier("match p=n foreach(x in p : create x--() set x.foo = 'bar') return distinct p;") )
   }
 
   @Test
@@ -73,7 +73,7 @@ class PrettifierTest extends Assertions {
 
   @Test
   def shouldUpcaseMultipleKeywords2() {
-    assertEquals( "MATCH a\nWHERE a.name='A'\nRETURN a.age AS SomethingTotallyDifferent", prettifier("match a where a.name='A' return a.age AS SomethingTotallyDifferent") )
+    assertEquals( "MATCH a\nWHERE a.name='A'\nRETURN a.age AS SomethingTotallyDifferent", prettifier("match a where a.name='A' return a.age as SomethingTotallyDifferent") )
   }
 
   @Test
