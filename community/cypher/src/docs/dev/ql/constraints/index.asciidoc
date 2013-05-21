@@ -3,7 +3,7 @@
 Constraints
 ===========
 
-Neo4j helps enforcing data integrity with the use of constraints.
+Neo4j helps enforce data integrity with the use of constraints.
 
 You can use unique constraints to ensure that property values are unique for all nodes with a specific label.
 Unique constraints do not mean that all nodes have to have a unique value for the properties -- nodes without the property are not subject to this rule.
