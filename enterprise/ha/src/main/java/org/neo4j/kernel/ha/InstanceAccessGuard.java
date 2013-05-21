@@ -38,7 +38,7 @@ public class InstanceAccessGuard
         enter();
     }
 
-    private synchronized void enter()
+    synchronized void enter()
     {
         if ( latch != null )
         {
@@ -64,7 +64,7 @@ public class InstanceAccessGuard
         }
     }
 
-    private synchronized void exit()
+    synchronized void exit()
     {
         if ( latch == null )
         {

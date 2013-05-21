@@ -31,11 +31,14 @@ public class HaKernelPanicHandler implements KernelEventHandler
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
     private final AtomicInteger epoch = new AtomicInteger();
+    private final InstanceAccessGuard accessGuard;
 
-    public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager )
+    public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
+            InstanceAccessGuard accessGuard )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
+        this.accessGuard = accessGuard;
     }
 
     @Override
@@ -56,12 +59,20 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     if ( myEpoch != epoch.get() )
                         return;
                     
-                    txManager.stop();
-                    dataSourceManager.stop();
-                    dataSourceManager.start();
-                    txManager.start();
-                    txManager.doRecovery();
-                    epoch.incrementAndGet();
+                    accessGuard.enter();
+                    try
+                    {
+                        txManager.stop();
+                        dataSourceManager.stop();
+                        dataSourceManager.start();
+                        txManager.start();
+                        txManager.doRecovery();
+                        epoch.incrementAndGet();
+                    }
+                    finally
+                    {
+                        accessGuard.exit();
+                    }
                 }
             }
             catch (Throwable t)
