@@ -28,52 +28,56 @@ trait StringLiteral extends Base {
     case in =>
       val start = handleWhiteSpace(in.source, in.offset)
       val string = in.source.subSequence(start, in.source.length()).toString
-      val startChar = string.charAt(0)
-      if (startChar != '\"' && startChar != '\'')
-        Failure("expected string", in)
+      if (string.isEmpty)
+        Failure("no string", in)
       else {
+        val startChar = string.charAt(0)
+        if (startChar != '\"' && startChar != '\'')
+          Failure("expected string", in)
+        else {
 
-        var ls = string.toList.tail
-        val sb = new StringBuilder(ls.length)
-        var idx = start
-        var result: Option[ParseResult[Literal]] = None
+          var ls = string.toList.tail
+          val sb = new StringBuilder(ls.length)
+          var idx = start
+          var result: Option[ParseResult[Literal]] = None
 
-        while (!ls.isEmpty && result.isEmpty) {
-          val (pref, suf) = ls span {
-            c => c != '\\' && c != startChar
-          }
-          idx += pref.length
-          sb ++= pref
+          while (!ls.isEmpty && result.isEmpty) {
+            val (pref, suf) = ls span {
+              c => c != '\\' && c != startChar
+            }
+            idx += pref.length
+            sb ++= pref
 
-          if (suf.isEmpty) {
-            result = Some(Failure("end of string missing", in))
-          } else {
-
-            val first: Char = suf(0)
-            if (first == startChar) {
-              result = Some(Success(Literal(sb.result()), in.drop(idx - in.offset + 2)))
+            if (suf.isEmpty) {
+              result = Some(Failure("end of string missing", in))
             } else {
-              val (escChars, afterEscape) = suf.splitAt(2)
 
-              if (escChars.size == 1) {
-                result = Some(Failure("invalid escape sequence", in.drop(1)))
+              val first: Char = suf(0)
+              if (first == startChar) {
+                result = Some(Success(Literal(sb.result()), in.drop(idx - in.offset + 2)))
               } else {
+                val (escChars, afterEscape) = suf.splitAt(2)
 
-                ls = afterEscape
-                idx += 2
+                if (escChars.size == 1) {
+                  result = Some(Failure("invalid escape sequence", in.drop(1)))
+                } else {
 
-                parseEscapeChars(escChars.tail, in) match {
-                  case Left(c)        => sb.append(c)
-                  case Right(failure) => result = Some(failure)
+                  ls = afterEscape
+                  idx += 2
+
+                  parseEscapeChars(escChars.tail, in) match {
+                    case Left(c) => sb.append(c)
+                    case Right(failure) => result = Some(failure)
+                  }
                 }
               }
             }
           }
-        }
 
-        result match {
-          case Some(x) => x
-          case None    => Failure("end of string missing", in)
+          result match {
+            case Some(x) => x
+            case None => Failure("end of string missing", in)
+          }
         }
       }
   }

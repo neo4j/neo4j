@@ -27,6 +27,7 @@ trait Strings extends JavaTokenParsers {
     START | CREATE | SET | DELETE | FOREACH | MATCH | WHERE | WITH |
     RETURN | SKIP | LIMIT | ORDER | BY | ASC | DESC | ON | WHEN | CASE | THEN |
     ELSE | DROP | USING | MERGE | CONSTRAINT | ASSERT | SCAN
+    REMOVE | UNION
 
   // KEYWORDS
   def START = ignoreCase("start")
@@ -55,17 +56,24 @@ trait Strings extends JavaTokenParsers {
   def SCAN = ignoreCase("scan")
   def MERGE = ignoreCase("merge")
   def ASSERT = ignoreCase("assert")
-
-  // SHOULD THESE ALSO BE KEYWORDS?
   def UNIQUE = ignoreCase("unique")
+  def REMOVE = ignoreCase("remove")
   def UNION = ignoreCase("union")
+
+  // SHOULD THESE ALSO BE KEYWORDS?  THEY ARE ALL NON-BREAKABLE IN THE PRETTIFIER
+  def EXTRA_KEYWORDS =
+    ALL | NULL | TRUE | FALSE | DISTINCT | END | NOT | HAS | ANY | NONE |
+    SINGLE | OR | XOR | AND | AS | INDEX | IN  | IS | ASSERT | UNIQUE
+
+  def INDEX = ignoreCase("index")
+  def IN = ignoreCase("in")
+  def IS = ignoreCase("is")
   def ALL = ignoreCase("all")
   def NULL = ignoreCase("null")
   def TRUE = ignoreCase("true")
   def FALSE = ignoreCase("false")
   def DISTINCT = ignoreCase("distinct")
   def END = ignoreCase("end")
-  def IS = ignoreCase("is")
   def NOT = ignoreCase("not")
   def HAS = ignoreCase("has")
   def ANY = ignoreCase("any")
@@ -75,11 +83,10 @@ trait Strings extends JavaTokenParsers {
   def AND = ignoreCase("and")
   def XOR = ignoreCase("xor")
   def AS = ignoreCase("as")
+
+  // SHOULD THESE ALSO BE KEYWORDS?  IGNORED BY THE PRETTIFIER
   def NODE = ignoreCase("node")
   def RELATIONSHIP = (ignoreCase("relationship") | ignoreCase("rel")) ^^^ "rel"
-  def REMOVE = ignoreCase("remove")
-  def IN = ignoreCase("in")
-  def INDEX = ignoreCase("index")
 
   //FUNCTIONS
   def EXTRACT = ignoreCase("extract")
@@ -98,9 +105,7 @@ trait Strings extends JavaTokenParsers {
   def SHORTESTPATH = ignoreCase("shortestPath")
   def ALLSHORTESTPATHS = ignoreCase("allshortestpaths")
 
-
-
-  private def ignoreCase(str: String): Parser[String] =
+  protected def ignoreCase(str: String): Parser[String] =
     ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase) |
       failure("expected " + str.toUpperCase)
 }

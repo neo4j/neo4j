@@ -25,7 +25,7 @@
 	{
         var funcs   =   'avg max min sum count all any none single length type id nodes relationships collect extract shortestPath allShortestPaths filter tail head last coalesce abs round sqrt sign collect type length has range timestamp reduce str substring left right ltrim rtrim trim lower upper replace PERCENTILE_DISC PERCENTILE_CONT';
 
-        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach unique as reduce merge case on when then else end';
+        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach unique as reduce merge case on when then else end constraint assert drop union';
 
         var operators = 'or and not xor';
 
