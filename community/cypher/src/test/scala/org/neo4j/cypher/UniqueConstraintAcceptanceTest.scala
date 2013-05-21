@@ -31,7 +31,7 @@ class UniqueConstraintAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
   @Test
-  def should_add_constraint() {
+  def should_add_constraint_with_no_existing_data() {
     //GIVEN
 
     //WHEN
@@ -47,6 +47,47 @@ class UniqueConstraintAcceptanceTest
 
     assert(constraints.size === 1)
   }
+
+  @Test
+  def should_add_constraint_when_existing_data_is_unique() {
+    // GIVEN
+    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+
+    // WHEN
+    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+
+    // THEN
+    val statementCtx = graph.statementContextForReading
+
+    val prop = statementCtx.getPropertyKeyId("name")
+    val label = statementCtx.getLabelId("Person")
+
+    val constraints = statementCtx.getConstraints(label, prop).asScala
+
+    assertTrue("Constraint should exist", constraints.size == 1)
+  }
+
+  @Test
+  def should_add_constraint_using_recreated_unique_data() {
+    // GIVEN
+    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+    parseAndExecute("match n:Person delete n")
+    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+
+    // WHEN
+    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+
+    // THEN
+    val statementCtx = graph.statementContextForReading
+
+    val prop = statementCtx.getPropertyKeyId("name")
+    val label = statementCtx.getLabelId("Person")
+
+    val constraints = statementCtx.getConstraints(label, prop).asScala
+
+    assertTrue("Constraint should exist", constraints.size == 1)
+  }
+
   @Test
   def should_drop_constraint() {
     //GIVEN
