@@ -18,7 +18,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.9</neo4j.version>
   </properties>
 
   <licenses>
