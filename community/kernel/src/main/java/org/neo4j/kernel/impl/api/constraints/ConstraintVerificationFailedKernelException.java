@@ -77,4 +77,6 @@ public class ConstraintVerificationFailedKernelException extends KernelException
     {
         return evidence == null ? Collections.<Evidence>emptySet() : Collections.unmodifiableSet( evidence );
     }
+
+
 }
