@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Collections.singletonList;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+
+import static java.util.Collections.singletonList;
 
 public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements UniquenessConstraintDefinition
 {
@@ -86,5 +86,11 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
         else if ( !propertyKey.equals( other.propertyKey ) )
             return false;
         return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s.%s IS UNIQUE", label.name().toLowerCase(), propertyKey );
     }
 }

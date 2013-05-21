@@ -149,7 +149,6 @@ the relevant Commercial Agreement.
       <groupId>${jline.groupId}</groupId>
       <artifactId>${jline.artifactId}</artifactId>
       <version>${jline.version}</version>
-      <!--scope>provided</scope -->
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>

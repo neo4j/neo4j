@@ -20,7 +20,6 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
@@ -48,21 +47,21 @@ public class Schema extends GraphDatabaseApp
 {
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()
-    {
-        @Override
-        public String apply( IndexDefinition index )
-        {
-            return index.getLabel().name();
-        }
-    };
-    
+            {
+                @Override
+                public String apply( IndexDefinition index )
+                {
+                    return index.getLabel().name();
+                }
+            };
+
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which label selected operation is about" ) );
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which property selected operation is about" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
@@ -73,7 +72,7 @@ public class Schema extends GraphDatabaseApp
                 "Awaiting indexes to come online\n" +
                 "  schema await -l Person -p name";
     }
-    
+
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
@@ -131,11 +130,10 @@ public class Schema extends GraphDatabaseApp
                 out.println( "Constraints" );
             }
 
-            String constraintName = constraint.getConstraintType().prettyName();
             String labelName = constraint.getLabel().name();
-            String prop = constraint.asUniquenessConstraint().getPropertyKeys().iterator().next();
 
-            out.println( String.format( "  %s on :%s(%s)", constraintName, labelName, prop ) );
+            out.println( String.format( "  ON (%s:%s) ASSERT %s", labelName.toLowerCase(), labelName,
+                    constraint.toString() ) );
             j++;
 
         }
@@ -149,7 +147,7 @@ public class Schema extends GraphDatabaseApp
     private void reportIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property )
             throws RemoteException
     {
-        ColumnPrinter printer = new ColumnPrinter( "  :", "ON ", "", "" );
+        ColumnPrinter printer = new ColumnPrinter( "  ON ", "", "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
 
         int i = 0;
@@ -159,13 +157,14 @@ public class Schema extends GraphDatabaseApp
             {
                 out.println( "Indexes" );
             }
-            String labelName = index.getLabel().name();
-            List<String> properties = toList( index.getPropertyKeys() );
+            String labelAndProperties = String.format( ":%s(%s)", index.getLabel().name(), commaSeparate( index
+                    .getPropertyKeys() ) );
+
             IndexState state = schema.getIndexState( index );
 
-            String uniqueOrNot = index.isConstraintIndex() ? "(for uniqueness constraint)":"";
+            String uniqueOrNot = index.isConstraintIndex() ? "(for uniqueness constraint)" : "";
 
-            printer.add( labelName, properties, state, uniqueOrNot );
+            printer.add( labelAndProperties, state, uniqueOrNot );
             i++;
         }
         if ( i == 0 )
@@ -178,8 +177,28 @@ public class Schema extends GraphDatabaseApp
         }
     }
 
+    private String commaSeparate( Iterable<String> keys )
+    {
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for ( String key : keys )
+        {
+            if ( !first )
+            {
+                builder.append( ", " );
+
+            }
+            else
+            {
+                first = false;
+            }
+            builder.append( key );
+        }
+        return builder.toString();
+    }
+
     private Iterable<IndexDefinition> indexesByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
-            Label[] labels, final String property )
+                                                                 Label[] labels, final String property )
     {
         Iterable<IndexDefinition> indexes = indexesByLabel( schema, labels );
         if ( property != null )
@@ -197,7 +216,7 @@ public class Schema extends GraphDatabaseApp
     }
 
     private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
-            final Label[] labels, final String property )
+                                                                          final Label[] labels, final String property )
     {
 
         return filter( new Predicate<ConstraintDefinition>()
@@ -213,7 +232,9 @@ public class Schema extends GraphDatabaseApp
     private boolean hasLabel( ConstraintDefinition constraint, Label[] labels )
     {
         if ( labels.length == 0 )
+        {
             return true;
+        }
 
         for ( Label label : labels )
         {
@@ -222,7 +243,7 @@ public class Schema extends GraphDatabaseApp
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -235,14 +256,14 @@ public class Schema extends GraphDatabaseApp
 
         switch ( constraint.getConstraintType() )
         {
-        case UNIQUENESS:
-            UniquenessConstraintDefinition typedConstraint = constraint.asUniquenessConstraint();
-            return indexOf( property, typedConstraint.getPropertyKeys() ) != -1;
-        default:
-            return false;
+            case UNIQUENESS:
+                UniquenessConstraintDefinition typedConstraint = constraint.asUniquenessConstraint();
+                return indexOf( property, typedConstraint.getPropertyKeys() ) != -1;
+            default:
+                return false;
         }
     }
-    
+
     private Iterable<IndexDefinition> indexesByLabel( org.neo4j.graphdb.schema.Schema schema, Label[] labels )
     {
         Iterable<IndexDefinition> indexes = schema.getIndexes();
