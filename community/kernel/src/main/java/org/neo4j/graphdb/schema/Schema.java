@@ -57,8 +57,7 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */
-    // TODO Think about the method name
-    IndexCreator indexCreator( Label label );
+    IndexCreator indexFor( Label label );
     
     /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.
@@ -95,8 +94,7 @@ public interface Schema
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@link Label label}.
      */
-    // TODO Think about the method name
-    ConstraintCreator constraintCreator( Label label );
+    ConstraintCreator constraintFor( Label label );
     
     /**
      * @param label the label to get constraints for.

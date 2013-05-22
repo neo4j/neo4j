@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions;
 
-public class PropertyKeyNotFoundException extends KernelException
+public class PropertyKeyIdNotFoundException extends KernelException
 {
-    public PropertyKeyNotFoundException( String propertyKey )
+    public PropertyKeyIdNotFoundException( long propertyKeyId, Exception cause )
     {
-        super( "Property key '" + propertyKey + "' not found" );
-    }
-    
-    public PropertyKeyNotFoundException( String propertyKey, Exception cause )
-    {
-        super( "Property key '" + propertyKey + "' not found", cause );
+        super( "Property key id '" + propertyKeyId + "' not found", cause );
     }
 }

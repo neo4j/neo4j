@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.kernel.api.operations.KeyNameLookup;
+
 /**
  * Description of a single index as needed by the {@link IndexProxy} cake
- *
+ * <p/>
  * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}
  */
 public class IndexDescriptor
@@ -46,7 +48,7 @@ public class IndexDescriptor
         {
             IndexDescriptor that = (IndexDescriptor) obj;
             return this.labelId == that.labelId &&
-                   this.propertyKeyId == that.propertyKeyId;
+                    this.propertyKeyId == that.propertyKeyId;
         }
         return false;
     }
@@ -68,10 +70,16 @@ public class IndexDescriptor
     {
         return propertyKeyId;
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format( "%s[label:%d, property:%d]", getClass().getSimpleName(), labelId, propertyKeyId );
+        return String.format( "INDEX ON :label[%d](property[%d])", labelId, propertyKeyId );
+    }
+
+    public String userDescription( KeyNameLookup keyNameLookup )
+    {
+        return String.format( "INDEX ON :%s(%s)",
+                keyNameLookup.getLabelName( labelId ), keyNameLookup.getPropertyKeyName( propertyKeyId ) );
     }
 }

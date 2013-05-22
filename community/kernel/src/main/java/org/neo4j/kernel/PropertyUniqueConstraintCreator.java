@@ -23,7 +23,9 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 
 import static java.lang.String.format;
@@ -54,18 +56,18 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
         {
             return actions.createPropertyUniquenessConstraint( label, propertyKey );
         }
-        catch ( DataIntegrityKernelException.AlreadyIndexedException e )
+        catch ( AlreadyIndexedException e )
         {
             throw new ConstraintViolationException( format( "Can not create an constraint on :%s(%s). An index " +
                     "already exists for this combination. Drop the index and create the constraint again.", label,
                     propertyKey ), e );
         }
-        catch ( DataIntegrityKernelException.AlreadyConstrainedException e )
+        catch ( AlreadyConstrainedException e )
         {
             throw new ConstraintViolationException( format( "A constraint already exists on :%s(%s)", label,
                     propertyKey ), e );
         }
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
             throw new ConstraintViolationException(
                     format( "Could not create property uniqueness constraint on :%s(%s)", label, propertyKey ), e );

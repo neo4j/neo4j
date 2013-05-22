@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -30,9 +27,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.impl.transaction.LockType;
+
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class RelationshipProxy implements Relationship
 {
@@ -213,11 +213,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public boolean equals( Object o )
     {
-        if ( !(o instanceof Relationship) )
-        {
-            return false;
-        }
-        return this.getId() == ((Relationship) o).getId();
+        return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
     }
 
     @Override

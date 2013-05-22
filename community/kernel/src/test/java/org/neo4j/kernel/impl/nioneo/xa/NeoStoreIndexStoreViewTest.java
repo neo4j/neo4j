@@ -35,8 +35,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -102,7 +102,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Before
-    public void before() throws DataIntegrityKernelException
+    public void before() throws SchemaKernelException
     {
         String graphDbPath = testDirectory.directory().getAbsolutePath();
         graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( graphDbPath );
@@ -153,7 +153,7 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    private void getOrCreateIds() throws DataIntegrityKernelException
+    private void getOrCreateIds() throws SchemaKernelException
     {
         Transaction tx = graphDb.beginTx();
         try

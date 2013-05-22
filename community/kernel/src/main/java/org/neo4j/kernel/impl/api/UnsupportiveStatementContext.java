@@ -22,15 +22,16 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -70,7 +71,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws DataIntegrityKernelException
+    public long getOrCreateLabelId( String label ) throws SchemaKernelException
     {
         throw unsupported();
     }
@@ -118,7 +119,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException
+    public long getOrCreatePropertyKeyId( String propertyKey ) throws SchemaKernelException
     {
         throw unsupported();
     }
@@ -178,14 +179,14 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
-                                                                      DataIntegrityKernelException
+            SchemaKernelException
     {
         throw unsupported();
     }
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws DataIntegrityKernelException
+            throws SchemaKernelException
     {
         throw unsupported();
     }
@@ -227,13 +228,13 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw unsupported();
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw unsupported();
     }

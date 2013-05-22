@@ -24,7 +24,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class LockingTransactionContext extends DelegatingTransactionContext

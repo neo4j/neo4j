@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.domain;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,6 +43,9 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.Database;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 public class GraphDbHelper
 {
@@ -444,7 +444,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            IndexDefinition index = database.getGraph().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
+            IndexDefinition index = database.getGraph().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
             tx.success();
             return index;
         }
@@ -489,7 +489,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            ConstraintCreator creator = database.getGraph().schema().constraintCreator( label( labelName ) ).unique();
+            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) ).unique();
             for ( String propertyKey : propertyKeys )
                 creator = creator.on( propertyKey );
             ConstraintDefinition result = creator.create();

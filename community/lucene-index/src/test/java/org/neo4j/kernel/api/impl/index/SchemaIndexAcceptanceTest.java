@@ -140,7 +140,7 @@ public class SchemaIndexAcceptanceTest
     private IndexDefinition createIndex( Label label, String propertyKey )
     {
         Transaction tx = db.beginTx();
-        IndexDefinition indexDefinition = db.schema().indexCreator( label ).on( propertyKey ).create();
+        IndexDefinition indexDefinition = db.schema().indexFor( label ).on( propertyKey ).create();
         tx.success();
         tx.finish();
         db.schema().awaitIndexOnline( indexDefinition, 1, MINUTES );

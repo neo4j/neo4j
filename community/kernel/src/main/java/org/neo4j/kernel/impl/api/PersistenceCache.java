@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.cache.EntityWithSize;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.cache.SoftLruCache;
  * This is a cache for data not cached by NodeImpl/RelationshipImpl. NodeImpl/RelationshipImpl
  * currently has the roles of caching, locking and transaction state merging. In the future
  * they might disappear and split up into {@link CachingStatementContext},
- * {@link LockingStatementContext} and {@link TransactionStateStatementContext}.
+ * {@link LockingStatementContext} and {@link StateHandlingStatementContext}.
  * <p/>
  * The point is that we need a cache and the implementation is a bit temporary, but might end
  * up being the cache to replace the data within NodeImpl/RelationshipImpl.

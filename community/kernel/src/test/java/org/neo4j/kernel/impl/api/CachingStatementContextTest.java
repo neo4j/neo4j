@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.kernel.api.EntityNotFoundException;
+
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 public class CachingStatementContextTest
 {

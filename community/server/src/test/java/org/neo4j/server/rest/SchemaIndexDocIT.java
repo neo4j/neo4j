@@ -19,10 +19,25 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.GraphDescription;
+
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -30,18 +45,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.junit.Test;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.GraphDescription;
 
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
@@ -169,7 +172,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Transaction tx = graphdb().beginTx();
         try
         {
-            graphdb().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
+            graphdb().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
             tx.success();
         }
         finally

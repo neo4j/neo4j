@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 public class ConstraintCreationKernelException extends KernelException
 {
@@ -28,12 +30,26 @@ public class ConstraintCreationKernelException extends KernelException
 
     public ConstraintCreationKernelException( UniquenessConstraint constraint, Throwable cause )
     {
-        super( cause, "Failed to create constraint %s: %s", constraint, cause.getMessage() );
+        super( cause, "Unable to create constraint %s: %s", constraint, cause.getMessage() );
         this.constraint = constraint;
     }
 
     public UniquenessConstraint constraint()
     {
         return constraint;
+    }
+
+    @Override
+    public String getUserMessage( KeyNameLookup keyNameLookup )
+    {
+        String message = "Unable to create " + constraint.userDescription( keyNameLookup );
+        if ( getCause() instanceof ConstraintVerificationFailedKernelException )
+        {
+            ConstraintVerificationFailedKernelException cause =
+                    (ConstraintVerificationFailedKernelException) getCause();
+
+            return message + ":\n" + cause.getUserMessage( keyNameLookup );
+        }
+        return message;
     }
 }

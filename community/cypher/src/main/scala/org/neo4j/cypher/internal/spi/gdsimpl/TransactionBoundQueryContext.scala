@@ -22,14 +22,20 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{LabelNotFoundKernelException, DataIntegrityKernelException, StatementContext, SchemaRuleNotFoundException}
+import org.neo4j.kernel.api._
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
+import org.neo4j.cypher.{CouldNotCreateConstraintException, EntityNotFoundException, CouldNotDropIndexException,
+IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.helpers.collection.IteratorUtil
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException
+import org.neo4j.kernel.api.operations.KeyNameLookup
+import scala.Some
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException
+import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, SchemaKernelException}
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
@@ -141,7 +147,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     try {
       ctx.addIndex(labelIds, propertyKeyId)
     } catch {
-      case e: DataIntegrityKernelException =>
+      case e: SchemaKernelException =>
         val labelName = getLabelName(labelIds)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
         throw new IndexAlreadyDefinedException(labelName, propName, e)
@@ -150,16 +156,10 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndex(ctx.getIndex(labelId, propertyKeyId))
+      ctx.dropIndex(new IndexDescriptor(labelId, propertyKeyId))
     } catch {
-      case e: DataIntegrityKernelException =>
-        val labelName = getLabelName(labelId)
-        val propName = ctx.getPropertyKeyName(propertyKeyId)
-        throw new CouldNotDropIndexException(labelName, propName, e)
-      case e: SchemaRuleNotFoundException        =>
-        val labelName = getLabelName(labelId)
-        val propName = ctx.getPropertyKeyName(propertyKeyId)
-        throw new CouldNotDropIndexException(labelName, propName, e)
+      case e: DropIndexFailureException =>
+        throw new CouldNotDropIndexException(e.getUserMessage(new KeyNameLookup(ctx)), e)
     }
   }
 
@@ -201,7 +201,12 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def schemaStateContains(key: String) = ctx.schemaStateContains(key)
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    ctx.addUniquenessConstraint(labelId, propertyKeyId)
+    try {
+      ctx.addUniquenessConstraint(labelId, propertyKeyId)
+    } catch {
+        case e: ConstraintCreationKernelException =>
+          throw new CouldNotCreateConstraintException(e.getUserMessage(new KeyNameLookup(ctx)), e)
+    }
   }
 
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
 {

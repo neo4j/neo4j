@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import org.neo4j.cypher.SyntaxException;
+import java.util.Map;
+
+import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.util.Map;
 
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a {@link Query}, use this class.
  */
-public class ExecutionEngine
+public class
+        ExecutionEngine
 {
     private org.neo4j.cypher.ExecutionEngine inner;
 
@@ -61,7 +62,7 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult execute( String query ) throws SyntaxException
+    public ExecutionResult execute( String query ) throws CypherException
     {
         return new ExecutionResult(inner.execute( query ));
     }
@@ -74,7 +75,7 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult execute( String query, Map<String, Object> params) throws SyntaxException
+    public ExecutionResult execute( String query, Map<String, Object> params) throws CypherException
     {
         return new ExecutionResult(inner.execute(query, params));
     }
@@ -90,7 +91,7 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult profile( String query ) throws SyntaxException
+    public ExecutionResult profile( String query ) throws CypherException
     {
         return new ExecutionResult(inner.profile(query));
     }
@@ -107,7 +108,7 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult profile( String query, Map<String, Object> params) throws SyntaxException
+    public ExecutionResult profile( String query, Map<String, Object> params) throws CypherException
     {
         return new ExecutionResult(inner.profile(query, params));
     }

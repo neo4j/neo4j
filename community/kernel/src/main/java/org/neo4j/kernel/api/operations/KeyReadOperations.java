@@ -21,16 +21,16 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.impl.core.Token;
 
 public interface KeyReadOperations
 {
     /**
      * Returns a label id for a label name. If the label doesn't exist a
-     * {@link org.neo4j.kernel.api.LabelNotFoundKernelException} will be thrown.
+     * {@link org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException} will be thrown.
      */
     long getLabelId( String label ) throws LabelNotFoundKernelException;
 
@@ -39,11 +39,11 @@ public interface KeyReadOperations
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist a
-     * {@link org.neo4j.kernel.api.PropertyKeyNotFoundException} will be thrown.
+     * {@link org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException} will be thrown.
      */
     long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException;
 
-    /** Returns the name of a property given it's property key id */
+    /** Returns the name of a property given its property key id */
     String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
 
     /** Returns the labels currently stored in the database **/

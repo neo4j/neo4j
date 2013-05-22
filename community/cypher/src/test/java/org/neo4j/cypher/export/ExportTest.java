@@ -39,6 +39,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+
 import static org.junit.Assert.assertEquals;
 
 public class ExportTest {
@@ -127,7 +128,7 @@ public class ExportTest {
 
     @Test
     public void testExportIndex() throws Exception {
-        gdb.schema().indexCreator(DynamicLabel.label("Foo")).on("bar").create();
+        gdb.schema().indexFor( DynamicLabel.label( "Foo" ) ).on("bar").create();
         final SubGraph graph = DatabaseSubGraph.from(gdb);
         SubGraphExporter exporter = new SubGraphExporter(graph);
         assertEquals(asList("create index on :`Foo`(`bar`)"), exporter.exportIndexes());

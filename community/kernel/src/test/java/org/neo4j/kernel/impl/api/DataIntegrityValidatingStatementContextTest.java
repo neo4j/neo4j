@@ -26,8 +26,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.junit.Assert.fail;
@@ -35,6 +35,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 
 public class DataIntegrityValidatingStatementContextTest
@@ -55,7 +56,7 @@ public class DataIntegrityValidatingStatementContextTest
             ctx.addIndex( label, propertyKey );
             fail( "Should have thrown exception." );
         }
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
         }
 
@@ -75,7 +76,7 @@ public class DataIntegrityValidatingStatementContextTest
         };
     }
 
-    @Test(expected = DataIntegrityKernelException.class)
+    @Test(expected = SchemaKernelException.class)
     public void shouldFailInvalidLabelNames() throws Exception
     {
         // Given
@@ -85,7 +86,7 @@ public class DataIntegrityValidatingStatementContextTest
         ctx.getOrCreateLabelId( "" );
     }
 
-    @Test(expected = DataIntegrityKernelException.class)
+    @Test(expected = SchemaKernelException.class)
     public void shouldFailOnNullLabel() throws Exception
     {
         // Given

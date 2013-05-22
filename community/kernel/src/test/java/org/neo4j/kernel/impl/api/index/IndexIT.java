@@ -24,15 +24,18 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+
+import static java.lang.String.format;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -69,7 +72,7 @@ public class IndexIT extends KernelIntegrationTest
         // THEN
         StatementContext roStatement = readOnlyContext();
         assertEquals( asSet( expectedRule ),
-                      asSet( roStatement.getIndexes( labelId ) ) );
+                asSet( roStatement.getIndexes( labelId ) ) );
         assertEquals( expectedRule, roStatement.getIndex( labelId, propertyKey ) );
     }
 
@@ -141,10 +144,10 @@ public class IndexIT extends KernelIntegrationTest
             commit();
         }
         // then
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
-            assertEquals( String.format( "There is no index for property %d for label %d.", propertyKey, labelId ),
-                          e.getMessage() );
+            assertEquals( "Unable to drop INDEX ON :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
+                    e.getMessage() );
         }
     }
 
@@ -166,11 +169,10 @@ public class IndexIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
-            assertEquals( String.format( "Property %d is already indexed for label %d through a constraint.",
-                                         propertyKey, labelId ),
-                          e.getMessage() );
+            assertEquals( format( "Already constrained CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE.",
+                    labelId, propertyKey ), e.getMessage() );
         }
     }
 
@@ -192,10 +194,10 @@ public class IndexIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
-            assertEquals( String.format( "There is no index for property %d for label %d.", propertyKey, labelId ),
-                          e.getMessage() );
+            assertEquals( "Unable to drop INDEX ON :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
+                    e.getMessage() );
         }
     }
 
@@ -205,7 +207,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         newTransaction();
         statement.addConstraintIndex( statement.getOrCreateLabelId( "Label1" ),
-                                      statement.getOrCreatePropertyKeyId( "property1" ) );
+                statement.getOrCreatePropertyKeyId( "property1" ) );
         commit();
 
         // when
@@ -229,7 +231,7 @@ public class IndexIT extends KernelIntegrationTest
         catch ( IllegalStateException e )
         {
             assertEquals( "Constraint indexes cannot be dropped directly, " +
-                          "instead drop the owning uniqueness constraint.", e.getMessage() );
+                    "instead drop the owning uniqueness constraint.", e.getMessage() );
         }
     }
 

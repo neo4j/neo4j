@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 
-public class IndexNotOnlineException extends KernelException
+public class ConstraintCreationException extends RuntimeException
 {
-    public IndexNotOnlineException( IndexProxy index )
+    public ConstraintCreationException( ConstraintCreationKernelException cause )
     {
-        super( index + " not online yet" );
+        super( cause );
     }
 }

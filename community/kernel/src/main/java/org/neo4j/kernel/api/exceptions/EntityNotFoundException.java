@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
-
-public class ConstraintCreationException extends RuntimeException
+public class EntityNotFoundException extends KernelException
 {
-    public ConstraintCreationException( ConstraintCreationKernelException cause )
+    public EntityNotFoundException( String msg )
     {
-        super( cause );
+        super(msg);
+    }
+
+    public EntityNotFoundException( String msg, IllegalStateException e )
+    {
+        super( msg, e );
     }
 }

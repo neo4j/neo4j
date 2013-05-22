@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static java.lang.String.format;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,12 +27,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.kernel.api.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+
+import static java.lang.String.format;
 
 public class TransactionHandleRegistry implements TransactionRegistry
 {

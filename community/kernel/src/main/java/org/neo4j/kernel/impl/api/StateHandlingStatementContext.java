@@ -26,14 +26,15 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionalException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
@@ -156,7 +158,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
     @Override
     public IndexDescriptor addIndex( long labelId, long propertyKey )
-            throws DataIntegrityKernelException
+            throws SchemaKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addIndexRule( rule );
@@ -165,7 +167,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws DataIntegrityKernelException
+            throws SchemaKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.addConstraintIndexRule( rule );
@@ -173,20 +175,20 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void dropIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.dropIndex( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.dropConstraintIndex( descriptor );
     }
 
     @Override
     public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
-            throws DataIntegrityKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException, ConstraintCreationKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         if ( !state.unRemoveConstraint( constraint ) )

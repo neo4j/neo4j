@@ -44,7 +44,7 @@ trait GraphIcing {
     def createIndex(label:String, property:String) {
       val tx = graph.beginTx()
       val indexDef = try {
-        val indexDef = graph.schema().indexCreator(DynamicLabel.label(label)).on(property).create()
+        val indexDef = graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
         tx.success()
         indexDef
       }

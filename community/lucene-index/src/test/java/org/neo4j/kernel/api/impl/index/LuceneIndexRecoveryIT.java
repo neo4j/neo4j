@@ -36,8 +36,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -251,7 +251,7 @@ public class LuceneIndexRecoveryIT
     private void createIndex( Label label, boolean wait )
     {
        Transaction tx = db.beginTx();
-       IndexDefinition definition = db.schema().indexCreator( label ).on( NUM_BANANAS_KEY ).create();
+       IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
        tx.success();
        tx.finish();
        if (wait)

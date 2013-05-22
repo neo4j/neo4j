@@ -697,7 +697,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label = label( "Person" );
         beginTx();
-        IndexDefinition index = db.schema().indexCreator( label ).on( "name" ).create();
+        IndexDefinition index = db.schema().indexFor( label ).on( "name" ).create();
         finishTx();
         db.schema().awaitIndexOnline( index, 10, SECONDS );
 
@@ -712,8 +712,8 @@ public class TestApps extends AbstractShellTest
         Label label1 = label( "Person" );
         Label label2 = label( "Building" );
         beginTx();
-        IndexDefinition index1 = db.schema().indexCreator( label1 ).on( "name" ).create();
-        IndexDefinition index2 = db.schema().indexCreator( label2 ).on( "name" ).create();
+        IndexDefinition index1 = db.schema().indexFor( label1 ).on( "name" ).create();
+        IndexDefinition index2 = db.schema().indexFor( label2 ).on( "name" ).create();
         finishTx();
         db.schema().awaitIndexOnline( index1, 10, SECONDS );
         db.schema().awaitIndexOnline( index2, 10, SECONDS );
@@ -732,10 +732,10 @@ public class TestApps extends AbstractShellTest
         String property1 = "name";
         String property2 = "age";
         beginTx();
-        IndexDefinition index1 = db.schema().indexCreator( label1 ).on( property1 ).create();
-        IndexDefinition index2 = db.schema().indexCreator( label1 ).on( property2 ).create();
-        IndexDefinition index3 = db.schema().indexCreator( label2 ).on( property1 ).create();
-        IndexDefinition index4 = db.schema().indexCreator( label2 ).on( property2 ).create();
+        IndexDefinition index1 = db.schema().indexFor( label1 ).on( property1 ).create();
+        IndexDefinition index2 = db.schema().indexFor( label1 ).on( property2 ).create();
+        IndexDefinition index3 = db.schema().indexFor( label2 ).on( property1 ).create();
+        IndexDefinition index4 = db.schema().indexFor( label2 ).on( property2 ).create();
         finishTx();
         db.schema().awaitIndexOnline( index1, 10, SECONDS );
         db.schema().awaitIndexOnline( index2, 10, SECONDS );
@@ -756,7 +756,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label = label( "Person" );
         beginTx();
-        IndexDefinition index = db.schema().indexCreator( label ).on( "name" ).create();
+        IndexDefinition index = db.schema().indexFor( label ).on( "name" ).create();
         finishTx();
 
         // WHEN / THEN
@@ -771,7 +771,7 @@ public class TestApps extends AbstractShellTest
         Label label = label( "Person" );
         String property = "name";
         beginTx();
-        IndexDefinition index = db.schema().indexCreator( label ).on( property ).create();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
         finishTx();
         db.schema().awaitIndexOnline( index, 10, SECONDS );
 
@@ -785,7 +785,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label = label( "Person" );
         beginTx();
-        db.schema().constraintCreator( label ).unique().on( "name" ).create();
+        db.schema().constraintFor( label ).unique().on( "name" ).create();
         finishTx();
 
         // WHEN / THEN
@@ -798,7 +798,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label1 = label( "Person" );
         beginTx();
-        db.schema().constraintCreator( label1 ).unique().on( "name" ).create();
+        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
         finishTx();
 
         // WHEN / THEN
@@ -811,7 +811,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label1 = label( "Person" );
         beginTx();
-        db.schema().constraintCreator( label1 ).unique().on( "name" ).create();
+        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
         finishTx();
 
         // WHEN / THEN

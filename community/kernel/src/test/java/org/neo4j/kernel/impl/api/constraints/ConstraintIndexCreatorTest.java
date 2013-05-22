@@ -19,7 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import java.util.Iterator;
+
+import org.junit.Test;
+
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.impl.api.Transactor;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
@@ -28,18 +42,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import java.util.Iterator;
-
-import org.junit.Test;
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.impl.api.Transactor;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 
 public class ConstraintIndexCreatorTest
 {
@@ -106,7 +108,7 @@ public class ConstraintIndexCreatorTest
         // then
         catch ( ConstraintVerificationFailedKernelException e )
         {
-            assertEquals( "Existing data does not match UniquenessConstraint{labelId=123, propertyKeyId=456}.",
+            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
                           e.getMessage() );
         }
         verify( indexCreationContext ).addConstraintIndex( 123, 456 );

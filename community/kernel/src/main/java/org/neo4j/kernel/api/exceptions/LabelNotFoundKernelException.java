@@ -17,35 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions;
 
-/** A super class of checked exceptions coming from the {@link KernelAPI Kernel API}. */
-public abstract class KernelException extends Exception
+public class LabelNotFoundKernelException extends KernelException
 {
-    protected KernelException( Throwable cause, String message, Object... parameters )
-    {
-        super( String.format( message, parameters ) );
-        if ( cause != null )
-        {
-            initCause( cause );
-        }
-    }
-
-    @Deprecated
-    public KernelException( String message, Throwable cause )
+    public LabelNotFoundKernelException( String message, Exception cause )
     {
         super( message, cause );
-    }
-
-    @Deprecated
-    public KernelException( String message )
-    {
-        super( message );
-    }
-
-    @Deprecated
-    public KernelException( Throwable cause )
-    {
-        super( cause );
     }
 }

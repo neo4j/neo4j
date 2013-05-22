@@ -38,13 +38,13 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -190,7 +190,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( e );
         }
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -218,7 +218,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( e );
         }
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -419,7 +419,7 @@ public class NodeProxy implements Node
         {
             ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
         }
-        catch ( DataIntegrityKernelException e )
+        catch ( SchemaKernelException e )
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
         }
@@ -443,7 +443,7 @@ public class NodeProxy implements Node
         }
         catch ( LabelNotFoundKernelException e )
         {
-            return;
+            // Do nothing
         }
         catch ( EntityNotFoundException e )
         {

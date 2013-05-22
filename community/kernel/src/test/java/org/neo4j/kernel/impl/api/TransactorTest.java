@@ -26,11 +26,11 @@ import javax.transaction.Transaction;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.kernel.api.BeginTransactionFailureException;
-import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 import static org.junit.Assert.assertEquals;

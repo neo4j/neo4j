@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions;
 
-public class SchemaRuleNotFoundException extends KernelException
+public abstract class TransactionalException extends Exception
 {
-    public SchemaRuleNotFoundException( String message )
+    TransactionalException( Exception cause )
     {
-        super( message );
-    }
-
-    public SchemaRuleNotFoundException( String message, Throwable cause )
-    {
-        super( message, cause );
+        super( cause );
     }
 }

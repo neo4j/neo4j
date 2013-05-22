@@ -24,7 +24,6 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException
 
 
 class UniqueConstraintAcceptanceTest
@@ -121,7 +120,7 @@ class UniqueConstraintAcceptanceTest
     // THEN
     catch
     {
-      case ex: ConstraintCreationKernelException =>
+      case ex: CouldNotCreateConstraintException =>
     }
 
     val statementCtx = graph.statementContextForReading

@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.set;
-
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.api.EntityNotFoundException;
+import org.mockito.Mockito;
+
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.IteratorUtil.set;
 
 public class PersistenceCacheTest
 {
@@ -97,10 +103,11 @@ public class PersistenceCacheTest
     private LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader;
     private PersistenceCache cache;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void before() throws Exception
     {
-        loader = mock( LockStripedCache.Loader.class );
+        loader = Mockito.mock( LockStripedCache.Loader.class );
         cache = new PersistenceCache( loader );
     }
 }

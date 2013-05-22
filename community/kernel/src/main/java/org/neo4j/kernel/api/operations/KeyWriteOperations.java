@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.DataIntegrityKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 
 public interface KeyWriteOperations
 {
@@ -27,11 +27,11 @@ public interface KeyWriteOperations
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    long getOrCreateLabelId( String label ) throws DataIntegrityKernelException;
+    long getOrCreateLabelId( String label ) throws SchemaKernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException;
+    long getOrCreatePropertyKeyId( String propertyKey ) throws SchemaKernelException;
 }

@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.kernel.api.{KernelException, StatementContext}
+import org.neo4j.kernel.api.StatementContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
-import org.neo4j.graphdb.schema.{UniquenessConstraintDefinition, ConstraintDefinition}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.exceptions.KernelException
 
 class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
 

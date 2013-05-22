@@ -35,19 +35,22 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -69,7 +72,7 @@ public class SchemaImpl implements Schema
     }
 
     @Override
-    public IndexCreator indexCreator( Label label )
+    public IndexCreator indexFor( Label label )
     {
         return new IndexCreatorImpl( actions, label );
     }
@@ -238,7 +241,7 @@ public class SchemaImpl implements Schema
     }
 
     @Override
-    public ConstraintCreator constraintCreator( Label label )
+    public ConstraintCreator constraintFor( Label label )
     {
         return new BaseConstraintCreator( actions, label );
     }
@@ -332,18 +335,18 @@ public class SchemaImpl implements Schema
                 context.addIndex( labelId, propertyKeyId );
                 return new IndexDefinitionImpl( this, label, propertyKey, false );
             }
-            catch ( DataIntegrityKernelException.AlreadyIndexedException e )
+            catch ( AlreadyIndexedException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "There already exists an index for label '%s' on property '%s'.", label.name(), propertyKey ), e );
             }
-            catch ( DataIntegrityKernelException.AlreadyConstrainedException e )
+            catch ( AlreadyConstrainedException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
                                 "already created that matches this.", label.name(), propertyKey ), e );
             }
-            catch ( DataIntegrityKernelException e )
+            catch ( SchemaKernelException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "Unable to create index for label '%s' on property %s.", label.name(), propertyKey ), e );
@@ -364,7 +367,7 @@ public class SchemaImpl implements Schema
                 long propertyKeyId = context.getPropertyKeyId( propertyKey );
                 context.dropIndex( context.getIndex( labelId, propertyKeyId ) );
             }
-            catch ( DataIntegrityKernelException e )
+            catch ( SchemaKernelException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
@@ -377,11 +380,6 @@ public class SchemaImpl implements Schema
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist here" );
             }
-            catch ( SchemaRuleNotFoundException e )
-            {
-                throw new ConstraintViolationException( String.format(
-                        "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
-            }
             finally
             {
                 context.close();
@@ -390,7 +388,7 @@ public class SchemaImpl implements Schema
 
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
-                throws DataIntegrityKernelException, ConstraintCreationKernelException
+                throws SchemaKernelException, ConstraintCreationKernelException
         {
             StatementContext context = ctxProvider.getCtxForWriting();
             try
@@ -417,7 +415,7 @@ public class SchemaImpl implements Schema
                 UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                 context.dropConstraint( constraint );
             }
-            catch ( DataIntegrityKernelException e )
+            catch ( SchemaKernelException e )
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
             }

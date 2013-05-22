@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -1022,7 +1021,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public IndexCreator indexCreator( Label label )
+        public IndexCreator indexFor( Label label )
         {
             throw readOnlyException();
         }
@@ -1058,7 +1057,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public ConstraintCreator constraintCreator( Label label )
+        public ConstraintCreator constraintFor( Label label )
         {
             throw readOnlyException();
         }

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -41,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -91,10 +93,10 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            schema.indexCreator( label ).on( propertyKey ).create();
+            schema.indexFor( label ).on( propertyKey ).create();
             try
             {
-                schema.indexCreator( label ).on( propertyKey ).create();
+                schema.indexFor( label ).on( propertyKey ).create();
                 fail( "Should not have validated" );
             }
             catch ( ConstraintViolationException e )
@@ -118,7 +120,7 @@ public class SchemaAcceptanceTest
 
         // And given
         Transaction tx = db.beginTx();
-        schema.indexCreator( label ).on( propertyKey ).create();
+        schema.indexFor( label ).on( propertyKey ).create();
         tx.success();
         tx.finish();
 
@@ -127,7 +129,7 @@ public class SchemaAcceptanceTest
         tx = db.beginTx();
         try
         {
-            schema.indexCreator( label ).on( propertyKey ).create();
+            schema.indexFor( label ).on( propertyKey ).create();
             tx.success();
         }
         catch(ConstraintViolationException e)
@@ -153,7 +155,7 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            schema.indexCreator( label )
+            schema.indexFor( label )
                     .on( "my_property_key" )
                     .on( "other_property" ).create();
             tx.success();
@@ -446,7 +448,7 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            ConstraintDefinition constraint = db.schema().constraintCreator( label ).on( prop ).unique().create();
+            ConstraintDefinition constraint = db.schema().constraintFor( label ).on( prop ).unique().create();
             tx.success();
             return constraint;
         }
@@ -461,7 +463,7 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            IndexDefinition result = db.schema().indexCreator( label ).on( property ).create();
+            IndexDefinition result = db.schema().indexFor( label ).on( property ).create();
             tx.success();
             return result;
         }

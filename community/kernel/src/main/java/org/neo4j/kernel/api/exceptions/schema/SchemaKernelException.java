@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions.schema;
 
-public class LabelNotFoundKernelException extends KernelException
+import org.neo4j.kernel.api.exceptions.KernelException;
+
+/**
+ * Signals that some constraint has been violated in a {@link org.neo4j.kernel.api.KernelAPI kernel interaction},
+ * for example a name containing invalid characters or length.
+ */
+public abstract class SchemaKernelException extends KernelException
 {
-    public LabelNotFoundKernelException( String message, Exception cause )
+    public SchemaKernelException( String message, Throwable cause )
     {
         super( message, cause );
     }
+
+    public SchemaKernelException( String message )
+    {
+        super( message );
+    }
+
 }

@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Collection;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class DuplicateIndexEntryConflictException extends IndexEntryConflictException
 {
@@ -28,8 +30,8 @@ public class DuplicateIndexEntryConflictException extends IndexEntryConflictExce
 
     public DuplicateIndexEntryConflictException( Object propertyValue, Set<Long> conflictingNodeIds )
     {
-        super( String.format( "Attempting to set same property value %s on nodes with ids %s " +
-                "disallowed by unique index.", propertyValue, conflictingNodeIds ) );
+        super( String.format( "Multiple nodes have property value %s:\n" +
+                "  %s", quote( propertyValue ), asNodeList( conflictingNodeIds ) ) );
         this.propertyValue = propertyValue;
         this.conflictingNodeIds = conflictingNodeIds;
     }
@@ -39,8 +41,35 @@ public class DuplicateIndexEntryConflictException extends IndexEntryConflictExce
         return propertyValue;
     }
 
+    @Override
+    public String evidenceMessage( String labelName, String propertyKey )
+    {
+        return String.format( "Multiple nodes with label `%s` have property `%s` = %s:\n" +
+                "  %s", labelName, propertyKey, quote( propertyValue ), asNodeList(conflictingNodeIds) );
+    }
+
     public Set<Long> getConflictingNodeIds()
     {
         return conflictingNodeIds;
+    }
+
+    private static String asNodeList( Collection<Long> nodeIds )
+    {
+        TreeSet<Long> ids = new TreeSet<Long>( nodeIds );
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for ( long nodeId : ids )
+        {
+            if ( !first )
+            {
+                builder.append( ", " );
+            }
+            else
+            {
+                first = false;
+            }
+            builder.append( "node(" ).append( nodeId ).append( ")" );
+        }
+        return builder.toString();
     }
 }

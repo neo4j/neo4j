@@ -44,6 +44,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -163,7 +164,7 @@ public class IndexRestartIt
     private IndexDefinition createIndex()
     {
         Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
+        IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
         tx.success();
         tx.finish();
         return index;

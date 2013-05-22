@@ -19,12 +19,11 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,6 +31,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.ConflictingServerIdIT;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.fail;
 
 public class ConstraintsInHAIT
 {
@@ -52,7 +53,7 @@ public class ConstraintsInHAIT
 
         try
         {
-            db.schema().constraintCreator( DynamicLabel.label( "LabelName" ) ).on( "PropertyName" ).unique().create();
+            db.schema().constraintFor( DynamicLabel.label( "LabelName" ) ).on( "PropertyName" ).unique().create();
             fail("Expected an exception to be thrown");
         }
         catch ( Exception e )

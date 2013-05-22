@@ -37,8 +37,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -54,6 +54,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -142,7 +143,7 @@ public class IndexCRUDIT
     private void createIndex( Label myLabel, String indexProperty )
     {
         Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexCreator( myLabel ).on( indexProperty ).create();
+        IndexDefinition index = db.schema().indexFor( myLabel ).on( indexProperty ).create();
         tx.success();
         tx.finish();
         db.schema().awaitIndexOnline( index, 10, TimeUnit.SECONDS );

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
@@ -31,8 +32,10 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -250,7 +253,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Transaction tx = graphdb().beginTx();
         try
         {
-            graphdb().schema().constraintCreator( label( labelName ) ).unique().on( propertyKey ).create();
+            graphdb().schema().constraintFor( label( labelName ) ).unique().on( propertyKey ).create();
             tx.success();
         }
         finally

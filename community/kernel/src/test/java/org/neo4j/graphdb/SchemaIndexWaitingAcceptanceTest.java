@@ -19,23 +19,25 @@
  */
 package org.neo4j.graphdb;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class SchemaIndexWaitingAcceptanceTest
 {
@@ -47,11 +49,11 @@ public class SchemaIndexWaitingAcceptanceTest
         @Override
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
-            List<KernelExtensionFactory<?>> extensions = null;
+            List<KernelExtensionFactory<?>> extensions;
             extensions = Arrays.<KernelExtensionFactory<?>>asList( singleInstanceSchemaIndexProviderFactory(
                     "test", provider ) );
             databaseFactory.addKernelExtensions( extensions );
-        };
+        }
     };
 
     @Test
@@ -62,7 +64,7 @@ public class SchemaIndexWaitingAcceptanceTest
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexCreator( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+        IndexDefinition index = db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
         tx.success();
         tx.finish();
 
@@ -95,7 +97,7 @@ public class SchemaIndexWaitingAcceptanceTest
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         Transaction tx = db.beginTx();
-        db.schema().indexCreator( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+        db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
         tx.success();
         tx.finish();
 

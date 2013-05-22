@@ -19,21 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -112,7 +106,13 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.core.HttpContext;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
 {
@@ -1126,7 +1126,7 @@ public class DatabaseActions
                 }
                 Relationship relationship = relationship(relationshipOrNull);
                 result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
-                if ( ( created = ( result == null ) ) == true ) result = relationship;
+                if ( (created = (result == null)) ) result = relationship;
             }
             else if ( startNode == null || type == null || endNode == null )
             {
@@ -1612,7 +1612,7 @@ public class DatabaseActions
 
     public ListRepresentation getNodesWithLabel( String labelName, Map<String, Object> properties)
     {
-        Iterable<Node> nodes = null;
+        Iterable<Node> nodes;
 
         if(properties.size() == 0)
         {
@@ -1659,7 +1659,7 @@ public class DatabaseActions
         Transaction tx = graphDb.beginTx();
         try
         {
-            IndexCreator indexCreator = graphDb.schema().indexCreator( label( labelName ) );
+            IndexCreator indexCreator = graphDb.schema().indexFor( label( labelName ) );
             for ( String key : propertyKey )
             {
                 indexCreator = indexCreator.on( key );
@@ -1720,7 +1720,7 @@ public class DatabaseActions
         Transaction tx = graphDb.beginTx();
         try
         {
-            ConstraintCreator constraintCreator = graphDb.schema().constraintCreator( label( labelName ) ).unique();
+            ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
             for ( String key : propertyKeys )
             {
                 constraintCreator = constraintCreator.on( key );

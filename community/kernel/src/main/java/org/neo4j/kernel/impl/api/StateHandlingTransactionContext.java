@@ -23,14 +23,14 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.ConstraintCreationException;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.TransactionFailureException;
-import org.neo4j.kernel.api.TransactionalException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -178,6 +178,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                 }
                 catch ( ConstraintCreationKernelException e )
                 {
+                    // TODO: Revisit decision to rethrow as RuntimeException.
                     throw new ConstraintCreationException(e);
                 }
                 clearState.set( true );
@@ -221,7 +222,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
             {
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
-            catch ( DataIntegrityKernelException e )
+            catch ( SchemaKernelException e )
             {
                 throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
                                                  "possible to drop during rollback of that transaction.", e );

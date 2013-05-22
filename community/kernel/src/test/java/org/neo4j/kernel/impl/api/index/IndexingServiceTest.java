@@ -52,6 +52,7 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -64,6 +65,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -244,9 +246,9 @@ public class IndexingServiceTest
 
         // then
         logger.assertExactly(
-                info( "IndexingService.initIndexes: IndexDescriptor[label:1, property:1] is ONLINE" ),
-                info( "IndexingService.initIndexes: IndexDescriptor[label:2, property:2] is POPULATING" ),
-                info( "IndexingService.initIndexes: IndexDescriptor[label:3, property:3] is FAILED" )
+                info( "IndexingService.initIndexes: INDEX ON :label[1](property[1]) is ONLINE" ),
+                info( "IndexingService.initIndexes: INDEX ON :label[2](property[2]) is POPULATING" ),
+                info( "IndexingService.initIndexes: INDEX ON :label[3](property[3]) is FAILED" )
         );
     }
 
@@ -281,11 +283,11 @@ public class IndexingServiceTest
 
         // then
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:1, property:1] is ONLINE" ) );
+                info( "IndexingService.start: INDEX ON :label[1](property[1]) is ONLINE" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:2, property:2] is POPULATING" ) );
+                info( "IndexingService.start: INDEX ON :label[2](property[2]) is POPULATING" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: IndexDescriptor[label:3, property:3] is FAILED" ) );
+                info( "IndexingService.start: INDEX ON :label[3](property[3]) is FAILED" ) );
     }
 
     private static Logging mockLogging( StringLogger logger )

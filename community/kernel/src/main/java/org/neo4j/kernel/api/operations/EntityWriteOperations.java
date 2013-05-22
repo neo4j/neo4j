@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 
 public interface EntityWriteOperations
 {

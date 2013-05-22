@@ -27,11 +27,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.api.TransactionFailureException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -131,7 +131,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     private UniquenessConstraint createConstraint()
-            throws ConstraintCreationKernelException, DataIntegrityKernelException
+            throws ConstraintCreationKernelException, SchemaKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -154,7 +154,7 @@ public class KernelSchemaStateFlushingTest
         tx.finish();
     }
 
-    private IndexDescriptor createIndex() throws DataIntegrityKernelException
+    private IndexDescriptor createIndex() throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -166,7 +166,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
@@ -210,14 +210,13 @@ public class KernelSchemaStateFlushingTest
         StatementContext ctx = tx.newStatementContext();
         try 
         {
-            String result = ctx.getOrCreateFromSchemaState( key, new Function<String, String>() {
+            return ctx.getOrCreateFromSchemaState( key, new Function<String, String>() {
                 @Override
                 public String apply( String from )
                 {
                     return value;
                 }
-            }); 
-            return result;
+            });
         }
         finally 
         {

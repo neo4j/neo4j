@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.operations.KeyNameLookup;
+
 // TODO: When we add other types of constraints, we will either want to create a hierarchy, or...
 // TODO: ...rename this to "Constraint" and add a "type" enum (or something like that).
 public class UniquenessConstraint
@@ -30,12 +32,6 @@ public class UniquenessConstraint
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "UniquenessConstraint{labelId=%d, propertyKeyId=%d}", labelId, propertyKeyId );
     }
 
     @Override
@@ -74,5 +70,19 @@ public class UniquenessConstraint
     public boolean equals( long labelId, long propertyKeyId )
     {
         return this.labelId == labelId && this.propertyKeyId == propertyKeyId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE", labelId, propertyKeyId );
+    }
+
+    public String userDescription( KeyNameLookup keyNameLookup )
+    {
+        String labelName = keyNameLookup.getLabelName( labelId );
+        String boundIdentifier = labelName.toLowerCase();
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName,
+                boundIdentifier, keyNameLookup.getPropertyKeyName( propertyKeyId ) );
     }
 }

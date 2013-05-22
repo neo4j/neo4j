@@ -22,12 +22,15 @@ package org.neo4j.kernel.impl.api.constraints;
 import java.util.Collections;
 import java.util.Set;
 
-import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.operations.KeyNameLookup;
 
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
+    private final UniquenessConstraint constraint;
+
     public static final class Evidence
     {
         private final IndexEntryConflictException conflict;
@@ -54,8 +57,8 @@ public class ConstraintVerificationFailedKernelException extends KernelException
         public String toString()
         {
             return "Evidence{" +
-                   "conflict=" + conflict +
-                   '}';
+                    "conflict=" + conflict +
+                    '}';
         }
     }
 
@@ -63,13 +66,15 @@ public class ConstraintVerificationFailedKernelException extends KernelException
 
     public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
     {
-        super( null, "Existing data does not match %s.", constraint );
+        super( null, "Existing data does not satisfy %s.", constraint );
+        this.constraint = constraint;
         this.evidence = evidence;
     }
 
     public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable failure )
     {
         super( failure, "Failed to verify constraint %s: %s", constraint, failure.getMessage() );
+        this.constraint = constraint;
         this.evidence = null;
     }
 
@@ -78,5 +83,17 @@ public class ConstraintVerificationFailedKernelException extends KernelException
         return evidence == null ? Collections.<Evidence>emptySet() : Collections.unmodifiableSet( evidence );
     }
 
-
+    @Override
+    public String getUserMessage( KeyNameLookup keyNameLookup )
+    {
+        StringBuilder message = new StringBuilder();
+        for ( Evidence evidenceItem : evidence )
+        {
+            IndexEntryConflictException conflict = evidenceItem.conflict;
+            message.append( conflict.evidenceMessage(
+                    keyNameLookup.getLabelName( constraint.label() ),
+                    keyNameLookup.getPropertyKeyName( constraint.property() ) ) );
+        }
+        return message.toString();
+    }
 }

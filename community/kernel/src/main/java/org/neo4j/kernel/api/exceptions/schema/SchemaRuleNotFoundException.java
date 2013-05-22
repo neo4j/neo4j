@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions.schema;
 
-public class EntityNotFoundException extends KernelException
+public class SchemaRuleNotFoundException extends SchemaKernelException
 {
-    public EntityNotFoundException( String msg )
+    public SchemaRuleNotFoundException( String message )
     {
-        super(msg);
+        super( message );
     }
 
-    public EntityNotFoundException( String msg, IllegalStateException e )
+    public SchemaRuleNotFoundException( String message, Throwable cause )
     {
-        super( msg, e );
+        super( message, cause );
     }
 }

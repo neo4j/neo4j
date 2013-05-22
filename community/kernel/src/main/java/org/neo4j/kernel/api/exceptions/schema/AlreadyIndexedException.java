@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions.schema;
 
-public class PropertyKeyIdNotFoundException extends KernelException
+import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+
+public class AlreadyIndexedException extends SchemaKernelException
 {
-    public PropertyKeyIdNotFoundException( long propertyKeyId, Exception cause )
+    private final IndexDescriptor descriptor;
+
+    public AlreadyIndexedException( IndexDescriptor descriptor )
     {
-        super( "Property key id '" + propertyKeyId + "' not found", cause );
+        super( String.format( "Already indexed %s.", descriptor ) );
+        this.descriptor = descriptor;
+    }
+
+    @Override
+    public String getUserMessage( KeyNameLookup keyNameLookup )
+    {
+        return String.format( String.format( "Already indexed %s.", descriptor.userDescription( keyNameLookup ) ) );
     }
 }

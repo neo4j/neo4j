@@ -48,7 +48,7 @@ public class EmbeddedNeo4jWithNewIndexing
             IndexDefinition indexDefinition;
             Transaction tx = graphDb.beginTx();
             try {
-                indexDefinition = schema.indexCreator( DynamicLabel.label( "User" ) )
+                indexDefinition = schema.indexFor( DynamicLabel.label( "User" ) )
                                         .on( "username" )
                                         .create();
                 tx.success();

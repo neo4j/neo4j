@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+
 /**
  * Represents a transaction of changes to the underlying graph.
  * Actual changes are made in the {@link #newStatementContext() statements}

@@ -21,11 +21,23 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
+import static java.lang.String.format;
+import static java.lang.String.valueOf;
+
 public abstract class IndexEntryConflictException extends Exception
 {
     public IndexEntryConflictException( String message )
     {
         super( message );
+    }
+
+    protected static String quote( Object propertyValue )
+    {
+        if (propertyValue instanceof String)
+        {
+            return format( "'%s'", propertyValue );
+        }
+        return valueOf( propertyValue );
     }
 
     /**
@@ -46,4 +58,6 @@ public abstract class IndexEntryConflictException extends Exception
     }
 
     public abstract Object getPropertyValue();
+
+    public abstract String evidenceMessage( String labelName, String propertyKey );
 }

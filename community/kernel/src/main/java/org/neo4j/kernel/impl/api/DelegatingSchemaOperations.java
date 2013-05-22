@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
@@ -107,33 +108,33 @@ public class DelegatingSchemaOperations implements SchemaOperations
 
     @Override
     public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
-                                                                      DataIntegrityKernelException
+            SchemaKernelException
     {
         return delegate.addIndex( labelId, propertyKey );
     }
 
     @Override
     public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws DataIntegrityKernelException
+            throws SchemaKernelException
     {
         return delegate.addConstraintIndex( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndex( IndexDescriptor indexRule ) throws DataIntegrityKernelException
+    public void dropIndex( IndexDescriptor indexRule ) throws DropIndexFailureException
     {
         delegate.dropIndex( indexRule );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         delegate.dropConstraintIndex( descriptor );
     }
 
     @Override
     public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
-            throws DataIntegrityKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException, ConstraintCreationKernelException
     {
         return delegate.addUniquenessConstraint( labelId, propertyKeyId );
     }

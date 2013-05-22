@@ -30,10 +30,12 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -57,7 +59,7 @@ public class IndexingAcceptanceTest
             {
                 Node node = beansAPI.createNode( label );
                 node.setProperty( key, "value" );
-                index = beansAPI.schema().indexCreator( label ).on( key ).create();
+                index = beansAPI.schema().indexFor( label ).on( key ).create();
                 tx.success();
             }
             finally
@@ -124,7 +126,7 @@ public class IndexingAcceptanceTest
                 // Use a small long here which will only occupy one property block
                 myNode.setProperty( "key", smallValue );
 
-                indexDefinition = beansAPI.schema().indexCreator( Labels.MY_LABEL ).on( "key" ).create();
+                indexDefinition = beansAPI.schema().indexFor( Labels.MY_LABEL ).on( "key" ).create();
                 tx.success();
             }
             finally
@@ -172,7 +174,7 @@ public class IndexingAcceptanceTest
                 myNode.setProperty( "key0", true );
                 myNode.setProperty( "key1", true );
 
-                indexDefinition = beansAPI.schema().indexCreator( Labels.MY_LABEL ).on( "key2" ).create();
+                indexDefinition = beansAPI.schema().indexFor( Labels.MY_LABEL ).on( "key2" ).create();
                 tx.success();
             }
             finally
@@ -363,7 +365,7 @@ public class IndexingAcceptanceTest
         IndexDefinition indexDef;
         try
         {
-            indexDef = beansAPI.schema().indexCreator( label ).on( property ).create();
+            indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
             tx.success();
         }
         finally

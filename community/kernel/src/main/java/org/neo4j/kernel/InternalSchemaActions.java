@@ -22,7 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.DataIntegrityKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 
 /**
@@ -36,7 +36,7 @@ public interface InternalSchemaActions
     void dropIndexDefinitions( Label label, String propertyKey );
 
     ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
-            throws DataIntegrityKernelException, ConstraintCreationKernelException;
+            throws SchemaKernelException, ConstraintCreationKernelException;
     
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 }

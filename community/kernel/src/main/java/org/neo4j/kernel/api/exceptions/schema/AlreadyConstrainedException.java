@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions.schema;
 
-public class UnknownKernelException extends KernelException
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.operations.KeyNameLookup;
+
+public class AlreadyConstrainedException extends SchemaKernelException
 {
-    public UnknownKernelException( Throwable cause )
+    private final UniquenessConstraint constraint;
+
+    public AlreadyConstrainedException( UniquenessConstraint constraint )
     {
-        super(cause);
+        super( String.format( "Already constrained %s.", constraint ) );
+        this.constraint = constraint;
+    }
+
+    @Override
+    public String getUserMessage( KeyNameLookup keyNameLookup )
+    {
+        return String.format( String.format( "Already constrained %s.", constraint.userDescription( keyNameLookup ) ) );
     }
 }

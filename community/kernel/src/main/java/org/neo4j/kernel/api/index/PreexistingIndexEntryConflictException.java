@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static java.lang.String.format;
+
 /**
  * Thrown from update methods (eg. {@link IndexPopulator#add(long, Object)}, {@link IndexPopulator#update(Iterable)},
  * and {@link IndexAccessor#updateAndCommit(Iterable)}) of an index that is unique when a conflicting entry (clashing
@@ -32,9 +34,10 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
 
     public PreexistingIndexEntryConflictException( Object propertyValue, long existingNodeId, long addedNodeId )
     {
-        super( String.format( "Could not index node with id:%d for propertyValue:[%s], " +
-                              "the unique index already contains an entry with that value for node with id:%d",
-                              addedNodeId, propertyValue, existingNodeId ) );
+        super( format( "Multiple nodes have property value %s:\n" +
+                "  existing node(%d)\n" +
+                "  new node(%d)",
+                quote( propertyValue ), existingNodeId, addedNodeId ) );
         this.addedNodeId = addedNodeId;
         this.propertyValue = propertyValue;
         this.existingNodeId = existingNodeId;
@@ -44,6 +47,16 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
     public Object getPropertyValue()
     {
         return propertyValue;
+    }
+
+    @Override
+    public String evidenceMessage( String labelName, String propertyKey )
+    {
+        return format(
+                "Multiple nodes with label `%s` have property `%s` = %s:\n" +
+                        "  existing node(%d)\n" +
+                        "  new node(%d)",
+                labelName, propertyKey, quote( propertyValue ), existingNodeId, addedNodeId );
     }
 
     public long getAddedNodeId()
