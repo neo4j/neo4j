@@ -19,12 +19,6 @@
  */
 package org.neo4j.qa.features;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.qa.features.support.FileHelper.copyFile;
-import static org.neo4j.qa.features.support.ProcessHelper.exec;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -35,6 +29,12 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.qa.features.support.FileHelper.copyFile;
+import static org.neo4j.qa.features.support.ProcessHelper.exec;
 
 public class StartAndStopFeatureTest
 {
@@ -134,12 +134,11 @@ public class StartAndStopFeatureTest
             // expected
         }
     }
-
+    
     private int statusCode( String uri, DefaultHttpClient httpClient ) throws IOException
     {
         HttpResponse response = httpClient.execute( new HttpGet( uri ) );
         EntityUtils.toString( response.getEntity() );
         return response.getStatusLine().getStatusCode();
     }
-
 }

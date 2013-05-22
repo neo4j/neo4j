@@ -22,7 +22,6 @@ package org.neo4j.server.modules;
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.List;
 
@@ -83,13 +82,7 @@ public class ManagementApiModule implements ServerModule
 
     private URI managementApiUri( ) throws UnknownHostException
     {
-        try
-        {
-            return new URI( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
     }
 }

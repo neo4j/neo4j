@@ -20,6 +20,10 @@
 package org.neo4j.server.rest.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,27 +36,44 @@ import javax.servlet.http.HttpServletResponse;
 
 public class SecurityFilter implements Filter
 {
+    private final HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>> rules = new HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>>();
 
-    private final SecurityRule rule;
-	private final UriPathWildcardMatcher pathMatcher;
-
-    public SecurityFilter( SecurityRule rule )
+    public SecurityFilter( SecurityRule rule, SecurityRule... rules )
     {
-        this.rule = rule;
-        
-        // For backwards compatibility
-        String rulePath = rule.forUriPath();
-        if(!rulePath.endsWith("*"))
-        {
-        	rulePath = rulePath + "*";
-        }
-        
-        this.pathMatcher = new UriPathWildcardMatcher( rulePath );
+        this( merge( rule, rules ) );
     }
-    
-    public SecurityRule getRule() 
+
+    public SecurityFilter( Iterable<SecurityRule> securityRules )
     {
-    	return rule;
+        // For backwards compatibility
+        for ( SecurityRule r : securityRules )
+        {
+            String rulePath = r.forUriPath();
+            if ( !rulePath.endsWith( "*" ) )
+            {
+                rulePath = rulePath + "*";
+            }
+
+            UriPathWildcardMatcher uriPathWildcardMatcher = new UriPathWildcardMatcher( rulePath );
+            HashSet<SecurityRule> ruleHashSet = rules.get( uriPathWildcardMatcher );
+            if ( ruleHashSet == null )
+            {
+                ruleHashSet = new HashSet<SecurityRule>();
+                rules.put( uriPathWildcardMatcher, ruleHashSet );
+            }
+            ruleHashSet.add( r );
+        }
+    }
+
+    private static Iterable<SecurityRule> merge( SecurityRule rule, SecurityRule[] rules )
+    {
+        ArrayList<SecurityRule> result = new ArrayList<SecurityRule>();
+
+        result.add( rule );
+
+        Collections.addAll( result, rules );
+
+        return result;
     }
 
     @Override
@@ -67,25 +88,34 @@ public class SecurityFilter implements Filter
 
         validateRequestType( request );
         validateResponseType( response );
-        
+
         HttpServletRequest httpReq = (HttpServletRequest) request;
         String path = httpReq.getContextPath() + (httpReq.getPathInfo() == null ? "" : httpReq.getPathInfo());
-        
-        pathMatcher.matches(path);
-        
-        if ( !pathMatcher.matches(path) || rule.isAuthorized( httpReq ) )
+
+        for ( UriPathWildcardMatcher uriPathWildcardMatcher : rules.keySet() )
         {
-            chain.doFilter( request, response );
+            if ( uriPathWildcardMatcher.matches( path ) )
+            {
+                HashSet<SecurityRule> securityRules = rules.get( uriPathWildcardMatcher );
+                for ( SecurityRule securityRule : securityRules )
+                {
+                    // 401 on the first failed rule we come along
+                    if ( !securityRule.isAuthorized( httpReq ) )
+                    {
+                        createUnauthorizedChallenge( response, securityRule );
+                        return;
+                    }
+                }
+            }
         }
-        else
-        {
-            createUnauthorizedChallenge( response );
-        }
+
+        chain.doFilter( request, response );
     }
+
 
     private void validateRequestType( ServletRequest request ) throws ServletException
     {
-        if ( !( request instanceof HttpServletRequest ) )
+        if ( !(request instanceof HttpServletRequest) )
         {
             throw new ServletException( String.format( "Expected HttpServletRequest, received [%s]", request.getClass()
                     .getCanonicalName() ) );
@@ -94,7 +124,7 @@ public class SecurityFilter implements Filter
 
     private void validateResponseType( ServletResponse response ) throws ServletException
     {
-        if ( !( response instanceof HttpServletResponse ) )
+        if ( !(response instanceof HttpServletResponse) )
         {
             throw new ServletException( String.format( "Expected HttpServletResponse, received [%s]",
                     response.getClass()
@@ -102,7 +132,7 @@ public class SecurityFilter implements Filter
         }
     }
 
-    private void createUnauthorizedChallenge( ServletResponse response )
+    private void createUnauthorizedChallenge( ServletResponse response, SecurityRule rule )
     {
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         httpServletResponse.setStatus( 401 );
@@ -110,8 +140,9 @@ public class SecurityFilter implements Filter
     }
 
     @Override
-    public void destroy()
+    public synchronized void destroy()
     {
+        rules.clear();
     }
 
     public static String basicAuthenticationResponse( String realm )

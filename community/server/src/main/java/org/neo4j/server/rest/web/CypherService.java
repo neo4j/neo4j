@@ -75,8 +75,9 @@ public class CypherService
         Map<String, Object> params = null;
         try
         {
-            params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) ? command.get(PARAMS_KEY ) : new
-                    HashMap<String, Object>());
+            params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) && command.get( PARAMS_KEY ) != null ?
+                    command.get( PARAMS_KEY ) :
+                    new HashMap<String, Object>());
         }
         catch ( ClassCastException e )
         {
