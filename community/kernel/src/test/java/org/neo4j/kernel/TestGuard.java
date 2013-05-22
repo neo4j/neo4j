@@ -20,7 +20,6 @@
 package org.neo4j.kernel;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,6 +31,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.sleep;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -134,7 +134,7 @@ public class TestGuard
                 newGraphDatabase();
         db.beginTx();
 
-        db.getGuard().startTimeout( 50 );
+        db.getDependencyResolver().resolveDependency( Guard.class ).startTimeout( 50 );
         sleep( 100 );
 
         try

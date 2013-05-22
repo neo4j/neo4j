@@ -165,7 +165,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         super.create();
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager ) );
+                (TxManager) txManager, accessGuard ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, lastUpdateTime, config, msgLog ) );
 

@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.security.KeyStoreInformation;
 
 public interface WebServer
@@ -68,14 +67,6 @@ public interface WebServer
 
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException;
-
-    /**
-     * Please use {@link #addFilter instead}, this will be removed
-     * in version 1.10
-     * @param rules
-     */
-    @Deprecated
-    void addSecurityRules( SecurityRule... rules );
 
     /**
      * Please use {@link #addFilter instead}, this will be removed
