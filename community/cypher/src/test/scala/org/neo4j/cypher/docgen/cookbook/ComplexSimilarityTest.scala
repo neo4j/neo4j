@@ -42,7 +42,7 @@ class ComplexSimilarityTest extends DocumentingTestBase {
 """Here, a similarity between two players in a game is calculated by the number of times they have eaten the same food.""",
       queryText = """MATCH me-[r1:ATE]->food<-[r2:ATE]-you
 WHERE me.name = 'me'
-==== me,count(distinct r1) as H1,count(distinct r2) as H2,you ====
+WITH me,count(distinct r1) as H1,count(distinct r2) as H2,you
 MATCH me-[r1:ATE]->food<-[r2:ATE]-you
 RETURN sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2)) as similarity""",
       returns = "The two players and their similarity measure.",

@@ -43,11 +43,11 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
 foreach( x in range(1,6) : 
    create (leaf {count : x}), center-[:X]->leaf
 )
-==== center ====
+WITH center
 MATCH leaf1<--center-->leaf2
 WHERE id(leaf1)<id(leaf2)
 CREATE leaf1-[:X]->leaf2
-==== center ====
+WITH center
 MATCH center-[r]->()
 DELETE center,r;""",
       returns =
