@@ -1,0 +1,7 @@
+[[query-syntax-case]]
+== Case Expressions ==
+Cypher supports CASE expressions, which is a generic conditional expression, similar to if/else statements in other
+languages. Two variants of +CASE+ exist - the simple form and the generic form.
+
+include::simple-case.asciidoc[]
+include::generic-case.asciidoc[]

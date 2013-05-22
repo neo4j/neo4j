@@ -6,11 +6,17 @@ Merge
 +MERGE+ ensures that a pattern exists in the graph. Either the pattern already exists, or parts of it need to be
 created.
 
++MERGE+ either matches existing nodes and binds them, or it creates new data and binds that. It's like a combination
+of +MATCH+ and +CREATE+ that additionally allows you to specify what happens if the data was matched or created.
+
 For example, you can specify that the graph must contain a node for a user with a certain name.
 If there isn't a node with the correct name, a new node will be created and its name property set.
 
 As with +MATCH+, +MERGE+ can match multiple occurrences of a pattern. If there are multiple matches, they will all be
 passed on to later stages of the query.
+
+The last part of +MERGE+ is the +ON CREATE+ and +ON MATCH+. These allow a query to express additional changes to the
+properties of a node or relationship, depending on if the element was +MATCH+ed in the database or if it was +CREATE+d.
 
 The following graph is used for the examples below:
 
