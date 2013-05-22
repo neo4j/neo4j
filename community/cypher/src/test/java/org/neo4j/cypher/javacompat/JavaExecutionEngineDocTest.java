@@ -345,8 +345,8 @@ public class JavaExecutionEngineDocTest
     @Test
     public void prettifier_makes_pretty() throws Exception
     {
-        String given = "match n-->() return n";
-        String expected = "MATCH n-->()\nRETURN n";
+        String given = "match (n)-->() return n";
+        String expected = String.format("MATCH (n)-->()%nRETURN n");
 
         assertEquals(expected, engine.prettify(given));
     }

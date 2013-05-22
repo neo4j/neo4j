@@ -2780,6 +2780,6 @@ RETURN x0.name?
   def should_be_able_to_prettify_queries() {
     val query = "match (n)-->(x) return n"
 
-    assert(engine.prettify(query) === "MATCH (n)-->(x)\nRETURN n")
+    assert(engine.prettify(query) === String.format("MATCH (n)-->(x)%nRETURN n"))
   }
 }
