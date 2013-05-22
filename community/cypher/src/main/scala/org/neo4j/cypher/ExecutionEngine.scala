@@ -32,6 +32,7 @@ import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.api.StatementContext
+import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
@@ -158,6 +159,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         throw t
     }
   }
+
+  def prettify(query:String): String = Prettifier(query)
 
   private def createCorrectParser() =
     optGraphAs[InternalAbstractGraphDatabase]

@@ -2775,4 +2775,11 @@ RETURN x0.name?
     val result = parseAndExecute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     assert(result.toList === List())
   }
+
+  @Test
+  def should_be_able_to_prettify_queries() {
+    val query = "match (n)-->(x) return n"
+
+    assert(engine.prettify(query) === "MATCH (n)-->(x)\nRETURN n")
+  }
 }

@@ -19,25 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +28,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class JavaExecutionEngineDocTest
 {
@@ -348,6 +340,15 @@ public class JavaExecutionEngineDocTest
 
         ExecutionResult result = engine.execute( "start n=node(0) create unique p = n-[:REL]->({props1})-[:LER]->({props2}) return p", params );
         assertThat( count( result ), is( 1 ) );
+    }
+
+    @Test
+    public void prettifier_makes_pretty() throws Exception
+    {
+        String given = "match n-->() return n";
+        String expected = "MATCH n-->()\nRETURN n";
+
+        assertEquals(expected, engine.prettify(given));
     }
 
     private void makeFriends( Node a, Node b )

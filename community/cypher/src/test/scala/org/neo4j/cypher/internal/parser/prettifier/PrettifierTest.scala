@@ -24,66 +24,78 @@ import org.scalatest.Assertions
 import org.junit.Assert.assertEquals
 
 class PrettifierTest extends Assertions {
-  val prettifier = Prettifier
-
   @Test
   def shouldUpcaseKeywords() {
-    assertEquals( "CREATE n", prettifier("create n") )
+    assertIsPrettified("CREATE n", "create n")
   }
 
   @Test
   def shouldNotBreakIndexOn() {
-    assertEquals( "CREATE INDEX ON :Person(name)", prettifier("create index on :Person(name)") )
+    assertIsPrettified("CREATE INDEX ON :Person(name)", "create index on :Person(name)")
   }
 
   @Test
   def shouldNotBreakOnAsc() {
-    assertEquals( "ORDER BY n.name ASC", prettifier("order by n.name asc") )
+    assertIsPrettified("ORDER BY n.name ASC", "order by n.name asc")
   }
 
   @Test
   def shouldNotBreakCreateInForeach() {
-    assertEquals( "MATCH p=n\nFOREACH (x IN p : CREATE x--())", prettifier("match p=n foreach(x in p : create x--())") )
+    assertIsPrettified("MATCH p=n%nFOREACH (x IN p : CREATE x--())", "match p=n foreach(x in p : create x--())")
   }
 
   @Test
   def shouldNotBreakCreateInComplexForeach() {
-    assertEquals( "MATCH p=n\nFOREACH (x IN p : CREATE x--()\nSET x.foo = 'bar')\nRETURN DISTINCT p;", prettifier("match p=n foreach(x in p : create x--() set x.foo = 'bar') return distinct p;") )
+    assertIsPrettified("MATCH p=n%nFOREACH (x IN p : CREATE x--()%nSET x.foo = 'bar')%nRETURN DISTINCT p;",
+      "match p=n foreach(x in p : create x--() set x.foo = 'bar') return distinct p;")
   }
 
   @Test
   def shouldNotBreakConstraintOn() {
-    assertEquals( "CREATE CONSTRAINT ON (person:Person)\nASSERT person.age IS UNIQUE", prettifier("create constraint on (person:Person) assert person.age is unique") )
+    assertIsPrettified("CREATE CONSTRAINT ON (person:Person) ASSERT person.age IS UNIQUE",
+      "create constraint on (person:Person) assert person.age is unique")
   }
 
   @Test
   def shouldBreakCertainKeywords() {
-    assertEquals( "MERGE n\nON CREATE SET n.age=32", prettifier("merge n on create set n.age=32") )
+    assertIsPrettified("MERGE n%nON CREATE SET n.age=32", "merge n on create set n.age=32")
   }
 
   @Test
   def shouldHandleParenthesisCorrectlyInMatch() {
-    assertEquals( "MATCH (a)-->(b)\nRETURN b", prettifier("match (a)-->(b) return b") )
+    assertIsPrettified("MATCH (a)-->(b)%nRETURN b", "match (a)-->(b) return b")
   }
 
   @Test
   def shouldUpcaseMultipleKeywords() {
-    assertEquals( "MATCH n\nWHERE n.name='B'\nRETURN n", prettifier("match n where n.name='B' return n") )
+    assertIsPrettified("MATCH n%nWHERE n.name='B'%nRETURN n", "match n where n.name='B' return n")
   }
 
   @Test
   def shouldUpcaseMultipleKeywords2() {
-    assertEquals( "MATCH a\nWHERE a.name='A'\nRETURN a.age AS SomethingTotallyDifferent", prettifier("match a where a.name='A' return a.age as SomethingTotallyDifferent") )
+    assertIsPrettified("MATCH a%nWHERE a.name='A'%nRETURN a.age AS SomethingTotallyDifferent",
+      "match a where a.name='A' return a.age as SomethingTotallyDifferent")
   }
 
   @Test
   def shouldNotBreakCreateUnique() {
-    assertEquals( "START me=node(3)\nMATCH p1 = me-[*2]-friendOfFriend\nCREATE p2 = me-[:MARRIED_TO]-(wife { name: 'Gunhild' })\nCREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend\nRETURN p1,p2,p3", prettifier("start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3") )
+    assertIsPrettified(
+      "START me=node(3)%n" +
+        "MATCH p1 = me-[*2]-friendOfFriend%n" +
+        "CREATE p2 = me-[:MARRIED_TO]-(wife { name: 'Gunhild' })%n" +
+        "CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend%n" +
+        "RETURN p1,p2,p3",
+      "start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3")
   }
 
   @Test
   def shouldUpcaseExtraKeywords() {
-    assertEquals("MATCH david--otherPerson-->()\nWHERE david.name='David'\nWITH otherPerson, count(*) AS foaf\nWHERE foaf > 1\nRETURN otherPerson", prettifier("match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson"))
+    assertIsPrettified("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson",
+      "match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson")
+  }
+
+  private def assertIsPrettified(expected: String, query: String) {
+    assertEquals(String.format(expected), Prettifier(query))
   }
 }
 

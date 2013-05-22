@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
-import java.util.Map;
-
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.util.Map;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a {@link Query}, use this class.
@@ -110,5 +110,17 @@ public class ExecutionEngine
     public ExecutionResult profile( String query, Map<String, Object> params) throws SyntaxException
     {
         return new ExecutionResult(inner.profile(query, params));
+    }
+
+    /**
+     * Turns a valid Cypher query and returns it with keywords in uppercase,
+     * and new-lines in the appropriate places.
+     *
+     * @param query The query to make pretty
+     * @return The same query, but prettier
+     */
+    public String prettify( String query )
+    {
+        return inner.prettify(query);
     }
 }
