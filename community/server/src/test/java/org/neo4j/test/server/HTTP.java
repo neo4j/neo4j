@@ -19,22 +19,23 @@
  */
 package org.neo4j.test.server;
 
-import static java.util.Collections.unmodifiableMap;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
+
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static java.util.Collections.unmodifiableMap;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 /**
  * A tool for performing REST HTTP requests
@@ -237,6 +238,11 @@ public class HTTP
             }
             throw new RuntimeException( "The request did not contain a location header, " +
                     "unable to provide location. Status code was: " + status() );
+        }
+
+        public String firstHeader( String key )
+        {
+            return response.getHeaders().getFirst( key );
         }
 
         public <T> T content()

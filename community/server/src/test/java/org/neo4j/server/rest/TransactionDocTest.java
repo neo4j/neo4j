@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import java.text.ParseException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
@@ -35,6 +37,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
@@ -73,7 +76,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      * Execute statements in an open transaction
      *
      * Given that you have an open transaction, you can make a number of requests, each of which executes additional
-     * statements, and keeps the transaction open.
+     * statements, and keeps the transaction open by resetting the transaction timeout.
      */
     @Test
     @Documented
@@ -92,6 +95,48 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
         assertNoErrors( result );
+    }
+
+    /**
+     * Reset transaction timeout of an open transaction
+     *
+     * Every orphaned transactions is automatically expired after a period of inactivity.  This may be prevented
+     * by resetting the transaction timeout.
+     *
+     * The timeout may be reset by sending a keep alive request to the server that executes an empty list of statements.
+     * This request will reset the transaction timeout and return the new time at which the transaction will
+     * expire as an RFC1123 formatted timestamp value in the "transaction" section of the response.
+     */
+    @Test
+    @Documented
+    public void reset_transaction_timeout_of_an_open_transaction()
+            throws PropertyValueException, ParseException, InterruptedException
+    {
+        // Given
+        HTTP.Response initialResponse = POST( getDataUri() + "transaction" );
+        String location = initialResponse.location();
+        long initialExpirationTime = expirationTime( jsonToMap( initialResponse.rawContent() ) );
+
+        // This generous wait time is necessary to compensate for limited resolution of RFC 1123 timestamps
+        // and the fact that the system clock is allowed to run "backwards" between threads
+        // (cf. http://stackoverflow.com/questions/2978598)
+        //
+        Thread.sleep( 3000 );
+
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson( "{ 'statements': [ ] }" ) )
+                .post( location );
+
+
+        // Then
+        Map<String, Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+        long newExpirationTime = expirationTime( result );
+
+        assertTrue( "Expiration time was not increased", newExpirationTime > initialExpirationTime );
     }
 
     /**
@@ -249,5 +294,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     private String quotedJson( String singleQuoted )
     {
         return singleQuoted.replaceAll( "'", "\"" );
+    }
+
+    private long expirationTime( Map<String, Object> entity ) throws ParseException
+    {
+        String timestampString = (String) ( (Map<?, ?>) entity.get( "transaction" ) ).get( "expires" );
+        return RFC1123.parseTimestamp( timestampString ).getTime();
     }
 }

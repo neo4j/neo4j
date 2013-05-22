@@ -32,6 +32,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TransactionHandleRegistryTest
@@ -41,7 +42,7 @@ public class TransactionHandleRegistryTest
     {
         // given
         TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
 
         // when
         long id1 = registry.begin();
@@ -57,7 +58,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin();
@@ -76,7 +77,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin();
@@ -103,7 +104,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
 
         long madeUpTransactionId = 1337;
 
@@ -128,7 +129,7 @@ public class TransactionHandleRegistryTest
         // Given
         FakeClock clock = new FakeClock();
         TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, 0, log );
         TransactionHandle oldTx = mock( TransactionHandle.class );
         TransactionHandle newTx = mock( TransactionHandle.class );
 

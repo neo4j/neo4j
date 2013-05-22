@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.MapUtil.toMap;
-import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -34,7 +28,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -68,6 +61,13 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+
+import static java.lang.String.format;
+
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.toMap;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 @Path( "/" )
 public class RestfulGraphDatabase

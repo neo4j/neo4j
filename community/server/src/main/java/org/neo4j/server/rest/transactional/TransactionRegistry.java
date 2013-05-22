@@ -30,7 +30,7 @@ public interface TransactionRegistry
 {
     public long begin();
 
-    public void release( long id, TransactionHandle transactionHandle );
+    public long release( long id, TransactionHandle transactionHandle );
 
     public TransactionHandle acquire( long id ) throws TransactionLifecycleException;
 

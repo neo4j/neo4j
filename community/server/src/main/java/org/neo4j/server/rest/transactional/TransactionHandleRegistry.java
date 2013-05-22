@@ -39,15 +39,17 @@ import static java.lang.String.format;
 public class TransactionHandleRegistry implements TransactionRegistry
 {
     private final AtomicLong idGenerator = new AtomicLong( 0l );
-    private final ConcurrentHashMap<Long, TransactionMarker> registry =
-            new ConcurrentHashMap<Long, TransactionMarker>( 64 );
+    private final ConcurrentHashMap<Long, TransactionMarker> registry = new ConcurrentHashMap<Long, TransactionMarker>( 64 );
 
     private final Clock clock;
-    private final StringLogger log;
 
-    public TransactionHandleRegistry( Clock clock, StringLogger log )
+    private final StringLogger log;
+    private final long timeoutMillis;
+
+    public TransactionHandleRegistry( Clock clock, long timeoutMillis, StringLogger log )
     {
         this.clock = clock;
+        this.timeoutMillis = timeoutMillis;
         this.log = log;
     }
 
@@ -97,6 +99,11 @@ public class TransactionHandleRegistry implements TransactionRegistry
         {
             return true;
         }
+
+        public long getLastActiveTimestamp()
+        {
+            return lastActiveTimestamp;
+        }
     }
 
     @Override
@@ -114,7 +121,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
-    public void release( long id, TransactionHandle transactionHandle )
+    public long release( long id, TransactionHandle transactionHandle )
     {
         TransactionMarker marker = registry.get( id );
 
@@ -128,11 +135,17 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
         }
 
-        TransactionMarker suspendedTx = new SuspendedTransaction( transactionHandle );
+        SuspendedTransaction suspendedTx = new SuspendedTransaction( transactionHandle );
         if ( !registry.replace( id, marker, suspendedTx ) )
         {
             throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
         }
+        return computeNewExpiryTime( suspendedTx.getLastActiveTimestamp() );
+    }
+
+    private long computeNewExpiryTime( long lastActiveTimestamp )
+    {
+        return  lastActiveTimestamp + timeoutMillis;
     }
 
     @Override
@@ -196,17 +209,17 @@ public class TransactionHandleRegistry implements TransactionRegistry
             @Override
             public boolean accept( TransactionMarker item )
             {
-                try
-                {
-                    return item.getTransaction().lastActiveTimestamp < oldestLastActiveTime;
-                }
-                catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
-                {
-                    throw new RuntimeException( concurrentTransactionAccessError );
-                }
+            try
+            {
+                SuspendedTransaction transaction = item.getTransaction();
+                return transaction.lastActiveTimestamp < oldestLastActiveTime;
+            }
+            catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
+            {
+                throw new RuntimeException( concurrentTransactionAccessError );
+            }
             }
         } );
-
     }
 
     private void rollbackSuspended( Predicate<TransactionMarker> predicate )
@@ -221,7 +234,6 @@ public class TransactionHandleRegistry implements TransactionRegistry
                 candidateTransactionIdsToRollback.add( entry.getKey() );
             }
         }
-
 
         for ( long id : candidateTransactionIdsToRollback )
         {
