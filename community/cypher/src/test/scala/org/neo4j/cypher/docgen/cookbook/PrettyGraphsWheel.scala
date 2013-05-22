@@ -45,12 +45,12 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
 foreach( x in range(1,6) : 
    CREATE (leaf {count:x}), center-[:X]->leaf
 )
-==== center ====
+WITH center
 MATCH large_leaf<--center-->small_leaf
 WHERE large_leaf.count = small_leaf.count + 1
 CREATE small_leaf-[:X]->large_leaf
 
-==== center, min(small_leaf.count) as min, max(large_leaf.count) as max ====
+WITH center, min(small_leaf.count) as min, max(large_leaf.count) as max
 MATCH first_leaf<--center-->last_leaf
 WHERE first_leaf.count = min AND last_leaf.count = max
 CREATE last_leaf-[:X]->first_leaf
