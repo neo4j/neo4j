@@ -37,7 +37,7 @@ public class InputStreamAwaiterTest
         // given
         ArtificialClock clock = new ArtificialClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 5, TimeUnit.MILLISECONDS ),
-                "important message" + System.getProperty( "line.separator" ) ) );
+                                                            lines( "important message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
@@ -50,7 +50,8 @@ public class InputStreamAwaiterTest
         // given
         ArtificialClock clock = new ArtificialClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ),
-                "different content" + System.getProperty( "line.separator" ), "different message\n" ) );
+                                                            lines( "different content" ),
+                                                            lines( "different message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
@@ -62,7 +63,7 @@ public class InputStreamAwaiterTest
         // then
         catch ( TimeoutException e )
         {
-             // ok
+            // ok
         }
     }
 
@@ -87,6 +88,15 @@ public class InputStreamAwaiterTest
         }
     }
 
+    private static String lines( String... lines )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( String line : lines )
+        {
+            result.append( line ).append( System.getProperty( "line.separator" ) );
+        }
+        return result.toString();
+    }
 
     private static class MockInputStream extends InputStream
     {
