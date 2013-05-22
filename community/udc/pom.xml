@@ -13,7 +13,7 @@
   <version>2.0-SNAPSHOT</version>
   <description>Collects simple statistics about server deployment.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  
+
   <properties>
     <bundle.namespace>org.neo4j.ext.udc</bundle.namespace>
     <short-name>udc</short-name>
@@ -21,7 +21,7 @@
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/usage-data-collector.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
-  
+
   <packaging>jar</packaging>
 
   <scm>
@@ -33,21 +33,21 @@
       <name>GNU General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
       <comments>The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
-parties and that license is included below.
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+        parties and that license is included below.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
-Version 3 and you may use the Software solely pursuant to the terms of
-the relevant Commercial Agreement.
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+        Version 3 and you may use the Software solely pursuant to the terms of
+        the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-  
+
   <build>
     <plugins>
       <plugin>
@@ -189,7 +189,7 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
- </dependencies>
+  </dependencies>
 
   <distributionManagement>
     <site>

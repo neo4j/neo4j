@@ -99,7 +99,7 @@ public class ClusterMockTest
             logger.getLogger().info( threadEntry.getKey().getName() );
             for ( StackTraceElement stackTraceElement : threadEntry.getValue() )
             {
-                logger.getLogger().info( "   "+stackTraceElement.toString() );
+                logger.getLogger().info( "   " + stackTraceElement.toString() );
             }
         }
 
@@ -112,7 +112,7 @@ public class ClusterMockTest
         int[] serverIds = new int[nrOfServers];
         for ( int i = 1; i <= nrOfServers; i++ )
         {
-            serverIds[i-1] = i;
+            serverIds[i - 1] = i;
         }
         testCluster( serverIds, null, mock, script );
     }
@@ -187,7 +187,7 @@ public class ClusterMockTest
 
         // Let messages settle
         network.tick( 100 );
-        if (finalConfig == null)
+        if ( finalConfig == null )
         {
             verifyConfigurations();
         }
@@ -207,9 +207,9 @@ public class ClusterMockTest
             network.tick( 400 );
         }
 
-        if (finalConfig != null )
+        if ( finalConfig != null )
         {
-            verifyConfigurations(finalConfig);
+            verifyConfigurations( finalConfig );
         }
         else
         {
@@ -250,13 +250,15 @@ public class ClusterMockTest
             @Override
             public void elected( String role, InstanceId id, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an election: " + id + " elected as " + role + " at URI " + electedMember );
+                logger.getLogger().debug(
+                        uri + " sees an election: " + id + " elected as " + role + " at URI " + electedMember );
             }
 
             @Override
             public void unelected( String role, InstanceId instanceId, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " + electedMember );
+                logger.getLogger().debug(
+                        uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " + electedMember );
             }
         } );
     }
@@ -265,9 +267,9 @@ public class ClusterMockTest
     {
         logger.getLogger().debug( "Verify configurations against given" );
 
-        List<URI> members = null;
-        Map<String, InstanceId> roles = null;
-        Set<InstanceId> failed = null;
+        List<URI> members;
+        Map<String, InstanceId> roles;
+        Set<InstanceId> failed;
 
         List<AssertionError> errors = new LinkedList<AssertionError>();
 
@@ -376,7 +378,7 @@ public class ClusterMockTest
         }
     }
 
-    private void verifyConfigurations ( StateMachines stateMachines, List<URI> members, Map<String, InstanceId> roles,
+    private void verifyConfigurations( StateMachines stateMachines, List<URI> members, Map<String, InstanceId> roles,
                                        Set<InstanceId> failed, List<AssertionError> errors )
     {
 
@@ -476,13 +478,13 @@ public class ClusterMockTest
                                 else
                                 {
                                     // Use test info to figure out who to join
-                                    URI[] toJoin = new URI[ servers.size() ];
+                                    URI[] toJoin = new URI[servers.size()];
                                     for ( int i = 0; i < servers.size(); i++ )
                                     {
                                         toJoin[i] = servers.get( i ).getServer().boundAt();
                                     }
                                     final Future<ClusterConfiguration> result = cluster.join( "default", toJoin );
-                                    Runnable joiner =  new Runnable()
+                                    Runnable joiner = new Runnable()
                                     {
                                         @Override
                                         public void run()
@@ -500,21 +502,22 @@ public class ClusterMockTest
                                                 out.add( cluster );
                                             }
                                         }
-                                    } ;
+                                    };
                                     network.addFutureWaiter( result, joiner );
                                 }
-                            } else
+                            }
+                            else
                             {
                                 // List of servers to join was explicitly specified, so use that
                                 URI[] instanceUris = new URI[joinServers.length];
                                 for ( int i = 0; i < joinServers.length; i++ )
                                 {
                                     int server = joinServers[i];
-                                    instanceUris[i] = URI.create( "server"+server );
+                                    instanceUris[i] = URI.create( "server" + server );
                                 }
 
                                 final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
-                                Runnable joiner =  new Runnable()
+                                Runnable joiner = new Runnable()
                                 {
                                     @Override
                                     public void run()
@@ -527,9 +530,10 @@ public class ClusterMockTest
                                         }
                                         catch ( Exception e )
                                         {
-                                            logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
-                                                    .getMessage() );
-                                            if ( !(e.getCause() instanceof IllegalStateException ))
+                                            logger.getLogger().debug(
+                                                    "**** Node " + joinServer + " could not join cluster:" + e
+                                                            .getMessage() );
+                                            if ( !(e.getCause() instanceof IllegalStateException) )
                                             {
                                                 cluster.create( "default" );
                                             }
@@ -660,19 +664,6 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScript verifyConfigurations( int time, final VerifyInstanceConfiguration[]
-                verifyInstanceConfigurations )
-        {
-            return addAction( new ClusterAction()
-            {
-                @Override
-                public void run()
-                {
-                    ClusterMockTest.this.verifyConfigurations( verifyInstanceConfigurations );
-                }
-            }, time );
-        }
-
         private ClusterTestScriptDSL addAction( ClusterAction action, long time )
         {
             action.time = now + time;
@@ -696,7 +687,7 @@ public class ClusterMockTest
             }
         }
 
-        public ClusterTestScriptDSL getRoles( int time, final Map<String, InstanceId> roles )
+        public ClusterTestScriptDSL getRoles( final Map<String, InstanceId> roles )
         {
             return addAction( new ClusterAction()
             {
@@ -779,8 +770,9 @@ public class ClusterMockTest
                     }
                     else
                     {
-                        final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
-                        Runnable joiner =  new Runnable()
+                        final Future<ClusterConfiguration> result = cluster.join( "default",
+                                URI.create( in.get( 0 ).toString() ) );
+                        Runnable joiner = new Runnable()
                         {
                             @Override
                             public void run()

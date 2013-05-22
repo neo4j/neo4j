@@ -64,9 +64,6 @@ import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.security.SecurityFilter;
-import org.neo4j.server.rest.security.SecurityRule;
-import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.security.KeyStoreInformation;
@@ -258,7 +255,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addFilter(Filter filter, String pathSpec)
     {
-    	filters.add(new FilterDefinition(filter, pathSpec));
+    	filters.add( new FilterDefinition( filter, pathSpec ) );
     }
     
     @Override
@@ -354,11 +351,6 @@ public class Jetty6WebServer implements WebServer
             }
         } );
 
-        if( requestLoggingConfiguration != null )
-        {
-            loadRequestLogging();
-        }
-
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
 
@@ -385,6 +377,12 @@ public class Jetty6WebServer implements WebServer
                 throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
             }
         }
+
+        if( requestLoggingConfiguration != null )
+        {
+            loadRequestLogging();
+        }
+
     }
     
     private void loadRequestLogging() {
@@ -486,7 +484,7 @@ public class Jetty6WebServer implements WebServer
     private void addFiltersTo(Context context) {
     	for(FilterDefinition filterDef : filters)
     	{
-            context.addFilter( new FilterHolder( 
+            context.addFilter( new FilterHolder(
             		filterDef.getFilter() ), 
             		filterDef.getPathSpec(), Handler.ALL );
     	}
@@ -504,37 +502,6 @@ public class Jetty6WebServer implements WebServer
 
         String result = sb.toString();
         return result.substring( 0, result.length() - 2 );
-    }
-
-    @Override
-    public void addSecurityRules( final SecurityRule... rules )
-    {
-        jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
-        {
-            @Override
-            public void lifeCycleStarted( LifeCycle arg0 )
-            {
-                for ( Handler handler : jetty.getHandlers() )
-                {
-                    if ( handler instanceof Context )
-                    {
-                        final Context context = (Context) handler;
-                        for ( SecurityRule rule : rules )
-                        {
-                            if ( new UriPathWildcardMatcher( rule.forUriPath() ).matches( context.getContextPath() ) )
-                            {
-                                final Filter jettyFilter = new SecurityFilter( rule );
-                                context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );
-                                log.info( "Security rule [%s] installed on server",
-                                    rule.getClass().getCanonicalName() );
-                                System.out.println( String.format( "Security rule [%s] installed on server",
-                                    rule.getClass().getCanonicalName() ) );
-                            }
-                        }
-                    }
-                }
-            }
-        } );
     }
 
     @Override
