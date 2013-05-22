@@ -65,7 +65,7 @@ trait ReturnClause extends Base with Expressions {
     }
   }
 
-  def withSyntax = WITH ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
+  def withSyntax = WITH ~> columnList
 
   def withClause: Parser[(Return, Option[Seq[AggregationExpression]])] = withSyntax ^^ (columns => {
 

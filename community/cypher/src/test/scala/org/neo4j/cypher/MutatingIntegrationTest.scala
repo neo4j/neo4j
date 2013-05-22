@@ -233,7 +233,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     val q = """
 start a = node(1), c = node(3)
 match p=a-->b-->c
-=== p ===
+with p
 foreach(n in nodes(p) :
   set n.marked = true
 )

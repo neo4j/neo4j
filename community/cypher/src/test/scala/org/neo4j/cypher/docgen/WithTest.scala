@@ -63,19 +63,4 @@ class WithTest extends DocumentingTestBase {
       returns = """Starting at Anders, find all matching nodes, order by name descending and get the top result, then find all the nodes connected to that top result, and return their names.""",
       assertions = (p) => assertEquals(List("Anders", "Bossman"), p.columnAs[String]("o.name").toList))
   }
-
-  @Test def alternative_way_to_write_with() {
-    testQuery(
-      title = "Alternative syntax of WITH",
-      text = "If you prefer a more visual way of writing your query, you can use " +
-        "equal-signs as delimiters before and after the column list. Use at least three " +
-        "before the column list, and at least three after.",
-      queryText = """
-match david--otherPerson-->()
-where david.name='David'
-========== otherPerson, count(*) as foaf ==========
-set otherPerson.connection_count = foaf """,
-      returns = """For persons connected to David, the `connection_count` property is set to their number of outgoing relationships.""",
-      assertions = (p) => assertEquals(node("A").getProperty("connection_count"), 2L))
-  }
 }

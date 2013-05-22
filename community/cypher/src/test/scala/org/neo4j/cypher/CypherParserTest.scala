@@ -1605,26 +1605,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test("start a=node(0), b=node(1) with a,b create a-[r:REL]->b", q)
   }
 
-  @Test def start_with_two_nodes_and_create_relationship_using_alternative_with_syntax() {
-    val secondQ = Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r",
-        RelationshipEndpoint(Identifier("a"),Map(), Seq.empty, true),
-        RelationshipEndpoint(Identifier("b"),Map(), Seq.empty, true), "REL", Map()))).
-      returns()
-
-    val q = Query.
-      start(NodeById("a", 0), NodeById("b", 1)).
-      tail(secondQ).
-      returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
-
-
-    test("""
-start a=node(0), b=node(1)
-========= a,b ============
-create a-[r:REL]->b
-""", q)
-  }
-
   @Test def create_relationship_with_properties() {
     val secondQ = Query.
       start(CreateRelationshipStartItem(CreateRelationship("r",
