@@ -23,7 +23,7 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>12</doctools.version>
+    <doctools.version>13</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
