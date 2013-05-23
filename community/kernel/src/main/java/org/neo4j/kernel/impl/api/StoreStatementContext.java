@@ -570,7 +570,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         try
@@ -579,7 +579,8 @@ public class StoreStatementContext extends CompositeStatementContext
             String propertyKey = propertyKeyGetName( propertyKeyId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
             NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
-            return nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
+            Object value = nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
+            return value == null ? Property.none( propertyKeyId ) : Property.property( propertyKeyId, value );
         }
         catch ( IllegalStateException e )
         {

@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -272,34 +271,6 @@ public class CompositeStatementContext implements StatementContext
         beforeReadOperation();
 
         String result = keyOperations.propertyKeyGetName( propertyKeyId );
-
-        afterReadOperation();
-        afterOperation();
-        return result;
-    }
-
-    @Override
-    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
-    {
-        beforeOperation();
-        beforeReadOperation();
-
-        Object result = entityOperations.nodeGetPropertyValue( nodeId, propertyKeyId );
-
-        afterReadOperation();
-        afterOperation();
-        return result;
-    }
-
-    @Override
-    public Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
-    {
-        beforeOperation();
-        beforeReadOperation();
-
-        Object result = entityOperations.relationshipGetPropertyValue( relationshipId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -705,32 +676,6 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        beforeOperation();
-        beforeWriteOperation();
-
-        entityOperations.nodeSetPropertyValue( nodeId, propertyKeyId, value );
-
-        afterWriteOperation();
-        afterOperation();
-    }
-
-    @Override
-    public void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        beforeOperation();
-        beforeWriteOperation();
-
-        entityOperations.relationshipSetPropertyValue( relationshipId, propertyKeyId, value );
-
-        afterWriteOperation();
-        afterOperation();
-    }
-
-    @Override
     public void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
@@ -757,13 +702,13 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        Object result = entityOperations.nodeRemoveProperty( nodeId, propertyKeyId );
+        Property result = entityOperations.nodeRemoveProperty( nodeId, propertyKeyId );
 
         afterWriteOperation();
         afterOperation();
@@ -772,13 +717,13 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        Object result = entityOperations.relationshipRemoveProperty( relationshipId, propertyKeyId );
+        Property result = entityOperations.relationshipRemoveProperty( relationshipId, propertyKeyId );
 
         afterWriteOperation();
         afterOperation();

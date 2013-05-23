@@ -223,8 +223,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             // + Stop HA from creating constraints
             result = new UniquenessConstraintStoppingTransactionContext( result );
         }
-        // TODO: remove this
-        result = new PropertyConversionTransactionContext( result );
 
         // + Single statement at a time
         result = new ReferenceCountingTransactionContext( result );
@@ -262,9 +260,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Read only access
         result = new ReadOnlyStatementContext( result );
-
-        // TODO: remove this
-        result = new PropertyConversionTransactionContext.PropertyConversionStatementContext( result );
 
         // + Schema state handling
         result = createSchemaStateStatementContext( result );

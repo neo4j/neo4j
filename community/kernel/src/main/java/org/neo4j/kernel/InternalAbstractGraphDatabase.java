@@ -1523,7 +1523,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 try
                 {
-                    return ctx.nodeGetPropertyValue( item, propertyId ).equals( value );
+                    return ctx.nodeGetProperty( item, propertyId ).valueEquals( value );
                 }
                 catch ( KernelException e )
                 {

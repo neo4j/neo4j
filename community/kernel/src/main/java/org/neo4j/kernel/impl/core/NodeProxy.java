@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -179,8 +180,8 @@ public class NodeProxy implements Node
         StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
         try
         {
-            long propertyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
-            ctxForWriting.nodeSetPropertyValue( nodeId, propertyId, value );
+            long propertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
+            ctxForWriting.nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -208,7 +209,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
-            return ctxForWriting.nodeRemoveProperty( nodeId, propertyId );
+            return ctxForWriting.nodeRemoveProperty( nodeId, propertyId ).value( null );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -241,7 +242,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyId = ctxForReading.propertyKeyGetForName( key );
-            return ctxForReading.nodeGetPropertyValue( nodeId, propertyId );
+            return ctxForReading.nodeGetProperty( nodeId, propertyId ).value(defaultValue);
         }
         catch ( EntityNotFoundException e )
         {
@@ -252,10 +253,6 @@ public class NodeProxy implements Node
             return defaultValue;
         }
         catch ( PropertyKeyNotFoundException e )
-        {
-            return defaultValue;
-        }
-        catch ( PropertyNotFoundException e )
         {
             return defaultValue;
         }
@@ -312,7 +309,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyId = ctxForReading.propertyKeyGetForName( key );
-            return ctxForReading.nodeGetPropertyValue( nodeId, propertyId );
+            return ctxForReading.nodeGetProperty( nodeId, propertyId ).value();
         }
         catch ( EntityNotFoundException e )
         {

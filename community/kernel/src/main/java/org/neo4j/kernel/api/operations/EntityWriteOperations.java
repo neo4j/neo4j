@@ -45,15 +45,6 @@ public interface EntityWriteOperations
      */
     boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
 
-    /** Set a node's property given the node's id, the property key id, and the value */
-    @Deprecated
-    void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
-    @Deprecated
-    void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
     void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
@@ -64,9 +55,9 @@ public interface EntityWriteOperations
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+    Property nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
-    Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 }

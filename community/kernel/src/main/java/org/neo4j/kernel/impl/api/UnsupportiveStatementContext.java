@@ -129,18 +129,6 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
-    {
-        throw unsupported();
-    }
-
-    @Override
-    public Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
-    {
-        throw unsupported();
-    }
-
-    @Override
     public Property nodeGetProperty( long nodeId, long propertyKeyId )
     {
         throw unsupported();
@@ -165,18 +153,6 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
-    {
-        throw unsupported();
-    }
-
-    @Override
-    public void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
-    {
-        throw unsupported();
-    }
-
-    @Override
     public void nodeSetProperty( long nodeId, Property property )
     {
         throw unsupported();
@@ -189,13 +165,13 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
     {
         throw unsupported();
     }
 
     @Override
-    public Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
     {
         throw unsupported();
     }

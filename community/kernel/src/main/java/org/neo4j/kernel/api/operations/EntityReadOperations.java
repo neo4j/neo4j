@@ -23,7 +23,6 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -58,15 +57,6 @@ public interface EntityReadOperations
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
     Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException;
-
-    /** Returns the value of the property given it's property key id for the node with the given node id. */
-    @Deprecated
-    Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
-
-    @Deprecated
-    Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
