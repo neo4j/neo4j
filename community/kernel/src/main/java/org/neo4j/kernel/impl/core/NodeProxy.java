@@ -232,12 +232,43 @@ public class NodeProxy implements Node
     @Override
     public Object getProperty( String key, Object defaultValue )
     {
-        return nodeLookup.lookup( nodeId ).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
+        // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long propertyId = ctxForReading.propertyKeyGetForName( key );
+            return ctxForReading.nodeGetPropertyValue( nodeId, propertyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return defaultValue;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return defaultValue;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            return defaultValue;
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
     }
 
     @Override
     public Iterable<Object> getPropertyValues()
     {
+
         return nodeLookup.lookup( nodeId ).getPropertyValues( nodeLookup.getNodeManager() );
     }
 
@@ -273,6 +304,7 @@ public class NodeProxy implements Node
     public Object getProperty( String key ) throws NotFoundException
     {
         // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 
 public interface EntityWriteOperations
 {
@@ -45,13 +46,27 @@ public interface EntityWriteOperations
     boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
 
     /** Set a node's property given the node's id, the property key id, and the value */
-    void nodeSetPropertyValue( long nodeId, long propertyId, Object value )
+    @Deprecated
+    void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    @Deprecated
+    void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    void nodeSetProperty( long nodeId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    void relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Object nodeRemoveProperty( long nodeId, long propertyId )
+    Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 }

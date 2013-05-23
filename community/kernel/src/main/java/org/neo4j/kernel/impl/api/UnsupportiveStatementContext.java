@@ -24,14 +24,8 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
@@ -57,7 +51,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value )
     {
         throw unsupported();
     }
@@ -75,37 +69,37 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public long labelGetForName( String label ) throws LabelNotFoundKernelException
+    public long labelGetForName( String label )
     {
         throw unsupported();
     }
 
     @Override
-    public String labelGetName( long labelId ) throws LabelNotFoundKernelException
+    public String labelGetName( long labelId )
     {
         throw unsupported();
     }
 
     @Override
-    public boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( long nodeId, long labelId )
     {
         throw unsupported();
     }
 
     @Override
-    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( long nodeId, long labelId )
     {
         throw unsupported();
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException
+    public Iterator<Long> nodeGetLabels( long nodeId )
     {
         throw unsupported();
     }
 
     @Override
-    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long nodeId, long labelId )
     {
         throw unsupported();
     }
@@ -123,42 +117,85 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public long propertyKeyGetForName( String propertyKey ) throws PropertyKeyNotFoundException
+    public long propertyKeyGetForName( String propertyKey )
     {
         throw unsupported();
     }
 
     @Override
-    public String propertyKeyGetName( long propertyId ) throws PropertyKeyIdNotFoundException
+    public String propertyKeyGetName( long propertyKeyId )
     {
         throw unsupported();
     }
 
     @Override
-    public Object nodeGetPropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-                                                                              PropertyNotFoundException,
-                                                                              EntityNotFoundException
+    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
     {
         throw unsupported();
     }
 
     @Override
-    public boolean nodeHasProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-                                                                          EntityNotFoundException
+    public Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
     {
         throw unsupported();
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyId,
-                                      Object value ) throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    public Property nodeGetProperty( long nodeId, long propertyKeyId )
     {
         throw unsupported();
     }
 
     @Override
-    public Object nodeRemoveProperty( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-                                                                            EntityNotFoundException
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void nodeSetProperty( long nodeId, Property property )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public void relationshipSetProperty( long relationshipId, Property property )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
     {
         throw unsupported();
     }
@@ -170,7 +207,19 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<Property> nodeGetAllProperties( long nodeId )
+    {
+        throw unsupported();
+    }
+
+    @Override
     public Iterator<Long> relationshipGetPropertyKeys( long relationshipId )
+    {
+        throw unsupported();
+    }
+
+    @Override
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId )
     {
         throw unsupported();
     }
@@ -188,7 +237,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey )
     {
         throw unsupported();
     }
@@ -218,7 +267,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor )
     {
         throw unsupported();
     }
@@ -272,7 +321,7 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index )
     {
         throw unsupported();
     }

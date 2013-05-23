@@ -17,17 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.properties;
 
-public class PropertyNotFoundException extends KernelException
+final class BigLongProperty extends FullSizeProperty
 {
-    public PropertyNotFoundException( long propertyKeyId, Throwable cause )
+    private final long value;
+
+    BigLongProperty( long propertyKeyId, long value )
     {
-        super( cause, "No property with propertyKeyId=%s", propertyKeyId );
+        super( propertyKeyId );
+        this.value = value;
     }
 
-    public PropertyNotFoundException( long propertyKeyId )
+    @Override
+    public Long value()
     {
-        super( null, "No property with propertyKeyId=%s", propertyKeyId );
+        return value;
+    }
+
+    @Override
+    public int intValue()
+    {
+        throw new ClassCastException( String.format( "[%s:long] is not small enough to fit into an int.", value ) );
+    }
+
+    @Override
+    public long longValue()
+    {
+        return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return (int) (value ^ (value >>> 32));
+    }
+
+    @Override
+    boolean valueEquals( FullSizeProperty that )
+    {
+        return value == ((BigLongProperty)that).value;
     }
 }

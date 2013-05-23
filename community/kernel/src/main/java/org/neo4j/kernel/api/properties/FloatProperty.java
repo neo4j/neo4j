@@ -17,17 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.properties;
 
-public class PropertyNotFoundException extends KernelException
+import static java.lang.Float.floatToIntBits;
+
+final class FloatProperty extends NumberPropertyWithin4Bytes
 {
-    public PropertyNotFoundException( long propertyKeyId, Throwable cause )
+    private final float value;
+    private final long propertyKeyId;
+
+    FloatProperty( long propertyKeyId, float value )
     {
-        super( cause, "No property with propertyKeyId=%s", propertyKeyId );
+        this.propertyKeyId = propertyKeyId;
+        this.value = value;
     }
 
-    public PropertyNotFoundException( long propertyKeyId )
+    @Override
+    public long propertyKeyId()
     {
-        super( null, "No property with propertyKeyId=%s", propertyKeyId );
+        return propertyKeyId;
+    }
+
+    @Override
+    boolean valueEquals( Object that )
+    {
+        return value == ((FloatProperty) that).value;
+    }
+
+    @Override
+    int valueBits()
+    {
+        return floatToIntBits( value );
+    }
+
+    @Override
+    public Number value()
+    {
+        return value;
     }
 }

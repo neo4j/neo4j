@@ -128,7 +128,7 @@ public class CompositeStatementContextTest
         @Override
         public String toString()
         {
-            return String.format( "%s#%s(...)", method.getDeclaringClass().getName(), method.getName() );
+            return String.format( "%s#%s(...)", method.getDeclaringClass().getSimpleName(), method.getName() );
         }
 
         public Object invoke( Object obj, Object... args )

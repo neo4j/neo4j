@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.Collections.synchronizedList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
@@ -222,6 +223,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             // + Stop HA from creating constraints
             result = new UniquenessConstraintStoppingTransactionContext( result );
         }
+        result = new PropertyConversionTransactionContext(result);
 
         // + Single statement at a time
         result = new ReferenceCountingTransactionContext( result );

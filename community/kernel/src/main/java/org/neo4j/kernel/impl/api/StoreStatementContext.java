@@ -469,8 +469,7 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( NotFoundException e )
         {
-            throw new PropertyNotFoundException(
-                    "No property with id " + propertyKeyId + " on node with id " + nodeId, e );
+            throw new PropertyNotFoundException( propertyKeyId, e );
         }
     }
 

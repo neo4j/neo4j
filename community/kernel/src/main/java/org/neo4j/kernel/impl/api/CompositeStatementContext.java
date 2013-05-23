@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.operations.EntityOperations;
 import org.neo4j.kernel.api.operations.KeyOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
@@ -137,8 +138,8 @@ public class CompositeStatementContext implements StatementContext
         else
         {
             throw new IllegalStateException( "Asked to close, but was not given a full implementation of statement " +
-                    "context. Please either override this close method, or give CompositeStatementContext a full " +
-                    "implementation of the statement context interface." );
+                                             "context. Please either override this close method, or give CompositeStatementContext a full " +
+                                             "implementation of the statement context interface." );
         }
     }
 
@@ -186,7 +187,8 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
     {
         beforeOperation();
         beforeReadOperation();
@@ -264,12 +266,12 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public String propertyKeyGetName( long propertyId ) throws PropertyKeyIdNotFoundException
+    public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        String result = keyOperations.propertyKeyGetName( propertyId );
+        String result = keyOperations.propertyKeyGetName( propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -277,28 +279,83 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Object nodeGetPropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-            PropertyNotFoundException, EntityNotFoundException
+    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        Object result = entityOperations.nodeGetPropertyValue( nodeId, propertyId );
+        Object result = entityOperations.nodeGetPropertyValue( nodeId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
         return result;
     }
 
+    @Override
+    public Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Object result = entityOperations.relationshipGetPropertyValue( relationshipId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
 
     @Override
-    public boolean nodeHasProperty(long nodeId, long propertyId)
+    public Property nodeGetProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
 
-        boolean result = entityOperations.nodeHasProperty( nodeId, propertyId );
+        Property result = entityOperations.nodeGetProperty( nodeId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Property result = entityOperations.relationshipGetProperty( relationshipId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = entityOperations.nodeHasProperty( nodeId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = entityOperations.relationshipHasProperty( relationshipId, propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -319,6 +376,19 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public Iterator<Property> nodeGetAllProperties( long nodeId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Property> result = entityOperations.nodeGetAllProperties( nodeId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
     public Iterator<Long> relationshipGetPropertyKeys( long relationshipId )
     {
         beforeOperation();
@@ -332,7 +402,21 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Property> result = entityOperations.relationshipGetAllProperties( relationshipId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey )
+            throws SchemaRuleNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -634,6 +718,45 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        entityOperations.relationshipSetPropertyValue( relationshipId, propertyKeyId, value );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
+    public void nodeSetProperty( long nodeId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        entityOperations.nodeSetProperty( nodeId, property );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
+    public void relationshipSetProperty( long relationshipId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        entityOperations.relationshipSetProperty( relationshipId, property );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+    @Override
     public Object nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
@@ -641,6 +764,21 @@ public class CompositeStatementContext implements StatementContext
         beforeWriteOperation();
 
         Object result = entityOperations.nodeRemoveProperty( nodeId, propertyKeyId );
+
+        afterWriteOperation();
+        afterOperation();
+
+        return result;
+    }
+
+    @Override
+    public Object relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        Object result = entityOperations.relationshipRemoveProperty( relationshipId, propertyKeyId );
 
         afterWriteOperation();
         afterOperation();

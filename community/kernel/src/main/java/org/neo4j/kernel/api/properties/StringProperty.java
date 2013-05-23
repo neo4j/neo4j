@@ -17,17 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.properties;
 
-public class PropertyNotFoundException extends KernelException
+final class StringProperty extends FullSizeProperty
 {
-    public PropertyNotFoundException( long propertyKeyId, Throwable cause )
+    private final String value;
+
+    StringProperty( long propertyKeyId, String value )
     {
-        super( cause, "No property with propertyKeyId=%s", propertyKeyId );
+        super( propertyKeyId );
+        assert value != null;
+        this.value = value;
     }
 
-    public PropertyNotFoundException( long propertyKeyId )
+    @Override
+    public String value()
     {
-        super( null, "No property with propertyKeyId=%s", propertyKeyId );
+        return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return value.hashCode();
+    }
+
+    @Override
+    boolean valueEquals( FullSizeProperty that )
+    {
+        return value.equals( ((StringProperty)that).value );
     }
 }

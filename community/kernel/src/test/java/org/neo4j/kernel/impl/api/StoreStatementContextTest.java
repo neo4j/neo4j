@@ -124,7 +124,7 @@ public class StoreStatementContextTest
         // THEN
         catch ( PropertyNotFoundException e )
         {
-            assertEquals( "No property with id 0 on node with id 2", e.getMessage() );
+            assertEquals( "No property with propertyKeyId=0", e.getMessage() );
         }
     }
     

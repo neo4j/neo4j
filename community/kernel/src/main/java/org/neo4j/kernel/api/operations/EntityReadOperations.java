@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public interface EntityReadOperations
@@ -58,17 +59,37 @@ public interface EntityReadOperations
      */
     Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    /** Returns the value of the property given it's property key id for the node with the given node id */
-    Object nodeGetPropertyValue( long nodeId, long propertyId )
+    /** Returns the value of the property given it's property key id for the node with the given node id. */
+    @Deprecated
+    Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
 
-    /** Returns true if node has the property given it's property key id for the node with the given node id */
-    boolean nodeHasProperty( long nodeId, long propertyId )
+    @Deprecated
+    Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
+
+    Property nodeGetProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
+    Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    /** Returns true if node has the property given it's property key id for the node with the given node id */
+    boolean nodeHasProperty( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+
+    // TODO: decide if this should be replaced by nodeGetAllProperties()
     /** Return all property keys associated with a node. */
     Iterator<Long> nodeGetPropertyKeys( long nodeId );
 
+    Iterator<Property> nodeGetAllProperties( long nodeId );
+
+    // TODO: decide if this should be replaced by relationshipGetAllProperties()
     /** Return all property keys associated with a relationship. */
     Iterator<Long> relationshipGetPropertyKeys( long relationshipId );
+
+    Iterator<Property> relationshipGetAllProperties( long relationshipId );
 }
