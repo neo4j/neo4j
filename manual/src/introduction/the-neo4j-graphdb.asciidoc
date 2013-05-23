@@ -292,3 +292,8 @@ Neo4j can help you keep your data clean. It does so using constraints, that allo
 your data should look like. Any changes that break these rules will be denied.
 
 In this version, unique constraints is the only available constraint type.
+
+How to use constraints in the different APIs:
+
+* <<query-constraints, Cypher>>
+* <<rest-api-schema-constraints, REST API>>
