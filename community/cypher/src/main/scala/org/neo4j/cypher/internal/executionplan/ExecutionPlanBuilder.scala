@@ -123,6 +123,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
         case x   => Seq(x)
       }
 
+    case union: Union => getQueryResultColumns(union.queries.head, currentSymbols)
+
     case _ => List.empty
   }
 
