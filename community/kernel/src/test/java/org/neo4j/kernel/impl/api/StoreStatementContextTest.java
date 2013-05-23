@@ -36,6 +36,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -93,7 +94,7 @@ public class StoreStatementContextTest
 
         // WHEN
         long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
-        int result = (Integer) statement.nodeGetPropertyValue( nodeId, propertyKeyId );
+        int result = (Integer) statement.nodeGetProperty( nodeId, propertyKeyId ).value();
 
         // THEN
         assertThat( propertyValue, equalTo( result ) );
@@ -115,10 +116,10 @@ public class StoreStatementContextTest
 
         // WHEN
         long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+        Property property = statement.nodeGetProperty( nodeId, propertyKeyId );
         try
         {
-            statement.nodeGetPropertyValue( nodeId, propertyKeyId );
-
+            property.value();
             fail( "Should have thrown exception" );
         }
         // THEN

@@ -41,7 +41,7 @@ final class ShortProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
-    boolean valueEquals( Object that )
+    boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((ShortProperty) that).value;
     }

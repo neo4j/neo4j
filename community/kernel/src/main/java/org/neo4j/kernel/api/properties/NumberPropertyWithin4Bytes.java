@@ -44,10 +44,10 @@ abstract class NumberPropertyWithin4Bytes extends PropertyWithValue
             return false;
         }
         NumberPropertyWithin4Bytes that = (NumberPropertyWithin4Bytes) obj;
-        return this.propertyKeyId() == that.propertyKeyId() && valueEquals(that);
+        return this.propertyKeyId() == that.propertyKeyId() && hasEqualValue( that );
     }
 
-    abstract boolean valueEquals( Object that );
+    abstract boolean hasEqualValue( NumberPropertyWithin4Bytes that );
 
     int valueBits()
     {

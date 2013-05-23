@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class Primitive
+public abstract class Primitive
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
@@ -453,7 +453,7 @@ abstract class Primitive
         }
     }
 
-    protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager, TransactionState tx )
+    protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )
     {
         ensureFullLightProperties( nodeManager );
         if ( allProperties() == null )
@@ -472,7 +472,7 @@ abstract class Primitive
         return props;
    }
 
-    protected Object getCommittedPropertyValue( NodeManager nodeManager, String key, TransactionState tx )
+    protected Object getCommittedPropertyValue( NodeManager nodeManager, String key )
     {
         ensureFullLightProperties( nodeManager );
         Token index = nodeManager.getPropertyKeyTokenOrNull( key );

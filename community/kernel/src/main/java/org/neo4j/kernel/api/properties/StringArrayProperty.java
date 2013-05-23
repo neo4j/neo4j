@@ -45,7 +45,7 @@ class StringArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return Arrays.equals( this.value, ((StringArrayProperty)that).value );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
@@ -104,13 +105,13 @@ public class TestOperationsOnDeletedPrimitive
     @Test(expected = NotFoundException.class)
     public void shouldThrowNotFoundExceptionOnGetAllCommittedPropertiesOnDeletedEntity() throws Exception
     {
-        primitive.getAllCommittedProperties( nodeManager, nodeManager.getTransactionState() );
+        primitive.getAllCommittedProperties( nodeManager );
     }
 
     @Test(expected = NotFoundException.class)
     public void shouldThrowNotFoundExceptionOnGetCommittedPropertyValueOnDeletedEntity() throws Exception
     {
-        primitive.getCommittedPropertyValue( nodeManager, "the_key", nodeManager.getTransactionState() );
+        primitive.getCommittedPropertyValue( nodeManager, "the_key" );
     }
 
     // Test utils

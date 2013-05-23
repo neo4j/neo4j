@@ -43,7 +43,7 @@ final class DoubleProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return Double.compare( this.value, ((DoubleProperty) that).value ) == 0;
     }

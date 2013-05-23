@@ -59,7 +59,7 @@ public class PersistenceCache
         }
         else
         {
-            throw new EntityNotFoundException( "No node with id " + nodeId + " found." );
+            throw new EntityNotFoundException( "node", nodeId );
         }
     }
 

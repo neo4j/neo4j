@@ -32,6 +32,12 @@ abstract class PropertyWithValue extends Property
     }
 
     @Override
+    public boolean valueEquals( Object value )
+    {
+        return value().equals( value ); // TODO: specialize sub-classes to avoid the boxing performed by value()
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueToString() + "]";

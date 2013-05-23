@@ -44,7 +44,7 @@ abstract class FullSizeProperty extends PropertyWithValue
         if ( o != null && getClass() == o.getClass() )
         {
             FullSizeProperty that = (FullSizeProperty) o;
-            return propertyKeyId == that.propertyKeyId && valueEquals( that );
+            return propertyKeyId == that.propertyKeyId && hasEqualValue( that );
         }
         return false;
     }
@@ -57,5 +57,5 @@ abstract class FullSizeProperty extends PropertyWithValue
 
     abstract int valueHash();
 
-    abstract boolean valueEquals( FullSizeProperty that );
+    abstract boolean hasEqualValue( FullSizeProperty that );
 }

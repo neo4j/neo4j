@@ -29,6 +29,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -40,6 +41,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -101,6 +103,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
+        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.none( propertyKeyId ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -127,7 +130,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        when( store.nodeGetPropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
+        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( Property.stringProperty( propertyKeyId, value ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         // When
@@ -151,7 +154,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
 
-        when( store.nodeGetPropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
+        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( Property.stringProperty( propertyKeyId, value ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         // When

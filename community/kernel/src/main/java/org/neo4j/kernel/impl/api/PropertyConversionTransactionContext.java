@@ -41,9 +41,9 @@ public class PropertyConversionTransactionContext extends DelegatingTransactionC
         return new PropertyConversionStatementContext( super.newStatementContext() );
     }
 
-    private static class PropertyConversionStatementContext extends CompositeStatementContext
+    public static class PropertyConversionStatementContext extends CompositeStatementContext
     {
-        PropertyConversionStatementContext( StatementContext delegate )
+        public PropertyConversionStatementContext( StatementContext delegate )
         {
             super( delegate );
         }
@@ -54,14 +54,14 @@ public class PropertyConversionTransactionContext extends DelegatingTransactionC
         public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
                 throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
         {
-            return super.nodeGetPropertyValue( nodeId, propertyKeyId );
+            return nodeGetProperty( nodeId, propertyKeyId ).value();
         }
 
         @Override
         public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
                 throws PropertyKeyIdNotFoundException, EntityNotFoundException
         {
-            super.nodeSetPropertyValue( nodeId, propertyKeyId, value );
+            nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
         }
 
         @Override
@@ -110,14 +110,14 @@ public class PropertyConversionTransactionContext extends DelegatingTransactionC
         public Object relationshipGetPropertyValue( long relationshipId, long propertyKeyId )
                 throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
         {
-            return super.relationshipGetPropertyValue( relationshipId, propertyKeyId );
+            return relationshipGetProperty( relationshipId, propertyKeyId ).value();
         }
 
         @Override
         public void relationshipSetPropertyValue( long relationshipId, long propertyKeyId, Object value )
                 throws PropertyKeyIdNotFoundException, EntityNotFoundException
         {
-            super.relationshipSetPropertyValue( relationshipId, propertyKeyId, value );
+            relationshipSetProperty( relationshipId, Property.property( propertyKeyId, value ) );
         }
 
         @Override

@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -101,16 +100,6 @@ public class WritableTransactionState implements TransactionState
         {
             if ( graph == null && create ) graph = new CowGraphElement();
             return graph;
-        }
-        
-        void addCreatedNode( long id )
-        {
-            this.createdNodes.add( id );
-        }
-
-        void addCreatedRelationship( long id )
-        {
-            this.createdRelationships.add( id );
         }
     }
     
@@ -566,14 +555,8 @@ public class WritableTransactionState implements TransactionState
         {
             return result;
         }
-        if ( primitiveElement.nodes != null )
-        {
-            populateNodeRelEvent( primitiveElement, result );
-        }
-        if ( primitiveElement.relationships != null )
-        {
-            populateRelationshipPropertyEvents( primitiveElement, result );
-        }
+        populateNodeRelEvent( primitiveElement, result );
+        populateRelationshipPropertyEvents( primitiveElement, result );
         return result;
     }
 
@@ -599,7 +582,7 @@ public class WritableTransactionState implements TransactionState
                 for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
                     String key = nodeManager.getKeyForProperty( data );
-                    Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key, this );
+                    Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( rel, key, newValue, oldValue );
                 }
@@ -612,7 +595,7 @@ public class WritableTransactionState implements TransactionState
                     Object oldValue = data.getValue();
                     if ( oldValue != null && !relElement.isDeleted() )
                     {
-                        relImpl.getCommittedPropertyValue( nodeManager, key, this );
+                        relImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( rel, key, oldValue );
                 }
@@ -668,7 +651,7 @@ public class WritableTransactionState implements TransactionState
                 for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
                     String key = nodeManager.getKeyForProperty( data );
-                    Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key, this );
+                    Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( node, key, newValue, oldValue );
                 }
@@ -681,7 +664,7 @@ public class WritableTransactionState implements TransactionState
                     Object oldValue = data.getValue();
                     if ( oldValue == null && !nodeElement.isDeleted() )
                     {
-                        nodeImpl.getCommittedPropertyValue( nodeManager, key, this );
+                        nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( node, key, oldValue );
                 }
@@ -713,7 +696,7 @@ public class WritableTransactionState implements TransactionState
     {
         for ( Long nodeId : getCreatedNodes() )
         {
-            if ( element != null && element.nodes != null )
+            if ( element != null )
             {
                 CowNodeElement nodeElement = element.nodes.get( nodeId );
                 if ( nodeElement != null && nodeElement.isDeleted() )
@@ -758,7 +741,7 @@ public class WritableTransactionState implements TransactionState
         if ( primitiveElement == null )
             return false;
         CowNodeElement nodeElement = primitiveElement.nodeElement( nodeId, false );
-        return nodeElement != null ? nodeElement.isDeleted() : false;
+        return nodeElement != null && nodeElement.isDeleted();
     }
     
     @Override
@@ -767,7 +750,7 @@ public class WritableTransactionState implements TransactionState
         if ( primitiveElement == null )
             return false;
         CowRelElement relationshipElement = primitiveElement.relationshipElement( relationshipId, false );
-        return relationshipElement != null ? relationshipElement.isDeleted() : false;
+        return relationshipElement != null && relationshipElement.isDeleted();
     }
     
     @Override

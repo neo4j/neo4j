@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -393,11 +392,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             try
             {
-                return value.equals( delegate.nodeGetPropertyValue( nodeId, propertyKeyId ) );
-            }
-            catch ( PropertyNotFoundException e )
-            {
-                return false;
+                return delegate.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value );
             }
             catch ( EntityNotFoundException e )
             {

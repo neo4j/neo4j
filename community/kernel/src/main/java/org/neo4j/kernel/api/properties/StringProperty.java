@@ -43,7 +43,7 @@ final class StringProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return value.equals( ((StringProperty)that).value );
     }

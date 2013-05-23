@@ -54,7 +54,7 @@ final class BigLongProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return value == ((BigLongProperty)that).value;
     }

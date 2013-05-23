@@ -35,6 +35,8 @@ public abstract class Property
 
     public abstract long propertyKeyId();
 
+    public abstract boolean valueEquals( Object value );
+
     public abstract Object value() throws PropertyNotFoundException;
 
     public abstract Object value( Object defaultValue );

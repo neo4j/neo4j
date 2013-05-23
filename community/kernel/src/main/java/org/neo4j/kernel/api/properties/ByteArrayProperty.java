@@ -45,7 +45,7 @@ class ByteArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return Arrays.equals( this.value, ((ByteArrayProperty)that).value );
     }

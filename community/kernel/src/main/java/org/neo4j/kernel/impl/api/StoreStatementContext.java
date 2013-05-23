@@ -40,13 +40,17 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -258,7 +262,8 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( final long labelId, final long propertyKey )
+            throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
@@ -456,20 +461,52 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         try
         {
-            return nodeManager.getNodeForProxy( nodeId, null ).getProperty( nodeManager, (int) propertyKeyId );
+            return property( propertyKeyId, nodeManager.getRelationshipForProxy( relationshipId, null ) );
+        }
+        // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
+        catch ( NotFoundException e )
+        {
+            throw new EntityNotFoundException( "relationship", relationshipId, e );
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+            throw new EntityNotFoundException( "relationship", relationshipId, e );
+        }
+    }
+
+    @Override
+    public Property nodeGetProperty( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            return property( propertyKeyId, nodeManager.getNodeForProxy( nodeId, null ) );
+        }
+        // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
+        catch ( NotFoundException e )
+        {
+            throw new EntityNotFoundException( "node", nodeId, e );
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new EntityNotFoundException( "node", nodeId, e );
+        }
+    }
+
+    private Property property( long propertyKeyId, Primitive primitive )
+    {
+        try
+        {
+            return Property.property( propertyKeyId, primitive.getProperty( nodeManager, (int) propertyKeyId ) );
         }
         catch ( NotFoundException e )
         {
-            throw new PropertyNotFoundException( propertyKeyId, e );
+            return Property.none( propertyKeyId );
         }
     }
 
@@ -484,25 +521,51 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+            throw new EntityNotFoundException( "node", nodeId, e );
         }
     }
 
     @Override
-    public void nodeSetPropertyValue( long nodeId, long propertyKeyId, Object value )
+    public void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         try
         {
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = propertyKeyGetName( propertyKeyId );
+            String propertyKey = propertyKeyGetName( property.propertyKeyId() );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
             NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
-            nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, value );
+            nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, property.value() );
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+            throw new EntityNotFoundException( "node", nodeId, e );
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+
+    @Override
+    public void relationshipSetProperty( long relationshipId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
+            String propertyKey = propertyKeyGetName( property.propertyKeyId() );
+            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE );
+            RelationshipProxy relProxy = nodeManager.newRelationshipProxyById( relationshipId );
+            relImpl.setProperty( nodeManager, relProxy, propertyKey, property.value() );
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new EntityNotFoundException( "relationship", relationshipId, e );
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
         }
     }
 
@@ -520,12 +583,13 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
+            throw new EntityNotFoundException( "node", nodeId, e );
         }
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId( index ) ).lookup( value );
     }

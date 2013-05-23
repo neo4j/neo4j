@@ -55,6 +55,12 @@ final class NoProperty extends Property
     }
 
     @Override
+    public boolean valueEquals( Object value )
+    {
+        return false;
+    }
+
+    @Override
     public Object value( Object defaultValue )
     {
         return defaultValue;

@@ -45,7 +45,7 @@ class DoubleArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean valueEquals( FullSizeProperty that )
+    boolean hasEqualValue( FullSizeProperty that )
     {
         return Arrays.equals( this.value, ((DoubleArrayProperty)that).value );
     }
