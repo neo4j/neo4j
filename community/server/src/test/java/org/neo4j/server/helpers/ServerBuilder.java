@@ -28,6 +28,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -43,7 +47,6 @@ import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.Clock;
-import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
@@ -87,6 +90,8 @@ public class ServerBuilder
 
     public CommunityNeoServer build() throws IOException
     {
+        turnOffConsoleLogging();
+
         if ( dbDir == null && persistent)
         {
             throw new IllegalStateException( "Must specify path" );
@@ -143,6 +148,36 @@ public class ServerBuilder
                 configFile.delete();
             }
         };
+    }
+
+    private void turnOffConsoleLogging()
+    {
+        //get the top Logger:
+        Logger topLogger = java.util.logging.Logger.getLogger( "" );
+
+        // Handler for console (reuse it if it already exists)
+        Handler consoleHandler = null;
+        //see if there is already a console handler
+        for ( Handler handler : topLogger.getHandlers() )
+        {
+            if ( handler instanceof ConsoleHandler )
+            {
+                //found the console handler
+                consoleHandler = handler;
+                break;
+            }
+        }
+
+
+        if ( consoleHandler == null )
+        {
+            //there was no console handler found, create a new one
+            consoleHandler = new ConsoleHandler();
+            topLogger.addHandler( consoleHandler );
+        }
+        //set the console handler to fine:
+        consoleHandler.setLevel( Level.OFF );
+        org.mortbay.log.Log.setLog( null );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -287,12 +322,6 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withMaxJettyThreads( int maxThreads )
-    {
-        this.maxThreads = String.valueOf( maxThreads );
-        return this;
-    }
-
     public ServerBuilder usingDatabaseDir( String dbDir )
     {
         this.dbDir = dbDir;
@@ -341,12 +370,6 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withoutWebServerPort()
-    {
-        portNo = null;
-        return this;
-    }
-
     public ServerBuilder withFailingPreflightTasks()
     {
         preflightTasks = new PreFlightTasks()
@@ -392,33 +415,15 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withCorruptTuningFile() throws IOException
-    {
-        action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
-        return this;
-    }
-
     public ServerBuilder withThirdPartyJaxRsPackage( String packageName, String mountPoint )
     {
         thirdPartyPackages.put( packageName, mountPoint );
         return this;
     }
 
-    public ServerBuilder withFakeClock()
-    {
-        clock = new FakeClock();
-        return this;
-    }
-
     public ServerBuilder withAutoIndexingEnabledForNodes( String... keys )
     {
         autoIndexedNodeKeys = keys;
-        return this;
-    }
-
-    public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
-    {
-        autoIndexedRelationshipKeys = keys;
         return this;
     }
 
