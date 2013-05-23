@@ -437,13 +437,19 @@ public class NodeProxy implements Node
     public void removeLabel( Label label )
     {
         StatementContext ctx = statementCtxProvider.getCtxForWriting();
+        long labelId;
         try
         {
-            ctx.removeLabelFromNode( ctx.getLabelId( label.name() ), getId() );
+            labelId = ctx.getLabelId( label.name() );
         }
         catch ( LabelNotFoundKernelException e )
         {
-            // Do nothing
+            return;
+        }
+
+        try
+        {
+            ctx.removeLabelFromNode( labelId, getId() );
         }
         catch ( EntityNotFoundException e )
         {

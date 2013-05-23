@@ -1126,7 +1126,7 @@ public class DatabaseActions
                 }
                 Relationship relationship = relationship(relationshipOrNull);
                 result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
-                if ( (created = (result == null)) ) result = relationship;
+                if ( created = result == null ) result = relationship;
             }
             else if ( startNode == null || type == null || endNode == null )
             {
