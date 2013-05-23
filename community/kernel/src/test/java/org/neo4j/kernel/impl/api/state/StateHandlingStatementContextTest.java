@@ -67,7 +67,7 @@ public class StateHandlingStatementContextTest
             }
 
             @Override
-            public boolean isLabelSetOnNode( long labelId, long nodeId )
+            public boolean nodeHasLabel( long nodeId, long labelId )
             {
                 return false;
             }
@@ -77,10 +77,10 @@ public class StateHandlingStatementContextTest
                 mock( SchemaStateOperations.class ), mock( TxState.class ), mock( ConstraintIndexCreator.class ) );
 
         // When
-        ctx.addIndex( 0l, 0l );
-        ctx.addLabelToNode( 0l, 0l );
-        ctx.dropIndex( new IndexDescriptor( 0l, 0l ) );
-        ctx.removeLabelFromNode( 0l, 0l );
+        ctx.indexCreate( 0l, 0l );
+        ctx.nodeAddLabel( 0l, 0l );
+        ctx.indexDrop( new IndexDescriptor( 0l, 0l ) );
+        ctx.nodeRemoveLabel( 0l, 0l );
 
         // These are kind of in between.. property key ids are created in
         // micro-transactions, so these methods
@@ -98,13 +98,13 @@ public class StateHandlingStatementContextTest
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         StatementContext delegate = mock( StatementContext.class );
-        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( asList( constraint ) ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( asList( constraint ) ) );
         TxState state = mock( TxState.class );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
                 mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
 
         // when
-        context.addUniquenessConstraint( 10, 66 );
+        context.uniquenessConstraintCreate( 10, 66 );
 
         // then
         verify( state ).unRemoveConstraint( any( UniquenessConstraint.class ) );
@@ -118,15 +118,15 @@ public class StateHandlingStatementContextTest
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
 
         StatementContext delegate = mock( StatementContext.class );
-        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
                 mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
-        context.addUniquenessConstraint( 10, 66 );
+        context.uniquenessConstraintCreate( 10, 66 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints( 10, 66 ) ) );
+        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetForLabelAndPropertyKey( 10, 66 ) ) );
 
         // then
         assertEquals( asSet( constraint ), result );
@@ -140,19 +140,19 @@ public class StateHandlingStatementContextTest
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
         StatementContext delegate = mock( StatementContext.class );
-        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 10 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 11 ) ).thenAnswer( asAnswer( asIterable( constraint1 ) ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetForLabel( 10 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetForLabel( 11 ) ).thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
                 mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
-        context.addUniquenessConstraint( 10, 66 );
-        context.addUniquenessConstraint( 11, 99 );
+        context.uniquenessConstraintCreate( 10, 66 );
+        context.uniquenessConstraintCreate( 11, 99 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints( 11 ) ) );
+        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetForLabel( 11 ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -167,17 +167,17 @@ public class StateHandlingStatementContextTest
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
         StatementContext delegate = mock( StatementContext.class );
-        when( delegate.getConstraints( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.getConstraints() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetForLabelAndPropertyKey( 11, 99 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
+        when( delegate.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
                 mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
-        context.addUniquenessConstraint( 10, 66 );
+        context.uniquenessConstraintCreate( 10, 66 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.getConstraints() ) );
+        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetAll() ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );

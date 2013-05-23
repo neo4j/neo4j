@@ -50,27 +50,27 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
         }
 
         @Override
-        public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+        public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
                 throws DataIntegrityKernelException
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public void dropConstraint( UniquenessConstraint constraint )
+        public void constraintDrop( UniquenessConstraint constraint )
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+        public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey )
                 throws DataIntegrityKernelException
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public void dropConstraintIndex( IndexDescriptor descriptor ) throws
+        public void uniqueIndexDrop( IndexDescriptor descriptor ) throws
                                                                       DataIntegrityKernelException
         {
             throw unsupportedOperation();

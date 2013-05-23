@@ -34,7 +34,7 @@ import org.neo4j.helpers.collection.IteratorUtil
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
   def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (ctx.addLabelToNode(labelId, node)) count + 1 else count
+    case (count, labelId) => if (ctx.nodeAddLabel(node, labelId)) count + 1 else count
   }
 
   def close(success: Boolean) {
@@ -54,20 +54,20 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelName(id: Long) =
-    ctx.getLabelName(id)
+    ctx.labelGetName(id)
 
   def getLabelsForNode(node: Long) =
-    ctx.getLabelsForNode(node).asScala.map(_.asInstanceOf[Long])
+    ctx.nodeGetLabels(node).asScala.map(_.asInstanceOf[Long])
 
   override def isLabelSetOnNode(label: Long, node: Long) =
-    ctx.isLabelSetOnNode(label, node)
+    ctx.nodeHasLabel(node, label)
 
   def getOrCreateLabelId(labelName: String) =
-    ctx.getOrCreateLabelId(labelName)
+    ctx.labelGetOrCreateForName(labelName)
 
 
   def getLabelId(labelName: String): Option[Long] = try {
-    Some(ctx.getLabelId(labelName))
+    Some(ctx.labelGetForName(labelName))
   } catch {
     case _: LabelNotFoundKernelException => None
   }
@@ -81,17 +81,17 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def getTransaction = tx
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
-    ctx.exactIndexLookup(index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+    ctx.nodesGetFromIndexLookup(index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 
   val relationshipOps = new RelationshipOperations
 
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
+    case (count, labelId) => if (ctx.nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.nodesGetForLabel(id).asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -132,33 +132,33 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =
-    ctx.getOrCreatePropertyKeyId(propertyKey)
+    ctx.propertyKeyGetOrCreateForName(propertyKey)
 
   def getPropertyKeyId(propertyKey: String) =
-    ctx.getPropertyKeyId(propertyKey)
+    ctx.propertyKeyGetForName(propertyKey)
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) {
     try {
-      ctx.addIndex(labelIds, propertyKeyId)
+      ctx.indexCreate(labelIds, propertyKeyId)
     } catch {
       case e: DataIntegrityKernelException =>
         val labelName = getLabelName(labelIds)
-        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        val propName = ctx.propertyKeyGetName(propertyKeyId)
         throw new IndexAlreadyDefinedException(labelName, propName, e)
     }
   }
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndex(ctx.getIndex(labelId, propertyKeyId))
+      ctx.indexDrop(ctx.indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
     } catch {
       case e: DataIntegrityKernelException =>
         val labelName = getLabelName(labelId)
-        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        val propName = ctx.propertyKeyGetName(propertyKeyId)
         throw new CouldNotDropIndexException(labelName, propName, e)
       case e: SchemaRuleNotFoundException        =>
         val labelName = getLabelName(labelId)
-        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        val propName = ctx.propertyKeyGetName(propertyKeyId)
         throw new CouldNotDropIndexException(labelName, propName, e)
     }
   }
@@ -195,17 +195,17 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     val javaCreator = new org.neo4j.helpers.Function[K, V]() {
       def apply(key: K) = creator
     }
-    ctx.getOrCreateFromSchemaState(key, javaCreator)
+    ctx.schemaStateGetOrCreate(key, javaCreator)
   }
 
   def schemaStateContains(key: String) = ctx.schemaStateContains(key)
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    ctx.addUniquenessConstraint(labelId, propertyKeyId)
+    ctx.uniquenessConstraintCreate(labelId, propertyKeyId)
   }
 
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    val constraint = IteratorUtil.single(ctx.getConstraints(labelId, propertyKeyId))
-    ctx.dropConstraint(constraint)
+    val constraint = IteratorUtil.single(ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    ctx.constraintDrop(constraint)
   }
 }

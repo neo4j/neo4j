@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
+
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
@@ -37,6 +34,10 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
@@ -119,7 +120,7 @@ public class SchemaIndexTestHelper
         long start = System.currentTimeMillis();
         while(true)
         {
-           if(ctx.getIndexState(indexRule) == InternalIndexState.ONLINE)
+           if(ctx.indexGetState( indexRule ) == InternalIndexState.ONLINE)
            {
                break;
            }

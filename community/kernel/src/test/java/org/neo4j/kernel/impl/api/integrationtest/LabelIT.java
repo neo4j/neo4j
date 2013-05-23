@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.core.Token;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 
 public class LabelIT extends KernelIntegrationTest
@@ -36,11 +36,11 @@ public class LabelIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        long label1Id = statement.getOrCreateLabelId( "label1" );
-        long label2Id = statement.getOrCreateLabelId( "label2" );
+        long label1Id = statement.labelGetOrCreateForName( "label1" );
+        long label2Id = statement.labelGetOrCreateForName( "label2" );
 
         // when
-        Iterator<Token> labelIdsBeforeCommit = statement.listLabels();
+        Iterator<Token> labelIdsBeforeCommit = statement.labelsGetAllTokens();
 
         // then
         assertEquals( asList( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id ) ),
@@ -49,7 +49,7 @@ public class LabelIT extends KernelIntegrationTest
         // when
         commit();
         newTransaction();
-        Iterator<Token> labelIdsAfterCommit = statement.listLabels();
+        Iterator<Token> labelIdsAfterCommit = statement.labelsGetAllTokens();
 
         // then
         assertEquals( asList( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id ) ),

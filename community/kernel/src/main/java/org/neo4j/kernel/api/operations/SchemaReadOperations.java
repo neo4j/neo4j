@@ -32,59 +32,59 @@ public interface SchemaReadOperations
     /**
      * Returns the index rule for the given labelId and propertyKey.
      */
-    IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
+    IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
 
     /**
      * Get all indexes for a label.
      */
-    Iterator<IndexDescriptor> getIndexes( long labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( long labelId );
 
     /**
      * Returns all indexes.
      */
-    Iterator<IndexDescriptor> getIndexes();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /**
      * Get all constraint indexes for a label.
      */
-    Iterator<IndexDescriptor> getConstraintIndexes( long labelId );
+    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId );
 
     /**
      * Returns all constraint indexes.
      */
-    Iterator<IndexDescriptor> getConstraintIndexes();
+    Iterator<IndexDescriptor> uniqueIndexesGetAll();
 
     /**
      * Retrieve the state of an index.
      */
-    InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId );
+    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId );
 
     /**
      * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> getConstraints( long labelId );
+    Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId );
 
     /**
      * Get all constraints. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> getConstraints();
+    Iterator<UniquenessConstraint> constraintsGetAll();
 
     /**
-     * Get the owning constraint for a constraint index.
+     * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

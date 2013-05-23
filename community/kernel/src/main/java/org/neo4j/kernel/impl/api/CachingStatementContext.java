@@ -79,48 +79,48 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         Set<Long> labels = persistenceCache.getLabels( nodeId );
         if ( labels != null )
         {
             return labels.contains( labelId );
         }
-        return delegate.isLabelSetOnNode( labelId, nodeId );
+        return delegate.nodeHasLabel( nodeId, labelId );
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
+    public Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
         Set<Long> labels = persistenceCache.getLabels( nodeId );
         if ( labels != null )
         {
             return labels.iterator();
         }
-        return delegate.getLabelsForNode( nodeId );
+        return delegate.nodeGetLabels( nodeId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes( long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
         return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         return toIndexDescriptors( schemaCache.getSchemaRules(), SchemaRule.Kind.INDEX_RULE );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
         return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ),
                                    SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes()
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         return toIndexDescriptors( schemaCache.getSchemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
@@ -140,25 +140,25 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
         }
-        return delegate.getOwningConstraint( index );
+        return delegate.indexGetOwningUniquenessConstraintId( index );
     }
 
     @Override
-    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
         {
             return rule.getId();
         }
-        return delegate.getCommittedIndexId( index );
+        return delegate.indexGetCommittedId( index );
     }
 
     private IndexRule indexRule( IndexDescriptor index )

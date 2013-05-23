@@ -81,9 +81,9 @@ public class SchemaImpl implements Schema
         try
         {
             List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
-            long labelId = context.getLabelId( label.name() );
-            addDefinitions( definitions, context, context.getIndexes( labelId ), false );
-            addDefinitions( definitions, context, context.getConstraintIndexes( labelId ), true );
+            long labelId = context.labelGetForName( label.name() );
+            addDefinitions( definitions, context, context.indexesGetForLabel( labelId ), false );
+            addDefinitions( definitions, context, context.uniqueIndexesGetForLabel( labelId ), true );
             return definitions;
         }
         catch ( LabelNotFoundKernelException e )
@@ -103,8 +103,8 @@ public class SchemaImpl implements Schema
         try
         {
             List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
-            addDefinitions( definitions, context, context.getIndexes(), false );
-            addDefinitions( definitions, context, context.getConstraintIndexes(), true );
+            addDefinitions( definitions, context, context.indexesGetAll(), false );
+            addDefinitions( definitions, context, context.uniqueIndexesGetAll(), true );
             return definitions;
         }
         finally
@@ -123,8 +123,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    Label label = label( context.getLabelName( rule.getLabelId() ) );
-                    String propertyKey = context.getPropertyKeyName( rule.getPropertyKeyId() );
+                    Label label = label( context.labelGetName( rule.getLabelId() ) );
+                    String propertyKey = context.propertyKeyGetName( rule.getPropertyKeyId() );
                     return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
                 }
                 catch ( LabelNotFoundKernelException e )
@@ -197,10 +197,10 @@ public class SchemaImpl implements Schema
         String propertyKey = single( index.getPropertyKeys() );
         try
         {
-            long labelId = context.getLabelId( index.getLabel().name() );
-            long propertyKeyId = context.getPropertyKeyId( propertyKey );
+            long labelId = context.labelGetForName( index.getLabel().name() );
+            long propertyKeyId = context.propertyKeyGetForName( propertyKey );
             org.neo4j.kernel.api.index.InternalIndexState indexState =
-                    context.getIndexState( context.getIndex( labelId, propertyKeyId ) );
+                    context.indexGetState( context.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
             switch ( indexState )
             {
             case POPULATING:
@@ -249,7 +249,7 @@ public class SchemaImpl implements Schema
         final StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            Iterator<UniquenessConstraint> constraints = context.getConstraints();
+            Iterator<UniquenessConstraint> constraints = context.constraintsGetAll();
             return asConstraintDefinitions( context, constraints );
         }
         finally
@@ -264,7 +264,8 @@ public class SchemaImpl implements Schema
         final StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            Iterator<UniquenessConstraint> constraints = context.getConstraints( context.getLabelId( label.name() ) );
+            Iterator<UniquenessConstraint> constraints = context.constraintsGetForLabel(
+                    context.labelGetForName( label.name() ) );
             return asConstraintDefinitions( context, constraints );
         }
         catch ( LabelNotFoundKernelException e )
@@ -289,9 +290,9 @@ public class SchemaImpl implements Schema
                         long labelId = constraint.label();
                         try
                         {
-                            Label label = label( context.getLabelName( labelId ) );
+                            Label label = label( context.labelGetName( labelId ) );
                             return new PropertyUniqueConstraintDefinition( actions, label,
-                                                                           context.getPropertyKeyName(
+                                                                           context.propertyKeyGetName(
                                                                                    constraint.property() ) );
                         }
                         catch ( PropertyKeyIdNotFoundException e )
@@ -327,9 +328,9 @@ public class SchemaImpl implements Schema
             StatementContext context = ctxProvider.getCtxForWriting();
             try
             {
-                long labelId = context.getOrCreateLabelId( label.name() );
-                long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
-                context.addIndex( labelId, propertyKeyId );
+                long labelId = context.labelGetOrCreateForName( label.name() );
+                long propertyKeyId = context.propertyKeyGetOrCreateForName( propertyKey );
+                context.indexCreate( labelId, propertyKeyId );
                 return new IndexDefinitionImpl( this, label, propertyKey, false );
             }
             catch ( DataIntegrityKernelException.AlreadyIndexedException e )
@@ -360,9 +361,9 @@ public class SchemaImpl implements Schema
             StatementContext context = ctxProvider.getCtxForWriting();
             try
             {
-                long labelId = context.getLabelId( label.name() );
-                long propertyKeyId = context.getPropertyKeyId( propertyKey );
-                context.dropIndex( context.getIndex( labelId, propertyKeyId ) );
+                long labelId = context.labelGetForName( label.name() );
+                long propertyKeyId = context.propertyKeyGetForName( propertyKey );
+                context.indexDrop( context.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
             }
             catch ( DataIntegrityKernelException e )
             {
@@ -395,9 +396,9 @@ public class SchemaImpl implements Schema
             StatementContext context = ctxProvider.getCtxForWriting();
             try
             {
-                long labelId = context.getOrCreateLabelId( label.name() );
-                long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
-                context.addUniquenessConstraint( labelId, propertyKeyId );
+                long labelId = context.labelGetOrCreateForName( label.name() );
+                long propertyKeyId = context.propertyKeyGetOrCreateForName( propertyKey );
+                context.uniquenessConstraintCreate( labelId, propertyKeyId );
                 return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
             }
             finally
@@ -412,10 +413,10 @@ public class SchemaImpl implements Schema
             StatementContext context = ctxProvider.getCtxForWriting();
             try
             {
-                long labelId = context.getOrCreateLabelId( label.name() );
-                long propertyKeyId = context.getOrCreatePropertyKeyId( propertyKey );
+                long labelId = context.labelGetOrCreateForName( label.name() );
+                long propertyKeyId = context.propertyKeyGetOrCreateForName( propertyKey );
                 UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-                context.dropConstraint( constraint );
+                context.constraintDrop( constraint );
             }
             catch ( DataIntegrityKernelException e )
             {

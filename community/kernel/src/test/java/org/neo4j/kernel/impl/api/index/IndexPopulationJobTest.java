@@ -148,7 +148,7 @@ public class IndexPopulationJobTest
         long node3 = createNode( map( name, value3 ), FIRST );
         @SuppressWarnings("UnnecessaryLocalVariable")
         long changeNode = node1;
-        long propertyKeyId = context.getPropertyKeyId( name );
+        long propertyKeyId = context.propertyKeyGetForName( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
                 firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
@@ -174,7 +174,7 @@ public class IndexPopulationJobTest
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
-        long propertyKeyId = context.getPropertyKeyId( name );
+        long propertyKeyId = context.propertyKeyGetForName( name );
         NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
         populator.setJob( job );
@@ -435,8 +435,8 @@ public class IndexPopulationJobTest
         
         Transaction tx = db.beginTx();
         StatementContext ctxForWriting = ctxProvider.getCtxForWriting();
-        firstLabelId = ctxForWriting.getOrCreateLabelId( FIRST.name() );
-        ctxForWriting.getOrCreateLabelId( SECOND.name() );
+        firstLabelId = ctxForWriting.labelGetOrCreateForName( FIRST.name() );
+        ctxForWriting.labelGetOrCreateForName( SECOND.name() );
         ctxForWriting.close();
         tx.success();
         tx.finish();
@@ -462,8 +462,8 @@ public class IndexPopulationJobTest
             FlippableIndexProxy flipper, IndexStoreView storeView, StringLogger logger )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        IndexDescriptor descriptor = new IndexDescriptor( context.getLabelId( label.name() ),
-                                                          context.getPropertyKeyId( propertyKey ) );
+        IndexDescriptor descriptor = new IndexDescriptor( context.labelGetForName( label.name() ),
+                                                          context.propertyKeyGetForName( propertyKey ) );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return
             new IndexPopulationJob( descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,

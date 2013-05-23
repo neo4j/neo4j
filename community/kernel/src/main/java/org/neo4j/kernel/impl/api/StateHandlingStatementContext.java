@@ -66,13 +66,13 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void deleteNode( long nodeId )
+    public void nodeDelete( long nodeId )
     {
         state.deleteNode( nodeId );
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         if ( state.hasChanges() )
         {
@@ -94,11 +94,11 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             }
         }
 
-        return delegate.isLabelSetOnNode( labelId, nodeId );
+        return delegate.nodeHasLabel( nodeId, labelId );
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId ) throws EntityNotFoundException
+    public Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
         if ( state.nodeIsDeletedInThisTx( nodeId ) )
         {
@@ -110,14 +110,14 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             return state.getNodeStateLabelDiffSets( nodeId ).getAdded().iterator();
         }
 
-        Iterator<Long> committed = delegate.getLabelsForNode( nodeId );
+        Iterator<Long> committed = delegate.nodeGetLabels( nodeId );
         return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
-        if ( isLabelSetOnNode( labelId, nodeId ) )
+        if ( nodeHasLabel( nodeId, labelId ) )
         {
             // Label is already in state or in store, no-op
             return false;
@@ -128,9 +128,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
-        if ( !isLabelSetOnNode( labelId, nodeId ) )
+        if ( !nodeHasLabel( nodeId, labelId ) )
         {
             // Label does not exist in state nor in store, no-op
             return false;
@@ -143,9 +143,9 @@ public class StateHandlingStatementContext extends CompositeStatementContext
 
     @SuppressWarnings("unchecked")
     @Override
-    public Iterator<Long> getNodesWithLabel( long labelId )
+    public Iterator<Long> nodesGetForLabel( long labelId )
     {
-        Iterator<Long> committed = delegate.getNodesWithLabel( labelId );
+        Iterator<Long> committed = delegate.nodesGetForLabel( labelId );
         if ( !state.hasChanges() )
         {
             return committed;
@@ -155,7 +155,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( long labelId, long propertyKey )
             throws DataIntegrityKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
@@ -164,7 +164,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey )
             throws DataIntegrityKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
@@ -173,25 +173,26 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void indexDrop( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         state.dropIndex( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
         state.dropConstraintIndex( descriptor );
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
             throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         if ( !state.unRemoveConstraint( constraint ) )
         {
-            for ( Iterator<UniquenessConstraint> it = delegate.getConstraints( labelId, propertyKeyId ); it.hasNext(); )
+            for ( Iterator<UniquenessConstraint> it = delegate.constraintsGetForLabelAndPropertyKey( labelId,
+                                                                                                     propertyKeyId ); it.hasNext(); )
             {
                 if ( it.next().equals( labelId, propertyKeyId ) )
                 {
@@ -217,21 +218,21 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
-        return applyConstraintsDiff( delegate.getConstraints( labelId, propertyKeyId ), labelId, propertyKeyId );
+        return applyConstraintsDiff( delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ), labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
-        return applyConstraintsDiff( delegate.getConstraints( labelId ), labelId );
+        return applyConstraintsDiff( delegate.constraintsGetForLabel( labelId ), labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints()
+    public Iterator<UniquenessConstraint> constraintsGetAll()
     {
-        return applyConstraintsDiff( delegate.getConstraints() );
+        return applyConstraintsDiff( delegate.constraintsGetAll() );
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
@@ -267,18 +268,18 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void dropConstraint( UniquenessConstraint constraint )
+    public void constraintDrop( UniquenessConstraint constraint )
     {
         state.dropConstraint( constraint );
     }
 
     @Override
-    public IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
         Iterable<IndexDescriptor> committedRules;
         try
         {
-            committedRules = option( delegate.getIndex( labelId, propertyKey ) );
+            committedRules = option( delegate.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -296,19 +297,19 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
-        if ( checkIndexState( indexRule, state.getIndexDiffSetsByLabel( indexRule.getLabelId() ) ) )
+        if ( checkIndexState( descriptor, state.getIndexDiffSetsByLabel( descriptor.getLabelId() ) ) )
         {
             return InternalIndexState.POPULATING;
         }
-        if ( checkIndexState( indexRule, state.getConstraintIndexDiffSetsByLabel( indexRule.getLabelId() ) ) )
+        if ( checkIndexState( descriptor, state.getConstraintIndexDiffSetsByLabel( descriptor.getLabelId() ) ) )
         {
             return InternalIndexState.POPULATING;
         }
 
-        return delegate.getIndexState( indexRule );
+        return delegate.indexGetState( descriptor );
     }
 
     private boolean checkIndexState( IndexDescriptor indexRule, DiffSets<IndexDescriptor> diffSet )
@@ -329,31 +330,32 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes( long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
-        return state.getIndexDiffSetsByLabel( labelId ).apply( delegate.getIndexes( labelId ) );
+        return state.getIndexDiffSetsByLabel( labelId ).apply( delegate.indexesGetForLabel( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return state.getIndexDiffSets().apply( delegate.getIndexes() );
+        return state.getIndexDiffSets().apply( delegate.indexesGetAll() );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
-        return state.getConstraintIndexDiffSetsByLabel( labelId ).apply( delegate.getConstraintIndexes( labelId ) );
+        return state.getConstraintIndexDiffSetsByLabel( labelId ).apply( delegate.uniqueIndexesGetForLabel(
+                labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes()
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
-        return state.getConstraintIndexDiffSets().apply( delegate.getConstraintIndexes() );
+        return state.getConstraintIndexDiffSets().apply( delegate.uniqueIndexesGetAll() );
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( IndexDescriptor index, final Object value )
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, final Object value )
             throws IndexNotFoundKernelException
     {
         // Start with nodes where the given property has changed
@@ -372,7 +374,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return state.getDeletedNodes().apply( diff.apply( delegate.exactIndexLookup( index, value ) ) );
+        return state.getDeletedNodes().apply( diff.apply( delegate.nodesGetFromIndexLookup( index, value ) ) );
     }
 
     private class HasPropertyFilter implements Predicate<Long>
@@ -391,7 +393,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             try
             {
-                return value.equals( delegate.getNodePropertyValue( nodeId, propertyKeyId ) );
+                return value.equals( delegate.nodeGetPropertyValue( nodeId, propertyKeyId ) );
             }
             catch ( PropertyNotFoundException e )
             {
@@ -422,7 +424,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             try
             {
-                return isLabelSetOnNode( labelId, nodeId );
+                return nodeHasLabel( nodeId, labelId );
             }
             catch ( EntityNotFoundException e )
             {

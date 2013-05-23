@@ -37,7 +37,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey ) throws DataIntegrityKernelException
+    public long propertyKeyGetOrCreateForName( String propertyKey ) throws DataIntegrityKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         if ( propertyKey == null )
@@ -45,11 +45,11 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
             throw new DataIntegrityKernelException.IllegalTokenNameException( null );
         }
 
-        return delegate.getOrCreatePropertyKeyId( propertyKey );
+        return delegate.propertyKeyGetOrCreateForName( propertyKey );
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws DataIntegrityKernelException
+    public long labelGetOrCreateForName( String label ) throws DataIntegrityKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         if ( label == null || label.length() == 0 )
@@ -57,35 +57,35 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
             throw new DataIntegrityKernelException.IllegalTokenNameException( label );
         }
 
-        return delegate.getOrCreateLabelId( label );
+        return delegate.labelGetOrCreateForName( label );
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( long labelId, long propertyKey )
             throws DataIntegrityKernelException
     {
         checkIndexExistence( labelId, propertyKey );
-        return delegate.addIndex( labelId, propertyKey );
+        return delegate.indexCreate( labelId, propertyKey );
     }
 
     @Override
-    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
+    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey )
             throws DataIntegrityKernelException
     {
         checkIndexExistence( labelId, propertyKey );
-        return delegate.addConstraintIndex( labelId, propertyKey );
+        return delegate.uniqueIndexCreate( labelId, propertyKey );
     }
 
     private void checkIndexExistence( long labelId, long propertyKey ) throws DataIntegrityKernelException
     {
-        for ( IndexDescriptor descriptor : loop( getIndexes( labelId ) ) )
+        for ( IndexDescriptor descriptor : loop( indexesGetForLabel( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new DataIntegrityKernelException.AlreadyIndexedException( labelId, propertyKey );
             }
         }
-        for ( IndexDescriptor descriptor : loop( getConstraintIndexes( labelId ) ) )
+        for ( IndexDescriptor descriptor : loop( uniqueIndexesGetForLabel( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
@@ -95,13 +95,13 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void indexDrop( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
-        for ( IndexDescriptor existing : loop( getIndexes( descriptor.getLabelId() ) ) )
+        for ( IndexDescriptor existing : loop( indexesGetForLabel( descriptor.getLabelId() ) ) )
         {
             if ( existing.getPropertyKeyId() == descriptor.getPropertyKeyId() )
             {
-                delegate.dropIndex( descriptor );
+                delegate.indexDrop( descriptor );
                 return;
             }
         }
@@ -110,13 +110,13 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DataIntegrityKernelException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DataIntegrityKernelException
     {
-        for ( IndexDescriptor existing : loop( getConstraintIndexes( descriptor.getLabelId() ) ) )
+        for ( IndexDescriptor existing : loop( uniqueIndexesGetForLabel( descriptor.getLabelId() ) ) )
         {
             if ( existing.getPropertyKeyId() == descriptor.getPropertyKeyId() )
             {
-                delegate.dropConstraintIndex( descriptor );
+                delegate.uniqueIndexDrop( descriptor );
                 return;
             }
         }
@@ -125,14 +125,14 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKey )
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKey )
             throws DataIntegrityKernelException, ConstraintCreationKernelException
     {
-        if ( getConstraints( labelId, propertyKey ).hasNext() )
+        if ( constraintsGetForLabelAndPropertyKey( labelId, propertyKey ).hasNext() )
         {
             throw new DataIntegrityKernelException.AlreadyConstrainedException( labelId, propertyKey );
         }
 
-        return delegate.addUniquenessConstraint( labelId, propertyKey );
+        return delegate.uniquenessConstraintCreate( labelId, propertyKey );
     }
 }

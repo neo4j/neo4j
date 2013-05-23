@@ -32,7 +32,7 @@ public class SchemaStateConcern implements SchemaStateOperations
     }
 
     @Override
-    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
     {
         return schemaState.getOrCreate( key, creator );
     }

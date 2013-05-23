@@ -145,7 +145,7 @@ public class GlobalGraphOperations
                     {
                         return label( labelToken.name() );
                     }
-                }, ctx.listLabels() ), ctx );
+                }, ctx.labelsGetAllTokens() ), ctx );
             }
         };
     }
@@ -176,8 +176,8 @@ public class GlobalGraphOperations
         StatementContext context = statementCtxProvider.getCtxForReading();
         try
         {
-            long labelId = context.getLabelId( label );
-            final Iterator<Long> nodeIds = context.getNodesWithLabel( labelId );
+            long labelId = context.labelGetForName( label );
+            final Iterator<Long> nodeIds = context.nodesGetForLabel( labelId );
             return cleanupService.resourceIterator( map( new Function<Long, Node>()
             {
                 @Override
