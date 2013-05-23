@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -34,11 +31,13 @@ import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.LockType;
 
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 public class RelationshipProxy implements Relationship
 {
     public interface RelationshipLookups
     {
-        Node lookupNode(long nodeId);
         Node newNodeProxy( long nodeId );
         RelationshipImpl lookupRelationship(long relationshipId);
         GraphDatabaseService getGraphDatabaseService();
@@ -128,7 +127,7 @@ public class RelationshipProxy implements Relationship
                 {
                     try
                     {
-                        return context.getPropertyKeyName( aLong );
+                        return context.propertyKeyGetName( aLong );
                     }
                     catch ( PropertyKeyIdNotFoundException e )
                     {
@@ -136,7 +135,7 @@ public class RelationshipProxy implements Relationship
                                 "Property key retrieved through kernel API should exist." );
                     }
                 }
-            }, context.listRelationshipPropertyKeys( getId() )));
+            }, context.relationshipGetPropertyKeys( getId() )));
         }
         finally
         {
@@ -213,11 +212,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public boolean equals( Object o )
     {
-        if ( !(o instanceof Relationship) )
-        {
-            return false;
-        }
-        return this.getId() == ((Relationship) o).getId();
+        return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
     }
 
     @Override

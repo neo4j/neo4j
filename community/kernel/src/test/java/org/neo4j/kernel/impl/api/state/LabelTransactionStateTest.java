@@ -58,7 +58,7 @@ public class LabelTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        txContext.addLabelToNode( labelId1, nodeId );
+        txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -71,7 +71,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        txContext.addLabelToNode( labelId2, nodeId );
+        txContext.nodeAddLabel( nodeId, labelId2 );
 
         // THEN
         assertLabels( labelId1, labelId2 );
@@ -84,7 +84,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        txContext.addLabelToNode( labelId1, nodeId );
+        txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -97,7 +97,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1, labelId2 );
 
         // WHEN
-        txContext.removeLabelFromNode( labelId1, nodeId );
+        txContext.nodeRemoveLabel( nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId2 );
@@ -110,8 +110,8 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        txContext.addLabelToNode( labelId2, nodeId );
-        txContext.removeLabelFromNode( labelId2, nodeId );
+        txContext.nodeAddLabel( nodeId, labelId2 );
+        txContext.nodeRemoveLabel( nodeId, labelId2 );
 
         // THEN
         assertLabels( labelId1 );
@@ -124,8 +124,8 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        txContext.removeLabelFromNode( labelId1, nodeId );
-        txContext.addLabelToNode( labelId1, nodeId );
+        txContext.nodeRemoveLabel( nodeId, labelId1 );
+        txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -141,10 +141,10 @@ public class LabelTransactionStateTest
                 labels( 2, 1L, 3L ) );
 
         // WHEN
-        txContext.addLabelToNode( 2, 2 );
+        txContext.nodeAddLabel( 2, 2 );
 
         // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.getNodesWithLabel( 2 ) ) );
+        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( 2 ) ) );
     }
 
     @Test
@@ -157,10 +157,10 @@ public class LabelTransactionStateTest
                 labels( 2, 1L, 3L ) );
 
         // WHEN
-        txContext.removeLabelFromNode( 2, 1 );
+        txContext.nodeRemoveLabel( 1, 2 );
 
         // THEN
-        assertEquals( asSet( 0L ), asSet( txContext.getNodesWithLabel( 2 ) ) );
+        assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( 2 ) ) );
     }
 
     @Test
@@ -168,11 +168,11 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         commitNoLabels();
-        when( store.addLabelToNode( labelId1, nodeId ) ).thenReturn( true );
+        when( store.nodeAddLabel( nodeId, labelId1 ) ).thenReturn( true );
 
 
         // WHEN
-        boolean added = txContext.addLabelToNode( labelId1, nodeId );
+        boolean added = txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertTrue( "Should have been added now", added );
@@ -185,7 +185,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        boolean added = txContext.addLabelToNode( labelId1, nodeId );
+        boolean added = txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertFalse( "Shouldn't have been added now", added );
@@ -198,7 +198,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        boolean removed = txContext.removeLabelFromNode( labelId1, nodeId );
+        boolean removed = txContext.nodeRemoveLabel( nodeId, labelId1 );
 
         // THEN
         assertTrue( "Should have been removed now", removed );
@@ -211,7 +211,7 @@ public class LabelTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        txContext.addLabelToNode( labelId1, nodeId );
+        txContext.nodeAddLabel( nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -221,40 +221,40 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( store.isLabelSetOnNode( 12, 1337 ) ).thenReturn( false );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
-        assertTrue( "Label should have been added", txContext.addLabelToNode( 12, 1337 ) );
+        assertTrue( "Label should have been added", txContext.nodeAddLabel( 1337, 12 ) );
     }
 
     @Test
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( store.isLabelSetOnNode( 12, 1337 ) ).thenReturn( true );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
-        assertFalse( "Label should have been added", txContext.addLabelToNode( 12, 1337 ) );
+        assertFalse( "Label should have been added", txContext.nodeAddLabel( 1337, 12 ) );
     }
 
     @Test
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( store.isLabelSetOnNode( 12, 1337 ) ).thenReturn( true );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
-        assertTrue( "Label should have been removed", txContext.removeLabelFromNode( 12, 1337 ) );
+        assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( 1337, 12 ) );
     }
 
     @Test
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( store.isLabelSetOnNode( 12, 1337 ) ).thenReturn( false );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
-        assertFalse( "Label should have been removed", txContext.removeLabelFromNode( 12, 1337 ) );
+        assertFalse( "Label should have been removed", txContext.nodeRemoveLabel( 1337, 12 ) );
     }
 
     // exists
@@ -270,10 +270,10 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexes( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexes( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.getIndexes() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.addIndex( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexCreate( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
@@ -327,13 +327,13 @@ public class LabelTransactionStateTest
         Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.getLabelsForNode( nodeLabels.nodeId ) ).then( asAnswer( Arrays.<Long>asList( nodeLabels
+            when( store.nodeGetLabels( nodeLabels.nodeId ) ).then( asAnswer( Arrays.<Long>asList( nodeLabels
                     .labelIds ) ) );
             for ( long label : nodeLabels.labelIds )
             {
-                when( store.isLabelSetOnNode( label, nodeLabels.nodeId ) ).thenReturn( true );
-                when( store.removeLabelFromNode( label, nodeLabels.nodeId ) ).thenReturn( true );
-                when( store.addLabelToNode( label, nodeLabels.nodeId ) ).thenReturn( false );
+                when( store.nodeHasLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeRemoveLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeAddLabel( nodeLabels.nodeId, label ) ).thenReturn( false );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
@@ -347,7 +347,7 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.getNodesWithLabel( entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
         }
     }
 
@@ -363,10 +363,10 @@ public class LabelTransactionStateTest
 
     private void assertLabels( Long... labels ) throws EntityNotFoundException
     {
-        assertEquals( asSet( labels ), asSet( txContext.getLabelsForNode( nodeId ) ) );
+        assertEquals( asSet( labels ), asSet( txContext.nodeGetLabels( nodeId ) ) );
         for ( long label : labels )
         {
-            assertTrue( "Expected labels not found on node", txContext.isLabelSetOnNode( label, nodeId ) );
+            assertTrue( "Expected labels not found on node", txContext.nodeHasLabel( nodeId, label ) );
         }
     }
 }

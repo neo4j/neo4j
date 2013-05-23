@@ -73,7 +73,7 @@ public class KernelTest
         StatementContext ctx = tx.newStatementContext();
         try
         {
-            ctx.addUniquenessConstraint( 1, 1 );
+            ctx.uniquenessConstraintCreate( 1, 1 );
             fail("expected exception here");
         }
         catch ( UnsupportedSchemaModificationException e )

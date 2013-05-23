@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -163,8 +162,8 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( null, txManager );
 
             StatementContext ctx = bridge.getCtxForWriting();
-            labelId = ctx.getOrCreateLabelId( "Person" );
-            propertyKeyId = ctx.getOrCreatePropertyKeyId( "name" );
+            labelId = ctx.labelGetOrCreateForName( "Person" );
+            propertyKeyId = ctx.propertyKeyGetOrCreateForName( "name" );
             ctx.close();
             tx.success();
         }

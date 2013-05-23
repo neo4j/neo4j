@@ -47,7 +47,7 @@ public class IndexIT extends KernelIntegrationTest
         newTransaction();
 
         // WHEN
-        IndexDescriptor rule = statement.addIndex( labelId, propertyKey );
+        IndexDescriptor rule = statement.indexCreate( labelId, propertyKey );
         commit();
 
         // AND WHEN the index is created
@@ -63,14 +63,14 @@ public class IndexIT extends KernelIntegrationTest
         newTransaction();
 
         // WHEN
-        IndexDescriptor expectedRule = statement.addIndex( labelId, propertyKey );
+        IndexDescriptor expectedRule = statement.indexCreate( labelId, propertyKey );
         commit();
 
         // THEN
         StatementContext roStatement = readOnlyContext();
         assertEquals( asSet( expectedRule ),
-                      asSet( roStatement.getIndexes( labelId ) ) );
-        assertEquals( expectedRule, roStatement.getIndex( labelId, propertyKey ) );
+                      asSet( roStatement.indexesGetForLabel( labelId ) ) );
+        assertEquals( expectedRule, roStatement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
     }
 
     @Test
@@ -78,14 +78,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         newTransaction();
-        IndexDescriptor existingRule = statement.addIndex( labelId, propertyKey );
+        IndexDescriptor existingRule = statement.indexCreate( labelId, propertyKey );
         commit();
 
         // WHEN
         newTransaction();
         long propertyKey2 = 10;
-        IndexDescriptor addedRule = statement.addIndex( labelId, propertyKey2 );
-        Set<IndexDescriptor> indexRulesInTx = asSet( statement.getIndexes( labelId ) );
+        IndexDescriptor addedRule = statement.indexCreate( labelId, propertyKey2 );
+        Set<IndexDescriptor> indexRulesInTx = asSet( statement.indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -99,12 +99,12 @@ public class IndexIT extends KernelIntegrationTest
         newTransaction();
 
         // WHEN
-        statement.addIndex( labelId, propertyKey );
+        statement.indexCreate( labelId, propertyKey );
         // don't mark as success
         rollback();
 
         // THEN
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getIndexes( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().indexesGetForLabel( labelId ) ) );
     }
 
     @Test
@@ -112,14 +112,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addConstraintIndex( labelId, propertyKey );
+        statement.uniqueIndexCreate( labelId, propertyKey );
         commit();
 
         // when
         restartDb();
 
         // then
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().getIndexes( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().indexesGetForLabel( labelId ) ) );
     }
 
     @Test
@@ -127,17 +127,17 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        IndexDescriptor index = statement.addIndex( labelId, propertyKey );
+        IndexDescriptor index = statement.indexCreate( labelId, propertyKey );
         commit();
         newTransaction();
-        statement.dropIndex( index );
+        statement.indexDrop( index );
         commit();
 
         // when
         try
         {
             newTransaction();
-            statement.dropIndex( index );
+            statement.indexDrop( index );
             commit();
         }
         // then
@@ -153,14 +153,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addConstraintIndex( labelId, propertyKey );
+        statement.uniqueIndexCreate( labelId, propertyKey );
         commit();
 
         // when
         try
         {
             newTransaction();
-            statement.addIndex( labelId, propertyKey );
+            statement.indexCreate( labelId, propertyKey );
             commit();
 
             fail( "expected exception" );
@@ -179,14 +179,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        IndexDescriptor index = statement.addConstraintIndex( labelId, propertyKey );
+        IndexDescriptor index = statement.uniqueIndexCreate( labelId, propertyKey );
         commit();
 
         // when
         try
         {
             newTransaction();
-            statement.dropIndex( index );
+            statement.indexDrop( index );
             commit();
 
             fail( "expected exception" );
@@ -204,8 +204,8 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addConstraintIndex( statement.getOrCreateLabelId( "Label1" ),
-                                      statement.getOrCreatePropertyKeyId( "property1" ) );
+        statement.uniqueIndexCreate( statement.labelGetOrCreateForName( "Label1" ),
+                                     statement.propertyKeyGetOrCreateForName( "property1" ) );
         commit();
 
         // when
@@ -238,13 +238,13 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addConstraintIndex( labelId, propertyKey );
+        statement.uniqueIndexCreate( labelId, propertyKey );
         commit();
 
         // then/when
         newTransaction();
-        assertFalse( statement.getIndexes().hasNext() );
-        assertFalse( statement.getIndexes( labelId ).hasNext() );
+        assertFalse( statement.indexesGetAll().hasNext() );
+        assertFalse( statement.indexesGetForLabel( labelId ).hasNext() );
     }
 
     @Test
@@ -252,13 +252,13 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.addIndex( labelId, propertyKey );
+        statement.indexCreate( labelId, propertyKey );
         commit();
 
         // then/when
         newTransaction();
-        assertFalse( statement.getConstraintIndexes().hasNext() );
-        assertFalse( statement.getConstraintIndexes( labelId ).hasNext() );
+        assertFalse( statement.uniqueIndexesGetAll().hasNext() );
+        assertFalse( statement.uniqueIndexesGetForLabel( labelId ).hasNext() );
     }
 
     private void awaitIndexOnline( IndexDescriptor indexRule ) throws IndexNotFoundKernelException

@@ -19,20 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -41,6 +34,14 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
 {
@@ -56,8 +57,8 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         node = db.createNode( label( "Foo" ) );
         long node2 = node.getId();
         node.setProperty( "name", "foo" );
-        long foo = statement.getLabelId( "Foo" );
-        long name = statement.getPropertyKeyId( "name" );
+        long foo = statement.labelGetForName( "Foo" );
+        long name = statement.propertyKeyGetForName( "name" );
         commit();
 
         newTransaction();
@@ -65,7 +66,7 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         // when
         try
         {
-            statement.addUniquenessConstraint( foo, name );
+            statement.uniquenessConstraintCreate( foo, name );
 
             fail( "expected exception" );
         }
@@ -90,12 +91,12 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         Node node = db.createNode( label( "Foo" ) );
         long node1 = node.getId();
         node.setProperty( "name", "foo" );
-        long foo = statement.getLabelId( "Foo" );
-        long name = statement.getPropertyKeyId( "name" );
+        long foo = statement.labelGetForName( "Foo" );
+        long name = statement.propertyKeyGetForName( "name" );
         commit();
 
         newTransaction();
-        statement.addUniquenessConstraint( foo, name );
+        statement.uniquenessConstraintCreate( foo, name );
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long node2 = executor.submit( new Callable<Long>()
         {
@@ -148,11 +149,11 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         // given
         newTransaction();
         db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.getLabelId( "Foo" );
-        long name = statement.getPropertyKeyId( "name" );
+        long foo = statement.labelGetForName( "Foo" );
+        long name = statement.propertyKeyGetForName( "name" );
         commit();
         newTransaction();
-        statement.addUniquenessConstraint( foo, name );
+        statement.uniquenessConstraintCreate( foo, name );
         commit();
 
         newTransaction();

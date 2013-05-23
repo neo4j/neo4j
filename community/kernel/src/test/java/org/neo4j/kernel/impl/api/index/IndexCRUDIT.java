@@ -78,8 +78,8 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        long propertyKey1 = ctxProvider.getCtxForReading().getPropertyKeyId( indexProperty );
-        long[] labels = new long[] {ctxProvider.getCtxForReading().getLabelId( myLabel.name() )};
+        long propertyKey1 = ctxProvider.getCtxForReading().propertyKeyGetForName( indexProperty );
+        long[] labels = new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )};
         assertThat( writer.updates, equalTo( asSet(
                 NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
 
@@ -112,8 +112,8 @@ public class IndexCRUDIT
         tx.finish();
 
         // THEN
-        long propertyKey1 = ctxProvider.getCtxForReading().getPropertyKeyId( indexProperty );
-        long[] labels = new long[] {ctxProvider.getCtxForReading().getLabelId( myLabel.name() )};
+        long propertyKey1 = ctxProvider.getCtxForReading().propertyKeyGetForName( indexProperty );
+        long[] labels = new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )};
         assertThat( writer.updates, equalTo( asSet(
                 NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
     }
@@ -193,8 +193,9 @@ public class IndexCRUDIT
         {
             try
             {
-                updates.add( NodePropertyUpdate.add( nodeId, ctxProvider.getCtxForReading().getPropertyKeyId( propertyKey ),
-                        propertyValue, new long[] {ctxProvider.getCtxForReading().getLabelId( myLabel.name() )} ) );
+                updates.add( NodePropertyUpdate.add( nodeId, ctxProvider.getCtxForReading().propertyKeyGetForName(
+                        propertyKey ),
+                        propertyValue, new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )} ) );
             }
             catch ( PropertyKeyNotFoundException e )
             {
