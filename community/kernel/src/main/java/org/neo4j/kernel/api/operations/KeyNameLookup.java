@@ -38,7 +38,7 @@ public class KeyNameLookup
     {
         try
         {
-            return keyReadOperations.getLabelName( labelId );
+            return keyReadOperations.labelGetName( labelId );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -53,7 +53,7 @@ public class KeyNameLookup
     {
         try
         {
-            return keyReadOperations.getPropertyKeyName( propertyId );
+            return keyReadOperations.propertyKeyGetName( propertyId );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {

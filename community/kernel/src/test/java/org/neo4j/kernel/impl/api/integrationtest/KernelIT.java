@@ -101,8 +101,8 @@ public class KernelIT extends KernelIntegrationTest
         //    same transaction.
         Node node = db.createNode();
 
-        long labelId = statement.getOrCreateLabelId( "labello" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "labello" );
+        statement.nodeAddLabel( node.getId(), labelId );
 
         // 4: Close the StatementContext
         statement.close();
@@ -131,8 +131,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.getOrCreateLabelId( "labello" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "labello" );
+        statement.nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.commit();
         outerTx.finish();
@@ -147,8 +147,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.getOrCreateLabelId( "labello" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "labello" );
+        statement.nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.finish();
 
@@ -156,7 +156,7 @@ public class KernelIT extends KernelIntegrationTest
         statement = statementContextProvider.getCtxForReading();
         try
         {
-            statement.isLabelSetOnNode( labelId, node.getId() );
+            statement.nodeHasLabel( node.getId(), labelId );
             fail( "should have thrown exception" );
         }
         catch ( EntityNotFoundException e )
@@ -173,8 +173,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.getOrCreateLabelId( "labello" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "labello" );
+        statement.nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.failure();
         tx.success();
@@ -184,7 +184,7 @@ public class KernelIT extends KernelIntegrationTest
         statement = statementContextProvider.getCtxForReading();
         try
         {
-            statement.isLabelSetOnNode( labelId, node.getId() );
+            statement.nodeHasLabel( node.getId(), labelId );
             fail( "should have thrown exception" );
         }
         catch ( EntityNotFoundException e )
@@ -201,18 +201,18 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
-        statement.removeLabelFromNode( labelId2, node.getId() );
+        long labelId1 = statement.labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.labelGetOrCreateForName( "labello2" );
+        statement.nodeAddLabel( node.getId(), labelId1 );
+        statement.nodeAddLabel( node.getId(), labelId2 );
+        statement.nodeRemoveLabel( node.getId(), labelId2 );
         statement.close();
         tx.success();
         tx.finish();
 
         // THEN
         statement = statementContextProvider.getCtxForReading();
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), asSet( statement.nodeGetLabels( node.getId() ) ) );
     }
 
     @Test
@@ -223,15 +223,15 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
-        statement.removeLabelFromNode( labelId2, node.getId() );
+        long labelId1 = statement.labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.labelGetOrCreateForName( "labello2" );
+        statement.nodeAddLabel( node.getId(), labelId1 );
+        statement.nodeAddLabel( node.getId(), labelId2 );
+        statement.nodeRemoveLabel( node.getId(), labelId2 );
 
         // THEN
-        assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
+        assertFalse( statement.nodeHasLabel( node.getId(), labelId2 ) );
+        assertEquals( asSet( labelId1 ), asSet( statement.nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -245,10 +245,10 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
+        long labelId1 = statement.labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.labelGetOrCreateForName( "labello2" );
+        statement.nodeAddLabel( node.getId(), labelId1 );
+        statement.nodeAddLabel( node.getId(), labelId2 );
         statement.close();
         tx.success();
         tx.finish();
@@ -256,12 +256,12 @@ public class KernelIT extends KernelIntegrationTest
         statement = statementContextProvider.getCtxForWriting();
 
         // WHEN
-        statement.removeLabelFromNode( labelId2, node.getId() );
+        statement.nodeRemoveLabel( node.getId(), labelId2 );
 
         // THEN
-        Iterator<Long> labelsIterator = statement.getLabelsForNode( node.getId() );
+        Iterator<Long> labelsIterator = statement.nodeGetLabels( node.getId() );
         Set<Long> labels = asSet( labelsIterator );
-        assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
+        assertFalse( statement.nodeHasLabel( node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
         statement.close();
         tx.success();
@@ -275,8 +275,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        statement.addLabelToNode( labelId1, node.getId() );
+        long labelId1 = statement.labelGetOrCreateForName( "labello1" );
+        statement.nodeAddLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
         tx.finish();
@@ -284,7 +284,7 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        statement.removeLabelFromNode( labelId1, node.getId() );
+        statement.nodeRemoveLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
         tx.finish();
@@ -292,7 +292,7 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        Iterator<Long> labels = statement.getLabelsForNode( node.getId() );
+        Iterator<Long> labels = statement.nodeGetLabels( node.getId() );
         statement.close();
         tx.success();
         tx.finish();
@@ -307,8 +307,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = statement.getOrCreateLabelId( "mylabel" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "mylabel" );
+        statement.nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
         tx.finish();
@@ -316,7 +316,7 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        boolean added = statement.addLabelToNode( labelId, node.getId() );
+        boolean added = statement.nodeAddLabel( node.getId(), labelId );
 
         // THEN
         assertFalse( "Shouldn't have been added now", added );
@@ -330,7 +330,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        long labelId = statement.labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.finish();
@@ -338,7 +338,7 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        boolean added = statement.addLabelToNode( labelId, node.getId() );
+        boolean added = statement.nodeAddLabel( node.getId(), labelId );
 
         // THEN
         assertTrue( "Should have been added now", added );
@@ -352,8 +352,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = statement.getOrCreateLabelId( "mylabel" );
-        statement.addLabelToNode( labelId, node.getId() );
+        long labelId = statement.labelGetOrCreateForName( "mylabel" );
+        statement.nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
         tx.finish();
@@ -361,7 +361,7 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        boolean removed = statement.removeLabelFromNode( labelId, node.getId() );
+        boolean removed = statement.nodeRemoveLabel( node.getId(), labelId );
 
         // THEN
         assertTrue( "Should have been removed now", removed );
@@ -375,7 +375,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        long labelId = statement.labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.finish();
@@ -383,7 +383,7 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        boolean removed = statement.removeLabelFromNode( labelId, node.getId() );
+        boolean removed = statement.nodeRemoveLabel( node.getId(), labelId );
 
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
@@ -404,13 +404,13 @@ public class KernelIT extends KernelIntegrationTest
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
         // WHEN
-        statement.deleteNode( node.getId() );
+        statement.nodeDelete( node.getId() );
 
         // Then
-        long labelId = statement.getLabelId( label.name() );
-        Set<Long> labels = asSet( statement.getLabelsForNode( node.getId() ) );
-        boolean labelIsSet = statement.isLabelSetOnNode( labelId, node.getId() );
-        Set<Long> nodes = asSet( statement.getNodesWithLabel( labelId ) );
+        long labelId = statement.labelGetForName( label.name() );
+        Set<Long> labels = asSet( statement.nodeGetLabels( node.getId() ) );
+        boolean labelIsSet = statement.nodeHasLabel( node.getId(), labelId );
+        Set<Long> nodes = asSet( statement.nodesGetForLabel( labelId ) );
 
         statement.close();
 
@@ -441,8 +441,8 @@ public class KernelIT extends KernelIntegrationTest
         // WHEN
         tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = statement.getLabelId( label.name() );
-        Iterator<Long> nodes = statement.getNodesWithLabel( labelId );
+        long labelId = statement.labelGetForName( label.name() );
+        Iterator<Long> nodes = statement.nodesGetForLabel( labelId );
         Set<Long> nodeSet = asSet( nodes );
         tx.success();
         tx.finish();
@@ -487,7 +487,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         newTransaction();
-        statement.dropIndex( idx );
+        statement.indexDrop( idx );
         commit();
 
         // THEN
@@ -496,8 +496,8 @@ public class KernelIT extends KernelIntegrationTest
 
     private IndexDescriptor createIndex( ) throws SchemaKernelException
     {
-        return statement.addIndex( statement.getOrCreateLabelId( "hello" ),
-                                   statement.getOrCreatePropertyKeyId( "hepp" ) );
+        return statement.indexCreate( statement.labelGetOrCreateForName( "hello" ),
+                                      statement.propertyKeyGetOrCreateForName( "hepp" ) );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )
@@ -505,13 +505,14 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx;StatementContext statement;
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        String state = statement.getOrCreateFromSchemaState( key, new Function<String, String>(){
+        String state = statement.schemaStateGetOrCreate( key, new Function<String, String>()
+        {
             @Override
             public String apply( String s )
             {
                 return maybeSetThisState;
             }
-        });
+        } );
         tx.success();
         tx.finish();
         return state;

@@ -42,54 +42,52 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         lockHolder.acquireNodeWriteLock( nodeId );
-        return delegate.addLabelToNode( labelId, nodeId );
+        return delegate.nodeAddLabel( nodeId, labelId );
     }
 
     @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         lockHolder.acquireNodeWriteLock( nodeId );
-        return delegate.removeLabelFromNode( labelId, nodeId );
+        return delegate.nodeRemoveLabel( nodeId, labelId );
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
-            SchemaKernelException
+    public IndexDescriptor indexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        return delegate.addIndex( labelId, propertyKey );
+        return delegate.indexCreate( labelId, propertyKey );
     }
 
     @Override
-    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws SchemaKernelException
+    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        return delegate.addConstraintIndex( labelId, propertyKey );
+        return delegate.uniqueIndexCreate( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.dropIndex( descriptor );
+        delegate.indexDrop( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.dropConstraintIndex( descriptor );
+        delegate.uniqueIndexDrop( descriptor );
     }
 
     @Override
-    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getOrCreateFromSchemaState( key, creator );
+        return delegate.schemaStateGetOrCreate( key, creator );
     }
 
     @Override
@@ -100,73 +98,73 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes( long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexes( labelId );
+        return delegate.indexesGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexes();
+        return delegate.indexesGetAll();
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getConstraintIndexes( labelId );
+        return delegate.uniqueIndexesGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes()
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getConstraintIndexes();
+        return delegate.uniqueIndexesGetAll();
     }
 
     @Override
-    public void deleteNode( long nodeId )
+    public void nodeDelete( long nodeId )
     {
         lockHolder.acquireNodeWriteLock( nodeId );
-        delegate.deleteNode( nodeId );
+        delegate.nodeDelete( nodeId );
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
             throws SchemaKernelException, ConstraintCreationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        return delegate.addUniquenessConstraint( labelId, propertyKeyId );
+        return delegate.uniquenessConstraintCreate( labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getConstraints( labelId, propertyKeyId );
+        return delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getConstraints( labelId );
+        return delegate.constraintsGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints()
+    public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getConstraints();
+        return delegate.constraintsGetAll();
     }
 
     @Override
-    public void dropConstraint( UniquenessConstraint constraint )
+    public void constraintDrop( UniquenessConstraint constraint )
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.dropConstraint( constraint );
+        delegate.constraintDrop( constraint );
     }
 }

@@ -44,7 +44,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey ) throws SchemaKernelException
+    public long propertyKeyGetOrCreateForName( String propertyKey ) throws SchemaKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         if ( propertyKey == null )
@@ -52,11 +52,11 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
             throw new IllegalTokenNameException( null );
         }
 
-        return delegate.getOrCreatePropertyKeyId( propertyKey );
+        return delegate.propertyKeyGetOrCreateForName( propertyKey );
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws SchemaKernelException
+    public long labelGetOrCreateForName( String label ) throws SchemaKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         if ( label == null || label.length() == 0 )
@@ -64,35 +64,33 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
             throw new IllegalTokenNameException( label );
         }
 
-        return delegate.getOrCreateLabelId( label );
+        return delegate.labelGetOrCreateForName( label );
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey )
-            throws SchemaKernelException
+    public IndexDescriptor indexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
         checkIndexExistence( labelId, propertyKey );
-        return delegate.addIndex( labelId, propertyKey );
+        return delegate.indexCreate( labelId, propertyKey );
     }
 
     @Override
-    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws SchemaKernelException
+    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
         checkIndexExistence( labelId, propertyKey );
-        return delegate.addConstraintIndex( labelId, propertyKey );
+        return delegate.uniqueIndexCreate( labelId, propertyKey );
     }
 
     private void checkIndexExistence( long labelId, long propertyKey ) throws SchemaKernelException
     {
-        for ( IndexDescriptor descriptor : loop( getIndexes( labelId ) ) )
+        for ( IndexDescriptor descriptor : loop( indexesGetForLabel( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new AlreadyIndexedException( descriptor );
             }
         }
-        for ( IndexDescriptor descriptor : loop( getConstraintIndexes( labelId ) ) )
+        for ( IndexDescriptor descriptor : loop( uniqueIndexesGetForLabel( labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
@@ -103,44 +101,43 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         try
         {
-            assertIndexExists( descriptor, getIndexes( descriptor.getLabelId() ) );
+            assertIndexExists( descriptor, indexesGetForLabel( descriptor.getLabelId() ) );
         }
         catch ( NoSuchIndexException e )
         {
             throw new DropIndexFailureException( descriptor, e );
         }
-        delegate.dropIndex( descriptor );
+        delegate.indexDrop( descriptor );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         try
         {
-            assertIndexExists( descriptor, getConstraintIndexes( descriptor.getLabelId() ) );
+            assertIndexExists( descriptor, uniqueIndexesGetForLabel( descriptor.getLabelId() ) );
         }
         catch ( NoSuchIndexException e )
         {
             throw new DropIndexFailureException( descriptor, e );
         }
-        delegate.dropConstraintIndex( descriptor );
+        delegate.uniqueIndexDrop( descriptor );
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKey )
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKey )
             throws SchemaKernelException, ConstraintCreationKernelException
     {
-        Iterator<UniquenessConstraint> constraints = getConstraints( labelId, propertyKey );
+        Iterator<UniquenessConstraint> constraints = constraintsGetForLabelAndPropertyKey( labelId, propertyKey );
         if ( constraints.hasNext() )
         {
             throw new AlreadyConstrainedException( constraints.next() );
         }
-
-        return delegate.addUniquenessConstraint( labelId, propertyKey );
+        return delegate.uniquenessConstraintCreate( labelId, propertyKey );
     }
 
     private void assertIndexExists( IndexDescriptor descriptor, Iterator<IndexDescriptor> indexes )

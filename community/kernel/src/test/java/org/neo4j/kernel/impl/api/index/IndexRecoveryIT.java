@@ -290,8 +290,8 @@ public class IndexRecoveryIT
             {
                 Node node = db.createNode( label );
                 node.setProperty( key, number );
-                updates.add( NodePropertyUpdate.add( node.getId(), context.getPropertyKeyId( key ), number,
-                        new long[] {context.getLabelId( label.name() )} ) );
+                updates.add( NodePropertyUpdate.add( node.getId(), context.propertyKeyGetForName( key ), number,
+                        new long[] {context.labelGetForName( label.name() )} ) );
             }
             context.close();
             tx.success();

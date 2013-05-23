@@ -38,7 +38,6 @@ public class RelationshipProxy implements Relationship
 {
     public interface RelationshipLookups
     {
-        Node lookupNode(long nodeId);
         Node newNodeProxy( long nodeId );
         RelationshipImpl lookupRelationship(long relationshipId);
         GraphDatabaseService getGraphDatabaseService();
@@ -128,7 +127,7 @@ public class RelationshipProxy implements Relationship
                 {
                     try
                     {
-                        return context.getPropertyKeyName( aLong );
+                        return context.propertyKeyGetName( aLong );
                     }
                     catch ( PropertyKeyIdNotFoundException e )
                     {
@@ -136,7 +135,7 @@ public class RelationshipProxy implements Relationship
                                 "Property key retrieved through kernel API should exist." );
                     }
                 }
-            }, context.listRelationshipPropertyKeys( getId() )));
+            }, context.relationshipGetPropertyKeys( getId() )));
         }
         finally
         {

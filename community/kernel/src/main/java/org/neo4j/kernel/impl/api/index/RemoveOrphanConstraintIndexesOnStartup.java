@@ -57,12 +57,12 @@ public class RemoveOrphanConstraintIndexesOnStartup
                 StatementContext context = tx.newStatementContext();
                 try
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.getConstraintIndexes(); indexes.hasNext(); )
+                    for ( Iterator<IndexDescriptor> indexes = context.uniqueIndexesGetAll(); indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.getOwningConstraint( index ) == null )
+                        if ( context.indexGetOwningUniquenessConstraintId( index ) == null )
                         {
-                            context.dropConstraintIndex( index );
+                            context.uniqueIndexDrop( index );
                         }
                     }
                 }

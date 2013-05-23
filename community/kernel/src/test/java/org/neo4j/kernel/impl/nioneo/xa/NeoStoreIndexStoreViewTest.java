@@ -163,8 +163,8 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( null, txManager );
 
             StatementContext ctx = bridge.getCtxForWriting();
-            labelId = ctx.getOrCreateLabelId( "Person" );
-            propertyKeyId = ctx.getOrCreatePropertyKeyId( "name" );
+            labelId = ctx.labelGetOrCreateForName( "Person" );
+            propertyKeyId = ctx.propertyKeyGetOrCreateForName( "name" );
             ctx.close();
             tx.success();
         }

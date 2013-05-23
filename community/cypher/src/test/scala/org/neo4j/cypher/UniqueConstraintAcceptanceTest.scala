@@ -39,10 +39,10 @@ class UniqueConstraintAcceptanceTest
     //THEN
     val statementCtx = graph.statementContextForReading
 
-    val prop = statementCtx.getPropertyKeyId("propertyKey")
-    val label = statementCtx.getLabelId("Label")
+    val prop = statementCtx.propertyKeyGetForName("propertyKey")
+    val label = statementCtx.labelGetForName("Label")
 
-    val constraints = statementCtx.getConstraints(label, prop).asScala
+    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
     assert(constraints.size === 1)
   }
@@ -58,10 +58,10 @@ class UniqueConstraintAcceptanceTest
     // THEN
     val statementCtx = graph.statementContextForReading
 
-    val prop = statementCtx.getPropertyKeyId("name")
-    val label = statementCtx.getLabelId("Person")
+    val prop = statementCtx.propertyKeyGetForName("name")
+    val label = statementCtx.labelGetForName("Person")
 
-    val constraints = statementCtx.getConstraints(label, prop).asScala
+    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
     assertTrue("Constraint should exist", constraints.size == 1)
   }
@@ -79,10 +79,10 @@ class UniqueConstraintAcceptanceTest
     // THEN
     val statementCtx = graph.statementContextForReading
 
-    val prop = statementCtx.getPropertyKeyId("name")
-    val label = statementCtx.getLabelId("Person")
+    val prop = statementCtx.propertyKeyGetForName("name")
+    val label = statementCtx.labelGetForName("Person")
 
-    val constraints = statementCtx.getConstraints(label, prop).asScala
+    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
     assertTrue("Constraint should exist", constraints.size == 1)
   }
@@ -98,10 +98,10 @@ class UniqueConstraintAcceptanceTest
     //THEN
     val statementCtx = graph.statementContextForReading
 
-    val prop = statementCtx.getPropertyKeyId("propertyKey")
-    val label = statementCtx.getLabelId("Label")
+    val prop = statementCtx.propertyKeyGetForName("propertyKey")
+    val label = statementCtx.labelGetForName("Label")
 
-    val constraints = statementCtx.getConstraints(label, prop).asScala
+    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
     assertTrue("No constraints should exist", constraints.isEmpty)
   }
@@ -125,10 +125,10 @@ class UniqueConstraintAcceptanceTest
 
     val statementCtx = graph.statementContextForReading
 
-    val prop = statementCtx.getPropertyKeyId("id")
-    val label = statementCtx.getLabelId("Person")
+    val prop = statementCtx.propertyKeyGetForName("id")
+    val label = statementCtx.labelGetForName("Person")
 
-    val constraints = statementCtx.getConstraints(label, prop).asScala
+    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
     assertTrue("No constraints should exist", constraints.isEmpty)
   }

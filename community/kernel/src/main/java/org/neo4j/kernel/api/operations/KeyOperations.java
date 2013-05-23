@@ -21,5 +21,4 @@ package org.neo4j.kernel.api.operations;
 
 public interface KeyOperations extends KeyReadOperations, KeyWriteOperations
 {
-
 }

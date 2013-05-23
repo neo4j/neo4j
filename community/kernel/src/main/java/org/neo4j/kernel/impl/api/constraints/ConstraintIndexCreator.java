@@ -54,7 +54,7 @@ public class ConstraintIndexCreator
         long indexId;
         try
         {
-            indexId = schema.getCommittedIndexId( descriptor );
+            indexId = schema.indexGetCommittedId( descriptor );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -154,7 +154,7 @@ public class ConstraintIndexCreator
             public IndexDescriptor perform( StatementContext statement ) throws
                     SchemaKernelException
             {
-                return statement.addConstraintIndex( labelId, propertyKeyId );
+                return statement.uniqueIndexCreate( labelId, propertyKeyId );
             }
         };
     }
@@ -167,7 +167,7 @@ public class ConstraintIndexCreator
             @Override
             public Void perform( StatementContext statement ) throws SchemaKernelException
             {
-                statement.dropConstraintIndex( descriptor );
+                statement.uniqueIndexDrop( descriptor );
                 return null;
             }
         };

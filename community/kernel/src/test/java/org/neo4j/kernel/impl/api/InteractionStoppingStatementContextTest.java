@@ -36,7 +36,7 @@ public class InteractionStoppingStatementContextTest
         statement.close();
 
         // WHEN
-        statement.getLabelId( "my label" );
+        statement.labelGetForName( "my label" );
     }
     
     @Test
@@ -49,10 +49,10 @@ public class InteractionStoppingStatementContextTest
         StatementContext statement = new SimpleInteractionStoppingStatementContext( actual );
 
         // WHEN
-        statement.addLabelToNode( labelId, nodeId );
+        statement.nodeAddLabel( nodeId, labelId );
 
         // THEN
-        verify( actual ).addLabelToNode( labelId, nodeId );
+        verify( actual ).nodeAddLabel( nodeId, labelId );
     }
 
     private static class SimpleInteractionStoppingStatementContext extends InteractionStoppingStatementContext

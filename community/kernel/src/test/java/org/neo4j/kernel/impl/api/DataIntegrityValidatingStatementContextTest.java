@@ -48,12 +48,12 @@ public class DataIntegrityValidatingStatementContextTest
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.getIndexes( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.addIndex( label, propertyKey );
+            ctx.indexCreate( label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( SchemaKernelException e )
@@ -61,7 +61,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).addIndex( anyLong(), anyLong() );
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
@@ -83,7 +83,7 @@ public class DataIntegrityValidatingStatementContextTest
         DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
 
         // When
-        ctx.getOrCreateLabelId( "" );
+        ctx.labelGetOrCreateForName( "" );
     }
 
     @Test(expected = SchemaKernelException.class)
@@ -93,7 +93,7 @@ public class DataIntegrityValidatingStatementContextTest
         DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
 
         // When
-        ctx.getOrCreateLabelId( null );
+        ctx.labelGetOrCreateForName( null );
     }
 
 }

@@ -41,114 +41,112 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public IndexDescriptor getIndex( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        return delegate.getIndex( labelId, propertyKey );
+        return delegate.indexesGetForLabelAndPropertyKey( labelId, propertyKey );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes( long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
-        return delegate.getIndexes( labelId );
+        return delegate.indexesGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return delegate.getIndexes();
+        return delegate.indexesGetAll();
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes( long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
-        return delegate.getConstraintIndexes( labelId );
+        return delegate.uniqueIndexesGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes()
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
-        return delegate.getConstraintIndexes();
+        return delegate.uniqueIndexesGetAll();
     }
 
     @Override
-    public InternalIndexState getIndexState( IndexDescriptor indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return delegate.getIndexState( indexRule );
+        return delegate.indexGetState( descriptor );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
-        return delegate.getConstraints( labelId, propertyKeyId );
+        return delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
-        return delegate.getConstraints( labelId );
+        return delegate.constraintsGetForLabel( labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints()
+    public Iterator<UniquenessConstraint> constraintsGetAll()
     {
-        return delegate.getConstraints();
+        return delegate.constraintsGetAll();
     }
 
     @Override
-    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        return delegate.getOwningConstraint( index );
+        return delegate.indexGetOwningUniquenessConstraintId( index );
     }
 
     @Override
-    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        return delegate.getCommittedIndexId( index );
+        return delegate.indexGetCommittedId( index );
     }
 
     @Override
-    public IndexDescriptor addIndex( long labelId, long propertyKey ) throws
-            SchemaKernelException
+    public IndexDescriptor indexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
-        return delegate.addIndex( labelId, propertyKey );
+        return delegate.indexCreate( labelId, propertyKey );
     }
 
     @Override
-    public IndexDescriptor addConstraintIndex( long labelId, long propertyKey )
-            throws SchemaKernelException
+    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
-        return delegate.addConstraintIndex( labelId, propertyKey );
+        return delegate.uniqueIndexCreate( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndex( IndexDescriptor indexRule ) throws DropIndexFailureException
+    public void indexDrop( IndexDescriptor indexRule ) throws DropIndexFailureException
     {
-        delegate.dropIndex( indexRule );
+        delegate.indexDrop( indexRule );
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        delegate.dropConstraintIndex( descriptor );
+        delegate.uniqueIndexDrop( descriptor );
     }
 
     @Override
-    public UniquenessConstraint addUniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
             throws SchemaKernelException, ConstraintCreationKernelException
     {
-        return delegate.addUniquenessConstraint( labelId, propertyKeyId );
+        return delegate.uniquenessConstraintCreate( labelId, propertyKeyId );
     }
 
     @Override
-    public void dropConstraint( UniquenessConstraint constraint )
+    public void constraintDrop( UniquenessConstraint constraint )
     {
-        delegate.dropConstraint( constraint );
+        delegate.constraintDrop( constraint );
     }
 
     @Override
-    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
     {
-        return delegate.getOrCreateFromSchemaState( key, creator );
+        return delegate.schemaStateGetOrCreate( key, creator );
     }
 
     @Override

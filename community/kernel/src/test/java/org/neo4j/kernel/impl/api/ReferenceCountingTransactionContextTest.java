@@ -117,7 +117,7 @@ public class ReferenceCountingTransactionContextTest
         // WHEN
         try
         {
-            first.getLabelName( 0 );
+            first.labelGetName( 0 );
 
             fail( "expected exception" );
         }

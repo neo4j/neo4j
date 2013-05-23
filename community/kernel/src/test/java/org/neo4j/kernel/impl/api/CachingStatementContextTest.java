@@ -50,7 +50,7 @@ public class CachingStatementContextTest
         StatementContext context = new CachingStatementContext( actual, cache, null );
         
         // WHEN
-        Iterator<Long> receivedLabels = context.getLabelsForNode( nodeId );
+        Iterator<Long> receivedLabels = context.nodeGetLabels( nodeId );
         
         // THEN
         assertEquals( labels, addToCollection(receivedLabels, new HashSet<Long>() ) );

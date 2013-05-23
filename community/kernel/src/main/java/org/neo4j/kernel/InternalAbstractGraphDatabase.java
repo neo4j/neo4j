@@ -749,13 +749,6 @@ public abstract class InternalAbstractGraphDatabase
         return new RelationshipProxy.RelationshipLookups()
         {
             @Override
-            public Node lookupNode( long nodeId )
-            {
-                // TODO: add CAS check here for requests not in tx to guard against shutdown
-                return nodeManager.getNodeById( nodeId );
-            }
-
-            @Override
             public RelationshipImpl lookupRelationship( long relationshipId )
             {
                 // TODO: add CAS check here for requests not in tx to guard against shutdown
@@ -1489,8 +1482,8 @@ public abstract class InternalAbstractGraphDatabase
         long labelId;
         try
         {
-            propertyId = ctx.getPropertyKeyId( key );
-            labelId = ctx.getLabelId( myLabel.name() );
+            propertyId = ctx.propertyKeyGetForName( key );
+            labelId = ctx.labelGetForName( myLabel.name() );
         }
         catch ( KernelException e )
         {
@@ -1500,11 +1493,11 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = ctx.getIndex( labelId, propertyId );
-            if(ctx.getIndexState( indexRule ) == InternalIndexState.ONLINE)
+            IndexDescriptor indexRule = ctx.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+            if(ctx.indexGetState( indexRule ) == InternalIndexState.ONLINE)
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.exactIndexLookup( indexRule, value ), ctx );
+                return map2nodes( ctx.nodesGetFromIndexLookup( indexRule, value ), ctx );
             }
         }
         catch ( SchemaRuleNotFoundException e )
@@ -1521,7 +1514,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value, final StatementContext ctx, long labelId )
     {
-        Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
+        Iterator<Long> nodesWithLabel = ctx.nodesGetForLabel( labelId );
 
         Iterator<Long> matches = filter( new Predicate<Long>()
         {
@@ -1530,7 +1523,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 try
                 {
-                    return ctx.getNodePropertyValue( item, propertyId ).equals( value );
+                    return ctx.nodeGetPropertyValue( item, propertyId ).equals( value );
                 }
                 catch ( KernelException e )
                 {

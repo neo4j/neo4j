@@ -69,7 +69,7 @@ public class StoreStatementContextTest
     {
         // When
         try {
-            statement.addLabelToNode( 12, 12);
+            statement.nodeAddLabel( 12, 12 );
             fail("Should have thrown unsupported operation.");
         } catch(UnsupportedOperationException e)
         {
@@ -92,8 +92,8 @@ public class StoreStatementContextTest
         tx.finish();
 
         // WHEN
-        long propertyKeyId = statement.getPropertyKeyId( propertyKey );
-        int result = (Integer) statement.getNodePropertyValue( nodeId, propertyKeyId );
+        long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+        int result = (Integer) statement.nodeGetPropertyValue( nodeId, propertyKeyId );
 
         // THEN
         assertThat( propertyValue, equalTo( result ) );
@@ -114,10 +114,10 @@ public class StoreStatementContextTest
         tx.finish();
 
         // WHEN
-        long propertyKeyId = statement.getPropertyKeyId( propertyKey );
+        long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
         try
         {
-            statement.getNodePropertyValue( nodeId, propertyKeyId );
+            statement.nodeGetPropertyValue( nodeId, propertyKeyId );
 
             fail( "Should have thrown exception" );
         }
@@ -135,13 +135,13 @@ public class StoreStatementContextTest
         Transaction tx = db.beginTx();
         long nodeId = db.createNode(label, label2).getId();
         String labelName1 = label.name(), labelName2 = label2.name();
-        long labelId1 = statement.getLabelId( labelName1 );
-        long labelId2 = statement.getOrCreateLabelId( labelName2 );
+        long labelId1 = statement.labelGetForName( labelName1 );
+        long labelId2 = statement.labelGetOrCreateForName( labelName2 );
         tx.success();
         tx.finish();
 
         // THEN
-        Iterator<Long> readLabels = statement.getLabelsForNode( nodeId );
+        Iterator<Long> readLabels = statement.nodeGetLabels( nodeId );
         assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
@@ -151,10 +151,10 @@ public class StoreStatementContextTest
     {
         // GIVEN
         String labelName = label.name();
-        long labelId = statement.getOrCreateLabelId( labelName );
+        long labelId = statement.labelGetOrCreateForName( labelName );
 
         // WHEN
-        String readLabelName = statement.getLabelName( labelId );
+        String readLabelName = statement.labelGetName( labelId );
 
         // THEN
         assertEquals( labelName, readLabelName );
@@ -187,8 +187,8 @@ public class StoreStatementContextTest
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label, label2 );
 
         // WHEN
-        Iterator<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label.name() ) );
-        Iterator<Long> nodesForLabel2 = statement.getNodesWithLabel( statement.getLabelId( label2.name() ) );
+        Iterator<Long> nodesForLabel1 = statement.nodesGetForLabel( statement.labelGetForName( label.name() ) );
+        Iterator<Long> nodesForLabel2 = statement.nodesGetForLabel( statement.labelGetForName( label2.name() ) );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
@@ -199,7 +199,7 @@ public class StoreStatementContextTest
     public void should_create_property_key_if_not_exists() throws Exception
     {
         // WHEN
-        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // THEN
         assertTrue( "Should have created a non-negative id", id >= 0 );
@@ -209,10 +209,10 @@ public class StoreStatementContextTest
     public void should_get_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // WHEN
-        long secondId = statement.getPropertyKeyId( propertyKey );
+        long secondId = statement.propertyKeyGetForName( propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -222,10 +222,10 @@ public class StoreStatementContextTest
     public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // WHEN
-        long secondId = statement.getOrCreatePropertyKeyId( propertyKey );
+        long secondId = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -237,7 +237,7 @@ public class StoreStatementContextTest
         // WHEN
         try
         {
-            statement.getPropertyKeyId( "non-existent-property-key" );
+            statement.propertyKeyGetForName( "non-existent-property-key" );
             fail( "Should have failed with property key not found exception" );
         }
         catch ( PropertyKeyNotFoundException e )
@@ -255,7 +255,7 @@ public class StoreStatementContextTest
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label );
 
         // WHEN
-        Set<Long> foundNodes = asUniqueSet( statement.exactIndexLookup( index, name ) );
+        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( index, name ) );
 
         // THEN
         assertEquals( asSet( mrTaylor.getId() ), foundNodes );
@@ -321,7 +321,7 @@ public class StoreStatementContextTest
         }
         
         db.schema().awaitIndexOnline( index, 10, SECONDS );
-        return statement.getIndex( statement.getLabelId( label.name() ),
-                                   statement.getPropertyKeyId( propertyKey ) );
+        return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
+                                                           statement.propertyKeyGetForName( propertyKey ) );
     }
 }

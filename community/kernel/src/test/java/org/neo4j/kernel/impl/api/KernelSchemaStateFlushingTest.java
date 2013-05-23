@@ -136,7 +136,7 @@ public class KernelSchemaStateFlushingTest
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
         StatementContext ctx = txc.newStatementContext();
-        UniquenessConstraint descriptor = ctx.addUniquenessConstraint( 1, 1 );
+        UniquenessConstraint descriptor = ctx.uniquenessConstraintCreate( 1, 1 );
         ctx.close();
         tx.success();
         tx.finish();
@@ -148,7 +148,7 @@ public class KernelSchemaStateFlushingTest
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
         StatementContext ctx = txc.newStatementContext();
-        ctx.dropConstraint( descriptor );
+        ctx.constraintDrop( descriptor );
         ctx.close();
         tx.success();
         tx.finish();
@@ -159,7 +159,7 @@ public class KernelSchemaStateFlushingTest
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
         StatementContext ctx = txc.newStatementContext();
-        IndexDescriptor descriptor = ctx.addIndex( 1, 1 );
+        IndexDescriptor descriptor = ctx.indexCreate( 1, 1 );
         ctx.close();
         tx.success();
         tx.finish();
@@ -171,7 +171,7 @@ public class KernelSchemaStateFlushingTest
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
         StatementContext ctx = txc.newStatementContext();
-        ctx.dropIndex( descriptor );
+        ctx.indexDrop( descriptor );
         ctx.close();
         tx.success();
         tx.finish();
@@ -210,13 +210,14 @@ public class KernelSchemaStateFlushingTest
         StatementContext ctx = tx.newStatementContext();
         try 
         {
-            return ctx.getOrCreateFromSchemaState( key, new Function<String, String>() {
+            return ctx.schemaStateGetOrCreate( key, new Function<String, String>()
+            {
                 @Override
                 public String apply( String from )
                 {
                     return value;
                 }
-            });
+            } );
         }
         finally 
         {

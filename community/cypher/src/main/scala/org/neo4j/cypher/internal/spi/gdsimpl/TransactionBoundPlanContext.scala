@@ -31,11 +31,11 @@ import org.neo4j.kernel.api.exceptions.KernelException
 class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
-    val labelId = ctx.getLabelId(labelName)
-    val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
+    val labelId = ctx.labelGetForName(labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
 
-    val rule = ctx.getIndex(labelId, propertyKeyId)
-    ctx.getIndexState(rule) match {
+    val rule = ctx.indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    ctx.indexGetState(rule) match {
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
@@ -44,10 +44,10 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
   }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = ctx.getLabelId(labelName)
-    val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
+    val labelId = ctx.labelGetForName(labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
 
-    val matchingConstraints = ctx.getConstraints(labelId, propertyKeyId)
+    val matchingConstraints = ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
     if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
   } catch {
     case _: KernelException => None
@@ -69,5 +69,5 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
     case _: KernelException => None
   }
 
-  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.getLabelId(labelName))
+  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.labelGetForName(labelName))
 }

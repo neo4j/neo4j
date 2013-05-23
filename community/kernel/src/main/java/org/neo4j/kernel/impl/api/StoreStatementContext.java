@@ -91,7 +91,7 @@ public class StoreStatementContext extends CompositeStatementContext
         {
             try
             {
-                return getPropertyKeyId( s );
+                return propertyKeyGetForName( s );
             }
             catch ( PropertyKeyNotFoundException e )
             {
@@ -143,7 +143,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws SchemaKernelException
+    public long labelGetOrCreateForName( String label ) throws SchemaKernelException
     {
         try
         {
@@ -168,7 +168,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public long getLabelId( String label ) throws LabelNotFoundKernelException
+    public long labelGetForName( String label ) throws LabelNotFoundKernelException
     {
         try
         {
@@ -181,11 +181,11 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public boolean nodeHasLabel( long nodeId, long labelId )
     {
         try
         {
-            return contains( getLabelsForNode( nodeId ), labelId );
+            return contains( nodeGetLabels( nodeId ), labelId );
         }
         catch ( InvalidRecordException e )
         {
@@ -194,7 +194,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> nodeGetLabels( long nodeId )
     {
         try
         {
@@ -208,7 +208,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    public String labelGetName( long labelId ) throws LabelNotFoundKernelException
     {
         try
         {
@@ -221,7 +221,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> getNodesWithLabel( final long labelId )
+    public Iterator<Long> nodesGetForLabel( final long labelId )
     {
         final NodeStore nodeStore = neoStore.getNodeStore();
         final long highestId = nodeStore.getHighestPossibleIdInUse();
@@ -252,13 +252,13 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Token> listLabels()
+    public Iterator<Token> labelsGetAllTokens()
     {
         return labelTokenHolder.getAllTokens().iterator();
     }
 
     @Override
-    public IndexDescriptor getIndex( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( final long labelId, final long propertyKey ) throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
@@ -269,25 +269,25 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes( final long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( final long labelId )
     {
         return getIndexDescriptorsFor( indexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getIndexes()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         return getIndexDescriptorsFor( INDEX_RULES );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes( final long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( final long labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getConstraintIndexes()
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
     }
@@ -347,19 +347,19 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Long getOwningConstraint( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
     }
 
     @Override
-    public long getCommittedIndexId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
     }
 
     @Override
-    public InternalIndexState getIndexState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getState();
     }
@@ -377,7 +377,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId, final long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
                                           labelId, new Predicate<UniquenessConstraintRule>()
@@ -392,27 +392,27 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints( long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
                                           labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> getConstraints()
+    public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                                           Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
-    public long getOrCreatePropertyKeyId( String propertyKey )
+    public long propertyKeyGetOrCreateForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
     }
 
     @Override
-    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
+    public long propertyKeyGetForName( String propertyKey ) throws PropertyKeyNotFoundException
     {
         try
         {
@@ -425,7 +425,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public String getPropertyKeyName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         try
         {
@@ -438,7 +438,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> listNodePropertyKeys( long nodeId )
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId )
     {
         // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
         // a first step to move it into the kernel.
@@ -447,7 +447,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> listRelationshipPropertyKeys( long relId )
+    public Iterator<Long> relationshipGetPropertyKeys( long relId )
     {
         // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
         // a first step to move it into the kernel.
@@ -456,7 +456,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Object getNodePropertyValue( long nodeId, long propertyKeyId )
+    public Object nodeGetPropertyValue( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
     {
         try
@@ -480,7 +480,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            String propertyKey = getPropertyKeyName( propertyKeyId );
+            String propertyKey = propertyKeyGetName( propertyKeyId );
             return nodeManager.getNodeForProxy( nodeId, null ).hasProperty( nodeManager, propertyKey );
         }
         catch ( IllegalStateException e )
@@ -496,7 +496,7 @@ public class StoreStatementContext extends CompositeStatementContext
         try
         {
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = getPropertyKeyName( propertyKeyId );
+            String propertyKey = propertyKeyGetName( propertyKeyId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
             NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
             nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, value );
@@ -514,7 +514,7 @@ public class StoreStatementContext extends CompositeStatementContext
         try
         {
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = getPropertyKeyName( propertyKeyId );
+            String propertyKey = propertyKeyGetName( propertyKeyId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
             NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
             return nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
@@ -526,13 +526,13 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Long> exactIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId( index ) ).lookup( value );
     }
 
     @Override
-    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
     {
         throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
     }

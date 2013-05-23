@@ -53,12 +53,12 @@ public class ConstraintIndexCreatorTest
         StatementContext indexCreationContext = mock( StatementContext.class );
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
-        when( indexCreationContext.addConstraintIndex( 123, 456 ) ).thenReturn( descriptor );
+        when( indexCreationContext.uniqueIndexCreate( 123, 456 ) ).thenReturn( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( indexCreationContext );
 
-        when( constraintCreationContext.getCommittedIndexId( descriptor ) ).thenReturn( 2468l );
+        when( constraintCreationContext.indexGetCommittedId( descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
 
@@ -69,9 +69,9 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 2468l, indexId );
-        verify( indexCreationContext ).addConstraintIndex( 123, 456 );
+        verify( indexCreationContext ).uniqueIndexCreate( 123, 456 );
         verifyNoMoreInteractions( indexCreationContext );
-        verify( constraintCreationContext ).getCommittedIndexId( descriptor );
+        verify( constraintCreationContext ).indexGetCommittedId( descriptor );
         verifyNoMoreInteractions( constraintCreationContext );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -85,12 +85,12 @@ public class ConstraintIndexCreatorTest
         StatementContext indexDestructionContext = mock( StatementContext.class );
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
-        when( indexCreationContext.addConstraintIndex( 123, 456 ) ).thenReturn( descriptor );
+        when( indexCreationContext.uniqueIndexCreate( 123, 456 ) ).thenReturn( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( indexCreationContext, indexDestructionContext );
 
-        when( constraintCreationContext.getCommittedIndexId( descriptor ) ).thenReturn( 2468l );
+        when( constraintCreationContext.indexGetCommittedId( descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
         doThrow( new IndexPopulationFailedKernelException( descriptor, new PreexistingIndexEntryConflictException( "a", 2, 1 ) ) )
@@ -111,11 +111,11 @@ public class ConstraintIndexCreatorTest
             assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
                           e.getMessage() );
         }
-        verify( indexCreationContext ).addConstraintIndex( 123, 456 );
+        verify( indexCreationContext ).uniqueIndexCreate( 123, 456 );
         verifyNoMoreInteractions( indexCreationContext );
-        verify( constraintCreationContext ).getCommittedIndexId( descriptor );
+        verify( constraintCreationContext ).indexGetCommittedId( descriptor );
         verifyNoMoreInteractions( constraintCreationContext );
-        verify( indexDestructionContext ).dropConstraintIndex( descriptor );
+        verify( indexDestructionContext ).uniqueIndexDrop( descriptor );
         verifyNoMoreInteractions( indexDestructionContext );
     }
 
@@ -136,7 +136,7 @@ public class ConstraintIndexCreatorTest
 
         // then
         verifyZeroInteractions( indexingService );
-        verify( indexDestructionTransaction ).dropConstraintIndex( descriptor );
+        verify( indexDestructionTransaction ).uniqueIndexDrop( descriptor );
         verifyNoMoreInteractions( indexDestructionTransaction );
     }
 

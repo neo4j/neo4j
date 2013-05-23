@@ -35,10 +35,22 @@ import org.neo4j.kernel.api.operations.WriteOperations;
  *
  * Note that this interface only combines a set of interfaces that define operations that the
  * database can perform.
- * 
+ *
  * One main difference between a {@link TransactionContext} and a {@link StatementContext}
  * is life cycle of some locks, where read locks can live within one statement,
  * whereas write locks will live for the entire transaction.
+ *
+ * === Method Names ===
+ *
+ * The most prominent entity the method deals with is the first word of the method name.
+ * If dealt with in general, the word is pluralized.
+ * We prefer physical entities to meta-entities (e.g. node is preferred to index and label).
+ * {@link #nodesGetFromIndexLookup(org.neo4j.kernel.impl.api.index.IndexDescriptor, Object)} is a good example for both
+ * of the last two rules, nodes are the physical entities we are interested in, therefore that word is first, the
+ * index is just a means of getting to the nodes.
+ *
+ * Parameter order for all methods, should reflect the order of words in the method name, with the most prominent entity
+ * being the first parameter.
  */
 public interface StatementContext
         extends ReadOperations, WriteOperations,
@@ -49,7 +61,7 @@ public interface StatementContext
      * Closes this statement. Statements must be closed when done and before
      * their parent transaction finishes.
      * As an example statement-bound locks can be released when closing
-     * a statement. 
+     * a statement.
      */
     void close();
 }
