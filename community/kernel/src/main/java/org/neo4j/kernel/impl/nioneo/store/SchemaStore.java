@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -33,6 +30,10 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
@@ -82,10 +83,10 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
                 {
                     long id = currentId++;
                     DynamicRecord record = forceGetRecord( id );
-                    if ( !record.inUse() || !record.isStartRecord() )
-                        continue;
-
-                    return getSchemaRule( id, scratchData );
+                    if ( record.inUse() && record.isStartRecord() )
+                    {
+                        return getSchemaRule( id, scratchData );
+                    }
                 }
                 return null;
             }
@@ -108,17 +109,5 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         Collection<DynamicRecord> records = getRecords( id );
         ByteBuffer scratchBuffer = concatData( records, buffer );
         return deserialize( id, scratchBuffer );
-    }
-    
-    @Override
-    public void setRecovered()
-    {
-        super.setRecovered();
-    }
-    
-    @Override
-    public void unsetRecovered()
-    {
-        super.unsetRecovered();
     }
 }

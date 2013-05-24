@@ -452,28 +452,6 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    // non thread safe but let exception be thrown instead of risking deadlock
-    @Override
-    public void dumpLocks()
-    {
-        //        System.out.print( "Locks held: " );
-        //        java.util.Iterator<?> itr = lockMap.keySet().iterator();
-        //        if ( !itr.hasNext() )
-        //        {
-        //            System.out.println( "NONE" );
-        //        }
-        //        else
-        //        {
-        //            System.out.println();
-        //        }
-        //        while ( itr.hasNext() )
-        //        {
-        //            Transaction transaction = (Transaction) itr.next();
-        //            System.out.println( "" + transaction + "->" +
-        //                lockMap.get( transaction ).size() );
-        //        }
-    }
-
     @Override
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
             Primitive primitive )
@@ -718,12 +696,6 @@ public class WritableTransactionState implements TransactionState
     public Set<Long> getCreatedRelationships()
     {
         return primitiveElement != null ? primitiveElement.createdRelationships : Collections.<Long>emptySet();
-    }
-
-    @Override
-    public Set<Long> getDeletedNodes()
-    {
-        return primitiveElement != null ? primitiveElement.deletedNodes : Collections.<Long>emptySet();
     }
 
     @Override

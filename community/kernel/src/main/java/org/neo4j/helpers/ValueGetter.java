@@ -23,7 +23,7 @@ public interface ValueGetter<T>
 {
     T get();
     
-    public static class FromValue<T> implements ValueGetter<T>
+    class FromValue<T> implements ValueGetter<T>
     {
         private final T value;
 
@@ -39,5 +39,5 @@ public interface ValueGetter<T>
         }
     }
     
-    public static ValueGetter<Void> NO_VALUE = new FromValue<Void>( null );
+    ValueGetter<Void> NO_VALUE = new FromValue<Void>( null );
 }

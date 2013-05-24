@@ -56,7 +56,7 @@ public interface RecordStore<R extends AbstractBaseRecord>
 
     void close();
     
-    public static final Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
+    Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {
         @Override
         public boolean accept( AbstractBaseRecord item )
@@ -65,7 +65,7 @@ public interface RecordStore<R extends AbstractBaseRecord>
         }
     };
 
-    public static abstract class Processor<FAILURE extends Exception>
+    abstract class Processor<FAILURE extends Exception>
     {
         // Have it volatile so that it can be stopped from a different thread.
         private volatile boolean continueScanning = true;

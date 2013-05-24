@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class Transactor
 {
-    public static interface Statement<RESULT, FAILURE extends KernelException>
+    public interface Statement<RESULT, FAILURE extends KernelException>
     {
         RESULT perform( StatementContext statementContext ) throws FAILURE;
     }

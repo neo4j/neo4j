@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Path;
 public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
 {
     @SuppressWarnings( "rawtypes" )
-    public static final InitialBranchState NO_STATE = new InitialBranchState()
+    InitialBranchState NO_STATE = new InitialBranchState()
     {
         @Override
         public Object initialState( Path path )
@@ -50,7 +50,7 @@ public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
      */
     InitialBranchState<STATE> reverse();
 
-    public static abstract class Adapter<STATE> implements InitialBranchState<STATE>
+    abstract class Adapter<STATE> implements InitialBranchState<STATE>
     {
         @Override
         public InitialBranchState<STATE> reverse()
@@ -61,9 +61,8 @@ public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
 
     /**
      * Branch state evaluator for an initial state.
-     * @param <STATE>
      */
-    public static class State<STATE> extends Adapter<STATE>
+    class State<STATE> extends Adapter<STATE>
     {
         private final STATE initialState;
         private final STATE reversedInitialState;
@@ -77,7 +76,7 @@ public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
         @Override
         public InitialBranchState<STATE> reverse()
         {
-            return new State( reversedInitialState, initialState );
+            return new State<STATE>( reversedInitialState, initialState );
         }
 
         @Override

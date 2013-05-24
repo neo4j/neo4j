@@ -64,8 +64,6 @@ public interface TransactionState
 
     boolean hasLocks();
 
-    void dumpLocks();
-
     ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive );
 
     ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
@@ -94,18 +92,16 @@ public interface TransactionState
     
     void setRollbackOnly();
     
-    public TxHook getTxHook();
+    TxHook getTxHook();
     
-    public TxIdGenerator getTxIdGenerator();
+    TxIdGenerator getTxIdGenerator();
     
     Set<Long> getCreatedNodes();
     
     Set<Long> getCreatedRelationships();
 
-    Set<Long> getDeletedNodes();
-
     // Tech debt, this is here waiting for transaction state to move to the TxState class
     Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
     
-    public static final TransactionState NO_STATE = new NoTransactionState();
+    TransactionState NO_STATE = new NoTransactionState();
 }

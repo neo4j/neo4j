@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,6 +35,8 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.String.format;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -74,12 +74,9 @@ public class NeoStore extends AbstractStore
     private LabelTokenStore labelTokenStore;
     private SchemaStore schemaStore;
     private final TxHook txHook;
-    private boolean isStarted;
     private long lastCommittedTx = -1;
 
     private final int REL_GRAB_SIZE;
-    private final File fileName;
-    private final Config conf;
 
     public NeoStore( File fileName, Config conf,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -91,8 +88,6 @@ public class NeoStore extends AbstractStore
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
-        this.fileName = fileName;
-        this.conf = conf;
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -360,8 +355,7 @@ public class NeoStore extends AbstractStore
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
-            long previous = buffer.getLong();
-            return previous;
+            return buffer.getLong();
         }
         catch ( IOException e )
         {
@@ -587,7 +581,6 @@ public class NeoStore extends AbstractStore
         nodeStore.makeStoreOk();
         schemaStore.makeStoreOk();
         super.makeStoreOk();
-        isStarted = true;
     }
 
     @Override

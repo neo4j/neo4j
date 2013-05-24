@@ -52,7 +52,7 @@ public interface BranchState<STATE>
      * Instance representing no state, usage resulting in
      * {@link IllegalStateException} being thrown.
      */
-    public static final BranchState NO_STATE = new BranchState()
+    BranchState NO_STATE = new BranchState()
     {
         @Override
         public Object getState()

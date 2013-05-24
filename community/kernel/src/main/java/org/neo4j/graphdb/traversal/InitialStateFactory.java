@@ -36,7 +36,7 @@ public interface InitialStateFactory<STATE>
      * An {@link InitialStateFactory} which returns {@code null} as state.
      */
     @SuppressWarnings( "rawtypes" )
-    public static final InitialStateFactory NO_STATE = new InitialStateFactory()
+    InitialStateFactory NO_STATE = new InitialStateFactory()
     {
         @Override
         public Object initialState( Path path )
@@ -60,7 +60,7 @@ public interface InitialStateFactory<STATE>
     /**
      * Wraps an {@link InitialStateFactory} in a {@link InitialBranchState}
      */
-    public static class AsInitialBranchState<STATE> implements InitialBranchState<STATE>
+    class AsInitialBranchState<STATE> implements InitialBranchState<STATE>
     {
         private final InitialStateFactory<STATE> factory;
 

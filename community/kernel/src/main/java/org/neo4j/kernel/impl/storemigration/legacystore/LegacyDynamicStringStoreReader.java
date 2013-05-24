@@ -28,30 +28,25 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.getUnsignedInt;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
 
 public class LegacyDynamicStringStoreReader
 {
-    public static final String FROM_VERSION_STRING = "StringPropertyStore " + LEGACY_VERSION;
-
     private final int blockSize;
     private final FileChannel fileChannel;
     private final ByteBuffer blockBuffer;
     private ByteBuffer chainBuffer;
 
-    public LegacyDynamicStringStoreReader( FileSystemAbstraction fs, File fileName, String fromVersion,
-            StringLogger log ) throws IOException
+    public LegacyDynamicStringStoreReader( FileSystemAbstraction fs, File fileName, String fromVersion )
+            throws IOException
     {
         // Read version and block size (stored in the first record in the store)
         fileChannel = fs.open( fileName, "r" );
         long fileSize = fileChannel.size();
-        String expectedVersion = fromVersion;
-        byte version[] = new byte[UTF8.encode( expectedVersion ).length];
+        byte version[] = new byte[UTF8.encode( fromVersion ).length];
         ByteBuffer buffer = ByteBuffer.wrap( version );
         fileChannel.position( fileSize - version.length );
         fileChannel.read( buffer );

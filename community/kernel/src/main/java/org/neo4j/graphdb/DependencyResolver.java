@@ -71,7 +71,7 @@ public interface DependencyResolver
      * Adapter for {@link DependencyResolver} which will select the first available candidate by default
      * for {@link #resolveDependency(Class)}.
      */
-    abstract static class Adapter implements DependencyResolver
+    abstract class Adapter implements DependencyResolver
     {
         @SuppressWarnings( "rawtypes" )
         private static final SelectionStrategy FIRST = new SelectionStrategy()

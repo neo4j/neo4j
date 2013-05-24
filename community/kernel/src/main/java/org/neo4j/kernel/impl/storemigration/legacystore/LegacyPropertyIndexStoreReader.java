@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.KEYS_PART;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class LegacyPropertyIndexStoreReader implements Closeable
 {
@@ -52,7 +51,7 @@ public class LegacyPropertyIndexStoreReader implements Closeable
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
         
         nameStoreReader = new LegacyDynamicStringStoreReader( fs, new File( file.getPath() + KEYS_PART ),
-                "StringPropertyStore", DEV_NULL );
+                "StringPropertyStore" );
     }
     
     public Token[] readTokens() throws IOException

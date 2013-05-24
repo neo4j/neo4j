@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -333,7 +332,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         try
         {
             assertTmOk();
-            Thread thread = Thread.currentThread();
             hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
@@ -852,21 +850,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
-    public synchronized void dumpTransactions()
-    {
-//        Iterator<TransactionImpl> itr = txThreadMap.values().iterator();
-//        if ( !itr.hasNext() )
-//        {
-//            System.out.println( "No uncompleted transactions" );
-//            return;
-//        }
-//        System.out.println( "Uncompleted transactions found: " );
-//        while ( itr.hasNext() )
-//        {
-//            System.out.println( itr.next() );
-//        }
-    }
-
     /**
      * @return The current transaction's event identifier or -1 if no
      *         transaction is currently running.
@@ -874,7 +857,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public int getEventIdentifier()
     {
-        TransactionImpl tx = null;
+        TransactionImpl tx;
         try
         {
             tx = (TransactionImpl) getTransaction();

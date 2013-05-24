@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.List;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.Migrator;
+
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
@@ -33,15 +42,6 @@ import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_array_fraction;
 import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_size;
 import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_array_fraction;
 import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_size;
-
-import java.util.List;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.Migrator;
 
 /**
  * Settings for High Availability mode
@@ -76,7 +76,7 @@ public class HaSettings
 
     @Description( "List of ZooKeeper coordinators. Only needed for rolling upgrade from 1.8 to 1.9" )
     @Deprecated
-    public static Setting<List<HostnamePort>> coordinators = setting( "ha.upgrade_coordinators", list( ",", HOSTNAME_PORT ),
+    public static final Setting<List<HostnamePort>> coordinators = setting( "ha.upgrade_coordinators", list( ",", HOSTNAME_PORT ),
             "" );
 
     @Description( "ZooKeeper session timeout. Only needed for rolling upgrade from 1.8 to 1.9" )

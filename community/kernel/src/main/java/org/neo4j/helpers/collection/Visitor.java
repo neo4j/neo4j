@@ -40,7 +40,7 @@ public interface Visitor<E, FAILURE extends Exception>
      */
     boolean visit( E element ) throws FAILURE;
 
-    public final class SafeGenerics
+    final class SafeGenerics
     {
         /**
          * Useful for determining "is this an object that can visit the things I can provide?"

@@ -98,11 +98,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void dumpLocks()
-    {
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive )
     {
         return null;
@@ -199,12 +194,6 @@ public class NoTransactionState implements TransactionState
 
     @Override
     public Set<Long> getCreatedRelationships()
-    {
-        return emptySet();
-    }
-
-    @Override
-    public Set<Long> getDeletedNodes()
     {
         return emptySet();
     }

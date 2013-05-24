@@ -79,12 +79,6 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     }
 
     @Override
-    public void close()
-    {
-        super.close();
-    }
-
-    @Override
     public RelationshipRecord getRecord( long id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );

@@ -21,7 +21,7 @@ package org.neo4j.helpers;
 
 public interface Clock
 {
-    final Clock SYSTEM = new Clock()
+    Clock SYSTEM = new Clock()
     {
         @Override
         public long currentTimeMillis()

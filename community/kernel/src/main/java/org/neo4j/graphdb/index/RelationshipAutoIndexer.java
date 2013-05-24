@@ -23,5 +23,5 @@ import org.neo4j.graphdb.Relationship;
 
 public interface RelationshipAutoIndexer extends AutoIndexer<Relationship>
 {
-    public ReadableRelationshipIndex getAutoIndex();
+    ReadableRelationshipIndex getAutoIndex();
 }

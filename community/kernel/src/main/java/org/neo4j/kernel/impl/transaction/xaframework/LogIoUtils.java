@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -131,6 +130,7 @@ public class LogIoUtils
         byte branchId[] = new byte[branchIdLength];
         readIntoBufferAndFlip( ByteBuffer.wrap( branchId ), channel, branchIdLength );
         int identifier = readNextInt( buf, channel );
+        @SuppressWarnings("unused")
         int formatId = readNextInt( buf, channel );
         int masterId = readNextInt( buf, channel );
         int myId = readNextInt( buf, channel );
@@ -284,18 +284,5 @@ public class LogIoUtils
         }
         buf.flip();
         return buf;
-    }
-
-    public static void moveAllLogicalLogs( File storeDir, String subDirectoryName )
-    {
-        File subdir = new File( storeDir, subDirectoryName );
-        subdir.mkdir();
-        for ( File file : storeDir.listFiles() )
-        {
-            if ( file.getName().contains( "nioneo_logical.log.v" ) )
-            {
-                file.renameTo( new File( subdir, file.getName() ) );
-            }
-        }
     }
 }

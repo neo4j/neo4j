@@ -111,17 +111,6 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    /**
-     * Sets the high id of {@link IdGenerator}.
-     *
-     * @param id
-     *            The high id
-     */
-    public void setHighId( int id )
-    {
-        super.setHighId( id );
-    }
-
     private long findHighIdBackwards() throws IOException
     {
         // Duplicated method

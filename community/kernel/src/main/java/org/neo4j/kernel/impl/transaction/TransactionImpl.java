@@ -62,7 +62,6 @@ class TransactionImpl implements Transaction
             new LinkedList<ResourceElement>();
     private List<Synchronization> syncHooks =
             new ArrayList<Synchronization>();
-    private boolean hasChanges;
 
     private final int eventIdentifier;
 
@@ -172,7 +171,6 @@ class TransactionImpl implements Transaction
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
                     resourceList.add( new ResourceElement( xid, xaRes ) );
-                    hasChanges = true;
                     xaRes.start( xid, XAResource.TMNOFLAGS );
                     try
                     {
@@ -271,7 +269,6 @@ class TransactionImpl implements Transaction
         {
             resourceList.add( element );
         }
-        hasChanges = true;
     }
 
     @Override
@@ -327,7 +324,7 @@ class TransactionImpl implements Transaction
                 + txManager.getTxStatusAsString( status ) );
     }
 
-    // TODO: figure out if this needs syncrhonization or make status volatile
+    // TODO: figure out if this needs synchronization or make status volatile
     @Override
     public int getStatus() // throws SystemException
     {

@@ -78,7 +78,7 @@ import org.neo4j.kernel.logging.Logging;
 public class ClusterClient extends LifecycleAdapter
         implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
-    public static Setting<Long> clusterJoinTimeout = Settings.setting("ha.cluster_join_timeout", Settings.DURATION, "0s");
+    public static final Setting<Long> clusterJoinTimeout = Settings.setting("ha.cluster_join_timeout", Settings.DURATION, "0s");
 
     public interface Configuration
     {

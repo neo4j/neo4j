@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public interface RecoveryVerifier
 {
-    final RecoveryVerifier ALWAYS_VALID = new RecoveryVerifier()
+    RecoveryVerifier ALWAYS_VALID = new RecoveryVerifier()
     {
         @Override
         public boolean isValid( TransactionInfo txInfo )
