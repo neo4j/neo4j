@@ -28,8 +28,8 @@ import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.server.ServerTestUtils;
@@ -38,6 +38,7 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
+import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -46,9 +47,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.test.Mute.muteAll;
 
 public class TestCommunityDatabase
 {
+    @Rule
+    public Mute mute = muteAll();
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;

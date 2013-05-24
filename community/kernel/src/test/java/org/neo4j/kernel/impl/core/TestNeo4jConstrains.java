@@ -23,9 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -38,7 +35,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestNeo4jConstrains extends AbstractNeo4jTestCase
 {
-    private String key = "testproperty";
+    private final String key = "testproperty";
 
     @Test
     public void testDeleteReferenceNodeOrLastNodeIsOk()
@@ -350,85 +347,75 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
     @Test
     public void testIllegalPropertyType()
     {
-        Logger log = Logger.getLogger( NodeManager.class.getName() );
-        Level level = log.getLevel();
-        log.setLevel( Level.OFF );
+        Node node1 = getGraphDb().createNode();
         try
         {
-            Node node1 = getGraphDb().createNode();
-            try
-            {
-                node1.setProperty( key, new Object() );
-                fail( "Shouldn't validate" );
-            }
-            catch ( Exception e )
-            { // good
-            }
-            try
-            {
-                Transaction tx = getTransaction();
-                tx.success();
-                tx.finish();
-                fail( "Shouldn't validate" );
-            }
-            catch ( Exception e )
-            {
-            } // good
-            setTransaction( getGraphDb().beginTx() );
-            try
-            {
-                getGraphDb().getNodeById( node1.getId() );
-                fail( "Node should not exist, previous tx didn't rollback" );
-            }
-            catch ( NotFoundException e )
-            {
-                // good
-            }
-            node1 = getGraphDb().createNode();
-            Node node2 = getGraphDb().createNode();
-            Relationship rel = node1.createRelationshipTo( node2,
-                    MyRelTypes.TEST );
-            try
-            {
-                rel.setProperty( key, new Object() );
-                fail( "Shouldn't validate" );
-            }
-            catch ( Exception e )
-            { // good
-            }
-            try
-            {
-                Transaction tx = getTransaction();
-                tx.success();
-                tx.finish();
-                fail( "Shouldn't validate" );
-            }
-            catch ( Exception e )
-            {
-            } // good
-            setTransaction( getGraphDb().beginTx() );
-            try
-            {
-                getGraphDb().getNodeById( node1.getId() );
-                fail( "Node should not exist, previous tx didn't rollback" );
-            }
-            catch ( NotFoundException e )
-            {
-                // good
-            }
-            try
-            {
-                getGraphDb().getNodeById( node2.getId() );
-                fail( "Node should not exist, previous tx didn't rollback" );
-            }
-            catch ( NotFoundException e )
-            {
-                // good
-            }
+            node1.setProperty( key, new Object() );
+            fail( "Shouldn't validate" );
         }
-        finally
+        catch ( Exception e )
+        { // good
+        }
+        try
         {
-            log.setLevel( level );
+            Transaction tx = getTransaction();
+            tx.success();
+            tx.finish();
+            fail( "Shouldn't validate" );
+        }
+        catch ( Exception e )
+        {
+        } // good
+        setTransaction( getGraphDb().beginTx() );
+        try
+        {
+            getGraphDb().getNodeById( node1.getId() );
+            fail( "Node should not exist, previous tx didn't rollback" );
+        }
+        catch ( NotFoundException e )
+        {
+            // good
+        }
+        node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel = node1.createRelationshipTo( node2,
+                MyRelTypes.TEST );
+        try
+        {
+            rel.setProperty( key, new Object() );
+            fail( "Shouldn't validate" );
+        }
+        catch ( Exception e )
+        { // good
+        }
+        try
+        {
+            Transaction tx = getTransaction();
+            tx.success();
+            tx.finish();
+            fail( "Shouldn't validate" );
+        }
+        catch ( Exception e )
+        {
+        } // good
+        setTransaction( getGraphDb().beginTx() );
+        try
+        {
+            getGraphDb().getNodeById( node1.getId() );
+            fail( "Node should not exist, previous tx didn't rollback" );
+        }
+        catch ( NotFoundException e )
+        {
+            // good
+        }
+        try
+        {
+            getGraphDb().getNodeById( node2.getId() );
+            fail( "Node should not exist, previous tx didn't rollback" );
+        }
+        catch ( NotFoundException e )
+        {
+            // good
         }
     }
     

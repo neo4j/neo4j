@@ -26,14 +26,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.Mute.muteAll;
 
 public class PropertyFileConfiguratorTest
 {
+    @Rule
+    public Mute mute = muteAll();
     @Rule
     public TemporaryFolder folder = new TemporaryFolder(  );
 

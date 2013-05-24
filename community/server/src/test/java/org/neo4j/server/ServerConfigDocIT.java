@@ -21,11 +21,11 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.ServerBuilder.server;
 
 import java.io.IOException;
-import java.lang.String;
 
 import javax.ws.rs.core.MediaType;
 
@@ -39,7 +39,6 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class ServerConfigDocIT extends ExclusiveServerTestBase
 {
-
     private CommunityNeoServer server;
 
     @After

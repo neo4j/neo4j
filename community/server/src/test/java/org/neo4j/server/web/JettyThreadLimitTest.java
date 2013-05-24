@@ -19,17 +19,22 @@
  */
 package org.neo4j.server.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mortbay.thread.QueuedThreadPool;
+import org.neo4j.test.Mute;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.Mute.muteAll;
 
 public class JettyThreadLimitTest
 {
+    @Rule
+    public Mute mute = muteAll();
 
     @Test
     public void shouldHaveSensibleDefaultJettyThreadPoolSize() throws Exception

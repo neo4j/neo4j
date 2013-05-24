@@ -33,8 +33,6 @@ import java.nio.ByteBuffer;
  */
 public class Buffer
 {
-//    private static Logger logger = Logger.getLogger( Buffer.class.getName() );
-
     private final ByteBuffer buf;
     private final PersistenceWindow persistenceWindow;
 
@@ -250,6 +248,7 @@ public class Buffer
         buf.limit( 0 );
     }
     
+    @Override
     public String toString()
     {
         return "Buffer[[" + buf.position() + "," + buf.capacity() + "]," + 

@@ -36,6 +36,7 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
@@ -47,6 +48,7 @@ import static java.lang.Double.NaN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.test.Mute.muteAll;
 
 public class RrdFactoryTest
 {
@@ -57,6 +59,8 @@ public class RrdFactoryTest
 
     @Rule
     public TargetDirectory.TestDirectory testDirectory = target.cleanTestDirectory();
+    @Rule
+    public Mute mute = muteAll();
 
     @Before
     public void setUp() throws IOException

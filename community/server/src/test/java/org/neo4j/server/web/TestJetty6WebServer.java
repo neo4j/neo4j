@@ -20,13 +20,14 @@
 package org.neo4j.server.web;
 
 import java.util.Arrays;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -37,10 +38,12 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.Mute;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.Mute.muteAll;
 
 @Path("/")
 public class TestJetty6WebServer
@@ -110,4 +113,7 @@ public class TestJetty6WebServer
         assertThat( appender.toString(), containsString( "Server started on" ) );
         testBootstrapper.stop();
     }
+    
+    @Rule
+    public Mute mute = muteAll();
 }
