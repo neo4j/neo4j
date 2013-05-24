@@ -29,6 +29,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class ExecutionEngineExceptionsTest
@@ -96,4 +97,28 @@ public class ExecutionEngineExceptionsTest
             // expected
         }
     }
+
+    @Test
+    public void shouldCloseImplicitTransactionWhenExceptionOccurs() throws Exception
+    {
+        assertNull( databaseRule.getGraphDatabaseAPI().getTxManager().getTransaction() );
+
+        // given
+        ExecutionEngine engine = new ExecutionEngine( databaseRule.getGraphDatabaseService() );
+        engine.execute( "CREATE ( person1:Person { name: 'One' } ), ( person2:Person { name: 'One' } )" );
+
+        // when
+        try
+        {
+            engine.execute( "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE" );
+            fail();
+        }
+        // then
+        catch ( CouldNotCreateConstraintException ex )
+        {
+        }
+
+        assertNull( databaseRule.getGraphDatabaseAPI().getTxManager().getTransaction() );
+    }
+
 }
