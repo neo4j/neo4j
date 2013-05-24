@@ -173,6 +173,8 @@ the relevant Commercial Agreement.
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
                 <property name="git.describe" value="${git.commit.id.describe}" />
+                <property name="git.branch" value="${git.commit.id.branch}" />
+                <property name="git.commit" value="${git.commit.id}" />
                 <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
 
 import org.neo4j.kernel.Version;
@@ -189,7 +191,27 @@ public class ComponentVersion extends Version
     @Override
     public String getRevision()
     {
-        return "${git.describe}";
+        // Goals with the revision returned from this method:
+        // 1. Which version of Neo4j is this?
+        // 2. If not a release version (i.e. SNAPSHOT), which git branch and commit hash was it built from?
+        // 3. Is there local modifications or not in this build? 
+        //
+        // This is a generated class, so why is there logic in here instead of generating this class
+        // with the correct revision directly? Because it's generated from a place that doesn't allow this
+        // kind of logic to build the revision at the place of generating it.
+        
+        String fromGitDescribe = "${git.describe}";
+        String version = "${project.version}";
+        StringBuilder result = new StringBuilder( version );
+        if ( version.endsWith( "-SNAPSHOT" ) )
+        {
+            result.append( "-${git.branch}-${git.commit}" );
+        }
+        if ( fromGitDescribe.endsWith( "-dirty" ) )
+        {
+            result.append( "-dirty" );
+        }
+        return result.toString();
     }
 }
 </echo>
