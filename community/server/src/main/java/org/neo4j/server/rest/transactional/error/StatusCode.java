@@ -38,51 +38,58 @@ public enum StatusCode
     // 3xxxxx Communication protocol errors
     //
     NETWORK_ERROR(
-            30000, "Failed to transfer request or response.",
-            StackTraceStrategy.SEND_TO_CLIENT ),
+            30000, StackTraceStrategy.SEND_TO_CLIENT ),
 
     //
     // 4xxxxx User errors
     //
     INVALID_REQUEST(
-            40000, "Invalid request was not understood by the server." ),
+            40000 ),
     INVALID_REQUEST_FORMAT(
-            40001, "Unable to deserialize request due to invalid request format." ),
+            40001 ),
 
     INVALID_TRANSACTION_ID(
-            40010, "Unrecognized transaction id. Transaction may have timed out and been rolled back." ),
+            40010 ),
     INVALID_CONCURRENT_TRANSACTION_ACCESS(
-            40011, "The requested transaction is being used concurrently by another request." ),
+            40011 ),
 
     STATEMENT_EXECUTION_ERROR(
-            42000, "Error when executing statement." ),
+            42000 ),
     STATEMENT_SYNTAX_ERROR(
-            42001, "Syntax error in statement." ),
+            42001 ),
     STATEMENT_MISSING_PARAMETER_ERROR(
-            42002, "Parameter missing in statement." ),
+            42002 ),
+
+    COULD_NOT_CREATE_INDEX(
+            42101 ),
+    COULD_NOT_DROP_INDEX(
+            42102 ),
+    COULD_NOT_CREATE_CONSTRAINT(
+            42103 ),
+    COULD_NOT_DROP_CONSTRAINT(
+            42104 ),
 
     //
     // 5xxxxx Database errors
     //
     INTERNAL_DATABASE_ERROR(
-            50000, "Internal database error. Please refer to the attached stack trace for details.",
+            50000,
             StackTraceStrategy.SEND_TO_CLIENT ),
     INTERNAL_STATEMENT_EXECUTION_ERROR(
-            50001, "Internal error when executing statement.",
+            50001,
             StackTraceStrategy.SEND_TO_CLIENT ),
 
     INTERNAL_BEGIN_TRANSACTION_ERROR(
-            53010, "Unable to start transaction, and unable to determine cause of failure. ",
+            53010,
             StackTraceStrategy.SEND_TO_CLIENT ),
     INTERNAL_ROLLBACK_TRANSACTION_ERROR(
-            53011, "Unable to roll back transaction, and unable to determine cause of failure. ",
+            53011,
             StackTraceStrategy.SEND_TO_CLIENT ),
     INTERNAL_COMMIT_TRANSACTION_ERROR(
-            53012, "It was not possible to commit your transaction. ",
+            53012,
             StackTraceStrategy.SEND_TO_CLIENT );
 
     private final int code;
-    private final String defaultMessage;
     private final StackTraceStrategy stackTraceStrategy;
 
     enum StackTraceStrategy
@@ -90,26 +97,20 @@ public enum StatusCode
         SWALLOW, SEND_TO_CLIENT
     }
 
-    StatusCode( int code, String defaultMessage )
+    StatusCode( int code )
     {
-        this (code, defaultMessage, StackTraceStrategy.SWALLOW );
+        this (code, StackTraceStrategy.SWALLOW );
     }
 
-    StatusCode( int code, String defaultMessage, StackTraceStrategy stackTraceStrategy )
+    StatusCode( int code, StackTraceStrategy stackTraceStrategy )
     {
         this.code = code;
-        this.defaultMessage = defaultMessage;
         this.stackTraceStrategy = stackTraceStrategy;
     }
 
     public int getCode()
     {
         return code;
-    }
-
-    public String getDefaultMessage()
-    {
-        return defaultMessage;
     }
 
     public boolean includeStackTrace()

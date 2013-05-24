@@ -362,7 +362,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(), "Can not create an constraint on :MY_LABEL(my_property_key). An index " +
+            assertEquals( e.getMessage(), "Cannot create a constraint on :MY_LABEL(my_property_key). An index " +
                     "already exists for this combination. Drop the index and create the constraint again." );
         }
     }

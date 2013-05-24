@@ -35,32 +35,17 @@ import java.io.StringWriter;
 public class Neo4jError
 {
     private final StatusCode statusCode;
-    private final String message;
     private final Throwable cause;
-
-    public Neo4jError( StatusCode statusCode )
-    {
-        this( statusCode, null, null );
-    }
 
     public Neo4jError( StatusCode statusCode, Throwable cause )
     {
-        this( statusCode, null, cause );
-    }
-
-    public Neo4jError( StatusCode statusCode, String message )
-    {
-        this( statusCode, message, null );
-    }
-
-    public Neo4jError( StatusCode statusCode, String message, Throwable cause )
-    {
         if ( statusCode == null  )
             throw new IllegalArgumentException( "statusCode must not be null" );
+        if ( cause == null  )
+            throw new IllegalArgumentException( "cause must not be null" );
 
         this.statusCode = statusCode;
         this.cause = cause;
-        this.message = buildMessage( statusCode, message, cause );
     }
 
     public StatusCode getStatusCode()
@@ -70,7 +55,7 @@ public class Neo4jError
 
     public String getMessage()
     {
-        return message;
+        return cause.getMessage();
     }
 
     public boolean shouldSerializeStackTrace()
@@ -80,31 +65,9 @@ public class Neo4jError
 
     public String getStackTraceAsString()
     {
-        if ( cause == null )
-            return "";
-        else
-        {
-            StringWriter stringWriter = new StringWriter(  );
-            PrintWriter printWriter = new PrintWriter( stringWriter );
-            cause.printStackTrace( printWriter );
-            return stringWriter.toString();
-        }
-    }
-
-    private String buildMessage( StatusCode statusCode, String message, Throwable cause )
-    {
-        StringBuilder builder = new StringBuilder( statusCode.getDefaultMessage() );
-        if ( message != null ) {
-            builder.append( " Details: ");
-            builder.append( message );
-            return builder.toString();
-        }
-        if ( cause != null )
-        {
-            builder.append( " Cause: ");
-            builder.append( cause.getMessage() );
-            return builder.toString();
-        }
-        return builder.toString();
+        StringWriter stringWriter = new StringWriter(  );
+        PrintWriter printWriter = new PrintWriter( stringWriter );
+        cause.printStackTrace( printWriter );
+        return stringWriter.toString();
     }
 }

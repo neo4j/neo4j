@@ -19,16 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableMap;
-import static org.codehaus.jackson.JsonToken.END_ARRAY;
-import static org.codehaus.jackson.JsonToken.END_OBJECT;
-import static org.codehaus.jackson.JsonToken.FIELD_NAME;
-import static org.codehaus.jackson.JsonToken.START_ARRAY;
-import static org.codehaus.jackson.JsonToken.START_OBJECT;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -41,9 +31,22 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
+
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
+
+import static org.codehaus.jackson.JsonToken.END_ARRAY;
+import static org.codehaus.jackson.JsonToken.END_OBJECT;
+import static org.codehaus.jackson.JsonToken.FIELD_NAME;
+import static org.codehaus.jackson.JsonToken.START_ARRAY;
+import static org.codehaus.jackson.JsonToken.START_OBJECT;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
@@ -126,7 +129,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                     if ( statement == null )
                     {
-                        addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "No statement provided." ) );
+                        addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new DeserializationException( "No statement provided." ) ) );
                         return null;
                     }
                     return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters );
@@ -140,12 +143,12 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         catch ( JsonParseException e )
         {
             addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
-                        "Unable to deserialize request: " + e.getMessage() ) );
+                        new DeserializationException( "Unable to deserialize request", e ) ) );
             return null;
         }
         catch ( IOException e )
         {
-            addError( new Neo4jError( StatusCode.NETWORK_ERROR, "Input error while deserializing request.", e ) );
+            addError( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
             return null;
         }
     }
@@ -185,9 +188,9 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                 {
                     addError( new Neo4jError(
                             StatusCode.INVALID_REQUEST_FORMAT,
-                            String.format( "Unable to deserialize request, " +
-                                    "expected first field to be '%s', but was '%s'", expectedField,
-                                    input.getText() ) ) );
+                            new DeserializationException( String.format( "Unable to deserialize request. " +
+                                    "Expected first field to be '%s', but was '%s'.",
+                                    expectedField, input.getText() ) ) ) );
                     return false;
                 }
             }
@@ -195,9 +198,10 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
         if ( !expectedTokens.equals( foundTokens ) )
         {
-            addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
-                        String.format( "Unable to deserialize request, expected %s, found %s.",
-                          expectedTokens, foundTokens ) ) );
+            addError( new Neo4jError(
+                    StatusCode.INVALID_REQUEST_FORMAT,
+                    new DeserializationException( String.format( "Unable to deserialize request. " +
+                            "Expected %s, found %s.", expectedTokens, foundTokens ) ) ) );
             return false;
         }
         return true;

@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.HashSet;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class StatusCodeTest
 {
@@ -42,14 +41,5 @@ public class StatusCodeTest
 
         // then
         assertEquals( StatusCode.values().length, numbers.size() );
-    }
-
-    @Test
-    public void eachStatusCodeHasADefaultMessage() throws Exception
-    {
-        for ( StatusCode statusCode : StatusCode.values() )
-        {
-            assertNotNull( statusCode.toString() + " defaultMessage", statusCode.getDefaultMessage() );
-        }
     }
 }

@@ -17,29 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional.error;
+package org.neo4j.server.rest.transactional;
 
-/**
- * TransactionLifecycleExceptions are internal exceptions that may be thrown
- * due to server transaction lifecycle transitions that map directly on a
- * @{link StatusCode}
- */
-public abstract class TransactionLifecycleException extends Exception
+public class DeserializationException extends Exception
 {
-    protected TransactionLifecycleException( String message )
+    DeserializationException( String message )
     {
         super( message );
     }
 
-    protected TransactionLifecycleException( String message, Throwable cause )
+    DeserializationException( String message, Throwable cause )
     {
-        super( message, cause );
+        super( message + ": " + cause.getMessage(), cause );
     }
-
-    public Neo4jError toNeo4jError()
-    {
-        return new Neo4jError( getStatusCode(), this );
-    }
-
-    protected abstract StatusCode getStatusCode();
 }

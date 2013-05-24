@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,6 +31,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -49,6 +42,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 
 public class ExecutionResultSerializerTest
 {
@@ -126,13 +129,13 @@ public class ExecutionResultSerializerTest
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "error1") ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -148,13 +151,13 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "error1")) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") )) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -166,14 +169,14 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "error1") ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":40001," +
                 "\"status\":\"INVALID_REQUEST_FORMAT\"," +
-                "\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+                "\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -184,12 +187,12 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "error1") ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"Unable to deserialize request due to invalid request format. Details: error1\"}]}", result );
+        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -337,7 +340,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\",\"stackTrace\":***}]}",
+                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -375,7 +378,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
-                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Internal error when executing statement. Cause: Stuff went wrong!\"," +
+                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }

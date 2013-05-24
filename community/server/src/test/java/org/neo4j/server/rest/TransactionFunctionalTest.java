@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.POST;
@@ -230,7 +231,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         assertThat( response.status(), is( 200 ) );
         assertErrorCodes( response, StatusCode.STATEMENT_SYNTAX_ERROR );
-        assertErrorMessages( response, "Syntax error in statement. Cause: expected an expression that is a node\n\"CREATE ;;\"\n        ^" );
+        assertErrorMessages( response, "expected an expression that is a node\n\"CREATE ;;\"\n        ^" );
         assertNoStackTrace( response );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );

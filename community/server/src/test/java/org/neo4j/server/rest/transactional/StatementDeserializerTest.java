@@ -29,10 +29,12 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -68,7 +70,7 @@ public class StatementDeserializerTest
 
         assertYieldsErrors( json,
                 new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
-                        "Unable to deserialize request, expected first field to be 'statements', but was 'timeout'"));
+                        new DeserializationException( "Unable to deserialize request. Expected first field to be 'statements', but was 'timeout'." )));
     }
 
     @Test
@@ -139,14 +141,16 @@ public class StatementDeserializerTest
     public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
     {
         assertYieldsErrors( "{}",
-                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "Unable to deserialize request, " +
-                        "expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
-                        "found [START_OBJECT, END_OBJECT, null]." ) );
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new DeserializationException( "Unable to " +
+                        "deserialize request. " +
+                        "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
+                        "found [START_OBJECT, END_OBJECT, null]." ) ) );
         assertYieldsErrors( "[{]}",
                 new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
-                        "Unable to deserialize request: Unexpected close marker ']': expected '}' " +
+                        new DeserializationException( "Unable to deserialize request: Unexpected close marker ']': " +
+                                "expected '}' " +
                                 "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
-                                "at [Source: TestInputStream; line: 1, column: 4]" ) );
+                                "at [Source: TestInputStream; line: 1, column: 4]" ) ) );
     }
 
     private void assertYieldsErrors( String json, Neo4jError... expectedErrors ) throws UnsupportedEncodingException

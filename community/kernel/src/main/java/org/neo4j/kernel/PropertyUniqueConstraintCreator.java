@@ -58,7 +58,7 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
         }
         catch ( AlreadyIndexedException e )
         {
-            throw new ConstraintViolationException( format( "Can not create an constraint on :%s(%s). An index " +
+            throw new ConstraintViolationException( format( "Cannot create a constraint on :%s(%s). An index " +
                     "already exists for this combination. Drop the index and create the constraint again.", label,
                     propertyKey ), e );
         }

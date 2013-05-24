@@ -21,6 +21,11 @@ package org.neo4j.server.rest.transactional.error;
 
 public class InvalidConcurrentTransactionAccess extends TransactionLifecycleException
 {
+    public InvalidConcurrentTransactionAccess()
+    {
+        super( "The requested transaction is being used concurrently by another request." );
+    }
+
     @Override
     protected StatusCode getStatusCode()
     {

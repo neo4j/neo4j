@@ -23,7 +23,7 @@ public class InternalBeginTransactionError extends TransactionLifecycleException
 {
     public InternalBeginTransactionError( RuntimeException cause )
     {
-        super( cause );
+        super( "Unable to begin transaction.", cause );
     }
 
     @Override

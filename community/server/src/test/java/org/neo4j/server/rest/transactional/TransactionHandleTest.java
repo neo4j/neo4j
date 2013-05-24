@@ -19,7 +19,27 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Test;
+import org.mockito.InOrder;
+
+import org.neo4j.cypher.SyntaxException;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.web.TransactionUriScheme;
+
 import static java.util.Arrays.asList;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -31,27 +51,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.deserilizationErrors;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
-
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.StatusCode;
-import org.neo4j.server.rest.web.TransactionUriScheme;
 
 public class TransactionHandleTest
 {
@@ -257,7 +260,7 @@ public class TransactionHandleTest
 
         // when
         handle.execute( deserilizationErrors(
-                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, "invalid request" ) ), output );
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception() ) ), output );
 
         // then
         verify( transactionContext ).rollback();

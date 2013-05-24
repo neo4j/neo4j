@@ -21,6 +21,11 @@ package org.neo4j.server.rest.transactional.error;
 
 public class InvalidTransactionId extends TransactionLifecycleException
 {
+    public InvalidTransactionId()
+    {
+        super( "Unrecognized transaction id. Transaction may have timed out and been rolled back." );
+    }
+
     @Override
     protected StatusCode getStatusCode()
     {
