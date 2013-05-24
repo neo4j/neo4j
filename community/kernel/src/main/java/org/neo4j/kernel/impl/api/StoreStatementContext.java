@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -30,6 +33,7 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -59,6 +63,11 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
@@ -89,6 +98,8 @@ public class StoreStatementContext extends CompositeStatementContext
     private final IndexingService indexService;
     private final IndexReaderFactory indexReaderFactory;
     private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
+    private final PropertyStore propertyStore;
     private final Function<String, Long> propertyStringToId = new Function<String, Long>()
     {
         @Override
@@ -132,6 +143,8 @@ public class StoreStatementContext extends CompositeStatementContext
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.nodeStore = neoStore.getNodeStore();
+        this.relationshipStore = neoStore.getRelationshipStore();
+        this.propertyStore = neoStore.getPropertyStore();
     }
 
     @Override
@@ -453,55 +466,12 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterator<Property> nodeGetAllProperties( final long nodeId ) throws EntityNotFoundException
-    {
-        Iterable<String> propertyKeys;
-        try
-        {
-            NodeImpl relImpl = nodeManager.getNodeForProxy( nodeId, null );
-            propertyKeys = relImpl.getPropertyKeys( nodeManager );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( "node", nodeId, e );
-        }
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( "node", nodeId, e );
-        }
-
-        return map( new Function<String, Property>() {
-            @Override
-            public Property apply( String propertyKey )
-            {
-                try
-                {
-                    long propertyKeyId = propertyKeyGetForName( propertyKey );
-                    return nodeGetProperty( nodeId, propertyKeyId );
-                }
-                catch ( PropertyKeyNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError("Tobias/Stefan", "Property key came from the store - should be known.", e);
-                }
-                catch ( PropertyKeyIdNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError("Tobias/Stefan", "Property key id came from the store - should be known.", e);
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError("Tobias/Stefan", "Node existance already verified.", e);
-                }
-            }
-        }, propertyKeys ).iterator();
-    }
-
-    @Override
     public Iterator<Long> relationshipGetPropertyKeys( long relId )
     {
         // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
         // a first step to move it into the kernel.
         return map( propertyStringToId,
-                    nodeManager.getRelationshipForProxy( relId, null ).getPropertyKeys( nodeManager ).iterator() );
+                nodeManager.getRelationshipForProxy( relId, null ).getPropertyKeys( nodeManager ).iterator() );
     }
 
     @Override
@@ -515,26 +485,11 @@ public class StoreStatementContext extends CompositeStatementContext
         // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
         catch ( NotFoundException e )
         {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
-        }
-    }
-
-    @Override
-    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId ) throws PropertyKeyIdNotFoundException, EntityNotFoundException
-
-    {
-        try
-        {
-            String propertyKey = propertyKeyGetName( propertyKeyId );
-            return nodeManager.getRelationshipForProxy( relationshipId, null ).hasProperty( nodeManager, propertyKey );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
     }
 
@@ -551,54 +506,52 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
     }
 
     @Override
-    public Iterator<Property> relationshipGetAllProperties( final long relationshipId ) throws EntityNotFoundException
+    public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
-        Iterable<String> propertyKeys;
         try
         {
-            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relationshipId, null );
-            propertyKeys = relImpl.getPropertyKeys( nodeManager );
+            return loadAllPropertiesOf( nodeStore.getRecord( nodeId ) );
         }
-        catch ( IllegalStateException e )
+        catch ( InvalidRecordException e )
         {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
-        }
+    }
 
-        return map( new Function<String, Property>()
+    @Override
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException
+    {
+        try
         {
-            @Override
-            public Property apply( String propertyKey )
+            return loadAllPropertiesOf( relationshipStore.getRecord( relationshipId ) );
+        }
+        catch ( InvalidRecordException e )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
+        }
+    }
+
+    private Iterator<Property> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
+    {
+        Collection<PropertyRecord> records = propertyStore.getPropertyRecordChain( primitiveRecord.getNextProp() );
+        if ( null == records )
+        {
+            return IteratorUtil.emptyIterator();
+        }
+        List<Property> properties = new ArrayList<Property>();
+        for ( PropertyRecord record : records )
+        {
+            for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                try
-                {
-                    long propertyKeyId = propertyKeyGetForName( propertyKey );
-                    return relationshipGetProperty( relationshipId, propertyKeyId );
-                }
-                catch ( PropertyKeyNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Tobias/Stefan", "Property key came from the store - should " +
-                            "be known.", e );
-                }
-                catch ( PropertyKeyIdNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Tobias/Stefan", "Property key id came from the store - " +
-                            "should be known.", e );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Tobias/Stefan", "Relationship existance already verified.", e );
-                }
+                properties.add( block.getType().readProperty( block.getKeyIndexId(), block, propertyStore ) );
             }
-        }, propertyKeys ).iterator();
+        }
+        return properties.iterator();
     }
 
     @Override
@@ -612,11 +565,11 @@ public class StoreStatementContext extends CompositeStatementContext
         // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
         catch ( NotFoundException e )
         {
-            throw new EntityNotFoundException( "node", nodeId, e );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "node", nodeId, e );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
     }
 
@@ -640,21 +593,6 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean nodeHasProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            String propertyKey = propertyKeyGetName( propertyKeyId );
-            return nodeManager.getNodeForProxy( nodeId, null ).hasProperty( nodeManager, propertyKey );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( "node", nodeId, e );
-        }
-    }
-
-    @Override
     public void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
@@ -668,7 +606,7 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "node", nodeId, e );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
         catch ( PropertyNotFoundException e )
         {
@@ -690,7 +628,7 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "relationship", relationshipId, e );
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
         catch ( PropertyNotFoundException e )
         {
@@ -713,7 +651,7 @@ public class StoreStatementContext extends CompositeStatementContext
         }
         catch ( IllegalStateException e )
         {
-            throw new EntityNotFoundException( "node", nodeId, e );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
     }
 

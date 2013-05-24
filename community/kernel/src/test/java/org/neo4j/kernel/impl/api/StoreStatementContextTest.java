@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -60,6 +62,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StoreStatementContextTest
@@ -195,7 +198,66 @@ public class StoreStatementContextTest
         assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
         assertEquals( asSet( node2.getId() ), asSet( nodesForLabel2 ) );
     }
-    
+
+    @Test
+    public void should_get_all_node_properties() throws Exception
+    {
+        // GIVEN
+        String longString =
+            "AlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalong";
+        Object[] properties = {
+                longString,
+                gimme( String.class ),
+                gimme( long.class ),
+                gimme( int.class ),
+                gimme( byte.class ),
+                gimme( short.class ),
+                gimme( boolean.class ),
+                gimme( char.class ),
+                gimme( float.class ),
+                gimme( double.class ),
+                array( 0, String.class ),
+                array( 0, long.class ),
+                array( 0, int.class ),
+                array( 0, byte.class ),
+                array( 0, short.class ),
+                array( 0, boolean.class ),
+                array( 0, char.class ),
+                array( 0, float.class ),
+                array( 0, double.class ),
+                array( 1, String.class ),
+                array( 1, long.class ),
+                array( 1, int.class ),
+                array( 1, byte.class ),
+                array( 1, short.class ),
+                array( 1, boolean.class ),
+                array( 1, char.class ),
+                array( 1, float.class ),
+                array( 1, double.class ),
+                array( 256, String.class ),
+                array( 256, long.class ),
+                array( 256, int.class ),
+                array( 256, byte.class ),
+                array( 256, short.class ),
+                array( 256, boolean.class ),
+                array( 256, char.class ),
+                array( 256, float.class ),
+                array( 256, double.class ),
+        };
+
+        for ( Object value : properties )
+        {
+            // given
+            long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label ).getId();
+
+            // when
+            Property property = single( statement.nodeGetAllProperties( nodeId ) );
+
+            //then
+            assertTrue( property + ".valueEquals(" + value + ")", property.valueEquals( value ) );
+        }
+    }
+
     @Test
     public void should_create_property_key_if_not_exists() throws Exception
     {
@@ -324,5 +386,56 @@ public class StoreStatementContextTest
         db.schema().awaitIndexOnline( index, 10, SECONDS );
         return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
                                                            statement.propertyKeyGetForName( propertyKey ) );
+    }
+
+    private Object array( int length, Class<?> componentType )
+    {
+        Object array = Array.newInstance( componentType, length );
+        for ( int i = 0; i < length; i++ )
+        {
+            Array.set(array, i, gimme( componentType ));
+        }
+        return array;
+    }
+
+    private Object gimme( Class<?> type )
+    {
+        if (type == int.class )
+        {
+            return 666;
+        }
+        if (type == long.class)
+        {
+            return 17l;
+        }
+        if (type == double.class)
+        {
+            return 6.28318530717958647692d;
+        }
+        if (type == float.class)
+        {
+            return 3.14f;
+        }
+        if (type == short.class)
+        {
+            return (short) 8733;
+        }
+        if (type == byte.class)
+        {
+            return (byte) 123;
+        }
+        if (type == boolean.class)
+        {
+            return false;
+        }
+        if (type == char.class)
+        {
+            return 'Z';
+        }
+        if (type == String.class)
+        {
+            return "hello world";
+        }
+        throw new IllegalArgumentException( type.getName() );
     }
 }

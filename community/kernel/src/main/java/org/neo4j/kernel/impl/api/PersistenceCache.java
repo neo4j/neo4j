@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -59,7 +60,7 @@ public class PersistenceCache
         }
         else
         {
-            throw new EntityNotFoundException( "node", nodeId );
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 

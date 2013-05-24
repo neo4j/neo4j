@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,6 +35,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -554,18 +554,18 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return UTF8.encode( string );
     }
 
-    public static Object decodeString( byte[] byteArray )
+    public static String decodeString( byte[] byteArray )
     {
         return UTF8.decode( byteArray );
     }
     
-    public Object getStringFor( PropertyBlock propertyBlock )
+    public String getStringFor( PropertyBlock propertyBlock )
     {
         ensureHeavy( propertyBlock );
-        return getStringFor( propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
+        return getStringFor( propertyBlock.getValueRecords() );
     }
 
-    public Object getStringFor( long startRecord, Collection<DynamicRecord> dynamicRecords )
+    public String getStringFor( Collection<DynamicRecord> dynamicRecords )
     {
         Pair<byte[], byte[]> source = stringPropertyStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array

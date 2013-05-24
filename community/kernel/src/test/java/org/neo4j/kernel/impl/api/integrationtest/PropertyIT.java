@@ -103,7 +103,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertEquals( "bozo", previous );
-        assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        assertFalse( "node should not have property", statement.nodeHasProperty( nodeId, propertyKeyId ) );
 
         // WHEN
         commit();

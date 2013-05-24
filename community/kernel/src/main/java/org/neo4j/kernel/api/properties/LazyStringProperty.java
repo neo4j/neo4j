@@ -17,9 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.properties;
 
-public enum EntityType
+import java.util.concurrent.Callable;
+
+class LazyStringProperty extends LazyProperty<String>
 {
-    NODE, RELATIONSHIP
+    LazyStringProperty( long propertyKeyId, Callable<String> producer )
+    {
+        super( propertyKeyId, producer );
+    }
+
+    @Override
+    public boolean valueEquals( Object value )
+    {
+        return value().equals( value );
+    }
+
+    @Override
+    int valueHash()
+    {
+        return value().hashCode();
+    }
 }

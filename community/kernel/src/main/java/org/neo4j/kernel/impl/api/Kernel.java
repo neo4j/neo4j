@@ -213,8 +213,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       new ConstraintIndexCreator(
                                                               new Transactor( transactionManager ), indexService ) );
 
+        // + get properties by getting all properties
+        result = new PropertyOperationTranslation.TransactionContext( result );
+
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );
+
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
 
@@ -257,6 +261,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
+
+        // + get properties by getting all properties
+        result = new PropertyOperationTranslation( result );
 
         // + Read only access
         result = new ReadOnlyStatementContext( result );
