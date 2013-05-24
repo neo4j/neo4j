@@ -347,7 +347,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Property> nodeGetAllProperties( long nodeId )
+    public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -373,7 +373,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Property> relationshipGetAllProperties( long relationshipId )
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();

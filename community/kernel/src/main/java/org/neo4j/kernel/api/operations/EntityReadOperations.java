@@ -75,11 +75,11 @@ public interface EntityReadOperations
     /** Return all property keys associated with a node. */
     Iterator<Long> nodeGetPropertyKeys( long nodeId );
 
-    Iterator<Property> nodeGetAllProperties( long nodeId );
+    Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 
     // TODO: decide if this should be replaced by relationshipGetAllProperties()
     /** Return all property keys associated with a relationship. */
     Iterator<Long> relationshipGetPropertyKeys( long relationshipId );
 
-    Iterator<Property> relationshipGetAllProperties( long relationshipId );
+    Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException;
 }

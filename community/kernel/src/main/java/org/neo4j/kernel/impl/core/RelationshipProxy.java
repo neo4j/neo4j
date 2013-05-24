@@ -28,7 +28,12 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.transaction.LockType;
 
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -145,37 +150,183 @@ public class RelationshipProxy implements Relationship
 
     public Iterable<Object> getPropertyValues()
     {
-        return relationshipLookups.lookupRelationship( relId ).getPropertyValues( relationshipLookups.getNodeManager() );
+        final StatementContext context = statementCtxProvider.getCtxForReading();
+        try
+        {
+            return asSet( map( new Function<Property,Object>() {
+                @Override
+                public Object apply( Property prop )
+                {
+                    try
+                    {
+                        return prop.value();
+                    }
+                    catch ( PropertyNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError( "Jake",
+                                "Property key retrieved through kernel API should exist." );
+                    }
+                }
+            }, context.relationshipGetAllProperties( getId() )));
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Relationship has been deleted", e );
+        }
+        finally
+        {
+            context.close();
+        }
     }
 
     public Object getProperty( String key )
     {
-        if(key == null)
+        // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
         {
-            // TODO: Move check into kernel API once kernel API is used by this method.
-            throw new IllegalArgumentException( "Null is not a valid property key." );
+            long propertyId = ctxForReading.propertyKeyGetForName( key );
+            return ctxForReading.relationshipGetProperty( relId, propertyId ).value();
         }
-        return relationshipLookups.lookupRelationship( relId ).getProperty( relationshipLookups.getNodeManager(), key );
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return relationshipLookups.lookupRelationship( relId ).getProperty( relationshipLookups.getNodeManager(), key, defaultValue );
+        // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long propertyId = ctxForReading.propertyKeyGetForName( key );
+            return ctxForReading.relationshipGetProperty( relId, propertyId ).value(defaultValue);
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return defaultValue;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return defaultValue;
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
+
     }
 
     public boolean hasProperty( String key )
     {
-        return relationshipLookups.lookupRelationship( relId ).hasProperty( relationshipLookups.getNodeManager(), key );
+        if ( null == key )
+            return false;
+
+        StatementContext ctxForReading = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long propertyId = ctxForReading.propertyKeyGetForName( key );
+            return ctxForReading.relationshipHasProperty( relId, propertyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return false;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return false;
+        }
+        finally
+        {
+            ctxForReading.close();
+        }
     }
 
-    public void setProperty( String key, Object property )
+    public void setProperty( String key, Object value )
     {
-        relationshipLookups.lookupRelationship( relId, LockType.WRITE ).setProperty( relationshipLookups.getNodeManager(), this, key, property );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            long propertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
+            ctxForWriting.relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
     public Object removeProperty( String key )
     {
-        return relationshipLookups.lookupRelationship( relId, LockType.WRITE ).removeProperty( relationshipLookups.getNodeManager(), this, key );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            long propertyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
+            return ctxForWriting.relationshipRemoveProperty( relId, propertyId ).value( null );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
     public boolean isType( RelationshipType type )

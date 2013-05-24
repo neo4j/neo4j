@@ -103,7 +103,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
-        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.none( propertyKeyId ) );
+        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.noNodeProperty( 1, propertyKeyId ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(

@@ -39,6 +39,32 @@ class BooleanArrayProperty extends FullSizeProperty
     }
 
     @Override
+    public boolean valueEquals( Object value )
+    {
+        if ( value instanceof boolean[])
+        {
+            return Arrays.equals(this.value, (boolean[])value);
+        }
+        if ( value instanceof Boolean[] )
+        {
+            Boolean[] otherValue = (Boolean[]) value;
+            if ( this.value.length != otherValue.length )
+            {
+                return false;
+            }
+            for (int i = 0; i < otherValue.length; i++ )
+            {
+                if ( otherValue[i] == null || this.value[i] != otherValue[i] )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     int valueHash()
     {
         return Arrays.hashCode( value );
