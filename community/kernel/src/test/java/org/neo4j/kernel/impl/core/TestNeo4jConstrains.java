@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -347,8 +346,6 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore("2013-05-23: This test fails with an assumption that it should not be possible to commit a transaction " +
-            "where we have tried (and failed) to set an invalid property.")
     public void testIllegalPropertyType()
     {
         Node node1 = getGraphDb().createNode();
@@ -360,16 +357,11 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         catch ( Exception e )
         { // good
         }
-        try
         {
             Transaction tx = getTransaction();
-            tx.success();
+            tx.failure();
             tx.finish();
-            fail( "Shouldn't validate" );
         }
-        catch ( Exception e )
-        {
-        } // good
         setTransaction( getGraphDb().beginTx() );
         try
         {
