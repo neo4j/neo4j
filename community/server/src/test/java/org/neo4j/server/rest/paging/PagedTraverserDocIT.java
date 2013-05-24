@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.paging;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import javax.ws.rs.core.MediaType;
 
@@ -54,6 +54,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.Mute.muteAll;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -79,7 +80,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
     
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer() throws Exception
     {
         clock = new FakeClock();
         server = ServerBuilder.server()
@@ -87,7 +88,15 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
                 .withClock( clock )
                 .build();
 
-        server.start();
+        muteAll().call( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                server.start();
+                return null;
+            }
+        } );
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
@@ -98,9 +107,17 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
 
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
-        server.stop();
+        muteAll().call( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                server.stop();
+                return null;
+            }
+        } );
     }
 
     @Test

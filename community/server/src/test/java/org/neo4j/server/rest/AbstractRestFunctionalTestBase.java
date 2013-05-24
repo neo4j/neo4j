@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static java.lang.String.format;
-import static java.net.URLEncoder.encode;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +39,12 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static java.lang.String.format;
+import static java.net.URLEncoder.encode;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -68,7 +69,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         cleanDatabase();
         gen().setGraph( graphdb() );
     }
-
 
     protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
         data.get();
@@ -130,6 +130,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
+    
     protected String getDataUri()
     {
         return "http://localhost:7474/db/data/";
