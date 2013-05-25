@@ -143,7 +143,8 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     func
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean):
+  (QueryState, ClosingIterator[ExecutionContext], () => PlanDescription) = {
     val tx = graph.beginTx()
 
 

@@ -28,7 +28,7 @@ import org.neo4j.cypher.NodeStillHasRelationshipsException
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
  * the inner iterator is empty.
  */
-class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Transaction) extends Iterator[T] {
+class ClosingIterator[+T](inner: Iterator[T], queryContext: QueryContext, tx: Transaction) extends Iterator[T] {
   private var closed: Boolean = false
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
@@ -48,7 +48,7 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Tra
     result
   }
 
-  private def close() {
+  def close() {
     translateException {
       if (!closed) {
         closed = true
