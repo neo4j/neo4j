@@ -20,9 +20,11 @@
 package org.neo4j.cypher.javacompat;
 
 import java.io.PrintWriter;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -36,7 +38,7 @@ import java.util.Map;
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
  */
-public class ExecutionResult implements Iterable<Map<String,Object>>
+public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
     private org.neo4j.cypher.ExecutionResult inner;
 
@@ -53,12 +55,12 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     }
 
     /**
-     * Provides result objects from a single column of the result set. This method is best used for
+     * Returns an iterator with the result objects from a single column of the result set. This method is best used for
      * single column results.
-     * <p>
-     * <b>The Iterator returned must be fully exhausted to ensure that any resources, including transactions, bound
-     * to it, are properly closed.</b>
-     * </p>
+     *
+     * <p><b>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
+     * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
+     * called.</b></p>
      *
      * @param n exact name of the column, as it appeared in the original query
      * @param <T> desired type cast for the result objects
@@ -66,7 +68,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
      * @throws ClassCastException when the result object can not be cast to the requested type
      * @throws org.neo4j.graphdb.NotFoundException when the column name does not appear in the original query
      */
-    public <T> Iterator<T> columnAs( String n )
+    public <T> ResourceIterator<T> columnAs( String n )
     {
         return inner.javaColumnAs( n );
     }
@@ -127,15 +129,15 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
      * Returns an iterator over the <i>return</i> clause of the query. The format is a map that has as keys the names
      * of the columns or their explicit names (set via 'as') and the value is the calculated value. Each iterator item
      * is one row of the query result.
-     * <p>
-     * <b>The Iterator returned must be fully exhausted to ensure that any resources, including transactions bound
-     * to it, are properly closed.</b>
-     * </p>
+     *
+     * <p><b>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
+     * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
+     * called.</b></p>
      *
      * @return An iterator over the result of the query as a map from projected column name to value
      */
     @Override
-    public Iterator<Map<String, Object>> iterator()
+    public ResourceIterator<Map<String, Object>> iterator()
     {
         return inner.javaIterator();
     }

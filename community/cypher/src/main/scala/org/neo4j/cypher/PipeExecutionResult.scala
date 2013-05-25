@@ -21,15 +21,16 @@ package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
 import internal.pipes.QueryState
-import internal.StringExtras
+import org.neo4j.cypher.internal.{ClosingIterator, StringExtras}
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
 import collection.Map
-import javacompat.{PlanDescription => JPlanDescription}
+import org.neo4j.graphdb.ResourceIterator
+import java.util
 
-class PipeExecutionResult(result: Iterator[Map[String, Any]],
+class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
                           val columns: List[String], state: QueryState,
                           executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
@@ -41,7 +42,11 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
 
   def javaColumns: java.util.List[String] = columns.asJava
 
-  def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
+  def javaColumnAs[T](column: String): ResourceIterator[T] = {
+    val scalaColumn: Iterator[T] = columnAs[T](column)
+    val javaColumn: util.Iterator[T] = scalaColumn.map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
+    wrapInResourceIterator(javaColumn)
+  }
 
   def columnAs[T](column: String): Iterator[T] = map {
     case m => {
@@ -55,9 +60,28 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
     case x => x
   }
 
-  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => {
-    m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
-  }).toIterator.asJava
+  def javaIterator: ResourceIterator[java.util.Map[String, Any]] = {
+    val inner = this.map(m => {
+      m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
+    }).toIterator.asJava
+
+    wrapInResourceIterator(inner)
+  }
+
+  private def wrapInResourceIterator[T](inner: java.util.Iterator[T]): ResourceIterator[T] =
+    new ResourceIterator[T] {
+      def hasNext: Boolean = inner.hasNext
+
+      def next(): T = inner.next()
+
+      def remove() {
+        inner.remove()
+      }
+
+      def close() {
+        result.close()
+      }
+    }
 
   private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
     val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.size)
@@ -135,5 +159,9 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
   def next(): ImmutableMap[String, Any] = result.next().toMap
 
   def queryStatistics = QueryStatistics.empty
+
+  def close() {
+    result.close()
+  }
 }
 
