@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public class LabelState extends EntityState
+public final class LabelState extends EntityState
 {
     private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
     private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();

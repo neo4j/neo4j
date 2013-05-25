@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.StatementContext;
@@ -31,6 +30,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -46,20 +47,20 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
-public class StateHandlingStatementContext extends CompositeStatementContext
+public class StateHandlingStatementContext extends StoreOperationTranslatingStatementContext
 {
     private final TxState state;
     private final StatementContext delegate;
     private final ConstraintIndexCreator constraintIndexCreator;
 
     public StateHandlingStatementContext( StatementContext actual,
-                                          SchemaStateOperations schemaOperations,
+                                          SchemaStateOperations schemaStateOperations,
                                           TxState state,
                                           ConstraintIndexCreator constraintIndexCreator )
     {
         // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
         // and so having it here along with transactional state makes little sense to me. Reconsider and refactor.
-        super( actual, schemaOperations );
+        super( actual, schemaStateOperations );
         this.state = state;
         this.delegate = actual;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -68,7 +69,13 @@ public class StateHandlingStatementContext extends CompositeStatementContext
     @Override
     public void nodeDelete( long nodeId )
     {
-        state.deleteNode( nodeId );
+        state.nodeDelete( nodeId );
+    }
+
+    @Override
+    public void relationshipDelete( long relationshipId )
+    {
+        state.relationshipDelete( relationshipId );
     }
 
     @Override
@@ -123,7 +130,7 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             return false;
         }
 
-        state.addLabelToNode( labelId, nodeId );
+        state.nodeAddLabel( labelId, nodeId );
         return true;
     }
 
@@ -136,12 +143,11 @@ public class StateHandlingStatementContext extends CompositeStatementContext
             return false;
         }
 
-        state.removeLabelFromNode( labelId, nodeId );
+        state.nodeRemoveLabel( labelId, nodeId );
 
         return true;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Iterator<Long> nodesGetForLabel( long labelId )
     {
@@ -375,6 +381,103 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         return state.getDeletedNodes().apply( diff.apply( delegate.nodesGetFromIndexLookup( index, value ) ) );
     }
 
+    @Override
+    public Property nodeSetProperty( long nodeId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            Property replacedProperty = delegate.nodeSetProperty( nodeId, property );
+            state.nodeReplaceProperty( nodeId, replacedProperty, property );
+            return replacedProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+
+    @Override
+    public Property relationshipSetProperty( long relationshipId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            Property replacedProperty = delegate.relationshipSetProperty( relationshipId, property );
+            state.relationshipReplaceProperty( relationshipId, replacedProperty, property );
+            return replacedProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+
+    @Override
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            Property removedProperty = delegate.nodeRemoveProperty( nodeId, propertyKeyId );
+            state.nodeRemoveProperty( nodeId, removedProperty );
+            return removedProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+
+    @Override
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            Property removedProperty = delegate.relationshipRemoveProperty( relationshipId, propertyKeyId );
+            state.relationshipRemoveProperty( relationshipId, removedProperty );
+            return removedProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+
+    @Override
+    public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    {
+        if ( state.nodeIsAddedInThisTx( nodeId ) )
+        {
+            return state.getNodePropertyDiffSets( nodeId ).getAdded().iterator();
+        }
+        if ( state.nodeIsDeletedInThisTx( nodeId ) )
+        {
+            // TODO Throw IllegalStateException to conform with beans API. We may want to introduce
+            // EntityDeletedException instead and use it instead of returning empty values in similar places
+            throw new IllegalStateException( "Node " + nodeId + " has been deleted" );
+        }
+        return state.getNodePropertyDiffSets( nodeId ).apply( delegate.nodeGetAllProperties( nodeId ) );
+    }
+
+    @Override
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException
+    {
+        if ( state.relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            return state.getRelationshipPropertyDiffSets( relationshipId ).getAdded().iterator();
+        }
+        if ( state.relationshipIsDeletedInThisTx( relationshipId ) )
+        {
+            // TODO Throw IllegalStateException to conform with beans API. We may want to introduce
+            // EntityDeletedException instead and use it instead of returning empty values in similar places
+            throw new IllegalStateException( "Relationship " + relationshipId + " has been deleted" );
+        }
+        return state.getRelationshipPropertyDiffSets( relationshipId )
+                    .apply( delegate.relationshipGetAllProperties( relationshipId ) );
+    }
+
     private class HasPropertyFilter implements Predicate<Long>
     {
         private final Object value;
@@ -391,15 +494,20 @@ public class StateHandlingStatementContext extends CompositeStatementContext
         {
             try
             {
-                return delegate.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value );
+                if ( state.nodeIsDeletedInThisTx( nodeId ) )
+                {
+                    return false;
+                }
+                Property property = nodeGetProperty( nodeId, propertyKeyId );
+                if ( property.isNoProperty() )
+                {
+                    return false;
+                }
+                return property.valueEquals( value );
             }
             catch ( EntityNotFoundException e )
             {
                 return false;
-            }
-            catch ( PropertyKeyIdNotFoundException e )
-            {
-                throw new ThisShouldNotHappenError( "Stefan/Jake", "propertyKeyId became invalid during indexQuery" );
             }
         }
     }

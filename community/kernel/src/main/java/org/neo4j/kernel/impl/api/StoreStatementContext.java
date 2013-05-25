@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -89,7 +87,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.contains;
  * Cache reading and invalidation is not the concern of this part of the system, that is an optimization on top of the
  * committed data in the database, and should as such live under that abstraction.
  */
-public class StoreStatementContext extends CompositeStatementContext
+public class StoreStatementContext extends  StoreOperationTranslatingStatementContext
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -399,7 +397,7 @@ public class StoreStatementContext extends CompositeStatementContext
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                                          labelId, new Predicate<UniquenessConstraintRule>()
+                labelId, new Predicate<UniquenessConstraintRule>()
         {
             @Override
             public boolean accept( UniquenessConstraintRule rule )
@@ -414,14 +412,14 @@ public class StoreStatementContext extends CompositeStatementContext
     public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                                          labelId, Predicates.<UniquenessConstraintRule>TRUE() );
+                labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
-                                          Predicates.<UniquenessConstraintRule>TRUE() );
+                Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
@@ -475,42 +473,6 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            return property( propertyKeyId, nodeManager.getRelationshipForProxy( relationshipId, null ) );
-        }
-        // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-        }
-    }
-
-    @Override
-    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            String propertyKey = propertyKeyGetName( propertyKeyId );
-            Relationship relProxy = nodeManager.getRelationshipById( relationshipId );
-            Object oldValue = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE ).removeProperty( nodeManager, relProxy, propertyKey );
-            return Property.propertyFromRelationship( relationshipId, propertyKeyId, oldValue );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-        }
-    }
-
-    @Override
     public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         try
@@ -555,45 +517,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Property nodeGetProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            return property( propertyKeyId, nodeManager.getNodeForProxy( nodeId, null ) );
-        }
-        // TODO: we should not have to catch two exceptions here, the underlying layer should use ONE sensible exception type
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
-        }
-    }
-
-    private Property property( long propertyKeyId, Primitive primitive )
-    {
-        try
-        {
-            return Property.property( propertyKeyId, primitive.getProperty( nodeManager, (int) propertyKeyId ) );
-        }
-        catch ( NotFoundException e )
-        {
-            if ( primitive instanceof NodeImpl )
-            {
-                return Property.noNodeProperty( primitive.getId(), propertyKeyId );
-            }
-            else
-            {
-                return Property.noRelationshipProperty( primitive.getId(), propertyKeyId );
-            }
-        }
-    }
-
-    @Override
-    public void nodeSetProperty( long nodeId, Property property )
+    public Property nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         try
@@ -602,7 +526,8 @@ public class StoreStatementContext extends CompositeStatementContext
             String propertyKey = propertyKeyGetName( property.propertyKeyId() );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
             NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
-            nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, property.value() );
+            Object oldValue = nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, property.value() );
+            return Property.propertyFromNode( nodeId, property.propertyKeyId(), oldValue );
         }
         catch ( IllegalStateException e )
         {
@@ -615,7 +540,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public void relationshipSetProperty( long relationshipId, Property property )
+    public Property relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         try
@@ -624,7 +549,8 @@ public class StoreStatementContext extends CompositeStatementContext
             String propertyKey = propertyKeyGetName( property.propertyKeyId() );
             RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE );
             RelationshipProxy relProxy = nodeManager.newRelationshipProxyById( relationshipId );
-            relImpl.setProperty( nodeManager, relProxy, propertyKey, property.value() );
+            Object oldValue = relImpl.setProperty( nodeManager, relProxy, propertyKey, property.value() );
+            return Property.propertyFromRelationship( relationshipId, property.propertyKeyId(), oldValue );
         }
         catch ( IllegalStateException e )
         {
@@ -652,6 +578,24 @@ public class StoreStatementContext extends CompositeStatementContext
         catch ( IllegalStateException e )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
+        }
+    }
+
+    @Override
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        try
+        {
+            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
+            String propertyKey = propertyKeyGetName( propertyKeyId );
+            Relationship relProxy = nodeManager.getRelationshipById( relationshipId );
+            Object oldValue = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE ).removeProperty( nodeManager, relProxy, propertyKey );
+            return Property.propertyFromRelationship( relationshipId, propertyKeyId, oldValue );
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
     }
 

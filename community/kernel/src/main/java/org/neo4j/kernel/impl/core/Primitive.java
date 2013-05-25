@@ -285,7 +285,7 @@ public abstract class Primitive
         return false;
     }
 
-    public void setProperty( NodeManager nodeManager, PropertyContainer proxy, String key, Object value )
+    public Object setProperty( NodeManager nodeManager, PropertyContainer proxy, String key, Object value )
     {
         if ( key == null || value == null )
         {
@@ -295,6 +295,7 @@ public abstract class Primitive
         TransactionState tx = nodeManager.getTransactionState();
         tx.acquireWriteLock( proxy );
         boolean success = false;
+        Object previous = null;
         try
         {
             ensureFullProperties( nodeManager );
@@ -324,6 +325,7 @@ public abstract class Primitive
             }
             if ( property != null && !foundInSkipMap )
             {
+                previous = getPropertyValue( nodeManager, property );
                 property = changeProperty( nodeManager, property, value, tx );
             }
             else
@@ -340,6 +342,7 @@ public abstract class Primitive
                 nodeManager.setRollbackOnly();
             }
         }
+        return previous;
     }
 
     public Object removeProperty( NodeManager nodeManager, PropertyContainer proxy, String key )

@@ -334,7 +334,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> nodeGetPropertyKeys( long nodeId )
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -360,7 +360,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId )
+    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();
@@ -676,29 +676,33 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public void nodeSetProperty( long nodeId, Property property )
+    public Property nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        entityOperations.nodeSetProperty( nodeId, property );
+        Property result = entityOperations.nodeSetProperty( nodeId, property );
 
         afterWriteOperation();
         afterOperation();
+
+        return result;
     }
 
     @Override
-    public void relationshipSetProperty( long relationshipId, Property property )
+    public Property relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        entityOperations.relationshipSetProperty( relationshipId, property );
+        Property result = entityOperations.relationshipSetProperty( relationshipId, property );
 
         afterWriteOperation();
         afterOperation();
+
+        return result;
     }
 
     @Override
@@ -738,6 +742,19 @@ public class CompositeStatementContext implements StatementContext
         beforeWriteOperation();
 
         entityOperations.nodeDelete( nodeId );
+
+        afterWriteOperation();
+        afterOperation();
+    }
+
+
+    @Override
+    public void relationshipDelete( long relationshipId )
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        entityOperations.relationshipDelete( relationshipId );
 
         afterWriteOperation();
         afterOperation();

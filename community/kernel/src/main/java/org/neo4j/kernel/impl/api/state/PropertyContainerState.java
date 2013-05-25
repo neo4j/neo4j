@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
 
-public final class NodeState extends PropertyContainerState
-
+public class PropertyContainerState extends EntityState
 {
-    private DiffSets<Long> labelDiffSets;
+    private DiffSets<Property> propertyDiffSets;
 
-    public NodeState( long id )
+    public PropertyContainerState( long id )
     {
         super( id );
     }
 
-    public DiffSets<Long> getLabelDiffSets()
+    public DiffSets<Property> getPropertyDiffSets()
     {
-        if ( null == labelDiffSets )
+        if ( null == propertyDiffSets )
         {
-            labelDiffSets = new DiffSets<Long>();
+            propertyDiffSets = new DiffSets<Property>();
         }
-        return labelDiffSets;
+        return propertyDiffSets;
     }
 }

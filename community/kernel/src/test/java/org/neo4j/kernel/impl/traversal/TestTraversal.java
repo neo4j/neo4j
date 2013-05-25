@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
-import static org.neo4j.graphdb.Traverser.Order.DEPTH_FIRST;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +40,12 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
+import static org.neo4j.graphdb.Traverser.Order.DEPTH_FIRST;
 
 public class TestTraversal extends AbstractNeo4jTestCase
 {
@@ -255,6 +255,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
             // a) Construct a returnable evaluator that returns node 2
             ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
             {
+                @Override
                 public boolean isReturnableNode( TraversalPosition pos )
                 {
                     try
@@ -386,6 +387,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         // Construct a stop evaluator that stops on nodes 5, 6, 3 and 4
         StopEvaluator stopEvaluator = new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition position )
             {
                 try
@@ -443,6 +445,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         // (ie root's children)
         StopEvaluator stopEvaluator = new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition position )
             {
                 try
@@ -496,6 +499,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         // Construct a stop evaluator that stops on depth 2
         StopEvaluator stopEvaluator = new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition position )
             {
                 return position.depth() >= 2;
@@ -544,6 +548,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         // Construct stop- and returnable evaluators that return 5 nodes
         StopEvaluator stopEvaluator = new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition position )
             {
                 // Stop traversing when we've returned 5 nodes
@@ -552,6 +557,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         };
         ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
         {
+            @Override
             public boolean isReturnableNode( TraversalPosition position )
             {
                 // Return nodes until we've reached 5 nodes or end of graph
@@ -600,6 +606,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         // Construct stop- and returnable evaluators that return 5 nodes
         StopEvaluator stopEvaluator = new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition position )
             {
                 // Stop when we got here by traversing a clone relationship

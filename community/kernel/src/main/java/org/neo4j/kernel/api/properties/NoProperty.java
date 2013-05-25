@@ -51,6 +51,12 @@ final class NoProperty extends Property
     }
 
     @Override
+    public boolean isNoProperty()
+    {
+        return true;
+    }
+
+    @Override
     public int hashCode()
     {
         return (int) (propertyKeyId ^ (propertyKeyId >>> 32));

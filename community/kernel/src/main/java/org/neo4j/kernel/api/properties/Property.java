@@ -26,12 +26,17 @@ public abstract class Property
 {
     public static Property noNodeProperty( long nodeId, long propertyKeyId )
     {
-        return new NoProperty( propertyKeyId, EntityType.NODE, nodeId );
+        return noProperty( propertyKeyId, EntityType.NODE, nodeId );
     }
 
     public static Property noRelationshipProperty( long relationshipId, long propertyKeyId )
     {
-        return new NoProperty( propertyKeyId, EntityType.RELATIONSHIP, relationshipId );
+        return noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationshipId );
+    }
+
+    public static Property noProperty( long propertyKeyId, EntityType type, long entityId )
+    {
+        return new NoProperty( propertyKeyId, type, entityId );
     }
 
     public static Property propertyFromNode( long nodeId, long propertyKeyId, Object value )
@@ -179,4 +184,6 @@ public abstract class Property
 
     @Override
     public abstract int hashCode();
+
+    public abstract boolean isNoProperty();
 }

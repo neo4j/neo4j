@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -119,6 +120,39 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
         return state.getCreatedNodes().contains( nodeId );
+    }
+
+    @Override
+    public void deleteRelationship( long relationshipId )
+    {
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        boolean success = false;
+        try
+        {
+            ArrayMap<Integer, PropertyData> skipMap = state.getOrCreateCowPropertyRemoveMap( relationship );
+            ArrayMap<Integer, PropertyData> removedProps = nodeManager.deleteRelationship( relationship, state );
+            if ( removedProps.size() > 0 )
+            {
+                for ( Integer index : removedProps.keySet() )
+                {
+                    skipMap.put( index, removedProps.get( index ) );
+                }
+            }
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                nodeManager.setRollbackOnly();
+            }
+        }
+    }
+
+    @Override
+    public boolean relationshipIsAddedInThisTx( long relationshipId )
+    {
+        return state.getCreatedRelationships().contains( relationshipId );
     }
 
     @Override

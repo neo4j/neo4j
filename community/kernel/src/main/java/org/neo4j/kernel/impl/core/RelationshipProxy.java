@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.transaction.LockType;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -47,7 +46,6 @@ public class RelationshipProxy implements Relationship
         RelationshipImpl lookupRelationship(long relationshipId);
         GraphDatabaseService getGraphDatabaseService();
         NodeManager getNodeManager();
-        RelationshipImpl lookupRelationship( long relId, LockType lock );
     }
     
     private final long relId;
@@ -62,27 +60,40 @@ public class RelationshipProxy implements Relationship
         this.statementCtxProvider = statementCtxProvider;
     }
 
+    @Override
     public long getId()
     {
         return relId;
     }
 
+    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         return relationshipLookups.getGraphDatabaseService();
     }
 
+    @Override
     public void delete()
     {
-        relationshipLookups.lookupRelationship( relId, LockType.WRITE ).delete( relationshipLookups.getNodeManager(), this );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            ctxForWriting.relationshipDelete( getId() );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
+    @Override
     public Node[] getNodes()
     {
         RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
         return new Node[]{ relationshipLookups.newNodeProxy( relationship.getStartNodeId() ), relationshipLookups.newNodeProxy( relationship.getEndNodeId() )};
     }
 
+    @Override
     public Node getOtherNode( Node node )
     {
         RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
@@ -98,16 +109,19 @@ public class RelationshipProxy implements Relationship
             + "] not connected to this relationship[" + getId() + "]" );
     }
 
+    @Override
     public Node getStartNode()
     {
         return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getStartNodeId() );
     }
 
+    @Override
     public Node getEndNode()
     {
         return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getEndNodeId() );
     }
 
+    @Override
     public RelationshipType getType()
     {
         try
@@ -121,6 +135,7 @@ public class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public Iterable<String> getPropertyKeys()
     {
         final StatementContext context = statementCtxProvider.getCtxForReading();
@@ -142,12 +157,17 @@ public class RelationshipProxy implements Relationship
                 }
             }, context.relationshipGetPropertyKeys( getId() )));
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Relationship not found", e );
+        }
         finally
         {
             context.close();
         }
     }
 
+    @Override
     public Iterable<Object> getPropertyValues()
     {
         final StatementContext context = statementCtxProvider.getCtxForReading();
@@ -179,6 +199,7 @@ public class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public Object getProperty( String key )
     {
         // TODO: Push this check to getPropertyKeyId
@@ -214,6 +235,7 @@ public class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public Object getProperty( String key, Object defaultValue )
     {
         // TODO: Push this check to getPropertyKeyId
@@ -246,6 +268,7 @@ public class RelationshipProxy implements Relationship
 
     }
 
+    @Override
     public boolean hasProperty( String key )
     {
         if ( null == key )
@@ -275,13 +298,16 @@ public class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public void setProperty( String key, Object value )
     {
         StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        boolean success = false;
         try
         {
             long propertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
             ctxForWriting.relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
+            success = true;
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -299,9 +325,14 @@ public class RelationshipProxy implements Relationship
         finally
         {
             ctxForWriting.close();
+            if ( !success )
+            {
+                relationshipLookups.getNodeManager().setRollbackOnly();
+            }
         }
     }
 
+    @Override
     public Object removeProperty( String key )
     {
         StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
@@ -329,6 +360,7 @@ public class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public boolean isType( RelationshipType type )
     {
         try

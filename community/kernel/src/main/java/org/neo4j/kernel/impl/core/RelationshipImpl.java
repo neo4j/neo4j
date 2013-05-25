@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -118,62 +117,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
         return (int)((idAndMore&0xFFFF000000000000L)>>>48);
     }
     
-    public void delete( NodeManager nodeManager, Relationship proxy )
-    {
-        NodeImpl startNode;
-        NodeImpl endNode;
-        boolean success = false;
-        TransactionState tx;
-        try
-        {
-            tx = nodeManager.getTransactionState();
-            startNode = nodeManager.getLightNode( getStartNodeId() );
-            if ( startNode != null )
-            {
-                tx.acquireWriteLock( nodeManager.newNodeProxyById( getStartNodeId() ) );
-            }
-            endNode = nodeManager.getLightNode( getEndNodeId() );
-            if ( endNode != null )
-            {
-                tx.acquireWriteLock( nodeManager.newNodeProxyById( getEndNodeId() ) );
-            }
-            tx.acquireWriteLock( proxy );
-            // no need to load full relationship, all properties will be
-            // deleted when relationship is deleted
-
-            ArrayMap<Integer,PropertyData> skipMap =
-                tx.getOrCreateCowPropertyRemoveMap( this );
-            ArrayMap<Integer,PropertyData> removedProps =
-                nodeManager.deleteRelationship( this, tx );
-            if ( removedProps.size() > 0 )
-            {
-                for ( int index : removedProps.keySet() )
-                {
-                    skipMap.put( index, removedProps.get( index ) );
-                }
-            }
-            success = true;
-            int typeId = getTypeId();
-            long id = getId();
-            if ( startNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id );
-            }
-            if ( endNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id );
-            }
-            success = true;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                nodeManager.setRollbackOnly();
-            }
-        }
-    }
-
     @Override
     public String toString()
     {

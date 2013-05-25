@@ -211,10 +211,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       newTxState(), providerMap, persistenceCache, schemaCache,
                                                       persistenceManager, schemaState,
                                                       new ConstraintIndexCreator(
-                                                              new Transactor( transactionManager ), indexService ) );
-
-        // + get properties by getting all properties
-        result = new PropertyOperationTranslation.TransactionContext( result );
+                                                      new Transactor( transactionManager ), indexService ) );
 
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );
@@ -261,9 +258,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
-
-        // + get properties by getting all properties
-        result = new PropertyOperationTranslation( result );
 
         // + Read only access
         result = new ReadOnlyStatementContext( result );

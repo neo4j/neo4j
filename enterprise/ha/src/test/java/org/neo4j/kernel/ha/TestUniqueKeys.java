@@ -100,7 +100,7 @@ public class TestUniqueKeys extends AbstractClusterTest
             int highestId = 0;
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
-                RelationshipTypeTokenHolder holder = db.getNodeManager().getRelationshipTypeHolder();
+                RelationshipTypeTokenHolder holder = db.getRelationshipTypeTokenHolder();
                 highestId = highestIdOf( holder, highestId );
                 Set<String> types = new HashSet<String>();
                 for ( int j = 0; j <= highestId; j++ )

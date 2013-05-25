@@ -63,6 +63,12 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
+    public void relationshipDelete( long nodeId )
+    {
+        throw unsupported();
+    }
+
+    @Override
     public long labelGetOrCreateForName( String label )
     {
         throw unsupported();
@@ -153,13 +159,13 @@ public enum UnsupportiveStatementContext implements StatementContext
     }
 
     @Override
-    public void nodeSetProperty( long nodeId, Property property )
+    public Property nodeSetProperty( long nodeId, Property property )
     {
         throw unsupported();
     }
 
     @Override
-    public void relationshipSetProperty( long relationshipId, Property property )
+    public Property relationshipSetProperty( long relationshipId, Property property )
     {
         throw unsupported();
     }

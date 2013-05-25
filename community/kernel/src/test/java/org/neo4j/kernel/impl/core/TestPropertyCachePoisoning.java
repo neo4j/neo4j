@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -51,6 +51,7 @@ import static org.junit.Assert.assertEquals;
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.ArrayBasedPrimitive", method = "commitPropertyMaps", on = BreakPoint.Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
 @SuppressWarnings( "javadoc" )
+@Ignore( "Unignore soon" )
 public class TestPropertyCachePoisoning
 {
     @Test
