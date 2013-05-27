@@ -209,15 +209,15 @@ public class TransactionHandleRegistry implements TransactionRegistry
             @Override
             public boolean accept( TransactionMarker item )
             {
-            try
-            {
-                SuspendedTransaction transaction = item.getTransaction();
-                return transaction.lastActiveTimestamp < oldestLastActiveTime;
-            }
-            catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
-            {
-                throw new RuntimeException( concurrentTransactionAccessError );
-            }
+                try
+                {
+                    SuspendedTransaction transaction = item.getTransaction();
+                    return transaction.lastActiveTimestamp < oldestLastActiveTime;
+                }
+                catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
+                {
+                    throw new RuntimeException( concurrentTransactionAccessError );
+                }
             }
         } );
     }

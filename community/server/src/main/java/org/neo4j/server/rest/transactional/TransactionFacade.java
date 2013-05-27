@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Date;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.api.KernelAPI;

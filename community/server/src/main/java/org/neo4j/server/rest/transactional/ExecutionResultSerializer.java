@@ -29,7 +29,6 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
-
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
@@ -42,7 +41,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
  * <li>{@link #statementResult(ExecutionResult) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
- * <li>{@link}#transactionStatus(Date expiryDate){@code ?}</li>
+ * <li>{@link #transactionStatus(Date expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
  * </ul>
  * <p/>
