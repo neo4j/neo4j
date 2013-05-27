@@ -35,7 +35,7 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
     public PreexistingIndexEntryConflictException( Object propertyValue, long existingNodeId, long addedNodeId )
     {
         super( format( "Multiple nodes have property value %s:%n" +
-                "  existing node(%d)\n" +
+                "  existing node(%d)%n" +
                 "  new node(%d)",
                 quote( propertyValue ), existingNodeId, addedNodeId ) );
         this.addedNodeId = addedNodeId;

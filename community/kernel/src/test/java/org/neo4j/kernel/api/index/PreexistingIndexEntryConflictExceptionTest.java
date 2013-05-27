@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.Test;
 
+import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
 
 public class PreexistingIndexEntryConflictExceptionTest
@@ -32,9 +34,9 @@ public class PreexistingIndexEntryConflictExceptionTest
         PreexistingIndexEntryConflictException e = new PreexistingIndexEntryConflictException( "value1", 11, 22 );
 
         // then
-        assertEquals("Multiple nodes have property value 'value1':\n" +
-                "  existing node(11)\n" +
-                "  new node(22)", e.getMessage());
+        assertEquals( format( "Multiple nodes have property value 'value1':%n" +
+                "  existing node(11)%n" +
+                "  new node(22)" ), e.getMessage() );
     }
 
     @Test
@@ -44,8 +46,8 @@ public class PreexistingIndexEntryConflictExceptionTest
         PreexistingIndexEntryConflictException e = new PreexistingIndexEntryConflictException( "value1", 11, 22 );
 
         // then
-        assertEquals("Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':\n" +
-                "  existing node(11)\n" +
-                "  new node(22)", e.evidenceMessage("Label1", "propertyKey1"));
+        assertEquals( format( "Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':%n" +
+                "  existing node(11)%n" +
+                "  new node(22)" ), e.evidenceMessage("Label1", "propertyKey1") );
     }
 }

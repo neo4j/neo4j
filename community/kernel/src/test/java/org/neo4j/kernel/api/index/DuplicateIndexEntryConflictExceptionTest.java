@@ -21,8 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static java.lang.String.format;
 
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class DuplicateIndexEntryConflictExceptionTest
@@ -34,8 +35,8 @@ public class DuplicateIndexEntryConflictExceptionTest
         DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11l, 22l, 33l) );
 
         // then
-        assertEquals("Multiple nodes have property value 'value1':\n" +
-                "  node(11), node(22), node(33)", e.getMessage());
+        assertEquals( format( "Multiple nodes have property value 'value1':%n" +
+                "  node(11), node(22), node(33)" ), e.getMessage());
     }
 
     @Test
@@ -45,7 +46,7 @@ public class DuplicateIndexEntryConflictExceptionTest
         DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11l, 22l, 33l) );
 
         // then
-        assertEquals("Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':\n" +
-                "  node(11), node(22), node(33)", e.evidenceMessage( "Label1", "propertyKey1" ));
+        assertEquals( format( "Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':%n" +
+                "  node(11), node(22), node(33)" ), e.evidenceMessage( "Label1", "propertyKey1" ));
     }
 }
