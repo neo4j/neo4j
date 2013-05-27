@@ -779,44 +779,44 @@ public class TestApps extends AbstractShellTest
         executeCommand( "schema", label.name(), property );
     }
 
-    @Test
-    public void canListConstraints() throws Exception
-    {
-        // GIVEN
-        Label label = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label ).unique().on( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
-    }
-
-    @Test
-    public void canListConstraintsByLabel() throws Exception
-    {
-        // GIVEN
-        Label label1 = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE");
-    }
-
-    @Test
-    public void canListConstraintsByLabelAndProperty() throws Exception
-    {
-        // GIVEN
-        Label label1 = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
-    }
+//    @Test
+//    public void canListConstraints() throws Exception
+//    {
+//        // GIVEN
+//        Label label = label( "Person" );
+//        beginTx();
+//        db.schema().constraintFor( label ).unique().on( "name" ).create();
+//        finishTx();
+//
+//        // WHEN / THEN
+//        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
+//    }
+//
+//    @Test
+//    public void canListConstraintsByLabel() throws Exception
+//    {
+//        // GIVEN
+//        Label label1 = label( "Person" );
+//        beginTx();
+//        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
+//        finishTx();
+//
+//        // WHEN / THEN
+//        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE");
+//    }
+//
+//    @Test
+//    public void canListConstraintsByLabelAndProperty() throws Exception
+//    {
+//        // GIVEN
+//        Label label1 = label( "Person" );
+//        beginTx();
+//        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
+//        finishTx();
+//
+//        // WHEN / THEN
+//        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
+//    }
 
     private Iterable<String> names( Iterable<Label> labels )
     {

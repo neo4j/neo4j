@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -55,8 +56,6 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -1056,23 +1055,23 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             actual.awaitIndexesOnline( duration, unit );
         }
 
-        @Override
-        public ConstraintCreator constraintFor( Label label )
-        {
-            throw readOnlyException();
-        }
-
-        @Override
-        public Iterable<ConstraintDefinition> getConstraints()
-        {
-            return actual.getConstraints();
-        }
-
-        @Override
-        public Iterable<ConstraintDefinition> getConstraints( Label label )
-        {
-            return actual.getConstraints( label );
-        }
+//        @Override
+//        public ConstraintCreator constraintFor( Label label )
+//        {
+//            throw readOnlyException();
+//        }
+//
+//        @Override
+//        public Iterable<ConstraintDefinition> getConstraints()
+//        {
+//            return actual.getConstraints();
+//        }
+//
+//        @Override
+//        public Iterable<ConstraintDefinition> getConstraints( Label label )
+//        {
+//            return actual.getConstraints( label );
+//        }
     }
 
     @Override

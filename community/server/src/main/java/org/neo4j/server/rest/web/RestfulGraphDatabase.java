@@ -1664,89 +1664,89 @@ public class RestfulGraphDatabase
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
     
-    @POST
-    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
-    public Response createPropertyUniquenessConstraint( @PathParam( "label" ) String labelName, String body )
-    {
-        try
-        {
-            Map<String, Object> data = input.readMap( body, "property_keys" );
-            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
-            if ( singlePropertyKey == null )
-            {
-                return output.badRequest( new IllegalArgumentException(
-                        "Supply single property key or list of property keys" ) );
-            }
-            return output.ok( actions.createPropertyUniquenessConstraint( labelName, singlePropertyKey ) );
-        }
-        catch( UnsupportedOperationException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( BadInputException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            return output.conflict( e );
-        }
-    }
+//    @POST
+//    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+//    public Response createPropertyUniquenessConstraint( @PathParam( "label" ) String labelName, String body )
+//    {
+//        try
+//        {
+//            Map<String, Object> data = input.readMap( body, "property_keys" );
+//            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+//            if ( singlePropertyKey == null )
+//            {
+//                return output.badRequest( new IllegalArgumentException(
+//                        "Supply single property key or list of property keys" ) );
+//            }
+//            return output.ok( actions.createPropertyUniquenessConstraint( labelName, singlePropertyKey ) );
+//        }
+//        catch( UnsupportedOperationException e )
+//        {
+//            return output.badRequest( e );
+//        }
+//        catch ( BadInputException e )
+//        {
+//            return output.badRequest( e );
+//        }
+//        catch ( ConstraintViolationException e )
+//        {
+//            return output.conflict( e );
+//        }
+//    }
     
-    @DELETE
-    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
-    public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
-            @PathParam( "property" ) AmpersandSeparatedCollection properties )
-    {
-        try
-        {
-            if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
-                return nothing();
-            else
-                return output.notFound();
-        }
-        catch ( ConstraintViolationException e )
-        {
-            return output.conflict( e );
-        }
-    }
+//    @DELETE
+//    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+//    public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
+//            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+//    {
+//        try
+//        {
+//            if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
+//                return nothing();
+//            else
+//                return output.notFound();
+//        }
+//        catch ( ConstraintViolationException e )
+//        {
+//            return output.conflict( e );
+//        }
+//    }
     
-    @GET
-    @Path( PATH_SCHEMA_CONSTRAINT )
-    public Response getSchemaConstraints()
-    {
-        return output.ok( actions.getConstraints() );
-    }
+//    @GET
+//    @Path( PATH_SCHEMA_CONSTRAINT )
+//    public Response getSchemaConstraints()
+//    {
+//        return output.ok( actions.getConstraints() );
+//    }
 
-    @GET
-    @Path( PATH_SCHEMA_CONSTRAINT_LABEL )
-    public Response getSchemaConstraintsForLabel( @PathParam( "label" ) String labelName )
-    {
-        return output.ok( actions.getLabelConstraints( labelName ) );
-    }
+//    @GET
+//    @Path( PATH_SCHEMA_CONSTRAINT_LABEL )
+//    public Response getSchemaConstraintsForLabel( @PathParam( "label" ) String labelName )
+//    {
+//        return output.ok( actions.getLabelConstraints( labelName ) );
+//    }
     
-    @GET
-    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
-    public Response getSchemaConstraintsForLabelAndUniqueness( @PathParam( "label" ) String labelName )
-    {
-        return output.ok( actions.getLabelUniquenessConstraints( labelName ) );
-    }
+//    @GET
+//    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+//    public Response getSchemaConstraintsForLabelAndUniqueness( @PathParam( "label" ) String labelName )
+//    {
+//        return output.ok( actions.getLabelUniquenessConstraints( labelName ) );
+//    }
     
-    @GET
-    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
-    public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
-            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
-    {
-        try
-        {
-        	ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
-    		return output.ok( constraints );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        	return output.notFound( e );
-        }
-    }
+//    @GET
+//    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+//    public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
+//            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+//    {
+//        try
+//        {
+//        	ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
+//    		return output.ok( constraints );
+//        }
+//        catch ( IllegalArgumentException e )
+//        {
+//        	return output.notFound( e );
+//        }
+//    }
 
     private final Function<Map.Entry<String,List<String>>,Pair<String,Object>> queryParamsToProperties =
             new Function<Map.Entry<String, List<String>>, Pair<String, Object>>()
