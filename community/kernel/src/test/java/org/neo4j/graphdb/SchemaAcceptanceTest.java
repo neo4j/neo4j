@@ -360,9 +360,10 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
-                    "IS UNIQUE:\nUnable to add index on [label: MY_LABEL, my_property_key] : " +
-                    "Already indexed :MY_LABEL(my_property_key).", e.getMessage() );
+            assertEquals(
+                String.format("Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                    "IS UNIQUE:%nUnable to add index on [label: MY_LABEL, my_property_key] : " +
+                    "Already indexed :MY_LABEL(my_property_key)."), e.getMessage() );
         }
     }
 
