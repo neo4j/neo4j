@@ -35,6 +35,8 @@ include::begin-a-transaction.asciidoc[]
 
 include::execute-statements-in-an-open-transaction.asciidoc[]
 
+include::reset-transaction-timeout-of-an-open-transaction.asciidoc[]
+
 include::commit-an-open-transaction.asciidoc[]
 
 include::rollback-an-open-transaction.asciidoc[]

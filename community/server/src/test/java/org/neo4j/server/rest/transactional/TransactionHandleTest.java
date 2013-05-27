@@ -41,6 +41,7 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
 import static java.util.Arrays.asList;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -80,6 +81,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
+        outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -111,6 +113,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
+        outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -149,6 +152,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
+        outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -238,6 +242,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( any( ExecutionResult.class ) );
+        outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
