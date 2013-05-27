@@ -19,13 +19,10 @@
  */
 package org.neo4j.server.rest.web;
 
-import static java.util.Arrays.asList;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -47,9 +44,12 @@ import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 
+import static java.util.Arrays.asList;
+
+
 /**
- * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not do anything more complicated
- * than that.
+ * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not
+ * do anything more complicated than that.
  */
 @Path("/transaction")
 public class TransactionalService
@@ -68,16 +68,15 @@ public class TransactionalService
     @Produces({MediaType.APPLICATION_JSON})
     public Response executeStatementsInNewTransaction( final InputStream input )
     {
-        final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme );
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme );
+            return createdResponse( transactionHandle, executeStatements( input, transactionHandle ) );
         }
         catch ( TransactionLifecycleException e )
         {
             return invalidTransaction( e );
         }
-        return createdResponse( transactionHandle, executeStatements( input, transactionHandle ) );
     }
 
     @POST
@@ -153,23 +152,28 @@ public class TransactionalService
 
     private Response invalidTransaction( TransactionLifecycleException e )
     {
-        return Response.status( Response.Status.NOT_FOUND )
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( serializeError( e.toNeo4jError() ) ).build();
+        return defaultResponseBuilder( Response.status( Response.Status.NOT_FOUND ) )
+               .entity( serializeError( e.toNeo4jError() ) )
+               .build();
     }
 
-    private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )
+    private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults  )
     {
-        return Response.created( transactionHandle.uri() )
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( streamingResults ).build();
+        return defaultResponseBuilder( Response.created( transactionHandle.uri() ) )
+               .entity( streamingResults )
+               .build();
     }
 
     private Response okResponse( StreamingOutput streamingResults )
     {
-        return Response.ok()
-                .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                .entity( streamingResults ).build();
+        return defaultResponseBuilder( Response.ok() )
+                .entity( streamingResults )
+                .build();
+    }
+
+    private Response.ResponseBuilder defaultResponseBuilder( Response.ResponseBuilder builder )
+    {
+        return builder.header( HttpHeaders.CONTENT_ENCODING, "UTF-8" );
     }
 
     private StreamingOutput executeStatements( final InputStream input, final TransactionHandle

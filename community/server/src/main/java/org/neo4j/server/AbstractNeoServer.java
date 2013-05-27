@@ -19,15 +19,6 @@
  */
 package org.neo4j.server;
 
-import static java.lang.Math.round;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
-import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -35,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -76,6 +68,17 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+
+import static java.lang.Math.round;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
+import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
+import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
+import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -205,20 +208,24 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionFacade createTransactionalActions()
     {
-        final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
+        final long timeoutMillis = getTransactionTimeoutMillis();
         final Clock clock = new RealClock();
 
-        transactionRegistry = new TransactionHandleRegistry(clock, logging.getMessagesLog(TransactionRegistry.class));
+        transactionRegistry =
+            new TransactionHandleRegistry( clock, timeoutMillis, logging.getMessagesLog(TransactionRegistry.class) );
+
+        // ensure that this is > 0
+        long runEvery = round( timeoutMillis / 2.0 );
 
         resolveDependency( JobScheduler.class ).scheduleRecurring( new Runnable()
         {
             @Override
             public void run()
             {
-                long maxAge = clock.currentTimeInMilliseconds() - (1000 * timeout);
+                long maxAge = clock.currentTimeInMilliseconds() - timeoutMillis;
                 transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
             }
-        }, round( timeout / 2.0 ), SECONDS );
+        }, runEvery, MILLISECONDS );
 
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
@@ -227,10 +234,16 @@ public abstract class AbstractNeoServer implements NeoServer
                 logging.getMessagesLog( TransactionFacade.class ));
     }
 
+    private long getTransactionTimeoutMillis()
+    {
+        final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
+        return Math.max( SECONDS.toMillis( timeout ), 1000L );
+    }
+
     protected InterruptThreadTimer createInterruptStartupTimer()
     {
-        long startupTimeout = getConfiguration().getInt( Configurator.STARTUP_TIMEOUT,
-                Configurator.DEFAULT_STARTUP_TIMEOUT ) * 1000;
+        long startupTimeout = SECONDS.toMillis(
+                getConfiguration().getInt( Configurator.STARTUP_TIMEOUT, Configurator.DEFAULT_STARTUP_TIMEOUT ) );
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {

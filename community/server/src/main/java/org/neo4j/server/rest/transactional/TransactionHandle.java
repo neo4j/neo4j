@@ -173,7 +173,8 @@ public class TransactionHandle
         if ( errors.isEmpty() )
         {
             context.suspendSinceTransactionsAreStillThreadBound();
-            registry.release( id, this );
+            long lastActiveTimestamp = registry.release( id, this );
+            output.transactionStatus( lastActiveTimestamp );
         }
         else
         {
@@ -285,5 +286,4 @@ public class TransactionHandle
             errors.add( new Neo4jError( StatusCode.INTERNAL_DATABASE_ERROR, e ) );
         }
     }
-
 }

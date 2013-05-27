@@ -73,6 +73,14 @@ org.neo4j.server.webserver.maxthreads=200
 
 NOTE: The default value is 10 times the number of CPUs reported available by the JVM.
 
+The server guards against orphaned transactions by using a timeout. If there are no requests for a given transaction
+within the timeout period, the server will roll it back. You can configure the timeout period by setting
+the following property to the number of seconds before timeout. The default timeout is 60 seconds.
+[source]
+----
+org.neo4j.server.transaction.timeout=60
+----
+
 Low-level performance tuning parameters can be explicitly set by referring
 to the following property:
 

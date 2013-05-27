@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import java.text.ParseException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +31,13 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,6 +49,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
+import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -59,19 +65,38 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
+        long startOfTest = System.currentTimeMillis();
+
+        // This generous wait time is necessary to compensate for limited resolution of RFC 1123 timestamps
+        // and the fact that the system clock is allowed to run "backwards" between threads
+        // (cf. http://stackoverflow.com/questions/2978598)
+        //
+        Thread.sleep( 3000 );
+
         // begin
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
 
+        long beginStamp = expirationTime( jsonToMap( begin.rawContent() ) );
+        long defaultTimeoutMillis =
+            SECONDS.toMillis( server().getConfiguration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT ) );
+        assertTrue( beginStamp > (defaultTimeoutMillis + startOfTest ) );
+
         String commitResource = begin.stringFromContent( "commit" );
         assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
 
+        Thread.sleep( 3000 );
+
         // execute
-        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute =
+            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 200 ) );
+        long executeStamp = expirationTime( jsonToMap( execute.rawContent() ) );
+        assertTrue( executeStamp > startOfTest );
+        assertTrue( executeStamp > beginStamp );
 
         // commit
         Response commit = http.POST( commitResource );
@@ -155,8 +180,8 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         http.POST( commitResource );
 
         // execute
-        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] " +
-                "}" ) );
+        Response execute =
+            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
         assertErrorCodes( execute, StatusCode.INVALID_TRANSACTION_ID );
@@ -227,7 +252,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // commit with invalid cypher
         response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
-        System.out.println( "begin.rawContent() = " + response.rawContent() );
+        // System.out.println( "begin.rawContent() = " + response.rawContent() );
 
         assertThat( response.status(), is( 200 ) );
         assertErrorCodes( response, StatusCode.STATEMENT_SYNTAX_ERROR );
@@ -379,5 +404,11 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
                 description.appendText( "matching regex" ).appendValue( pattern );
             }
         };
+    }
+
+    private long expirationTime( Map<String, Object> entity ) throws ParseException
+    {
+        String timestampString = (String) ( (Map<?, ?>) entity.get( "transaction" ) ).get( "expires" );
+        return RFC1123.parseTimestamp( timestampString ).getTime();
     }
 }
