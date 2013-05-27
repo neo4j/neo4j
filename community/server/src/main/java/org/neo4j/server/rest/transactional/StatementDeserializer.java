@@ -182,17 +182,14 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             {
                 return false;
             }
-            if ( token == FIELD_NAME )
+            if ( token == FIELD_NAME && !expectedField.equals( input.getText() ) )
             {
-                if ( !expectedField.equals( input.getText() ) )
-                {
-                    addError( new Neo4jError(
-                            StatusCode.INVALID_REQUEST_FORMAT,
-                            new DeserializationException( String.format( "Unable to deserialize request. " +
-                                    "Expected first field to be '%s', but was '%s'.",
-                                    expectedField, input.getText() ) ) ) );
-                    return false;
-                }
+                addError( new Neo4jError(
+                        StatusCode.INVALID_REQUEST_FORMAT,
+                        new DeserializationException( String.format( "Unable to deserialize request. " +
+                                                                     "Expected first field to be '%s', but was '%s'.",
+                                                                     expectedField, input.getText() ) ) ) );
+                return false;
             }
             foundTokens.add( token );
         }

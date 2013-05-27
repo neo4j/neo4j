@@ -30,7 +30,7 @@ public class DuplicateIndexEntryConflictException extends IndexEntryConflictExce
 
     public DuplicateIndexEntryConflictException( Object propertyValue, Set<Long> conflictingNodeIds )
     {
-        super( String.format( "Multiple nodes have property value %s:\n" +
+        super( String.format( "Multiple nodes have property value %s:%n" +
                 "  %s", quote( propertyValue ), asNodeList( conflictingNodeIds ) ) );
         this.propertyValue = propertyValue;
         this.conflictingNodeIds = conflictingNodeIds;
@@ -44,7 +44,7 @@ public class DuplicateIndexEntryConflictException extends IndexEntryConflictExce
     @Override
     public String evidenceMessage( String labelName, String propertyKey )
     {
-        return String.format( "Multiple nodes with label `%s` have property `%s` = %s:\n" +
+        return String.format( "Multiple nodes with label `%s` have property `%s` = %s:%n" +
                 "  %s", labelName, propertyKey, quote( propertyValue ), asNodeList(conflictingNodeIds) );
     }
 

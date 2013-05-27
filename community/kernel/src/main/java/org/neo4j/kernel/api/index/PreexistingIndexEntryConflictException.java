@@ -34,7 +34,7 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
 
     public PreexistingIndexEntryConflictException( Object propertyValue, long existingNodeId, long addedNodeId )
     {
-        super( format( "Multiple nodes have property value %s:\n" +
+        super( format( "Multiple nodes have property value %s:%n" +
                 "  existing node(%d)\n" +
                 "  new node(%d)",
                 quote( propertyValue ), existingNodeId, addedNodeId ) );
@@ -53,8 +53,8 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
     public String evidenceMessage( String labelName, String propertyKey )
     {
         return format(
-                "Multiple nodes with label `%s` have property `%s` = %s:\n" +
-                        "  existing node(%d)\n" +
+                "Multiple nodes with label `%s` have property `%s` = %s:%n" +
+                        "  existing node(%d)%n" +
                         "  new node(%d)",
                 labelName, propertyKey, quote( propertyValue ), existingNodeId, addedNodeId );
     }

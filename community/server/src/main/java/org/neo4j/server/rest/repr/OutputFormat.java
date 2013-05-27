@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -145,10 +144,6 @@ public class OutputFormat
                 }
                 catch ( Exception e )
                 {
-                    if ( e instanceof BadInputException )
-                    {
-                        throw new WebApplicationException( badRequest( e ) );
-                    }
                     throw new WebApplicationException( serverError( e ) );
                 }
             }

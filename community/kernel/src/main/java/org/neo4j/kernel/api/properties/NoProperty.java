@@ -39,7 +39,7 @@ final class NoProperty extends Property
     @Override
     public boolean equals( Object o )
     {
-        return this == o || (o instanceof NoProperty && propertyKeyId == ((NoProperty) o).propertyKeyId);
+        return this == o || o instanceof NoProperty && propertyKeyId == ((NoProperty) o).propertyKeyId;
     }
 
     @Override
