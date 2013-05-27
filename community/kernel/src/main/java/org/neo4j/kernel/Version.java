@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.ComponentVersion;
 
 public class Version extends Service
 {
@@ -118,5 +119,17 @@ public class Version extends Service
     public static String getKernelRevision()
     {
         return KERNEL_VERSION.getRevision();
+    }
+    
+    /**
+     * A very nice to have main-method for quickly checking the version of a neo4j kernel,
+     * for example given a kernel jar file.
+     */
+    public static void main( String[] args )
+    {
+        ComponentVersion componentVersion = new ComponentVersion();
+        System.out.println( "Release version: " + componentVersion.getReleaseVersion() );
+        System.out.println( "Version: " + componentVersion.getVersion() );
+        System.out.println( "Revision: " + componentVersion.getRevision() );
     }
 }
