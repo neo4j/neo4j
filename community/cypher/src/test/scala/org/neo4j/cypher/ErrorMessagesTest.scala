@@ -271,8 +271,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     createLabeledNode(Map("name"->"A"), "Person")
 
     expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      v2_0 -> ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:\n"+
-        "Multiple nodes with label `Person` have property `name` = 'A':\n  existing node(1)\n  new node(2)")
+      v2_0 -> (String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n"+
+        "Multiple nodes with label `Person` have property `name` = 'A':%n  existing node(1)%n  new node(2)"))
     )
   }
 

@@ -46,7 +46,7 @@ public class ConstraintCreationKernelException extends KernelException
         {
             KernelException cause = (KernelException) getCause();
 
-            return message + ":\n" + cause.getUserMessage( keyNameLookup );
+            return String.format( "%s:%n%s", message, cause.getUserMessage( keyNameLookup ) );
         }
         return message;
     }
