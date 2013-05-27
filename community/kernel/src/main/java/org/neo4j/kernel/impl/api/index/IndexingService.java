@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -114,7 +115,8 @@ public class IndexingService extends LifecycleAdapter
             long ruleId = entry.getKey();
             IndexProxy indexProxy = entry.getValue();
             InternalIndexState state = indexProxy.getState();
-            logger.info( "IndexingService.start: " + indexProxy.getDescriptor().toString() + " is " + state.name() );
+            logger.info( String.format( "IndexingService.start: index on %s is %s",
+                    indexProxy.getDescriptor().toString(), state.name() ) );
             switch ( state )
             {
             case ONLINE:
@@ -213,7 +215,8 @@ public class IndexingService extends LifecycleAdapter
             IndexProxy indexProxy = null;
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             InternalIndexState initialState = providerMap.apply( providerDescriptor ).getInitialState( ruleId );
-            logger.info( "IndexingService.initIndexes: " + descriptor.toString() + " is " + initialState.name() );
+            logger.info( format( "IndexingService.initIndexes: index on %s is %s",
+                    descriptor.toString(), initialState.name() ) );
             switch ( initialState )
             {
             case ONLINE:

@@ -22,31 +22,37 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
+import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 
 public class DataIntegrityValidatingStatementContextTest
 {
     @Test
-    public void shouldDisallowReAddingExistingSchemaRules() throws Exception
+    public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = Mockito.mock(StatementContext.class);
+        StatementContext inner = mock( StatementContext.class );
         DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
         when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
@@ -56,13 +62,171 @@ public class DataIntegrityValidatingStatementContextTest
             ctx.indexCreate( label, propertyKey );
             fail( "Should have thrown exception." );
         }
-        catch ( SchemaKernelException e )
+        catch ( AddIndexFailureException e )
         {
+            assertThat(e.getCause(), instanceOf( AlreadyIndexedException.class) );
         }
 
         // THEN
         verify( inner, never() ).indexCreate( anyLong(), anyLong() );
     }
+
+    @Test
+    public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( inner.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+
+        // WHEN
+        try
+        {
+            ctx.indexCreate( label, propertyKey );
+            fail( "Should have thrown exception." );
+        }
+        catch ( AddIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( AlreadyConstrainedException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldDisallowReAddingConstraintIndex() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( inner.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+
+        // WHEN
+        try
+        {
+            ctx.uniqueIndexCreate( label, propertyKey );
+            fail( "Should have thrown exception." );
+        }
+        catch ( AddIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( AlreadyConstrainedException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
+
+        // WHEN
+        try
+        {
+            ctx.indexDrop( indexDescriptor );
+            fail( "Should have thrown exception." );
+        }
+        catch ( DropIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( NoSuchIndexException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
+        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+
+        // WHEN
+        try
+        {
+            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            fail( "Should have thrown exception." );
+        }
+        catch ( DropIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
+        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+
+        // WHEN
+        try
+        {
+            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            fail( "Should have thrown exception." );
+        }
+        catch ( DropIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
+    {
+        // GIVEN
+        long label = 0, propertyKey = 7;
+        IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
+        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+
+        // WHEN
+        try
+        {
+            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            fail( "Should have thrown exception." );
+        }
+        catch ( DropIndexFailureException e )
+        {
+            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+        }
+
+        // THEN
+        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+    }
+
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
     {

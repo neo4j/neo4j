@@ -23,12 +23,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
-
-import static java.lang.String.format;
+import org.neo4j.kernel.api.exceptions.KernelException;
 
 public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
 {
@@ -56,26 +51,10 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
         {
             return actions.createPropertyUniquenessConstraint( label, propertyKey );
         }
-        catch ( AlreadyIndexedException e )
+        catch ( KernelException e )
         {
-            throw new ConstraintViolationException( format( "Cannot create a constraint on :%s(%s). An index " +
-                    "already exists for this combination. Drop the index and create the constraint again.", label,
-                    propertyKey ), e );
-        }
-        catch ( AlreadyConstrainedException e )
-        {
-            throw new ConstraintViolationException( format( "A constraint already exists on :%s(%s)", label,
-                    propertyKey ), e );
-        }
-        catch ( SchemaKernelException e )
-        {
-            throw new ConstraintViolationException(
-                    format( "Could not create property uniqueness constraint on :%s(%s)", label, propertyKey ), e );
-        }
-        catch ( ConstraintCreationKernelException e )
-        {
-            throw new ConstraintViolationException(
-                    format( "Could not create property uniqueness constraint on :%s(%s)", label, propertyKey ), e );
+            String userMessage = actions.getUserMessage( e );
+            throw new ConstraintViolationException( userMessage, e );
         }
     }
 }

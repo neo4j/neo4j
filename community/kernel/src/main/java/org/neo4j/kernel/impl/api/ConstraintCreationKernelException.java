@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.KeyNameLookup;
-import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 public class ConstraintCreationKernelException extends KernelException
 {
@@ -43,10 +42,9 @@ public class ConstraintCreationKernelException extends KernelException
     public String getUserMessage( KeyNameLookup keyNameLookup )
     {
         String message = "Unable to create " + constraint.userDescription( keyNameLookup );
-        if ( getCause() instanceof ConstraintVerificationFailedKernelException )
+        if ( getCause() instanceof KernelException )
         {
-            ConstraintVerificationFailedKernelException cause =
-                    (ConstraintVerificationFailedKernelException) getCause();
+            KernelException cause = (KernelException) getCause();
 
             return message + ":\n" + cause.getUserMessage( keyNameLookup );
         }

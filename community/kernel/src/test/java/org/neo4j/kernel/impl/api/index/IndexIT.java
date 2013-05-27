@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -30,12 +29,10 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -146,7 +143,7 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Unable to drop INDEX ON :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
+            assertEquals( "Unable to drop index on :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
                     e.getMessage() );
         }
     }
@@ -171,8 +168,9 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( format( "Already constrained CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE.",
-                    labelId, propertyKey ), e.getMessage() );
+            assertEquals( format( "Unable to add index on [label: %s, %s] : Already constrained " +
+                    "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE.",
+                    labelId, propertyKey, labelId, propertyKey ), e.getMessage() );
         }
     }
 
@@ -196,8 +194,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Unable to drop INDEX ON :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
-                    e.getMessage() );
+            assertEquals( "Unable to drop index on :label[5](property[8]): Index belongs to constraint: " +
+                    ":label[5](property[8])", e.getMessage() );
         }
     }
 

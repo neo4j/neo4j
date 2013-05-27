@@ -37,6 +37,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
@@ -45,12 +46,12 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.operations.KeyNameLookup;
 import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -349,8 +350,7 @@ public class SchemaImpl implements Schema
             }
             catch ( SchemaKernelException e )
             {
-                throw new ConstraintViolationException( String.format(
-                        "Unable to create index for label '%s' on property %s.", label.name(), propertyKey ), e );
+                throw new ConstraintViolationException( e.getUserMessage( new KeyNameLookup( context ) ), e );
             }
             finally
             {
@@ -419,6 +419,20 @@ public class SchemaImpl implements Schema
             catch ( SchemaKernelException e )
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
+            }
+            finally
+            {
+                context.close();
+            }
+        }
+
+        @Override
+        public String getUserMessage( KernelException e )
+        {
+            StatementContext context = ctxProvider.getCtxForWriting();
+            try
+            {
+                return e.getUserMessage( new KeyNameLookup( context ) );
             }
             finally
             {

@@ -29,6 +29,8 @@ import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.StatementContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 
 class GraphDatabaseTestBase extends GraphIcing with JUnitSuite {
 
@@ -167,6 +169,11 @@ class GraphDatabaseTestBase extends GraphIcing with JUnitSuite {
 
   def statementContext:StatementContext=
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
+
+  def readOnlyStatementContext:StatementContext=
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForReading
+
+  def planContext:PlanContext= new TransactionBoundPlanContext(readOnlyStatementContext, graph)
 }
 
 trait Snitch extends GraphDatabaseAPI {

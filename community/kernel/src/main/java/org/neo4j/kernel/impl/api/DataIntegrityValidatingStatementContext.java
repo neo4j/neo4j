@@ -23,10 +23,13 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -70,14 +73,28 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     @Override
     public IndexDescriptor indexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
-        checkIndexExistence( labelId, propertyKey );
+        try
+        {
+            checkIndexExistence( labelId, propertyKey );
+        }
+        catch ( KernelException e )
+        {
+            throw new AddIndexFailureException(labelId, propertyKey, e);
+        }
         return delegate.indexCreate( labelId, propertyKey );
     }
 
     @Override
     public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
     {
-        checkIndexExistence( labelId, propertyKey );
+        try
+        {
+            checkIndexExistence( labelId, propertyKey );
+        }
+        catch ( KernelException e )
+        {
+            throw new AddIndexFailureException(labelId, propertyKey, e);
+        }
         return delegate.uniqueIndexCreate( labelId, propertyKey );
     }
 
@@ -105,13 +122,28 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     {
         try
         {
+            assertIsNotUniqueIndex( descriptor, uniqueIndexesGetForLabel( descriptor.getLabelId() ) );
             assertIndexExists( descriptor, indexesGetForLabel( descriptor.getLabelId() ) );
         }
-        catch ( NoSuchIndexException e )
+        catch ( SchemaKernelException e )
         {
             throw new DropIndexFailureException( descriptor, e );
         }
         delegate.indexDrop( descriptor );
+    }
+
+    private void assertIsNotUniqueIndex( IndexDescriptor descriptor, Iterator<IndexDescriptor> uniqueIndexes )
+            throws IndexBelongsToConstraintException
+
+    {
+        while ( uniqueIndexes.hasNext() )
+        {
+            IndexDescriptor uniqueIndex = uniqueIndexes.next();
+            if ( uniqueIndex.getPropertyKeyId() == descriptor.getPropertyKeyId() )
+            {
+                throw new IndexBelongsToConstraintException( descriptor );
+            }
+        }
     }
 
     @Override

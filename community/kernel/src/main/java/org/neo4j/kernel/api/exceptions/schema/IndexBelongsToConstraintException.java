@@ -24,20 +24,20 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 
-public class NoSuchIndexException extends SchemaKernelException
+public class IndexBelongsToConstraintException extends SchemaKernelException
 {
-    private final IndexDescriptor descriptor;
-    private final static String message = "No such INDEX ON %s.";
+    private final IndexDescriptor index;
+    private final static String message = "Index belongs to constraint: %s";
 
-    public NoSuchIndexException( IndexDescriptor descriptor )
+    public IndexBelongsToConstraintException( IndexDescriptor index )
     {
-        super( format( message, descriptor ) );
-        this.descriptor = descriptor;
+        super( format( "Index belongs to constraint: %s", index ) );
+        this.index = index;
     }
 
     @Override
     public String getUserMessage( KeyNameLookup keyNameLookup )
     {
-        return format( message, descriptor.userDescription( keyNameLookup ) );
+        return format( message, index.userDescription( keyNameLookup ) );
     }
 }

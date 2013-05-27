@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -42,7 +41,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -101,8 +99,8 @@ public class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                assertEquals( e.getMessage(), "There already exists an index for label 'MY_LABEL' on property" +
-                        " 'my_property_key'." );
+                assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already " +
+                        "indexed :MY_LABEL(my_property_key).", e.getMessage() );
             }
             tx.success();
         }
@@ -362,8 +360,9 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(), "Cannot create a constraint on :MY_LABEL(my_property_key). An index " +
-                    "already exists for this combination. Drop the index and create the constraint again." );
+            assertEquals( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                    "IS UNIQUE:\nUnable to add index on [label: MY_LABEL, my_property_key] : " +
+                    "Already indexed :MY_LABEL(my_property_key).", e.getMessage() );
         }
     }
 
@@ -381,7 +380,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(), "A constraint already exists on :MY_LABEL(my_property_key)" );
+            assertEquals( "Already constrained CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS" +
+                    " UNIQUE.", e.getMessage() );
         }
     }
 
@@ -399,8 +399,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(), "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint" +
-                    " defined on them, so an index is already created that matches this." );
+            assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already constrained CONSTRAINT" +
+                    " ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE.", e.getMessage() );
         }
     }
 
@@ -418,8 +418,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(), "There already exists an index for label 'MY_LABEL' on property" +
-                    " 'my_property_key'." );
+            assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already indexed " +
+                    ":MY_LABEL(my_property_key).", e.getMessage() );
         }
     }
 

@@ -22,19 +22,22 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.KeyNameLookup;
 
+import static java.lang.String.format;
+
 public class AlreadyConstrainedException extends SchemaKernelException
 {
     private final UniquenessConstraint constraint;
+    private final static String message = "Already constrained %s.";
 
     public AlreadyConstrainedException( UniquenessConstraint constraint )
     {
-        super( String.format( "Already constrained %s.", constraint ) );
+        super( format( message, constraint ) );
         this.constraint = constraint;
     }
 
     @Override
     public String getUserMessage( KeyNameLookup keyNameLookup )
     {
-        return String.format( String.format( "Already constrained %s.", constraint.userDescription( keyNameLookup ) ) );
+        return format( message, constraint.userDescription( keyNameLookup ) );
     }
 }

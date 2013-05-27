@@ -19,25 +19,29 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.KeyNameLookup;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 
-public class NoSuchIndexException extends SchemaKernelException
+public class AddIndexFailureException extends SchemaKernelException
 {
-    private final IndexDescriptor descriptor;
-    private final static String message = "No such INDEX ON %s.";
+    private final static String message = "Unable to add index on [label: %s, %s] : %s";
 
-    public NoSuchIndexException( IndexDescriptor descriptor )
+    private final long labelId;
+    private final long propertyKey;
+
+    public AddIndexFailureException( long labelId, long propertyKey, KernelException cause )
     {
-        super( format( message, descriptor ) );
-        this.descriptor = descriptor;
+        super( format( message, labelId, propertyKey, cause.getMessage() ), cause );
+        this.labelId = labelId;
+        this.propertyKey = propertyKey;
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup keyNameLookup )
+    public String getUserMessage( KeyNameLookup nameLookup )
     {
-        return format( message, descriptor.userDescription( keyNameLookup ) );
+        return format( message, nameLookup.getLabelName( labelId ), nameLookup.getPropertyKeyName( propertyKey ),
+                ((KernelException) getCause()).getUserMessage( nameLookup ) );
     }
 }

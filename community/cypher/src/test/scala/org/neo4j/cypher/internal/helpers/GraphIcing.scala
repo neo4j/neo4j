@@ -31,7 +31,9 @@ trait GraphIcing {
   implicit class RichNode(n: Node) {
     def labels: List[String] = n.getLabels.asScala.map(_.name()).toList
 
-    def addLabels(input: String*) = input.foreach(l => n.addLabel(label(l)))
+    def addLabels(input: String*) {
+      input.foreach(l => n.addLabel(label(l)))
+    }
   }
 
   implicit class RichGraph(graph: GraphDatabaseAPI) {
@@ -41,16 +43,17 @@ trait GraphIcing {
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
+    def createConstraint(label:String, property: String) {
+      inTx {
+        graph.schema().constraintFor(DynamicLabel.label(label)).on(property).unique().create()
+      }
+    }
+
     def createIndex(label:String, property:String) {
-      val tx = graph.beginTx()
-      val indexDef = try {
-        val indexDef = graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
-        tx.success()
-        indexDef
+      val indexDef = inTx {
+        graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
       }
-      finally {
-        tx.finish()
-      }
+
       graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
     }
 

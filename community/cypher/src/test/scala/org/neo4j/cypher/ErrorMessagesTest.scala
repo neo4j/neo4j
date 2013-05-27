@@ -69,19 +69,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Ignore // We feel guilty
-  @Test def semiColonInMiddleOfQuery() {
-    expectSyntaxError(
-      """start n=node(2)
-         match n<-[r:IS_A]-p
-         ;
-         start n=node(2)
-         match p-[IS_A]->n, p-[r:WORKED_ON]->u
-         return p, sum(r.months)""",
-      v2_0 -> ("expected return clause", 44)
-    )
-  }
-
   @Test def badMatch2() {
     expectSyntaxError("start p=node(2) match p-[:IS_A]>dude return dude.name",
       v2_0 -> ("expected -", 31)
@@ -265,6 +252,30 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
+  @Test def trying_to_drop_constraint_index_should_return_sensible_error() {
+    graph.createConstraint("LabelName", "Prop")
+
+    expectError("DROP INDEX ON :LabelName(Prop)",
+      v2_0 -> "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
+    )
+  }
+
+  @Test def trying_to_drop_non_existent_index() {
+    expectError("DROP INDEX ON :Person(name)",
+      v2_0 -> "Unable to drop index on :Person(name): No such INDEX ON :Person(name)."
+    )
+  }
+
+  @Test def trying_to_add_unique_constraint_when_duplicates_exist() {
+    createLabeledNode(Map("name"->"A"), "Person")
+    createLabeledNode(Map("name"->"A"), "Person")
+
+    expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
+      v2_0 -> ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:\n"+
+        "Multiple nodes with label `Person` have property `name` = 'A':\n  existing node(1)\n  new node(2)")
+    )
+  }
+
   private def expectError(query: String, variants: (CypherVersion, String)*) {
     for ((version, message) <- variants) {
       expectError(version, query, message)
@@ -273,7 +284,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   def expectError(version: CypherVersion, query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(version, query))
-    assertThat(error.getMessage(), containsString(expectedError))
+    assertThat(error.getMessage, containsString(expectedError))
   }
 
   private def expectSyntaxError(query: String, variants: (CypherVersion, (String, Int))*) {

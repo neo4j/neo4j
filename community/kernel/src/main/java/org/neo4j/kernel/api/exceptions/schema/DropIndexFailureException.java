@@ -23,20 +23,23 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.KeyNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
+import static java.lang.String.format;
+
 public class DropIndexFailureException extends SchemaKernelException
 {
     private final IndexDescriptor indexDescriptor;
+    private final static String message = "Unable to drop index on %s: %s";
 
-    public DropIndexFailureException( IndexDescriptor indexDescriptor, KernelException cause )
+    public DropIndexFailureException( IndexDescriptor indexDescriptor, SchemaKernelException cause )
     {
-        super( String.format( "Unable to drop %s: %s", indexDescriptor, cause.getMessage() ), cause );
+        super( format( message, indexDescriptor, cause.getMessage() ), cause );
         this.indexDescriptor = indexDescriptor;
     }
 
     @Override
     public String getUserMessage( KeyNameLookup keyNameLookup )
     {
-        return String.format( "Unable to drop %s: %s", indexDescriptor.userDescription( keyNameLookup ),
+        return format( message, indexDescriptor.userDescription( keyNameLookup ),
                 ((KernelException) getCause()).getUserMessage( keyNameLookup ) );
     }
 }

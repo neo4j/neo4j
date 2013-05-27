@@ -74,12 +74,12 @@ public class IndexDescriptor
     @Override
     public String toString()
     {
-        return String.format( "INDEX ON :label[%d](property[%d])", labelId, propertyKeyId );
+        return String.format( ":label[%d](property[%d])", labelId, propertyKeyId );
     }
 
     public String userDescription( KeyNameLookup keyNameLookup )
     {
-        return String.format( "INDEX ON :%s(%s)",
+        return String.format( ":%s(%s)",
                 keyNameLookup.getLabelName( labelId ), keyNameLookup.getPropertyKeyName( propertyKeyId ) );
     }
 }

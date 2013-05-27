@@ -22,30 +22,53 @@ package org.neo4j.cypher.internal.executionplan
 import collection.Seq
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{NodeById, Query}
+import org.neo4j.cypher.internal.commands.{ReturnItem, NodeById, Query}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.Assertions
-import org.neo4j.cypher.{GraphDatabaseTestBase, InternalException}
-import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.{PlanDescription, GraphDatabaseTestBase, InternalException}
 import java.util.concurrent._
-import org.neo4j.cypher.internal.commands.ReturnItem
-import org.hamcrest.core.Is.is
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.internal.pipes.{QueryState, Pipe}
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 
 class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed {
-  @Test def should_not_go_into_never_ending_loop() {
-    val q     = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
+  @Test def should_not_accept_returning_the_input_execution_plan() {
+    val q = Query.empty
 
-    val exception = intercept[ExecutionException](timeoutAfter(1) {
-      val epi = new FakeExecPlanBuilder(graph)
-      epi.build(null, q)
+    val exception = intercept[ExecutionException](timeoutAfter(5) {
+      val epi = new FakeExecPlanBuilder(graph, Seq(new BadBuilder))
+      epi.build(planContext, q)
     })
 
-    assertTrue( "Execution plan builder didn't throw expected exception", exception.getCause().isInstanceOf[InternalException] )
+    assertTrue("Execution plan builder didn't throw expected exception", exception.getCause.isInstanceOf[InternalException])
+  }
+
+  @Test def should_close_transactions_if_pipe_throws_when_creating_iterator() {
+    // given
+    val tx = graph.beginTx()
+    val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
+
+    val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext)
+
+    // when
+    intercept[ExplodingException] {
+      val executionPlan = execPlanBuilder.build(planContext, q)
+      executionPlan.execute(queryContext, Map())
+    }
+
+    // then
+    assertNull("Expected no transactions left open", graph.getTxManager.getTransaction)
+
   }
 }
 
-class FakeExecPlanBuilder(gds: GraphDatabaseService) extends ExecutionPlanBuilder(gds) {
-  override lazy val builders = Seq(new BadBuilder)
+class FakeExecPlanBuilder(gds: GraphDatabaseService, myBuilders: Seq[PlanBuilder]) extends ExecutionPlanBuilder(gds) {
+  override lazy val builders = myBuilders
 }
 
 // This is a builder that accepts everything, but changes nothing
@@ -57,6 +80,33 @@ class BadBuilder extends LegacyPlanBuilder {
 
   def priority = 0
 }
+
+class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
+    !plan.pipe.isInstanceOf[ExplodingPipe]
+
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+      val psq = mock[PartiallySolvedQuery]
+      when(psq.isSolved).thenReturn(true)
+      when(psq.tail).thenReturn(None)
+
+      plan.copy(pipe = new ExplodingPipe, query = psq)
+    }
+
+  def priority: Int = 0
+
+  class ExplodingPipe extends Pipe {
+    def internalCreateResults(state: QueryState) = throw new ExplodingException
+
+    def symbols: SymbolTable = new SymbolTable()
+
+    def executionPlanDescription: PlanDescription = null
+  }
+
+
+}
+
+class ExplodingException extends Exception
 
 trait Timed {
   def timeoutAfter(timeout: Long)(codeToTest: => Unit) {

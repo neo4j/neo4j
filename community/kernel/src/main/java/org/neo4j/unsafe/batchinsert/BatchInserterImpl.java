@@ -54,6 +54,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalSchemaActions;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -107,7 +108,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -1258,7 +1258,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public void dropIndexDefinitions( Label label, String propertyKey )
         {
-            throw new UnsupportedOperationException( "Dropping schema indexes is not supported in batch mode" );
+            throw unsupportedException();
         }
 
         @Override
@@ -1273,7 +1273,18 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            throw new UnsupportedOperationException( "Batch inserter doesn't support this" );
+            throw unsupportedException();
+        }
+
+        @Override
+        public String getUserMessage( KernelException e )
+        {
+            throw unsupportedException();
+        }
+
+        private UnsupportedOperationException unsupportedException()
+        {
+            return new UnsupportedOperationException( "Batch inserter doesn't support this" );
         }
     }
 

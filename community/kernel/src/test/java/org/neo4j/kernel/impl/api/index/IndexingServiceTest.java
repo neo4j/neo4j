@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -65,7 +63,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -246,9 +243,9 @@ public class IndexingServiceTest
 
         // then
         logger.assertExactly(
-                info( "IndexingService.initIndexes: INDEX ON :label[1](property[1]) is ONLINE" ),
-                info( "IndexingService.initIndexes: INDEX ON :label[2](property[2]) is POPULATING" ),
-                info( "IndexingService.initIndexes: INDEX ON :label[3](property[3]) is FAILED" )
+                info( "IndexingService.initIndexes: index on :label[1](property[1]) is ONLINE" ),
+                info( "IndexingService.initIndexes: index on :label[2](property[2]) is POPULATING" ),
+                info( "IndexingService.initIndexes: index on :label[3](property[3]) is FAILED" )
         );
     }
 
@@ -283,11 +280,11 @@ public class IndexingServiceTest
 
         // then
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: INDEX ON :label[1](property[1]) is ONLINE" ) );
+                info( "IndexingService.start: index on :label[1](property[1]) is ONLINE" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: INDEX ON :label[2](property[2]) is POPULATING" ) );
+                info( "IndexingService.start: index on :label[2](property[2]) is POPULATING" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: INDEX ON :label[3](property[3]) is FAILED" ) );
+                info( "IndexingService.start: index on :label[3](property[3]) is FAILED" ) );
     }
 
     private static Logging mockLogging( StringLogger logger )
