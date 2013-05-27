@@ -252,13 +252,13 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Test def trying_to_drop_constraint_index_should_return_sensible_error() {
-    graph.createConstraint("LabelName", "Prop")
-
-    expectError("DROP INDEX ON :LabelName(Prop)",
-      v2_0 -> "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
-    )
-  }
+//  @Test def trying_to_drop_constraint_index_should_return_sensible_error() {
+//    graph.createConstraint("LabelName", "Prop")
+//
+//    expectError("DROP INDEX ON :LabelName(Prop)",
+//      v2_0 -> "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
+//    )
+//  }
 
   @Test def trying_to_drop_non_existent_index() {
     expectError("DROP INDEX ON :Person(name)",
@@ -266,6 +266,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
+  @Ignore("2013-05-27 Waiting for constraints to be finished")
   @Test def trying_to_add_unique_constraint_when_duplicates_exist() {
     createLabeledNode(Map("name"->"A"), "Person")
     createLabeledNode(Map("name"->"A"), "Person")

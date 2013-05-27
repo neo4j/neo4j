@@ -23,11 +23,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
-
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -55,16 +53,12 @@ import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
-import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
@@ -107,12 +101,9 @@ import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
 {
@@ -1714,147 +1705,147 @@ public class DatabaseActions
         }
     }
 
-    public ConstraintDefinitionRepresentation createPropertyUniquenessConstraint( String labelName,
-            Iterable<String> propertyKeys )
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
-            for ( String key : propertyKeys )
-            {
-                constraintCreator = constraintCreator.on( key );
-            }
-
-            ConstraintDefinition constraintDefinition = constraintCreator.create();
-            ConstraintDefinitionRepresentation result = new ConstraintDefinitionRepresentation( constraintDefinition );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public ConstraintDefinitionRepresentation createPropertyUniquenessConstraint( String labelName,
+//            Iterable<String> propertyKeys )
+//    {
+//        Transaction tx = graphDb.beginTx();
+//        try
+//        {
+//            ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
+//            for ( String key : propertyKeys )
+//            {
+//                constraintCreator = constraintCreator.on( key );
+//            }
+//
+//            ConstraintDefinition constraintDefinition = constraintCreator.create();
+//            ConstraintDefinitionRepresentation result = new ConstraintDefinitionRepresentation( constraintDefinition );
+//            tx.success();
+//            return result;
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
     
-    public boolean dropPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
-    {
-        final Set<String> propertyKeysSet = asSet( propertyKeys );
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ConstraintDefinition constraint =
-                    singleOrNull( filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
-            if ( constraint != null )
-                constraint.drop();
-            tx.success();
-            return constraint != null;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public boolean dropPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
+//    {
+//        final Set<String> propertyKeysSet = asSet( propertyKeys );
+//        Transaction tx = database.getGraph().beginTx();
+//        try
+//        {
+//            ConstraintDefinition constraint =
+//                    singleOrNull( filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
+//            if ( constraint != null )
+//                constraint.drop();
+//            tx.success();
+//            return constraint != null;
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
 
-    public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
-    {
-        Set<String> propertyKeysSet = asSet( propertyKeys );
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            Iterable<ConstraintDefinition> constraints =
-                    filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
-            if ( constraints.iterator().hasNext() )
-            {
-                Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
-                ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
-	            tx.success();
-	            return result;
-            }
-            else
-            {
-            	throw new IllegalArgumentException( 
-        			String.format( "Constraint with label %s for properties %s already exists", labelName, propertyKeys ) );
-            }
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
+//    {
+//        Set<String> propertyKeysSet = asSet( propertyKeys );
+//        Transaction tx = database.getGraph().beginTx();
+//        try
+//        {
+//            Iterable<ConstraintDefinition> constraints =
+//                    filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
+//            if ( constraints.iterator().hasNext() )
+//            {
+//                Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+//                ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
+//	            tx.success();
+//	            return result;
+//            }
+//            else
+//            {
+//            	throw new IllegalArgumentException(
+//        			String.format( "Constraint with label %s for properties %s already exists", labelName, propertyKeys ) );
+//            }
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, Predicate<ConstraintDefinition> filter )
-    {
-        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
-		return filter( filter, constraints );
-    }
+//    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, Predicate<ConstraintDefinition> filter )
+//    {
+//        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
+//		return filter( filter, constraints );
+//    }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, ConstraintType type )
-    {
-        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
-        return type.filter( constraints );
-    }
+//    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, ConstraintType type )
+//    {
+//        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
+//        return type.filter( constraints );
+//    }
 
-    private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
-    {
-        return new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean accept( ConstraintDefinition item )
-            {
-                return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
-                        propertyKeysSet.equals( asSet( item.asUniquenessConstraint().getPropertyKeys() ) );
-            }
-        };
-    }
+//    private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
+//    {
+//        return new Predicate<ConstraintDefinition>()
+//        {
+//            @Override
+//            public boolean accept( ConstraintDefinition item )
+//            {
+//                return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
+//                        propertyKeysSet.equals( asSet( item.asUniquenessConstraint().getPropertyKeys() ) );
+//            }
+//        };
+//    }
 
-    public ListRepresentation getConstraints()
-    {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION, database.getGraph().schema().getConstraints() ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public ListRepresentation getConstraints()
+//    {
+//        Transaction tx = database.getGraph().beginTx();
+//        try
+//        {
+//            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
+//                    map( CONSTRAINT_DEF_TO_REPRESENTATION, database.getGraph().schema().getConstraints() ) );
+//            tx.success();
+//            return result;
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
 
-    public ListRepresentation getLabelConstraints( String labelName )
-    {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                            filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public ListRepresentation getLabelConstraints( String labelName )
+//    {
+//        Transaction tx = database.getGraph().beginTx();
+//        try
+//        {
+//            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
+//                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
+//                            filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
+//            tx.success();
+//            return result;
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
 
-    public Representation getLabelUniquenessConstraints( String labelName )
-    {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                            filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+//    public Representation getLabelUniquenessConstraints( String labelName )
+//    {
+//        Transaction tx = database.getGraph().beginTx();
+//        try
+//        {
+//            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
+//                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
+//                            filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
+//            tx.success();
+//            return result;
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//    }
 }

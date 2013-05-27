@@ -43,11 +43,11 @@ trait GraphIcing {
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
-    def createConstraint(label:String, property: String) {
-      inTx {
-        graph.schema().constraintFor(DynamicLabel.label(label)).on(property).unique().create()
-      }
-    }
+//    def createConstraint(label:String, property: String) {
+//      inTx {
+//        graph.schema().constraintFor(DynamicLabel.label(label)).on(property).unique().create()
+//      }
+//    }
 
     def createIndex(label:String, property:String) {
       val indexDef = inTx {

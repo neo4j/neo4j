@@ -24,11 +24,9 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
@@ -61,7 +59,7 @@ public class ServerHelper
                 deleteAllNodesAndRelationships();
                 deleteAllIndexes();
                 deleteAllIndexRules();
-                deleteAllConstraints();
+//                deleteAllConstraints();
             }
 
             private void deleteAllIndexRules()
@@ -75,13 +73,13 @@ public class ServerHelper
                 }
             }
 
-            private void deleteAllConstraints()
-            {
-                for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-                {
-                    constraint.drop();
-                }
-            }
+//            private void deleteAllConstraints()
+//            {
+//                for ( ConstraintDefinition constraint : db.schema().getConstraints() )
+//                {
+//                    constraint.drop();
+//                }
+//            }
 
             private void deleteAllNodesAndRelationships()
             {

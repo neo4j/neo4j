@@ -23,10 +23,8 @@ import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.shell.AppCommandParser;
@@ -115,34 +113,34 @@ public class Schema extends GraphDatabaseApp
                                             final String property ) throws RemoteException
     {
         reportIndexes( out, schema, labels, property );
-        reportConstraints( out, schema, labels, property );
+//        reportConstraints( out, schema, labels, property );
     }
 
-    private void reportConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String
-            property ) throws RemoteException
-    {
-        int j = 0;
-        for ( ConstraintDefinition constraint : constraintsByLabelAndProperty( schema, labels, property ) )
-        {
-            if ( j == 0 )
-            {
-                out.println();
-                out.println( "Constraints" );
-            }
-
-            String labelName = constraint.getLabel().name();
-
-            out.println( String.format( "  ON (%s:%s) ASSERT %s", labelName.toLowerCase(), labelName,
-                    constraint.toString() ) );
-            j++;
-
-        }
-        if ( j == 0 )
-        {
-            out.println();
-            out.println( "No constraints" );
-        }
-    }
+//    private void reportConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String
+//            property ) throws RemoteException
+//    {
+//        int j = 0;
+//        for ( ConstraintDefinition constraint : constraintsByLabelAndProperty( schema, labels, property ) )
+//        {
+//            if ( j == 0 )
+//            {
+//                out.println();
+//                out.println( "Constraints" );
+//            }
+//
+//            String labelName = constraint.getLabel().name();
+//
+//            out.println( String.format( "  ON (%s:%s) ASSERT %s", labelName.toLowerCase(), labelName,
+//                    constraint.toString() ) );
+//            j++;
+//
+//        }
+//        if ( j == 0 )
+//        {
+//            out.println();
+//            out.println( "No constraints" );
+//        }
+//    }
 
     private void reportIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property )
             throws RemoteException
@@ -215,54 +213,54 @@ public class Schema extends GraphDatabaseApp
         return indexes;
     }
 
-    private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
-                                                                          final Label[] labels, final String property )
-    {
+//    private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
+//                                                                          final Label[] labels, final String property )
+//    {
+//
+//        return filter( new Predicate<ConstraintDefinition>()
+//        {
+//            @Override
+//            public boolean accept( ConstraintDefinition constraint )
+//            {
+//                return hasLabel( constraint, labels ) && isMatchingConstraint( constraint, property );
+//            }
+//        }, schema.getConstraints() );
+//    }
 
-        return filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean accept( ConstraintDefinition constraint )
-            {
-                return hasLabel( constraint, labels ) && isMatchingConstraint( constraint, property );
-            }
-        }, schema.getConstraints() );
-    }
+//    private boolean hasLabel( ConstraintDefinition constraint, Label[] labels )
+//    {
+//        if ( labels.length == 0 )
+//        {
+//            return true;
+//        }
+//
+//        for ( Label label : labels )
+//        {
+//            if ( constraint.getLabel().name().equals( label.name() ) )
+//            {
+//                return true;
+//            }
+//        }
+//
+//        return false;
+//    }
 
-    private boolean hasLabel( ConstraintDefinition constraint, Label[] labels )
-    {
-        if ( labels.length == 0 )
-        {
-            return true;
-        }
-
-        for ( Label label : labels )
-        {
-            if ( constraint.getLabel().name().equals( label.name() ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean isMatchingConstraint( ConstraintDefinition constraint, final String property )
-    {
-        if ( property == null )
-        {
-            return true;
-        }
-
-        switch ( constraint.getConstraintType() )
-        {
-            case UNIQUENESS:
-                UniquenessConstraintDefinition typedConstraint = constraint.asUniquenessConstraint();
-                return indexOf( property, typedConstraint.getPropertyKeys() ) != -1;
-            default:
-                return false;
-        }
-    }
+//    private boolean isMatchingConstraint( ConstraintDefinition constraint, final String property )
+//    {
+//        if ( property == null )
+//        {
+//            return true;
+//        }
+//
+//        switch ( constraint.getConstraintType() )
+//        {
+//            case UNIQUENESS:
+//                UniquenessConstraintDefinition typedConstraint = constraint.asUniquenessConstraint();
+//                return indexOf( property, typedConstraint.getPropertyKeys() ) != -1;
+//            default:
+//                return false;
+//        }
+//    }
 
     private Iterable<IndexDefinition> indexesByLabel( org.neo4j.graphdb.schema.Schema schema, Label[] labels )
     {

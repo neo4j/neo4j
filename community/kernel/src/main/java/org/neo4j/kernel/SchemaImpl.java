@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -241,6 +240,7 @@ public class SchemaImpl implements Schema
         }
     }
 
+    /* 2013-05-27 Waiting for constraints to be finished
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
@@ -316,6 +316,7 @@ public class SchemaImpl implements Schema
         // Intentionally iterator over it so that we can close the statement context within this method
         return asCollection( definitions );
     }
+    */
 
     private static class GDBSchemaActions implements InternalSchemaActions
     {
