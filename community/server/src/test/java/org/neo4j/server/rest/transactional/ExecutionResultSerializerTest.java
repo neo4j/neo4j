@@ -31,12 +31,12 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -44,12 +44,10 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 
@@ -320,7 +318,7 @@ public class ExecutionResultSerializerTest
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
         @SuppressWarnings("unchecked")
-        Iterator<Map<String, Object>> iterator = mock( Iterator.class );
+        ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true, true, false );
         when( iterator.next() ).thenReturn( data ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
         when( executionResult.iterator() ).thenReturn( iterator );
@@ -357,7 +355,7 @@ public class ExecutionResultSerializerTest
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
         @SuppressWarnings("unchecked")
-        Iterator<Map<String, Object>> iterator = mock( Iterator.class );
+        ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true ).thenThrow(
                 new RuntimeException( "Stuff went wrong!" ) );
         when( iterator.next() ).thenReturn( data );
@@ -408,7 +406,34 @@ public class ExecutionResultSerializerTest
         }
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<String>( keys ) );
-        when( executionResult.iterator() ).thenReturn( asList( rows ).iterator() );
+        final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
+
+        ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>() {
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return inner.hasNext();
+            }
+
+            @Override
+            public Map<String, Object> next()
+            {
+                return inner.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                inner.remove();
+            }
+        };
+
+        when( executionResult.iterator() ).thenReturn( iterator );
         return executionResult;
     }
 
