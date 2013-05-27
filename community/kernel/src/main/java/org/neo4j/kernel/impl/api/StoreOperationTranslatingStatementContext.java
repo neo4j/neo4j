@@ -41,6 +41,11 @@ public class StoreOperationTranslatingStatementContext extends CompositeStatemen
     {
     }
 
+    public StoreOperationTranslatingStatementContext( StatementContext delegate )
+    {
+        super( delegate );
+    }
+    
     public StoreOperationTranslatingStatementContext( StatementContext delegate, SchemaStateOperations
             schemaStateOperations )
     {
@@ -72,6 +77,19 @@ public class StoreOperationTranslatingStatementContext extends CompositeStatemen
             }
         }, relationshipGetAllProperties( relationshipId ) );
     }
+    
+    @Override
+    public Iterator<Long> graphGetPropertyKeys()
+    {
+        return map( new Function<Property, Long>()
+        {
+            @Override
+            public Long apply( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        }, graphGetAllProperties() );
+    }
 
     @Override
     public boolean nodeHasProperty( long nodeId, long propertyKeyId )
@@ -88,6 +106,12 @@ public class StoreOperationTranslatingStatementContext extends CompositeStatemen
     {
         return null != getPropertyOrNull( relationshipGetAllProperties( relationshipId ), propertyKeyId );
     }
+    
+    @Override
+    public boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        return null != getPropertyOrNull( graphGetAllProperties(), propertyKeyId );
+    }
 
     @Override
     public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
@@ -101,6 +125,13 @@ public class StoreOperationTranslatingStatementContext extends CompositeStatemen
     {
         Property property = getPropertyOrNull( relationshipGetAllProperties( relationshipId ), propertyKeyId );
         return property == null ? Property.noRelationshipProperty( relationshipId, propertyKeyId ) : property;
+    }
+    
+    @Override
+    public Property graphGetProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        Property property = getPropertyOrNull( graphGetAllProperties(), propertyKeyId );
+        return property == null ? Property.noGraphProperty( propertyKeyId ) : property;
     }
 
     private Property getPropertyOrNull( Iterator<Property> properties, long propertyKeyId )

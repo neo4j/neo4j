@@ -209,7 +209,6 @@ public class LockManagerImpl implements LockManager
             }
             lock.releaseWriteLock(tx);
         }
-
     }
 
     /**

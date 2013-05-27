@@ -19,16 +19,21 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 /**
  * A {@link Primitive} which uses a {@link PropertyData}[] for caching properties.
@@ -38,7 +43,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  */
 abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
 {
-    private volatile PropertyData[] properties;
+    private volatile Property[] properties;
     private volatile int registeredSize;
 
     ArrayBasedPrimitive( boolean newPrimitive )
@@ -58,19 +63,18 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         return registeredSize;
     }
     
+    @Override
     public int size()
     {
         int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
         if ( properties != null )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
-            for ( PropertyData data : properties )
-                size += data.size();
+            for ( Property data : properties )
+                size += data.asPropertyDataJustForIntegration().size();
         }
         return withObjectOverhead( size );
     }
-    
-    abstract protected void updateSize( NodeManager nodeManager );
     
     @Override
     protected void setEmptyProperties()
@@ -78,16 +82,16 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         properties = NO_PROPERTIES;
     }
 
-    private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
+    private Property[] toPropertyArray( Collection<Property> loadedProperties )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
         {
             return NO_PROPERTIES;
         }
 
-        PropertyData[] result = new PropertyData[loadedProperties.size()];
+        Property[] result = new Property[loadedProperties.size()];
         int i = 0;
-        for ( PropertyData property : loadedProperties.values() )
+        for ( Property property : loadedProperties )
         {
             result[i++] = property;
         }
@@ -95,17 +99,17 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         return result;
     }
     
-    private static void sort( PropertyData[] array )
+    private static void sort( Property[] array )
     {
         Arrays.sort( array, PROPERTY_DATA_COMPARATOR_FOR_SORTING );
     }
     
-    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<PropertyData>()
+    private static final Comparator<Property> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<Property>()
     {
         @Override
-        public int compare( PropertyData o1, PropertyData o2 )
+        public int compare( Property o1, Property o2 )
         {
-            return o1.getIndex() - o2.getIndex();
+            return (int) o1.propertyKeyId() - (int) o2.propertyKeyId();
         }
     };
     
@@ -122,30 +126,35 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         @Override
         public int compare( Object o1, Object o2 )
         {
-            return ((PropertyData)o1).getIndex() - ((Integer) o2).intValue();
+            return (int) ((Property)o1).propertyKeyId() - ((Integer) o2).intValue();
         }
     };
-
+    
     @Override
-    public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
+    protected boolean hasLoadedProperties()
     {
-        this.properties = toPropertyArray( properties );
-        updateSize( nodeManager );
+        return properties != null;
+    }
+    
+    @Override
+    protected Iterator<Property> getCachedProperties()
+    {
+        return iterator( properties );
     }
 
     @Override
-    protected PropertyData[] allProperties()
+    protected void setProperties( Iterator<Property> properties )
     {
-        return properties;
+        this.properties = toPropertyArray( asCollection( properties ) );
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
     protected PropertyData getPropertyForIndex( int keyId )
     {
-        PropertyData[] localProperties = properties;
+        Property[] localProperties = properties;
         int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
-        return index < 0 ? null : localProperties[index];
+        return index < 0 ? null : localProperties[index].asPropertyDataJustForIntegration();
     }
 
     @Override
@@ -156,7 +165,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         synchronized ( this )
         {
             // Dereference the volatile once to avoid multiple barriers
-            PropertyData[] newArray = properties;
+            Property[] newArray = properties;
             if ( newArray == null ) return;
 
             /*
@@ -179,8 +188,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
             // currently it can do two copies in the clone() case if it also compacts
             if ( extraLength > 0 )
             {
-                PropertyData[] oldArray = newArray;
-                newArray = new PropertyData[oldArray.length + extraLength];
+                Property[] oldArray = newArray;
+                newArray = new Property[oldArray.length + extraLength];
                 System.arraycopy( oldArray, 0, newArray, 0, oldArray.length );
             }
             else
@@ -194,8 +203,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
                 {
                     for ( int i = 0; i < newArraySize; i++ )
                     {
-                        PropertyData existingProperty = newArray[i];
-                        if ( existingProperty.getIndex() == keyIndex )
+                        Property existingProperty = newArray[i];
+                        if ( existingProperty.propertyKeyId() == keyIndex )
                         {
                             int swapWith = --newArraySize;
                             newArray[i] = newArray[swapWith];
@@ -212,10 +221,10 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
                 {
                     for ( int i = 0; i < newArray.length; i++ )
                     {
-                        PropertyData existingProperty = newArray[i];
-                        if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                        Property existingProperty = newArray[i];
+                        if ( existingProperty == null || addedProperty.getIndex() == existingProperty.propertyKeyId() )
                         {
-                            newArray[i] = addedProperty;
+                            newArray[i] = Property.property( addedProperty.getIndex(), addedProperty.getValue() );
                             if ( existingProperty == null )
                             {
                                 newArraySize++;
@@ -229,7 +238,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
             // these size changes are updated from lock releaser
             if ( newArraySize < newArray.length )
             {
-                PropertyData[] compactedNewArray = new PropertyData[newArraySize];
+                Property[] compactedNewArray = new Property[newArraySize];
                 System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
                 sort( compactedNewArray );
                 properties = compactedNewArray;
@@ -239,7 +248,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
                 sort( newArray );
                 properties = newArray;
             }
-            updateSize( nodeManager );
         }
     }
 }

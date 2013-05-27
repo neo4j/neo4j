@@ -21,6 +21,9 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+
 class BooleanArrayProperty extends FullSizeProperty
 {
     private final boolean[] value;
@@ -74,5 +77,12 @@ class BooleanArrayProperty extends FullSizeProperty
     boolean hasEqualValue( FullSizeProperty that )
     {
         return Arrays.equals( this.value, ((BooleanArrayProperty)that).value );
+    }
+    
+    @Override
+    @Deprecated
+    public PropertyData asPropertyDataJustForIntegration()
+    {
+        return PropertyDatas.forStringOrArray( (int) propertyKeyId, -1, value );
     }
 }

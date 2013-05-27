@@ -28,6 +28,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
@@ -225,7 +226,8 @@ public class IndexQueryTransactionStateTest
                                      mock( TxState.IdGeneration.class ) );
 
         txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class),
-                                                       state, mock( ConstraintIndexCreator.class ) );
+                                                       state, mock( ConstraintIndexCreator.class ),
+                                                       mock( AuxiliaryStoreOperations.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

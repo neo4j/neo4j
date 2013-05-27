@@ -128,4 +128,20 @@ public class Exceptions
     {
         // no instances
     }
+
+    public static final Throwable rootCause( Throwable caughtException )
+    {
+        if ( null == caughtException )
+        {
+            throw new IllegalArgumentException( "Cannot obtain rootCause from (null)" );
+        }
+        Throwable root  = caughtException;
+        Throwable cause = root.getCause();
+        while ( null != cause )
+        {
+            root  = cause;
+            cause = cause.getCause();
+        }
+        return root;
+    }
 }

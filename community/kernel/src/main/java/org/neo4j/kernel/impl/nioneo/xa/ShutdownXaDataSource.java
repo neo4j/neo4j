@@ -28,7 +28,6 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -85,12 +84,6 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 
     @Override
     public long getNumberOfIdsInUse( Class<?> clazz )
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
-    public PersistenceCache getPersistenceCache()
     {
         throw databaseIsShutdownError();
     }

@@ -68,11 +68,9 @@ public interface TransactionState
 
     ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
-            Primitive primitive );
+    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
-            Primitive primitive );
+    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap( Primitive primitive );
     
     void createNode( long id );
 

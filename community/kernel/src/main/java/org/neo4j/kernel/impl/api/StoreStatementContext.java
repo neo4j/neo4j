@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
@@ -44,16 +43,13 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -69,7 +65,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
-import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -87,7 +83,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.contains;
  * Cache reading and invalidation is not the concern of this part of the system, that is an optimization on top of the
  * committed data in the database, and should as such live under that abstraction.
  */
-public class StoreStatementContext extends  StoreOperationTranslatingStatementContext
+public class StoreStatementContext extends StoreOperationTranslatingStatementContext implements AuxiliaryStoreOperations
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -126,9 +122,15 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
                 }
             };
     private final SchemaStorage schemaStorage;
+    
+    // TODO this is here since the move of properties from Primitive and friends to the Kernel API.
+    // ideally we'd have StateHandlingStatementContext not delegate setProperty to this StoreStatementContext,
+    // but talk to use before commit instead.
+    private final PersistenceManager persistenceManager;
 
     public StoreStatementContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                   NodeManager nodeManager, SchemaStorage schemaStorage, NeoStore neoStore,
+                                  PersistenceManager persistenceManager,
                                   IndexingService indexService, IndexReaderFactory indexReaderFactory )
     {
         this.schemaStorage = schemaStorage;
@@ -143,6 +145,7 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
         this.nodeStore = neoStore.getNodeStore();
         this.relationshipStore = neoStore.getRelationshipStore();
         this.propertyStore = neoStore.getPropertyStore();
+        this.persistenceManager = persistenceManager;
     }
 
     @Override
@@ -455,24 +458,6 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
     }
 
     @Override
-    public Iterator<Long> nodeGetPropertyKeys( long nodeId )
-    {
-        // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
-        // a first step to move it into the kernel.
-        return map( propertyStringToId,
-                    nodeManager.getNodeForProxy( nodeId, null ).getPropertyKeys( nodeManager ).iterator() );
-    }
-
-    @Override
-    public Iterator<Long> relationshipGetPropertyKeys( long relId )
-    {
-        // TODO: This is temporary, it should be split up to handle tx state up in the correct layers, this is just
-        // a first step to move it into the kernel.
-        return map( propertyStringToId,
-                nodeManager.getRelationshipForProxy( relId, null ).getPropertyKeys( nodeManager ).iterator() );
-    }
-
-    @Override
     public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         try
@@ -497,6 +482,12 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
     }
+    
+    @Override
+    public Iterator<Property> graphGetAllProperties()
+    {
+        return loadAllPropertiesOf( neoStore.asRecord() );
+    }
 
     private Iterator<Property> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
     {
@@ -517,90 +508,6 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, Property property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = propertyKeyGetName( property.propertyKeyId() );
-            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
-            NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
-            Object oldValue = nodeImpl.setProperty( nodeManager, nodeProxy, propertyKey, property.value() );
-            return Property.propertyFromNode( nodeId, property.propertyKeyId(), oldValue );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
-        }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
-        }
-    }
-
-    @Override
-    public Property relationshipSetProperty( long relationshipId, Property property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = propertyKeyGetName( property.propertyKeyId() );
-            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE );
-            RelationshipProxy relProxy = nodeManager.newRelationshipProxyById( relationshipId );
-            Object oldValue = relImpl.setProperty( nodeManager, relProxy, propertyKey, property.value() );
-            return Property.propertyFromRelationship( relationshipId, property.propertyKeyId(), oldValue );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-        }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
-        }
-    }
-
-    @Override
-    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = propertyKeyGetName( propertyKeyId );
-            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, LockType.WRITE );
-            NodeProxy nodeProxy = nodeManager.newNodeProxyById( nodeId );
-            Object oldValue = nodeImpl.removeProperty( nodeManager, nodeProxy, propertyKey );
-            return Property.propertyFromNode( nodeId, propertyKeyId, oldValue );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
-        }
-    }
-
-    @Override
-    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        try
-        {
-            // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
-            String propertyKey = propertyKeyGetName( propertyKeyId );
-            Relationship relProxy = nodeManager.getRelationshipById( relationshipId );
-            Object oldValue = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE ).removeProperty(
-                    nodeManager, relProxy, propertyKey );
-            return Property.propertyFromRelationship( relationshipId, propertyKeyId, oldValue );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-        }
-    }
-
-    @Override
     public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
@@ -617,5 +524,127 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
     public <K> boolean schemaStateContains( K key )
     {
         throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
+    }
+
+    @Override
+    public void nodeAddStoreProperty( long nodeId, Property property )
+            throws PropertyNotFoundException
+
+    {
+        persistenceManager.nodeAddProperty( nodeId, (int) property.propertyKeyId(), property.value() );
+    }
+
+    @Override
+    public void relationshipAddStoreProperty( long relationshipId, Property property )
+            throws PropertyNotFoundException
+    {
+        persistenceManager.relAddProperty( relationshipId, (int) property.propertyKeyId(), property.value() );
+    }
+    
+    @Override
+    public void graphAddStoreProperty( Property property ) throws PropertyNotFoundException
+    {
+        persistenceManager.graphAddProperty( (int) property.propertyKeyId(), property.value() );
+    }
+
+    @Override
+    public void nodeChangeStoreProperty( long nodeId, Property previousProperty, Property property )
+            throws PropertyNotFoundException
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.nodeChangeProperty( nodeId, (int) property.propertyKeyId(), property.value() );
+    }
+
+    @Override
+    public void relationshipChangeStoreProperty( long relationshipId, Property previousProperty, Property property )
+            throws PropertyNotFoundException
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.relChangeProperty( relationshipId,
+                (int) property.propertyKeyId(), property.value() );
+    }
+    
+    @Override
+    public void graphChangeStoreProperty( Property previousProperty, Property property )
+            throws PropertyNotFoundException
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.graphChangeProperty( (int) property.propertyKeyId(), property.value() );
+    }
+
+    @Override
+    public void nodeRemoveStoreProperty( long nodeId, Property property )
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.nodeRemoveProperty( nodeId, (int) property.propertyKeyId() );
+    }
+
+    @Override
+    public void relationshipRemoveStoreProperty( long relationshipId, Property property )
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.relRemoveProperty( relationshipId, (int) property.propertyKeyId() );
+    }
+    
+    @Override
+    public void graphRemoveStoreProperty( Property property )
+    {
+        // TODO this should change. We don't have the property record id here, so we PersistenceManager
+        // has been changed to only accept the property key and it will find it among the property records
+        // on demand. This change was made instead of cramming in record id into the Property objects,
+        persistenceManager.graphRemoveProperty( (int) property.propertyKeyId() );
+    }
+
+    @Override
+    public Property nodeSetProperty( long nodeId, Property property )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+
+    @Override
+    public Property relationshipSetProperty( long relationshipId, Property property )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+    
+    @Override
+    public Property graphSetProperty( Property property )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+    
+    @Override
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+
+    @Override
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+    
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId )
+    {
+        throw shouldCallAuxiliaryInstead();
+    }
+    
+    private UnsupportedOperationException shouldCallAuxiliaryInstead()
+    {
+        return new UnsupportedOperationException(
+                "This shouldn't be called directly, but instead to an appropriate method in the " + 
+                        AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
     }
 }

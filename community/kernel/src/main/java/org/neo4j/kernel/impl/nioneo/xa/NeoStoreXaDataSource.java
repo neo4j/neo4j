@@ -41,6 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.Visitor;
@@ -53,8 +54,13 @@ import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
+import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -276,9 +282,20 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
-        persistenceCache = new PersistenceCache( new NodeCacheLoader( neoStore.getNodeStore() ) );
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
+        final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
+        Iterator<? extends Cache<?>> caches = nodeManager.caches().iterator();
+        persistenceCache = new PersistenceCache(
+                (LockStripedCache<NodeImpl>)caches.next(),
+                (LockStripedCache<RelationshipImpl>)caches.next(), new Thunk<GraphPropertiesImpl>()
+        {
+            @Override
+            public GraphPropertiesImpl evaluate()
+            {
+                return nodeManager.getGraphProperties();
+            }
+        } );
         cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
 
         final SchemaIndexProvider indexProvider =
@@ -356,11 +373,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public DefaultSchemaIndexProviderMap getProviderMap()
     {
         return providerMap;
-    }
-
-    public PersistenceCache getPersistenceCache()
-    {
-        return persistenceCache;
     }
 
     public SchemaCache getSchemaCache()
@@ -665,5 +677,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 return item.getKind().isIndex();
             }
         }, neoStore.getSchemaStore().loadAll() ) );
+    }
+    
+    public PersistenceCache getPersistenceCache()
+    {
+        return persistenceCache;
     }
 }

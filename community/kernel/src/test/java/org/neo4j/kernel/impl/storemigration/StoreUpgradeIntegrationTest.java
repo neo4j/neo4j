@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -32,9 +33,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -50,17 +53,19 @@ public class StoreUpgradeIntegrationTest
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
-        HashMap params = new HashMap();
+        HashMap<String, String> params = new HashMap<String, String>();
         params.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
+        GraphDatabaseService database = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( params ).newGraphDatabase();
         database.shutdown();
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( "Some store files did not have the correct version",
+                allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
     }
 
     @Test
-    public void shouldAbortOnNonCleanlyShutdown() throws IOException
+    public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
@@ -79,7 +84,7 @@ public class StoreUpgradeIntegrationTest
         }
         catch ( RuntimeException e )
         {
-            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
         }
     }
 
@@ -98,15 +103,17 @@ public class StoreUpgradeIntegrationTest
 
         try
         {
-            GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
+            GraphDatabaseService database = new GraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( params ).newGraphDatabase();
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
         {
-            assertTrue( UnableToUpgradeException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
         }
     }
     
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final File workingDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+
 }

@@ -23,7 +23,6 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,7 +74,7 @@ public class TestTxSuspendResume
             {
                 while ( main.getState() != Thread.State.WAITING ) Thread.sleep( 1 );
                 tm.resume( tx );
-                tm.commit();
+                tm.getTransaction().commit();
                 success = true;
             }
             catch ( Throwable t )

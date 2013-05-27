@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
@@ -86,4 +89,10 @@ final class BooleanProperty extends PropertyWithValue
         return value ? result : -result;
     }
 
+    @Override
+    @Deprecated
+    public PropertyData asPropertyDataJustForIntegration()
+    {
+        return PropertyDatas.forBoolean( (int) propertyKeyId, -1, value );
+    }
 }

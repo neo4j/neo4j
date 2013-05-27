@@ -24,8 +24,11 @@ import javax.transaction.Transaction;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.transaction.LockManager;
+
+import static org.mockito.Mockito.mock;
 
 public class LockHolderTest
 {
@@ -33,9 +36,10 @@ public class LockHolderTest
     public void shouldAcquireSchemaReadLock()
     {
         // GIVEN
-        LockManager mgr = Mockito.mock( LockManager.class );
-        Transaction tx = Mockito.mock( Transaction.class );
-        LockHolder holder = new LockHolder( mgr, tx );
+        LockManager mgr = mock( LockManager.class );
+        Transaction tx = mock( Transaction.class );
+        NodeManager nm = mock( NodeManager.class );
+        LockHolder holder = new LockHolder( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaReadLock();
@@ -49,9 +53,10 @@ public class LockHolderTest
     public void shouldAcquireSchemaWriteLock()
     {
         // GIVEN
-        LockManager mgr = Mockito.mock( LockManager.class );
-        Transaction tx = Mockito.mock( Transaction.class );
-        LockHolder holder = new LockHolder( mgr, tx );
+        LockManager mgr = mock( LockManager.class );
+        Transaction tx = mock( Transaction.class );
+        NodeManager nm = mock( NodeManager.class );
+        LockHolder holder = new LockHolder( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaWriteLock();
@@ -65,9 +70,10 @@ public class LockHolderTest
     public void shouldReleaseSchemaReadLockOnRelease()
     {
         // GIVEN
-        LockManager mgr = Mockito.mock( LockManager.class );
-        Transaction tx = Mockito.mock( Transaction.class );
-        LockHolder holder = new LockHolder( mgr, tx );
+        LockManager mgr = mock( LockManager.class );
+        Transaction tx = mock( Transaction.class );
+        NodeManager nm = mock( NodeManager.class );
+        LockHolder holder = new LockHolder( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaReadLock();
@@ -82,9 +88,10 @@ public class LockHolderTest
     public void shouldReleaseSchemaWriteLockOnRelease()
     {
         // GIVEN
-        LockManager mgr = Mockito.mock( LockManager.class );
-        Transaction tx = Mockito.mock( Transaction.class );
-        LockHolder holder = new LockHolder( mgr, tx );
+        LockManager mgr = mock( LockManager.class );
+        Transaction tx = mock( Transaction.class );
+        NodeManager nm = mock( NodeManager.class );
+        LockHolder holder = new LockHolder( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaWriteLock();
@@ -94,7 +101,4 @@ public class LockHolderTest
         // THEN
         Mockito.verify( mgr ).releaseWriteLock( Matchers.any( SchemaLock.class ), Matchers.eq( tx ) );
     }
-
-
-
 }

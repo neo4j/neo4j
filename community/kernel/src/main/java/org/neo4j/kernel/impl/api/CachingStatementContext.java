@@ -46,25 +46,59 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class CachingStatementContext extends CompositeStatementContext
+public class CachingStatementContext extends StoreOperationTranslatingStatementContext
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
             new Function<SchemaRule, IndexDescriptor>()
-            {
-                @Override
-                public IndexDescriptor apply( SchemaRule from )
-                {
-                    IndexRule rule = (IndexRule) from;
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-                }
-            };
+    {
+        @Override
+        public IndexDescriptor apply( SchemaRule from )
+        {
+            IndexRule rule = (IndexRule) from;
+            return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+        }
+    };
+    private final CacheLoader<Iterator<Property>> nodePropertyLoader = new CacheLoader<Iterator<Property>>()
+    {
+        @Override
+        public Iterator<Property> load( long id ) throws EntityNotFoundException
+        {
+            return delegate.nodeGetAllProperties( id );
+        }
+    };
+    private final CacheLoader<Iterator<Property>> relationshipPropertyLoader = new CacheLoader<Iterator<Property>>()
+    {
+        @Override
+        public Iterator<Property> load( long id ) throws EntityNotFoundException
+        {
+            return delegate.relationshipGetAllProperties( id );
+        }
+    };
+    private final CacheLoader<Iterator<Property>> graphPropertyLoader = new CacheLoader<Iterator<Property>>()
+    {
+        @Override
+        public Iterator<Property> load( long id ) throws EntityNotFoundException
+        {
+            return delegate.graphGetAllProperties();
+        }
+    };
+    private final CacheLoader<Set<Long>> nodeLabelLoader = new CacheLoader<Set<Long>>()
+    {
+        @Override
+        public Set<Long> load( long id ) throws EntityNotFoundException
+        {
+            return asSet( delegate.nodeGetLabels( id ) );
+        }
+    };
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final StatementContext delegate;
@@ -79,25 +113,15 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( final long nodeId, long labelId ) throws EntityNotFoundException
     {
-        Set<Long> labels = persistenceCache.getLabels( nodeId );
-        if ( labels != null )
-        {
-            return labels.contains( labelId );
-        }
-        return delegate.nodeHasLabel( nodeId, labelId );
+        return persistenceCache.nodeHasLabel( nodeId, labelId, nodeLabelLoader );
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( long nodeId ) throws EntityNotFoundException
+    public Iterator<Long> nodeGetLabels( final long nodeId ) throws EntityNotFoundException
     {
-        Set<Long> labels = persistenceCache.getLabels( nodeId );
-        if ( labels != null )
-        {
-            return labels.iterator();
-        }
-        return delegate.nodeGetLabels( nodeId );
+        return persistenceCache.nodeGetLabels( nodeId, nodeLabelLoader ).iterator();
     }
 
     @Override
@@ -177,5 +201,21 @@ public class CachingStatementContext extends CompositeStatementContext
         return null;
     }
 
-    // TODO: Add caching for *GetAllProperties
+    @Override
+    public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    {
+        return persistenceCache.nodeGetProperties( nodeId, nodePropertyLoader );
+    }
+    
+    @Override
+    public Iterator<Property> relationshipGetAllProperties( long nodeId ) throws EntityNotFoundException
+    {
+        return persistenceCache.relationshipGetProperties( nodeId, relationshipPropertyLoader );
+    }
+    
+    @Override
+    public Iterator<Property> graphGetAllProperties()
+    {
+        return persistenceCache.graphGetProperties( graphPropertyLoader );
+    }
 }

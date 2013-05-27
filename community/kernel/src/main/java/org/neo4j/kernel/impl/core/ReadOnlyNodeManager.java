@@ -75,45 +75,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyData nodeAddProperty( NodeImpl node, Token index, Object value )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-                                     Object value, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData relAddProperty( RelationshipImpl rel, Token index, Object value )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData relChangeProperty( RelationshipImpl rel,
-                                    PropertyData property, Object value, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

@@ -97,10 +97,39 @@ public class TxState
 
         void visitRemovedConstraint( UniquenessConstraint element );
     }
+    
+    private static final StateCreator<LabelState> LABEL_STATE_CREATOR = new StateCreator<LabelState>()
+    {
+        @Override
+        public LabelState newState( long id )
+        {
+            return new LabelState( id );
+        }
+    };
+    
+    private static final StateCreator<NodeState> NODE_STATE_CREATOR = new StateCreator<NodeState>()
+    {
+        @Override
+        public NodeState newState( long id )
+        {
+            return new NodeState( id );
+        }
+    };
+    
+    private static final StateCreator<RelationshipState> RELATIONSHIP_STATE_CREATOR =
+            new StateCreator<RelationshipState>()
+    {
+        @Override
+        public RelationshipState newState( long id )
+        {
+            return new RelationshipState( id );
+        }
+    };
 
     private final Map<Long/*Node ID*/, NodeState> nodeStates = new HashMap<Long, NodeState>();
     private final Map<Long/*Relationship ID*/, RelationshipState> relationshipStates = new HashMap<Long, RelationshipState>();
     private final Map<Long/*Label ID*/, LabelState> labelStates = new HashMap<Long, LabelState>();
+    private GraphState graphState;
     private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
@@ -196,11 +225,16 @@ public class TxState
         return getOrCreateNodeState( nodeId ).getPropertyDiffSets();
     }
 
-    public DiffSets<Property> getRelationshipPropertyDiffSets( long nodeId )
+    public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
     {
-        return getOrCreateRelationshipState( nodeId ).getPropertyDiffSets();
+        return getOrCreateRelationshipState( relationshipId ).getPropertyDiffSets();
     }
 
+    public DiffSets<Property> getGraphPropertyDiffSets()
+    {
+        return getOrCreateGraphState().getPropertyDiffSets();
+    }
+    
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
         return legacyState.nodeIsAddedInThisTx( nodeId );
@@ -244,6 +278,7 @@ public class TxState
                 diffSets.remove( replacedProperty );
             }
             diffSets.add( newProperty );
+            legacyState.nodeSetProperty( nodeId, newProperty.asPropertyDataJustForIntegration() );
         }
     }
 
@@ -258,6 +293,22 @@ public class TxState
                 diffSets.remove( replacedProperty );
             }
             diffSets.add( newProperty );
+            legacyState.relationshipSetProperty( relationshipId, newProperty.asPropertyDataJustForIntegration() );
+        }
+    }
+    
+    public void graphReplaceProperty( Property replacedProperty, Property newProperty )
+            throws PropertyNotFoundException
+    {
+        if ( ! newProperty.isNoProperty() )
+        {
+            DiffSets<Property> diffSets = getGraphPropertyDiffSets();
+            if ( ! replacedProperty.isNoProperty() )
+            {
+                diffSets.remove( replacedProperty );
+            }
+            diffSets.add( newProperty );
+            legacyState.graphSetProperty( newProperty.asPropertyDataJustForIntegration() );
         }
     }
 
@@ -267,6 +318,7 @@ public class TxState
         if ( ! removedProperty.isNoProperty() )
         {
             getNodePropertyDiffSets( nodeId ).remove( removedProperty );
+            legacyState.nodeRemoveProperty( nodeId, removedProperty );
         }
     }
 
@@ -276,9 +328,20 @@ public class TxState
         if ( ! removedProperty.isNoProperty() )
         {
             getRelationshipPropertyDiffSets( relationshipId ).remove( removedProperty );
+            legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
         }
     }
 
+    public void graphRemoveProperty( Property removedProperty )
+            throws PropertyNotFoundException
+    {
+        if ( ! removedProperty.isNoProperty() )
+        {
+            getGraphPropertyDiffSets().remove( removedProperty );
+            legacyState.graphRemoveProperty( removedProperty );
+        }
+    }
+    
     public void nodeAddLabel( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).add( nodeId );
@@ -392,38 +455,26 @@ public class TxState
 
     private LabelState getOrCreateLabelState( long labelId )
     {
-        return getState( labelStates, labelId, new StateCreator<LabelState>()
-        {
-            @Override
-            public LabelState newState( long id )
-            {
-                return new LabelState( id );
-            }
-        } );
+        return getState( labelStates, labelId, LABEL_STATE_CREATOR );
     }
 
     private NodeState getOrCreateNodeState( long nodeId )
     {
-        return getState( nodeStates, nodeId, new StateCreator<NodeState>()
-        {
-            @Override
-            public NodeState newState( long id )
-            {
-                return new NodeState( id );
-            }
-        } );
+        return getState( nodeStates, nodeId, NODE_STATE_CREATOR );
     }
 
     private RelationshipState getOrCreateRelationshipState( long relationshipId )
     {
-        return getState( relationshipStates, relationshipId, new StateCreator<RelationshipState>()
+        return getState( relationshipStates, relationshipId, RELATIONSHIP_STATE_CREATOR );
+    }
+    
+    private GraphState getOrCreateGraphState()
+    {
+        if ( graphState == null )
         {
-            @Override
-            public RelationshipState newState( long id )
-            {
-                return new RelationshipState( id );
-            }
-        } );
+            graphState = new GraphState();
+        }
+        return graphState;
     }
 
     private interface StateCreator<STATE>

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.lang.reflect.Field;
 
 import org.junit.ClassRule;
@@ -38,6 +33,11 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestShortStringProperties extends TestShortString
 {
@@ -88,23 +88,31 @@ public class TestShortStringProperties extends TestShortString
     @Test
     public void canUpdateShortStringInplace() throws Exception
     {
-        long recordCount = dynamicRecordsInUse();
-        long propCount = propertyRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
-        node.setProperty( "key", "value" );
+        try
+        {
+            long recordCount = dynamicRecordsInUse();
+            long propCount = propertyRecordsInUse();
+            Node node = graphdb.getGraphDatabaseService().createNode();
+            node.setProperty( "key", "value" );
 
-        newTx();
+            newTx();
 
-        assertEquals( recordCount, dynamicRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertEquals( "value", node.getProperty( "key" ) );
+            assertEquals( recordCount, dynamicRecordsInUse() );
+            assertEquals( propCount + 1, propertyRecordsInUse() );
+            assertEquals( "value", node.getProperty( "key" ) );
 
-        node.setProperty( "key", "other" );
-        commit();
+            node.setProperty( "key", "other" );
+            commit();
 
-        assertEquals( recordCount, dynamicRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertEquals( "other", node.getProperty( "key" ) );
+            assertEquals( recordCount, dynamicRecordsInUse() );
+            assertEquals( propCount + 1, propertyRecordsInUse() );
+            assertEquals( "other", node.getProperty( "key" ) );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test

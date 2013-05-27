@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 
 /**
  * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class
@@ -41,4 +43,16 @@ public interface OldTxStateBridge
     void deleteRelationship( long relationshipId );
 
     boolean relationshipIsAddedInThisTx( long relationshipId );
+
+    void nodeSetProperty( long nodeId, PropertyData property );
+
+    void relationshipSetProperty( long relationshipId, PropertyData property );
+
+    void graphSetProperty( PropertyData property );
+
+    void nodeRemoveProperty( long nodeId, Property removedProperty );
+
+    void relationshipRemoveProperty( long relationshipId, Property removedProperty );
+
+    void graphRemoveProperty( Property removedProperty );
 }

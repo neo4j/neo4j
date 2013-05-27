@@ -29,12 +29,15 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
+import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
@@ -43,8 +46,9 @@ public class LockHolder
     private final LockManager lockManager;
     private final Transaction tx;
     private final List<Releasable> locks = new ArrayList<Releasable>();
+    private final NodeManager nodeManager;
 
-    public LockHolder( LockManager lockManager, Transaction tx )
+    public LockHolder( LockManager lockManager, Transaction tx, NodeManager nodeManager )
     {
         if ( tx == null )
         {
@@ -52,6 +56,10 @@ public class LockHolder
         }
         this.lockManager = lockManager;
         this.tx = tx;
+
+        // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
+        // equality comparison between GraphProperties instances. It should change.
+        this.nodeManager = nodeManager;
     }
 
     public void acquireNodeReadLock( long nodeId )
@@ -64,6 +72,27 @@ public class LockHolder
     public void acquireNodeWriteLock( long nodeId )
     {
         NodeLock resource = new NodeLock( LockType.WRITE, nodeId );
+        lockManager.getWriteLock( resource, tx );
+        locks.add( resource );
+    }
+    
+    public void acquireRelationshipReadLock( long relationshipId )
+    {
+        RelationshipLock resource = new RelationshipLock( LockType.READ, relationshipId );
+        lockManager.getReadLock( resource, tx );
+        locks.add( resource );
+    }
+
+    public void acquireRelationshipWriteLock( long relationshipId )
+    {
+        RelationshipLock resource = new RelationshipLock( LockType.WRITE, relationshipId );
+        lockManager.getWriteLock( resource, tx );
+        locks.add( resource );
+    }
+    
+    public void acquireGraphWriteLock()
+    {
+        GraphLock resource = new GraphLock( LockType.WRITE );
         lockManager.getWriteLock( resource, tx );
         locks.add( resource );
     }
@@ -120,46 +149,102 @@ public class LockHolder
         {
             lockType.release( lockManager, this, tx );
         }
+        
+        protected UnsupportedOperationException unsupportedOperation()
+        {
+            return new UnsupportedOperationException( getClass().getSimpleName() +
+                    " does not support this operation." );
+        }
     }
-
-    // Have them be releasable also since they are internal and will save the
-    // amount of garbage produced
-    private class NodeLock extends Releasable implements Node
+    
+    private abstract class EntityLock extends Releasable implements PropertyContainer
     {
         private final long id;
 
-        public NodeLock( LockType lockType, long id )
+        public EntityLock( LockType lockType, long id )
         {
             super( lockType );
             this.id = id;
         }
         
-        @Override
-        public boolean equals( Object o )
+        public long getId()
         {
-            if ( !(o instanceof Node) )
-            {
-                return false;
-            }
-            return this.getId() == ((Node) o).getId();
+            return id;
+        }
+        
+        public void delete()
+        {
+            throw unsupportedOperation();
+        }
+        
+        public GraphDatabaseService getGraphDatabaseService()
+        {
+            throw unsupportedOperation();
         }
 
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public boolean hasProperty( String key )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Object getProperty( String key )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Object getProperty( String key, Object defaultValue )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void setProperty( String key, Object value )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Object removeProperty( String key )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Iterable<String> getPropertyKeys()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        @Deprecated
+        public Iterable<Object> getPropertyValues()
+        {
+            throw unsupportedOperation();
+        }
+        
         @Override
         public int hashCode()
         {
             return (int) (( id >>> 32 ) ^ id );
         }
-
-        @Override
-        public long getId()
+    }
+    
+    // Have them be releasable also since they are internal and will save the
+    // amount of garbage produced
+    private class NodeLock extends EntityLock implements Node
+    {
+        public NodeLock( LockType lockType, long id )
         {
-            return id;
-        }
-
-        @Override
-        public void delete()
-        {
-            throw unsupportedOperation();
+            super( lockType, id );
         }
 
         @Override
@@ -275,62 +360,98 @@ public class LockHolder
         }
 
         @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public boolean hasProperty( String key )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public Object getProperty( String key )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public Object getProperty( String key, Object defaultValue )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public void setProperty( String key, Object value )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public Object removeProperty( String key )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public Iterable<String> getPropertyKeys()
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
         public ResourceIterable<Label> getLabels()
         {
             throw unsupportedOperation();
         }
-        
-        private UnsupportedOperationException unsupportedOperation()
+
+        @Override
+        public boolean equals( Object o )
         {
-            return new UnsupportedOperationException( "NodeLock does not support this operation." );
+            if ( !(o instanceof Node) )
+            {
+                return false;
+            }
+            return this.getId() == ((Node) o).getId();
+        }
+        // NOTE hashCode is implemented in super
+    }
+    
+    private class RelationshipLock extends EntityLock implements Relationship
+    {
+        public RelationshipLock( LockType lockType, long id )
+        {
+            super( lockType, id );
+        }
+
+        @Override
+        public Node getStartNode()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Node getEndNode()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Node getOtherNode( Node node )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public Node[] getNodes()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public RelationshipType getType()
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public boolean isType( RelationshipType type )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( !(o instanceof Relationship) )
+            {
+                return false;
+            }
+            return this.getId() == ((Relationship) o).getId();
+        }
+    }
+    
+    private class GraphLock extends EntityLock implements GraphProperties
+    {
+        public GraphLock( LockType lockType )
+        {
+            super( lockType, -1 );
+        }
+
+        @Override
+        public NodeManager getNodeManager()
+        {
+            return nodeManager;
+        }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( !(o instanceof GraphProperties) )
+            {
+                return false;
+            }
+            return this.getNodeManager().equals( ((GraphProperties)o).getNodeManager() );
         }
     }
 
