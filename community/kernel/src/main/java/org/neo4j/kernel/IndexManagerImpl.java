@@ -202,11 +202,12 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         return provider;
     }
 
-    private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
-                                                        String indexName, Map<String, String> suppliedConfig )
+    private Pair<Map<String, String>, /*was it created now?*/Boolean> getOrCreateIndexConfig(
+            Class<? extends PropertyContainer> cls, String indexName, Map<String, String> suppliedConfig )
     {
         Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
                 indexName, suppliedConfig, config.getParams() );
+        boolean createdNow = false;
         if ( result.other() )
         {   // Ok, we need to create this config
             synchronized ( this )
@@ -217,7 +218,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
                     // No, someone else made it before us, cool
                     assertConfigMatches( getIndexProvider( existing.get( PROVIDER ) ), indexName,
                             existing, result.first() );
-                    return result.first();
+                    return Pair.of( result.first(), false );
                 }
 
                 // We were the first one here, let's create this config
@@ -226,6 +227,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
                 {
                     executorService.submit( new IndexCreatorJob( cls, indexName, result.first() ) ).get();
                     indexStore.set( cls, indexName, result.first() );
+                    createdNow = true;
                 }
                 catch ( ExecutionException ex )
                 {
@@ -242,7 +244,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
                 }
             }
         }
-        return result.first();
+        return Pair.of( result.first(), createdNow );
     }
 
     private class IndexCreatorJob implements Callable
@@ -283,16 +285,19 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         }
     }
 
+    @Override
     public boolean existsForNodes( String indexName )
     {
         return indexStore.get( Node.class, indexName ) != null;
     }
 
+    @Override
     public Index<Node> forNodes( String indexName )
     {
         return forNodes( indexName, null );
     }
 
+    @Override
     public Index<Node> forNodes( String indexName,
                                  Map<String, String> customConfiguration )
     {
@@ -308,36 +313,62 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     Index<Node> getOrCreateNodeIndex(
             String indexName, Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class,
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( Node.class,
                 indexName, customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName,
-                config );
+        try
+        {
+            return getIndexProvider( config.first().get( PROVIDER ) ).nodeIndex( indexName,
+                    config.first() );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( config.other() )
+            {
+                indexStore.remove( Node.class, indexName );
+            }
+            throw e;
+        }
     }
 
     RelationshipIndex getOrCreateRelationshipIndex( String indexName,
                                                     Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig(
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig(
                 Relationship.class, indexName, customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex(
-                indexName, config );
+        try
+        {
+            return getIndexProvider( config.first().get( PROVIDER ) ).relationshipIndex(
+                    indexName, config.first() );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( config.other() )
+            {
+                indexStore.remove( Relationship.class, indexName );
+            }
+            throw e;
+        }
     }
 
+    @Override
     public String[] nodeIndexNames()
     {
         return indexStore.getNames( Node.class );
     }
 
+    @Override
     public boolean existsForRelationships( String indexName )
     {
         return indexStore.get( Relationship.class, indexName ) != null;
     }
 
+    @Override
     public RelationshipIndex forRelationships( String indexName )
     {
         return forRelationships( indexName, null );
     }
 
+    @Override
     public RelationshipIndex forRelationships( String indexName,
                                                Map<String, String> customConfiguration )
     {
@@ -351,11 +382,13 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         return toReturn;
     }
 
+    @Override
     public String[] relationshipIndexNames()
     {
         return indexStore.getNames( Relationship.class );
     }
 
+    @Override
     public Map<String, String> getConfiguration( Index<? extends PropertyContainer> index )
     {
         Map<String, String> config = indexStore.get( index.getEntityType(), index.getName() );
@@ -367,6 +400,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         return config;
     }
 
+    @Override
     public String setConfiguration( Index<? extends PropertyContainer> index, String key, String value )
     {
         assertLegalConfigKey( key );
@@ -389,6 +423,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         return new HashMap<String, String>( getConfiguration( index ) );
     }
 
+    @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
         assertLegalConfigKey( key );
@@ -412,11 +447,13 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         this.relAutoIndexer = relAutoIndexer;
     }
 
+    @Override
     public AutoIndexer<Node> getNodeAutoIndexer()
     {
         return nodeAutoIndexer;
     }
 
+    @Override
     public RelationshipAutoIndexer getRelationshipAutoIndexer()
     {
         return relAutoIndexer;

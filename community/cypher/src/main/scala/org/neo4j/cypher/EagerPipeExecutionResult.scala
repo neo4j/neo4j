@@ -21,9 +21,9 @@ package org.neo4j.cypher
 
 import internal.pipes.QueryState
 import collection.Map
-import javacompat.{PlanDescription => JPlanDescription}
+import org.neo4j.cypher.internal.ClosingIterator
 
-class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
+class EagerPipeExecutionResult(result: ClosingIterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                planDescriptor: () => PlanDescription)

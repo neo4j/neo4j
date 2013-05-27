@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -34,9 +35,9 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,6 +55,8 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
@@ -1730,5 +1733,26 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         q.add( LuceneUtil.rangeQuery( "start", 9, null, true, true ), Occur.MUST );
         q.add( LuceneUtil.rangeQuery( "end", null, 30, true, true ), Occur.MUST );
         assertContains( index.query( q ), node );
+    }
+    
+    @Test
+    public void failureToCreateAnIndexShouldNotLeaveConfiguratiobBehind() throws Exception
+    {
+        // WHEN
+        try
+        {
+            // StandardAnalyzer is invalid since it has no publi no-arg constructor
+            nodeIndex( stringMap( "analyzer", StandardAnalyzer.class.getName() ) );
+            fail( "Should have failed" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e.getMessage(), CoreMatchers.containsString( StandardAnalyzer.class.getName() ) );
+        }
+        
+        // THEN - assert that there's no index config about this index left behind
+        assertFalse( "There should be no index config for index '" + currentIndexName() + "' left behind",
+                ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( IndexStore.class ).has(
+                        Node.class, currentIndexName() ) );
     }
 }

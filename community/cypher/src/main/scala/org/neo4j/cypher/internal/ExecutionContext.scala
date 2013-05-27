@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal
 
 import mutation.UpdateAction
-import pipes.{QueryState, MutableMaps}
-import scala.Predef._
-import org.neo4j.cypher.ParameterNotFoundException
+import pipes.MutableMaps
 import collection.{immutable, Iterator}
 import collection.mutable.{Queue, Map => MutableMap}
 

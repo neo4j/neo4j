@@ -19,16 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static java.util.Arrays.asList;
-import static org.apache.commons.collections.IteratorUtils.emptyIterator;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -39,12 +29,23 @@ import org.junit.Test;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+
 public class CypherResultRepresentationTest
 {
+    private static final ResourceIterator EMPTY_ITERATOR = emptyIterator();
 
     @Test
     @SuppressWarnings("unchecked")
@@ -64,9 +65,9 @@ public class CypherResultRepresentationTest
 
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 
-        ExecutionResult result = mock(ExecutionResult.class);
-        when(result.iterator()).thenReturn( emptyIterator());
-        when(result.columns()).thenReturn(new ArrayList<String>());
+        ExecutionResult result = mock( ExecutionResult.class );
+        when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
+        when( result.columns() ).thenReturn( new ArrayList<String>() );
         when( result.executionPlanDescription() ).thenReturn( plan );
 
         // When
@@ -90,15 +91,23 @@ public class CypherResultRepresentationTest
     public void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
-        ExecutionResult result = mock(ExecutionResult.class);
-        when(result.iterator()).thenReturn( emptyIterator());
-        when(result.columns()).thenReturn(new ArrayList<String>());
+        ExecutionResult result = mock( ExecutionResult.class );
+        when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
+        when( result.columns() ).thenReturn( new ArrayList<String>() );
 
         // When
         Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, /*includeStats=*/false, false ) );
 
         // Then
         assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );
+    }
+
+    private static ResourceIterator<Map<String, Object>> emptyIterator()
+    {
+        @SuppressWarnings("unchecked")
+        ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
+        when( iterator.hasNext() ).thenReturn( false );
+        return iterator;
     }
 
     private PlanDescription getMockDescription( String name )

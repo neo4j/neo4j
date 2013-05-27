@@ -48,7 +48,7 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext) extends
     result
   }
 
-  private def close() {
+  def close() {
     translateException {
       if (!closed) {
         closed = true
