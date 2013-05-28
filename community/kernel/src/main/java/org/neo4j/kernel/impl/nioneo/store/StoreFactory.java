@@ -118,6 +118,11 @@ public class StoreFactory
             tryToUpgradeStores( fileName );
             return attemptNewNeoStore( fileName );
         }
+        catch ( StoreNotFoundException e )
+        {
+            tryToUpgradeStores( fileName );
+            return attemptNewNeoStore( fileName );
+        }
     }
 
     NeoStore attemptNewNeoStore( File fileName )

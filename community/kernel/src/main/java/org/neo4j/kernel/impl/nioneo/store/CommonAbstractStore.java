@@ -146,8 +146,7 @@ public abstract class CommonAbstractStore
         backupSlave = configuration.get( Configuration.backup_slave );
         if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
-            throw new IllegalStateException( "No such store[" + storageFileName
-                + "] for " + fileSystemAbstraction );
+            throw new StoreNotFoundException( "No such store[" + storageFileName + "] in " + fileSystemAbstraction );
         }
         try
         {
@@ -155,8 +154,7 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to open file "
-                + storageFileName, e );
+            throw new UnderlyingStorageException( "Unable to open file " + storageFileName, e );
         }
         try
         {

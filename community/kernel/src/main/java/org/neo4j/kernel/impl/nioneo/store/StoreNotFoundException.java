@@ -19,20 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class NotCurrentStoreVersionException extends StoreFailureException
+public class StoreNotFoundException extends StoreFailureException
 {
-    private final boolean possibleToAutomaticallyUpgrade;
-
-    public NotCurrentStoreVersionException( String expectedVersion, String foundVersion, String msg,
-            boolean possibleToAutomaticallyUpgrade )
+    public StoreNotFoundException( String msg )
     {
-        super( String.format( "Was expecting store version [%s] but found [%s]. Store %s be upgraded automatically. ",
-                expectedVersion, foundVersion, possibleToAutomaticallyUpgrade ? "can" : "cannot") + msg );
-        this.possibleToAutomaticallyUpgrade = possibleToAutomaticallyUpgrade;
-    }
-
-    public boolean possibleToAutomaticallyUpgrade()
-    {
-        return possibleToAutomaticallyUpgrade;
+        super( msg );
     }
 }
