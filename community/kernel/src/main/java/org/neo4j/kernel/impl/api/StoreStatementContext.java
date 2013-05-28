@@ -39,10 +39,10 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -590,7 +590,8 @@ public class StoreStatementContext extends  StoreOperationTranslatingStatementCo
             // TODO: Move locking to LockingStatementContext et cetera, don't create a new node proxy for every call!
             String propertyKey = propertyKeyGetName( propertyKeyId );
             Relationship relProxy = nodeManager.getRelationshipById( relationshipId );
-            Object oldValue = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE ).removeProperty( nodeManager, relProxy, propertyKey );
+            Object oldValue = nodeManager.getRelationshipForProxy( relationshipId, LockType.WRITE ).removeProperty(
+                    nodeManager, relProxy, propertyKey );
             return Property.propertyFromRelationship( relationshipId, propertyKeyId, oldValue );
         }
         catch ( IllegalStateException e )

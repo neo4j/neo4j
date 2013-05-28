@@ -19,29 +19,35 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.KeyNameLookup;
 
-import static java.lang.String.format;
-
-public class CreateConstraintFailureException extends SchemaKernelException
+public class ConstraintCreationKernelException extends SchemaKernelException
 {
-    private final static String message = "Unable to create constraint [label: %s, %s] : %s";
+    private final UniquenessConstraint constraint;
 
-    private final long labelId;
-    private final long propertyKey;
-
-    public CreateConstraintFailureException( long labelId, long propertyKey, SchemaKernelException cause )
+    public ConstraintCreationKernelException( UniquenessConstraint constraint, Throwable cause )
     {
-        super( format( message, labelId, propertyKey, cause ), cause );
-        this.labelId = labelId;
-        this.propertyKey = propertyKey;
+        super( cause, "Unable to create constraint %s: %s", constraint, cause.getMessage() );
+        this.constraint = constraint;
+    }
+
+    public UniquenessConstraint constraint()
+    {
+        return constraint;
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup nameLookup )
+    public String getUserMessage( KeyNameLookup keyNameLookup )
     {
-        return format( message, nameLookup.getLabelName( labelId ), nameLookup.getPropertyKeyName( propertyKey ),
-                ((KernelException) getCause()).getUserMessage( nameLookup ) );
+        String message = "Unable to create " + constraint.userDescription( keyNameLookup );
+        if ( getCause() instanceof KernelException )
+        {
+            KernelException cause = (KernelException) getCause();
+
+            return String.format( "%s:%n%s", message, cause.getUserMessage( keyNameLookup ) );
+        }
+        return message;
     }
 }

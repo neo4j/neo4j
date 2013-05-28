@@ -19,22 +19,25 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
-
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.index.FlippableIndexProxy.FlipFailedKernelException;
+
+import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class FlippableIndexProxyTest
 {

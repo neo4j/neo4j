@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityOperations;
 import org.neo4j.kernel.api.operations.KeyOperations;
@@ -627,7 +627,7 @@ public class CompositeStatementContext implements StatementContext
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException
     {
         beforeOperation();
         beforeWriteOperation();

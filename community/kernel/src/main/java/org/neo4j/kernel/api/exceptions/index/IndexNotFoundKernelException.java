@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
 
-public class IndexPopulationFailedKernelException extends KernelException
+public class IndexNotFoundKernelException extends KernelException
 {
-    public IndexPopulationFailedKernelException( IndexDescriptor descriptor, Throwable cause )
+    public IndexNotFoundKernelException( String message, Throwable cause )
     {
-        super( cause, "Failed to populate index for labelId %d on propertyKeyId %d",
-               descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        super( cause, message );
+    }
+
+    public IndexNotFoundKernelException( String msg )
+    {
+        super( msg );
     }
 }

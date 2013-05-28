@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.helpers.collection.Iterables.filter;
-
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -33,6 +28,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -40,6 +36,12 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
+
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
+import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.

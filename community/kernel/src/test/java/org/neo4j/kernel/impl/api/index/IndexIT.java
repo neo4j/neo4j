@@ -22,17 +22,20 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 

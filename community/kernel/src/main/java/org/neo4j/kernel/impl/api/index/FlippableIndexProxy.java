@@ -26,8 +26,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -36,14 +37,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 public class FlippableIndexProxy implements IndexProxy
 {
     private boolean closed;
-
-    public static final class FlipFailedKernelException extends KernelException
-    {
-        public FlipFailedKernelException( Throwable cause )
-        {
-            super( cause, "Failed to transition index to new context, see nested exception." );
-        }
-    }
 
     private static final Callable<Void> NO_OP = new Callable<Void>()
     {

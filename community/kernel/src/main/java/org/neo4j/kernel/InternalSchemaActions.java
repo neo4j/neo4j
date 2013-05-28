@@ -24,7 +24,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseConstraintCreator} for re-use
@@ -37,7 +36,7 @@ public interface InternalSchemaActions
     void dropIndexDefinitions( Label label, String propertyKey );
 
     ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
-            throws SchemaKernelException, ConstraintCreationKernelException;
+            throws SchemaKernelException;
     
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 

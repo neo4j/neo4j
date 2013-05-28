@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;

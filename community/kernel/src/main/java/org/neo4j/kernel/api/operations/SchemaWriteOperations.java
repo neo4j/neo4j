@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public interface SchemaWriteOperations
@@ -52,7 +51,7 @@ public interface SchemaWriteOperations
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintCreationKernelException;
+            throws SchemaKernelException;
 
     void constraintDrop( UniquenessConstraint constraint );
 }

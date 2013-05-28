@@ -134,7 +134,7 @@ public class LockingStatementContext extends CompositeStatementContext
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         return delegate.uniquenessConstraintCreate( labelId, propertyKeyId );

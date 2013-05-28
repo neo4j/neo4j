@@ -23,10 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -132,7 +132,7 @@ public class DelegatingSchemaOperations implements SchemaOperations
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException
     {
         return delegate.uniquenessConstraintCreate( labelId, propertyKeyId );
     }

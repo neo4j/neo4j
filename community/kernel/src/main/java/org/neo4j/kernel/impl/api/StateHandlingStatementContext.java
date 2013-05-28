@@ -32,10 +32,11 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.Property;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
@@ -190,7 +192,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         if ( !state.unRemoveConstraint( constraint ) )
@@ -224,7 +226,8 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
-        return applyConstraintsDiff( delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ), labelId, propertyKeyId );
+        return applyConstraintsDiff( delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ),
+                labelId, propertyKeyId );
     }
 
     @Override

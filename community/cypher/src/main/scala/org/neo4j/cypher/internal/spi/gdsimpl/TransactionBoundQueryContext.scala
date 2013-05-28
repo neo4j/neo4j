@@ -31,11 +31,11 @@ import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.kernel.impl.api.ConstraintCreationKernelException
 import org.neo4j.kernel.api.operations.KeyNameLookup
 import scala.Some
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException
-import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, SchemaKernelException}
+import org.neo4j.kernel.api.exceptions.schema.{ConstraintCreationKernelException, DropIndexFailureException,
+SchemaKernelException}
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 

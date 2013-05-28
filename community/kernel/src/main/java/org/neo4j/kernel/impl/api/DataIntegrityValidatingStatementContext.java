@@ -162,7 +162,7 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKey )
-            throws SchemaKernelException, ConstraintCreationKernelException
+            throws SchemaKernelException
     {
         Iterator<UniquenessConstraint> constraints = constraintsGetForLabelAndPropertyKey( labelId, propertyKey );
         if ( constraints.hasNext() )

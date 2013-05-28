@@ -27,6 +27,11 @@ import org.neo4j.kernel.api.exceptions.KernelException;
  */
 public abstract class SchemaKernelException extends KernelException
 {
+    protected SchemaKernelException( Throwable cause, String message, Object... parameters )
+    {
+        super( cause, message, parameters );
+    }
+
     public SchemaKernelException( String message, Throwable cause )
     {
         super( message, cause );
