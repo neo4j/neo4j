@@ -33,7 +33,7 @@ public class CypherExceptionMapping implements Function<CypherException, StatusC
     public StatusCode apply( CypherException e )
     {
         if ( ParameterNotFoundException.class.isInstance( e ) )
-            return StatusCode.STATEMENT_MISSING_PARAMETER_ERROR;
+            return StatusCode.STATEMENT_MISSING_PARAMETER;
 
         if ( SyntaxException.class.isInstance( e ) )
             return StatusCode.STATEMENT_SYNTAX_ERROR;

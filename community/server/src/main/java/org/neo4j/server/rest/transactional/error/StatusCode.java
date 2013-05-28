@@ -57,7 +57,7 @@ public enum StatusCode
             42000 ),
     STATEMENT_SYNTAX_ERROR(
             42001 ),
-    STATEMENT_MISSING_PARAMETER_ERROR(
+    STATEMENT_MISSING_PARAMETER(
             42002 ),
 
     COULD_NOT_CREATE_INDEX(

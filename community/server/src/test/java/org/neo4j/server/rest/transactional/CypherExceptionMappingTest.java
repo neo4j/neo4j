@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.rest.transactional.error.StatusCode.COULD_NOT_CREATE_CONSTRAINT;
 import static org.neo4j.server.rest.transactional.error.StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR;
 import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_EXECUTION_ERROR;
-import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_MISSING_PARAMETER_ERROR;
+import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_MISSING_PARAMETER;
 import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_SYNTAX_ERROR;
 
 public class CypherExceptionMappingTest
@@ -45,9 +45,9 @@ public class CypherExceptionMappingTest
     }
 
     @Test
-    public void shouldMap_ParameterNotFoundException_to_STATEMENT_MISSING_PARAMETER_EROR() throws Exception
+    public void shouldMap_ParameterNotFoundException_to_STATEMENT_MISSING_PARAMETER() throws Exception
     {
-        assertEquals( STATEMENT_MISSING_PARAMETER_ERROR, map( new ParameterNotFoundException( "message" ) ));
+        assertEquals( STATEMENT_MISSING_PARAMETER, map( new ParameterNotFoundException( "message" ) ));
     }
 
     @Test
