@@ -47,12 +47,6 @@ abstract class NumberPropertyWithin4Bytes extends PropertyWithValue
         return this.propertyKeyId() == that.propertyKeyId() && hasEqualValue( that );
     }
 
-    @Override
-    final public boolean isNoProperty()
-    {
-        return false;
-    }
-
     abstract boolean hasEqualValue( NumberPropertyWithin4Bytes that );
 
     int valueBits()

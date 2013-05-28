@@ -215,7 +215,6 @@ public class PropertyConversionTest
     {
         Property property = PropertyConversion.convertProperty( 17, value );
         assertDeepEquals( value, property.value() );
-        assertTrue( "valueEquals:" + value.getClass(), property.valueEquals( value ) );
         assertTrue( "two conversions are equal", property.equals( PropertyConversion.convertProperty( 17, value ) ) );
         assertEquals( "hashCode()", property.hashCode(), PropertyConversion.convertProperty( 17, value ).hashCode() );
         assertFalse( "properties with different keys should not be equal",

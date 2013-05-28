@@ -178,12 +178,10 @@ public class NodeProxy implements Node
     public void setProperty( String key, Object value )
     {
         StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
-        boolean success = false;
         try
         {
             long propertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( key );
             ctxForWriting.nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
-            success = true;
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -201,10 +199,6 @@ public class NodeProxy implements Node
         finally
         {
             ctxForWriting.close();
-            if ( !success )
-            {
-                nodeLookup.getNodeManager().setRollbackOnly();
-            }
         }
     }
 
@@ -271,33 +265,8 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        final StatementContext context = statementCtxProvider.getCtxForReading();
-        try
-        {
-            return asSet( map( new Function<Property,Object>() {
-                @Override
-                public Object apply( Property prop )
-                {
-                    try
-                    {
-                        return prop.value();
-                    }
-                    catch ( PropertyNotFoundException e )
-                    {
-                        throw new ThisShouldNotHappenError( "Jake",
-                                "Property key retrieved through kernel API should exist." );
-                    }
-                }
-            }, context.nodeGetAllProperties( getId() )));
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found", e );
-        }
-        finally
-        {
-            context.close();
-        }
+
+        return nodeLookup.lookup( nodeId ).getPropertyValues( nodeLookup.getNodeManager() );
     }
 
     @Override
@@ -321,10 +290,6 @@ public class NodeProxy implements Node
                     }
                 }
             }, context.nodeGetPropertyKeys( getId() )));
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found", e );
         }
         finally
         {

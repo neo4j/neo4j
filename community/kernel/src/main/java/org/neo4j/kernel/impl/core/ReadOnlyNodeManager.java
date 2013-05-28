@@ -94,7 +94,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

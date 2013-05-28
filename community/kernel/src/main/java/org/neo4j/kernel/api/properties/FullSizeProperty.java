@@ -50,12 +50,6 @@ abstract class FullSizeProperty extends PropertyWithValue
     }
 
     @Override
-    public final boolean isNoProperty()
-    {
-        return false;
-    }
-
-    @Override
     public final int hashCode()
     {
         return (int) (propertyKeyId ^ (propertyKeyId >>> 32)) ^ valueHash();

@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.helpers.collection.IteratorUtil;
+
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.Property;
@@ -44,8 +44,8 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 public class IndexQueryTransactionStateTest
 {
@@ -103,8 +103,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
-        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( IteratorUtil.<Property>emptyIterator() );
+        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.none( propertyKeyId ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -131,9 +130,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        Property stringProperty = Property.stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( Property.stringProperty( propertyKeyId, value ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         // When
@@ -157,9 +154,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
 
-        Property stringProperty = Property.stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( Property.stringProperty( propertyKeyId, value ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         // When

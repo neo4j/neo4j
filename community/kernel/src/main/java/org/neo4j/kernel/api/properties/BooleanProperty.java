@@ -59,6 +59,13 @@ final class BooleanProperty extends PropertyWithValue
     }
 
     @Override
+    public int hashCode()
+    {
+        int result = (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        return value ? result : -result;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -72,18 +79,4 @@ final class BooleanProperty extends PropertyWithValue
         }
         return false;
     }
-
-    @Override
-    public boolean isNoProperty()
-    {
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = (int) (propertyKeyId ^ (propertyKeyId >>> 32));
-        return value ? result : -result;
-    }
-
 }

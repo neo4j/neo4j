@@ -70,7 +70,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.cast;
 
 public class NodeManager implements Lifecycle
@@ -288,7 +287,6 @@ public class NodeManager implements Lifecycle
             tx.acquireWriteLock( startNodeProxy );
             tx.acquireWriteLock( endNode );
             persistenceManager.relationshipCreate( id, typeId, startNodeId, endNodeId );
-            tx.createRelationship( id );
             if ( startNodeId == endNodeId )
             {
                 tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.BOTH );
@@ -943,65 +941,13 @@ public class NodeManager implements Lifecycle
         persistenceManager.graphRemoveProperty( property );
     }
 
-    public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
-        NodeImpl startNode;
-        NodeImpl endNode;
-        boolean success = false;
-        try
-        {
-            tx = getTransactionState();
-            long startNodeId = rel.getStartNodeId();
-            startNode = getLightNode( startNodeId );
-            if ( startNode != null )
-            {
-                tx.acquireWriteLock( newNodeProxyById( startNodeId ) );
-            }
-            long endNodeId = rel.getEndNodeId();
-            endNode = getLightNode( endNodeId );
-            if ( endNode != null )
-            {
-                tx.acquireWriteLock( newNodeProxyById( endNodeId ) );
-            }
-            tx.acquireWriteLock( newRelationshipProxyById( rel.getId() ) );
-            // no need to load full relationship, all properties will be
-            // deleted when relationship is deleted
+        deleteFromTrackers( rel, relationshipPropertyTrackers );
 
-            ArrayMap<Integer,PropertyData> skipMap =
-                tx.getOrCreateCowPropertyRemoveMap( rel );
-            
-            deleteFromTrackers( rel, relationshipPropertyTrackers );
-            tx.deleteRelationship( rel.getId() );
-            ArrayMap<Integer,PropertyData> removedProps = persistenceManager.relDelete( rel.getId() );
-            
-            if ( removedProps.size() > 0 )
-            {
-                for ( int index : removedProps.keySet() )
-                {
-                    skipMap.put( index, removedProps.get( index ) );
-                }
-            }
-            success = true;
-            int typeId = rel.getTypeId();
-            long id = rel.getId();
-            if ( startNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id );
-            }
-            if ( endNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id );
-            }
-            success = true;
-            return removedProps;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                setRollbackOnly();
-            }
-        }
+        tx.deleteRelationship( rel.getId() );
+        return persistenceManager.relDelete( rel.getId() );
+        // remove in rel cache done via event
     }
 
     PropertyData relAddProperty( RelationshipImpl rel, Token index, Object value )
@@ -1086,6 +1032,11 @@ public class NodeManager implements Lifecycle
         {
             throw new ThisShouldNotHappenError( "Mattias", "The key should exist at this point" );
         }
+    }
+
+    public RelationshipTypeTokenHolder getRelationshipTypeHolder()
+    {
+        return this.relTypeHolder;
     }
 
     public void addNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )

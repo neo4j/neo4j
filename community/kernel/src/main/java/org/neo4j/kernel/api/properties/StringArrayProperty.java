@@ -39,16 +39,6 @@ class StringArrayProperty extends FullSizeProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
-    {
-        if ( value instanceof String[])
-        {
-            return Arrays.equals(this.value, (String[])value);
-        }
-        return false;
-    }
-
-    @Override
     int valueHash()
     {
         return Arrays.hashCode( value );

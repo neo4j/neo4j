@@ -38,7 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TxStateTest
@@ -49,9 +48,9 @@ public class TxStateTest
     public void shouldGetAddedLabels() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 2, 1 );
+        state.addLabelToNode( 1, 0 );
+        state.addLabelToNode( 1, 1 );
+        state.addLabelToNode( 2, 1 );
 
         // WHEN
         Set<Long> addedLabels = state.getNodeStateLabelDiffSets( 1 ).getAdded();
@@ -64,9 +63,9 @@ public class TxStateTest
     public void shouldGetRemovedLabels() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 2, 1 );
+        state.removeLabelFromNode( 1, 0 );
+        state.removeLabelFromNode( 1, 1 );
+        state.removeLabelFromNode( 2, 1 );
 
         // WHEN
         Set<Long> removedLabels = state.getNodeStateLabelDiffSets( 1 ).getRemoved();
@@ -79,12 +78,12 @@ public class TxStateTest
     public void removeAddedLabelShouldRemoveFromAdded() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 2, 1 );
+        state.addLabelToNode( 1, 0 );
+        state.addLabelToNode( 1, 1 );
+        state.addLabelToNode( 2, 1 );
 
         // WHEN
-        state.nodeRemoveLabel( 1, 1 );
+        state.removeLabelFromNode( 1, 1 );
 
         // THEN
         assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getAdded() );
@@ -94,12 +93,12 @@ public class TxStateTest
     public void addRemovedLabelShouldRemoveFromRemoved() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 2, 1 );
+        state.removeLabelFromNode( 1, 0 );
+        state.removeLabelFromNode( 1, 1 );
+        state.removeLabelFromNode( 2, 1 );
 
         // WHEN
-        state.nodeAddLabel( 1, 1 );
+        state.addLabelToNode( 1, 1 );
 
         // THEN
         assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getRemoved() );
@@ -109,11 +108,11 @@ public class TxStateTest
     public void shouldMapFromAddedLabelToNodes() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 2, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 3, 1 );
-        state.nodeAddLabel( 2, 2 );
+        state.addLabelToNode( 1, 0 );
+        state.addLabelToNode( 2, 0 );
+        state.addLabelToNode( 1, 1 );
+        state.addLabelToNode( 3, 1 );
+        state.addLabelToNode( 2, 2 );
 
         // WHEN
         Set<Long> nodes = state.getNodesWithLabelAdded( 2 );
@@ -126,11 +125,11 @@ public class TxStateTest
     public void shouldMapFromRemovedLabelToNodes() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 2, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 3, 1 );
-        state.nodeRemoveLabel( 2, 2 );
+        state.removeLabelFromNode( 1, 0 );
+        state.removeLabelFromNode( 2, 0 );
+        state.removeLabelFromNode( 1, 1 );
+        state.removeLabelFromNode( 3, 1 );
+        state.removeLabelFromNode( 2, 2 );
 
         // WHEN
         Set<Long> nodes = state.getNodesWithLabelChanged( 2 ).getRemoved();
@@ -213,7 +212,7 @@ public class TxStateTest
 
         // When
         long nodeId = 1337l;
-        state.nodeDelete( nodeId );
+        state.deleteNode( nodeId );
 
         // Then
         verify( legacyState ).deleteNode( nodeId );

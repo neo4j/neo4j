@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;

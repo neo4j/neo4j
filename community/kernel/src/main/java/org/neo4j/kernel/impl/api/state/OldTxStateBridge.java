@@ -37,8 +37,4 @@ public interface OldTxStateBridge
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean hasChanges();
-
-    void deleteRelationship( long relationshipId );
-
-    boolean relationshipIsAddedInThisTx( long relationshipId );
 }

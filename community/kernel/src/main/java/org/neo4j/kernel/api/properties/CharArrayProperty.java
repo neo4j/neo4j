@@ -39,32 +39,6 @@ class CharArrayProperty extends FullSizeProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
-    {
-        if ( value instanceof char[])
-        {
-            return Arrays.equals(this.value, (char[])value);
-        }
-        if ( value instanceof Character[] )
-        {
-            Character[] otherValue = (Character[]) value;
-            if ( this.value.length != otherValue.length )
-            {
-                return false;
-            }
-            for (int i = 0; i < otherValue.length; i++ )
-            {
-                if ( otherValue[i] == null || this.value[i] != otherValue[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    @Override
     int valueHash()
     {
         return Arrays.hashCode( value );

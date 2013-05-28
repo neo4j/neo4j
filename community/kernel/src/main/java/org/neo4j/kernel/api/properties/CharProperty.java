@@ -62,12 +62,6 @@ final class CharProperty extends PropertyWithValue
     }
 
     @Override
-    public boolean isNoProperty()
-    {
-        return false;
-    }
-
-    @Override
     public int hashCode()
     {
         int result = value;

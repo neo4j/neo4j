@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import java.util.Collections;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -32,6 +31,7 @@ import org.neo4j.kernel.api.properties.Property;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -103,7 +103,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertEquals( "bozo", previous );
-        assertFalse( "node should not have property", statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
 
         // WHEN
         commit();
@@ -125,10 +125,10 @@ public class PropertyIT extends KernelIntegrationTest
         newTransaction();
 
         // WHEN
-        Property result = statement.nodeRemoveProperty( nodeId, propertyId );
+        Object result = statement.nodeRemoveProperty( nodeId, propertyId ).value( null );
 
         // THEN
-        assertTrue( "Return no property if removing missing", result.isNoProperty() );
+        assertNull( result );
     }
 
     @Test
@@ -265,16 +265,16 @@ public class PropertyIT extends KernelIntegrationTest
         rel.setProperty( "prop", "value" );
 
         // THEN
-        Set<Long> actualKeys = asSet( statement.relationshipGetPropertyKeys( rel.getId() ) );
-        assertThat( actualKeys, equalTo( asSet( statement.propertyKeyGetForName( "prop" ) ) ) );
+        assertThat( asSet( statement.relationshipGetPropertyKeys( rel.getId() ) ),
+                equalTo( asSet( statement.propertyKeyGetForName( "prop" ) ) ) );
 
         // WHEN
         commit();
 
         // THEN
         newTransaction();
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( rel.getId() ) );
-        assertThat( actualKeys, equalTo( asSet( statement.propertyKeyGetForName( "prop" ) ) ) );
+        assertThat( asSet( statement.relationshipGetPropertyKeys( rel.getId() ) ),
+                equalTo( asSet( statement.propertyKeyGetForName( "prop" ) ) ) );
         commit();
 
         // WHEN
@@ -282,16 +282,16 @@ public class PropertyIT extends KernelIntegrationTest
         rel.removeProperty( "prop" );
 
         // THEN
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( rel.getId() ) );
-        assertThat( actualKeys, equalTo( Collections.<Long>emptySet() ) );
+        assertThat( asSet( statement.relationshipGetPropertyKeys( rel.getId() ) ),
+                equalTo( Collections.<Long>emptySet() ) );
 
         // WHEN
         commit();
 
         // THEN
         newTransaction();
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( rel.getId() ) );
-        assertThat( actualKeys, equalTo( Collections.<Long>emptySet() ) );
+        assertThat( asSet( statement.relationshipGetPropertyKeys( rel.getId() ) ),
+                equalTo( Collections.<Long>emptySet() ) );
         commit();
     }
 }

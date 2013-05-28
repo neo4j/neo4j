@@ -176,6 +176,4 @@ public class CachingStatementContext extends CompositeStatementContext
         }
         return null;
     }
-
-    // TODO: Add caching for *GetAllProperties
 }

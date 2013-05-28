@@ -29,8 +29,6 @@ public interface EntityWriteOperations
 
     void nodeDelete( long nodeId );
 
-    void relationshipDelete( long relationshipId );
-
     /**
      * Labels a node with the label corresponding to the given label id.
      * If the node already had that label nothing will happen. Label ids
@@ -47,10 +45,10 @@ public interface EntityWriteOperations
      */
     boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( long nodeId, Property property )
+    void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
-    Property relationshipSetProperty( long relationshipId, Property property )
+    void relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
     /**

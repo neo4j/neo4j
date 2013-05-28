@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.System.arraycopy;
+
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -35,8 +37,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.System.arraycopy;
 
 /**
  * Dynamic store that stores strings.
@@ -173,7 +173,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
                 dataBuffer.get( stringByteArray );
-                result[i] = PropertyStore.decodeString( stringByteArray );
+                result[i] = (String) PropertyStore.decodeString( stringByteArray );
             }
             return result;
         }

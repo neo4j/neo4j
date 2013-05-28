@@ -334,7 +334,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId )
     {
         beforeOperation();
         beforeReadOperation();
@@ -347,7 +347,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    public Iterator<Property> nodeGetAllProperties( long nodeId )
     {
         beforeOperation();
         beforeReadOperation();
@@ -360,7 +360,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId )
     {
         beforeOperation();
         beforeReadOperation();
@@ -373,7 +373,7 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException
+    public Iterator<Property> relationshipGetAllProperties( long relationshipId )
     {
         beforeOperation();
         beforeReadOperation();
@@ -676,33 +676,29 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, Property property )
+    public void nodeSetProperty( long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        Property result = entityOperations.nodeSetProperty( nodeId, property );
+        entityOperations.nodeSetProperty( nodeId, property );
 
         afterWriteOperation();
         afterOperation();
-
-        return result;
     }
 
     @Override
-    public Property relationshipSetProperty( long relationshipId, Property property )
+    public void relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeWriteOperation();
 
-        Property result = entityOperations.relationshipSetProperty( relationshipId, property );
+        entityOperations.relationshipSetProperty( relationshipId, property );
 
         afterWriteOperation();
         afterOperation();
-
-        return result;
     }
 
     @Override
@@ -742,19 +738,6 @@ public class CompositeStatementContext implements StatementContext
         beforeWriteOperation();
 
         entityOperations.nodeDelete( nodeId );
-
-        afterWriteOperation();
-        afterOperation();
-    }
-
-
-    @Override
-    public void relationshipDelete( long relationshipId )
-    {
-        beforeOperation();
-        beforeWriteOperation();
-
-        entityOperations.relationshipDelete( relationshipId );
 
         afterWriteOperation();
         afterOperation();

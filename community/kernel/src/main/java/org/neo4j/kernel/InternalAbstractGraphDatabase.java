@@ -756,6 +756,12 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
+            public RelationshipImpl lookupRelationship( long relationshipId, LockType lock )
+            {
+                return nodeManager.getRelationshipForProxy( relationshipId, lock );
+            }
+
+            @Override
             public GraphDatabaseService getGraphDatabaseService()
             {
                 return InternalAbstractGraphDatabase.this;

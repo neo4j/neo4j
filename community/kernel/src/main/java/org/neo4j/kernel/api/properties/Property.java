@@ -19,35 +19,13 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 
 public abstract class Property
 {
-    public static Property noNodeProperty( long nodeId, long propertyKeyId )
+    public static Property none( long propertyKeyId )
     {
-        return noProperty( propertyKeyId, EntityType.NODE, nodeId );
-    }
-
-    public static Property noRelationshipProperty( long relationshipId, long propertyKeyId )
-    {
-        return noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationshipId );
-    }
-
-    public static Property noProperty( long propertyKeyId, EntityType type, long entityId )
-    {
-        return new NoProperty( propertyKeyId, type, entityId );
-    }
-
-    public static Property propertyFromNode( long nodeId, long propertyKeyId, Object value )
-    {
-        return null == value ? noNodeProperty( nodeId, propertyKeyId ) : property( propertyKeyId, value );
-    }
-
-    public static Property propertyFromRelationship( long relationshipId, long propertyKeyId, Object value )
-    {
-        return null == value ?
-            noRelationshipProperty( relationshipId, propertyKeyId ) : property( propertyKeyId, value );
+        return new NoProperty( propertyKeyId );
     }
 
     public static Property property( long propertyKeyId, Object value )
@@ -184,6 +162,4 @@ public abstract class Property
 
     @Override
     public abstract int hashCode();
-
-    public abstract boolean isNoProperty();
 }

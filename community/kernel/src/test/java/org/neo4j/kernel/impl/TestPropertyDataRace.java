@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -57,8 +56,6 @@ import static org.neo4j.qa.tooling.DumpVmInformation.dumpVmInfo;
                       @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.NodeManager",
                               method = "getNodeIfCached" ) } )
 @RunWith( SubProcessTestRunner.class )
-@Ignore( "Ignored in 2.0 due to half-way refactoring moving properties into kernel API. " +
-		"Unignore and change appropriately when it's done" )
 public class TestPropertyDataRace
 {
     @ClassRule

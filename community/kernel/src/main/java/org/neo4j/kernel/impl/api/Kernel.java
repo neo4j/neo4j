@@ -211,11 +211,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                                                       newTxState(), providerMap, persistenceCache, schemaCache,
                                                       persistenceManager, schemaState,
                                                       new ConstraintIndexCreator(
-                                                      new Transactor( transactionManager ), indexService ) );
+                                                              new Transactor( transactionManager ), indexService ) );
 
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );
-
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
 

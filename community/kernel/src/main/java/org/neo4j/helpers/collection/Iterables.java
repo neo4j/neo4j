@@ -19,6 +19,9 @@
  */
 package org.neo4j.helpers.collection;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,10 +39,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
 /**
  * TODO: Combine this and {@link IteratorUtil} into one class
@@ -762,7 +761,8 @@ public final class Iterables
             @Override
             public boolean hasNext()
             {
-                return !finished && (!nextConsumed || moveToNextValid());
+                return !finished &&
+                        (!nextConsumed || moveToNextValid());
             }
 
             @Override

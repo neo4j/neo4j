@@ -21,22 +21,17 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.impl.api.DiffSets;
 
-public final class NodeState extends PropertyContainerState
-
+public class NodeState extends EntityState
 {
-    private DiffSets<Long> labelDiffSets;
-
     public NodeState( long id )
     {
         super( id );
     }
 
+    private final DiffSets<Long> labelDiffSets = new DiffSets<Long>();
+
     public DiffSets<Long> getLabelDiffSets()
     {
-        if ( null == labelDiffSets )
-        {
-            labelDiffSets = new DiffSets<Long>();
-        }
         return labelDiffSets;
     }
 }

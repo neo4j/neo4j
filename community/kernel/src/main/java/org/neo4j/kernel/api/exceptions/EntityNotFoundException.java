@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.EntityType;
-
 public class EntityNotFoundException extends KernelException
 {
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
+    public EntityNotFoundException( String entityType, long entityId, Throwable cause )
     {
-        super( cause, "Unable to load %s with id %s.", entityType.name(), entityId );
+        super( cause, "Unable to load %s with id %s.", entityType, entityId );
     }
 
-    public EntityNotFoundException( EntityType entityType, long entityId )
+    public EntityNotFoundException( String entityType, long entityId )
     {
-        super( null, "Unable to load %s with id %s.", entityType.name(), entityId );
+        super( null, "Unable to load %s with id %s.", entityType, entityId );
     }
 }

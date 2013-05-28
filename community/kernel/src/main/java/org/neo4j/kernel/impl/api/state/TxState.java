@@ -27,9 +27,6 @@ import java.util.Set;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -99,13 +96,11 @@ public class TxState
     }
 
     private final Map<Long/*Node ID*/, NodeState> nodeStates = new HashMap<Long, NodeState>();
-    private final Map<Long/*Relationship ID*/, RelationshipState> relationshipStates = new HashMap<Long, RelationshipState>();
     private final Map<Long/*Label ID*/, LabelState> labelStates = new HashMap<Long, LabelState>();
     private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
     private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
     private final DiffSets<Long> nodes = new DiffSets<Long>();
-    private final DiffSets<Long> relationships = new DiffSets<Long>();
     private final Map<UniquenessConstraint, Long> createdConstraintIndexes = new HashMap<UniquenessConstraint, Long>();
 
     private final OldTxStateBridge legacyState;
@@ -167,10 +162,8 @@ public class TxState
     public boolean hasChanges()
     {
         return !nodeStates.isEmpty() ||
-               !relationshipStates.isEmpty() ||
                !labelStates.isEmpty() ||
                !nodes.isEmpty() ||
-               !relationships.isEmpty() ||
                !indexChanges.isEmpty() ||
                !constraintsChanges.isEmpty() ||
                legacyState.hasChanges();
@@ -191,27 +184,7 @@ public class TxState
         return getOrCreateNodeState( nodeId ).getLabelDiffSets();
     }
 
-    public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
-    {
-        return getOrCreateNodeState( nodeId ).getPropertyDiffSets();
-    }
-
-    public DiffSets<Property> getRelationshipPropertyDiffSets( long nodeId )
-    {
-        return getOrCreateRelationshipState( nodeId ).getPropertyDiffSets();
-    }
-
-    public boolean nodeIsAddedInThisTx( long nodeId )
-    {
-        return legacyState.nodeIsAddedInThisTx( nodeId );
-    }
-
-    public boolean relationshipIsAddedInThisTx( long relationshipId )
-    {
-        return legacyState.relationshipIsAddedInThisTx( relationshipId );
-    }
-
-    public void nodeDelete( long nodeId )
+    public void deleteNode( long nodeId )
     {
         legacyState.deleteNode( nodeId );
         nodes.remove( nodeId );
@@ -222,71 +195,19 @@ public class TxState
         return nodes.isRemoved( nodeId );
     }
 
-    public void relationshipDelete( long relationshipId )
+    public boolean nodeIsAddedInThisTx( long nodeId )
     {
-        legacyState.deleteRelationship( relationshipId );
-        relationships.remove( relationshipId );
+        return legacyState.nodeIsAddedInThisTx( nodeId );
     }
 
-    public boolean relationshipIsDeletedInThisTx( long relationshipId )
-    {
-        return relationships.isRemoved( relationshipId );
-    }
-
-    public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
-    {
-        if ( ! newProperty.isNoProperty() )
-        {
-            DiffSets<Property> diffSets = getNodePropertyDiffSets( nodeId );
-            if ( ! replacedProperty.isNoProperty() )
-            {
-                diffSets.remove( replacedProperty );
-            }
-            diffSets.add( newProperty );
-        }
-    }
-
-    public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
-    {
-        if ( ! newProperty.isNoProperty() )
-        {
-            DiffSets<Property> diffSets = getRelationshipPropertyDiffSets( relationshipId );
-            if ( ! replacedProperty.isNoProperty() )
-            {
-                diffSets.remove( replacedProperty );
-            }
-            diffSets.add( newProperty );
-        }
-    }
-
-    public void nodeRemoveProperty( long nodeId, Property removedProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
-    {
-        if ( ! removedProperty.isNoProperty() )
-        {
-            getNodePropertyDiffSets( nodeId ).remove( removedProperty );
-        }
-    }
-
-    public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
-    {
-        if ( ! removedProperty.isNoProperty() )
-        {
-            getRelationshipPropertyDiffSets( relationshipId ).remove( removedProperty );
-        }
-    }
-
-    public void nodeAddLabel( long labelId, long nodeId )
+    public void addLabelToNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).add( nodeId );
         getNodeStateLabelDiffSets( nodeId ).add( labelId );
         persistenceManager.addLabelToNode( labelId, nodeId );
     }
 
-    public void nodeRemoveLabel( long labelId, long nodeId )
+    public void removeLabelFromNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).remove( nodeId );
         getNodeStateLabelDiffSets( nodeId ).remove( labelId );
@@ -410,18 +331,6 @@ public class TxState
             public NodeState newState( long id )
             {
                 return new NodeState( id );
-            }
-        } );
-    }
-
-    private RelationshipState getOrCreateRelationshipState( long relationshipId )
-    {
-        return getState( relationshipStates, relationshipId, new StateCreator<RelationshipState>()
-        {
-            @Override
-            public RelationshipState newState( long id )
-            {
-                return new RelationshipState( id );
             }
         } );
     }
