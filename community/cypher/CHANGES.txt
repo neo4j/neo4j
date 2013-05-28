@@ -6,6 +6,10 @@ o Fixes #844 - Label predicate do not work on optional nodes that are null
 ---------
 o Added startNode()/endNode()
 o Fixes #780 - Queries with literal collections fail against schema indexes
+o Make Cypher execution results closable 
+o Adds Cypher label scan hint
+o Removes alternative WITH syntax in Cypher
+o Fixes bug with UNION text output
 
 2.0.0-M02
 ---------

@@ -1,3 +1,7 @@
+2.0.0-M03
+---------
+o Added support for transaction keep-alive
+
 2.0.0-M02
 ---------
 o REST transaction support

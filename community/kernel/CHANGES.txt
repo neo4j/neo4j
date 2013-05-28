@@ -1,3 +1,7 @@
+2.0.0-M03
+---------
+o Read-only index results are closed properly
+
 2.0.0-M02
 ---------
 o Support for labels in the org.neo4j.unsafe.batchinsert APIs.
