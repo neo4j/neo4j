@@ -1,5 +1,21 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.0-M03
+---------
+Kernel:
+  o Read-only index results are closed properly
+
+Cypher:
+  o Make Cypher execution results closable 
+  o Adds Cypher label scan hint
+  o Removes alternative WITH syntax in Cypher
+  o Fixes bug with UNION text output
+  o Added startNode()/endNode()
+  o Fixes #780 - Queries with literal collections fail against schema indexes
+
+Server:
+  o Added support for transaction keep-alive
+
 2.0.0-M02
 ---------
 o In server, added REST transaction support
