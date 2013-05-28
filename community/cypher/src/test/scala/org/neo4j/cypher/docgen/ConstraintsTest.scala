@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import collection.JavaConverters._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
+@Ignore("2013-05-27 Waiting for constraints to be finished")
 class ConstraintsTest extends DocumentingTestBase {
   def graphDescription: List[String] = List()
 

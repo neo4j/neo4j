@@ -51,7 +51,7 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def cypherQuery: Parser[AbstractQuery] = (indexOps | constraintOps | union | query) <~ opt(";")
+  def cypherQuery: Parser[AbstractQuery] = (indexOps | union | query) <~ opt(";")
 
   def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 }

@@ -22,7 +22,6 @@ package org.neo4j.graphdb.schema;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Transaction;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes
@@ -79,33 +78,6 @@ public interface Schema
      * @return the current {@link IndexState} of the index
      */
     IndexState getIndexState( IndexDefinition index );
-
-    /**
-     * Returns a {@link ConstraintCreator} where details about the constraint can be
-     * specified. When all details have been entered {@link ConstraintCreator#create()}
-     * must be called for it to actually be created.
-     * 
-     * Creating a constraint will have the transaction creating it block on commit until
-     * all existing data has been verified for compliance. If any existing data doesn't
-     * comply with the constraint the transaction will not be able to commit, but
-     * fail in {@link Transaction#finish()}.
-     * 
-     * @param label the label this constraint is for.
-     * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
-     * a constraint for the given {@link Label label}.
-     */
-    ConstraintCreator constraintFor( Label label );
-    
-    /**
-     * @param label the label to get constraints for.
-     * @return all constraints for the given label.
-     */
-    Iterable<ConstraintDefinition> getConstraints( Label label );
-    
-    /**
-     * @return all constraints
-     */
-    Iterable<ConstraintDefinition> getConstraints();
 
     /**
      * Wait until an index comes online

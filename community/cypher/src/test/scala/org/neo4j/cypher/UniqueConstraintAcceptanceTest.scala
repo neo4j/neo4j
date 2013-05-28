@@ -21,11 +21,11 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.scalatest.Assertions
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 import collection.JavaConverters._
 
-
+@Ignore("2013-05-27 Waiting for constraints to be finished")
 class UniqueConstraintAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
