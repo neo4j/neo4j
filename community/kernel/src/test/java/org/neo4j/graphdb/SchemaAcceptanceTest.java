@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -41,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -258,7 +260,7 @@ public class SchemaAcceptanceTest
 
         // WHEN
         IndexDefinition index = createIndex( label, propertyKey );
-        IndexDefinition index2 = createIndex( label, "other_property" );
+        createIndex( label, "other_property" );
 
         // PASS
         db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
@@ -364,6 +366,38 @@ public class SchemaAcceptanceTest
                 String.format("Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
                     "IS UNIQUE:%nUnable to add index on [label: MY_LABEL, my_property_key] : " +
                     "Already indexed :MY_LABEL(my_property_key)."), e.getMessage() );
+        }
+    }
+
+    @Test
+    public void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError() throws Exception
+    {
+        // GIVEN
+        Transaction transaction = db.beginTx();
+        try {
+            db.createNode( label ).setProperty( propertyKey, "value1" );
+            db.createNode( label ).setProperty( propertyKey, "value1" );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        // WHEN
+        try
+        {
+            createConstraint( label, propertyKey );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals(
+                String.format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                        "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
+                        "'value1':%n" +
+                        "  existing node(1)%n" +
+                        "  new node(2)" ), e.getMessage() );
         }
     }
 
