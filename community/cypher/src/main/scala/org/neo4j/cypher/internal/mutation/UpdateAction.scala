@@ -71,7 +71,7 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
 
 
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
-    val map = getMapFromExpression(expression(context)(state))
+    val map = getMapFromExpression(expression(context)(state)).filter(_._2 != null) /* filter out the properties with null values */
 
     pc match {
       case n: Node => map.foreach {
@@ -90,15 +90,17 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
     val value = makeValueNeoSafe(expression(context)(state))
-    pc match {
-      case n: Node =>
-        state.query.nodeOps.setProperty(n, key, value)
+    if (value != null) {
+      pc match {
+        case n: Node =>
+          state.query.nodeOps.setProperty(n, key, value)
 
-      case r: Relationship =>
-        state.query.relationshipOps.setProperty(r, key, value)
+        case r: Relationship =>
+          state.query.relationshipOps.setProperty(r, key, value)
+      }
+
+      state.propertySet.increase()
     }
-
-    state.propertySet.increase()
   }
 
   def makeValueNeoSafe(a: Any): Any = if (isCollection(a)) {
