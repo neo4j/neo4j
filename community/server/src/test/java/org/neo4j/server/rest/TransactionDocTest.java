@@ -49,7 +49,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Begin a transaction
      *
-     * You begin a new transaction by posting zero or more cypher statements
+     * You begin a new transaction by posting zero or more Cypher statements
      * to the transaction endpoint. The server will respond with the result of
      * your statements, as well as the location of your open transaction.
      */
@@ -100,12 +100,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Reset transaction timeout of an open transaction
      *
-     * Every orphaned transactions is automatically expired after a period of inactivity.  This may be prevented
+     * Every orphaned transaction is automatically expired after a period of inactivity.  This may be prevented
      * by resetting the transaction timeout.
      *
-     * The timeout may be reset by sending a keep alive request to the server that executes an empty list of statements.
+     * The timeout may be reset by sending a keep-alive request to the server that executes an empty list of statements.
      * This request will reset the transaction timeout and return the new time at which the transaction will
-     * expire as an RFC1123 formatted timestamp value in the "transaction" section of the response.
+     * expire as an RFC1123 formatted timestamp value in the ``transaction'' section of the response.
      */
     @Test
     @Documented
