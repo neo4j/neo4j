@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public enum EntityType
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+
+public interface CacheLoader<T>
 {
-    NODE, RELATIONSHIP, GRAPH
+    T load( long id ) throws EntityNotFoundException;
 }

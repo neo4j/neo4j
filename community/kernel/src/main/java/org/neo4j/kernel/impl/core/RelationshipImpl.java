@@ -64,36 +64,21 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected PropertyData changeProperty( NodeManager nodeManager,
-            PropertyData property, Object value, TransactionState tx )
-    {
-        return nodeManager.relChangeProperty( this, property, value, tx );
-    }
-
-    @Override
-    protected PropertyData addProperty( NodeManager nodeManager, Token index, Object value )
-    {
-        return nodeManager.relAddProperty( this, index, value );
-    }
-    
-    @Override
     public int size()
     {
         return super.size() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
     }
-
+    
     @Override
-    protected void removeProperty( NodeManager nodeManager,
-            PropertyData property, TransactionState tx )
+    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
     {
-        nodeManager.relRemoveProperty( this, property, tx );
+        return nodeManager.loadProperties( this, false );
     }
-
+    
     @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties(
-            NodeManager nodeManager, boolean light )
+    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
     {
-        return nodeManager.loadProperties( this, light );
+        return nodeManager.relationshipLoadPropertyValue( getId(), propertyKey );
     }
 
     @Override
@@ -134,11 +119,5 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     PropertyContainer asProxy( NodeManager nm )
     {
         return nm.newRelationshipProxyById( getId() );
-    }
-
-    @Override
-    protected void updateSize( NodeManager nodeManager )
-    {
-        nodeManager.updateCacheSize( this, size() );
     }
 }

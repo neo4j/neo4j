@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class StoreTransactionContext implements TransactionContext
@@ -42,14 +43,17 @@ public class StoreTransactionContext implements TransactionContext
     private final IndexingService indexingService;
     private final LabelTokenHolder labelTokenHolder;
     private final NodeManager nodeManager;
+    private final PersistenceManager persistenceManager;
 
     public StoreTransactionContext( AbstractTransactionManager transactionManager,
+                                    PersistenceManager persistenceManager,
                                     PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                     NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.transactionManager = transactionManager;
+        this.persistenceManager = persistenceManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
@@ -59,8 +63,8 @@ public class StoreTransactionContext implements TransactionContext
     public StatementContext newStatementContext()
     {
         return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
-                                          new SchemaStorage( neoStore.getSchemaStore() ), neoStore, indexingService,
-                                          new IndexReaderFactory.Caching( indexingService ) );
+                                          new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
+                                          indexingService, new IndexReaderFactory.Caching( indexingService ) );
     }
 
     @Override

@@ -25,6 +25,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class LockingTransactionContext extends DelegatingTransactionContext
@@ -32,12 +33,14 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     private final LockHolder lockHolder;
 
     public LockingTransactionContext( TransactionContext actual, LockManager lockManager,
-            TransactionManager transactionManager )
+            TransactionManager transactionManager, NodeManager nodeManager )
     {
         super( actual );
         try
         {
-            this.lockHolder = new LockHolder( lockManager, transactionManager.getTransaction() );
+            // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
+            // equality comparison between GraphProperties instances. It should change.
+            this.lockHolder = new LockHolder( lockManager, transactionManager.getTransaction(), nodeManager );
         }
         catch ( SystemException e )
         {

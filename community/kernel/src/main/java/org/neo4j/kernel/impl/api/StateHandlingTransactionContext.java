@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -33,10 +32,13 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -49,18 +51,21 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private final SchemaCache schemaCache;
     private final PersistenceManager persistenceManager;
     private final SchemaStorage schemaStorage;
-
     private final UpdateableSchemaState schemaState;
     private final ConstraintIndexCreator constraintIndexCreator;
+    private final NodeManager nodeManager;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
-    public StateHandlingTransactionContext( TransactionContext actual,
+    public StateHandlingTransactionContext( StoreTransactionContext actual,
                                             SchemaStorage schemaStorage,
                                             TxState state,
                                             SchemaIndexProviderMap providerMap,
                                             PersistenceCache persistenceCache,
                                             SchemaCache schemaCache,
                                             PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
-                                            ConstraintIndexCreator constraintIndexCreator )
+                                            ConstraintIndexCreator constraintIndexCreator,
+                                            PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                            NodeManager nodeManager )
     {
         super( actual );
         this.schemaStorage = schemaStorage;
@@ -71,18 +76,27 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         this.schemaState = schemaState;
         this.state = state;
         this.constraintIndexCreator = constraintIndexCreator;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.nodeManager = nodeManager;
     }
 
     @Override
     public StatementContext newStatementContext()
     {
         // Store stuff
-        StatementContext result = super.newStatementContext();
+        StoreStatementContext storeContext = (StoreStatementContext) super.newStatementContext();
+        StatementContext result = storeContext;
+
         // + Caching
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
+
         // + Transaction-local state awareness
-        result = new StateHandlingStatementContext( result, new SchemaStateConcern( schemaState ), state,
-                                                    constraintIndexCreator );
+        AuxiliaryStoreOperations auxStoreOperations = storeContext; // StoreStatementContext implements it too
+        auxStoreOperations = new LegacyAutoIndexAuxStoreOps( auxStoreOperations, propertyKeyTokenHolder,
+                nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
+        
+        result = new StateHandlingStatementContext( result,
+                new SchemaStateConcern( schemaState ), state, constraintIndexCreator, auxStoreOperations );
         // done
         return result;
     }

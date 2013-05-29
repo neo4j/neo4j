@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.cache.SizeOfs;
+
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 public class PropertyDatas
 {
@@ -38,6 +38,7 @@ public class PropertyDatas
             this.id = id;
         }
         
+        @Override
         public int size()
         {
             // all primitives fit in 8 byte value
@@ -322,6 +323,7 @@ public class PropertyDatas
             this.value = value;
         }
         
+        @Override
         public int size()
         {
             return super.size() + 8;
@@ -362,6 +364,7 @@ public class PropertyDatas
             this.value = value;
         }
 
+        @Override
         public int size()
         {
             return super.size() + 8;
@@ -408,6 +411,7 @@ public class PropertyDatas
             this.value = value;
         }
         
+        @Override
         public int size()
         {
             return withObjectOverhead( 8 /*id*/ + SizeOfs.REFERENCE_SIZE /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
@@ -420,6 +424,7 @@ public class PropertyDatas
             return id;
         }
 
+        @Override
         public int getIndex()
         {
             return index;
@@ -505,5 +510,41 @@ public class PropertyDatas
     public static PropertyData forStringOrArray( int index, long id, Object value )
     {
         return new ObjectPropertyData( index, id, value );
+    }
+
+    public static PropertyData noProperty( final long propertyKeyId )
+    {
+        return new PropertyData()
+        {
+            @Override
+            public int size()
+            {
+                return 0;
+            }
+            
+            @Override
+            public void setNewValue( Object newValue )
+            {
+                throw new UnsupportedOperationException();
+            }
+            
+            @Override
+            public Object getValue()
+            {
+                return null;
+            }
+            
+            @Override
+            public int getIndex()
+            {
+                return (int) propertyKeyId;
+            }
+            
+            @Override
+            public long getId()
+            {
+                return -1;
+            }
+        };
     }
 }

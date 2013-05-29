@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.nioneo.store;
 
-public enum EntityType
+public class StoreNotFoundException extends StoreFailureException
 {
-    NODE, RELATIONSHIP, GRAPH
+    public StoreNotFoundException( String msg )
+    {
+        super( msg );
+    }
 }

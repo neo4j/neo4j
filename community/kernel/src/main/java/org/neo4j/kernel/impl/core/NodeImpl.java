@@ -23,8 +23,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -33,6 +35,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -63,6 +67,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
+    private volatile Set<Long> labels; // TODO do this more efficiently
 
     /*
      * This is the id of the next relationship to load from disk.
@@ -87,6 +92,18 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             relationships = NO_RELATIONSHIPS;
         }
+    }
+    
+    @Override
+    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
+    {
+        return nodeManager.loadProperties( this, false );
+    }
+    
+    @Override
+    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
+    {
+        return nodeManager.nodeLoadPropertyValue( id, propertyKey );
     }
 
     @Override
@@ -121,33 +138,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     public boolean equals( Object obj )
     {
         return this == obj || obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId();
-    }
-
-    @Override
-    protected PropertyData changeProperty( NodeManager nodeManager,
-                                           PropertyData property, Object value, TransactionState tx )
-    {
-        return nodeManager.nodeChangeProperty( this, property, value, tx );
-    }
-
-    @Override
-    protected PropertyData addProperty( NodeManager nodeManager, Token index, Object value )
-    {
-        return nodeManager.nodeAddProperty( this, index, value );
-    }
-
-    @Override
-    protected void removeProperty( NodeManager nodeManager,
-                                   PropertyData property, TransactionState tx )
-    {
-        nodeManager.nodeRemoveProperty( this, property, tx );
-    }
-
-    @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties(
-            NodeManager nodeManager, boolean light )
-    {
-        return nodeManager.loadProperties( this, light );
     }
 
     Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
@@ -386,12 +376,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     }
 
-    @Override
-    protected void updateSize( NodeManager nodeManager )
-    {
-        nodeManager.updateCacheSize( this, size() );
-    }
-
     private RelIdArray[] toRelIdArray( ArrayMap<Integer, RelIdArray> tmpRelMap )
     {
         RelIdArray[] result = new RelIdArray[tmpRelMap.size()];
@@ -550,6 +534,11 @@ public class NodeImpl extends ArrayBasedPrimitive
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
     }
 
+    protected void updateSize( NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, size() );
+    }
+
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long>
     loadMoreRelationshipsFromNodeManager( NodeManager nodeManager )
     {
@@ -674,7 +663,6 @@ public class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
-            updateSize( nodeManager );
         }
     }
 
@@ -718,5 +706,37 @@ public class NodeImpl extends ArrayBasedPrimitive
     PropertyContainer asProxy( NodeManager nm )
     {
         return nm.newNodeProxyById( getId() );
+    }
+
+    public Set<Long> getLabels( CacheLoader<Set<Long>> loader ) throws EntityNotFoundException
+    {
+        if ( labels == null )
+        {
+            synchronized ( this )
+            {
+                if ( labels == null )
+                {
+                    labels = loader.load( getId() );
+                }
+            }
+        }
+        return labels;
+    }
+
+    public synchronized void commitLabels( Set<Long> added, Set<Long> removed )
+    {
+        if ( labels != null )
+        {
+            HashSet<Long> newLabels = new HashSet<Long>( labels );
+            if ( added != null )
+            {
+                newLabels.addAll( added );
+            }
+            if ( removed != null )
+            {
+                newLabels.removeAll( removed );
+            }
+            labels = newLabels;
+        }
     }
 }

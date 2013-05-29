@@ -139,7 +139,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaState = schemaState;
-        highlyAvailableInstance = highlyAvailable;
+        this.highlyAvailableInstance = highlyAvailable;
     }
 
     @Override
@@ -203,21 +203,27 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
-        TransactionContext result = new StoreTransactionContext(
-                transactionManager, propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService );
+        StoreTransactionContext storeTransactionContext = new StoreTransactionContext(
+                transactionManager, persistenceManager,
+                propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService
+        );
 
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, new SchemaStorage( neoStore.getSchemaStore() ),
-                                                      newTxState(), providerMap, persistenceCache, schemaCache,
-                                                      persistenceManager, schemaState,
-                                                      new ConstraintIndexCreator(
-                                                      new Transactor( transactionManager ), indexService ) );
+        TransactionContext result =
+                new StateHandlingTransactionContext(
+                    storeTransactionContext,
+                    new SchemaStorage( neoStore.getSchemaStore() ),
+                    newTxState(), providerMap, persistenceCache, schemaCache,
+                    persistenceManager, schemaState,
+                    new ConstraintIndexCreator( new Transactor( transactionManager ), indexService ),
+                    propertyKeyTokenHolder, nodeManager
+                );
 
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );
 
         // + Locking
-        result = new LockingTransactionContext( result, lockManager, transactionManager );
+        result = new LockingTransactionContext( result, lockManager, transactionManager, nodeManager );
 
         if ( highlyAvailableInstance )
         {
@@ -253,8 +259,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // I/O
         SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        StatementContext result = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
-                schemaStorage, neoStore, indexService, new IndexReaderFactory.Caching( indexService ) );
+        StatementContext result = new StoreStatementContext(
+                propertyKeyTokenHolder, labelTokenHolder,
+                nodeManager, schemaStorage, neoStore, persistenceManager,
+                indexService, new IndexReaderFactory.Caching( indexService )
+        );
 
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );

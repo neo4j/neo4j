@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
-
+import org.mockito.Matchers;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
@@ -33,7 +33,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 public class CachingStatementContextTest
@@ -45,7 +44,7 @@ public class CachingStatementContextTest
         long nodeId = 3;
         Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
         PersistenceCache cache = mock( PersistenceCache.class );
-        when( cache.getLabels( nodeId ) ).thenReturn( labels );
+        when( cache.nodeGetLabels( Matchers.eq( nodeId ), Matchers.any( CacheLoader.class ) ) ).thenReturn( labels );
         StatementContext actual = mock( StatementContext.class );
         StatementContext context = new CachingStatementContext( actual, cache, null );
         
@@ -53,6 +52,6 @@ public class CachingStatementContextTest
         Iterator<Long> receivedLabels = context.nodeGetLabels( nodeId );
         
         // THEN
-        assertEquals( labels, addToCollection(receivedLabels, new HashSet<Long>() ) );
+        assertEquals( labels, addToCollection( receivedLabels, new HashSet<Long>() ) );
     }
 }

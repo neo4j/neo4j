@@ -51,7 +51,8 @@ import static org.junit.Assert.assertEquals;
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.ArrayBasedPrimitive", method = "commitPropertyMaps", on = BreakPoint.Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
 @SuppressWarnings( "javadoc" )
-@Ignore( "Unignore soon" )
+@Ignore( "Ignored in 2.0 due to half-way refactoring moving properties into kernel API. " +
+        "Unignore and change appropriately when it's done" )
 public class TestPropertyCachePoisoning
 {
     @Test

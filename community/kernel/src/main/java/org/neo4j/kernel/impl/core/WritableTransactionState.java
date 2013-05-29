@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -452,8 +453,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
-            Primitive primitive )
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap( Primitive primitive )
     {
         if ( primitiveElement == null )
             return null;

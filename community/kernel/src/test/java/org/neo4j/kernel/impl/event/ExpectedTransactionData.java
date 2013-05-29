@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +29,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 class ExpectedTransactionData
 {
@@ -116,7 +116,8 @@ class ExpectedTransactionData
             checkAssigned( expectedAssignedNodeProperties, entry );
             assertFalse( data.isDeleted( entry.entity() ) );
         }
-        assertTrue( expectedAssignedNodeProperties.isEmpty() );
+        assertTrue( "Expected node properties not encountered " + expectedAssignedNodeProperties,
+                expectedAssignedNodeProperties.isEmpty() );
 
         for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
         {
