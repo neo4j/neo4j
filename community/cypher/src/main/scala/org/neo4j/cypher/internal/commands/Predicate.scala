@@ -320,7 +320,12 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val node           = CastSupport.erasureCastOrFail[Node](entity(m))
+    val value = entity(m)
+
+    if(value == null)
+      return false
+
+    val node           = CastSupport.erasureCastOrFail[Node](value)
     val nodeId         = node.getId
     val queryCtx       = state.query
 
