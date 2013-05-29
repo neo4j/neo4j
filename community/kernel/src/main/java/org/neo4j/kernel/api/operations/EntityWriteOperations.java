@@ -52,6 +52,9 @@ public interface EntityWriteOperations
 
     Property relationshipSetProperty( long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    
+    Property graphSetProperty( Property property )
+            throws PropertyKeyIdNotFoundException;
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
@@ -62,4 +65,7 @@ public interface EntityWriteOperations
 
     Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    
+    Property graphRemoveProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException;
 }

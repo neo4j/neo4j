@@ -26,9 +26,9 @@ import java.util.Set;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.CompositeStatementContext;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
@@ -45,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -76,7 +75,8 @@ public class StateHandlingStatementContextTest
         };
 
         StateHandlingStatementContext ctx = new StateHandlingStatementContext( hatesWritesCtx,
-                mock( SchemaStateOperations.class ), mock( TxState.class ), mock( ConstraintIndexCreator.class ) );
+                mock( SchemaStateOperations.class ), mock( TxState.class ), mock( ConstraintIndexCreator.class ),
+                mock( AuxiliaryStoreOperations.class ) );
 
         // When
         ctx.indexCreate( 0l, 0l );
@@ -103,7 +103,8 @@ public class StateHandlingStatementContextTest
         when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( asList( constraint ) ) );
         TxState state = mock( TxState.class );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
+                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
+                mock( AuxiliaryStoreOperations.class ) );
 
         // when
         context.uniquenessConstraintCreate( 10, 66 );
@@ -124,7 +125,8 @@ public class StateHandlingStatementContextTest
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
+                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
+                mock( AuxiliaryStoreOperations.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
 
         // when
@@ -149,7 +151,8 @@ public class StateHandlingStatementContextTest
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
+                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
+                mock( AuxiliaryStoreOperations.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
         context.uniquenessConstraintCreate( 11, 99 );
 
@@ -175,7 +178,8 @@ public class StateHandlingStatementContextTest
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ) );
+                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
+                mock( AuxiliaryStoreOperations.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
 
         // when

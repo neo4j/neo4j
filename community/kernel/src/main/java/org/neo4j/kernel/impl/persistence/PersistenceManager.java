@@ -73,9 +73,19 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().nodeLoadLight( id );
     }
 
-    public Object loadPropertyValue( PropertyData property )
+    public Object nodeLoadPropertyValue( long nodeId, int propertyKey )
     {
-        return getReadOnlyResource().loadPropertyValue( property );
+        return getReadOnlyResource().nodeLoadPropertyValue( nodeId, propertyKey );
+    }
+    
+    public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
+    {
+        return getReadOnlyResource().relationshipLoadPropertyValue( relationshipId, propertyKey );
+    }
+    
+    public Object graphLoadPropertyValue( int propertyKey )
+    {
+        return getReadOnlyResource().graphLoadPropertyValue( propertyKey );
     }
 
     public Token[] loadAllPropertyKeyTokens()
@@ -149,20 +159,19 @@ public class PersistenceManager
         return getResource( true ).nodeDelete( nodeId );
     }
 
-    public PropertyData nodeAddProperty( long nodeId, Token index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource( true ).nodeAddProperty( nodeId, index, value );
+        return getResource( true ).nodeAddProperty( nodeId, propertyKey, value );
     }
 
-    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
-            Object value )
+    public PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource( true ).nodeChangeProperty( nodeId, data, value );
+        return getResource( true ).nodeChangeProperty( nodeId, propertyKey, value );
     }
 
-    public void nodeRemoveProperty( long nodeId, PropertyData data )
+    public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        getResource( true ).nodeRemoveProperty( nodeId, data );
+        getResource( true ).nodeRemoveProperty( nodeId, propertyKey );
     }
 
     public void nodeCreate( long id )
@@ -181,35 +190,34 @@ public class PersistenceManager
         return getResource( true ).relDelete( relId );
     }
 
-    public PropertyData relAddProperty( long relId, Token index, Object value )
+    public PropertyData relAddProperty( long relId, int propertyKey, Object value )
     {
-        return getResource( true ).relAddProperty( relId, index, value );
+        return getResource( true ).relAddProperty( relId, propertyKey, value );
     }
 
-    public PropertyData relChangeProperty( long relId, PropertyData data,
-            Object value )
+    public PropertyData relChangeProperty( long relId, int propertyKey, Object value )
     {
-        return getResource( true ).relChangeProperty( relId, data, value );
+        return getResource( true ).relChangeProperty( relId, propertyKey, value );
     }
 
-    public void relRemoveProperty( long relId, PropertyData data )
+    public void relRemoveProperty( long relId, int propertyKey )
     {
-        getResource( true ).relRemoveProperty( relId, data );
+        getResource( true ).relRemoveProperty( relId, propertyKey );
     }
 
-    public PropertyData graphAddProperty( Token index, Object value )
+    public PropertyData graphAddProperty( int propertyKey, Object value )
     {
-        return getResource( true ).graphAddProperty( index, value );
+        return getResource( true ).graphAddProperty( propertyKey, value );
     }
 
-    public PropertyData graphChangeProperty( PropertyData data, Object value )
+    public PropertyData graphChangeProperty( int propertyKey, Object value )
     {
-        return getResource( true ).graphChangeProperty( data, value );
+        return getResource( true ).graphChangeProperty( propertyKey, value );
     }
 
-    public void graphRemoveProperty( PropertyData data )
+    public void graphRemoveProperty( int propertyKey )
     {
-        getResource( true ).graphRemoveProperty( data );
+        getResource( true ).graphRemoveProperty( propertyKey );
     }
     
     public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )

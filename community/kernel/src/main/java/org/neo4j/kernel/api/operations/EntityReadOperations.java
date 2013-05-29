@@ -63,6 +63,9 @@ public interface EntityReadOperations
 
     Property relationshipGetProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    
+    Property graphGetProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException;
 
     /** Returns true if node has the property given it's property key id for the node with the given node id */
     boolean nodeHasProperty( long nodeId, long propertyKeyId )
@@ -71,6 +74,9 @@ public interface EntityReadOperations
     boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
+    boolean graphHasProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException;
+    
     // TODO: decide if this should be replaced by nodeGetAllProperties()
     /** Return all property keys associated with a node. */
     Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException;
@@ -82,4 +88,10 @@ public interface EntityReadOperations
     Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException;
 
     Iterator<Property> relationshipGetAllProperties( long relationshipId ) throws EntityNotFoundException;
+
+    // TODO: decide if this should be replaced by relationshipGetAllProperties()
+    /** Return all property keys associated with a relationship. */
+    Iterator<Long> graphGetPropertyKeys();
+
+    Iterator<Property> graphGetAllProperties();
 }

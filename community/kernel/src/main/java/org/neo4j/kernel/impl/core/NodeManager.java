@@ -73,7 +73,7 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.cast;
 
-public class NodeManager implements Lifecycle
+public class NodeManager implements Lifecycle, EntityFactory
 {
     private long referenceNodeId = 0;
 
@@ -81,9 +81,7 @@ public class NodeManager implements Lifecycle
     private final GraphDatabaseService graphDbService;
     private final LockStripedCache<NodeImpl> nodeCache;
     private final LockStripedCache<RelationshipImpl> relCache;
-
     private final CacheProvider cacheProvider;
-
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -100,9 +98,8 @@ public class NodeManager implements Lifecycle
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
     private static final int LOCK_STRIPE_COUNT = 32;
-    private final ReentrantLock loadLocks[] =
-            new ReentrantLock[LOCK_STRIPE_COUNT];
-    private GraphProperties graphProperties;
+    private final ReentrantLock loadLocks[] = new ReentrantLock[LOCK_STRIPE_COUNT];
+    private GraphPropertiesImpl graphProperties;
 
     private final LockStripedCache.Loader<NodeImpl> nodeLoader = new LockStripedCache.Loader<NodeImpl>()
     {
@@ -253,6 +250,7 @@ public class NodeManager implements Lifecycle
         }
     }
 
+    @Override
     public NodeProxy newNodeProxyById( long id )
     {
         return new NodeProxy( id, nodeLookup, statementCtxProvider );
@@ -351,6 +349,7 @@ public class NodeManager implements Lifecycle
         return nodeCache.get( nodeId );
     }
 
+    @Override
     public RelationshipProxy newRelationshipProxyById( long id )
     {
         return new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
@@ -648,9 +647,19 @@ public class NodeManager implements Lifecycle
         }
     }
 
-    Object loadPropertyValue( PropertyData property )
+    Object nodeLoadPropertyValue( long nodeId, int propertyKey )
     {
-        return persistenceManager.loadPropertyValue( property );
+        return persistenceManager.nodeLoadPropertyValue( nodeId, propertyKey );
+    }
+    
+    Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
+    {
+        return persistenceManager.relationshipLoadPropertyValue( relationshipId, propertyKey );
+    }
+    
+    Object graphLoadPropertyValue( int propertyKey )
+    {
+        return persistenceManager.graphLoadPropertyValue( propertyKey );
     }
 
     long getRelationshipChainPosition( NodeImpl node )
@@ -853,94 +862,11 @@ public class NodeManager implements Lifecycle
         return cast( relTypeHolder.getAllTokens() );
     }
 
-    private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
-            trackers )
-    {
-        if ( !trackers.isEmpty() )
-        {
-            Iterable<String> propertyKeys = primitive.getPropertyKeys( this );
-            @SuppressWarnings("unchecked"/*caller ensures appropriate type*/)
-            T proxy = (T) primitive.asProxy( this );
-
-            for ( String key : propertyKeys )
-            {
-                Object value = primitive.getProperty( this,
-                        propertyKeyTokenHolder.getTokenByNameOrNull( key ).id() );
-                for ( PropertyTracker<T> tracker : trackers )
-                {
-                    tracker.propertyRemoved( proxy, key, value );
-                }
-            }
-        }
-    }
-
     public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
-        deleteFromTrackers( node, nodePropertyTrackers );
-
         tx.deleteNode( node.getId() );
         return persistenceManager.nodeDelete( node.getId() );
         // remove from node cache done via event
-    }
-
-    PropertyData nodeAddProperty( NodeImpl node, Token index, Object value )
-    {
-        if ( !nodePropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
-            {
-                nodePropertyTracker.propertyAdded( getNodeById( node.getId() ),
-                        index.name(), value );
-            }
-        }
-        return persistenceManager.nodeAddProperty( node.getId(), index, value );
-    }
-
-    PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-                                     Object value, TransactionState tx )
-    {
-        if ( !nodePropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
-            {
-                nodePropertyTracker.propertyChanged(
-                        getNodeById( node.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
-                        property.getValue(), value );
-            }
-        }
-        return persistenceManager.nodeChangeProperty( node.getId(), property,
-                value );
-    }
-
-    void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
-    {
-        if ( !nodePropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
-            {
-                nodePropertyTracker.propertyRemoved(
-                        getNodeById( node.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
-                        property.getValue() );
-            }
-        }
-        persistenceManager.nodeRemoveProperty( node.getId(), property );
-    }
-
-    PropertyData graphAddProperty( Token index, Object value )
-    {
-        return persistenceManager.graphAddProperty( index, value );
-    }
-
-    PropertyData graphChangeProperty( PropertyData property, Object value )
-    {
-        return persistenceManager.graphChangeProperty( property, value );
-    }
-
-    void graphRemoveProperty( PropertyData property )
-    {
-        persistenceManager.graphRemoveProperty( property );
     }
 
     public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
@@ -970,7 +896,6 @@ public class NodeManager implements Lifecycle
             ArrayMap<Integer,PropertyData> skipMap =
                 tx.getOrCreateCowPropertyRemoveMap( rel );
             
-            deleteFromTrackers( rel, relationshipPropertyTrackers );
             tx.deleteRelationship( rel.getId() );
             ArrayMap<Integer,PropertyData> removedProps = persistenceManager.relDelete( rel.getId() );
             
@@ -1002,52 +927,6 @@ public class NodeManager implements Lifecycle
                 setRollbackOnly();
             }
         }
-    }
-
-    PropertyData relAddProperty( RelationshipImpl rel, Token index, Object value )
-    {
-        if ( !relationshipPropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
-            {
-                relPropertyTracker.propertyAdded(
-                        getRelationshipById( rel.getId() ), index.name(),
-                        value );
-            }
-        }
-        return persistenceManager.relAddProperty( rel.getId(), index, value );
-    }
-
-    PropertyData relChangeProperty( RelationshipImpl rel,
-                                    PropertyData property, Object value, TransactionState tx )
-    {
-        if ( !relationshipPropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
-            {
-                relPropertyTracker.propertyChanged(
-                        getRelationshipById( rel.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
-                        property.getValue(), value );
-            }
-        }
-        return persistenceManager.relChangeProperty( rel.getId(), property,
-                value );
-    }
-
-    void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
-    {
-        if ( !relationshipPropertyTrackers.isEmpty() )
-        {
-            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
-            {
-                relPropertyTracker.propertyRemoved(
-                        getRelationshipById( rel.getId() ),
-                        getPropertyKeyTokenOrNull( property.getIndex() ).name(),
-                        property.getValue() );
-            }
-        }
-        persistenceManager.relRemoveProperty( rel.getId(), property );
     }
 
     public NodeImpl getNodeIfCached( long nodeId )
@@ -1086,6 +965,16 @@ public class NodeManager implements Lifecycle
         {
             throw new ThisShouldNotHappenError( "Mattias", "The key should exist at this point" );
         }
+    }
+    
+    public List<PropertyTracker<Node>> getNodePropertyTrackers()
+    {
+        return nodePropertyTrackers;
+    }
+    
+    public List<PropertyTracker<Relationship>> getRelationshipPropertyTrackers()
+    {
+        return relationshipPropertyTrackers;
     }
 
     public void addNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )
@@ -1135,12 +1024,12 @@ public class NodeManager implements Lifecycle
         return getTransactionState().relationshipIsDeleted( resource.getId() );
     }
 
-    private GraphProperties instantiateGraphProperties()
+    private GraphPropertiesImpl instantiateGraphProperties()
     {
-        return new GraphProperties( this );
+        return new GraphPropertiesImpl( this, statementCtxProvider );
     }
 
-    public GraphProperties getGraphProperties()
+    public GraphPropertiesImpl getGraphProperties()
     {
         return graphProperties;
     }

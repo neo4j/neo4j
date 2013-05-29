@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -159,5 +161,81 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     public boolean hasChanges()
     {
         return state.hasChanges();
+    }
+
+    @Override
+    public void nodeSetProperty( long nodeId, PropertyData property )
+    {
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        state.getOrCreateCowPropertyAddMap( node ).put( property.getIndex(), property );
+        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( node );
+        if ( removed != null )
+        {
+            removed.remove( property.getIndex() );
+        }
+    }
+
+    @Override
+    public void relationshipSetProperty( long relationshipId, PropertyData property )
+    {
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        state.getOrCreateCowPropertyAddMap( relationship ).put( property.getIndex(), property );
+        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( relationship );
+        if ( removed != null )
+        {
+            removed.remove( property.getIndex() );
+        }
+    }
+
+    @Override
+    public void graphSetProperty( PropertyData property )
+    {
+        GraphPropertiesImpl properties = nodeManager.getGraphProperties();
+        state.getOrCreateCowPropertyAddMap( properties ).put( property.getIndex(), property );
+        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( properties );
+        if ( removed != null )
+        {
+            removed.remove( property.getIndex() );
+        }
+    }
+
+    @Override
+    public void nodeRemoveProperty( long nodeId, Property property )
+    {
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        state.getOrCreateCowPropertyRemoveMap( node ).put( (int) property.propertyKeyId(),
+                property.asPropertyDataJustForIntegration() );
+        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( node );
+        if ( added != null )
+        {
+            added.remove( (int) property.propertyKeyId() );
+        }
+    }
+
+    @Override
+    public void relationshipRemoveProperty( long relationshipId, Property property )
+    {
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        state.getOrCreateCowPropertyRemoveMap( relationship ).put( (int) property.propertyKeyId(),
+                property.asPropertyDataJustForIntegration() );
+        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( relationship );
+        if ( added != null )
+        {
+            added.remove( (int) property.propertyKeyId() );
+        }
+    }
+
+    @Override
+    public void graphRemoveProperty( Property property )
+    {
+        GraphPropertiesImpl properties = nodeManager.getGraphProperties();
+        state.getOrCreateCowPropertyRemoveMap( properties ).put( (int) property.propertyKeyId(),
+                property.asPropertyDataJustForIntegration() );
+        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( properties );
+        if ( added != null )
+        {
+            added.remove( (int) property.propertyKeyId() );
+        }
+
     }
 }

@@ -19,20 +19,30 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
-import org.neo4j.kernel.impl.cache.SoftLruCache;
+import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.Primitive;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+
+import static org.neo4j.kernel.impl.api.CacheUpdateListener.NO_UPDATES;
 
 /**
- * This is a cache for data not cached by NodeImpl/RelationshipImpl. NodeImpl/RelationshipImpl
- * currently has the roles of caching, locking and transaction state merging. In the future
+ * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
+ * to gather all caching in one place.
+ * 
+ * NOTE:
+ * NodeImpl/RelationshipImpl manages caching, locking and transaction state merging. In the future
  * they might disappear and split up into {@link CachingStatementContext},
  * {@link LockingStatementContext} and {@link StateHandlingStatementContext}.
  * <p/>
@@ -41,41 +51,81 @@ import org.neo4j.kernel.impl.cache.SoftLruCache;
  */
 public class PersistenceCache
 {
-    private final LockStripedCache<CachedNodeEntity> nodeCache;
-
-    public PersistenceCache( LockStripedCache.Loader<CachedNodeEntity> nodeLoader )
+    private final CacheUpdateListener NODE_CACHE_SIZE_LISTENER = new CacheUpdateListener()
     {
-        this.nodeCache = new LockStripedCache<CachedNodeEntity>( new SoftLruCache<CachedNodeEntity>( "Kernel API " +
-                "label cache" ),
-                32, nodeLoader );
+        @Override
+        public void newSize( Primitive entity, int size )
+        {
+            nodeCache.updateSize( (NodeImpl) entity, size );
+        }
+    };
+    private final CacheUpdateListener RELATIONSHIP_CACHE_SIZE_LISTENER = new CacheUpdateListener()
+    {
+        @Override
+        public void newSize( Primitive entity, int size )
+        {
+            relationshipCache.updateSize( (RelationshipImpl) entity, size );
+        }
+    };
+    private final LockStripedCache<NodeImpl> nodeCache;
+    private final LockStripedCache<RelationshipImpl> relationshipCache;
+    private final Thunk<GraphPropertiesImpl> graphProperties;
+
+    public PersistenceCache(
+            LockStripedCache<NodeImpl> nodeCache,
+            LockStripedCache<RelationshipImpl> relationshipCache,
+            Thunk<GraphPropertiesImpl> graphProperties )
+    {
+        this.nodeCache = nodeCache;
+        this.relationshipCache = relationshipCache;
+        this.graphProperties = graphProperties;
     }
 
-    public Set<Long> getLabels( long nodeId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( long nodeId, long labelId, CacheLoader<Set<Long>> cacheLoader )
+            throws EntityNotFoundException
     {
-        CachedNodeEntity node = nodeCache.get( nodeId );
-
-        if( node != null )
-        {
-            return node.getLabels();
-        }
-        else
+        Set<Long> labels = getNode( nodeId ).getLabels( cacheLoader );
+        return labels.contains( labelId );
+    }
+    
+    public Set<Long> nodeGetLabels( long nodeId, CacheLoader<Set<Long>> loader ) throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getLabels( loader );
+    }
+    
+    private NodeImpl getNode( long nodeId ) throws EntityNotFoundException
+    {
+        NodeImpl node = nodeCache.get( nodeId );
+        if ( node == null )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
+        return node;
     }
 
+    private RelationshipImpl getRelationship( long relationshipId ) throws EntityNotFoundException
+    {
+        RelationshipImpl relationship = relationshipCache.get( relationshipId );
+        if ( relationship == null )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+        }
+        return relationship;
+    }
+    
     public void apply( TxState state )
     {
         for ( NodeState stateEntity : state.getNodeStates() )
         {
-            CachedNodeEntity entity = nodeCache.getIfCached( stateEntity.getId() );
-            if ( entity == null )
+            NodeImpl node = nodeCache.getIfCached( stateEntity.getId() );
+            if ( node == null )
             {
                 continue;
             }
 
-            entity.addLabels( stateEntity.getLabelDiffSets().getAdded() );
-            entity.removeLabels( stateEntity.getLabelDiffSets().getRemoved() );
+            node.commitLabels(
+                    stateEntity.getLabelDiffSets().getAdded(),
+                    stateEntity.getLabelDiffSets().getRemoved() );
         }
     }
 
@@ -84,53 +134,20 @@ public class PersistenceCache
         nodeCache.remove( nodeId );
     }
 
-    public static class CachedNodeEntity implements EntityWithSize
+    public Iterator<Property> nodeGetProperties( long nodeId, CacheLoader<Iterator<Property>> cacheLoader )
+            throws EntityNotFoundException
     {
-        private final long id;
-        private final Set<Long> labels = new CopyOnWriteArraySet<Long>();
+        return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER );
+    }
+    
+    public Iterator<Property> relationshipGetProperties( long relationshipId,
+            CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
+    {
+        return getRelationship( relationshipId ).getProperties( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER );
+    }
 
-        public CachedNodeEntity( long id )
-        {
-            this.id = id;
-        }
-
-        public void addLabels( Set<Long> additionalLabels )
-        {
-            labels.addAll( additionalLabels );
-        }
-
-        public void removeLabels( Set<Long> removedLabels )
-        {
-            labels.removeAll( removedLabels );
-        }
-
-        @Override
-        public long getId()
-        {
-            return id;
-        }
-
-        @Override
-        public void setRegisteredSize( int size )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getRegisteredSize()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int size()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public Set<Long> getLabels()
-        {
-            return labels;
-        }
+    public Iterator<Property> graphGetProperties( CacheLoader<Iterator<Property>> cacheLoader )
+    {
+        return graphProperties.evaluate().getProperties( cacheLoader, NO_UPDATES );
     }
 }

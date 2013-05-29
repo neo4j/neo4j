@@ -19,37 +19,31 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 
 import static java.lang.String.format;
 
-final class NoProperty extends Property
+final class NoGraphProperty extends Property
 {
     private final long propertyKeyId;
-    private final EntityType entityType;
-    private final long entityId;
 
-    NoProperty( long propertyKeyId, EntityType entityType, long entityId )
+    NoGraphProperty( long propertyKeyId )
     {
         this.propertyKeyId = propertyKeyId;
-        this.entityType = entityType;
-        this.entityId = entityId;
     }
 
     @Override
     public String toString()
     {
-        return format( "%s[propertyKeyId=%s, %sId=%s]", getClass().getSimpleName(),
-                propertyKeyId, entityType.name().toLowerCase(), entityId );
+        return format( "%s[propertyKeyId=%s]", getClass().getSimpleName(), propertyKeyId );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        return this == o || o instanceof NoProperty && propertyKeyId == ((NoProperty) o).propertyKeyId;
+        return this == o || o instanceof NoGraphProperty && propertyKeyId == ((NoGraphProperty) o).propertyKeyId;
     }
 
     @Override

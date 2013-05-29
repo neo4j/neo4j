@@ -304,6 +304,20 @@ public class CompositeStatementContext implements StatementContext
         afterOperation();
         return result;
     }
+    
+    @Override
+    public Property graphGetProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Property result = entityOperations.graphGetProperty( propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
 
     @Override
     public boolean nodeHasProperty( long nodeId, long propertyKeyId )
@@ -327,6 +341,20 @@ public class CompositeStatementContext implements StatementContext
         beforeReadOperation();
 
         boolean result = entityOperations.relationshipHasProperty( relationshipId, propertyKeyId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+    
+    @Override
+    public boolean graphHasProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = entityOperations.graphHasProperty( propertyKeyId );
 
         afterReadOperation();
         afterOperation();
@@ -379,6 +407,32 @@ public class CompositeStatementContext implements StatementContext
         beforeReadOperation();
 
         Iterator<Property> result = entityOperations.relationshipGetAllProperties( relationshipId );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+    
+    @Override
+    public Iterator<Long> graphGetPropertyKeys()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Long> result = entityOperations.graphGetPropertyKeys();
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public Iterator<Property> graphGetAllProperties()
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        Iterator<Property> result = entityOperations.graphGetAllProperties();
 
         afterReadOperation();
         afterOperation();
@@ -706,6 +760,21 @@ public class CompositeStatementContext implements StatementContext
     }
 
     @Override
+    public Property graphSetProperty( Property property )
+            throws PropertyKeyIdNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        Property result = entityOperations.graphSetProperty( property );
+
+        afterWriteOperation();
+        afterOperation();
+
+        return result;
+    }
+    
+    @Override
     public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
@@ -734,7 +803,22 @@ public class CompositeStatementContext implements StatementContext
 
         return result;
     }
+    
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException
+    {
+        beforeOperation();
+        beforeWriteOperation();
 
+        Property result = entityOperations.graphRemoveProperty( propertyKeyId );
+
+        afterWriteOperation();
+        afterOperation();
+
+        return result;
+    }
+    
     @Override
     public void nodeDelete( long nodeId )
     {
@@ -746,7 +830,6 @@ public class CompositeStatementContext implements StatementContext
         afterWriteOperation();
         afterOperation();
     }
-
 
     @Override
     public void relationshipDelete( long relationshipId )

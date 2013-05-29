@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 
 public abstract class Property
 {
@@ -33,7 +34,12 @@ public abstract class Property
     {
         return noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationshipId );
     }
-
+    
+    public static Property noGraphProperty( long propertyKeyId )
+    {
+        return new NoGraphProperty( propertyKeyId );
+    }
+    
     public static Property noProperty( long propertyKeyId, EntityType type, long entityId )
     {
         return new NoProperty( propertyKeyId, type, entityId );
@@ -186,4 +192,7 @@ public abstract class Property
     public abstract int hashCode();
 
     public abstract boolean isNoProperty();
+    
+    @Deprecated
+    public abstract PropertyData asPropertyDataJustForIntegration();
 }

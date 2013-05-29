@@ -25,8 +25,10 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class LockingStatementContext extends CompositeStatementContext
@@ -166,5 +168,51 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.constraintDrop( constraint );
+    }
+    
+    @Override
+    public Property nodeSetProperty( long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        lockHolder.acquireNodeWriteLock( nodeId );
+        return delegate.nodeSetProperty( nodeId, property );
+    }
+    
+    @Override
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        lockHolder.acquireNodeWriteLock( nodeId );
+        return delegate.nodeRemoveProperty( nodeId, propertyKeyId );
+    }
+    
+    @Override
+    public Property relationshipSetProperty( long relationshipId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        lockHolder.acquireRelationshipWriteLock( relationshipId );
+        return delegate.relationshipSetProperty( relationshipId, property );
+    }
+    
+    @Override
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        lockHolder.acquireRelationshipWriteLock( relationshipId );
+        return delegate.relationshipRemoveProperty( relationshipId, propertyKeyId );
+    }
+    
+    @Override
+    public Property graphSetProperty( Property property ) throws PropertyKeyIdNotFoundException
+    {
+        lockHolder.acquireGraphWriteLock();
+        return delegate.graphSetProperty( property );
+    }
+    
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        lockHolder.acquireGraphWriteLock();
+        return delegate.graphRemoveProperty( propertyKeyId );
     }
 }

@@ -145,6 +145,12 @@ public enum UnsupportiveStatementContext implements StatementContext
     {
         throw unsupported();
     }
+    
+    @Override
+    public Property graphGetProperty( long propertyKeyId )
+    {
+        throw unsupported();
+    }
 
     @Override
     public boolean nodeHasProperty( long nodeId, long propertyKeyId )
@@ -154,6 +160,12 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+    
+    @Override
+    public boolean graphHasProperty( long propertyKeyId )
     {
         throw unsupported();
     }
@@ -169,6 +181,12 @@ public enum UnsupportiveStatementContext implements StatementContext
     {
         throw unsupported();
     }
+    
+    @Override
+    public Property graphSetProperty( Property property )
+    {
+        throw unsupported();
+    }
 
     @Override
     public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
@@ -178,6 +196,12 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    {
+        throw unsupported();
+    }
+    
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId )
     {
         throw unsupported();
     }
@@ -202,6 +226,18 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public Iterator<Property> relationshipGetAllProperties( long relationshipId )
+    {
+        throw unsupported();
+    }
+    
+    @Override
+    public Iterator<Property> graphGetAllProperties()
+    {
+        throw unsupported();
+    }
+    
+    @Override
+    public Iterator<Long> graphGetPropertyKeys()
     {
         throw unsupported();
     }

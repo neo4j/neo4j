@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -54,11 +55,13 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     private final TxState state;
     private final StatementContext delegate;
     private final ConstraintIndexCreator constraintIndexCreator;
+    private final AuxiliaryStoreOperations auxStoreOps;
 
     public StateHandlingStatementContext( StatementContext actual,
                                           SchemaStateOperations schemaStateOperations,
                                           TxState state,
-                                          ConstraintIndexCreator constraintIndexCreator )
+                                          ConstraintIndexCreator constraintIndexCreator,
+                                          AuxiliaryStoreOperations auxStoreOps )
     {
         // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
         // and so having it here along with transactional state makes little sense to me. Reconsider and refactor.
@@ -66,17 +69,20 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
         this.state = state;
         this.delegate = actual;
         this.constraintIndexCreator = constraintIndexCreator;
+        this.auxStoreOps = auxStoreOps;
     }
 
     @Override
     public void nodeDelete( long nodeId )
     {
+        auxStoreOps.nodeDelete( nodeId );
         state.nodeDelete( nodeId );
     }
 
     @Override
     public void relationshipDelete( long relationshipId )
     {
+        auxStoreOps.relationshipDelete( relationshipId );
         state.relationshipDelete( relationshipId );
     }
 
@@ -390,9 +396,17 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     {
         try
         {
-            Property replacedProperty = delegate.nodeSetProperty( nodeId, property );
-            state.nodeReplaceProperty( nodeId, replacedProperty, property );
-            return replacedProperty;
+            Property existingProperty = nodeGetProperty( nodeId, property.propertyKeyId() );
+            if ( existingProperty.isNoProperty() )
+            {
+                auxStoreOps.nodeAddStoreProperty( nodeId, property );
+            }
+            else
+            {
+                auxStoreOps.nodeChangeStoreProperty( nodeId, existingProperty, property );
+            }
+            state.nodeReplaceProperty( nodeId, existingProperty, property );
+            return existingProperty;
         }
         catch ( PropertyNotFoundException e )
         {
@@ -406,9 +420,40 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     {
         try
         {
-            Property replacedProperty = delegate.relationshipSetProperty( relationshipId, property );
-            state.relationshipReplaceProperty( relationshipId, replacedProperty, property );
-            return replacedProperty;
+            Property existingProperty = relationshipGetProperty( relationshipId, property.propertyKeyId() );
+            if ( existingProperty.isNoProperty() )
+            {
+                auxStoreOps.relationshipAddStoreProperty( relationshipId, property );
+            }
+            else
+            {
+                auxStoreOps.relationshipChangeStoreProperty( relationshipId, existingProperty, property );
+            }
+            state.relationshipReplaceProperty( relationshipId, existingProperty, property );
+            return existingProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+    
+    @Override
+    public Property graphSetProperty( Property property ) throws PropertyKeyIdNotFoundException
+    {
+        try
+        {
+            Property existingProperty = graphGetProperty( property.propertyKeyId() );
+            if ( existingProperty.isNoProperty() )
+            {
+                auxStoreOps.graphAddStoreProperty( property );
+            }
+            else
+            {
+                auxStoreOps.graphChangeStoreProperty( existingProperty, property );
+            }
+            state.graphReplaceProperty( existingProperty, property );
+            return existingProperty;
         }
         catch ( PropertyNotFoundException e )
         {
@@ -422,9 +467,13 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     {
         try
         {
-            Property removedProperty = delegate.nodeRemoveProperty( nodeId, propertyKeyId );
-            state.nodeRemoveProperty( nodeId, removedProperty );
-            return removedProperty;
+            Property existingProperty = nodeGetProperty( nodeId, propertyKeyId );
+            if ( !existingProperty.isNoProperty() )
+            {
+                auxStoreOps.nodeRemoveStoreProperty( nodeId, existingProperty );
+            }
+            state.nodeRemoveProperty( nodeId, existingProperty );
+            return existingProperty;
         }
         catch ( PropertyNotFoundException e )
         {
@@ -438,9 +487,33 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     {
         try
         {
-            Property removedProperty = delegate.relationshipRemoveProperty( relationshipId, propertyKeyId );
-            state.relationshipRemoveProperty( relationshipId, removedProperty );
-            return removedProperty;
+            Property existingProperty = relationshipGetProperty( relationshipId, propertyKeyId );
+            if ( !existingProperty.isNoProperty() )
+            {
+                auxStoreOps.relationshipRemoveStoreProperty( relationshipId, existingProperty );
+            }
+            state.relationshipRemoveProperty( relationshipId, existingProperty );
+            return existingProperty;
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+        }
+    }
+    
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId )
+            throws PropertyKeyIdNotFoundException
+    {
+        try
+        {
+            Property existingProperty = graphGetProperty( propertyKeyId );
+            if ( !existingProperty.isNoProperty() )
+            {
+                auxStoreOps.graphRemoveStoreProperty( existingProperty );
+            }
+            state.graphRemoveProperty( existingProperty );
+            return existingProperty;
         }
         catch ( PropertyNotFoundException e )
         {
@@ -479,6 +552,12 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
         }
         return state.getRelationshipPropertyDiffSets( relationshipId )
                     .apply( delegate.relationshipGetAllProperties( relationshipId ) );
+    }
+    
+    @Override
+    public Iterator<Property> graphGetAllProperties()
+    {
+        return state.getGraphPropertyDiffSets().apply( delegate.graphGetAllProperties() );
     }
 
     private class HasPropertyFilter implements Predicate<Long>

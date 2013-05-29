@@ -30,11 +30,14 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -227,16 +230,55 @@ class ReadTransaction implements NeoStoreTransaction
     {
         return loadProperties( getPropertyStore(), neoStore.getGraphNextProp() );
     }
+    
+    /**
+     * TODO MP: itroduces performance regression
+     * This method was introduced during moving handling of entity properties from NodeImpl/RelationshipImpl
+     * to the {@link KernelAPI}. Reason was that the {@link Property} object at the time didn't have a notion
+     * of property record id, and didn't want to have it.
+     */
+    private long findPropertyRecordContaining( PrimitiveRecord primitive, int propertyKey )
+    {
+        long propertyRecordId = primitive.getNextProp();
+        while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
+        {
+            PropertyRecord propertyRecord = getPropertyStore().getRecord( propertyRecordId );
+            if ( propertyRecord.getPropertyBlock( propertyKey ) != null )
+            {
+                return propertyRecordId;
+            }
+            propertyRecordId = propertyRecord.getNextProp();
+        }
+        throw new IllegalStateException( "No property record in property chain for " + primitive +
+                " contained property with key " + propertyKey );
+    }
 
     @Override
-    public Object loadPropertyValue( PropertyData property )
+    public Object nodeLoadPropertyValue( long nodeId, int propertyKey )
     {
-        PropertyRecord propertyRecord = getPropertyStore().getRecord(
-                property.getId() );
-        PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( property.getIndex() );
+        return loadPropertyValue( getNodeStore().getRecord( nodeId ), propertyKey );
+    }
+    
+    @Override
+    public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
+    {
+        return loadPropertyValue( getRelationshipStore().getRecord( relationshipId ), propertyKey );
+    }
+    
+    @Override
+    public Object graphLoadPropertyValue( int propertyKey )
+    {
+        return loadPropertyValue( neoStore.asRecord(), propertyKey );
+    }
+
+    private Object loadPropertyValue( PrimitiveRecord primitive, int propertyKey )
+    {
+        long propertyRecordId = // property.getId();
+                findPropertyRecordContaining( primitive, propertyKey );
+        PropertyRecord propertyRecord = getPropertyStore().getRecord( propertyRecordId );
+        PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKey );
         getPropertyStore().ensureHeavy( propertyBlock );
-        return propertyBlock.getType().getValue( propertyBlock,
-                getPropertyStore() );
+        return propertyBlock.getType().getValue( propertyBlock, getPropertyStore() );
     }
 
     @Override
@@ -293,20 +335,19 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData nodeAddProperty( long nodeId, Token index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
-            Object value )
+    public PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void nodeRemoveProperty( long nodeId, PropertyData data )
+    public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
         throw readOnlyException();
     }
@@ -330,20 +371,19 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData relAddProperty( long relId, Token index, Object value )
+    public PropertyData relAddProperty( long relId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData relChangeProperty( long relId, PropertyData data,
-            Object value )
+    public PropertyData relChangeProperty( long relId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void relRemoveProperty( long relId, PropertyData data )
+    public void relRemoveProperty( long relId, int propertyKey )
     {
         throw readOnlyException();
     }
@@ -393,19 +433,19 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData graphAddProperty( Token index, Object value )
+    public PropertyData graphAddProperty( int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData graphChangeProperty( PropertyData index, Object value )
+    public PropertyData graphChangeProperty( int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void graphRemoveProperty( PropertyData index )
+    public void graphRemoveProperty( int propertyKey )
     {
         throw readOnlyException();
     }

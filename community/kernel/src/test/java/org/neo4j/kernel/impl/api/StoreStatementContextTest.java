@@ -28,7 +28,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -56,7 +57,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -333,17 +333,19 @@ public class StoreStatementContextTest
     public void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        DependencyResolver resolver = db.getDependencyResolver();
+        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
         @SuppressWarnings("deprecation")// Ooh, jucky
-        NeoStoreXaDataSource neoStoreDataSource = db.getDependencyResolver()
+        NeoStoreXaDataSource neoStoreDataSource = resolver
                 .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
         statement = new StoreStatementContext(
-                db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class ),
-                db.getDependencyResolver().resolveDependency( LabelTokenHolder.class ),
-                db.getDependencyResolver().resolveDependency( NodeManager.class ),
+                resolver.resolveDependency( PropertyKeyTokenHolder.class ),
+                resolver.resolveDependency( LabelTokenHolder.class ),
+                resolver.resolveDependency( NodeManager.class ),
                 new SchemaStorage( neoStoreDataSource.getNeoStore().getSchemaStore() ),
                 neoStoreDataSource.getNeoStore(),
-                indexingService, new IndexReaderFactory.Caching( indexingService ));
+                resolver.resolveDependency( PersistenceManager.class ), indexingService,
+                new IndexReaderFactory.Caching( indexingService ));
     }
 
     @After

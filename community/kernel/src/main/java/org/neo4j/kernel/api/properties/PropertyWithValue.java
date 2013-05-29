@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+
 /** Base class for properties that have a value. */
 abstract class PropertyWithValue extends Property
 {
@@ -116,5 +119,12 @@ abstract class PropertyWithValue extends Property
     public boolean booleanValue( boolean defaultValue )
     {
         return booleanValue();
+    }
+    
+    @Override
+    @Deprecated
+    public PropertyData asPropertyDataJustForIntegration()
+    {
+        return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
     }
 }

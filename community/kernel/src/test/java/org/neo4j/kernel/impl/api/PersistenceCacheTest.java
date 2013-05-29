@@ -23,91 +23,62 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
-
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
+import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.IteratorUtil.set;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PersistenceCacheTest
 {
-
     @Test
-    public void shouldEvictNodeWhenITellItTo() throws Exception
+    public void shouldLoadAndCacheNodeLabels() throws Exception
     {
-        // Given
-        when( loader.loadById( nodeId ) ).thenReturn( new CachedNodeEntity( nodeId ) );
-        cache.getLabels( nodeId );
-
-        // When
-        cache.evictNode( nodeId );
-
-        // Then
-        cache.getLabels( nodeId );
-        verify( loader, times( 2 ) ).loadById( nodeId );
+        // GIVEN
+        final Set<Long> labels = asSet( 1L, 2L, 3L );
+        @SuppressWarnings( "unchecked" )
+        CacheLoader<Set<Long>> loader = mock( CacheLoader.class );
+        when( loader.load( nodeId ) ).thenReturn( labels );
+        NodeImpl node = new NodeImpl( nodeId, -1, -1 );
+        when( nodeCache.get( nodeId ) ).thenReturn( node );
+        
+        // WHEN
+        boolean hasLabel1 = persistenceCache.nodeHasLabel( nodeId, 1, loader );
+        boolean hasLabel2 = persistenceCache.nodeHasLabel( nodeId, 2, loader );
+        
+        // THEN
+        assertTrue( hasLabel1 );
+        assertTrue( hasLabel2 );
+        verify( loader, times( 1 ) ).load( nodeId );
+        verify( nodeCache, times( 2 ) ).get( nodeId );
     }
-
+    
     @Test
-    public void shouldLoadAndCacheLabelsWhenIAskForStuff() throws Exception
+    public void shouldEvictNode() throws Exception
     {
-        // Given
-        CachedNodeEntity node = new CachedNodeEntity( nodeId );
-        Set<Long> labels = set( 1l, 2l, 3l );
-        node.addLabels( labels );
-        when( loader.loadById( nodeId ) ).thenReturn( node );
-
-        // When
-        Set<Long> l1 = cache.getLabels( nodeId );
-        Set<Long> l2 = cache.getLabels( nodeId );
-        Set<Long> l3 = cache.getLabels( nodeId );
-
-        // Then
-        verify( loader, times( 1 ) ).loadById( nodeId );
-
-        assertThat( l1, equalTo(labels) );
-        assertThat( l2, equalTo(labels) );
-        assertThat( l3, equalTo(labels) );
+        // WHEN
+        persistenceCache.evictNode( nodeId );
+        
+        // THEN
+        verify( nodeCache, times( 1 ) ).remove( nodeId );
     }
-
-    @Test
-    public void shouldHandleNodeNotExistingAtAll() throws Exception
-    {
-        // Given
-        when( loader.loadById( nodeId ) ).thenReturn( null );
-
-        // When
-        try
-        {
-            cache.getLabels( nodeId );
-            fail( "Expected exception" );
-        }
-        catch(EntityNotFoundException e)
-        {
-            // Yay!
-        }
-
-        // Then
-        verify( loader, times( 1 ) ).loadById( nodeId );
-    }
-
-    private final long nodeId = 5;
-    private LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader;
-    private PersistenceCache cache;
-
-    @SuppressWarnings("unchecked")
+    
+    private PersistenceCache persistenceCache;
+    private LockStripedCache<NodeImpl> nodeCache;
+    private final long nodeId = 1;
+    
+    @SuppressWarnings( "unchecked" )
     @Before
-    public void before() throws Exception
+    public void init()
     {
-        loader = Mockito.mock( LockStripedCache.Loader.class );
-        cache = new PersistenceCache( loader );
+        nodeCache = mock( LockStripedCache.class );
+        LockStripedCache<RelationshipImpl> relCache = mock( LockStripedCache.class );
+        persistenceCache = new PersistenceCache( nodeCache, relCache, mock( Thunk.class ) );
     }
 }

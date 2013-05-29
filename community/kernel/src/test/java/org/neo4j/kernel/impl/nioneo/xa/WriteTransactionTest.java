@@ -19,24 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -57,7 +39,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -79,6 +60,24 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class WriteTransactionTest
 {
@@ -168,11 +167,11 @@ public class WriteTransactionTest
         int nodeId = 1;
         writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
-        Token propertyKeyToken = new Token( "key", 1 );
+        int propertyKey = 1;
         Object value = 5;
 
         // WHEN
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken, value );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey, value );
         writeTransaction.doPrepare();
     }
     
@@ -186,19 +185,19 @@ public class WriteTransactionTest
         long nodeId = 1;
         CapturingIndexingService indexingService = new CapturingIndexingService();
         WriteTransaction writeTransaction = newWriteTransaction( indexingService );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         
         // WHEN
         writeTransaction.nodeCreate( nodeId );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKeyToken1.id(), value1, none ),
-                add( nodeId, propertyKeyToken2.id(), value2, none ) ),
+                add( nodeId, propertyKey1, value1, none ),
+                add( nodeId, propertyKey2, value2, none ) ),
                 
                 indexingService.updates );
     }
@@ -209,25 +208,25 @@ public class WriteTransactionTest
         // GIVEN
         int nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         Object newValue1 = "new", newValue2 = "new 2";
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeChangeProperty( nodeId, property1, newValue1 );
-        writeTransaction.nodeChangeProperty( nodeId, property2, newValue2 );
+        writeTransaction.nodeChangeProperty( nodeId, property1.getIndex(), newValue1 );
+        writeTransaction.nodeChangeProperty( nodeId, property2.getIndex(), newValue2 );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                change( nodeId, propertyKeyToken1.id(), value1, none, newValue1, none ),
-                change( nodeId, propertyKeyToken2.id(), value2, none, newValue2, none ) ),
+                change( nodeId, propertyKey1, value1, none, newValue1, none ),
+                change( nodeId, propertyKey2, value2, none, newValue2, none ) ),
                 
                 indexingService.updates );
     }
@@ -238,24 +237,24 @@ public class WriteTransactionTest
         // GIVEN
         int nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeRemoveProperty( nodeId, property1 );
-        writeTransaction.nodeRemoveProperty( nodeId, property2 );
+        writeTransaction.nodeRemoveProperty( nodeId, property1.getIndex() );
+        writeTransaction.nodeRemoveProperty( nodeId, property2.getIndex() );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKeyToken1.id(), value1, none ),
-                remove( nodeId, propertyKeyToken2.id(), value2, none ) ),
+                remove( nodeId, propertyKey1, value1, none ),
+                remove( nodeId, propertyKey2, value2, none ) ),
                 
                 indexingService.updates );
     }
@@ -267,11 +266,11 @@ public class WriteTransactionTest
         long nodeId = 1, labelId = 3;
         long[] labelIds = new long[] {labelId};
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         writeTransaction.nodeCreate( nodeId );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
         
         // WHEN
@@ -282,8 +281,8 @@ public class WriteTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKeyToken1.id(), value1, labelIds ),
-                add( nodeId, propertyKeyToken2.id(), value2, labelIds ) ),
+                add( nodeId, propertyKey1, value1, labelIds ),
+                add( nodeId, propertyKey2, value2, labelIds ) ),
                 
                 indexingService.updates );
     }
@@ -294,25 +293,25 @@ public class WriteTransactionTest
         // GIVEN
         long nodeId = 1, labelId1 = 3, labelId2 = 4;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKeyToken1.id(), value1, new long[] {labelId2} ),
-                add( nodeId, propertyKeyToken2.id(), value2, new long[] {labelId2} ),
-                add( nodeId, propertyKeyToken2.id(), value2, new long[] {labelId1, labelId2} ) ),
+                add( nodeId, propertyKey1, value1, new long[] {labelId2} ),
+                add( nodeId, propertyKey2, value2, new long[] {labelId2} ),
+                add( nodeId, propertyKey2, value2, new long[] {labelId1, labelId2} ) ),
                 
                 indexingService.updates );
     }
@@ -324,11 +323,11 @@ public class WriteTransactionTest
         long nodeId = 1, labelId = 3;
         long[] labelIds = new long[] {labelId};
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId, nodeId );
         prepareAndCommit( writeTransaction );
         
@@ -340,8 +339,8 @@ public class WriteTransactionTest
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKeyToken1.id(), value1, labelIds ),
-                remove( nodeId, propertyKeyToken2.id(), value2, labelIds ) ),
+                remove( nodeId, propertyKey1, value1, labelIds ),
+                remove( nodeId, propertyKey2, value2, labelIds ) ),
                 
                 indexingService.updates );
     }
@@ -352,11 +351,11 @@ public class WriteTransactionTest
         // GIVEN
         long nodeId = 1, labelId1 = 3, labelId2 = 4;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
@@ -364,14 +363,14 @@ public class WriteTransactionTest
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeRemoveProperty( nodeId, property1 );
+        writeTransaction.nodeRemoveProperty( nodeId, property1.getIndex() );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKeyToken1.id(), value1, new long[] {labelId1, labelId2} ),
-                remove( nodeId, propertyKeyToken2.id(), value2, new long[] {labelId2} ) ),
+                remove( nodeId, propertyKey1, value1, new long[] {labelId1, labelId2} ),
+                remove( nodeId, propertyKey2, value2, new long[] {labelId2} ) ),
                 
                 indexingService.updates );
     }
@@ -382,10 +381,10 @@ public class WriteTransactionTest
         // GIVEN
         long nodeId = 1, labelId1 = 3, labelId2 = 4;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        Token propertyKeyToken1 = new Token( "key", 1 ), propertyKeyToken2 = new Token( "key2", 2 );
+        int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
@@ -393,15 +392,15 @@ public class WriteTransactionTest
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeAddProperty( nodeId, propertyKeyToken2, value2 );
+        writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKeyToken2.id(), value2, new long[] {labelId1} ),
-                remove( nodeId, propertyKeyToken1.id(), value1, new long[] {labelId2} ),
-                remove( nodeId, propertyKeyToken2.id(), value2, new long[] {labelId2} ) ),
+                add( nodeId, propertyKey2, value2, new long[] {labelId1} ),
+                remove( nodeId, propertyKey1, value1, new long[] {labelId2} ),
+                remove( nodeId, propertyKey2, value2, new long[] {labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -412,17 +411,16 @@ public class WriteTransactionTest
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING );
         int nodeId = 5, relId = 10, relationshipType = 3, propertyKeyId = 4, ruleId = 8;
-        Token propertyKeyToken = new Token( "key", propertyKeyId );
 
         // WHEN
         tx.setRecovered();
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( relationshipType, "type" );
         tx.relationshipCreate( relId, 0, nodeId, nodeId );
-        tx.relAddProperty( relId, propertyKeyToken,
+        tx.relAddProperty( relId, propertyKeyId,
                 new long[] {1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60} );
-        tx.createPropertyKeyToken( propertyKeyToken.name(), propertyKeyToken.id() );
-        tx.nodeAddProperty( nodeId, propertyKeyToken,
+        tx.createPropertyKeyToken( "key", propertyKeyId );
+        tx.nodeAddProperty( nodeId, propertyKeyId,
                 "something long and nasty that requires dynamic records for sure I would think and hope. Ok then åäö%!=" );
         for ( int i = 0; i < 10; i++ )
             tx.addLabelToNode( 10000 + i, nodeId );
@@ -481,7 +479,7 @@ public class WriteTransactionTest
         WriteTransaction tx = newWriteTransaction( NO_INDEXING );
         int nodeId = 0;
         tx.nodeCreate( nodeId );
-        Token index = new Token( "key", 0 );
+        int index = 0;
         tx.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
         prepareAndCommit( tx );
 
@@ -512,7 +510,7 @@ public class WriteTransactionTest
             }
         };
         tx = newWriteTransaction( NO_INDEXING, verifier );
-        Token index2 = new Token( "key2", 1 );
+        int index2 = 1;
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         prepareAndCommit( tx );
     }
