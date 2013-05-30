@@ -71,7 +71,10 @@ public class NodeImpl extends ArrayBasedPrimitive
          */
         super( newNode );
         this.id = id;
-        if ( newNode ) relationships = NO_RELATIONSHIPS;
+        if ( newNode )
+        {
+            relationships = NO_RELATIONSHIPS;
+        }
     }
 
     @Override
@@ -88,7 +91,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             size = withArrayOverheadIncludingReferences( size, relationships.length );
             for ( RelIdArray array : relationships )
+            {
                 size += array.size();
+            }
         }
         return size;
     }
@@ -97,18 +102,18 @@ public class NodeImpl extends ArrayBasedPrimitive
     public int hashCode()
     {
         long id = getId();
-        return (int) (( id >>> 32 ) ^ id );
+        return (int) ((id >>> 32) ^ id);
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        return this == obj || ( obj instanceof NodeImpl && ( (NodeImpl) obj ).getId() == getId() );
+        return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
     }
 
     @Override
     protected PropertyData changeProperty( NodeManager nodeManager,
-            PropertyData property, Object value )
+                                           PropertyData property, Object value )
     {
         return nodeManager.nodeChangeProperty( this, property, value );
     }
@@ -121,7 +126,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     @Override
     protected void removeProperty( NodeManager nodeManager,
-            PropertyData property )
+                                   PropertyData property )
     {
         nodeManager.nodeRemoveProperty( this, property );
     }
@@ -136,17 +141,17 @@ public class NodeImpl extends ArrayBasedPrimitive
     Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
     {
         ensureRelationshipMapNotNull( nodeManager );
-        
+
         // We need to check if there are more relationships to load before grabbing
         // the references to the RelIdArrays since otherwise there could be
         // another concurrent thread exhausting the chain position in between the point
         // where we got an empty iterator for a type that the other thread loaded and
         // the point where we check whether or not there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
-        
+
         List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
-        ArrayMap<String,RelIdArray> addMap = null;
+        ArrayMap<String, RelIdArray> addMap = null;
         if ( hasModifications )
         {
             addMap = nodeManager.getCowRelationshipAddMap( this );
@@ -185,22 +190,22 @@ public class NodeImpl extends ArrayBasedPrimitive
                 }
             }
         }
-        
+
         return new IntArrayIterator( relTypeList, this, direction, nodeManager, new RelationshipType[0], hasMore );
     }
 
     Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
-        DirectionWrapper direction, RelationshipType... types)
+                                                      DirectionWrapper direction, RelationshipType... types )
     {
         ensureRelationshipMapNotNull( nodeManager );
-        
+
         // We need to check if there are more relationships to load before grabbing
         // the references to the RelIdArrays since otherwise there could be
         // another concurrent thread exhausting the chain position in between the point
         // where we got an empty iterator for a type that the other thread loaded and
         // the point where we check whether or not there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
-        
+
         List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         for ( RelationshipType type : types )
@@ -222,7 +227,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             }
             relTypeList.add( iterator );
         }
-        
+
         return new IntArrayIterator( relTypeList, this, direction, nodeManager, types, hasMore );
     }
 
@@ -238,26 +243,26 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
-        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, new RelationshipType[] { type } );
+        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, new RelationshipType[]{type} );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
-            RelationshipType... types )
+                                                    RelationshipType... types )
     {
         return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
-            Direction direction, RelationshipType... types )
+                                                    Direction direction, RelationshipType... types )
     {
         return getAllRelationshipsOfType( nodeManager, wrap( direction ), types );
     }
 
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
-        Direction dir )
+                                               Direction dir )
     {
         Iterator<Relationship> rels = getAllRelationshipsOfType( nodeManager, wrap( dir ),
-                new RelationshipType[] { type } ).iterator();
+                new RelationshipType[]{type} ).iterator();
         if ( !rels.hasNext() )
         {
             return null;
@@ -266,15 +271,15 @@ public class NodeImpl extends ArrayBasedPrimitive
         if ( rels.hasNext() )
         {
             throw new NotFoundException( "More than one relationship[" +
-                type + ", " + dir + "] found for " + this );
+                    type + ", " + dir + "] found for " + this );
         }
         return rel;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
-        Direction dir )
+                                                    Direction dir )
     {
-        return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[] { type } );
+        return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[]{type} );
     }
 
     public void delete( NodeManager nodeManager, Node proxy )
@@ -283,10 +288,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         boolean success = false;
         try
         {
-            ArrayMap<Integer,PropertyData> skipMap =
-                nodeManager.getOrCreateCowPropertyRemoveMap( this );
-            ArrayMap<Integer,PropertyData> removedProps =
-                nodeManager.deleteNode( this );
+            ArrayMap<Integer, PropertyData> skipMap =
+                    nodeManager.getOrCreateCowPropertyRemoveMap( this );
+            ArrayMap<Integer, PropertyData> removedProps =
+                    nodeManager.deleteNode( this );
             if ( removedProps.size() > 0 )
             {
                 for ( Integer index : removedProps.keySet() )
@@ -321,10 +326,10 @@ public class NodeImpl extends ArrayBasedPrimitive
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
     void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
-            DirectionWrapper dir )
+                          DirectionWrapper dir )
     {
         RelIdArray relationshipSet = nodeManager.getOrCreateCowRelationshipAddMap(
-            this, type.name() );
+                this, type.name() );
         relationshipSet.add( relId, dir );
     }
 
@@ -334,7 +339,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     void removeRelationship( NodeManager nodeManager, RelationshipType type, long relId )
     {
         Collection<Long> relationshipSet = nodeManager.getOrCreateCowRelationshipRemoveMap(
-            this, type.name() );
+                this, type.name() );
         relationshipSet.add( relId );
     }
 
@@ -364,7 +369,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                             " concurrently deleted while loading its relationships?", e );
                 }
 
-                ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
+                ArrayMap<String, RelIdArray> tmpRelMap = new ArrayMap<String, RelIdArray>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
                 if ( rels != null )
@@ -402,19 +407,19 @@ public class NodeImpl extends ArrayBasedPrimitive
         return result;
     }
 
-//            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
-    private Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
-            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
+    //            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
+    private Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships(
+            NodeManager nodeManager, ArrayMap<String, RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
+        Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> rels;
 
-        rels = loadMoreRelationshipsFromNodeManager(nodeManager);
+        rels = loadMoreRelationshipsFromNodeManager( nodeManager );
 
-        ArrayMap<String,RelIdArray> addMap = rels.first();
+        ArrayMap<String, RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
             return null;
@@ -445,13 +450,13 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return getRelChainPosition() != Record.NO_NEXT_RELATIONSHIP.intValue();
     }
-    
+
     static enum LoadStatus
     {
         NOTHING( false, false ),
         LOADED_END( true, false ),
         LOADED_MORE( true, true );
-        
+
         private final boolean loaded;
         private final boolean more;
 
@@ -460,12 +465,12 @@ public class NodeImpl extends ArrayBasedPrimitive
             this.loaded = loaded;
             this.more = more;
         }
-        
+
         public boolean loaded()
         {
             return this.loaded;
         }
-        
+
         public boolean hasMoreToLoad()
         {
             return this.more;
@@ -474,7 +479,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     LoadStatus getMoreRelationships( NodeManager nodeManager )
     {
-        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
+        Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
             return LoadStatus.NOTHING;
@@ -486,8 +491,8 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 return LoadStatus.NOTHING;
             }
-            rels = loadMoreRelationshipsFromNodeManager(nodeManager);
-            ArrayMap<String,RelIdArray> addMap = rels.first();
+            rels = loadMoreRelationshipsFromNodeManager( nodeManager );
+            ArrayMap<String, RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
                 return LoadStatus.NOTHING;
@@ -520,15 +525,17 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     private Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long>
-        loadMoreRelationshipsFromNodeManager( NodeManager nodeManager )
+    loadMoreRelationshipsFromNodeManager( NodeManager nodeManager )
     {
         try
         {
             return nodeManager.getMoreRelationships( this );
-        } catch(InvalidRecordException e)
+        }
+        catch ( InvalidRecordException e )
         {
             throw new NotFoundException( "Unable to load one or more relationships from " + asProxy( nodeManager ) +
-                    ". This usually happens when relationships are deleted by someone else just as we are about to load them. Please try again.", e );
+                    ". This usually happens when relationships are deleted by someone else just as we are about to " +
+                    "load them. Please try again.", e );
         }
     }
 
@@ -573,7 +580,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     public Relationship createRelationshipTo( NodeManager nodeManager, Node thisProxy,
-        Node otherNode, RelationshipType type )
+                                              Node otherNode, RelationshipType type )
     {
         return nodeManager.createRelationship( thisProxy, this, otherNode, type );
     }
@@ -618,7 +625,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     public boolean hasRelationship( NodeManager nodeManager, Direction direction,
-            RelationshipType... types )
+                                    RelationshipType... types )
     {
         return getRelationships( nodeManager, direction, types ).iterator().hasNext();
     }
@@ -634,8 +641,8 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     protected void commitRelationshipMaps(
-        ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
+            ArrayMap<String, RelIdArray> cowRelationshipAddMap,
+            ArrayMap<String, Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
     {
         if ( relationships == null )
         {
@@ -664,7 +671,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                 for ( String type : cowRelationshipRemoveMap.keySet() )
                 {
                     if ( cowRelationshipAddMap != null &&
-                        cowRelationshipAddMap.get( type ) != null )
+                            cowRelationshipAddMap.get( type ) != null )
                     {
                         continue;
                     }
@@ -719,6 +726,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     PropertyContainer asProxy( NodeManager nm )
     {
-        return nm.newNodeProxyById(getId());
+        return nm.newNodeProxyById( getId() );
     }
 }
