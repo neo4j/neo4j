@@ -563,6 +563,7 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterable, new ArrayList<T>() );
     }
+    
     public static <T> Collection<T> asCollection( Iterator<T> iterable )
     {
         return addToCollection( iterable, new ArrayList<T>() );

@@ -33,8 +33,8 @@ import java.util.NoSuchElementException;
  */
 public abstract class PrefetchingIterator<T> implements Iterator<T>
 {
-    boolean hasFetchedNext;
-    T nextObject;
+    protected boolean hasFetchedNext;
+    protected T nextObject;
 
 	/**
 	 * @return {@code true} if there is a next item to be returned from the next
