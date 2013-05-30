@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
   @Test def mixed_types_are_not_ok() {
-    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))))
+    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37, "otherProperty" -> null))))
 
     val tx = graph.beginTx()
     action.exec(ExecutionContext.empty, new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator))
@@ -41,6 +41,7 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
     assert(n.getProperty("name") === "Andres")
     assert(n.getProperty("age") === 37)
+    assert(n.hasProperty("otherProperty") === false, "Expected that the `otherProperty` property is ignored")
   }
 }
 
