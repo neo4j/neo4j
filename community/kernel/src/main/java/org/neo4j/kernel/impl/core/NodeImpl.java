@@ -62,13 +62,13 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 
-    NodeImpl( long id, long firstRel, long firstProp )
+    NodeImpl( long id )
     {
-        this( id, firstRel, firstProp, false );
+        this( id, false );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( long id, long firstRel, long firstProp, boolean newNode )
+    NodeImpl( long id, boolean newNode )
     {
         /* TODO firstRel/firstProp isn't used yet due to some unresolved issue with clearing
          * of cache and keeping those first ids in the node instead of loading on demand.
@@ -168,7 +168,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             RelIdArray src = localRelationships[i];
             int type = src.getType();
-            RelIdIterator iterator = null;
+            RelIdIterator iterator;
             if ( addMap != null || skipMap != null )
             {
                 iterator = new CombinedRelIdIterator( type, direction, src,
@@ -231,16 +231,16 @@ public class NodeImpl extends ArrayBasedPrimitive
             skipMap = tx.getCowRelationshipRemoveMap( this );
         }
         int actualLength = 0;
-        for ( int i = 0; i < types.length; i++ )
+        for ( RelationshipType type : types )
         {
-            Integer typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
+            Integer typeId = nodeManager.getRelationshipTypeIdFor( type );
             if ( typeId == null )
             // This relationship type doesn't even exist in this database
             {
                 continue;
             }
 
-            result[actualLength++] = getRelationshipsIterator( nodeManager, direction,
+            result[actualLength++] = getRelationshipsIterator( direction,
                     addMap != null ? addMap.get( typeId ) : null,
                     skipMap != null ? skipMap.get( typeId ) : null, typeId );
         }
@@ -258,11 +258,11 @@ public class NodeImpl extends ArrayBasedPrimitive
         return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
     }
 
-    private RelIdIterator getRelationshipsIterator( NodeManager nodeManager, DirectionWrapper direction,
+    private RelIdIterator getRelationshipsIterator( DirectionWrapper direction,
                                                     RelIdArray add, Collection<Long> remove, int type )
     {
         RelIdArray src = getRelIdArray( type );
-        RelIdIterator iterator = null;
+        RelIdIterator iterator;
         if ( add != null || remove != null )
         {
             iterator = new CombinedRelIdIterator( type, direction, src, add, remove );
@@ -286,7 +286,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
-        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, new RelationshipType[]{type} );
+        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, type );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
@@ -326,7 +326,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
                                                     Direction dir )
     {
-        return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[]{type} );
+        return getAllRelationshipsOfType( nodeManager, wrap( dir ), type );
     }
 
     public void delete( NodeManager nodeManager, Node proxy )
@@ -448,7 +448,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         @Override
         public int compare( Object o1, Object o2 )
         {
-            return ((RelIdArray) o1).getType() - ((Integer) o2).intValue();
+            return ((RelIdArray) o1).getType() - (Integer) o2;
         }
     };
 
@@ -655,7 +655,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
             ArrayMap<Integer, RelIdArray> cowRelationshipAddMap,
-            ArrayMap<Integer, Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
+            ArrayMap<Integer, Collection<Long>> cowRelationshipRemoveMap, NodeManager nodeManager )
     {
         if ( relationships == null )
         {

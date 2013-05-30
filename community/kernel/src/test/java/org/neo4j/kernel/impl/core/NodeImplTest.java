@@ -35,7 +35,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -55,8 +54,8 @@ public class NodeImplTest
     public void shouldQuietlyIgnoreSingleDuplicateEntryWhenGetSingleRelationshipCalled() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                Record.NO_NEXT_PROPERTY.intValue() );
+        NodeImpl nodeImpl = new NodeImpl( 1
+        );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
@@ -90,8 +89,8 @@ public class NodeImplTest
     public void shouldThrowExceptionIfMultipleDifferentEntries() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                Record.NO_NEXT_PROPERTY.intValue() );
+        NodeImpl nodeImpl = new NodeImpl( 1
+        );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
@@ -140,8 +139,8 @@ public class NodeImplTest
     public void shouldThrowExceptionIfMultipleDifferentEntriesWithTwoOfThemBeingIdentical() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                Record.NO_NEXT_PROPERTY.intValue() );
+        NodeImpl nodeImpl = new NodeImpl( 1
+        );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
