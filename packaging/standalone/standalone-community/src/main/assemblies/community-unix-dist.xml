@@ -32,7 +32,7 @@
     <fileSet>
       <directory>src/main/distribution/text/community</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>keep</lineEnding>
       <filtered>true</filtered>
       <directoryMode>0755</directoryMode>
       <fileMode>0644</fileMode>

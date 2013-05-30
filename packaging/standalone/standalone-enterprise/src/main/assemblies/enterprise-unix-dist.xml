@@ -31,7 +31,7 @@
     <fileSet>
       <directory>src/main/distribution/text/enterprise</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>keep</lineEnding>
       <filtered>true</filtered>
       <excludes>
         <exclude>conf/jmx.*</exclude>
