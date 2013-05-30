@@ -29,7 +29,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
   val symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) : Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
 
     if(input.isEmpty)
@@ -37,18 +37,20 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
     val first: ExecutionContext = input.next()
 
-    val sourceIter: Iterator[ExecutionContext] = new HeadAndTail[ExecutionContext](first, input)
+    val sourceIter: Iterator[ExecutionContext] = new HeadAndTail(first, input)
 
-    def asInt(v: Expression): Int = v(first)(state).asInstanceOf[Int]
+    def asInt(v: Expression): Int = v(first).asInstanceOf[Number].intValue()
 
     (skip, limit) match {
       case (Some(x), None) => sourceIter.drop(asInt(x))
       case (None, Some(x)) => sourceIter.take(asInt(x))
-      case (Some(startAt), Some(count)) => {
+
+      case (Some(startAt), Some(count)) =>
         val start = asInt(startAt)
         sourceIter.slice(start, start + asInt(count))
-      }
-      case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
+
+      case (None, None) =>
+        throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
   }
 
@@ -64,17 +66,19 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
   }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    // TODO do it
+    skip.foreach(_.throwIfSymbolsMissing(symbols))
+    limit.foreach(_.throwIfSymbolsMissing(symbols))
   }
 }
 
 class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {
-  var usedHead = false
-  def headUnused = !usedHead
+  var usedHead: Boolean = false
 
-  def hasNext = headUnused || tail.hasNext
+  def headUnused: Boolean = !usedHead
 
-  def next() = if (headUnused) {
+  def hasNext: Boolean = headUnused || tail.hasNext
+
+  def next(): T = if (headUnused) {
     usedHead = true
     head
   } else {
