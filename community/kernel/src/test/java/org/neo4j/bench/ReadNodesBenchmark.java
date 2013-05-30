@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.bench;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -26,33 +26,30 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 
-import org.neo4j.bench.BenchmarkCommandLineInterface;
-import org.neo4j.bench.BenchmarkResults;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
-public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.Describer,
+public class ReadNodesBenchmark implements BenchmarkCommandLineInterface.Describer,
         BenchmarkCommandLineInterface.RunBenchCase
 {
     public static void main( String... args ) throws Exception
     {
-        QuickReadPerformanceTest test = new QuickReadPerformanceTest();
+        ReadNodesBenchmark test = new ReadNodesBenchmark();
         System.exit( new BenchmarkCommandLineInterface().evaluate( args, test, test ) );
     }
 
     @Override
     public void describe( PrintStream out )
     {
-        out.println( "name=" + QuickReadPerformanceTest.class.getSimpleName() );
+        out.println( "name=" + ReadNodesBenchmark.class.getSimpleName() );
         out.println( "description=In a background thread, " +
-                "creates pairs of nodes (2 string properties on each), " +
-                "each connected by one relationship (one integer property on each). " +
-                "In the main thread, read all nodes, relationships, and their properties. " +
-                "Reports number of nodes 'fully read', including reading their properties, " +
-                "reading the attached relationship, and reading the property of the relationship." );
+                "creates individual unconnected nodes. " +
+                "In the main thread, read all nodes. " +
+                "Reports number of nodes read." );
     }
 
     @Override
@@ -82,9 +79,8 @@ public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.D
                 long now = System.currentTimeMillis();
                 long elapsedTime = now - startTime;
                 long duration = now - periodStartTime;
-                results.writeResult( elapsedTime,
-                        "iterateNodeGet2PropertiesGet1RelationshipGet1Property",
-                        result.iterateNodeGet2PropertiesGet1RelationshipGet1Property, result.exceptions, duration );
+                results.writeResult( elapsedTime, "iterateNode",
+                        result.iterateNode, result.exceptions, duration );
             }
         }
         finally
@@ -107,14 +103,7 @@ public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.D
                 Transaction tx = db.beginTx();
                 try
                 {
-                    Node node1 = db.createNode();
-                    Node node2 = db.createNode();
-
-                    node1.setProperty( "name", "Bob" );
-                    node2.setProperty( "name", "Ashton" );
-
-                    Relationship rel = node1.createRelationshipTo( node2, withName( "LIKES" ) );
-                    rel.setProperty( "since", 12 );
+                    db.createNode();
 
                     tx.success();
                 }
@@ -128,12 +117,11 @@ public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.D
 
     static class ReaderResultsSample
     {
-        int iterateNodeGet2PropertiesGet1RelationshipGet1Property, exceptions;
+        int iterateNode, exceptions;
 
-        ReaderResultsSample( int iterateNodeGet2PropertiesGet1RelationshipGet1Property, int exceptions )
+        ReaderResultsSample( int iterateNode, int exceptions )
         {
-            this.iterateNodeGet2PropertiesGet1RelationshipGet1Property =
-                    iterateNodeGet2PropertiesGet1RelationshipGet1Property;
+            this.iterateNode = iterateNode;
             this.exceptions = exceptions;
         }
     }
@@ -187,36 +175,18 @@ public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.D
         @Override
         public ReaderResultsSample call() throws Exception
         {
-            int iterateNodeGet2PropertiesGet1RelationshipGet1Property = 0, exceptions = 0;
+            int iterateNode = 0, exceptions = 0;
 
             Transaction tx = graphDb.beginTx();
             try
             {
-                for ( int j = 0; j < 1000000; j++ )
+                for ( int j = 0; j < 10000000; j++ )
                 {
                     if ( iterator.hasNext() )
                     {
-                        Node node = iterator.next();
-                        try
-                        {
-                            for ( Relationship r : node.getRelationships() )
-                            {
-                                for ( String propertyKey : r.getPropertyKeys() )
-                                {
-                                    r.getProperty( propertyKey );
-                                }
-                            }
-                            for ( String propertyKey : node.getPropertyKeys() )
-                            {
-                                node.getProperty( propertyKey );
-                            }
-                        }
-                        catch ( Exception e )
-                        {
-                            e.printStackTrace();
-                            exceptions += 1;
-                        }
-                        iterateNodeGet2PropertiesGet1RelationshipGet1Property++;
+                        iterator.next();
+
+                        iterateNode++;
                     }
                 }
             }
@@ -225,7 +195,7 @@ public class QuickReadPerformanceTest implements BenchmarkCommandLineInterface.D
                 tx.finish();
             }
 
-            return new ReaderResultsSample( iterateNodeGet2PropertiesGet1RelationshipGet1Property, exceptions );
+            return new ReaderResultsSample( iterateNode, exceptions );
         }
     }
 
