@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-case class Count extends Function {
+case class Count extends Function with AggregatingFunction {
   def name = "COUNT"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super[AggregatingFunction].semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 1) >>=
     invocation.limitType(LongType())
   }

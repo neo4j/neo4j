@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-case class Collect extends Function {
+case class Collect extends Function with AggregatingFunction  {
   def name = "COLLECT"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super[AggregatingFunction].semanticCheck(ctx, invocation) >>=
     checkArgsThen(invocation, 1) {
       val arg = invocation.arguments(0)
       invocation.limitType(arg.types(_).map(t => CollectionType(t)))

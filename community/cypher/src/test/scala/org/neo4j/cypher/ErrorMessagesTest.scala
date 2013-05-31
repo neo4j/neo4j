@@ -64,7 +64,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def aggregateFunctionInWhere() {
     expectError("START a = node(0) WHERE count(a) > 10 RETURN a",
-      v2_0    -> "Can't use aggregate functions in the WHERE clause."
+      v2_0    -> "Can't use aggregate functions in the WHERE clause.",
+      v2_0peg -> "Invalid use of aggregating function COUNT in this context (line 1, column 25)"
     )
   }
 
