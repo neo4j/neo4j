@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpr
 object Expression {
   sealed trait SemanticContext
   object SemanticContext {
-    case class Predicate extends SemanticContext
+    case class Simple extends SemanticContext
     case class Results extends SemanticContext
   }
 

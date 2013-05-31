@@ -204,7 +204,7 @@ sealed abstract class NodePattern extends PatternElement {
     if (properties.isDefined && !context.isInstanceOf[SemanticContext.Create]) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Predicate())
+      properties.semanticCheck(Expression.SemanticContext.Simple())
     }
   }
 
@@ -258,7 +258,7 @@ sealed abstract class RelationshipPattern extends AstNode {
     } else if (optional && context.isInstanceOf[SemanticContext.Expression]) {
       SemanticError("Optional relationships cannot be specified in this context", token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Predicate())
+      properties.semanticCheck(Expression.SemanticContext.Simple())
     }
   }
 

@@ -31,7 +31,7 @@ sealed trait SetItem extends AstNode with SemanticCheckable {
 
 case class SetPropertyItem(property: Property, token: InputToken, expression: Expression) extends SetItem {
   def children = Seq(property, expression)
-  def semanticCheck = Seq(property, expression).semanticCheck(Expression.SemanticContext.Predicate())
+  def semanticCheck = Seq(property, expression).semanticCheck(Expression.SemanticContext.Simple())
 
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
 }
@@ -39,7 +39,7 @@ case class SetPropertyItem(property: Property, token: InputToken, expression: Ex
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
   def children = expression +: labels
   def semanticCheck = {
-    expression.semanticCheck(Expression.SemanticContext.Predicate()) >>=
+    expression.semanticCheck(Expression.SemanticContext.Simple()) >>=
     expression.limitType(NodeType())
   }
 
@@ -51,7 +51,7 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
 case class SetNodeItem(identifier: Identifier, token: InputToken, expression: Expression) extends SetItem {
   def children = Seq(identifier, expression)
   def semanticCheck = {
-    Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Predicate()) >>=
+    Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Simple()) >>=
     identifier.limitType(NodeType()) >>=
     expression.limitType(MapType())
   }

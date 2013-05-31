@@ -37,7 +37,7 @@ case class Match(patterns: Seq[Pattern], token: InputToken) extends Clause {
 
 case class Where(expression: Expression, token: InputToken) extends Clause {
   def children = Seq(expression)
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Predicate())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple())
 }
 
 
@@ -63,7 +63,7 @@ case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClaus
 
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
   def children = expressions
-  def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Predicate())
+  def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Simple())
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
 }
