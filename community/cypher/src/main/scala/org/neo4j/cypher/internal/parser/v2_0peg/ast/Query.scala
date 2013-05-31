@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.parser.v2_0peg.ast
 
 import org.neo4j.cypher.internal.parser.v2_0peg._
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 import org.neo4j.cypher.internal.mutation
@@ -42,8 +43,10 @@ case class SingleQuery(
     case (None, None, Seq(), None, Seq(), None) => true
     case _ => false
   }
-
-  def semanticCheck = {
+  
+  def semanticCheck : Seq[SemanticError] = checkUntilConsistent(semanticCheck)
+  
+  def semanticCheck(implicit d: DummyImplicit) : SemanticCheck = {
     checkStart >>=
     checkConclusion >>=
     (start ++ matches ++ where ++ updates ++ close).semanticCheck
@@ -60,6 +63,23 @@ case class SingleQuery(
       Some(SemanticError("Query must conclude with RETURN, WITH or an update clause", token.endOnly))
     else
       None
+  }
+
+  private def checkUntilConsistent(check: SemanticCheck) : Seq[SemanticError] = {
+    repeatUntil((SemanticCheckResult.success(SemanticState.clean), 10)) { case (previous, n) =>
+      val latest = check(previous.state)
+      if (!latest.errors.isEmpty || latest.state == previous.state)
+        ((latest, n-1), true)
+      else if (n == 0)
+        throw new ThisShouldNotHappenError("chris", "Too many semantic check passes")
+      else
+        ((latest, n-1), !latest.errors.isEmpty || latest.state == previous.state)
+    }._1.errors    
+  }
+
+  private def repeatUntil[A](seed: A)(f: A => (A, Boolean)): A = f(seed) match {
+    case (a, false) => repeatUntil(a)(f)
+    case (a, true) => a
   }
 
   def toLegacyQuery = toLegacyQuery(true)
@@ -193,7 +213,11 @@ case class With(
 {
   def children = Seq(returnItems) ++ orderBy ++ skip ++ limit
 
-  override def semanticCheck = super.semanticCheck >>= checkAliasedReturnItems >>= checkSubQuery
+  override def semanticCheck = {
+    super.semanticCheck >>=
+    checkAliasedReturnItems >>=
+    checkSubQuery
+  }
 
   private def checkAliasedReturnItems : SemanticState => Seq[SemanticError] = state => {
     returnItems match {
@@ -228,8 +252,14 @@ trait Union extends Query {
   def statement: Query
   def query: SingleQuery
 
-  def semanticCheck = SemanticCheckResult.success
-  override def check = statement.check ++ query.check
+  def semanticCheck = checkUnionAggregation.toSeq ++ statement.semanticCheck ++ query.semanticCheck
+  
+  private def checkUnionAggregation = (statement, this) match {
+    case (_: SingleQuery, _) => None
+    case (_: UnionAll, _: UnionAll) => None
+    case (_: UnionDistinct, _: UnionDistinct) => None
+    case _ => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
+  }
 
   protected def unionedQueries : Seq[SingleQuery] = statement match {
     case q: SingleQuery => Seq(query, q)

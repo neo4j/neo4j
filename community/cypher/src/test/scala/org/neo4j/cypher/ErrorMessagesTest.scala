@@ -268,7 +268,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
          START a=node(0) RETURN a
          UNION ALL
          START a=node(0) RETURN a""",
-      v2_0    -> "can't mix UNION and UNION ALL"
+      v2_0    -> "can't mix UNION and UNION ALL",
+      v2_0peg -> "Invalid combination of UNION and UNION ALL (line 4, column 10)"
     )
   }
 

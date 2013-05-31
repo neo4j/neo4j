@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.parser.v2_0peg
 
 trait SemanticCheckable {
   def semanticCheck: SemanticCheck
+}
 
-  implicit class SemanticCheckableOption[A <: SemanticCheckable](option: Option[A]) {
-    def semanticCheck = option.fold(SemanticCheckResult.success) { _.semanticCheck }
-  }
+case class SemanticCheckableOption[A <: SemanticCheckable](option: Option[A]) {
+  def semanticCheck = option.fold(SemanticCheckResult.success) { _.semanticCheck }
+}
 
-  implicit class SemanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) {
-    def semanticCheck = {
-      traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f >>= o.semanticCheck }
-    }
+case class SemanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) {
+  def semanticCheck = {
+    traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f >>= o.semanticCheck }
   }
 }
 

@@ -23,23 +23,8 @@ import org.neo4j.cypher.internal.parser.v2_0peg._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands
 
-trait Statement extends AstNode with SemanticCheckable {
-  def check : Seq[SemanticError] = {
-    repeatUntil((SemanticCheckResult.success(SemanticState.clean), 10)) { case (previous, n) =>
-      val latest = semanticCheck(previous.state)
-      if (!latest.errors.isEmpty || latest.state == previous.state)
-        ((latest, n-1), true)
-      else if (n == 0)
-        throw new ThisShouldNotHappenError("chris", "Too many semantic check passes")
-      else
-        ((latest, n-1), !latest.errors.isEmpty || latest.state == previous.state)
-    }._1.errors
-  }
+trait Statement extends AstNode {
+  def semanticCheck : Seq[SemanticError]
 
   def toLegacyQuery : commands.AbstractQuery
-
-  private def repeatUntil[A](seed: A)(f: A => (A, Boolean)): A = f(seed) match {
-    case (a, false) => repeatUntil(a)(f)
-    case (a, true) => a
-  }
 }

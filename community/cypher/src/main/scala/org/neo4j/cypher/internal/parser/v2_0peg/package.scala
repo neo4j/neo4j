@@ -46,6 +46,9 @@ package object v2_0peg {
   implicit def liftSemanticErrorAndChain(error: SemanticError) : ChainableSemanticCheck = liftSemanticError(error)
   implicit def liftSemanticErrorOptionAndChain(error: Option[SemanticError]) : ChainableSemanticCheck = liftSemanticErrorOption(error)
 
+  implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]) = SemanticCheckableOption(option)
+  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) = SemanticCheckableTraversableOnce(traversable)
+
   implicit def mergeableCypherTypeSet[T <: CypherType](set: Set[T]) = MergeableCypherTypeSet(set)
   implicit def formattableCypherTypeSet[T <: CypherType](set: Set[T]) = FormattableCypherTypeSet(set)
 }
