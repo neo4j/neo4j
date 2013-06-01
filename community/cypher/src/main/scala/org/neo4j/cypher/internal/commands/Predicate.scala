@@ -56,6 +56,8 @@ object Predicate {
 }
 
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
+  override def atoms: Seq[Predicate] = inner.atoms
+
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
     val nullValue = exp.find {
       case (e, res) => e(m) == null

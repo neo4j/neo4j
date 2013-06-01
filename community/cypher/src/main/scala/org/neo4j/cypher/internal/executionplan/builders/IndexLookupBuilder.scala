@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Property}
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Property, Nullable}
 import org.neo4j.cypher.IndexHintException
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
@@ -64,6 +64,8 @@ class IndexLookupBuilder extends PlanBuilder {
   private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(Unsolved[Predicate], Expression)] =
     plan.query.where.collect {
       case predicate@Unsolved(Equals(Property(Identifier(id), prop), expression))
+        if id == hint.identifier && prop == hint.property => (predicate, expression)
+      case predicate@Unsolved(Equals(Nullable(Property(Identifier(id), prop)), expression))
         if id == hint.identifier && prop == hint.property => (predicate, expression)
 
       case predicate@Unsolved(Equals(expression, Property(Identifier(id), prop)))
