@@ -47,8 +47,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class AbstractStore extends CommonAbstractStore
 {
-    public static abstract class Configuration
-        extends CommonAbstractStore.Configuration
+    public static abstract class Configuration extends CommonAbstractStore.Configuration
     {
         public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
@@ -67,7 +66,7 @@ public abstract class AbstractStore extends CommonAbstractStore
     {
         try
         {
-            return getFileChannel().size()/getRecordSize();
+            return getFileChannel().size() / getRecordSize();
         }
         catch ( IOException e )
         {
@@ -101,9 +100,11 @@ public abstract class AbstractStore extends CommonAbstractStore
         int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
         long fileSize = getFileChannel().size();
         if ( getRecordSize() != 0
-            && (fileSize - expectedVersionLength) % getRecordSize() != 0  && !isReadOnly() )
+             && (fileSize - expectedVersionLength) % getRecordSize() != 0 && !isReadOnly() )
         {
-            setStoreNotOk( new IllegalStateException( "Misaligned file size " + fileSize + " for " + this + ", expected version length:" + expectedVersionLength ) );
+            setStoreNotOk( new IllegalStateException(
+                    "Misaligned file size " + fileSize + " for " + this + ", expected version length:" +
+                    expectedVersionLength ) );
         }
         if ( getStoreOk() && !isReadOnly() )
         {
@@ -136,10 +137,10 @@ public abstract class AbstractStore extends CommonAbstractStore
         return 0;
     }
 
-    protected boolean isRecordInUse(ByteBuffer buffer)
+    protected boolean isRecordInUse( ByteBuffer buffer )
     {
         byte inUse = buffer.get();
-        return ( ( inUse & 0x1 ) == Record.IN_USE.byteValue() );
+        return (inUse & 0x1) == Record.IN_USE.byteValue();
     }
 
     /**
@@ -154,15 +155,14 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new ReadOnlyDbException();
         }
 
-        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
-            + "] ..." );
+        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" ) ))
+        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" ) ) )
         {
-            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
+            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ) );
             assert success;
         }
-        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
+        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ) );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;
@@ -182,8 +182,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             LinkedList<Long> freeIdList = new LinkedList<Long>();
             if ( fullRebuild )
             {
-                for ( long i = 0; i * recordSize < fileSize && recordSize > 0;
-                    i++ )
+                for ( long i = 0; i * recordSize < fileSize && recordSize > 0; i++ )
                 {
                     fileChannel.position( i * recordSize );
                     byteBuffer.clear();
@@ -196,7 +195,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                     else
                     {
                         highId = i;
-                        setHighId( highId+1 );
+                        setHighId( highId + 1 );
                         while ( !freeIdList.isEmpty() )
                         {
                             freeId( freeIdList.removeFirst() );
@@ -209,13 +208,13 @@ public abstract class AbstractStore extends CommonAbstractStore
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
-                "Unable to rebuild id generator " + getStorageFileName(), e );
+                    "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
         stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                " defragged count=" + defraggedCount, true );
+                                 " defragged count=" + defraggedCount, true );
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-            + " (defragged=" + defraggedCount + ")" );
+                            + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();
         openIdGenerator();
     }

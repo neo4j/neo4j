@@ -41,14 +41,14 @@ public class AutoConfigurator
         this( fs, dbPath, useMemoryMapped, physicalMemory(), Runtime.getRuntime().maxMemory() );
     }
 
-    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physicalMemory, long vmMemory )
+    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physMemory, long vmMemory )
     {
         this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
-        if ( physicalMemory != -1 )
+        if ( physMemory != -1 )
         {
-            totalPhysicalMemMb = (int) (physicalMemory / 1024 / 1024);
+            totalPhysicalMemMb = (int) (physMemory / 1024 / 1024);
         }
         else
         {
@@ -61,7 +61,7 @@ public class AutoConfigurator
     {
         OperatingSystemMXBean osBean =
                 ManagementFactory.getOperatingSystemMXBean();
-        long mem = -1;
+        long mem;
         try
         {
             Class<?> beanClass =
@@ -118,7 +118,7 @@ public class AutoConfigurator
         }
         else if ( canExpand )
         {
-            if ( (storeSize * expand * 5 < memLeft * use) )
+            if ( storeSize * expand * 5 < memLeft * use )
             {
                 size = (int) (memLeft * use / 5);
             }

@@ -49,7 +49,7 @@ public abstract class CommonAbstractStore
     {
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-        
+
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
         public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
@@ -90,8 +90,7 @@ public abstract class CommonAbstractStore
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
      *
-     * @param idType
-     *            The Id used to index into this store
+     * @param idType The Id used to index into this store
      */
     public CommonAbstractStore( File fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -130,7 +129,7 @@ public abstract class CommonAbstractStore
 
     protected long longFromIntAndMod( long base, long modifier )
     {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     /**
@@ -158,27 +157,26 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( (!readOnly || backupSlave) )
+            if ( !readOnly || backupSlave )
             {
                 this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
                 if ( fileLock == null )
                 {
                     throw new IllegalStateException( "Unable to lock store ["
-                        + storageFileName + "], this is usually a result of some "
-                        + "other Neo4j kernel running using the same store." );
+                                                     + storageFileName + "], this is usually a result of some "
+                                                     + "other Neo4j kernel running using the same store." );
                 }
             }
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to lock store["
-                + storageFileName + "]", e );
+            throw new UnderlyingStorageException( "Unable to lock store[" + storageFileName + "]", e );
         }
         catch ( OverlappingFileLockException e )
         {
             throw new IllegalStateException( "Unable to lock store [" + storageFileName +
-                    "], this is usually caused by another Neo4j kernel already running in " +
-                    "this JVM for this particular store" );
+                                             "], this is usually caused by another Neo4j kernel already running in " +
+                                             "this JVM for this particular store" );
         }
     }
 
@@ -190,8 +188,7 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to check version "
-                    + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to check version " + getStorageFileName(), e );
         }
     }
 
@@ -208,14 +205,12 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to load storage "
-                + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to load storage " + getStorageFileName(), e );
         }
         loadIdGenerator();
 
-        this.windowPool = windowPoolFactory.create( getStorageFileName(),
-            getEffectiveRecordSize(), getFileChannel(), configuration,
-                stringLogger );
+        this.windowPool = windowPoolFactory.create( getStorageFileName(), getEffectiveRecordSize(),
+                                                    getFileChannel(), configuration, stringLogger );
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -234,7 +229,7 @@ public abstract class CommonAbstractStore
             }
             else
             {
-                openReadOnlyIdGenerator( getEffectiveRecordSize());
+                openReadOnlyIdGenerator( getEffectiveRecordSize() );
             }
         }
         catch ( InvalidIdGeneratorException e )
@@ -266,7 +261,8 @@ public abstract class CommonAbstractStore
         }
         else if ( !isReadOnly() )
         {
-            setStoreNotOk( new IllegalStateException( "Invalid file size " + fileSize + " for " + this + ". Expected " + length + " or bigger" ) );
+            setStoreNotOk( new IllegalStateException(
+                    "Invalid file size " + fileSize + " for " + this + ". Expected " + length + " or bigger" ) );
             return;
         }
         getFileChannel().read( buffer );
@@ -276,18 +272,19 @@ public abstract class CommonAbstractStore
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "",
+                                                           false );
             }
             else
             {
-                setStoreNotOk( new IllegalStateException( "Unexpected version " + foundTypeDescriptorAndVersion + ", expected " + expectedTypeDescriptorAndVersion ) );
+                setStoreNotOk( new IllegalStateException(
+                        "Unexpected version " + foundTypeDescriptorAndVersion + ", expected " +
+                        expectedTypeDescriptorAndVersion ) );
             }
         }
     }
 
-    /**
-     * Should rebuild the id generator from scratch.
-     */
+    /** Should rebuild the id generator from scratch. */
     protected abstract void rebuildIdGenerator();
 
     /**
@@ -313,14 +310,13 @@ public abstract class CommonAbstractStore
 
     /**
      * Marks this store as "not ok".
-     *
      */
     protected void setStoreNotOk( Throwable cause )
     {
         if ( readOnly && !isBackupSlave() )
         {
             throw new UnderlyingStorageException(
-                "Cannot start up on non clean store as read only" );
+                    "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
         causeOfStoreNotOk = cause;
@@ -349,8 +345,7 @@ public abstract class CommonAbstractStore
     /**
      * Frees an id for this store's {@link IdGenerator}.
      *
-     * @param id
-     *            The id to free
+     * @param id The id to free
      */
     public void freeId( long id )
     {
@@ -376,8 +371,7 @@ public abstract class CommonAbstractStore
     /**
      * Sets the highest id in use (use this when rebuilding id generator).
      *
-     * @param highId
-     *            The high id to set.
+     * @param highId The high id to set.
      */
     public void setHighId( long highId )
     {
@@ -428,19 +422,17 @@ public abstract class CommonAbstractStore
      * operation <CODE>type</CODE>. Window must be released after operation
      * has been performed via {@link #releaseWindow(PersistenceWindow)}.
      *
-     * @param position
-     *            The record position
-     * @param type
-     *            The operation type
+     * @param position The record position
+     * @param type     The operation type
      * @return a persistence window encapsulating the record
      */
     protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
-        if ( !isInRecoveryMode() && ( position > getHighId() || !storeOk) )
+        if ( !isInRecoveryMode() && (position > getHighId() || !storeOk) )
         {
-            throw new InvalidRecordException( "Position[" + position + "]"
-                + " requested for high id[" + getHighId() + "], store is ok[" + storeOk + "]"
-                + " recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
+            throw new InvalidRecordException(
+                    "Position[" + position + "] requested for high id[" + getHighId() + "], store is ok[" + storeOk +
+                    "] recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
         }
         return windowPool.acquire( position, type );
     }
@@ -449,8 +441,7 @@ public abstract class CommonAbstractStore
      * Releases the window and writes the data (async) if the
      * <CODE>window</CODE> was a {@link PersistenceRow}.
      *
-     * @param window
-     *            The window to be released
+     * @param window The window to be released
      */
     protected void releaseWindow( PersistenceWindow window )
     {
@@ -489,12 +480,10 @@ public abstract class CommonAbstractStore
         return storageFileName;
     }
 
-    /**
-     * Opens the {@link IdGenerator} used by this store.
-     */
+    /** Opens the {@link IdGenerator} used by this store. */
     protected void openIdGenerator()
     {
-        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id"), idType.getGrabSize() );
+        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
 
         /* MP: 2011-11-23
          * There may have been some migration done in the startup process, so if there have been some
@@ -506,7 +495,8 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
+        return idGeneratorFactory
+                .open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
     }
 
     protected abstract long figureOutHighestIdInUse();
@@ -521,7 +511,7 @@ public abstract class CommonAbstractStore
         try
         {
             idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id",
-                fileChannel.size() / recordSize );
+                                                   fileChannel.size() / recordSize );
         }
         catch ( IOException e )
         {
@@ -529,9 +519,7 @@ public abstract class CommonAbstractStore
         }
     }
 
-    /**
-     * Closed the {@link IdGenerator} used by this store
-     */
+    /** Closed the {@link IdGenerator} used by this store */
     protected void closeIdGenerator()
     {
         if ( idGenerator != null )
@@ -588,9 +576,10 @@ public abstract class CommonAbstractStore
                 {
                     fileChannel.position( highId * recordSize );
                     ByteBuffer buffer = ByteBuffer.wrap(
-                        UTF8.encode( getTypeAndVersionDescriptor() ) );
+                            UTF8.encode( getTypeAndVersionDescriptor() ) );
                     fileChannel.write( buffer );
-                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() + " vs file size " + fileChannel.size() );
+                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
+                                        " vs file size " + fileChannel.size() );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
                     releaseFileLockAndCloseFileChannel();
@@ -612,7 +601,7 @@ public abstract class CommonAbstractStore
         if ( !success )
         {
             throw new UnderlyingStorageException( "Unable to close store "
-                + getStorageFileName(), storedIoe );
+                                                  + getStorageFileName(), storedIoe );
         }
     }
 
@@ -648,9 +637,7 @@ public abstract class CommonAbstractStore
         return fileChannel;
     }
 
-    /**
-     * @return The highest possible id in use, -1 if no id in use.
-     */
+    /** @return The highest possible id in use, -1 if no id in use. */
     public long getHighestPossibleIdInUse()
     {
         if ( idGenerator != null )
@@ -664,9 +651,7 @@ public abstract class CommonAbstractStore
         }
     }
 
-    /**
-     * @return The total number of ids in use.
-     */
+    /** @return The total number of ids in use. */
     public long getNumberOfIdsInUse()
     {
         return idGenerator.getNumberOfIdsInUse();
@@ -700,15 +685,15 @@ public abstract class CommonAbstractStore
         }
     }
 
-    public void logVersions( StringLogger.LineLogger logger)
+    public void logVersions( StringLogger.LineLogger logger )
     {
         logger.logLine( "  " + getTypeAndVersionDescriptor() );
     }
 
-    public void logIdUsage(StringLogger.LineLogger lineLogger )
+    public void logIdUsage( StringLogger.LineLogger lineLogger )
     {
-        lineLogger.logLine( String.format( "  %s: used=%s high=%s", getTypeDescriptor(),
-                getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+        lineLogger.logLine( String.format( "  %s: used=%s high=%s",
+                                           getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
     @Override

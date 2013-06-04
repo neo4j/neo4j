@@ -94,16 +94,13 @@ public class PropertyRecord extends Abstract64BitRecord
 
     /**
      * Gets the sum of the sizes of the blocks in this record, in bytes.
-     *
-     * @return
      */
     public int size()
     {
         int result = 0;
-        final int size = blockRecords.size();
-        for (int i = 0; i < size; i++)
+        for ( PropertyBlock blockRecord : blockRecords )
         {
-            result += blockRecords.get(i).getSize();
+            result += blockRecord.getSize();
         }
         return result;
     }
@@ -126,10 +123,9 @@ public class PropertyRecord extends Abstract64BitRecord
     public void addPropertyBlock(PropertyBlock block)
     {
         assert size() + block.getSize() <= PropertyType.getPayloadSize() :
-            ("Exceeded capacity of property record " + this
-                             + ". My current size is reported as " + size() + "The added block was " + block + " (note that size is "
-          + block.getSize() + ")"
-        );
+                "Exceeded capacity of property record " + this
+                + ". My current size is reported as " + size() + "The added block was " + block +
+                " (note that size is " + block.getSize() + ")";
 
         blockRecords.add( block );
     }

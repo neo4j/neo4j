@@ -38,8 +38,6 @@ package org.neo4j.kernel.ha.cluster.zoo;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import static org.neo4j.cluster.ClusterSettings.server_id;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -67,6 +65,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkInstance;
@@ -89,6 +88,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.cluster.ClusterSettings.server_id;
 
 public class ZooClient implements Lifecycle, CompatibilityMonitor
 {
@@ -297,7 +298,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         {
             return;
         }
-        if ( shutdown == true )
+        if ( shutdown )
         {
             throw new ZooKeeperException( "ZooKeeper client has been shutdown" );
         }
@@ -320,13 +321,13 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                 {
                     return;
                 }
-                if ( shutdown == true )
+                if ( shutdown )
                 {
                     throw new ZooKeeperException( "ZooKeeper client has been shutdown" );
                 }
                 currentTime = System.currentTimeMillis();
             }
-            while ( strategy.waitMore( (currentTime - startTime) ) );
+            while ( strategy.waitMore( currentTime - startTime ) );
 
             if ( keeperState != KeeperState.SyncConnected )
             {

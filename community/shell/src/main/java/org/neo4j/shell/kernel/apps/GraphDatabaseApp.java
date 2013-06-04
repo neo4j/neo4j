@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static org.neo4j.shell.ShellException.stackTraceAsString;
-
 import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -65,6 +63,8 @@ import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.neo4j.shell.ShellException.stackTraceAsString;
+
 /**
  * An implementation of {@link App} which has common methods and functionality
  * to use with neo4j.
@@ -98,7 +98,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         GraphDatabaseShellServer server, Session session ) throws ShellException
     {
         String currentThing = session.getCurrent();
-        NodeOrRelationship result = null;
+        NodeOrRelationship result;
         if ( currentThing == null )
         {
             try
@@ -180,7 +180,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected static NodeOrRelationship getThingById(
         GraphDatabaseShellServer server, TypedId typedId ) throws ShellException
     {
-        NodeOrRelationship result = null;
+        NodeOrRelationship result;
         if ( typedId.isNode() )
         {
             try
@@ -253,7 +253,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         Node currentNode = null;
         for ( PropertyContainer entity : path )
         {
-            String display = null;
+            String display;
             if ( entity instanceof Relationship )
             {
                 display = quietPrint ? "" : getDisplayName( getServer(), session, (Relationship) entity, false, true );
@@ -318,7 +318,6 @@ public abstract class GraphDatabaseApp extends AbstractApp
         List<TypedId> wd = readCurrentWorkingDir( session );
         try
         {
-            NodeOrRelationship current = getCurrent( session );
             wd.add( getCurrent( session ).getTypedId() );
         }
         catch ( ShellException e )
@@ -393,16 +392,15 @@ public abstract class GraphDatabaseApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
 
-        String title = findTitle( server, session, node );
+        String title = findTitle( session, node );
         StringBuilder result = new StringBuilder( "(" );
-        result.append( (title != null ? title + "," : "" ) );
+        result.append( title != null ? title + "," : "" );
         result.append( node.getId() );
         result.append( ")" );
         return result.toString();
     }
 
-    protected static String findTitle( GraphDatabaseShellServer server,
-        Session session, Node node ) throws ShellException
+    protected static String findTitle( Session session, Node node ) throws ShellException
     {
         String keys = session.getTitleKeys();
         if ( keys == null )
@@ -460,7 +458,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
 
         StringBuilder result = new StringBuilder( "[" );
-        result.append( ":" + relationship.getType().name() );
+        result.append( ":" ).append( relationship.getType().name() );
         result.append( verbose ? "," + relationship.getId() : "" );
         result.append( "]" );
         return result.toString();
@@ -512,7 +510,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         int count = 0;
         for ( T enumConstant : enumClass.getEnumConstants() )
         {
-            builder.append( (count++ == 0 ? "" : ", ") );
+            builder.append( count++ == 0 ? "" : ", " );
             builder.append( enumConstant.name() );
         }
         return builder.append( "]" ).toString();
@@ -594,7 +592,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
 
     protected static String format( Object value, boolean includeFraming )
     {
-        String result = null;
+        String result;
         if ( value.getClass().isArray() )
         {
             StringBuilder buffer = new StringBuilder();

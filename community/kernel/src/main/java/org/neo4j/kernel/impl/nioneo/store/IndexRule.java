@@ -167,18 +167,24 @@ public class IndexRule extends AbstractSchemaRule
     public int hashCode()
     {
         // TODO: Think if this needs to be extended with providerDescriptor
-        return ( 31 * super.hashCode() + (int) propertyKey );
+        return 31 * super.hashCode() + (int) propertyKey;
     }
 
     @Override
     public boolean equals( Object obj )
     {
         if ( this == obj )
+        {
             return true;
+        }
         if ( !super.equals( obj ) )
+        {
             return false;
+        }
         if ( getClass() != obj.getClass() )
+        {
             return false;
+        }
         IndexRule other = (IndexRule) obj;
         return propertyKey == other.propertyKey;
     }
@@ -205,7 +211,7 @@ public class IndexRule extends AbstractSchemaRule
 
     public IndexRule withOwningConstraint( long constraintId )
     {
-        if (!isConstraintIndex())
+        if ( !isConstraintIndex() )
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.copyOf;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.util.Bits;
+
+import static java.util.Arrays.copyOf;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
@@ -72,7 +72,7 @@ public enum LongerShortString
         char decTranslate( byte codePoint )
         {
             if ( codePoint < 10 ) return (char) ( codePoint + '0' );
-            return decPunctuation( ( codePoint - 10 + 6 ) );
+            return decPunctuation( codePoint - 10 + 6 );
         }
     },
     /**
@@ -440,19 +440,19 @@ public enum LongerShortString
     LOWERHEX( 11, 4 )
     {
         @Override
-        int encTranslate( byte b ) 
+        int encTranslate( byte b )
         {
             if ( b >= '0' && b <= '9' ) return b - '0';
             if ( b >= 'a' && b <= 'f' ) return b - 'a' + 10;
             throw cannotEncode( b );
         }
-        
+
         @Override
-        int encPunctuation( byte b ) 
+        int encPunctuation( byte b )
         {
             throw cannotEncode( b );
         }
-        
+
         @Override
         char decTranslate( byte codePoint )
         {
@@ -471,19 +471,19 @@ public enum LongerShortString
     UPPERHEX( 12, 4 )
     {
         @Override
-        int encTranslate( byte b ) 
+        int encTranslate( byte b )
         {
             if ( b >= '0' && b <= '9' ) return b - '0';
             if ( b >= 'A' && b <= 'F' ) return b - 'A' + 10;
             throw cannotEncode( b );
         }
-        
+
         @Override
-        int encPunctuation( byte b ) 
+        int encPunctuation( byte b )
         {
             throw cannotEncode( b );
         }
-        
+
         @Override
         char decTranslate( byte codePoint )
         {

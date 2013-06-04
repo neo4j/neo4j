@@ -202,7 +202,7 @@ public class NetworkInstance
                 InetSocketAddress localAddress = new InetSocketAddress( host, checkPort );
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
-                listeningAt( (getURI( (InetSocketAddress) listenChannel.getLocalAddress() )) );
+                listeningAt( getURI( (InetSocketAddress) listenChannel.getLocalAddress() ) );
 
                 channels.add( listenChannel );
                 return;

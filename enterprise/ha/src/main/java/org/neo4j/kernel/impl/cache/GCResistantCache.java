@@ -227,7 +227,6 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
             if ( myCurrentSize < purgeHandoffSize )
             {   // It's safe to just return and let the purger do its thing
                 avertedPurgeWaits.incrementAndGet();
-                return;
             }
             else
             {
@@ -436,7 +435,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
         {
             return;
         }
-        long size = currentSize.addAndGet( (newSize - existingObj.getRegisteredSize()) );
+        long size = currentSize.addAndGet( newSize - existingObj.getRegisteredSize() );
         obj.setRegisteredSize( newSize );
         if ( size > closeToMaxSize )
         {

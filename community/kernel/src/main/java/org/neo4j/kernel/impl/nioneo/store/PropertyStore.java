@@ -44,10 +44,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
  */
 public class PropertyStore extends AbstractStore implements Store, RecordStore<PropertyRecord>
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
+    public static abstract class Configuration extends AbstractStore.Configuration
     {
-        
     }
     
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
@@ -81,7 +79,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record )
+            throws FAILURE
     {
         processor.processProperty( this, record );
     }
@@ -222,9 +221,9 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             for ( PropertyBlock block : record.getPropertyBlocks() )
             {
                 long[] propBlockValues = block.getValueBlocks();
-                for ( int k = 0; k < propBlockValues.length; k++ )
+                for ( long propBlockValue : propBlockValues )
                 {
-                    buffer.putLong( propBlockValues[k] );
+                    buffer.putLong( propBlockValue );
                 }
 
                 longsAppended += propBlockValues.length;
@@ -260,7 +259,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     private void updateDynamicRecords( List<DynamicRecord> records )
     {
-        for (DynamicRecord valueRecord : records)
+        for ( DynamicRecord valueRecord : records )
         {
             if ( valueRecord.getType() == PropertyType.STRING.intValue() )
             {
@@ -383,8 +382,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
          * [pppp,nnnn] previous, next high bits
          */
         byte modifiers = buffer.get();
-        long prevMod = ( ( modifiers & 0xF0L ) << 28 );
-        long nextMod = ( ( modifiers & 0x0FL ) << 32 );
+        long prevMod = ( modifiers & 0xF0L ) << 28;
+        long nextMod = ( modifiers & 0x0FL ) << 32;
         long prevProp = buffer.getUnsignedInt();
         long nextProp = buffer.getUnsignedInt();
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
@@ -491,8 +490,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         if ( value instanceof String )
         {   // Try short string first, i.e. inlined in the property block
             String string = (String) value;
-            if ( LongerShortString.encode( keyId, string, block,
-                    PropertyType.getPayloadSize() ) ) return;
+            if ( LongerShortString.encode( keyId, string, block, PropertyType.getPayloadSize() ) )
+            {
+                return;
+            }
 
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( string );
@@ -504,28 +505,54 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 block.addValueRecord( valueRecord );
             }
         }
-        else if ( value instanceof Integer ) setSingleBlockValue( block, keyId, PropertyType.INT, ((Integer)value).longValue() );
-        else if ( value instanceof Boolean ) setSingleBlockValue( block, keyId, PropertyType.BOOL, (((Boolean)value).booleanValue()?1L:0L) );
-        else if ( value instanceof Float ) setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( ((Float) value).floatValue() ) );
+        else if ( value instanceof Integer )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.INT, ((Integer) value).longValue() );
+        }
+        else if ( value instanceof Boolean )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.BOOL, ((Boolean) value ? 1L : 0L) );
+        }
+        else if ( value instanceof Float )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( (Float) value ) );
+        }
         else if ( value instanceof Long )
         {
-            long keyAndType = keyId | (((long)PropertyType.LONG.intValue()) << 24);
-            if ( ShortArray.LONG.getRequiredBits( (Long)value ) <= 35 )
+            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) << 24);
+            if ( ShortArray.LONG.getRequiredBits( (Long) value ) <= 35 )
             {   // We only need one block for this value, special layout compared to, say, an integer
-                block.setSingleBlock( keyAndType | (1L << 28) |  (((Long)value).longValue() << 29) );
+                block.setSingleBlock( keyAndType | (1L << 28) | ((Long) value << 29) );
             }
             else
             {   // We need two blocks for this value
-                block.setValueBlocks( new long[] {keyAndType, ((Long)value).longValue()} );
+                block.setValueBlocks( new long[]{keyAndType, (Long) value} );
             }
         }
-        else if ( value instanceof Double ) block.setValueBlocks( new long[] { keyId | (((long)PropertyType.DOUBLE.intValue()) << 24), Double.doubleToRawLongBits( ((Double)value).doubleValue() ) } );
-        else if ( value instanceof Byte ) setSingleBlockValue( block, keyId, PropertyType.BYTE, ((Byte)value).longValue() );
-        else if ( value instanceof Character ) setSingleBlockValue( block, keyId, PropertyType.CHAR, ((Character)value).charValue() );
-        else if ( value instanceof Short ) setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short)value).longValue() );
+        else if ( value instanceof Double )
+        {
+            block.setValueBlocks( new long[]{
+                    keyId | (((long) PropertyType.DOUBLE.intValue()) << 24),
+                    Double.doubleToRawLongBits( (Double) value )} );
+        }
+        else if ( value instanceof Byte )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.BYTE, ((Byte) value).longValue() );
+        }
+        else if ( value instanceof Character )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.CHAR, (Character) value );
+        }
+        else if ( value instanceof Short )
+        {
+            setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short) value).longValue() );
+        }
         else if ( value.getClass().isArray() )
         {   // Try short array first, i.e. inlined in the property block
-            if ( ShortArray.encode( keyId, value, block, PropertyType.getPayloadSize() ) ) return;
+            if ( ShortArray.encode( keyId, value, block, PropertyType.getPayloadSize() ) )
+            {
+                return;
+            }
 
             // Fall back to dynamic array store
             Collection<DynamicRecord> arrayRecords = allocateArrayRecords( value );
@@ -538,8 +565,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown property type on: "
-                + value + ", " + value.getClass() );
+            throw new IllegalArgumentException( "Unknown property type on: " + value + ", " + value.getClass() );
         }
     }
 
@@ -618,8 +644,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         // TODO: The next line is an ugly hack, but works.
         Buffer fromByteBuffer = new Buffer( null, buffer );
-        return buffer.limit() >= RECORD_SIZE
-               && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+        return buffer.limit() >= RECORD_SIZE && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
     }
 
     @Override
