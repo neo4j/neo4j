@@ -19,14 +19,22 @@
  */
 package org.neo4j.kernel;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.transaction.SystemException;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -35,15 +43,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class LabelIT
 {
@@ -114,7 +113,7 @@ public class LabelIT
                 new HashMap<Integer, Map<String,String>>(), dbFactory );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
+        cluster.await( allSeesAllAsAvailable() );
         return cluster;
     }
 

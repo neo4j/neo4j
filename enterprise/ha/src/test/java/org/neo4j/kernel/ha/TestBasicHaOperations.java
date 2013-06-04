@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +26,15 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
 
 /**
  * TODO
@@ -65,6 +64,8 @@ public class TestBasicHaOperations
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
