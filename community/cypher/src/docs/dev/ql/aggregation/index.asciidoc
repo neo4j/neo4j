@@ -31,6 +31,10 @@ include::percentile_disc.asciidoc[]
 
 include::percentile_cont.asciidoc[]
 
+include::stdev.asciidoc[]
+
+include::stdevp.asciidoc[]
+
 include::max.asciidoc[]
 
 include::min.asciidoc[]
