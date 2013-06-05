@@ -88,15 +88,16 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        int size = super.size() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
+        int size = super.sizeOfObjectInBytesIncludingOverhead() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ +
+                8/*relChainPosition*/ + 8/*id*/;
         if ( relationships != null )
         {
             size = withArrayOverheadIncludingReferences( size, relationships.length );
             for ( RelIdArray array : relationships )
             {
-                size += array.size();
+                size += array.sizeOfObjectInBytesIncludingOverhead();
             }
         }
         return size;
@@ -215,10 +216,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         ensureRelationshipMapNotNull( nodeManager );
 
         // We need to check if there are more relationships to load before grabbing
-        // the references to the RelIdArrays since otherwise there could be
+        // the references to the RelIdArrays. Otherwise there could be
         // another concurrent thread exhausting the chain position in between the point
         // where we got an empty iterator for a type that the other thread loaded and
-        // the point where we check whether or not there are more relationships to load.
+        // the point where we check if there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
 
         RelIdIterator[] result = new RelIdIterator[types.length];
@@ -240,23 +241,23 @@ public class NodeImpl extends ArrayBasedPrimitive
                 continue;
             }
 
-            result[actualLength++] = getRelationshipsIterator( direction,
-                    addMap != null ? addMap.get( typeId ) : null,
-                    skipMap != null ? skipMap.get( typeId ) : null, typeId );
-        }
+                result[actualLength++] = getRelationshipsIterator( direction,
+                        addMap != null ? addMap.get( typeId ) : null,
+                        skipMap != null ? skipMap.get( typeId ) : null, typeId );
+            }
 
-        if ( actualLength < result.length )
-        {
-            RelIdIterator[] compacted = new RelIdIterator[actualLength];
-            arraycopy( result, 0, compacted, 0, actualLength );
-            result = compacted;
+            if ( actualLength < result.length )
+            {
+                RelIdIterator[] compacted = new RelIdIterator[actualLength];
+                arraycopy( result, 0, compacted, 0, actualLength );
+                result = compacted;
+            }
+            if ( result.length == 0 )
+            {
+                return Collections.emptyList();
+            }
+            return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
         }
-        if ( result.length == 0 )
-        {
-            return Collections.emptyList();
-        }
-        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
-    }
 
     private RelIdIterator getRelationshipsIterator( DirectionWrapper direction,
                                                     RelIdArray add, Collection<Long> remove, int type )
@@ -411,7 +412,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     protected void updateSize( NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, size() );
+        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 
     private RelIdArray[] toRelIdArray( ArrayMap<Integer, RelIdArray> tmpRelMap )
@@ -491,8 +492,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                 }
             }
         }
+
         return rels;
-        // nodeManager.putAllInRelCache( pair.other() );
     }
 
     boolean hasMoreRelationshipsToLoad()

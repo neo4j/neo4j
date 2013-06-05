@@ -746,55 +746,77 @@ public class NodeManager
         boolean hasLoops = loops != null;
         if ( hasLoops )
         {
-            receiveRelationships( loops, newRelationshipMap, relsList, DirectionWrapper.BOTH, true );
+            populateLoadedRelationships( loops, relsList, DirectionWrapper.BOTH, true, newRelationshipMap );
         }
-        receiveRelationships( rels.first().get( DirectionWrapper.OUTGOING ), newRelationshipMap,
-                relsList, DirectionWrapper.OUTGOING, hasLoops );
-        receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
-                relsList, DirectionWrapper.INCOMING, hasLoops );
+        populateLoadedRelationships( rels.first().get( DirectionWrapper.OUTGOING ), relsList,
+                DirectionWrapper.OUTGOING, hasLoops,
+                newRelationshipMap
+        );
+        populateLoadedRelationships( rels.first().get( DirectionWrapper.INCOMING ), relsList,
+                DirectionWrapper.INCOMING, hasLoops,
+                newRelationshipMap
+        );
 
-        // relCache.putAll( relsMap );
         return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
-    private void receiveRelationships(
-            Iterable<RelationshipRecord> rels, ArrayMap<Integer, RelIdArray> newRelationshipMap,
-            List<RelationshipImpl> relsList, DirectionWrapper dir, boolean hasLoops )
+    /**
+     * @param loadedRelationshipsOutputParameter
+     *         This is the return value for this method. It's written like this
+     *         because several calls to this method are used to gradually build up
+     *         the map of RelIdArrays that are ultimately involved in the operation.
+     */
+    private void populateLoadedRelationships( Iterable<RelationshipRecord> loadedRelationshipRecords,
+                                              List<RelationshipImpl> relsList,
+                                              DirectionWrapper dir,
+                                              boolean hasLoops,
+                                              ArrayMap<Integer, RelIdArray> loadedRelationshipsOutputParameter )
     {
-        for ( RelationshipRecord rel : rels )
+        for ( RelationshipRecord rel : loadedRelationshipRecords )
         {
             long relId = rel.getId();
-            RelationshipImpl relImpl = relCache.get( relId );
-            RelationshipType type = null;
-            int typeId;
-            if ( relImpl == null )
-            {
-                typeId = rel.getType();
-                type = getRelationshipTypeById( typeId );
-                assert type != null;
-                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
-                        typeId, false );
-                relsList.add( relImpl );
-            }
-            else
-            {
-                typeId = relImpl.getTypeId();
-                type = getRelationshipTypeById( typeId );
-            }
-            RelIdArray relationshipSet = newRelationshipMap.get( typeId );
-            if ( relationshipSet == null )
-            {
-                relationshipSet = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
-                newRelationshipMap.put( typeId, relationshipSet );
-            }
-            relationshipSet.add( relId, dir );
+
+            RelationshipImpl relImpl = getOrCreateRelationshipFromCache( relsList, rel, relId );
+
+            getOrCreateRelationships( hasLoops, relImpl.getTypeId(), loadedRelationshipsOutputParameter )
+                    .add( relId, dir );
         }
     }
 
-//    void putAllInRelCache( Map<Long,RelationshipImpl> map )
-//    {
-//         relCache.putAll( map );
-//    }
+    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId, ArrayMap<Integer, RelIdArray> loadedRelationships )
+    {
+        RelIdArray relIdArray = loadedRelationships.get( typeId );
+        if ( relIdArray == null )
+        {
+            relIdArray = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
+            loadedRelationships.put( typeId, relIdArray );
+        }
+        return relIdArray;
+    }
+
+    private RelationshipImpl getOrCreateRelationshipFromCache( List<RelationshipImpl> newlyCreatedRelationships,
+                                                               RelationshipRecord
+                                                                       rel, long relId )
+    {
+        RelationshipImpl relImpl = relCache.get( relId );
+        if ( relImpl == null )
+        {
+            int relType = rel.getType();
+            RelationshipType type = getRelationshipTypeById( relType );
+            assert type != null;
+
+            relImpl = newRelationshipImpl( relId,
+
+                    rel.getFirstNode(),
+                    rel.getSecondNode(),
+                    type,
+                    relType,
+                    false );
+
+            newlyCreatedRelationships.add( relImpl );
+        }
+        return relImpl;
+    }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
     {

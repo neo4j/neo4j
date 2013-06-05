@@ -70,9 +70,9 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return super.size() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
+        return super.sizeOfObjectInBytesIncludingOverhead() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
     }
 
     @Override
@@ -188,6 +188,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     @Override
     protected void updateSize( NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, size() );
+        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-public interface EntityWithSize extends SizeOf
+public interface EntityWithSizeObject extends SizeOfObject
 {
     /**
      * Id of this entity.

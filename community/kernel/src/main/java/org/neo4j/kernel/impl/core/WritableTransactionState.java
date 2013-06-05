@@ -448,7 +448,7 @@ public class WritableTransactionState implements TransactionState
                     throw new TransactionFailureException(
                             "Unknown transaction status: " + param );
                 }
-                int sizeAfter = node.size();
+                int sizeAfter = node.sizeOfObjectInBytesIncludingOverhead();
                 nodeManager.updateCacheSize( node, sizeAfter );
             }
         }
@@ -471,7 +471,7 @@ public class WritableTransactionState implements TransactionState
                     throw new TransactionFailureException(
                             "Unknown transaction status: " + param );
                 }
-                int sizeAfter = rel.size();
+                int sizeAfter = rel.sizeOfObjectInBytesIncludingOverhead();
                 nodeManager.updateCacheSize( rel, sizeAfter );
             }
         }

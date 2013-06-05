@@ -25,7 +25,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.kernel.impl.cache.EntityWithSize;
+import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  * a Map based.
  * @author Mattias Persson
  */
-abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
+abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeObject
 {
     private volatile PropertyData[] properties;
     private volatile int registeredSize;
@@ -58,14 +58,14 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         return registeredSize;
     }
     
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
         if ( properties != null )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
             for ( PropertyData data : properties )
-                size += data.size();
+                size += data.sizeOfObjectInBytesIncludingOverhead();
         }
         return withObjectOverhead( size );
     }

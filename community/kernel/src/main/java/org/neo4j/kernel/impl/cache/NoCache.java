@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.cache;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class NoCache<E extends EntityWithSize> implements Cache<E>
+public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
 {
     private final String name;
     private volatile long misses;

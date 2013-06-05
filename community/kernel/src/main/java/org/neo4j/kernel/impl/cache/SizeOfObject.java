@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-public interface SizeOf
+public interface SizeOfObject
 {
     /**
      * @return the size in bytes of the state of this object including its object overhead (16b).
      */
-    public int size();
+    public int sizeOfObjectInBytesIncludingOverhead();
 }
