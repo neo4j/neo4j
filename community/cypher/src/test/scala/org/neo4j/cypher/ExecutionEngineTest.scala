@@ -2670,7 +2670,23 @@ RETURN x0.name?
 
     //WHEN
     val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
-    println(result.executionPlanDescription())
+
+    //THEN
+    assert(result.toList === List(Map("n"->jake)))
+  }
+
+  @Test
+  def should_be_able_to_use_index_hints_for_nullable_predicate() {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name! = 'Jacob' RETURN n")
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))

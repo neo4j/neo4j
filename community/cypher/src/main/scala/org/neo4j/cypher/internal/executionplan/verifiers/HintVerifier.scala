@@ -25,6 +25,7 @@ import org.neo4j.cypher.{LabelScanHintException, IndexHintException, SyntaxExcep
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.expressions.Property
+import org.neo4j.cypher.internal.commands.expressions.Nullable
 
 object HintVerifier extends Verifier {
   override val verifyFunction: PartialFunction[AbstractQuery, Unit] = {
@@ -52,6 +53,7 @@ object HintVerifier extends Verifier {
 
           val valid = predicateAtoms.exists {
             case Equals(Property(Identifier(identifier), property), _) => id == identifier && property == prop
+            case Equals(Nullable(Property(Identifier(identifier), property)), _) => id == identifier && property == prop
             case _                                                     => false
           }
 
