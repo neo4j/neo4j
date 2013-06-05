@@ -30,7 +30,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
                      predicates: Seq[Predicate],
                      includeOptionals: Boolean,
                      source:ExecutionContext,
-                     state:QueryState)
+                     state:QueryState,
+                     legacyNullPredicateCheck: Boolean)
   extends Traversable[ExecutionContext] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
@@ -164,7 +165,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
+    val predicate = predicates.filter(predicate=> !(legacyNullPredicateCheck && predicate.containsIsNull) && predicate.symbolTableDependencies.forall(m contains))
     predicate.forall(_.isMatch(m)(state))
   }
 
