@@ -25,7 +25,7 @@ import org.neo4j.cypher.PatternException
 
 object OptionalPatternWithoutStartVerifier extends Verifier {
   def verifyFunction = {
-    case Query(_, start, _, patterns, _, _, _, _, _, _, _, _)
+    case Query(_, start, _, patterns, _, _, _, _, _, _, _, _, _)
       if start.isEmpty && patterns.exists(_.optional) =>
 
       val optionalRelationships: String = patterns.
