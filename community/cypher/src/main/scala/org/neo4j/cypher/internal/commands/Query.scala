@@ -60,7 +60,8 @@ case class Query(returns: Return,
                  slice: Option[Slice],
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
-                 queryString: QueryString = QueryString.empty) extends AbstractQuery {
+                 queryString: QueryString = QueryString.empty,
+                 legacyNullPredicateCheck: Boolean = false) extends AbstractQuery {
 
   override def toString: String =
     """

@@ -117,14 +117,14 @@ Thank you, the Neo4j Team.
   private def expandQuery(start: Seq[StartItem], namedPaths: Seq[NamedPath], updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
+      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)), legacyNullPredicateCheck = true)
     }
     case b: BodyReturn => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
+      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None, legacyNullPredicateCheck = true)
     }
     case NoBody() => {
-      Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
+      Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None, legacyNullPredicateCheck = true)
     }
   }
 
