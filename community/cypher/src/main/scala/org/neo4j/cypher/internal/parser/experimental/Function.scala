@@ -124,7 +124,7 @@ abstract class Function {
 
 trait AggregatingFunction { self: Function =>
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    when(ctx == ast.Expression.SemanticContext.Simple()) {
+    when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function ${name} in this context", invocation.token)
     }
   }

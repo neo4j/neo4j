@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpr
 object Expression {
   sealed trait SemanticContext
   object SemanticContext {
-    case class Simple extends SemanticContext
-    case class Results extends SemanticContext
+    case object Simple extends SemanticContext
+    case object Results extends SemanticContext
   }
 
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
@@ -165,7 +165,7 @@ case class PatternExpression(pattern: Pattern, token: InputToken) extends Expres
   def children = Seq(pattern)
   protected def possibleTypes = Set(CollectionType(PathType()))
 
-  override def semanticCheck(ctx: SemanticContext) = pattern.semanticCheck(Pattern.SemanticContext.Expression()) >>= super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = pattern.semanticCheck(Pattern.SemanticContext.Expression) >>= super.semanticCheck(ctx)
 
   def toCommand = commands.PatternPredicate(pattern.toLegacyPatterns)
 }

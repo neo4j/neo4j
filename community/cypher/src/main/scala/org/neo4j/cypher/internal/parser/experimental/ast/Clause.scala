@@ -32,12 +32,12 @@ case class Start(items: Seq[StartItem], token: InputToken) extends Clause {
 
 case class Match(patterns: Seq[Pattern], token: InputToken) extends Clause {
   def children = patterns
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Match())
+  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Match)
 }
 
 case class Where(expression: Expression, token: InputToken) extends Clause {
   def children = Seq(expression)
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple)
 }
 
 
@@ -47,7 +47,7 @@ trait UpdateClause extends Clause {
 
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
   def children = patterns
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Create())
+  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Create)
 
   def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map(_ match {
     case createNode: mutation.CreateNode => commands.CreateNodeStartItem(createNode)
@@ -63,7 +63,7 @@ case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClaus
 
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
   def children = expressions
-  def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Simple())
+  def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Simple)
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
 }

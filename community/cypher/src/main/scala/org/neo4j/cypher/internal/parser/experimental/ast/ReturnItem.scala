@@ -58,7 +58,7 @@ sealed trait ReturnItem extends AstNode with SemanticCheckable {
   def alias: Option[Identifier]
   def name: String
 
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 
   def toCommand : commands.ReturnItem
 }

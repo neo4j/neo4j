@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.mutation
 object Pattern {
   sealed trait SemanticContext
   object SemanticContext {
-    case class Match extends SemanticContext
-    case class Create extends SemanticContext
-    case class Expression extends SemanticContext
+    case object Match extends SemanticContext
+    case object Create extends SemanticContext
+    case object Expression extends SemanticContext
   }
 
   implicit class SemanticCheckablePatternTraversable(patterns: TraversableOnce[Pattern]) {
@@ -201,10 +201,10 @@ sealed abstract class NodePattern extends PatternElement {
   val properties : Option[Expression]
 
   def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && !context.isInstanceOf[SemanticContext.Create]) {
+    if (properties.isDefined && context != SemanticContext.Create) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Simple())
+      properties.semanticCheck(Expression.SemanticContext.Simple)
     }
   }
 
@@ -253,12 +253,12 @@ sealed abstract class RelationshipPattern extends AstNode {
   val properties : Option[Expression]
 
   def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && !context.isInstanceOf[SemanticContext.Create]) {
+    if (properties.isDefined && context != SemanticContext.Create) {
       SemanticError("Relationship properties cannot be specified in this context", properties.get.token)
-    } else if (optional && context.isInstanceOf[SemanticContext.Expression]) {
+    } else if (optional && context == SemanticContext.Expression) {
       SemanticError("Optional relationships cannot be specified in this context", token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Simple())
+      properties.semanticCheck(Expression.SemanticContext.Simple)
     }
   }
 

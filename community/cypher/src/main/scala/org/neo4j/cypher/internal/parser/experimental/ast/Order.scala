@@ -32,7 +32,7 @@ sealed trait SortItem extends AstNode with SemanticCheckable {
   def expression: Expression
   def children = Seq(expression)
 
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 
   def toCommand : commands.SortItem
 }
