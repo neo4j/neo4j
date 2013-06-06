@@ -25,7 +25,7 @@ import org.parboiled.scala._
 
 trait Base extends Parser {
 
-  def IdentiferCharacter = rule("an identifier character") { ((Letter | ch('_') | Digit | ch('\'')) memoMismatches) suppressSubnodes }
+  def IdentifierCharacter = rule("an identifier character") { ((Letter | ch('_') | Digit | ch('\'')) memoMismatches) suppressSubnodes }
 
   def OperatorCharacter = rule("an operator char") { anyOf("|^&<>=!:+-*/%~") }
 

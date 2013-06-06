@@ -29,7 +29,7 @@ trait Literals extends Parser
   def Expression : Rule1[ast.Expression]
 
   def Identifier : Rule1[ast.Identifier] = rule("an identifier") (
-      group(Letter ~ zeroOrMore(IdentiferCharacter)) ~> t(ast.Identifier(_, _)) ~ !(IdentiferCharacter)
+      group((Letter | ch('_')) ~ zeroOrMore(IdentifierCharacter)) ~> t(ast.Identifier(_, _)) ~ !(IdentifierCharacter)
     | EscapedIdentifier
   ) memoMismatches
 
@@ -53,7 +53,7 @@ trait Literals extends Parser
 
   def Parameter : Rule1[ast.Parameter] = rule("a parameter") {
     ((ch('{') ~~ (
-        oneOrMore(IdentiferCharacter)
+        oneOrMore(IdentifierCharacter)
       | UnsignedInteger
     ) ~> (_.toString) ~~ ch('}')) memoMismatches) ~>> token ~~> ast.Parameter
   }

@@ -37,11 +37,11 @@ sealed trait ContextToken extends InputToken {
 }
 case class ContextMatchToken(ctx: Context[Any]) extends ContextToken {
   val range = ctx.getMatchRange()
-  val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
-  val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
+  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
+  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
 }
 case class ContextRangeToken(ctx: Context[Any], start: Int, end: Int) extends ContextToken {
   val range = new IndexRange(start, end)
-  val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
-  val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
+  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
+  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
 }
