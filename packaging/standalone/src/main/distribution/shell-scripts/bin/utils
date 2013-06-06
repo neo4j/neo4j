@@ -145,6 +145,7 @@ reportstatus() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "$FRIENDLY_NAME is not running"
+	exit 3
   else
     echo "$FRIENDLY_NAME is running at pid $NEO4J_PID"
   fi
