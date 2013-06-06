@@ -22,11 +22,11 @@ package org.neo4j.kernel;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import org.junit.Test;
@@ -41,7 +41,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestGuard
 {
-
     @Test
     public void testGuardNotInsertedByDefault()
     {
