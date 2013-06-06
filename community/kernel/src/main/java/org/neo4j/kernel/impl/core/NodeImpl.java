@@ -58,13 +58,13 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 
-    NodeImpl( long id, long firstRel, long firstProp )
+    NodeImpl( long id )
     {
-        this( id, firstRel, firstProp, false );
+        this( id, false );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( long id, long firstRel, long firstProp, boolean newNode )
+    NodeImpl( long id, boolean newNode )
     {
         /* TODO firstRel/firstProp isn't used yet due to some unresolved issue with clearing
          * of cache and keeping those first ids in the node instead of loading on demand.
@@ -160,9 +160,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         for ( RelIdArray src : relationships )
         {
             String type = src.getType();
-            Collection<Long> remove = null;
+            Collection<Long> remove;
             RelIdArray add = null;
-            RelIdIterator iterator = null;
+            RelIdIterator iterator;
             if ( hasModifications )
             {
                 remove = nodeManager.getCowRelationshipRemoveMap( this, type );
@@ -212,9 +212,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             String typeName = type.name();
             RelIdArray src = getRelIdArray( typeName );
-            Collection<Long> remove = null;
-            RelIdArray add = null;
-            RelIdIterator iterator = null;
+            Collection<Long> remove;
+            RelIdArray add;
+            RelIdIterator iterator;
             if ( hasModifications )
             {
                 remove = nodeManager.getCowRelationshipRemoveMap( this, typeName );
@@ -243,7 +243,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
-        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, new RelationshipType[]{type} );
+        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, type );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
@@ -279,7 +279,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
                                                     Direction dir )
     {
-        return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[]{type} );
+        return getAllRelationshipsOfType( nodeManager, wrap( dir ), type );
     }
 
     public void delete( NodeManager nodeManager, Node proxy )
@@ -642,7 +642,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
             ArrayMap<String, RelIdArray> cowRelationshipAddMap,
-            ArrayMap<String, Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
+            ArrayMap<String, Collection<Long>> cowRelationshipRemoveMap, NodeManager nodeManager )
     {
         if ( relationships == null )
         {

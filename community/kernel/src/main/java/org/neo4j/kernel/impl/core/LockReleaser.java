@@ -466,7 +466,7 @@ public class LockReleaser
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap,
-                        nodeElement.relationshipRemoveMap, nodeElement.firstRel, nodeManager );
+                        nodeElement.relationshipRemoveMap, nodeManager );
                     node.commitPropertyMaps( nodeElement.propertyAddMap,
                         nodeElement.propertyRemoveMap, nodeElement.firstProp, nodeManager );
                 }

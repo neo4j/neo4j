@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -101,7 +100,7 @@ public class NodeManager
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider, PropertyIndexManager propertyIndexManager,
-            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, 
+            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
             Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         this.graphDbService = graphDb;
@@ -186,7 +185,7 @@ public class NodeManager
     public Node createNode()
     {
         long id = idGenerator.nextId( Node.class );
-        NodeImpl node = new NodeImpl( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue(), true );
+        NodeImpl node = new NodeImpl( id, true );
         NodeProxy proxy = new NodeProxy( id, nodeLookup );
         acquireLock( proxy, LockType.WRITE );
         boolean success = false;
@@ -349,7 +348,7 @@ public class NodeManager
             }
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
-            node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
+            node = new NodeImpl( nodeId );
             nodeCache.put( node );
             return new NodeProxy( nodeId, nodeLookup );
         }
@@ -422,7 +421,7 @@ public class NodeManager
             }
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
-            node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
+            node = new NodeImpl( nodeId );
 //            nodeCache.put( nodeId, node );
             nodeCache.put( node );
             return node;

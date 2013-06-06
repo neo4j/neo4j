@@ -40,7 +40,7 @@ public class TestOperationsOnDeletedRelationships
     public void shouldThrowNotFoundOnGetAllRelationshipsWhenRelationshipConcurrentlyDeleted() throws Exception
     {
         // Given
-        NodeImpl nodeImpl = new NodeImpl( 1337l, 0l, 0l, false );
+        NodeImpl nodeImpl = new NodeImpl( 1337l, false );
         NodeManager nodeManager = mock(NodeManager.class);
         Throwable exceptionCaught = null;
 
@@ -64,7 +64,7 @@ public class TestOperationsOnDeletedRelationships
     public void shouldThrowNotFoundWhenIteratingOverDeletedRelationship() throws Exception
     {
         // Given
-        NodeImpl fromNode = new NodeImpl( 1337l, 0l, 0l, false );
+        NodeImpl fromNode = new NodeImpl( 1337l, false );
         NodeManager nodeManager = mock(NodeManager.class);
         Throwable exceptionCaught = null;
 
