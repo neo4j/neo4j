@@ -19,24 +19,22 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.{Expressions, MatchClause}
-import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.parser.experimental.rules.{Expressions, Patterns}
+import org.neo4j.cypher.internal.parser.experimental.ast
 
+class PatternTest extends ParserExperimentalTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
 
-class MatchClauseTest extends MatchClause with Expressions with ParserTest {
+  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
+
   @Test def label_literal_list_parsing() {
-    implicit val parserToTest = matching
+    implicit val parserToTest = Pattern
 
-    parsing("MATCH a-[:FOO|BAR]->b") or
-    parsing("MATCH a-[:FOO|:BAR]->b") shouldGive
-      RelatedTo("a", "b", "  UNNAMED7", Seq("FOO", "BAR"), Direction.OUTGOING, false)
+    parsing("(a)-[r:FOO|BAR]->(b)") or
+    parsing("a-[r:FOO|:BAR]->b") shouldGive
+      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
   }
-
-  implicit def a(p: Pattern): (Seq[Pattern], Seq[NamedPath], Predicate) = (Seq(p), Seq.empty, True())
-
-  def createProperty(entity: String, propName: String): Expression = ???
 }
