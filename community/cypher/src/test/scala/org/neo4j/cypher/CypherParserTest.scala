@@ -1084,7 +1084,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def testSingle() {
-    test(vAll diff List(v2_0peg),
+    test(vAll diff List(vExperimental),
       """start a = node(1) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
@@ -1216,7 +1216,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def testCountDistinct() {
-    test(vAll diff List(v2_0peg),
+    test(vAll diff List(vExperimental),
       """start a=node(0) return count(distinct a)""",
       Query.
         start(NodeById("a", 0)).
@@ -1341,7 +1341,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
-    test(vAll diff List(v2_0peg),
+    test(vAll diff List(vExperimental),
       "start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
@@ -1844,7 +1844,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
-    test(vFrom2_0 diff List(v2_0peg),
+    test(vFrom2_0 diff List(vExperimental),
       "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
@@ -1956,7 +1956,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       Literal(true) -> vPre2_0,
-      True() -> (vFrom2_0 diff List(v2_0peg)))
+      True() -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def returnAll() {
@@ -1981,7 +1981,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED44" -> (vFrom2_0 diff List(v2_0peg)))
+      "  UNNAMED44" -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def single_create_unique_with_rel() {
@@ -1993,7 +1993,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    test(vAll diff List(v2_0peg),
+    test(vAll diff List(vExperimental),
         "start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
@@ -2013,7 +2013,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED58", "  UNNAMED44") -> (vFrom2_0 diff List(v2_0peg)))
+      ("  UNNAMED58", "  UNNAMED44") -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def two_relates() {
@@ -2033,7 +2033,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED33", "  UNNAMED41") -> (vFrom2_0 diff List(v2_0peg)))
+      ("  UNNAMED33", "  UNNAMED41") -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def relate_with_initial_values_for_node() {
@@ -2055,7 +2055,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED33", false) -> (vFrom2_0 diff List(v2_0peg)))
+      ("  UNNAMED33", false) -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def relate_with_initial_values_for_rel() {
@@ -2076,7 +2076,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     }
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED33" -> (vFrom2_0 diff List(v2_0peg)))
+      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def foreach_with_literal_collectionOld() {
@@ -2095,7 +2095,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def foreach_with_literal_collection() {
-    test(vFrom2_0 diff List(v2_0peg),
+    test(vFrom2_0 diff List(vExperimental),
       "create root foreach(x in [1,2,3] : create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
@@ -2127,7 +2127,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
 
-    test(vAll diff List(v2_0peg),
+    test(vAll diff List(vExperimental),
         "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x", q)
   }
 
@@ -2244,7 +2244,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
     "  UNNAMED1" -> vPre2_0,
-    "  UNNAMED48"-> (vFrom2_0 diff List(v2_0peg)))
+    "  UNNAMED48"-> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def use_predicate_as_expression() {
@@ -2266,7 +2266,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    test(vFrom2_0 diff List(v2_0peg),
+    test(vFrom2_0 diff List(vExperimental),
         "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).
@@ -2457,7 +2457,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test(expected = classOf[SyntaxException]) def create_no_index_without_properties() {
-    test(vFrom2_0 diff List(v2_0peg), "create index on :MyLabel",
+    test(vFrom2_0 diff List(vExperimental), "create index on :MyLabel",
       CreateIndex("MyLabel", Seq()))
   }
 
@@ -2467,7 +2467,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test(expected = classOf[SyntaxException]) def create_index_on_multiple_properties() {
-    test(vFrom2_0 diff List(v2_0peg),
+    test(vFrom2_0 diff List(vExperimental),
       "create index on :MyLabel(prop1, prop2)",
       CreateIndex("MyLabel", Seq("prop1", "prop2")))
   }
@@ -2641,7 +2641,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       }
     }
 
-  private val vAll = List(v1_9, v2_0, v2_0peg)
+  private val vAll = List(v1_9, v2_0, vExperimental)
   private val vPre2_0 = List(v1_9)
   private val vFrom2_0 = vAll diff vPre2_0
 
