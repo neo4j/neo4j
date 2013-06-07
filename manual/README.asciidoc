@@ -38,7 +38,7 @@ Install libraries
 
 Register the docbook xml DTD
 
-  sudo ./osx-register-docbook
+  sudo ./osx-docbook-register
 
 === With apt-get on Ubuntu ===
 
