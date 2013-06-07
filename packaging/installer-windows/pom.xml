@@ -19,9 +19,9 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
-    <url>https://github.com/neo4j/packaging</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+	<url>https://github.com/neo4j/neo4j/tree/master/packaging</url>
   </scm>
 
   <properties>

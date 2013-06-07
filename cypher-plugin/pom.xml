@@ -46,9 +46,9 @@ the relevant Commercial Agreement.
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/cypher-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/cypher-plugin.git</developerConnection>
-    <url>https://github.com/neo4j/cypher-plugin</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+	<url>https://github.com/neo4j/neo4j/tree/master/cypher-plugin</url>
   </scm>
 
   <dependencies>
