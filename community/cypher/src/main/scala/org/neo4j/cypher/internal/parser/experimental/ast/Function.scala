@@ -37,7 +37,6 @@ object FunctionInvocation {
 }
 case class FunctionInvocation(identifier: Identifier, arguments: IndexedSeq[Expression], token: InputToken)  extends Expression {
   val name = identifier.name
-  val children = identifier +: arguments
   private val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {

@@ -26,17 +26,14 @@ import org.neo4j.cypher.internal.mutation
 trait Clause extends AstNode with SemanticCheckable
 
 case class Start(items: Seq[StartItem], token: InputToken) extends Clause {
-  def children = items
   def semanticCheck = items.semanticCheck
 }
 
 case class Match(patterns: Seq[Pattern], token: InputToken) extends Clause {
-  def children = patterns
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Match)
 }
 
 case class Where(expression: Expression, token: InputToken) extends Clause {
-  def children = Seq(expression)
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple)
 }
 
@@ -46,7 +43,6 @@ trait UpdateClause extends Clause {
 }
 
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
-  def children = patterns
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Create)
 
   def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map(_ match {
@@ -62,7 +58,6 @@ case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClaus
 
 
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
-  def children = expressions
   def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Simple)
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
@@ -70,7 +65,6 @@ case class Delete(expressions: Seq[Expression], token: InputToken) extends Updat
 
 
 case class SetClause(items: Seq[SetItem], token: InputToken) extends UpdateClause {
-  def children = items
   def semanticCheck = items.semanticCheck
 
   def toLegacyUpdateActions = items.map(_.toLegacyUpdateAction)
@@ -78,7 +72,6 @@ case class SetClause(items: Seq[SetItem], token: InputToken) extends UpdateClaus
 
 
 case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClause {
-  def children = items
   def semanticCheck = items.semanticCheck
 
   def toLegacyUpdateActions = items.map(_.toLegacyUpdateAction)

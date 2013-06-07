@@ -36,8 +36,6 @@ case class SingleQuery(
     close: Option[QueryClose],
     token: InputToken) extends Query
 {
-  def children = start.toSeq ++ matches ++ hints ++ where ++ updates ++ close
-
   def isEmpty = (start, matches, hints, where, updates, close) match {
     case (None, None, Seq(), None, Seq(), None) => true
     case _ => false
@@ -210,8 +208,6 @@ case class With(
     token: InputToken,
     query: SingleQuery) extends QueryClose
 {
-  def children = Seq(returnItems) ++ orderBy ++ skip ++ limit
-
   override def semanticCheck = {
     super.semanticCheck >>=
     checkAliasedReturnItems >>=
@@ -243,9 +239,6 @@ case class Return(
     skip: Option[Skip],
     limit: Option[Limit],
     token: InputToken) extends QueryClose
-{
-  def children = Seq(returnItems) ++ orderBy ++ skip ++ limit
-}
 
 trait Union extends Query {
   def statement: Query
@@ -267,13 +260,9 @@ trait Union extends Query {
 }
 
 case class UnionAll(statement: Query, token: InputToken, query: SingleQuery) extends Union {
-  def children = Seq(statement, query)
-
   def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, false)
 }
 
 case class UnionDistinct(statement: Query, token: InputToken, query: SingleQuery) extends Union {
-  def children = Seq(statement, query)
-
   def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, true)
 }

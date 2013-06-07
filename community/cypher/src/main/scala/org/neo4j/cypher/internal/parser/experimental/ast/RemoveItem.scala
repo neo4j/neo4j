@@ -30,7 +30,6 @@ sealed trait RemoveItem extends AstNode with SemanticCheckable {
 }
 
 case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends RemoveItem {
-  def children = expression +: labels
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) >>= expression.limitType(NodeType())
 
   def toLegacyUpdateAction = {

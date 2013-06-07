@@ -28,13 +28,9 @@ sealed trait Hint extends AstNode {
 }
 
 case class UsingIndexHint(node: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
-  def children = Seq(node, label, property)
-
   def toLegacySchemaIndex = commands.SchemaIndex(node.name, label.name, property.name, None)
 }
 
 case class UsingScanHint(node: Identifier, label: Identifier, token: InputToken) extends Hint {
-  def children = Seq(node, label)
-
   def toLegacySchemaIndex = commands.NodeByLabel(node.name, label.name)
 }

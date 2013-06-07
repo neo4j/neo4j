@@ -35,17 +35,14 @@ sealed trait NodeStartItem extends StartItem {
 }
 
 case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedInteger], token: InputToken) extends NodeStartItem {
-  def children = identifier +: ids
   def toCommand = commands.NodeById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
 }
 
 case class NodeByParameter(identifier: Identifier, parameter: Parameter, token: InputToken) extends NodeStartItem {
-  def children = Seq(identifier, parameter)
   def toCommand = commands.NodeById(identifier.name, parameter.toCommand)
 }
 
 case class AllNodes(identifier: Identifier, token: InputToken) extends NodeStartItem {
-  def children = Seq(identifier)
   def toCommand = commands.AllNodes(identifier.name)
 }
 
@@ -54,12 +51,10 @@ sealed trait NodeByIndex extends NodeStartItem {
 }
 
 case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression, token: InputToken) extends NodeByIndex {
-  def children = Seq(identifier, index, key, value)
   def toCommand = commands.NodeByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), value.toCommand)
 }
 
 case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Expression, token: InputToken) extends NodeByIndex {
-  def children = Seq(identifier, index, query)
   def toCommand = commands.NodeByIndexQuery(identifier.name, index.name, query.toCommand)
 }
 
@@ -68,12 +63,10 @@ sealed trait RelationshipStartItem extends StartItem {
 }
 
 case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedInteger], token: InputToken) extends RelationshipStartItem {
-  def children = identifier +: ids
   def toCommand = commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
 }
 
 case class AllRelationships(identifier: Identifier, token: InputToken) extends RelationshipStartItem {
-  def children = Seq(identifier)
   def toCommand = commands.AllRelationships(identifier.name)
 }
 
@@ -82,11 +75,9 @@ sealed trait RelationshipByIndex extends RelationshipStartItem {
 }
 
 case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression, token: InputToken) extends RelationshipByIndex {
-  def children = Seq(identifier, index, key, value)
   def toCommand = commands.RelationshipByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), value.toCommand)
 }
 
 case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression, token: InputToken) extends RelationshipByIndex {
-  def children = Seq(identifier, index, query)
   def toCommand = commands.RelationshipByIndexQuery(identifier.name, index.name, query.toCommand)
 }

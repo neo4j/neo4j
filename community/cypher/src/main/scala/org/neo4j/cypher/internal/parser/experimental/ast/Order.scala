@@ -23,15 +23,11 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands
 
 case class OrderBy(sortItems: Seq[SortItem], token: InputToken) extends AstNode with SemanticCheckable {
-  def children = sortItems
-
   def semanticCheck = sortItems.semanticCheck
 }
 
 sealed trait SortItem extends AstNode with SemanticCheckable {
   def expression: Expression
-  def children = Seq(expression)
-
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 
   def toCommand : commands.SortItem

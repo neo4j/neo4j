@@ -28,8 +28,6 @@ sealed trait ReturnItems extends AstNode with SemanticCheckable {
 }
 
 case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends ReturnItems {
-  def children = items
-
   def semanticCheck = items.semanticCheck
 
   def declareSubqueryIdentifiers(currentState: SemanticState) = {
@@ -43,8 +41,6 @@ case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends 
 }
 
 case class ReturnAll(token: InputToken) extends ReturnItems {
-  def children = Seq()
-
   def semanticCheck = SemanticCheckResult.success
 
   def declareSubqueryIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
@@ -64,8 +60,6 @@ sealed trait ReturnItem extends AstNode with SemanticCheckable {
 }
 
 case class UnaliasedReturnItem(expression: Expression, token: InputToken) extends ReturnItem {
-  def children = Seq(expression)
-
   val alias = expression match {
     case i: Identifier => Some(i)
     case _ => None
@@ -76,8 +70,6 @@ case class UnaliasedReturnItem(expression: Expression, token: InputToken) extend
 }
 
 case class AliasedReturnItem(expression: Expression, identifier: Identifier, token: InputToken) extends ReturnItem {
-  def children = Seq(expression, identifier)
-
   val alias = Some(identifier)
   val name = identifier.name
 

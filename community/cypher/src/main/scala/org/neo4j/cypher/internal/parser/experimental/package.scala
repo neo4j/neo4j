@@ -35,13 +35,11 @@ package object experimental {
     SemanticCheckResult(state, func(state))
   }
   implicit def liftSemanticErrorFunc(func: SemanticState => Option[SemanticError]) : SemanticCheck = state => {
-	SemanticCheckResult.error(state, func(state))
+    SemanticCheckResult.error(state, func(state))
   }
-  implicit def liftSemanticState(state: SemanticState) : SemanticCheck = SemanticCheckResult.success
   implicit def liftSemanticErrors(errors: Seq[SemanticError]) : SemanticCheck = SemanticCheckResult(_, errors)
   implicit def liftSemanticError(error: SemanticError) : SemanticCheck = SemanticCheckResult.error(_, error)
   implicit def liftSemanticErrorOption(error: Option[SemanticError]) : SemanticCheck = SemanticCheckResult.error(_, error)
-  implicit def liftSemanticStateAndChain(state: SemanticState) : ChainableSemanticCheck = liftSemanticState(state)
   implicit def liftSemanticErrorsAndChain(errors: Seq[SemanticError]) : ChainableSemanticCheck = liftSemanticErrors(errors)
   implicit def liftSemanticErrorAndChain(error: SemanticError) : ChainableSemanticCheck = liftSemanticError(error)
   implicit def liftSemanticErrorOptionAndChain(error: Option[SemanticError]) : ChainableSemanticCheck = liftSemanticErrorOption(error)

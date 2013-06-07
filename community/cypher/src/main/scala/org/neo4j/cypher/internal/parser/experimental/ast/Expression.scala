@@ -75,8 +75,6 @@ trait SimpleTypedExpression { self: Expression =>
 
 
 case class Identifier(name: String, token: InputToken) extends Expression {
-  def children = Seq()
-
   // check the identifier is defined and, if not, define it
   def semanticCheck(ctx: SemanticContext) = s => ensureDefined(AnyType())(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
@@ -100,7 +98,6 @@ case class Identifier(name: String, token: InputToken) extends Expression {
 
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(ScalarType()))
 
   def toCommand = commandexpressions.ParameterExpression(name)
@@ -108,7 +105,6 @@ case class Parameter(name: String, token: InputToken) extends Expression with Si
 
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(AnyType())
 
   def toCommand = commandexpressions.Literal(null)
@@ -116,7 +112,6 @@ case class Null(token: InputToken) extends Expression with SimpleTypedExpression
 
 
 case class True(token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(BooleanType())
 
   def toCommand = commands.True()
@@ -124,7 +119,6 @@ case class True(token: InputToken) extends Expression with SimpleTypedExpression
 
 
 case class False(token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(BooleanType())
 
   def toCommand = commands.Not(commands.True())
@@ -132,7 +126,6 @@ case class False(token: InputToken) extends Expression with SimpleTypedExpressio
 
 
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(LongType())
 
   def toCommand = commandexpressions.CountStar()
@@ -140,7 +133,6 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 
 
 case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq(map, identifier)
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   override def semanticCheck(ctx: SemanticContext) = map.semanticCheck(ctx) >>= super.semanticCheck(ctx)
@@ -150,8 +142,6 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
 
 
 case class Nullable(expression: Expression, token: InputToken) extends Expression {
-  def children = Seq(expression)
-
   def semanticCheck(ctx: SemanticContext) = expression.semanticCheck(ctx) >>= limitType(expression.types)
 
   def toCommand = commandexpressions.Nullable(expression.toCommand)
@@ -162,7 +152,6 @@ trait DefaultTrue {
 
 
 case class PatternExpression(pattern: Pattern, token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq(pattern)
   protected def possibleTypes = Set(CollectionType(PathType()))
 
   override def semanticCheck(ctx: SemanticContext) = pattern.semanticCheck(Pattern.SemanticContext.Expression) >>= super.semanticCheck(ctx)
@@ -172,7 +161,6 @@ case class PatternExpression(pattern: Pattern, token: InputToken) extends Expres
 
 
 case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = identifier +: labels
   protected def possibleTypes = Set(BooleanType())
 
   override def semanticCheck(ctx: SemanticContext) = identifier.ensureDefined(NodeType()) >>= super.semanticCheck(ctx)
@@ -182,7 +170,6 @@ case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: Inp
 
 
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
-  def children = expressions
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) >>= limitType(possibleTypes)
 
   private def possibleTypes : SemanticState => Set[CypherType] = state => expressions match {
@@ -195,7 +182,6 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
 
 
 case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = items.flatMap(i => Seq(i._1, i._2))
   protected def possibleTypes = Set(MapType())
 
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) >>= super.semanticCheck(ctx)

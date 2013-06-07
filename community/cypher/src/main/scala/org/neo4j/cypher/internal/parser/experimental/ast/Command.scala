@@ -26,16 +26,12 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 sealed trait Command extends Statement
 
 case class CreateIndex(label: Identifier, property: Identifier, token: InputToken) extends Command {
-  def children = Seq(label, property)
-
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.CreateIndex(label.name, Seq(property.name))
 }
 
 case class DropIndex(label: Identifier, property: Identifier, token: InputToken) extends Command {
-  def children = Seq(label, property)
-
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.DropIndex(label.name, Seq(property.name))

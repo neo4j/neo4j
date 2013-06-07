@@ -23,7 +23,4 @@ import org.neo4j.cypher.internal.parser.experimental.InputToken
 
 trait AstNode {
   def token: InputToken
-  def children : Seq[AstNode]
-
-  def flatten : Stream[AstNode] = this #:: children.toStream.flatMap(_.flatten)
 }

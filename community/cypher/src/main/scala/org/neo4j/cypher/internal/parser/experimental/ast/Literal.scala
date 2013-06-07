@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 sealed trait Number extends Expression {
   def value : java.lang.Number
-  def children = Seq()
 
   def toCommand = commandexpressions.Literal(value)
 }
@@ -44,12 +43,9 @@ case class Double(value: java.lang.Double, token: InputToken) extends Number wit
 }
 
 case class StringLiteral(value: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  def children = Seq()
   protected def possibleTypes = Set(StringType())
 
   def toCommand = commandexpressions.Literal(value)
 }
 
-case class Range(lower: Option[UnsignedInteger], upper: Option[UnsignedInteger], token: InputToken) extends AstNode {
-  def children = lower.toSeq ++ upper
-}
+case class Range(lower: Option[UnsignedInteger], upper: Option[UnsignedInteger], token: InputToken) extends AstNode
