@@ -10,6 +10,10 @@ It takes you from Hello World to advanced usage of graphs.
 
 :leveloffset: 1
 
+include::cypher.asciidoc[]
+
+:leveloffset: 1
+
 include::{importdir}/neo4j-examples-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 2
