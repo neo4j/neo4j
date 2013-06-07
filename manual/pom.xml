@@ -26,6 +26,10 @@
     <doctools.version>13</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
+  
+  <modules>
+    <module>cypherdoc</module>
+  </modules>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/manual.git</connection>
@@ -323,6 +327,20 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>parse-cypherdoc</id>
+            <phase>compile</phase>
+            <goals><goal>java</goal></goals>
+            <configuration>
+              <mainClass>org.neo4j.doc.cypherdoc.Main</mainClass>
+              <includePluginDependencies>true</includePluginDependencies>
+              <includeProjectDependencies>false</includeProjectDependencies>
+              <arguments>
+                <argument>${docs.sources}/cypherdoc</argument>
+                <argument>${project.build.directory}/../src/tutorials/cypher</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>execute-asciidoc</id>
             <phase>compile</phase>
             <goals>
@@ -337,6 +355,13 @@
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.doc</groupId>
+            <artifactId>neo4j-cypherdoc</artifactId>
+            <version>${neo4j.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
