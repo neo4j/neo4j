@@ -51,8 +51,18 @@ trait Query extends Parser
     group(keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep)) ~>> token ~~> ast.Start
   }
 
-  private def Match  : Rule1[ast.Match] = rule("MATCH") {
+  private def Match : Rule1[ast.Match] = rule("MATCH") {
     group(keyword("MATCH") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Match
+  }
+
+  def Merge : Rule1[ast.Merge] = rule("MERGE") {
+    group(
+      oneOrMore(keyword("MERGE") ~~ Pattern, separator = WS) ~~
+      zeroOrMore((
+          (group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch)
+        | (group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate)
+      ), separator = WS)
+    ) ~>> token ~~> ast.Merge
   }
 
   private def Hint : Rule1[ast.Hint] = rule("USING") (
@@ -67,8 +77,12 @@ trait Query extends Parser
   private def Updates : Rule1[ast.UpdateClause] = rule("CREATE, DELETE, SET, REMOVE") (
       group(keyword("CREATE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Create
     | group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~>> token ~~> ast.Delete
-    | group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~>> token ~~> ast.SetClause
+    | SetClause
     | group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
+  )
+
+  private def SetClause : Rule1[ast.SetClause] = rule("SET") (
+    group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~>> token ~~> ast.SetClause
   )
 
   private def SetItem : Rule1[ast.SetItem] = rule (

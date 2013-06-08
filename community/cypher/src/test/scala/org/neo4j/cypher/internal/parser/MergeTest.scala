@@ -20,57 +20,64 @@
 package org.neo4j.cypher.internal.parser
 
 import org.junit.Test
-import org.neo4j.cypher.internal.commands._
-import expressions._
-import org.neo4j.cypher.internal.parser.v2_0.{Updates, StartAndCreateClause, MatchClause}
-import org.neo4j.cypher.internal.mutation.PropertySetAction
+import org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.MergeAst
+import org.neo4j.cypher.internal.parser.experimental.ast
+import org.neo4j.cypher.internal.parser.experimental.rules.{Expressions, Query}
+import org.neo4j.cypher.internal.mutation.PropertySetAction
 
 
-class MergeTest extends StartAndCreateClause with MatchClause with Updates with ParserTest {
+class MergeTest extends ParserExperimentalTest[ast.Merge, MergeAst] with Query with Expressions {
+
   @Test def tests() {
-    implicit val parserToTest = createStart
+    implicit val parserToTest = Merge
     val node = "nodeName"
+    val nodeOther = "fooName"
     val A = "a"
     val B = "b"
     val NO_PATHS = Seq.empty
     val labelName = KeyToken.Unresolved("Label", TokenType.Label)
-    def setProperty(id: String) = PropertySetAction(Property(Identifier(id), "property"), TimestampFunction())
+    val labelOther = KeyToken.Unresolved("Other", TokenType.Label)
+    def setProperty(id: String) = PropertySetAction(
+      expressions.Property(expressions.Identifier(id), "property"), expressions.TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive
-      (Seq(
-        MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map.empty, Seq.empty, bare = true)),
-          Seq.empty)), NO_PATHS)
-
+      MergeAst(Seq(
+        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq.empty, bare = true)),
+        Seq.empty)
 
     parsing("MERGE (nodeName {prop:42})") shouldGive
-      (Seq(
         MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map("prop" -> Literal(42)), Seq.empty, bare = false)),
-          Seq.empty)), NO_PATHS)
+          ParsedEntity(node, expressions.Identifier(node), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = false)),
+          Seq.empty)
 
+    parsing("MERGE ({prop:42})") shouldGive
+        MergeAst(Seq(
+          ParsedEntity("  UNNAMED7", expressions.Identifier("  UNNAMED7"), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = true)),
+          Seq.empty)
 
     parsing("MERGE (nodeName:Label)") shouldGive
-      (Seq(
         MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq.empty)), NO_PATHS)
+          ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq.empty)
+
+    parsing("MERGE (nodeName:Label) MERGE (fooName:Other)") shouldGive
+      MergeAst(Seq(
+        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false),
+        ParsedEntity(nodeOther, expressions.Identifier(nodeOther), Map.empty, Seq(labelOther), bare = false)),
+        Seq.empty)
 
 
     parsing("MERGE (nodeName:Label) ON CREATE nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(
         MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq(OnAction(On.Create, node, Seq(setProperty(node)))))), NO_PATHS)
-
+          ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq(OnAction(On.Create, node, Seq(setProperty(node)))))
 
     parsing("MERGE (nodeName:Label) ON MATCH nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(
         MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq(OnAction(On.Match, node, Seq(setProperty(node)))))), NO_PATHS)
-
+          ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
+          Seq(OnAction(On.Match, node, Seq(setProperty(node)))))
 
     parsing(
       """MERGE (a:Label)
@@ -78,19 +85,17 @@ MERGE (b:Label)
 ON MATCH a SET a.property = timestamp()
 ON CREATE a SET a.property = timestamp()
 ON CREATE b SET b.property = timestamp()
-ON MATCH b SET b.property = timestamp()
-      """) shouldGive
-      (Seq(
+ON MATCH b SET b.property = timestamp()""") shouldGive
         MergeAst(Seq(
-          ParsedEntity(A, Identifier(A), Map.empty, Seq(labelName), bare = false),
-          ParsedEntity(B, Identifier(B), Map.empty, Seq(labelName), bare = false)),
+          ParsedEntity(A, expressions.Identifier(A), Map.empty, Seq(labelName), bare = false),
+          ParsedEntity(B, expressions.Identifier(B), Map.empty, Seq(labelName), bare = false)),
           Seq(
             OnAction(On.Match, A, Seq(setProperty(A))),
             OnAction(On.Create, A, Seq(setProperty(A))),
             OnAction(On.Create, B, Seq(setProperty(B))),
             OnAction(On.Match, B, Seq(setProperty(B)))
-          ))), NO_PATHS)
+          ))
   }
 
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
+  def convert(astNode: ast.Merge): MergeAst = astNode.toCommand
 }

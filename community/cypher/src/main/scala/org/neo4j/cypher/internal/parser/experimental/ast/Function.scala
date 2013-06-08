@@ -40,12 +40,12 @@ case class FunctionInvocation(identifier: Identifier, arguments: IndexedSeq[Expr
   private val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {
-    case None => SemanticError(s"Unknown function '${name}'", token)
+    case None    => SemanticError(s"Unknown function '${name}'", token)
     case Some(f) => arguments.semanticCheck(ctx) >>= f.semanticCheck(ctx, this)
   }
 
   def toCommand = function match {
-    case None => throw new IllegalStateException("Unknown function should have failed semantic check")
+    case None    => throw new IllegalStateException("Unknown function should have failed semantic check")
     case Some(f) => f.toCommand(this)
   }
 }

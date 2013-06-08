@@ -79,7 +79,8 @@ object Function {
     functions.Min(),
     functions.Max(),
     functions.Collect(),
-    functions.Coalesce()
+    functions.Coalesce(),
+    functions.Timestamp
   )
 
   val lookup : Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) } toMap

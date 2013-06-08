@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.parser
 import org.scalatest.Assertions
 import org.parboiled.scala._
 import org.neo4j.cypher.internal.parser.experimental.ast.AstNode
+import org.parboiled.errors.InvalidInputError
+import org.neo4j.cypher.internal.parser.experimental.InvalidInputErrorFormatter
 
 
 trait ParserExperimentalTest[T <: AstNode, J] extends Assertions {
@@ -39,7 +41,7 @@ trait ParserExperimentalTest[T <: AstNode, J] extends Assertions {
     }
   }
 
-  def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), s)
+  def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), s)
 
   def partiallyParsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), s)
 
@@ -53,8 +55,11 @@ trait ParserExperimentalTest[T <: AstNode, J] extends Assertions {
   private def parseRule(rule: Rule1[T], text: String): ParsingResult[T] =
     ReportingParseRunner(rule).run(text)
 
-  private def convertResult(r: ParsingResult[T], s: String) = r.result match {
-    case Some(t) => new ResultCheck(Seq(convert(t)), s)
-    case None    => fail("Shit broke " + r.parseErrors.mkString(","))
+  private def convertResult(r: ParsingResult[T], input: String) = r.result match {
+    case Some(t) => new ResultCheck(Seq(convert(t)), input)
+    case None    => fail(s"'${input}' failed with " + r.parseErrors.map {
+      case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+      case error                           => error.getClass.getSimpleName
+    }.mkString(","))
   }
 }
