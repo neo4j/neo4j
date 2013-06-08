@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.junit.{After, Before}
 import scala.collection.JavaConverters._
-import org.scalatest.junit.JUnitSuite
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
@@ -31,8 +30,9 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.scalatest.Assertions
 
-class GraphDatabaseTestBase extends GraphIcing with JUnitSuite {
+class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   var graph: GraphDatabaseAPI with Snitch = null
   var refNode: Node = null
