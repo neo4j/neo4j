@@ -76,7 +76,7 @@ case class SingleQuery(
 
   private def repeatUntil[A](seed: A)(f: A => (A, Boolean)): A = f(seed) match {
     case (a, false) => repeatUntil(a)(f)
-    case (a, true) => a
+    case (a, true)  => a
   }
 
   def toLegacyQuery = toLegacyQuery(true)
@@ -87,12 +87,12 @@ case class SingleQuery(
     val rest = if (start.isDefined || matches.isDefined || where.isDefined || updateGroups.isEmpty) {
       val startItems = start match {
         case Some(s) => s.items.map(_.toCommand)
-        case None => Seq()
+        case None    => Seq()
       }
 
       val (patterns, namedMatchPaths, patternPredicates) = matches match {
         case Some(Match(ps, _)) => (ps.flatMap(_.toLegacyPatterns), ps.flatMap(_.toLegacyNamedPath), ps.flatMap(_.toLegacyPredicates))
-        case None => (Seq(), Seq(), Seq())
+        case None               => (Seq(), Seq(), Seq())
       }
 
       val indexHints = hints.map(_.toLegacySchemaIndex)
@@ -100,15 +100,15 @@ case class SingleQuery(
       val wherePredicate = where match {
         case Some(Where(e, _)) => e.toCommand match {
           case p: commands.Predicate => Some(p)
-          case _ => throw new SyntaxException(s"WHERE clause expression must return a boolean (${e.token.startPosition})")
+          case _                     => throw new SyntaxException(s"WHERE clause expression must return a boolean (${e.token.startPosition})")
         }
         case None => None
       }
 
       val predicate = (wherePredicate ++ patternPredicates) match {
-        case Seq() => commands.True()
+        case Seq()  => commands.True()
         case Seq(p) => p
-        case s => s.reduceLeft(commands.And(_, _))
+        case s      => s.reduceLeft(commands.And(_, _))
       }
 
       builder.startItems(startItems:_*).matches(patterns:_*).namedPaths(namedMatchPaths:_*).using(indexHints:_*).where(predicate)
@@ -124,12 +124,12 @@ case class SingleQuery(
 
     val closeFunc = close match {
       case Some(c) => c.addToLegacyQuery(_)
-      case None => (b: commands.QueryBuilder) => b.returns()
+      case None    => (b: commands.QueryBuilder) => b.returns()
     }
 
     rest.foldRight(closeFunc)((group, closer) => {
       val tail = closer(addUpdateGroupToBuilder(new commands.QueryBuilder, group))
-      _.tail(tail).returns(commands.AllIdentifiers())
+      queryBuilder => queryBuilder.tail(tail).returns(commands.AllIdentifiers())
     })(builder)
   }
 
@@ -144,8 +144,8 @@ case class SingleQuery(
 
   private def addUpdateGroupToBuilder(builder: commands.QueryBuilder, updates: Seq[UpdateClause]) = {
     val (createItems, namedCreatePaths, updateItems) = updates.head match {
-      case c : Create => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
-      case _ => (Seq(), Seq(), updates.flatMap(_.toLegacyUpdateActions))
+      case c: Create => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
+      case _         => (Seq(), Seq(), updates.flatMap(_.toLegacyUpdateActions))
     }
     builder.startItems(createItems:_*).namedPaths(namedCreatePaths:_*).updates(updateItems:_*)
   }
@@ -189,7 +189,7 @@ sealed trait QueryClose extends AstNode with SemanticCheckable {
 
     aggregationExpressions match {
       case Seq() => None
-      case _ => Some(aggregationExpressions)
+      case _     => Some(aggregationExpressions)
     }
   }
 }
@@ -247,15 +247,15 @@ trait Union extends Query {
   def semanticCheck = checkUnionAggregation.toSeq ++ statement.semanticCheck ++ query.semanticCheck
   
   private def checkUnionAggregation = (statement, this) match {
-    case (_: SingleQuery, _) => None
-    case (_: UnionAll, _: UnionAll) => None
+    case (_: SingleQuery, _)                  => None
+    case (_: UnionAll, _: UnionAll)           => None
     case (_: UnionDistinct, _: UnionDistinct) => None
-    case _ => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
+    case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
   }
 
   protected def unionedQueries : Seq[SingleQuery] = statement match {
     case q: SingleQuery => Seq(query, q)
-    case u: Union => query +: u.unionedQueries
+    case u: Union       => query +: u.unionedQueries
   }
 }
 

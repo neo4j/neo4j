@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 
-case class And extends Function with LegacyPredicate {
+case object And extends Function with LegacyPredicate {
   def name = "AND"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {

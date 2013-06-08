@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.experimental.functions
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands
 
-case class Or extends Function with LegacyPredicate {
+case object Or extends Function with LegacyPredicate {
   def name = "OR"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {

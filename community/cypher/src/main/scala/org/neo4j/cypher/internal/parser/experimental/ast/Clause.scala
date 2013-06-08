@@ -47,15 +47,15 @@ trait UpdateClause extends Clause {
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Create)
 
-  def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map(_ match {
+  def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map {
     case createNode: mutation.CreateNode => commands.CreateNodeStartItem(createNode)
     case createRelationship: mutation.CreateRelationship => commands.CreateRelationshipStartItem(createRelationship)
-  })
+  }
   def toLegacyUpdateActions = patterns.flatMap(_.toLegacyCreates)
-  def toLegacyNamedPaths = patterns.flatMap(_ match {
+  def toLegacyNamedPaths = patterns.flatMap {
     case n : NamedPattern => Some(commands.NamedPath(n.identifier.name, n.toLegacyPatterns:_*))
     case _ => None
-  })
+  }
 }
 
 

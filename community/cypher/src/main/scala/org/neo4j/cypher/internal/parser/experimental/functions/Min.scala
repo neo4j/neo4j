@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.experimental.functions
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-case class Min extends Function with AggregatingFunction {
+case object Min extends Function with AggregatingFunction {
   def name = "MIN"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {

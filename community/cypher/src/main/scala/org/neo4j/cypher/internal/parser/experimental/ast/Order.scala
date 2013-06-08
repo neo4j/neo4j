@@ -33,8 +33,8 @@ sealed trait SortItem extends AstNode with SemanticCheckable {
   def toCommand : commands.SortItem
 }
 case class AscSortItem(expression: Expression, token: InputToken) extends SortItem {
-  def toCommand = commands.SortItem(expression.toCommand, true)
+  def toCommand = commands.SortItem(expression.toCommand, ascending = true)
 }
 case class DescSortItem(expression: Expression, token: InputToken) extends SortItem {
-  def toCommand = commands.SortItem(expression.toCommand, false)
+  def toCommand = commands.SortItem(expression.toCommand, ascending = false)
 }

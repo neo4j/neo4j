@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.experimental.ast
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, Predicate}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 
 object Expression {
@@ -43,21 +43,23 @@ object Expression {
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
     def mergeDownTypes = (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
     def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
-        traversable.foldLeft(SemanticCheckResult.success) { (f, e) => f >>= e.limitType(possibleType, possibleTypes:_*) }
+        traversable.foldLeft(SemanticCheckResult.success) {
+          (f, e) => f >>= e.limitType(possibleType, possibleTypes:_*)
+        }
   }
 }
-import Expression._
 
+import Expression._
 
 abstract class Expression extends AstNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   // double-dispatch helpers
   final def types : SemanticState => Set[CypherType] = s => s.expressionTypes(this) match {
-    case None => throw new IllegalStateException(s"Types of ${this} have not been evaluated (${token.startPosition})")
+    case None => throw new IllegalStateException(s"Types of $this have not been evaluated (${token.startPosition})")
     case Some(types) => types
   }
-  final def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticState => Either[SemanticError, SemanticState] =
+  final def limitType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
       limitType((possibleType +: possibleTypes).toSet)
   final def limitType(typeGen: SemanticState => Set[CypherType]) : SemanticState => Either[SemanticError, SemanticState] =
       s => s.limitExpressionType(this, token, typeGen(s))
@@ -67,18 +69,16 @@ abstract class Expression extends AstNode {
   def toCommand: CommandExpression
 }
 
-
 trait SimpleTypedExpression { self: Expression =>
   protected def possibleTypes : Set[CypherType]
   def semanticCheck(ctx: SemanticContext) : SemanticCheck = limitType(possibleTypes)
 }
 
-
 case class Identifier(name: String, token: InputToken) extends Expression {
   // check the identifier is defined and, if not, define it
   def semanticCheck(ctx: SemanticContext) = s => ensureDefined(AnyType())(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
-    case Left(error) => SemanticCheckResult.error((declare(AnyType())(s)).right.get, error)
+    case Left(error) => SemanticCheckResult.error(declare(AnyType())(s).right.get, error)
   }
 
   // double-dispatch helpers
@@ -96,13 +96,11 @@ case class Identifier(name: String, token: InputToken) extends Expression {
   def toCommand = commands.expressions.Identifier(name)
 }
 
-
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(ScalarType()))
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
-
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(AnyType())
@@ -110,13 +108,11 @@ case class Null(token: InputToken) extends Expression with SimpleTypedExpression
   def toCommand = commandexpressions.Literal(null)
 }
 
-
 case class True(token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
 
   def toCommand = commands.True()
 }
-
 
 case class False(token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
@@ -124,13 +120,11 @@ case class False(token: InputToken) extends Expression with SimpleTypedExpressio
   def toCommand = commands.Not(commands.True())
 }
 
-
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(LongType())
 
   def toCommand = commandexpressions.CountStar()
 }
-
 
 case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
@@ -140,46 +134,46 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
   def toCommand = commands.expressions.Property(map.toCommand, identifier.name)
 }
 
-
 case class Nullable(expression: Expression, token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expression.semanticCheck(ctx) >>= limitType(expression.types)
 
   def toCommand = commandexpressions.Nullable(expression.toCommand)
 }
+
 trait DefaultTrue {
   self: Nullable => ()
 }
 
-
 case class PatternExpression(pattern: Pattern, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(CollectionType(PathType()))
 
-  override def semanticCheck(ctx: SemanticContext) = pattern.semanticCheck(Pattern.SemanticContext.Expression) >>= super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) =
+    pattern.semanticCheck(Pattern.SemanticContext.Expression) >>= super.semanticCheck(ctx)
 
   def toCommand = commands.PatternPredicate(pattern.toLegacyPatterns)
 }
-
 
 case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
 
   override def semanticCheck(ctx: SemanticContext) = identifier.ensureDefined(NodeType()) >>= super.semanticCheck(ctx)
 
-  def toCommand = labels.map(l => commands.HasLabel(identifier.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)) : commands.Predicate).reduceLeft(commands.And(_, _))
-}
+  private def toPredicate(l: Identifier): Predicate =
+    commands.HasLabel(identifier.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
 
+  def toCommand = labels.map(toPredicate).reduceLeft(commands.And(_, _))
+}
 
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) >>= limitType(possibleTypes)
 
-  private def possibleTypes : SemanticState => Set[CypherType] = state => expressions match {
+  private def possibleTypes: SemanticState => Set[CypherType] = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))
-    case _ => expressions.mergeDownTypes(state) map { t => CollectionType(t) }
+    case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
   }
 
   def toCommand = commandexpressions.Collection(expressions.map(_.toCommand):_*)
 }
-
 
 case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(MapType())

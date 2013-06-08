@@ -123,41 +123,44 @@ case class EveryPath(element: PatternElement) extends PathPattern {
 case class ShortestPath(element: PatternElement, token: InputToken) extends PathPattern {
   def semanticCheck(context: SemanticContext) = checkContainsSingle >>= checkNoMinimalLength
 
-  private def checkContainsSingle : SemanticCheck = element match {
+  private def checkContainsSingle: SemanticCheck = element match {
     case RelationshipChain(l: NamedNodePattern, _, r: NamedNodePattern, _) => {
       l.identifier.ensureDefined(NodeType()) >>=
-      r.identifier.ensureDefined(NodeType())
+        r.identifier.ensureDefined(NodeType())
     }
-    case RelationshipChain(l: NodePattern, _, _, _) =>
-        SemanticError(s"shortestPath requires named nodes", token, l.token)
-    case _ =>
-        SemanticError(s"shortestPath requires a pattern containing a single relationship", token, element.token)
+    case RelationshipChain(l: NodePattern, _, _, _)                        =>
+      SemanticError(s"shortestPath requires named nodes", token, l.token)
+    case _                                                                 =>
+      SemanticError(s"shortestPath requires a pattern containing a single relationship", token, element.token)
   }
 
-  private def checkNoMinimalLength : SemanticCheck = element match {
+  private def checkNoMinimalLength: SemanticCheck = element match {
     case RelationshipChain(_, rel, _, _) => rel.length match {
       case Some(Some(Range(Some(_), _, _))) =>
-          SemanticError(s"shortestPath does not support a minimal length", token, element.token)
-      case _ =>
-          SemanticCheckResult.success
+        SemanticError(s"shortestPath does not support a minimal length", token, element.token)
+      case _                                =>
+        SemanticCheckResult.success
     }
-    case _ => SemanticCheckResult.success
+    case _                               => SemanticCheckResult.success
   }
 
   def toLegacyPatterns(maybePathName: Option[String]) = {
     val pathName = maybePathName.getOrElse("  UNNAMED" + token.startPosition.offset)
 
     val (leftName, rel, rightName) = element match {
-      case RelationshipChain(leftNode: NodePattern, rel, rightNode, _) => (leftNode.legacyName, rel, rightNode.legacyName)
-      case _ => throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
+      case RelationshipChain(leftNode: NodePattern, relationshipPattern, rightNode, _) =>
+        (leftNode.legacyName, relationshipPattern, rightNode.legacyName)
+      case _                                                           =>
+        throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
     }
     val reltypes = rel.types.map(_.name)
     val maxDepth = rel.length match {
       case Some(Some(Range(None, Some(i), _))) => Some(i.value.toInt)
-      case _ => None
+      case _                                   => None
     }
     Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, rel.optional, true, None))
   }
+
   def toLegacyNamedPath(pathName: String) = None
   def toLegacyCreates(pathName: Option[String]) = ???
   def toLegacyPredicates(pathName: Option[String]) = Seq()
@@ -183,8 +186,8 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern] = {
     val (patterns, leftName) = element match {
-      case leftNode : NodePattern => (Vector(), leftNode.legacyName)
-      case leftChain : RelationshipChain => (leftChain.toLegacyPatterns(makeOutgoing), leftChain.rightNode.legacyName)
+      case leftNode: NodePattern        => (Vector(), leftNode.legacyName)
+      case leftChain: RelationshipChain => (leftChain.toLegacyPatterns(makeOutgoing), leftChain.rightNode.legacyName)
     }
 
     patterns :+ relationship.toLegacyPattern(leftName, rightNode.legacyName, makeOutgoing)
@@ -192,11 +195,10 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
   lazy val toLegacyCreates : Seq[mutation.CreateRelationship] = {
     val (creates, leftEndpoint) = element match {
-      case leftNode : NodePattern => (Vector(), leftNode.toLegacyEndpoint)
-      case leftChain : RelationshipChain => {
+      case leftNode: NodePattern        => (Vector(), leftNode.toLegacyEndpoint)
+      case leftChain: RelationshipChain =>
         val creates = leftChain.toLegacyCreates
         (creates, creates.last.to)
-      }
     }
 
     creates :+ relationship.toLegacyCreates(leftEndpoint, rightNode.toLegacyEndpoint)
@@ -288,12 +290,14 @@ sealed abstract class RelationshipPattern extends AstNode {
   }
 
   def legacyName : String
-  def toLegacyPattern(leftName: String, rightName: String, makeOutgoing: Boolean) : commands.Pattern = {
-    val (left, right, dir) = if (!makeOutgoing) (leftName, rightName, direction) else direction match {
-      case Direction.OUTGOING => (leftName, rightName, direction)
-      case Direction.INCOMING => (rightName, leftName, Direction.OUTGOING)
+
+  def toLegacyPattern(leftName: String, rightName: String, makeOutgoing: Boolean): commands.Pattern = {
+    val (left, right, dir) = if (!makeOutgoing) (leftName, rightName, direction)
+    else direction match {
+      case Direction.OUTGOING                     => (leftName, rightName, direction)
+      case Direction.INCOMING                     => (rightName, leftName, Direction.OUTGOING)
       case Direction.BOTH if leftName < rightName => (leftName, rightName, direction)
-      case Direction.BOTH => (rightName, leftName, direction)
+      case Direction.BOTH                         => (rightName, leftName, direction)
     }
 
     length match {
@@ -301,17 +305,18 @@ sealed abstract class RelationshipPattern extends AstNode {
         val pathName = "  UNNAMED" + token.startPosition.offset
         val (min, max) = maybeRange match {
           case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
-          case None => (None, None)
+          case None        => (None, None)
         }
         val relIterator = this match {
-          case namedRel : NamedRelationshipPattern => Some(namedRel.identifier.name)
-          case _ => None
+          case namedRel: NamedRelationshipPattern => Some(namedRel.identifier.name)
+          case _                                  => None
         }
         commands.VarLengthRelatedTo(pathName, left, right, min, max, types.map(_.name).distinct, dir, relIterator, optional)
       }
-      case None => 												commands.RelatedTo(left, right, legacyName, types.map(_.name).distinct, dir, optional)
+      case None             => commands.RelatedTo(left, right, legacyName, types.map(_.name).distinct, dir, optional)
     }
   }
+
   def toLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint) : mutation.CreateRelationship = {
     val (from, to) = direction match {
       case Direction.OUTGOING => (fromEnd, toEnd)
@@ -326,10 +331,10 @@ sealed abstract class RelationshipPattern extends AstNode {
       case _ => throw new SyntaxException(s"A single relationship type must be specified for CREATE (${token.startPosition})")
     }
     val props = properties match {
-      case Some(m : MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
-      case Some(p : Parameter) => Map[String, CommandExpression]("*" -> p.toCommand)
-      case Some(p) => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
-      case None => Map[String, CommandExpression]()
+      case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
+      case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
+      case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+      case None                   => Map[String, CommandExpression]()
     }
     mutation.CreateRelationship(legacyName, from, to, typeName, props)
   }
