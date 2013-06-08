@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.cypher.internal.parser.experimental.rules._
-import org.parboiled.errors.InvalidInputError
 import org.parboiled.scala._
+import org.parboiled.errors.InvalidInputError
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.parser.experimental.rules._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands.AbstractQuery
@@ -41,22 +42,26 @@ class CypherParserImpl extends Parser
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
       case Some(statement : ast.Statement) => {
-        for (error <- statement.semanticCheck) throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
+        statement.semanticCheck.map { error =>
+          throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
+        }
         ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))
       }
       case _ => {
-        val error = parsingResult.parseErrors.head
-        val message = if (error.getErrorMessage != null) {
-          error.getErrorMessage
-        } else {
-          error match {
-            case invalidInput : InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-            case _ => error.getClass.getSimpleName
+        parsingResult.parseErrors.map { error =>
+          val message = if (error.getErrorMessage != null) {
+            error.getErrorMessage
+          } else {
+            error match {
+              case invalidInput : InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+              case _                                => error.getClass.getSimpleName
+            }
           }
+          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+          throw new SyntaxException(s"${message} (${position})", text, error.getStartIndex)
         }
-        val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-        throw new SyntaxException(s"${message} (${position})", text, error.getStartIndex)
       }
+      throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
     }
   }
 }
