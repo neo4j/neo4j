@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.parser.{Action, On, OnAction}
 import org.neo4j.cypher.internal.commands.MergeAst
+import org.neo4j.cypher.internal.mutation.UpdateAction
 
 sealed trait Clause extends AstNode with SemanticCheckable
 
@@ -45,7 +46,7 @@ trait UpdateClause extends Clause {
 }
 
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Create)
+  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 
   def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map {
     case createNode: mutation.CreateNode => commands.CreateNodeStartItem(createNode)
@@ -80,11 +81,13 @@ case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClaus
 }
 
 
-case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends Clause {
+case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
   def children = patterns ++ actions
-  def semanticCheck = ??? // pattern.semanticCheck(Pattern.SemanticContext.Merge)
+  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 
   def toCommand: MergeAst = MergeAst(patterns.flatMap(_.toAbstractPatterns), actions.map(_.toAction))
+
+  def toLegacyUpdateActions: Seq[UpdateAction] = toCommand.nextStep()
 }
 
 abstract class MergeAction(identifier: Identifier, action: SetClause, token: InputToken) extends AstNode {

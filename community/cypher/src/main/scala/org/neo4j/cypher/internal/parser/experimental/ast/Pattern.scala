@@ -35,8 +35,7 @@ object Pattern {
   sealed trait SemanticContext
   object SemanticContext {
     case object Match extends SemanticContext
-    case object Merge extends SemanticContext
-    case object Create extends SemanticContext
+    case object Update extends SemanticContext
     case object Expression extends SemanticContext
   }
 
@@ -215,7 +214,7 @@ sealed abstract class NodePattern extends PatternElement {
   val properties: Option[Expression]
 
   def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && context != SemanticContext.Create) {
+    if (properties.isDefined && context != SemanticContext.Update) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
       properties.semanticCheck(Expression.SemanticContext.Simple)
@@ -280,7 +279,7 @@ sealed abstract class RelationshipPattern extends AstNode {
   val properties : Option[Expression]
 
   def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && context != SemanticContext.Create) {
+    if (properties.isDefined && context != SemanticContext.Update) {
       SemanticError("Relationship properties cannot be specified in this context", properties.get.token)
     } else if (optional && context == SemanticContext.Expression) {
       SemanticError("Optional relationships cannot be specified in this context", token)

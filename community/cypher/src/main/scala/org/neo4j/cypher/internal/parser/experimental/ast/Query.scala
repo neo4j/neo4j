@@ -105,7 +105,7 @@ case class SingleQuery(
         case None => None
       }
 
-      val predicate = (wherePredicate ++ patternPredicates) match {
+      val predicate = wherePredicate ++ patternPredicates match {
         case Seq()  => commands.True()
         case Seq(p) => p
         case s      => s.reduceLeft(commands.And(_, _))
@@ -115,7 +115,9 @@ case class SingleQuery(
       updateGroups
     } else {
       val firstUpdates = updateGroups.head
-      if (top && !firstUpdates.head.isInstanceOf[Create]) {
+      val acceptableAtQueryStart = firstUpdates.head.isInstanceOf[Create] || firstUpdates.head.isInstanceOf[Merge]
+
+      if (top && !acceptableAtQueryStart) {
         throw new SyntaxException(s"Invalid update clause at start of query (${firstUpdates.head.token.startPosition})")
       }
       addUpdateGroupToBuilder(builder, updateGroups.head)
@@ -229,7 +231,7 @@ case class With(
   }
 
   override def addToLegacyQuery(builder: commands.QueryBuilder) = {
-    super.addToLegacyQuery(builder.tail(query.toLegacyQuery(false)))
+    super.addToLegacyQuery(builder.tail(query.toLegacyQuery(top = false)))
   }
 }
 
@@ -260,9 +262,9 @@ trait Union extends Query {
 }
 
 case class UnionAll(statement: Query, token: InputToken, query: SingleQuery) extends Union {
-  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, false)
+  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = false)
 }
 
 case class UnionDistinct(statement: Query, token: InputToken, query: SingleQuery) extends Union {
-  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, true)
+  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = true)
 }

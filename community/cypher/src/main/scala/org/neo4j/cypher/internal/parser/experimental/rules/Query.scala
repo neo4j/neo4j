@@ -58,10 +58,9 @@ trait Query extends Parser
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
     group(
       oneOrMore(keyword("MERGE") ~~ Pattern, separator = WS) ~~
-      zeroOrMore((
-          (group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch)
-        | (group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate)
-      ), separator = WS)
+      zeroOrMore(
+        group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch
+        | group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate, separator = WS)
     ) ~>> token ~~> ast.Merge
   }
 
@@ -79,6 +78,7 @@ trait Query extends Parser
     | group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~>> token ~~> ast.Delete
     | SetClause
     | group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
+    | Merge
   )
 
   private def SetClause : Rule1[ast.SetClause] = rule("SET") (
