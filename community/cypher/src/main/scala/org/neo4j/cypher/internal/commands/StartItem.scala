@@ -43,7 +43,6 @@ import scala.collection.mutable
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {
   def mutating: Boolean
-  override def addsToRow() = Seq(identifierName)
   def name: String = getClass.getSimpleName
 }
 

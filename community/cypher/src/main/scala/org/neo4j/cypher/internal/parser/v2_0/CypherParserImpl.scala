@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Property, Expression}
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 class CypherParserImpl extends Base
@@ -52,6 +51,4 @@ Thank you, the Neo4j Team.
   }
 
   def cypherQuery: Parser[AbstractQuery] = (indexOps | constraintOps | union | query) <~ opt(";")
-
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 }

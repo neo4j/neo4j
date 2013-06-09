@@ -42,7 +42,5 @@ class UsingTest extends Using with ParserTest {
     assertFails("USING SCAN :Person")
   }
 
-  def createProperty(entity: String, propName: String) = ???
-
   def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

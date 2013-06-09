@@ -72,6 +72,4 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
          END""") shouldGive
       GenericCase(Seq(alt1, alt2), Some(Literal("OTHER")))
   }
-
-  def createProperty(entity: String, propName: String) = ???
 }
