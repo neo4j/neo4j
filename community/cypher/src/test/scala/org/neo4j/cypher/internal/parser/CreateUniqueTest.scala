@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.cypher.internal.mutation.{NamedExpectation, UniqueLink}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.helpers.LabelSupport
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Identifier}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 
 class CreateUniqueTest extends CreateUnique with MatchClause with ParserTest with Expressions {
 
@@ -39,7 +39,4 @@ class CreateUniqueTest extends CreateUnique with MatchClause with ParserTest wit
     parsing("a:Foo-[:x]->b") shouldGive
       Seq(PathAndRelateLink(None, Seq(UniqueLink(aLink, bLink, relLink, "x", Direction.OUTGOING))))
   }
-
-
-  def createProperty(entity: String, propName: String) = ???
 }

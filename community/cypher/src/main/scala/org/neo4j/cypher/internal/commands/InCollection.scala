@@ -53,8 +53,6 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   }
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
-
-  override def addsToRow() = Seq(id)
 }
 
 case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)

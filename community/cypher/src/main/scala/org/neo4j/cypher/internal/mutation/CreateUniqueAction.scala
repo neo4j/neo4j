@@ -61,8 +61,6 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
     Iterator(executionContext)
   }
 
-  override def addsToRow(): Seq[String] = Seq()
-
   /**
    * Here we take the incoming links and prepare them to be used, by making sure that
    * no named expectations contradict each other

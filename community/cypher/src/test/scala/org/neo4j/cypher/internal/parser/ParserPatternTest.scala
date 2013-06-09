@@ -69,6 +69,4 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???
-
-  def createProperty(entity: String, propName: String) = ???
 }
