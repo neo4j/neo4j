@@ -54,7 +54,7 @@ class CypherParser(version: String) {
 
     val (v, q) = queryText match {
       case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
+      case _                         => (version, queryText)
     }
 
     val result = v match {
