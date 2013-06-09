@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.commands
 case object And extends Function with LegacyPredicate {
   def name = "AND"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 2) >>=
     invocation.limitType(BooleanType())
   }

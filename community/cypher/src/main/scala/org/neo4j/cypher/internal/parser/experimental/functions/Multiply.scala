@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Multiply extends Function {
   def name = "*"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 2) >>=
     invocation.arguments.limitType(NumberType()) >>=
     invocation.limitType(NumberType())

@@ -23,16 +23,21 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-case object Count extends Function with AggregatingFunction {
+case object Count extends AggregatingFunction {
   def name = "COUNT"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super[AggregatingFunction].semanticCheck(ctx, invocation) >>=
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 1) >>=
     invocation.limitType(LongType())
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    commandexpressions.Count(invocation.arguments(0).toCommand)
+    val inner = invocation.arguments(0).toCommand
+    val command = commandexpressions.Count(inner)
+    if (invocation.distinct)
+      commandexpressions.Distinct(command, inner)
+    else
+      command
   }
 }

@@ -1216,7 +1216,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def testCountDistinct() {
-    test(vAll diff List(vExperimental),
+    test(
       """start a=node(0) return count(distinct a)""",
       Query.
         start(NodeById("a", 0)).

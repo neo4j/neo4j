@@ -26,16 +26,16 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpr
 import Expression._
 
 object FunctionInvocation {
-  def apply(identifier: Identifier, arguments: Seq[Expression], token: InputToken) : FunctionInvocation =
-      FunctionInvocation(identifier, arguments.toIndexedSeq, token)
+  def apply(identifier: Identifier, distinct: Boolean, arguments: Seq[Expression], token: InputToken) : FunctionInvocation =
+      FunctionInvocation(identifier, distinct, arguments.toIndexedSeq, token)
   def apply(identifier: Identifier, argument: Expression, token: InputToken) : FunctionInvocation =
-      FunctionInvocation(identifier, IndexedSeq(argument), token)
+      FunctionInvocation(identifier, false, IndexedSeq(argument), token)
   def apply(left: Expression, identifier: Identifier, right: Expression) : FunctionInvocation =
-      FunctionInvocation(identifier, IndexedSeq(left, right), identifier.token)
+      FunctionInvocation(identifier, false, IndexedSeq(left, right), identifier.token)
   def apply(expression: Expression, identifier: Identifier) : FunctionInvocation =
-      FunctionInvocation(identifier, IndexedSeq(expression), identifier.token)
+      FunctionInvocation(identifier, false, IndexedSeq(expression), identifier.token)
 }
-case class FunctionInvocation(identifier: Identifier, arguments: IndexedSeq[Expression], token: InputToken)  extends Expression {
+case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression], token: InputToken)  extends Expression {
   val name = identifier.name
   private val function = Function.lookup.get(name.toLowerCase)
 

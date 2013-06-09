@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Rels extends Function {
   def name = "RELS"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 1) >>=
     invocation.arguments.limitType(CollectionType(MapType())) >>=
     invocation.limitType(CollectionType(RelationshipType()))

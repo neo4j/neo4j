@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Has extends Function {
   def name = "HAS"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgsThen(invocation, 1) {
       invocation.arguments(0) match {
         case _: ast.Property => None
