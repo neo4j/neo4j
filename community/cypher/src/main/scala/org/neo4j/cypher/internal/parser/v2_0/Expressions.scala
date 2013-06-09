@@ -90,17 +90,17 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
   def property: Parser[Expression] = identity ~ "." ~ escapableString ^^ {
-    case v ~ "." ~ p => createProperty(v, p)
+    case v ~ "." ~ p => Property(Identifier(v), p)
   }
 
-  def createProperty(entity: String, propName: String): Expression
+  private val message = "Cypher does not support != for inequality comparisons. " +
+    "It's used for nullable properties instead.\n" +
+    "You probably meant <> instead. Read more about this in the operators chapter in the manual."
 
-  def nullableProperty: Parser[Expression] = (
-    property ~> "!=" ^^^ (throw new SyntaxException("Cypher does not support != for inequality comparisons. " +
-                                                    "It's used for nullable properties instead.\n" +
-                                                    "You probably meant <> instead. Read more about this in the operators chapter in the manual.")) |
+  def nullableProperty: Parser[Expression] =
+    property ~> "!=" ^^^ (throw new SyntaxException(message)) |
     property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
-    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
+    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse)
 
   def extract: Parser[Expression] = EXTRACT ~> parens(identity ~ IN ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)

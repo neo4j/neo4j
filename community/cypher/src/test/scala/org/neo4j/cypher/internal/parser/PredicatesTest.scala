@@ -70,6 +70,4 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     parsing("true = true") shouldGive
       Equals(True(), True())
   }
-
-  def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }

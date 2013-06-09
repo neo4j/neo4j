@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.parser
 
 import v2_0.QueryParser
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.{Equals, CreateNodeStartItem}
-import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.commands.expressions.Literal
@@ -52,6 +50,4 @@ class QueryParserTest extends QueryParser with ParserTest {
     parsing("where ID(n) = 1") shouldGive
       QueryStart.empty.copy(predicate=Equals(IdFunction(Identifier("n")), Literal(1)))
   }
-
-  def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }

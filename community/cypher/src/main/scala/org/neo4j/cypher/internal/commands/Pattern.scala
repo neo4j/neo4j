@@ -98,8 +98,6 @@ case class RelatedTo(left: String,
   def symbolTableDependencies = Set.empty
 
   def children = Seq.empty
-
-  override def addsToRow() = Seq(left, right, relName)
 }
 
 abstract class PathPattern extends Pattern {

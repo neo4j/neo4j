@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_9
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Property, Expression, AggregationExpression}
+import expressions.AggregationExpression
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
@@ -127,8 +127,6 @@ Thank you, the Neo4j Team.
       Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
     }
   }
-
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 
   override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
     if (offset >= source.length())
