@@ -55,15 +55,6 @@ trait Query extends Parser
     group(keyword("MATCH") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Match
   }
 
-  def Merge : Rule1[ast.Merge] = rule("MERGE") {
-    group(
-      oneOrMore(keyword("MERGE") ~~ Pattern, separator = WS) ~~
-      zeroOrMore(
-        group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch
-        | group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate, separator = WS)
-    ) ~>> token ~~> ast.Merge
-  }
-
   private def Hint : Rule1[ast.Hint] = rule("USING") (
       group(keyword("USING", "INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~>> token ~~> ast.UsingIndexHint
     | group(keyword("USING", "SCAN") ~~ Identifier ~~ NodeLabel) ~>> token ~~> ast.UsingScanHint
@@ -74,16 +65,24 @@ trait Query extends Parser
   }
 
   private def Updates : Rule1[ast.UpdateClause] = rule("CREATE, DELETE, SET, REMOVE") (
-      group(keyword("CREATE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Create
-    | group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~>> token ~~> ast.Delete
+      CreateClause
+    | DeleteClause
     | SetClause
-    | group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
+    | RemoveClause
     | Merge
   )
 
-  private def SetClause : Rule1[ast.SetClause] = rule("SET") (
+  private def CreateClause : Rule1[ast.Create] = rule("CREATE") {
+    group(keyword("CREATE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Create
+  }
+
+  private def DeleteClause : Rule1[ast.Delete] = rule("DELETE") {
+    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~>> token ~~> ast.Delete
+  }
+
+  private def SetClause : Rule1[ast.SetClause] = rule("SET") {
     group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~>> token ~~> ast.SetClause
-  )
+  }
 
   private def SetItem : Rule1[ast.SetItem] = rule (
       Property ~~ operator("=") ~>> token ~~ Expression ~~> ast.SetPropertyItem
@@ -91,9 +90,25 @@ trait Query extends Parser
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.SetLabelItem
   )
 
+  private def RemoveClause : Rule1[ast.Remove] = rule {
+    group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
+  }
+
   private def RemoveItem : Rule1[ast.RemoveItem] = rule {
     group(Identifier ~~ NodeLabels) ~>> token ~~> ast.RemoveLabelItem
   }
+
+  def Merge : Rule1[ast.Merge] = rule("MERGE") {
+    group(
+      oneOrMore(keyword("MERGE") ~~ Pattern, separator = WS) ~~
+        zeroOrMore(MergeAction, separator = WS)
+    ) ~>> token ~~> ast.Merge
+  }
+
+  private def MergeAction = rule("ON") (
+      group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch
+    | group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate
+  )
 
   private def With : Rule1[ast.With] = rule("WITH") (
       group(keyword("WITH", "DISTINCT") ~~ ReturnBody) ~>> token ~~ SingleQuery ~~> (new ast.With(_, _, _, _, _, _) with ast.DistinctQueryClose)
