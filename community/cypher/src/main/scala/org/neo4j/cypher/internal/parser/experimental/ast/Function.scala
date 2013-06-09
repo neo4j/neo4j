@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.parser.experimental.ast
 
 import org.neo4j.cypher.internal.parser.experimental._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
-
+import org.neo4j.helpers.ThisShouldNotHappenError
 import Expression._
 
 object FunctionInvocation {
@@ -45,7 +43,7 @@ case class FunctionInvocation(identifier: Identifier, distinct: Boolean, argumen
   }
 
   def toCommand = function match {
-    case None    => throw new IllegalStateException("Unknown function should have failed semantic check")
+    case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
     case Some(f) => f.toCommand(this)
   }
 }
