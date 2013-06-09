@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.mutation.{UpdateAction, MergeNodeAction}
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.pipes.EntityProducer
 
@@ -57,14 +57,13 @@ class StartPointChoosingBuilder extends PlanBuilder {
     val disconnectedStarItems: Seq[QueryToken[StartItem]] = findStartItemsForDisconnectedPatterns(plan, ctx).map(Unsolved(_))
 
     // Find merge points that do not have a node producer, and produce one for them
-    // TODO: Decide if this should live in it's own builder or not
-    val solvedMergePoints = plan.query.start.map(solveUnsolvedMergePoints(ctx))
+    val updatesWithSolvedMergePoints = plan.query.updates.map(solveUnsolvedMergePoints(ctx))
 
-    plan.copy(query = q.copy(start = disconnectedStarItems ++ solvedMergePoints))
+    plan.copy(query = q.copy(start = disconnectedStarItems ++ q.start, updates = updatesWithSolvedMergePoints))
   }
 
-  private def solveUnsolvedMergePoints(ctx: PlanContext): (QueryToken[StartItem] => QueryToken[StartItem]) = {
-    case Unsolved(MergeNodeStartItem(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None))) =>
+  private def solveUnsolvedMergePoints(ctx: PlanContext): (QueryToken[UpdateAction] => QueryToken[UpdateAction]) = {
+    case Unsolved(mergeNodeAction@MergeNodeAction(identifier, where, _, _, None)) =>
       val startItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx)
       val nodeProducer: EntityProducer[Node] = entityProducerFactory.nodeStartItems(ctx, startItem.s)
       val predicatesLeft = where.toSet -- startItem.solvedPredicates
@@ -73,7 +72,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
         nodeProducerOption = Some(nodeProducer),
         expectations = predicatesLeft.toSeq)
 
-      Unsolved(MergeNodeStartItem(newMergeNodeAction))
+      Unsolved(newMergeNodeAction)
     case x                                                                                            => x
 
   }
