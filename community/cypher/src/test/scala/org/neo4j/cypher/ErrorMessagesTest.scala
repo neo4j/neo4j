@@ -70,14 +70,9 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def semiColonInMiddleOfQuery() {
     expectSyntaxError(
-      """start n=node(2)
-    match n<-[r:IS_A]-p
-    ;
-    start n=node(2)
-    match p-[IS_A]->n, p-[r:WORKED_ON]->u
-    return p, sum(r.months)""",
+      """start n=node(2) match n<-[r:IS_A]-p; start n=node(2) match p-[IS_A]->n, p-[r:WORKED_ON]->u return p, sum(r.months)""",
       "expected return clause",
-      44)
+      """start n=node(2) match n<-[r:IS_A]-p;""".length-1)
   }
 
   @Test def badMatch2() {
