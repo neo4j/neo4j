@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.symbols.LongType
 case object Timestamp extends Function {
   def name = "TIMESTAMP"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 0) >>=
     invocation.limitType(LongType())
   }

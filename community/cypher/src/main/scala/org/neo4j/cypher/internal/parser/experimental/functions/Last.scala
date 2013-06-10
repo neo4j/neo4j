@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Last extends Function {
   def name = "LAST"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgsThen(invocation, 1) {
       invocation.arguments(0).limitType(CollectionType(AnyType())) >>=
       invocation.limitType(iteratedTypes(invocation.arguments(0)))

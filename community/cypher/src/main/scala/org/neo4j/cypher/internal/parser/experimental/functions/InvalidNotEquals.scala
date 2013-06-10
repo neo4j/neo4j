@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.commands
 case object InvalidNotEquals extends Function with LegacyPredicate {
   def name = "!="
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgs(invocation, 2) >>=
     invocation.limitType(BooleanType()) >>=
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)

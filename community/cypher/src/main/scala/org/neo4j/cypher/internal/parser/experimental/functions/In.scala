@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object In extends Function with LegacyPredicate {
   def name = "IN"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    super.semanticCheck(ctx, invocation) >>=
     checkArgsThen(invocation, 2) {
       invocation.arguments(1).limitType(CollectionType(AnyType()))
     } >>= invocation.limitType(BooleanType())

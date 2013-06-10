@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.parser.experimental.functions
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-case object Max extends Function with AggregatingFunction {
+case object Max extends AggregatingFunction {
   def name = "MAX"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super[AggregatingFunction].semanticCheck(ctx, invocation) >>=
+    super.semanticCheck(ctx, invocation) >>=
     checkArgsThen(invocation, 1) {
       val arg = invocation.arguments(0)
       invocation.limitType(arg.types)
@@ -34,6 +34,11 @@ case object Max extends Function with AggregatingFunction {
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    commandexpressions.Max(invocation.arguments(0).toCommand)
+    val inner = invocation.arguments(0).toCommand
+    val command = commandexpressions.Max(inner)
+    if (invocation.distinct)
+      commandexpressions.Distinct(command, inner)
+    else
+      command
   }
 }

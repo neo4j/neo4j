@@ -88,9 +88,11 @@ object Function {
 
 abstract class Function {
   def name : String
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck
-
-  def toCommand(invocation: ast.FunctionInvocation) : CommandExpression
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+    when(invocation.distinct) {
+      SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.token)
+    }
+  }
 
   protected def checkArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
     Seq(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
@@ -120,11 +122,13 @@ abstract class Function {
     else
       SemanticCheckResult.success(state)
   }
+
+  def toCommand(invocation: ast.FunctionInvocation) : CommandExpression
 }
 
 
-trait AggregatingFunction { self: Function =>
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
+abstract class AggregatingFunction extends Function {
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function ${name} in this context", invocation.token)
     }

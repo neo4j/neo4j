@@ -1083,13 +1083,47 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("b"), "b")))
   }
 
-  @Test def testSingle() {
-    test(vAll diff List(vExperimental),
-      """start a = node(1) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
+  @Test def testAllIterablePredicate() {
+    test(
+      """start a = node(1) match p=(a-[r]->b) where all(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(SingleInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), "name"),
-        Literal("Andres"))))
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
+        where(AllInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), "name"), Literal("Andres"))))
+        returns (ReturnItem(Identifier("b"), "b")))
+  }
+
+  @Test def testAnyIterablePredicate() {
+    test(
+      """start a = node(1) match p=(a-[r]->b) where any(x in NODES(p) WHERE x.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
+        where(AnyInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), "name"), Literal("Andres"))))
+        returns (ReturnItem(Identifier("b"), "b")))
+  }
+
+  @Test def testNoneIterablePredicate() {
+    test(
+      """start a = node(1) match p=(a-[r]->b) where none(x in NODES(p) WHERE x.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
+        where(NoneInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), "name"), Literal("Andres"))))
+        returns (ReturnItem(Identifier("b"), "b")))
+  }
+
+  @Test def testSingleIterablePredicate() {
+    test(
+      """start a = node(1) match p=(a-[r]->b) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
+        where(SingleInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), "name"), Literal("Andres"))))
         returns (ReturnItem(Identifier("b"), "b")))
   }
 
@@ -1216,7 +1250,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def testCountDistinct() {
-    test(vAll diff List(vExperimental),
+    test(
       """start a=node(0) return count(distinct a)""",
       Query.
         start(NodeById("a", 0)).

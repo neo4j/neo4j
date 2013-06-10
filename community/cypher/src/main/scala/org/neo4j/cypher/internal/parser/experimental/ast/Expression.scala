@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.experimental.ast
 
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
@@ -181,4 +182,71 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) >>= super.semanticCheck(ctx)
 
   def toCommand = ???
+}
+
+
+sealed trait FilterExpression extends Expression {
+  def name: String
+  def identifier: Identifier
+  def expression: Expression
+  def innerPredicate: Option[Expression]
+
+  def semanticCheck(ctx: SemanticContext) = {
+    expression.semanticCheck(ctx) >>=
+    checkInnerPredicate
+  }
+
+  private def checkInnerPredicate : SemanticState => Seq[SemanticError] = s => {
+    // Check inner predicate using a scoped state containing the identifier
+    (identifier.declare(expression.types) >>= innerPredicate.semanticCheck(SemanticContext.Simple))(s.newScope).errors
+  }
+
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
+  def toCommand = {
+    val command = expression.toCommand
+    val inner = innerPredicate.map { _.toCommand } match {
+      case Some(e: commands.Predicate) => e
+      case None => commands.True()
+      case _ => throw new SyntaxException(s"Argument to ${name} is not a predicate (${expression.token.startPosition})")
+    }
+    toCommand(command, identifier.name, inner)
+  }
+}
+
+sealed trait IterablePredicateExpression extends FilterExpression {
+  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) >>= limitType(BooleanType())
+
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
+    val predicate = toPredicate(command, identifier.name, inner)
+    if (expression.isInstanceOf[ast.Nullable]) {
+      commands.NullablePredicate(predicate, Seq((command, expression.isInstanceOf[ast.DefaultTrue])))
+    } else {
+      predicate
+    }
+  }
+}
+
+case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+  val name = "ALL"
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
+      commands.AllInCollection(command, identifier.name, inner)
+}
+
+case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+  val name = "ANY"
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
+      commands.AnyInCollection(command, identifier.name, inner)
+}
+
+case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+  val name = "NONE"
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
+      commands.NoneInCollection(command, identifier.name, inner)
+}
+
+case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+  val name = "SINGLE"
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
+      commands.SingleInCollection(command, identifier.name, inner)
 }

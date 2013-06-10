@@ -100,7 +100,11 @@ trait Expressions extends Parser
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
-    | group(Identifier ~~ "(" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ ")") ~~> (_.toIndexedSeq) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
+    | group(keyword("ALL") ~~ FilterExpression) ~>> token ~~> ast.AllIterablePredicate
+    | group(keyword("ANY") ~~ FilterExpression) ~>> token ~~> ast.AnyIterablePredicate
+    | group(keyword("NONE") ~~ FilterExpression) ~>> token ~~> ast.NoneIterablePredicate
+    | group(keyword("SINGLE") ~~ FilterExpression) ~>> token ~~> ast.SingleIterablePredicate
+    | FunctionInvocation
     | RelationshipsPattern ~>> token ~~> ast.PatternExpression
     | Parameter
     | StringLiteral
@@ -110,6 +114,20 @@ trait Expressions extends Parser
     | Identifier
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
   )
+
+  private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] = {
+    "(" ~~
+      Identifier ~~ keyword("IN") ~~ Expression ~~
+      (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~
+    ")"
+  }
+
+  private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule {
+    group(Identifier ~~ "(" ~~
+      (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
+      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
+    ) ~~> (_.toIndexedSeq) ~>> token ~~> (ast.FunctionInvocation(_, _, _, _))
+  }
 
   private def MaybeNullableProperty : Rule1[ast.Expression] = rule {
     Property ~~ (
