@@ -27,9 +27,9 @@ case object Tail extends Function {
   def name = "TAIL"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 1) {
-      invocation.arguments(0).limitType(CollectionType(AnyType())) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) ifOkThen {
+      invocation.arguments(0).limitType(CollectionType(AnyType())) then
       invocation.limitType(invocation.arguments(0).types)
     }
   }

@@ -27,9 +27,9 @@ case object Labels extends Function {
   def name = "LABELS"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 1) >>=
-    invocation.arguments.limitType(NodeType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) then
+    invocation.arguments.limitType(NodeType()) then
     invocation.limitType(BooleanType())
   }
 

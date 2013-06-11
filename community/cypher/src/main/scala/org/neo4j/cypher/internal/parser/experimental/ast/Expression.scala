@@ -38,14 +38,14 @@ object Expression {
   }
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) {
     def semanticCheck(ctx: SemanticContext) = {
-      traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f >>= o.semanticCheck(ctx) }
+      traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck(ctx) }
     }
   }
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
     def mergeDownTypes = (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
     def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
         traversable.foldLeft(SemanticCheckResult.success) {
-          (f, e) => f >>= e.limitType(possibleType, possibleTypes:_*)
+          (f, e) => f then e.limitType(possibleType, possibleTypes:_*)
         }
   }
 }
@@ -130,13 +130,13 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
-  override def semanticCheck(ctx: SemanticContext) = map.semanticCheck(ctx) >>= super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = map.semanticCheck(ctx) then super.semanticCheck(ctx)
 
   def toCommand = commands.expressions.Property(map.toCommand, identifier.name)
 }
 
 case class Nullable(expression: Expression, token: InputToken) extends Expression {
-  def semanticCheck(ctx: SemanticContext) = expression.semanticCheck(ctx) >>= limitType(expression.types)
+  def semanticCheck(ctx: SemanticContext) = expression.semanticCheck(ctx) then limitType(expression.types)
 
   def toCommand = commandexpressions.Nullable(expression.toCommand)
 }
@@ -149,7 +149,7 @@ case class PatternExpression(pattern: Pattern, token: InputToken) extends Expres
   protected def possibleTypes = Set(CollectionType(PathType()))
 
   override def semanticCheck(ctx: SemanticContext) =
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) >>= super.semanticCheck(ctx)
+    pattern.semanticCheck(Pattern.SemanticContext.Expression) then super.semanticCheck(ctx)
 
   def toCommand = commands.PatternPredicate(pattern.toLegacyPatterns)
 }
@@ -157,7 +157,7 @@ case class PatternExpression(pattern: Pattern, token: InputToken) extends Expres
 case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
 
-  override def semanticCheck(ctx: SemanticContext) = identifier.ensureDefined(NodeType()) >>= super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = identifier.ensureDefined(NodeType()) then super.semanticCheck(ctx)
 
   private def toPredicate(l: Identifier): Predicate =
     commands.HasLabel(identifier.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
@@ -166,7 +166,7 @@ case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: Inp
 }
 
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
-  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) >>= limitType(possibleTypes)
+  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then limitType(possibleTypes)
 
   private def possibleTypes: SemanticState => Set[CypherType] = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))
@@ -179,7 +179,7 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
 case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(MapType())
 
-  override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) >>= super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
 
   def toCommand = ???
 }
@@ -192,13 +192,13 @@ sealed trait FilterExpression extends Expression {
   def innerPredicate: Option[Expression]
 
   def semanticCheck(ctx: SemanticContext) = {
-    expression.semanticCheck(ctx) >>=
+    expression.semanticCheck(ctx) then
     checkInnerPredicate
   }
 
   private def checkInnerPredicate : SemanticState => Seq[SemanticError] = s => {
     // Check inner predicate using a scoped state containing the identifier
-    (identifier.declare(expression.types) >>= innerPredicate.semanticCheck(SemanticContext.Simple))(s.newScope).errors
+    (identifier.declare(expression.types) then innerPredicate.semanticCheck(SemanticContext.Simple))(s.newScope).errors
   }
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
@@ -214,7 +214,7 @@ sealed trait FilterExpression extends Expression {
 }
 
 sealed trait IterablePredicateExpression extends FilterExpression {
-  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) >>= limitType(BooleanType())
+  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())
 
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.experimental
 
+
 trait SemanticCheckable {
   def semanticCheck: SemanticCheck
 }
@@ -29,7 +30,7 @@ case class SemanticCheckableOption[A <: SemanticCheckable](option: Option[A]) {
 
 case class SemanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) {
   def semanticCheck = {
-    traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f >>= o.semanticCheck }
+    traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck }
   }
 }
 
@@ -42,10 +43,30 @@ object SemanticCheckResult {
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
 
-case class ChainableSemanticCheck(func: SemanticCheck) {
-  def >>=(next: SemanticCheck) : SemanticCheck = state => {
-    val r1 = func(state)
+case class ChainableSemanticCheck(check: SemanticCheck) {
+  def then(next: SemanticCheck) : SemanticCheck = state => {
+    val r1 = check(state)
     val r2 = next(r1.state)
     SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
+  }
+
+  def ifOkThen(next: SemanticCheck) : SemanticCheck = state => {
+    val r1 = check(state)
+    if (!r1.errors.isEmpty)
+      r1
+    else
+      next(r1.state)
+  }
+}
+
+
+trait SemanticChecking {
+  def name : String
+
+  protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
+    if (pred)
+      check(state)
+    else
+      SemanticCheckResult.success(state)
   }
 }

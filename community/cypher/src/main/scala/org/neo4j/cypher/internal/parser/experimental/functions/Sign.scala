@@ -27,9 +27,9 @@ case object Sign extends Function {
   def name = "SIGN"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 1) {
-      invocation.arguments(0).limitType(NumberType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) ifOkThen {
+      invocation.arguments(0).limitType(NumberType()) then
       invocation.limitType(invocation.arguments(0).types)
     }
   }

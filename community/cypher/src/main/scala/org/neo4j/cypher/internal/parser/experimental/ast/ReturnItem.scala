@@ -32,7 +32,7 @@ case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends 
 
   def declareSubqueryIdentifiers(currentState: SemanticState) = {
     items.foldLeft(SemanticCheckResult.success)((sc, item) => item.alias match {
-      case Some(identifier) => sc >>= identifier.declare(item.expression.types(currentState))
+      case Some(identifier) => sc then identifier.declare(item.expression.types(currentState))
       case None => sc
     })
   }
