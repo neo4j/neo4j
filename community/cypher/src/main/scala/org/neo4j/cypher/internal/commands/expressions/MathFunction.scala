@@ -197,6 +197,18 @@ case class TanFunction(argument: Expression) extends MathFunction(argument) {
   override def calculateType(symbols: SymbolTable) = DoubleType()
 }
 
+case class RandFunction() extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.random
+
+  def children = Seq()
+
+  def symbolTableDependencies = Set[String]()
+
+  def rewrite(f: (Expression) => Expression) = f(RandFunction())
+
+  def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val startVal = asInt(start(ctx))

@@ -41,10 +41,15 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.pipes.ExtractPipe
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.commands.expressions.AbsFunction
+import org.neo4j.cypher.internal.commands.expressions.RandFunction
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.symbols.NumberType
 
 class ExtractBuilderTest extends BuilderTest {
 
@@ -100,12 +105,35 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("foo"))
 
-    val planInProgress = ExecutionPlanInProgress(q, p, false)
+    val planInProgress = ExecutionPlanInProgress(q, p, isUpdating = false)
 
     //WHEN
     val resultPlan = builder(planInProgress)
 
     //THEN
     assert(!resultPlan.pipe.isInstanceOf[ExtractPipe], "No need to extract here")
+  }
+
+  @Test
+  def should_not_cache_calls_to_rand() {
+    val q = PartiallySolvedQuery().
+      copy(returns = Seq(
+        Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
+        Unsolved(ReturnItem(AbsFunction(Literal(1)), "foo")))
+    )
+
+    val p = createPipe(nodes = Seq("s"))
+
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
+
+    val result = builder(plan(p, q))
+
+    assertTrue("the builder did not mark the query as extracted", result.query.extracted)
+
+    val returnItems = result.query.returns.toSet
+    assertEquals( Set(
+      Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
+      Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+    ), returnItems )
   }
 }
