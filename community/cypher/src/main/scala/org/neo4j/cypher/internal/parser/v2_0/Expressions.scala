@@ -189,6 +189,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "log10" -> func(1, args => Log10Function(args.head)),
     "pi" -> func(0, args => PiFunction()),
     "radians" -> func(1, args => RadiansFunction(args.head)),
+    "rand" -> func(0, args => RandFunction()),
     "round" -> func(1, args => RoundFunction(args.head)),
     "sqrt" -> func(1, args => SqrtFunction(args.head)),
     "sign" -> func(1, args => SignFunction(args.head)),

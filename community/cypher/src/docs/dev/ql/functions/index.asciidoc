@@ -130,6 +130,8 @@ include::pi.asciidoc[]
 
 include::radians.asciidoc[]
 
+include::rand.asciidoc[]
+
 include::round.asciidoc[]
 
 include::sign.asciidoc[]

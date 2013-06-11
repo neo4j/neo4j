@@ -132,6 +132,12 @@ class MathFunctionsTest extends Assertions with NumericHelper {
     intercept[CypherTypeException](calc(TanFunction(Literal("wut"))))
   }
 
+  @Test def randTests() {
+    val r1 = asDouble(calc(RandFunction()))
+    val r2 = asDouble(calc(RandFunction()))
+    assert(r1 != r2)
+  }
+
   @Test def roundTests() {
     assert(calc(RoundFunction(Literal(1.5))) === 2)
     assert(calc(RoundFunction(Literal(12.22))) === 12)
