@@ -94,14 +94,14 @@ public class RelIdArray implements SizeOf
         this.type = type;
     }
     
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
     }
     
     static int sizeOfBlockWithReference( IdBlock block )
     {
-        return withReference( block != null ? block.size() : 0 );
+        return withReference( block != null ? block.sizeOfObjectInBytesIncludingOverhead() : 0 );
     }
 
     public int getType()
@@ -394,7 +394,7 @@ public class RelIdArray implements SizeOf
             return copy;
         }
         
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
             return withObjectOverhead( withReference( withArrayOverhead( 4*ids.length ) ) );
         }
@@ -523,12 +523,12 @@ public class RelIdArray implements SizeOf
             this.highBits = highBits;
         }
         
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            int size = super.size() + 8 + SizeOfs.REFERENCE_SIZE;
+            int size = super.sizeOfObjectInBytesIncludingOverhead() + 8 + SizeOfs.REFERENCE_SIZE;
             if ( prev != null )
             {
-                size += prev.size();
+                size += prev.sizeOfObjectInBytesIncludingOverhead();
             }
             return size;
         }

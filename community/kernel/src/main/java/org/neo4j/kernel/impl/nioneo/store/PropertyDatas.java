@@ -39,7 +39,7 @@ public class PropertyDatas
         }
         
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
             // all primitives fit in 8 byte value
             // Object + id(long) + index(int) + value(pad)
@@ -324,9 +324,9 @@ public class PropertyDatas
         }
         
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            return super.size() + 8;
+            return super.sizeOfObjectInBytesIncludingOverhead() + 8;
         }
 
         @SuppressWarnings( "boxing" )
@@ -365,9 +365,9 @@ public class PropertyDatas
         }
 
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            return super.size() + 8;
+            return super.sizeOfObjectInBytesIncludingOverhead() + 8;
         }
         
         @SuppressWarnings( "boxing" )
@@ -412,7 +412,7 @@ public class PropertyDatas
         }
         
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
             return withObjectOverhead( 8 /*id*/ + SizeOfs.REFERENCE_SIZE /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
             // TODO with padding the 'int index' will probably amount to 8 bytes.
@@ -517,7 +517,7 @@ public class PropertyDatas
         return new PropertyData()
         {
             @Override
-            public int size()
+            public int sizeOfObjectInBytesIncludingOverhead()
             {
                 return 0;
             }

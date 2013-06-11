@@ -64,14 +64,14 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
         if ( properties != null )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
             for ( Property data : properties )
-                size += data.asPropertyDataJustForIntegration().size();
+                size += data.asPropertyDataJustForIntegration().sizeOfObjectInBytesIncludingOverhead();
         }
         return withObjectOverhead( size );
     }

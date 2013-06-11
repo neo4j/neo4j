@@ -113,15 +113,15 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        int size = super.size() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
+        int size = super.sizeOfObjectInBytesIncludingOverhead() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
         if ( relationships != null )
         {
             size = withArrayOverheadIncludingReferences( size, relationships.length );
             for ( RelIdArray array : relationships )
             {
-                size += array.size();
+                size += array.sizeOfObjectInBytesIncludingOverhead();
             }
         }
         return size;
@@ -536,7 +536,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void updateSize( NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, size() );
+        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long>

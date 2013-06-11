@@ -80,7 +80,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         return 0;
     }

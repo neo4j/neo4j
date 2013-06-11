@@ -67,7 +67,7 @@ public abstract class Primitive implements SizeOf
                 {
                     Iterator<Property> loadedProperties = loader.load( getId() );
                     setProperties( loadedProperties );
-                    updateListener.newSize( this, size() );
+                    updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                 }
                 catch ( InvalidRecordException e )
                 {
