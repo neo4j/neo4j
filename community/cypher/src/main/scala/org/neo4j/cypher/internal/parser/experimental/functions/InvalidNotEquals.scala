@@ -27,9 +27,9 @@ case object InvalidNotEquals extends Function with LegacyPredicate {
   def name = "!="
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 2) >>=
-    invocation.limitType(BooleanType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) then
+    invocation.limitType(BooleanType()) then
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
   }
 

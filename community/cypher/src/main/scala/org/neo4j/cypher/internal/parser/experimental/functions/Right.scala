@@ -27,11 +27,11 @@ case object Right extends Function {
   def name = "RIGHT"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 2) {
-      invocation.arguments(0).limitType(StringType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) ifOkThen {
+      invocation.arguments(0).limitType(StringType()) then
       invocation.arguments(1).limitType(LongType())
-    } >>= invocation.limitType(StringType())
+    } then invocation.limitType(StringType())
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

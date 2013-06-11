@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols.CypherType
 package object experimental {
   type SemanticCheck = SemanticState => SemanticCheckResult
 
-  // Allows joining of two (SemanticState => SemanticCheckResult) funcs together (using >>=)
+  // Allows joining of two (SemanticState => SemanticCheckResult) funcs together (using then)
   implicit def chainableSemanticCheck(check: SemanticCheck) = ChainableSemanticCheck(check)
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Either[SemanticError, SemanticState]) func
   implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticError, SemanticState]) = ChainableSemanticCheck(func)
@@ -51,11 +51,11 @@ package object experimental {
   // Allows using an optional SemanticError, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticErrorOption(error: Option[SemanticError]) : SemanticCheck = SemanticCheckResult.error(_, error)
 
-  // Allows starting with a sequence of SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using >>=)
+  // Allows starting with a sequence of SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using then)
   implicit def liftSemanticErrorsAndChain(errors: Seq[SemanticError]) : ChainableSemanticCheck = liftSemanticErrors(errors)
-  // Allows starting with a single SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using >>=)
+  // Allows starting with a single SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using then)
   implicit def liftSemanticErrorAndChain(error: SemanticError) : ChainableSemanticCheck = liftSemanticError(error)
-  // Allows starting with an optional SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using >>=)
+  // Allows starting with an optional SemanticError, and joining to a (SemanticState => SemanticCheckResult) func (using then)
   implicit def liftSemanticErrorOptionAndChain(error: Option[SemanticError]) : ChainableSemanticCheck = liftSemanticErrorOption(error)
 
   // Allows calling semanticCheck on an optional SemanticCheckable object

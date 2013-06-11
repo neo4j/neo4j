@@ -27,8 +27,8 @@ case object And extends Function with LegacyPredicate {
   def name = "AND"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 2) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) then
     invocation.limitType(BooleanType())
   }
 

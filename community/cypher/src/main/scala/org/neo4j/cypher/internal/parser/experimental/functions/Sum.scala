@@ -27,10 +27,10 @@ case object Sum extends AggregatingFunction {
   def name = "SUM"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 1) {
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) ifOkThen {
       val arg = invocation.arguments(0)
-      arg.limitType(NumberType()) >>= invocation.limitType(arg.types)
+      arg.limitType(NumberType()) then invocation.limitType(arg.types)
     }
   }
 

@@ -27,9 +27,9 @@ case object Rels extends Function {
   def name = "RELS"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 1) >>=
-    invocation.arguments.limitType(CollectionType(MapType())) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) then
+    invocation.arguments.limitType(CollectionType(MapType())) then
     invocation.limitType(CollectionType(RelationshipType()))
   }
 

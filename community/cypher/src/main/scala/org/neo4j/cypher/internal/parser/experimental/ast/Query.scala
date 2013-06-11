@@ -44,8 +44,8 @@ case class SingleQuery(
   def semanticCheck : Seq[SemanticError] = checkUntilConsistent(semanticCheck)
   
   def semanticCheck(implicit d: DummyImplicit) : SemanticCheck = {
-    checkStart >>=
-    checkConclusion >>=
+    checkStart then
+    checkConclusion then
     (start ++ matches ++ where ++ updates ++ close).semanticCheck
   }
 
@@ -160,14 +160,14 @@ sealed trait QueryClose extends AstNode with SemanticCheckable {
   def limit: Option[Limit]
 
   def semanticCheck = {
-    returnItems.semanticCheck >>=
-    checkSortItems >>=
+    returnItems.semanticCheck then
+    checkSortItems then
     checkSkipLimit
   }
 
   // use a scoped state containing the aliased return items for the sort expressions
   private def checkSortItems : SemanticState => Seq[SemanticError] =
-      s => (returnItems.declareSubqueryIdentifiers(s) >>= orderBy.semanticCheck)(s.newScope).errors
+      s => (returnItems.declareSubqueryIdentifiers(s) then orderBy.semanticCheck)(s.newScope).errors
 
   // use an empty state when checking skip & limit, as these have isolated scope
   private def checkSkipLimit : SemanticState => Seq[SemanticError] =
@@ -211,8 +211,8 @@ case class With(
     query: SingleQuery) extends QueryClose
 {
   override def semanticCheck = {
-    super.semanticCheck >>=
-    checkAliasedReturnItems >>=
+    super.semanticCheck then
+    checkAliasedReturnItems then
     checkSubQuery
   }
 
@@ -227,7 +227,7 @@ case class With(
 
   private def checkSubQuery : SemanticState => Seq[SemanticError] = state => {
     // check the subquery with a clean state
-    ( returnItems.declareSubqueryIdentifiers(state) >>= query.semanticCheck )(SemanticState.clean).errors
+    ( returnItems.declareSubqueryIdentifiers(state) then query.semanticCheck )(SemanticState.clean).errors
   }
 
   override def addToLegacyQuery(builder: commands.QueryBuilder) = {

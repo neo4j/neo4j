@@ -33,7 +33,7 @@ class SemanticCheckableTest extends Assertions {
     val error2 = SemanticError("another error", DummyToken(0,1))
     val func2 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error2))
 
-    val chain : SemanticState => SemanticCheckResult = func1 >>= func2
+    val chain : SemanticState => SemanticCheckResult = func1 then func2
     val state = SemanticState.clean
     val result = chain(state)
     assertEquals(state, result.state.parent.get.parent.get)
@@ -47,18 +47,18 @@ class SemanticCheckableTest extends Assertions {
 
     val func2 : SemanticState => Either[SemanticError, SemanticState] = s => Right(s.newScope)
 
-    val chain : SemanticState => SemanticCheckResult = func1 >>= func2
+    val chain : SemanticState => SemanticCheckResult = func1 then func2
     val state = SemanticState.clean
     val result = chain(state)
     assertEquals(state, result.state.parent.get.parent.get)
     assertEquals(Seq(error1), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 >>= func1
+    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
     val result2 = chain2(state)
     assertEquals(state, result2.state.parent.get.parent.get)
     assertEquals(Seq(error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 >>= func2
+    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
     val result3 = chain3(state)
     assertEquals(state, result3.state.parent.get.parent.get)
     assertEquals(Seq(), result3.errors)
@@ -72,18 +72,18 @@ class SemanticCheckableTest extends Assertions {
     val error2 = SemanticError("another error", DummyToken(0,1))
     val func2 : SemanticState => Either[SemanticError, SemanticState] = s => Left(error2)
 
-    val chain : SemanticState => SemanticCheckResult = func1 >>= func2
+    val chain : SemanticState => SemanticCheckResult = func1 then func2
     val state = SemanticState.clean
     val result = chain(state)
     assertEquals(state, result.state.parent.get)
     assertEquals(Seq(error1, error2), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 >>= func1
+    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
     val result2 = chain2(state)
     assertEquals(state, result2.state.parent.get)
     assertEquals(Seq(error2, error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 >>= func2
+    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
     val result3 = chain3(state)
     assertEquals(state, result3.state)
     assertEquals(Seq(error2, error2), result3.errors)
@@ -96,18 +96,18 @@ class SemanticCheckableTest extends Assertions {
 
     val func2 : SemanticState => Option[SemanticError] = s => None
 
-    val chain : SemanticState => SemanticCheckResult = func1 >>= func2
+    val chain : SemanticState => SemanticCheckResult = func1 then func2
     val state = SemanticState.clean
     val result = chain(state)
     assertEquals(state, result.state.parent.get)
     assertEquals(Seq(error1), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 >>= func1
+    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
     val result2 = chain2(state)
     assertEquals(state, result2.state.parent.get)
     assertEquals(Seq(error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 >>= func2
+    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
     val result3 = chain3(state)
     assertEquals(state, result3.state)
     assertEquals(Seq(), result3.errors)
@@ -121,18 +121,18 @@ class SemanticCheckableTest extends Assertions {
     val error2 = SemanticError("another error", DummyToken(0,1))
     val func2 : SemanticState => Option[SemanticError] = s => Some(error2)
 
-    val chain : SemanticState => SemanticCheckResult = func1 >>= func2
+    val chain : SemanticState => SemanticCheckResult = func1 then func2
     val state = SemanticState.clean
     val result = chain(state)
     assertEquals(state, result.state.parent.get)
     assertEquals(Seq(error1, error2), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 >>= func1
+    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
     val result2 = chain2(state)
     assertEquals(state, result2.state.parent.get)
     assertEquals(Seq(error2, error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 >>= func2
+    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
     val result3 = chain3(state)
     assertEquals(state, result3.state)
     assertEquals(Seq(error2, error2), result3.errors)
