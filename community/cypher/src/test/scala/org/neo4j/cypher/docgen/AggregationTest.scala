@@ -187,4 +187,22 @@ An example might be helpful:""",
       assertions = p => assertEquals(Map("percentile_cont(n.property, 0.4)" -> 29), p.toList.head))
   }
 
+  @Test def stdev() {
+    testQuery(
+      title = "STDEV",
+      text = "+STDEV+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N-1 as the denominator, and should be used when taking a sample of the population for an unbiased estimate. When the standard variation of the entire population is being calculated, STDEVP should be used.",
+      queryText = "start n=node(%A%,%B%,%C%) return stdev(n.property)",
+      returns = "The standard deviation of the values in the property `property` is returned by the example query.",
+      assertions = p => assertEquals(15.7162336455,p.toList.head("stdev(n.property)").asInstanceOf[Double], 0.0000001))
+  }
+
+  @Test def stdevp() {
+    testQuery(
+      title = "STDEVP",
+      text = "+STDEVP+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N as the denominator, and should be used when calculating the standard deviation for an entire population. When the standard variation of only a sample of the population is being calculated, STDEV should be used.",
+      queryText = "start n=node(%A%,%B%,%C%) return stdevp(n.property)",
+      returns = "The population standard deviation of the values in the property `property` is returned by the example query.",
+      assertions = p => assertEquals(12.8322510366, p.toList.head("stdevp(n.property)").asInstanceOf[Double], 0.0000001))
+  }
+
 }
