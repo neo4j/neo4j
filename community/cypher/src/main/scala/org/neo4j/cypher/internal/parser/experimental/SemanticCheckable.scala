@@ -61,8 +61,6 @@ case class ChainableSemanticCheck(check: SemanticCheck) {
 
 
 trait SemanticChecking {
-  def name : String
-
   protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
     if (pred)
       check(state)

@@ -23,118 +23,181 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 
-class SemanticCheckableTest extends Assertions {
+class SemanticCheckableTest extends Assertions with SemanticChecking {
 
   @Test
   def shouldChainSemanticCheckableFunctions() {
+    val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyToken(0,1))
-    val func1 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
 
+    val state2 = SemanticState.clean
     val error2 = SemanticError("another error", DummyToken(0,1))
-    val func2 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error2))
+    val func2 : SemanticCheck = s => {
+      assertEquals(s, state1)
+      SemanticCheckResult(state2, Seq(error2))
+    }
 
-    val chain : SemanticState => SemanticCheckResult = func1 then func2
-    val state = SemanticState.clean
-    val result = chain(state)
-    assertEquals(state, result.state.parent.get.parent.get)
+    val chain : SemanticCheck = func1 then func2
+    val result = chain(SemanticState.clean)
+    assertEquals(state2, result.state)
     assertEquals(Seq(error1, error2), result.errors)
   }
 
   @Test
   def shouldChainSemanticFunctionReturningRightOfEither() {
+    val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyToken(0,1))
-    val func1 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
 
-    val func2 : SemanticState => Either[SemanticError, SemanticState] = s => Right(s.newScope)
+    val state2 = SemanticState.clean
+    val func2 : SemanticState => Either[SemanticError, SemanticState] = s => Right(state2)
 
-    val chain : SemanticState => SemanticCheckResult = func1 then func2
-    val state = SemanticState.clean
-    val result = chain(state)
-    assertEquals(state, result.state.parent.get.parent.get)
+    val chain : SemanticCheck = func1 then func2
+    val result = chain(SemanticState.clean)
+    assertEquals(state2, result.state)
     assertEquals(Seq(error1), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
-    val result2 = chain2(state)
-    assertEquals(state, result2.state.parent.get.parent.get)
+    val chain2 : SemanticCheck = func2 then func1
+    val result2 = chain2(SemanticState.clean)
+    assertEquals(state1, result2.state)
     assertEquals(Seq(error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
-    val result3 = chain3(state)
-    assertEquals(state, result3.state.parent.get.parent.get)
+    val chain3 : SemanticCheck = func2 then func2
+    val result3 = chain3(SemanticState.clean)
+    assertEquals(state2, result3.state)
     assertEquals(Seq(), result3.errors)
   }
 
   @Test
   def shouldChainSemanticFunctionReturningLeftOfEither() {
+    val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyToken(0,1))
-    val func1 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
 
     val error2 = SemanticError("another error", DummyToken(0,1))
     val func2 : SemanticState => Either[SemanticError, SemanticState] = s => Left(error2)
 
-    val chain : SemanticState => SemanticCheckResult = func1 then func2
-    val state = SemanticState.clean
-    val result = chain(state)
-    assertEquals(state, result.state.parent.get)
+    val chain1 : SemanticCheck = func1 then func2
+    val result = chain1(SemanticState.clean)
+    assertEquals(state1, result.state)
     assertEquals(Seq(error1, error2), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
-    val result2 = chain2(state)
-    assertEquals(state, result2.state.parent.get)
+    val chain2 : SemanticCheck = func2 then func1
+    val result2 = chain2(SemanticState.clean)
+    assertEquals(state1, result2.state)
     assertEquals(Seq(error2, error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
-    val result3 = chain3(state)
-    assertEquals(state, result3.state)
+    val chain3 : SemanticCheck = func2 then func2
+    val state3 = SemanticState.clean
+    val result3 = chain3(state3)
+    assertEquals(state3, result3.state)
     assertEquals(Seq(error2, error2), result3.errors)
   }
 
   @Test
   def shouldChainSemanticFunctionReturningNone() {
+    val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyToken(0,1))
-    val func1 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
 
     val func2 : SemanticState => Option[SemanticError] = s => None
 
-    val chain : SemanticState => SemanticCheckResult = func1 then func2
-    val state = SemanticState.clean
-    val result = chain(state)
-    assertEquals(state, result.state.parent.get)
+    val chain1 : SemanticCheck = func1 then func2
+    val result = chain1(SemanticState.clean)
+    assertEquals(state1, result.state)
     assertEquals(Seq(error1), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
-    val result2 = chain2(state)
-    assertEquals(state, result2.state.parent.get)
+    val chain2 : SemanticCheck = func2 then func1
+    val result2 = chain2(SemanticState.clean)
+    assertEquals(state1, result2.state)
     assertEquals(Seq(error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
-    val result3 = chain3(state)
-    assertEquals(state, result3.state)
+    val chain3 : SemanticCheck = func2 then func2
+    val state3 = SemanticState.clean
+    val result3 = chain3(state3)
+    assertEquals(state3, result3.state)
     assertEquals(Seq(), result3.errors)
   }
 
   @Test
   def shouldChainSemanticFunctionReturningSomeError() {
+    val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyToken(0,1))
-    val func1 = (s: SemanticState) => SemanticCheckResult(s.newScope, Seq(error1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
 
     val error2 = SemanticError("another error", DummyToken(0,1))
     val func2 : SemanticState => Option[SemanticError] = s => Some(error2)
 
-    val chain : SemanticState => SemanticCheckResult = func1 then func2
-    val state = SemanticState.clean
-    val result = chain(state)
-    assertEquals(state, result.state.parent.get)
+    val chain1 : SemanticCheck = func1 then func2
+    val result = chain1(SemanticState.clean)
+    assertEquals(state1, result.state)
     assertEquals(Seq(error1, error2), result.errors)
 
-    val chain2 : SemanticState => SemanticCheckResult = func2 then func1
-    val result2 = chain2(state)
-    assertEquals(state, result2.state.parent.get)
+    val chain2 : SemanticCheck = func2 then func1
+    val result2 = chain2(SemanticState.clean)
+    assertEquals(state1, result2.state)
     assertEquals(Seq(error2, error1), result2.errors)
 
-    val chain3 : SemanticState => SemanticCheckResult = func2 then func2
-    val result3 = chain3(state)
-    assertEquals(state, result3.state)
+    val chain3 : SemanticCheck = func2 then func2
+    val state3 = SemanticState.clean
+    val result3 = chain3(state3)
+    assertEquals(state3, result3.state)
     assertEquals(Seq(error2, error2), result3.errors)
+  }
+
+  @Test
+  def shouldChainSemanticCheckAfterNoErrorWithIfOkThen() {
+    val state1 = SemanticState.clean
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq())
+
+    val error2 = SemanticError("an error", DummyToken(0,1))
+    val func2 : SemanticState => Option[SemanticError] = s => Some(error2)
+
+    val chain : SemanticCheck = func1 then func2
+    val result = chain(SemanticState.clean)
+    assertEquals(state1, result.state)
+    assertEquals(Seq(error2), result.errors)
+  }
+
+  @Test
+  def shouldNotChainSemanticFunctionAfterAnErrorWithIfOkThen() {
+    val state1 = SemanticState.clean
+    val error1 = SemanticError("an error", DummyToken(0,1))
+    val func1 = (s: SemanticState) => SemanticCheckResult(state1, Seq(error1))
+    val func2 : SemanticCheck = s => fail("Second check was incorrectly run")
+
+    val chain : SemanticCheck = func1 ifOkThen func2
+    val result = chain(SemanticState.clean)
+    assertEquals(state1, result.state)
+    assertEquals(Seq(error1), result.errors)
+  }
+
+  @Test
+  def shouldEvaluateInnerCheckForTrueWhen() {
+    val state1 = SemanticState.clean
+    val error1 = SemanticError("an error", DummyToken(0,1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+
+    val error2 = SemanticError("another error", DummyToken(0,1))
+    val func2 : SemanticState => Option[SemanticError] = s => Some(error2)
+
+    val chain : SemanticCheck = func1 then when(true) { func2 }
+    val result = chain(SemanticState.clean)
+    assertEquals(state1, result.state)
+    assertEquals(Seq(error1, error2), result.errors)
+  }
+
+  @Test
+  def shouldNotEvaluateInnerCheckForFalseWhen() {
+    val state1 = SemanticState.clean
+    val error1 = SemanticError("an error", DummyToken(0,1))
+    val func1 : SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func2 : SemanticCheck = s => fail("Second check was incorrectly run")
+
+    val chain : SemanticCheck = func1 then when(false) { func2 }
+    val result = chain(SemanticState.clean)
+    assertEquals(state1, result.state)
+    assertEquals(Seq(error1), result.errors)
   }
 }
