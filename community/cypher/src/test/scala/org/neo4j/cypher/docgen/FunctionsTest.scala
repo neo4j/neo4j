@@ -159,7 +159,7 @@ class FunctionsTest extends DocumentingTestBase {
         "expression" -> "This expression will run once per value in the collection, and produces the result value."
       ),
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
- an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result 
+ an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
@@ -519,6 +519,18 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = "match n return sign(-17), sign(0.1) limit 1",
       returns = "",
       assertions = (p) => assert(List(Map("sign(-17)"-> -1, "sign(0.1)"->1)) === p.toList)
+    )
+  }
+
+  @Test def rand() {
+    testThis(
+      title = "RAND",
+      syntax = "RAND( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`RAND` returns a random double between 0 and 1.0.",
+      queryText = """start a=node(%A%) return rand() as x1""",
+      returns = "Two random numbers are returned.",
+      assertions = (p) => assert(p.toList.head("x1").asInstanceOf[Double] >= 0)
     )
   }
 
