@@ -26,8 +26,8 @@ case object Coalesce extends Function {
   def name = "COALESCE"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkMinArgs(invocation, 1) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkMinArgs(invocation, 1) then
     invocation.limitType(invocation.arguments.mergeDownTypes)
   }
 

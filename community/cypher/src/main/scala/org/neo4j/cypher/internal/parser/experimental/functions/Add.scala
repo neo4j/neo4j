@@ -27,9 +27,9 @@ case object Add extends Function {
   def name = "+"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 2) >>=
-    invocation.arguments.limitType(StringType(), NumberType(), CollectionType(AnyType())) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) then
+    invocation.arguments.limitType(StringType(), NumberType(), CollectionType(AnyType())) then
     invocation.limitType(invocation.arguments.mergeDownTypes)
   }
 

@@ -28,13 +28,13 @@ case object Has extends Function {
   def name = "HAS"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 1) {
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) ifOkThen {
       invocation.arguments(0) match {
         case _: ast.Property => None
         case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.token, invocation.token))
       }
-    } >>= invocation.limitType(BooleanType())
+    } then invocation.limitType(BooleanType())
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

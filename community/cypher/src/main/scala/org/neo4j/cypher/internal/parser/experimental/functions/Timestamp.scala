@@ -27,8 +27,8 @@ case object Timestamp extends Function {
   def name = "TIMESTAMP"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 0) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 0) then
     invocation.limitType(LongType())
   }
 

@@ -86,7 +86,7 @@ object Function {
   val lookup : Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 }
 
-abstract class Function {
+abstract class Function extends SemanticChecking {
   def name : String
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
     when(invocation.distinct) {
@@ -96,10 +96,6 @@ abstract class Function {
 
   protected def checkArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
     Seq(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
-  }
-
-  protected def checkArgsThen(invocation: ast.FunctionInvocation, n: Int)(check: => SemanticCheck) : SemanticCheck = {
-    checkArgs(invocation, n) >>= when(invocation.arguments.length == n)(check)
   }
 
   protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
@@ -114,13 +110,6 @@ abstract class Function {
       Some(SemanticError(s"Insufficient parameters for function '$name'", invocation.token))
     else
       None
-  }
-
-  protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
-    if (pred)
-      check(state)
-    else
-      SemanticCheckResult.success(state)
   }
 
   def toCommand(invocation: ast.FunctionInvocation) : CommandExpression

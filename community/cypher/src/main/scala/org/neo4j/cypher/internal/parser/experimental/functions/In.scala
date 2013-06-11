@@ -28,10 +28,10 @@ case object In extends Function with LegacyPredicate {
   def name = "IN"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgsThen(invocation, 2) {
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) ifOkThen {
       invocation.arguments(1).limitType(CollectionType(AnyType()))
-    } >>= invocation.limitType(BooleanType())
+    } then invocation.limitType(BooleanType())
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

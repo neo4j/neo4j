@@ -27,9 +27,9 @@ case object Id extends Function {
   def name = "ID"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 1) >>=
-    invocation.arguments.limitType(RelationshipType(), NodeType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) then
+    invocation.arguments.limitType(RelationshipType(), NodeType()) then
     invocation.limitType(LongType())
   }
 

@@ -37,7 +37,7 @@ case class SetPropertyItem(property: Property, token: InputToken, expression: Ex
 
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
   def semanticCheck = {
-    expression.semanticCheck(Expression.SemanticContext.Simple) >>=
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.limitType(NodeType())
   }
 
@@ -48,8 +48,8 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
 
 case class SetNodeItem(identifier: Identifier, token: InputToken, expression: Expression) extends SetItem {
   def semanticCheck = {
-    Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Simple) >>=
-    identifier.limitType(NodeType()) >>=
+    Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Simple) then
+    identifier.limitType(NodeType()) then
     expression.limitType(MapType())
   }
 

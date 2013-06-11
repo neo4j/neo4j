@@ -27,9 +27,9 @@ case object Subtract extends Function {
   def name = "-"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 2) >>=
-    invocation.arguments.limitType(NumberType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 2) then
+    invocation.arguments.limitType(NumberType()) then
     invocation.limitType(NumberType())
   }
 

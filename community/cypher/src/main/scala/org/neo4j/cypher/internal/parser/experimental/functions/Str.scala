@@ -27,8 +27,8 @@ case object Str extends Function {
   def name = "STR"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 1) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) then
     invocation.limitType(StringType())
   }
 

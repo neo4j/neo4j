@@ -27,9 +27,9 @@ case object RTrim extends Function {
   def name = "RTRIM"
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) >>=
-    checkArgs(invocation, 1) >>=
-    invocation.arguments.limitType(StringType()) >>=
+    super.semanticCheck(ctx, invocation) then
+    checkArgs(invocation, 1) then
+    invocation.arguments.limitType(StringType()) then
     invocation.limitType(StringType())
   }
 
