@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.parser.experimental
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
+import org.neo4j.cypher.internal.parser.experimental.ast.Identifier
+import org.neo4j.cypher.internal.symbols.NodeType
 
 class SemanticCheckableTest extends Assertions with SemanticChecking {
 
@@ -199,5 +201,23 @@ class SemanticCheckableTest extends Assertions with SemanticChecking {
     val result = chain(SemanticState.clean)
     assertEquals(state1, result.state)
     assertEquals(Seq(error1), result.errors)
+  }
+
+  @Test
+  def shouldScopeState() {
+    val func1 : SemanticCheck = Identifier("name", DummyToken(0, 1)).declare(NodeType())
+
+    val error2 = SemanticError("an error", DummyToken(0,1))
+    val func2 : SemanticCheck = s => {
+      assertTrue(s.symbolTable.get("name").isDefined)
+      assertTrue(s.parent.isDefined)
+      SemanticCheckResult.error(s, error2)
+    }
+
+    val chain : SemanticCheck = withScopedState { func1 then func2 }
+    val state = SemanticState.clean
+    val result = chain(state)
+    assertEquals(state, result.state)
+    assertEquals(Seq(error2), result.errors)
   }
 }

@@ -67,4 +67,8 @@ trait SemanticChecking {
     else
       SemanticCheckResult.success(state)
   }
+
+  private def scopeState : SemanticCheck = state => SemanticCheckResult.success(state.newScope)
+  private def popStateScope : SemanticCheck = state => SemanticCheckResult.success(state.popScope)
+  protected def withScopedState(check: => SemanticCheck) : SemanticCheck = scopeState then check then popStateScope
 }
