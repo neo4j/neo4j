@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StrongReferenceCache<E extends EntityWithSize> implements Cache<E>
+public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
 {
     private final String name;
     private final ConcurrentHashMap<Long,E> cache = new ConcurrentHashMap<Long,E>();

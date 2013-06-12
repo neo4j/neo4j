@@ -122,7 +122,7 @@ public class TestGCResistantCache
         cache.remove( -1l );
     }
     
-    private static class Entity implements EntityWithSize
+    private static class Entity implements EntityWithSizeObject
     {
         private final long id;
         private int size;
@@ -135,7 +135,7 @@ public class TestGCResistantCache
         }
         
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
             return size;
         }
@@ -172,9 +172,9 @@ public class TestGCResistantCache
         }
         
         @Override
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            int size = super.size();
+            int size = super.sizeOfObjectInBytesIncludingOverhead();
             doThisBadStuffInSizeCall();
             return size;
         }

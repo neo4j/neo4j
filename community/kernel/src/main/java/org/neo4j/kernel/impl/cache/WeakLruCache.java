@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WeakLruCache<E extends EntityWithSize> extends ReferenceCache<E>
+public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
 {
     private final ConcurrentHashMap<Long,WeakValue<Long,E>> cache =
         new ConcurrentHashMap<Long,WeakValue<Long,E>>();

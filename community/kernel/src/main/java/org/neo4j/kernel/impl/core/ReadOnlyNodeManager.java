@@ -63,12 +63,6 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    int getOrCreatePropertyKeyId( String key )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
         throw new ReadOnlyDbException();

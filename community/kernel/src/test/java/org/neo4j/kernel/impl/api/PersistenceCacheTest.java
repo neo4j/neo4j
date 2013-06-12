@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PersistenceCacheTest
@@ -45,7 +47,7 @@ public class PersistenceCacheTest
         @SuppressWarnings( "unchecked" )
         CacheLoader<Set<Long>> loader = mock( CacheLoader.class );
         when( loader.load( nodeId ) ).thenReturn( labels );
-        NodeImpl node = new NodeImpl( nodeId, -1, -1 );
+        NodeImpl node = new NodeImpl( nodeId );
         when( nodeCache.get( nodeId ) ).thenReturn( node );
         
         // WHEN

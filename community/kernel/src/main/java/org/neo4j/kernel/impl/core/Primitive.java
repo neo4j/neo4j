@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.api.CacheUpdateListener;
-import org.neo4j.kernel.impl.cache.SizeOf;
+import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
-public abstract class Primitive implements SizeOf
+public abstract class Primitive implements SizeOfObject
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
@@ -97,8 +97,8 @@ public abstract class Primitive implements SizeOf
     protected abstract PropertyData getPropertyForIndex( int keyId );
     
     protected abstract void commitPropertyMaps(
-            ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager );
+            ArrayMap<Integer, PropertyData> cowPropertyAddMap,
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp );
 
     @Override
     public int hashCode()

@@ -75,13 +75,13 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 
-    public NodeImpl( long id, long firstRel, long firstProp )
+    public NodeImpl( long id )
     {
-        this( id, firstRel, firstProp, false );
+        this( id, false );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( long id, @SuppressWarnings("unused") long firstRel, @SuppressWarnings("unused")long firstProp, boolean newNode )
+    public NodeImpl( long id, boolean newNode )
     {
         /* TODO firstRel/firstProp isn't used yet due to some unresolved issue with clearing
          * of cache and keeping those first ids in the node instead of loading on demand.
@@ -137,7 +137,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     public boolean equals( Object obj )
     {
-        return this == obj || obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId();
+        return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
     }
 
     Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
@@ -213,10 +213,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         ensureRelationshipMapNotNull( nodeManager );
 
         // We need to check if there are more relationships to load before grabbing
-        // the references to the RelIdArrays since otherwise there could be
+        // the references to the RelIdArrays. Otherwise there could be
         // another concurrent thread exhausting the chain position in between the point
         // where we got an empty iterator for a type that the other thread loaded and
-        // the point where we check whether or not there are more relationships to load.
+        // the point where we check if there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
 
         RelIdIterator[] result = new RelIdIterator[types.length];
@@ -304,16 +304,22 @@ public class NodeImpl extends ArrayBasedPrimitive
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
                                                Direction dir )
     {
-        Iterator<Relationship> rels = getAllRelationshipsOfType( nodeManager, wrap( dir ), type ).iterator();
+        Iterator<Relationship> rels = getAllRelationshipsOfType( nodeManager, wrap( dir ),
+                new RelationshipType[]{type} ).iterator();
+
         if ( !rels.hasNext() )
         {
             return null;
         }
         Relationship rel = rels.next();
-        if ( rels.hasNext() )
+        while ( rels.hasNext() )
         {
-            throw new NotFoundException( "More than one relationship[" +
-                    type + ", " + dir + "] found for " + this );
+            Relationship other = rels.next();
+            if ( !other.equals( rel ) )
+            {
+                throw new NotFoundException( "More than one relationship[" +
+                        type + ", " + dir + "] found for " + this );
+            }
         }
         return rel;
     }
@@ -374,6 +380,11 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             nodeManager.putAllInRelCache( rels.second() );
         }
+    }
+
+    protected void updateSize( NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 
     private RelIdArray[] toRelIdArray( ArrayMap<Integer, RelIdArray> tmpRelMap )
@@ -453,8 +464,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                 }
             }
         }
+
         return rels;
-        // nodeManager.putAllInRelCache( pair.other() );
     }
 
     boolean hasMoreRelationshipsToLoad()
@@ -532,11 +543,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         nodeManager.putAllInRelCache( rels.second() );
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
-    }
-
-    protected void updateSize( NodeManager nodeManager )
-    {
-        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long>
@@ -622,7 +628,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
             ArrayMap<Integer, RelIdArray> cowRelationshipAddMap,
-            ArrayMap<Integer, Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
+            ArrayMap<Integer, Collection<Long>> cowRelationshipRemoveMap )
     {
         if ( relationships == null )
         {

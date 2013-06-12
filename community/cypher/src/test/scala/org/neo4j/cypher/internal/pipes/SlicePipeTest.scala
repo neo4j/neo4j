@@ -17,21 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.cache;
+package org.neo4j.cypher.internal.pipes
 
-public abstract class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
-{
-    protected abstract void pollClearedValues();
+import org.junit.Test
+import org.scalatest.Assertions
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.expressions.Literal
 
-    @Override
-    public void updateSize( E entity, int newSize )
-    {
-        // do nothing
-    }
+class SlicePipeTest extends Assertions {
+  @Test
+  def should_handle_longs() {
+    //given
+    val ctx = ExecutionContext.empty
+    val input = new FakePipe(Iterator(ctx, ctx, ctx))
+    val pipe = new SlicePipe(input, None, Some(Literal(42l)))
 
-    @Override
-    public void printStatistics()
-    {
-        // do nothing
-    }
+    //when
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+
+    //then
+    assert(result.size == 3)
+  }
 }

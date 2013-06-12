@@ -74,7 +74,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return nodeManager.loadProperties( this, false );
     }
-    
+
     @Override
     protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
     {
