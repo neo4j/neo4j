@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class SetTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "SET"
-  val css = "write c2-2 c4-4"
+  val css = "write c2-2 c4-4 c5-4 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -41,7 +41,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=set" => Map("value" -> "a value")
       case "parameters=map" => Map("map" -> Map("property" -> "a value"))
-      case ""               => Map()
+      case "" => Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(

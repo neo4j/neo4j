@@ -43,8 +43,14 @@ footer div.mid {
         case pageWidth >= 1350 && pageWidth < 1800:
           numberOfColumns = 3;
           break;
-        case pageWidth >= 1800:
+        case pageWidth >= 1800 && pageWidth < 2210:
           numberOfColumns = 4;
+          break;
+        case pageWidth >= 2210 && pageWidth < 2640:
+          numberOfColumns = 5;
+          break;
+        case pageWidth >= 2640:
+          numberOfColumns = 6;
           break;
       }
       if ( numberOfColumns < 2 )

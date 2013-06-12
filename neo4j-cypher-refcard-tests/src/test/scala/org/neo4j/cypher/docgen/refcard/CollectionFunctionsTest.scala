@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Collection Functions"
-  val css = "general c3-3 c4-3"
+  val css = "general c3-3 c4-3 c5-5 c6-6"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -51,9 +51,9 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("property" -> "Andrés"),
-    "B" -> Map("property" -> "Tobias"),
-    "C" -> Map("property" -> "Chris"))
+    "A" -> Map("prop" -> "Andrés"),
+    "B" -> Map("prop" -> "Tobias"),
+    "C" -> Map("prop" -> "Chris"))
 
   def text = """
 ###assertion=returns-one
@@ -82,7 +82,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection
 RETURN
 
-EXTRACT(x IN collection: x.property)
+EXTRACT(x IN collection: x.prop)
 ###
 
 A collection of the value of the expression for each element in the collection.
@@ -90,10 +90,10 @@ A collection of the value of the expression for each element in the collection.
 ###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
-WITH nodes(path) as collection
+WITH nodes(path) as coll
 RETURN
 
-FILTER(x IN collection: x.property <> {value})
+FILTER(x IN coll: x.prop <> {value})
 ###
 
 A collection of the elements where the predicate is `true`.
@@ -127,7 +127,7 @@ MATCH path=(n)-[*]->(m)
 WITH nodes(path) as coll
 RETURN
 
-REDUCE(str = "", n IN coll : str + n.property )
+REDUCE(str = "", n IN coll : str + n.prop)
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
@@ -136,9 +136,9 @@ Evaluate expression for each element in the collection, accumulate the results.
 //
 START begin = node(%A%), end = node(%B%)
 MATCH path = begin -[*]-> end
-WITH nodes(path) AS collection
+WITH nodes(path) AS coll
 
-FOREACH (n IN collection : SET n.marked = true)
+FOREACH (n IN coll : SET n.marked = true)
 ###
 
 Execute a mutating operation for each element in a collection.

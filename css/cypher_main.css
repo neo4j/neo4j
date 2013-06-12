@@ -14,7 +14,63 @@ html,body {
   float: left;
 }
 
-@media screen and (min-width: 1800px) {
+@media screen and (min-width: 2640px) {
+  html,body {
+    font-size: 0.975em;
+  }
+  .mid {
+    margin: 0 auto;
+    width: 2640px;
+  }
+  header img.neo4j-logo {
+    width: 282px;
+    float: left;
+    margin: 2em 0 0 3%;
+  }
+  header h1 {
+    float: right;
+    padding: 1.5em 3% 0 3%;
+  }
+  header {
+    height: 8em;
+  }
+  .col {
+    float: left;
+    width: 420px;
+    margin: 0 10px;
+    padding: 10px 0;
+  }
+}
+
+@media screen and (min-width: 2210px) and (max-width: 2639px) {
+  html,body {
+    font-size: 0.975em;
+  }
+  .mid {
+    margin: 0 auto;
+    width: 2210px;
+  }
+  header img.neo4j-logo {
+    width: 282px;
+    float: left;
+    margin: 2em 0 0 3%;
+  }
+  header h1 {
+    float: right;
+    padding: 1.5em 3% 0 3%;
+  }
+  header {
+    height: 8em;
+  }
+  .col {
+    float: left;
+    width: 420px;
+    margin: 0 10px;
+    padding: 10px 0;
+  }
+}
+
+@media screen and (min-width: 1800px) and (max-width: 2209px) {
   html,body {
     font-size: 0.975em;
   }
@@ -440,27 +496,6 @@ body .syntaxhighlighter {
   margin: 0.1em 0 0 0 !important;
 }
 
-/**** Transitions ****/
-.masonry,.masonry .masonry-brick {
-  -webkit-transition-duration: 0.7s;
-  -moz-transition-duration: 0.7s;
-  -ms-transition-duration: 0.7s;
-  -o-transition-duration: 0.7s;
-  transition-duration: 0.7s;
-}
-
-.masonry {
-  -webkit-transition-property: width, height;
-  -moz-transition-property: width, height;
-  -ms-transition-property: width, height;
-  -o-transition-property: width, height;
-  transition-property: width, height;
-}
-
-.masonry .masonry-brick {
-  -webkit-transition-property: left, right, top;
-  -moz-transition-property: left, right, top;
-  -ms-transition-property: left, right, top;
-  -o-transition-property: left, right, top;
-  transition-property: left, right, top;
+body .syntaxhighlighter table td.code .line {
+  padding: 0 !important;
 }
