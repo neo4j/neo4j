@@ -186,7 +186,7 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
 }
 
 
-sealed trait FilterExpression extends Expression {
+trait FilterExpression extends Expression {
   def name: String
   def identifier: Identifier
   def expression: Expression
@@ -209,9 +209,10 @@ sealed trait FilterExpression extends Expression {
   }
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
+
   def toCommand = {
     val command = expression.toCommand
-    val inner = innerPredicate.map { _.toCommand } match {
+    val inner = innerPredicate.map(_.toCommand) match {
       case Some(e: commands.Predicate) => e
       case None                        => commands.True()
       case _                           => throw new SyntaxException(s"Argument to ${name} is not a predicate (${expression.token.startPosition})")
@@ -224,6 +225,7 @@ sealed trait IterablePredicateExpression extends FilterExpression {
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())
 
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
+
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
     val predicate = toPredicate(command, identifier.name, inner)
     if (expression.isInstanceOf[ast.Nullable]) {

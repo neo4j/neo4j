@@ -100,10 +100,10 @@ trait Expressions extends Parser
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
-    | group(keyword("ALL") ~~ FilterExpression) ~>> token ~~> ast.AllIterablePredicate
-    | group(keyword("ANY") ~~ FilterExpression) ~>> token ~~> ast.AnyIterablePredicate
-    | group(keyword("NONE") ~~ FilterExpression) ~>> token ~~> ast.NoneIterablePredicate
-    | group(keyword("SINGLE") ~~ FilterExpression) ~>> token ~~> ast.SingleIterablePredicate
+    | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
+    | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
+    | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate
+    | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
     | FunctionInvocation
     | RelationshipsPattern ~>> token ~~> ast.PatternExpression
     | Parameter
@@ -116,10 +116,8 @@ trait Expressions extends Parser
   )
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] = {
-    "(" ~~
-      Identifier ~~ keyword("IN") ~~ Expression ~~
-      (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~
-    ")"
+    Identifier ~~ keyword("IN") ~~ Expression ~~
+    (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))
   }
 
   private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule {
