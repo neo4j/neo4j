@@ -174,9 +174,27 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "rels" -> func(1, args => RelationshipFunction(args.head)),
     "relationships" -> func(1, args => RelationshipFunction(args.head)),
     "abs" -> func(1, args => AbsFunction(args.head)),
+    "acos" -> func(1, args => AcosFunction(args.head)),
+    "asin" -> func(1, args => AsinFunction(args.head)),
+    "atan" -> func(1, args => AtanFunction(args.head)),
+    "atan2" -> func(1, args => Atan2Function(args(0), args(1))),
+    "ceil" -> func(1, args => CeilFunction(args.head)),
+    "cos" -> func(1, args => CosFunction(args.head)),
+    "cot" -> func(1, args => CotFunction(args.head)),
+    "degrees" -> func(1, args => DegreesFunction(args.head)),
+    "e" -> func(0, args => EFunction()),
+    "exp" -> func(1, args => ExpFunction(args.head)),
+    "floor" -> func(1, args => FloorFunction(args.head)),
+    "log" -> func(1, args => LogFunction(args.head)),
+    "log10" -> func(1, args => Log10Function(args.head)),
+    "pi" -> func(0, args => PiFunction()),
+    "radians" -> func(1, args => RadiansFunction(args.head)),
+    "rand" -> func(0, args => RandFunction()),
     "round" -> func(1, args => RoundFunction(args.head)),
     "sqrt" -> func(1, args => SqrtFunction(args.head)),
     "sign" -> func(1, args => SignFunction(args.head)),
+    "sin" -> func(1, args => SinFunction(args.head)),
+    "tan" -> func(1, args => TanFunction(args.head)),
     "head" -> func(1, args => HeadFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
@@ -205,7 +223,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames: Parser[String] = COUNT | SUM | MIN | MAX | AVG | COLLECT
+  def aggregateFunctionNames: Parser[String] = COUNT | SUM | MIN | MAX | AVG | COLLECT | STDEV | STDEVP
 
   def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(DISTINCT) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
@@ -217,6 +235,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         case "max" => Max(inner)
         case "avg" => Avg(inner)
         case "collect" => Collect(inner)
+        case "stdev" => Stdev(inner)
+        case "stdevp" => StdevP(inner)
       }
 
       if (distinct.isEmpty) {

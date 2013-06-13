@@ -29,9 +29,9 @@ public class RelIdArrayWithLoops extends RelIdArray
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return super.size() + sizeOfBlockWithReference( lastLoopBlock );
+        return super.sizeOfObjectInBytesIncludingOverhead() + sizeOfBlockWithReference( lastLoopBlock );
     }
     
     protected RelIdArrayWithLoops( RelIdArray from )

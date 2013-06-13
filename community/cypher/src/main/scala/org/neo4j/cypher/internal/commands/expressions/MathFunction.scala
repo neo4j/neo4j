@@ -53,6 +53,162 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
   def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
+case class AcosFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.acos(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class AsinFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.asin(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class AtanFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.atan(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.atan2(asDouble(y(ctx)), asDouble(x(ctx)))
+
+  def children = Seq(x, y)
+
+  def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable): CypherType = DoubleType()
+
+  def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
+}
+
+case class CeilFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.ceil(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(CeilFunction(argument.rewrite(f)))
+}
+
+case class CosFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.cos(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class CotFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = 1.0/math.tan(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class DegreesFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.toDegrees(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(DegreesFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class EFunction() extends Expression() {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
+
+  def children = Seq()
+
+  def symbolTableDependencies = Set[String]()
+
+  def rewrite(f: (Expression) => Expression) = f(EFunction())
+
+  def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class ExpFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.exp(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class FloorFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.floor(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(FloorFunction(argument.rewrite(f)))
+}
+
+case class LogFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.log(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(LogFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class Log10Function(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.log10(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(Log10Function(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class PiFunction() extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.Pi
+
+  def children = Seq()
+
+  def symbolTableDependencies = Set()
+
+  def rewrite(f: (Expression) => Expression) = f(PiFunction())
+
+  def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class RadiansFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.toRadians(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class SinFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.sin(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class TanFunction(argument: Expression) extends MathFunction(argument) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.tan(asDouble(argument(ctx)))
+
+  def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
+case class RandFunction() extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.random
+
+  def children = Seq()
+
+  def symbolTableDependencies = Set[String]()
+
+  def rewrite(f: (Expression) => Expression) = f(RandFunction())
+
+  def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val startVal = asInt(start(ctx))

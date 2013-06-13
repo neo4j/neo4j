@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.annotations;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -33,7 +32,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
-@SupportedSourceVersion( SourceVersion.RELEASE_6 )
+@SupportedSourceVersion( SourceVersion.RELEASE_7 )
 @SupportedAnnotationTypes( "org.neo4j.helpers.Service.Implementation" )
 public class ServiceProcessor extends AnnotationProcessor
 {

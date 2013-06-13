@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.cache;
 import java.util.Collection;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LockStripedCache<E extends EntityWithSize> implements Cache<E>
+public class LockStripedCache<E extends EntityWithSizeObject> implements Cache<E>
 {
     private final ReentrantLock locks[];
     private final Cache<E> actual;

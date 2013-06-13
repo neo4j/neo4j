@@ -45,6 +45,8 @@ Apache Software License, Version 2.0
   Jetty Utilities
   JTA 1.1
   Lucene Core
+  parboiled-core
+  parboiled-scala
   RRD4J
   Servlet Specification API
 
