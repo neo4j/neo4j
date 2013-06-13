@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
-import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 

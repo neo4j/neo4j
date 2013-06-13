@@ -185,7 +185,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect", "stdev", "stdevp")
 
   def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
@@ -197,6 +197,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         case "max" => Max(inner)
         case "avg" => Avg(inner)
         case "collect" => Collect(inner)
+        case "stdev" => Stdev(inner)
+        case "stdevp" => StdevP(inner)
       }
 
       if (distinct.isEmpty) {

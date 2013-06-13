@@ -159,7 +159,7 @@ class FunctionsTest extends DocumentingTestBase {
         "expression" -> "This expression will run once per value in the collection, and produces the result value."
       ),
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
- an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result 
+ an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
@@ -282,6 +282,210 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def acos() {
+    testThis(
+      title = "ACOS",
+      syntax = "ACOS( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`ACOS` returns the arccosine of the expression, in radians.",
+      queryText = """start a=node(%A%) return acos(0.5)""",
+      returns = "The arccosine of 0.5.",
+      assertions = (p) => assertEquals(1.0471975511965979, p.toList.head("acos(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def asin() {
+    testThis(
+      title = "ASIN",
+      syntax = "ASIN( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`ASIN` returns the arcsine of the expression, in radians.",
+      queryText = """start a=node(%A%) return asin(0.5)""",
+      returns = "The arcsine of 0.5.",
+      assertions = (p) => assertEquals(0.5235987755982989, p.toList.head("asin(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def atan() {
+    testThis(
+      title = "ATAN",
+      syntax = "ATAN( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`ATAN` returns the arctangent of the expression, in radians.",
+      queryText = """start a=node(%A%) return atan(0.5)""",
+      returns = "The arctangent of 0.5.",
+      assertions = (p) => assertEquals(0.4636476090008061, p.toList.head("atan(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def atan2() {
+    testThis(
+      title = "ATAN2",
+      syntax = "ATAN2( expression , expression)",
+      arguments = List("expression" -> "A numeric expression for y.", "expression" -> "A numeric expression for x."),
+      text = "`ATAN2` returns the arctangent2 of a set of coordinates, in radians.",
+      queryText = """start a=node(%A%) return atan2(0.5, 0.6)""",
+      returns = "The arctangent2 of 0.5, 0.6.",
+      assertions = (p) => assertEquals(0.6947382761967033, p.toList.head("atan2(0.5, 0.6)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def ceil() {
+    testThis(
+      title = "CEIL",
+      syntax = "CEIL( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`CEIL` returns the smallest integer greater than or equal to the number.",
+      queryText = """start a=node(%A%) return ceil(0.1)""",
+      returns = "The ceil of 0.1",
+      assertions = (p) => assertEquals(1.0, p.toList.head("ceil(0.1)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def cos() {
+    testThis(
+      title = "COS",
+      syntax = "COS( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`COS` returns the cosine of the expression.",
+      queryText = """start a=node(%A%) return cos(0.5)""",
+      returns = "The cosine of 0.5 is returned.",
+      assertions = (p) => assertEquals(0.87758256189, p.toList.head("cos(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def cot() {
+    testThis(
+      title = "COT",
+      syntax = "COT( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`COT` returns the cotangent of the expression.",
+      queryText = """start a=node(%A%) return cot(0.5)""",
+      returns = "The cotangent of 0.5 is returned.",
+      assertions = (p) => assertEquals(1.830487721712452, p.toList.head("cot(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def degrees() {
+    testThis(
+      title = "DEGREES",
+      syntax = "DEGREES( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`DEGREES` converts radians to degrees.",
+      queryText = """start a=node(%A%) return degrees(3.14159)""",
+      returns = "The number of degrees in something close to pi.",
+      assertions = (p) => assertEquals(180.0, p.toList.head("degrees(3.14159)").asInstanceOf[Double], 0.001)
+    )
+  }
+
+  @Test def e() {
+    testThis(
+      title = "E",
+      syntax = "E( expression )",
+      arguments = List.empty,
+      text = "`E` returns the constant, e.",
+      queryText = """start a=node(%A%) return e()""",
+      returns = "The constant e is returned (the base of natural log).",
+      assertions = (p) => assertEquals(2.718281828459045, p.toList.head("e()").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def exp() {
+    testThis(
+      title = "EXP",
+      syntax = "EXP( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`EXP` returns the value e raised to the power of the expression.",
+      queryText = """start a=node(%A%) return exp(2)""",
+      returns = "The exp of 2 is returned: e^2.",
+      assertions = (p) => assertEquals(7.38905609893065, p.toList.head("exp(2)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def floor() {
+    testThis(
+      title = "FLOOR",
+      syntax = "FLOOR( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`FLOOR` returns the greatest integer less than or equal to the expression.",
+      queryText = """start a=node(%A%) return floor(0.9)""",
+      returns = "The floor of 0.9 is returned.",
+      assertions = (p) => assertEquals(0.0, p.toList.head("floor(0.9)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def log() {
+    testThis(
+      title = "LOG",
+      syntax = "LOG( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`LOG` returns the natural logarithm of the expression.",
+      queryText = """start a=node(%A%) return log(27)""",
+      returns = "The log of 27 is returned.",
+      assertions = (p) => assertEquals(3.295836866004329, p.toList.head("log(27)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def log10() {
+    testThis(
+      title = "LOG10",
+      syntax = "LOG10( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`LOG10` returns the base 10 logarithm of the expression.",
+      queryText = """start a=node(%A%) return log10(27)""",
+      returns = "The log10 of 27 is returned.",
+      assertions = (p) => assertEquals(1.4313637641589874, p.toList.head("log10(27)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def pi() {
+    testThis(
+      title = "PI",
+      syntax = "PI()",
+      arguments = List.empty,
+      text = "`PI` returns the mathmatical constant pi.",
+      queryText = """start a=node(%A%) return pi()""",
+      returns = "The constant pi is returned.",
+      assertions = (p) => assertEquals(3.141592653589793, p.toList.head("pi()").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def radians() {
+    testThis(
+      title = "RADIANS",
+      syntax = "RADIANS( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`RADIANS` converts degrees to radians.",
+      queryText = """start a=node(%A%) return radians(180)""",
+      returns = "The number of radians in 180 is returned (pi).",
+      assertions = (p) => assertEquals(3.141592653589793, p.toList.head("radians(180)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def sin() {
+    testThis(
+      title = "SIN",
+      syntax = "SIN( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`SIN` returns the sine of the expression.",
+      queryText = """start a=node(%A%) return sin(0.5)""",
+      returns = "The sine of 0.5 is returned.",
+      assertions = (p) => assertEquals(0.479425538604203, p.toList.head("sin(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
+  @Test def tan() {
+    testThis(
+      title = "TAN",
+      syntax = "TAN( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`TAN` returns the tangent of the expression.",
+      queryText = """start a=node(%A%) return tan(0.5)""",
+      returns = "The tangent of 0.5 is returned.",
+      assertions = (p) => assertEquals(0.5463024898437905, p.toList.head("tan(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
   @Test def round() {
     testThis(
       title = "ROUND",
@@ -315,6 +519,18 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = "match n return sign(-17), sign(0.1) limit 1",
       returns = "",
       assertions = (p) => assert(List(Map("sign(-17)"-> -1, "sign(0.1)"->1)) === p.toList)
+    )
+  }
+
+  @Test def rand() {
+    testThis(
+      title = "RAND",
+      syntax = "RAND( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`RAND` returns a random double between 0 and 1.0.",
+      queryText = """start a=node(%A%) return rand() as x1""",
+      returns = "Two random numbers are returned.",
+      assertions = (p) => assert(p.toList.head("x1").asInstanceOf[Double] >= 0)
     )
   }
 

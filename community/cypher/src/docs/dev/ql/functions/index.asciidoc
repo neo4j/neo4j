@@ -104,11 +104,43 @@ include::includes/cypher-functions-graph.asciidoc[]
 
 include::abs.asciidoc[]
 
+include::acos.asciidoc[]
+
+include::asin.asciidoc[]
+
+include::atan.asciidoc[]
+
+include::cos.asciidoc[]
+
+include::cot.asciidoc[]
+
+include::degrees.asciidoc[]
+
+include::e.asciidoc[]
+
+include::exp.asciidoc[]
+
+include::floor.asciidoc[]
+
+include::log.asciidoc[]
+
+include::log10.asciidoc[]
+
+include::pi.asciidoc[]
+
+include::radians.asciidoc[]
+
+include::rand.asciidoc[]
+
 include::round.asciidoc[]
+
+include::sign.asciidoc[]
+
+include::sin.asciidoc[]
 
 include::sqrt.asciidoc[]
 
-include::sign.asciidoc[]
+include::tan.asciidoc[]
 
 :leveloffset: 1
 

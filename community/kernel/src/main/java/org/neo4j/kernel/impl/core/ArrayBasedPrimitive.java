@@ -25,7 +25,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.cache.EntityWithSize;
+import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
  * a Map based.
  * @author Mattias Persson
  */
-abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
+abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeObject
 {
     private volatile Property[] properties;
     private volatile int registeredSize;
@@ -64,14 +64,14 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
         if ( properties != null )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
             for ( Property data : properties )
-                size += data.asPropertyDataJustForIntegration().size();
+                size += data.asPropertyDataJustForIntegration().sizeOfObjectInBytesIncludingOverhead();
         }
         return withObjectOverhead( size );
     }
@@ -159,8 +159,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
 
     @Override
     protected void commitPropertyMaps(
-            ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
+            ArrayMap<Integer, PropertyData> cowPropertyAddMap,
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
     {
         synchronized ( this )
         {
