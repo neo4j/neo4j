@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SoftLruCache<E extends EntityWithSize> extends ReferenceCache<E>
+public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
 {
     private final ConcurrentHashMap<Long,SoftValue<Long,E>> cache =
         new ConcurrentHashMap<Long,SoftValue<Long,E>>();

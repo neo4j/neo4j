@@ -1,0 +1,65 @@
+== Introduction ==
+
+THIS IS OUTDATED ... will fix!
+
+This is a tool to easily generate output from Cypher queries.
+
+You feed it with files, where each file can contain multiple queries.
+Queries are separated by a blank line.
+All queries in the same file will be executed against the same database.
+The database has automatic indexing turned on for both nodes and relationships.
+
+The output is formatted for inclusion in Neo4j AsciiDoc documents.
+There are output files for:
+
+* the query
+* query result
+* graph visualization
+* live console
+* live console, starting with an empty database
+
+== Usage ==
+
+This is how to execute it from a Maven 'pom.xml' file:
+
+----
+<plugin>
+  <groupId>org.codehaus.mojo</groupId>
+  <artifactId>exec-maven-plugin</artifactId>
+  <version>1.2.1</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>cypher-executor</artifactId>
+      <version>0.1-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+  <executions>
+    <execution>
+      <id>execute-queries</id>
+      <phase>generate-sources</phase>
+      <goals>
+        <goal>java</goal>
+      </goals>
+      <configuration>
+        <includeProjectDependencies>false</includeProjectDependencies>
+        <includePluginDependencies>true</includePluginDependencies>
+        <executableDependency>
+          <groupId>org.neo4j.doc</groupId>
+          <artifactId>cypher-executor</artifactId>
+        </executableDependency>
+        <mainClass>org.neo4j.doc.cypherexecutor.Main</mainClass>
+        <arguments>
+          <argument>hello-world</argument>
+        </arguments>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+----
+
+TIP: To execute more files, just add additional +<argument>+ elements.
+
+The result will end up in the 'target/snippets' directory.
+
+

@@ -80,7 +80,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
     
     @Override
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         return 0;
     }
@@ -380,7 +380,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 
     @Override
     protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
+                                       ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
     {
         if ( cowPropertyAddMap != null ) for ( Map.Entry<Integer, PropertyData> entry : cowPropertyAddMap.entrySet() )
         {

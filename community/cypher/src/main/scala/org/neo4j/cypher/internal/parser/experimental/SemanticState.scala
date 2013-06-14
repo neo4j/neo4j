@@ -43,6 +43,7 @@ case class SemanticState(
   def isFirstPass = pass == 0
   def nextPass = SemanticState(symbolTable, typeTable, parent)(pass + 1)
   def newScope = SemanticState(HashMap.empty, typeTable, Some(this))(pass)
+  def popScope = SemanticState(parent.get.symbolTable, typeTable, parent.get.parent)(pass)
 
   def symbol(name: String) : Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
   def symbolTypes(name: String) = this.symbol(name).map(_.types)

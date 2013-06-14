@@ -61,12 +61,14 @@ case class ChainableSemanticCheck(check: SemanticCheck) {
 
 
 trait SemanticChecking {
-  def name : String
-
   protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
     if (pred)
       check(state)
     else
       SemanticCheckResult.success(state)
   }
+
+  private def scopeState : SemanticCheck = state => SemanticCheckResult.success(state.newScope)
+  private def popStateScope : SemanticCheck = state => SemanticCheckResult.success(state.popScope)
+  protected def withScopedState(check: => SemanticCheck) : SemanticCheck = scopeState then check then popStateScope
 }

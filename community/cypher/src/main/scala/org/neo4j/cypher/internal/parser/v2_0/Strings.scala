@@ -88,6 +88,8 @@ trait Strings extends JavaTokenParsers {
   def COALESCE = ignoreCase("coalesce")
   def FILTER = ignoreCase("filter")   //"count", "sum", "min", "max", "avg", "collect"
   def COUNT = ignoreCase("count")
+  def STDEV = ignoreCase("stdev")
+  def STDEVP = ignoreCase("stdevp")
   def SUM = ignoreCase("sum")
   def MIN = ignoreCase("min")
   def MAX = ignoreCase("max")

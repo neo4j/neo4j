@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.cache;
 
 import java.util.Collection;
 
-public interface Cache<E extends EntityWithSize>
+public interface Cache<E extends EntityWithSizeObject>
 {
     /**
      * Returns the name of the cache.

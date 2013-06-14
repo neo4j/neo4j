@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.util.RelIdArray;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -27,11 +33,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class TestOperationsOnDeletedRelationships
 {
@@ -42,23 +43,26 @@ public class TestOperationsOnDeletedRelationships
     public void shouldThrowNotFoundOnGetAllRelationshipsWhenRelationshipConcurrentlyDeleted() throws Exception
     {
         // Given
-        NodeImpl nodeImpl = new NodeImpl( 1337l, 0l, 0l, false );
-        NodeManager nodeManager = mock(NodeManager.class);
+        NodeImpl nodeImpl = new NodeImpl( 1337l, false );
+        NodeManager nodeManager = mock( NodeManager.class );
         Throwable exceptionCaught = null;
 
         // Given something tries to load relationships, throw InvalidRecordException
-        when( nodeManager.getMoreRelationships( any( NodeImpl.class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
+        when( nodeManager.getMoreRelationships( any( NodeImpl.class ) ) ).thenThrow( new InvalidRecordException(
+                "LURING!" ) );
 
         // When
-        try {
+        try
+        {
             nodeImpl.getAllRelationships( nodeManager, RelIdArray.DirectionWrapper.BOTH );
-        } catch(Throwable e)
+        }
+        catch ( Throwable e )
         {
             exceptionCaught = e;
         }
 
         // Then
-        assertThat(exceptionCaught, not(nullValue()));
+        assertThat( exceptionCaught, not( nullValue() ) );
         assertThat( exceptionCaught, is( instanceOf( NotFoundException.class ) ) );
     }
 
@@ -66,8 +70,8 @@ public class TestOperationsOnDeletedRelationships
     public void shouldThrowNotFoundWhenIteratingOverDeletedRelationship() throws Exception
     {
         // Given
-        NodeImpl fromNode = new NodeImpl( 1337l, 0l, 0l, false );
-        NodeManager nodeManager = mock(NodeManager.class);
+        NodeImpl fromNode = new NodeImpl( 1337l, false );
+        NodeManager nodeManager = mock( NodeManager.class );
         Throwable exceptionCaught = null;
 
         // This makes fromNode think there are more relationships to be loaded
@@ -81,8 +85,9 @@ public class TestOperationsOnDeletedRelationships
         // When
         try
         {
-           fromNode.getMoreRelationships( nodeManager );
-        } catch(Throwable e)
+            fromNode.getMoreRelationships( nodeManager );
+        }
+        catch ( Throwable e )
         {
             exceptionCaught = e;
         }

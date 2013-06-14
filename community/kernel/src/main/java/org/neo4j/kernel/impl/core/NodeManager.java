@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -111,7 +110,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             {
                 return null;
             }
-            return new NodeImpl( id, record.getCommittedNextRel(), record.getCommittedNextProp() );
+            return new NodeImpl( id );
         }
     };
 
@@ -219,7 +218,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     public Node createNode( Label[] labels )
     {
         long id = idGenerator.nextId( Node.class );
-        NodeImpl node = new NodeImpl( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue(),
+        NodeImpl node = new NodeImpl( id,
                 true );
         NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
@@ -682,48 +681,68 @@ public class NodeManager implements Lifecycle, EntityFactory
         boolean hasLoops = loops != null;
         if ( hasLoops )
         {
-            receiveRelationships( loops, newRelationshipMap, relsList, DirectionWrapper.BOTH, true );
+            populateLoadedRelationships( loops, relsList, DirectionWrapper.BOTH, true, newRelationshipMap );
         }
-        receiveRelationships( rels.first().get( DirectionWrapper.OUTGOING ), newRelationshipMap,
-                relsList, DirectionWrapper.OUTGOING, hasLoops );
-        receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
-                relsList, DirectionWrapper.INCOMING, hasLoops );
+        populateLoadedRelationships( rels.first().get( DirectionWrapper.OUTGOING ), relsList,
+                DirectionWrapper.OUTGOING, hasLoops,
+                newRelationshipMap
+        );
+        populateLoadedRelationships( rels.first().get( DirectionWrapper.INCOMING ), relsList,
+                DirectionWrapper.INCOMING, hasLoops,
+                newRelationshipMap
+        );
 
         return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
-    private void receiveRelationships(
-            Iterable<RelationshipRecord> rels, ArrayMap<Integer, RelIdArray> newRelationshipMap,
-            List<RelationshipImpl> relsList, DirectionWrapper dir, boolean hasLoops )
+    /**
+     * @param loadedRelationshipsOutputParameter
+     *         This is the return value for this method. It's written like this
+     *         because several calls to this method are used to gradually build up
+     *         the map of RelIdArrays that are ultimately involved in the operation.
+     */
+    private void populateLoadedRelationships( Iterable<RelationshipRecord> loadedRelationshipRecords,
+                                              List<RelationshipImpl> relsList,
+                                              DirectionWrapper dir,
+                                              boolean hasLoops,
+                                              ArrayMap<Integer, RelIdArray> loadedRelationshipsOutputParameter )
     {
-        for ( RelationshipRecord rel : rels )
+        for ( RelationshipRecord rel : loadedRelationshipRecords )
         {
             long relId = rel.getId();
-            RelationshipImpl relImpl = relCache.get( relId );
-            int typeId;
-            if ( relImpl == null )
-            {
-                typeId = rel.getType();
-                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), typeId, false );
-                relsList.add( relImpl );
-            }
-            else
-            {
-                typeId = relImpl.getTypeId();
-            }
-            RelIdArray relationshipSet = newRelationshipMap.get( typeId );
-            if ( relationshipSet == null )
-            {
-                relationshipSet = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
-                newRelationshipMap.put( typeId, relationshipSet );
-            }
-            relationshipSet.add( relId, dir );
+            RelationshipImpl relImpl = getOrCreateRelationshipFromCache( relsList, rel, relId );
+
+            getOrCreateRelationships( hasLoops, relImpl.getTypeId(), loadedRelationshipsOutputParameter )
+                    .add( relId, dir );
         }
+    }
+
+    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId, ArrayMap<Integer, RelIdArray> loadedRelationships )
+    {
+        RelIdArray relIdArray = loadedRelationships.get( typeId );
+        if ( relIdArray == null )
+        {
+            relIdArray = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
+            loadedRelationships.put( typeId, relIdArray );
+        }
+        return relIdArray;
     }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
     {
         relCache.putAll( relationships );
+    }
+
+    private RelationshipImpl getOrCreateRelationshipFromCache( List<RelationshipImpl> newlyCreatedRelationships,
+                                                               RelationshipRecord rel, long relId )
+    {
+        RelationshipImpl relImpl = relCache.get( relId );
+        if ( relImpl == null )
+        {
+            newlyCreatedRelationships.add( relImpl );
+            relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), rel.getType(), false );
+        }
+        return relImpl;
     }
 
     ArrayMap<Integer, PropertyData> loadGraphProperties( boolean light )
@@ -827,24 +846,9 @@ public class NodeManager implements Lifecycle, EntityFactory
         labelTokenHolder.addTokens( labelTokens );
     }
 
-    Token getPropertyKeyToken( int keyId ) throws TokenNotFoundException
-    {
-        return propertyKeyTokenHolder.getTokenById( keyId );
-    }
-
-    Token getPropertyKeyTokenOrNull( int keyId )
-    {
-        return propertyKeyTokenHolder.getTokenByIdOrNull( keyId );
-    }
-
     Token getPropertyKeyTokenOrNull( String key )
     {
         return propertyKeyTokenHolder.getTokenByNameOrNull( key );
-    }
-    
-    int getOrCreatePropertyKeyId( String key )
-    {
-        return propertyKeyTokenHolder.getOrCreateId( key );
     }
 
     int getRelationshipTypeIdFor( RelationshipType type ) throws TokenNotFoundException
@@ -876,7 +880,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         boolean success = false;
         try
         {
-            tx = getTransactionState();
             long startNodeId = rel.getStartNodeId();
             startNode = getLightNode( startNodeId );
             if ( startNode != null )
@@ -906,7 +909,6 @@ public class NodeManager implements Lifecycle, EntityFactory
                     skipMap.put( index, removedProps.get( index ) );
                 }
             }
-            success = true;
             int typeId = rel.getTypeId();
             long id = rel.getId();
             if ( startNode != null )
@@ -966,7 +968,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             throw new ThisShouldNotHappenError( "Mattias", "The key should exist at this point" );
         }
     }
-    
+
     public List<PropertyTracker<Node>> getNodePropertyTrackers()
     {
         return nodePropertyTrackers;

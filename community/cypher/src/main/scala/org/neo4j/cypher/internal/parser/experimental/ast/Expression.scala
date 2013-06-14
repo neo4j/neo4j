@@ -52,17 +52,18 @@ object Expression {
 
 import Expression._
 
-abstract class Expression extends AstNode {
+abstract class Expression extends AstNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   // double-dispatch helpers
-  final def types : SemanticState => Set[CypherType] = s => s.expressionTypes(this) match {
+  type TypeGenerator = SemanticState => Set[CypherType]
+  final def types : TypeGenerator = s => s.expressionTypes(this) match {
     case None => throw new IllegalStateException(s"Types of $this have not been evaluated (${token.startPosition})")
     case Some(types) => types
   }
   final def limitType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
       limitType((possibleType +: possibleTypes).toSet)
-  final def limitType(typeGen: SemanticState => Set[CypherType]) : SemanticState => Either[SemanticError, SemanticState] =
+  final def limitType(typeGen: TypeGenerator) : SemanticState => Either[SemanticError, SemanticState] =
       s => s.limitExpressionType(this, token, typeGen(s))
   final def limitType(possibleTypes: => Set[CypherType]) : SemanticState => Either[SemanticError, SemanticState] =
       _.limitExpressionType(this, token, possibleTypes)
@@ -185,7 +186,7 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
 }
 
 
-sealed trait FilterExpression extends Expression {
+trait FilterExpression extends Expression {
   def name: String
   def identifier: Identifier
   def expression: Expression
@@ -193,21 +194,28 @@ sealed trait FilterExpression extends Expression {
 
   def semanticCheck(ctx: SemanticContext) = {
     expression.semanticCheck(ctx) then
+    expression.limitType(CollectionType(AnyType())) then
     checkInnerPredicate
   }
 
-  private def checkInnerPredicate : SemanticState => Seq[SemanticError] = s => {
-    // Check inner predicate using a scoped state containing the identifier
-    (identifier.declare(expression.types) then innerPredicate.semanticCheck(SemanticContext.Simple))(s.newScope).errors
+  private def checkInnerPredicate : SemanticCheck = {
+    innerPredicate match {
+      case Some(e) => withScopedState {
+        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      }
+      case None    => SemanticCheckResult.success
+    }
   }
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
+
   def toCommand = {
     val command = expression.toCommand
-    val inner = innerPredicate.map { _.toCommand } match {
+    val inner = innerPredicate.map(_.toCommand) match {
       case Some(e: commands.Predicate) => e
-      case None => commands.True()
-      case _ => throw new SyntaxException(s"Argument to ${name} is not a predicate (${expression.token.startPosition})")
+      case None                        => commands.True()
+      case _                           => throw new SyntaxException(s"Argument to ${name} is not a predicate (${expression.token.startPosition})")
     }
     toCommand(command, identifier.name, inner)
   }
@@ -217,6 +225,7 @@ sealed trait IterablePredicateExpression extends FilterExpression {
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())
 
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
+
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
     val predicate = toPredicate(command, identifier.name, inner)
     if (expression.isInstanceOf[ast.Nullable]) {

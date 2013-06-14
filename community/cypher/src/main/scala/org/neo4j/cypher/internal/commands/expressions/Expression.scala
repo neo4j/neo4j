@@ -58,6 +58,11 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   }
 
   override def toString() = getClass.getSimpleName
+
+  def isDeterministic = ! exists {
+    case RandFunction() => true
+    case _              => false
+  }
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
