@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.junit.{Assert, Test}
+import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.mutation.{UpdateAction, MergeNodeAction}
 import org.neo4j.cypher.internal.parser.v2_0.DefaultFalse
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.spi.PlanContext
@@ -457,7 +457,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given MERGE (x:Label)
     val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
     val query = q(
-      start = Seq(MergeNodeStartItem(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)))
+      updates = Seq(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None))
     )
     when(context.getLabelId("Label")).thenReturn(Some(42L))
 
@@ -465,16 +465,16 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(pipe, query)
 
     // Then
-    plan.query.start match {
-      case Seq(Unsolved(MergeNodeStartItem(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_))))) =>
-        return
-      case _ =>
+    plan.query.updates match {
+      case Seq(Unsolved(MergeNodeAction("x", Seq(), Seq(), Seq(), Some(_)))) =>
+      case _                                                                 =>
         fail("Expected something else, but got this: " + plan.query.start)
     }
   }
 
   private def q(start: Seq[StartItem] = Seq(),
                 where: Seq[Predicate] = Seq(),
+                updates: Seq[UpdateAction] = Seq(),
                 patterns: Seq[Pattern] = Seq(),
                 returns: Seq[ReturnColumn] = Seq(),
                 tail: Option[PartiallySolvedQuery] = None) =
@@ -483,6 +483,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       where = where.map(Unsolved(_)),
       patterns = patterns.map(Unsolved(_)),
       returns = returns.map(Unsolved(_)),
+      updates = updates.map(Unsolved(_)),
       tail = tail
     )
 }
