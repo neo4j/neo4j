@@ -184,20 +184,20 @@ http://neo4j-03.local:7474/webadmin/#/info/org.neo4j/High%20Availability/
 [TIP]
 You can replace database #3 with an 'arbiter' instance, see <<arbiter-instances, Arbiter Instances>>.
 
-That's it! You now have a Neo4j HA cluster of 3 instances running. You can start by making a change on any
-instance and those changes will be propagated between them. For more HA related configuration options take a look at
-<<ha-configuration, HA Configuration>>.
+That's it!
+You now have a Neo4j HA cluster of 3 instances running.
+You can start by making a change on any instance and those changes will be propagated between them.
+For more HA related configuration options take a look at <<ha-configuration, HA Configuration>>.
 
+[[ha-local-cluster]]
 == Alternative setup: Creating a local cluster for testing ==
 
-If you want to start a cluster similar to the one described above, but for development and testing purposes, it is
-convenient to run all Neo4j instances on the same machine. This is easy to achieve, although it requires some
-additional configuration as the defaults will conflict with each other.
+If you want to start a cluster similar to the one described above, but for development and testing purposes, it is convenient to run all Neo4j instances on the same machine.
+This is easy to achieve, although it requires some additional configuration as the defaults will conflict with each other.
 
 === Download and unpack Neo4j Enterprise ===
 
-Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack into 3 separate
-directories on your test machine.
+Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack into 3 separate directories on your test machine.
 
 === Configure HA related settings for each installation ===
 
