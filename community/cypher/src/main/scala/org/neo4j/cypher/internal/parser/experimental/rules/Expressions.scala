@@ -112,6 +112,7 @@ trait Expressions extends Parser
     | MaybeNullableProperty
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
+    | ListComprehension
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
   )
 
@@ -133,6 +134,13 @@ trait Expressions extends Parser
       | "!" ~>> token ~ !("=") ~~> ast.Nullable
       | EMPTY ~~> ((e: ast.Expression) => e)
     )
+  }
+
+  private def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
+    group("[" ~~
+      FilterExpression ~~
+      ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~
+    "]") ~>> token ~~> ast.ListComprehension
   }
 
 }
