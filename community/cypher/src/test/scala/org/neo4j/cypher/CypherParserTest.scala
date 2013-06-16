@@ -1405,6 +1405,28 @@ class CypherParserTest extends JUnitSuite with Assertions {
       ))
   }
 
+  @Test def extractWithColon() {
+    testAll("start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
+      ))
+  }
+
+  @Test def extract() {
+    testFrom_1_8("start x = NODE(1) match p=x-[r]->z return extract(x in p | x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p | x.prop)")
+      ))
+  }
+
   @Test def collection_literal() {
     testAll("start x = NODE(1) return ['a','b','c']",
       Query.
