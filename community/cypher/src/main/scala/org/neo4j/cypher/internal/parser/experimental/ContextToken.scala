@@ -29,19 +29,14 @@ case class BufferPosition(buffer: InputBuffer, offset: Int) extends InputPositio
   val column = position.column
 }
 
-sealed trait ContextToken extends InputToken {
-  val ctx : Context[Any]
-  val range : IndexRange
 
+object ContextToken {
+  def apply(ctx: Context[Any]): ContextToken = new ContextToken(ctx, ctx.getMatchRange)
+  def apply(ctx: Context[Any], start: Int, end: Int) = new ContextToken(ctx, new IndexRange(start, end))
+}
+
+case class ContextToken(val ctx: Context[Any], val range: IndexRange) extends InputToken {
+  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
+  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
   override lazy val toString = ctx.getInputBuffer().extract(range)
-}
-case class ContextMatchToken(ctx: Context[Any]) extends ContextToken {
-  val range = ctx.getMatchRange()
-  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
-  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
-}
-case class ContextRangeToken(ctx: Context[Any], start: Int, end: Int) extends ContextToken {
-  val range = new IndexRange(start, end)
-  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
-  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
 }
