@@ -136,7 +136,7 @@ trait Expressions extends Parser
     )
   }
 
-  private def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
+  def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
     group("[" ~~
       FilterExpression ~~
       ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~
