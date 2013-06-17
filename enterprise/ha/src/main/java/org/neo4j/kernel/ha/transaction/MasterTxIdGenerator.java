@@ -373,7 +373,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
 
     private void commitAtSlave( final XaDataSource dataSource, Slave slave, final long txId )
     {
-        PullUpdateFuture pullRequest = new PullUpdateFuture(slave);
+        PullUpdateFuture pullRequest = new PullUpdateFuture(slave, txId);
 
         synchronized ( pullUpdateQueues )
         {
@@ -410,7 +410,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
 
                                 try
                                 {
-                                    Response<Void> response = currentPulls.get( 0 ).getSlave().pullUpdates( dataSource.getName(), txId );
+                                    PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
+                                    Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( dataSource.getName(), pullUpdateFuture.getTxId() );
                                     response.close();
 
                                     // Notify the futures
@@ -451,7 +452,10 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
         catch ( ExecutionException e )
         {
-            throw new RuntimeException( e );
+            if (e.getCause() instanceof RuntimeException)
+                throw ((RuntimeException)e.getCause());
+            else
+                throw new RuntimeException( e.getCause() );
         }
     }
 
@@ -470,8 +474,9 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         extends FutureTask<Object>
     {
         private Slave slave;
+        private long txId;
 
-        public PullUpdateFuture( Slave slave )
+        public PullUpdateFuture( Slave slave, long txId )
         {
             super( new Callable<Object>()
             {
@@ -482,6 +487,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                 }
             });
             this.slave = slave;
+            this.txId = txId;
         }
 
         @Override
@@ -500,6 +506,11 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         public Slave getSlave()
         {
             return slave;
+        }
+
+        private long getTxId()
+        {
+            return txId;
         }
     }
 }
