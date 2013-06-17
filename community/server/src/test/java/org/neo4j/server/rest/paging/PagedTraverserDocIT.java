@@ -373,6 +373,38 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertEquals( MediaType.APPLICATION_JSON, response.getHeaders().getFirst( "Content-Type" ) );
     }
 
+    @Test
+    public void should201WithAcceptHtmlHeader()
+    {
+        // given
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+        String uri = functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node";
+
+        // when
+        JaxRsResponse response = RestRequest.req().accept( MediaType.TEXT_HTML_TYPE ).post( uri,
+                traverserDescription() );
+
+        // then
+        assertEquals( 201, response.getStatus() );
+        assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( MediaType.TEXT_HTML, response.getHeaders().getFirst( "Content-Type" ) );
+    }
+
+    @Test
+    public void shouldHaveTransportEncodingChunkedOnResponseHeader()
+    {
+        // given
+        theStartNode =  createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+
+        // when
+        JaxRsResponse response = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
+
+        // then
+        assertEquals( 201, response.getStatus() );
+        assertEquals( "application/json; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getHeaders().getFirst( "Transfer-Encoding" ), containsString( "chunked" ) );
+    }
+
     private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize( final int leaseTimeInSeconds,
                                                                                final int pageSize )
     {
