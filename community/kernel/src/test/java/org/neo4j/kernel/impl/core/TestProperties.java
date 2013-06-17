@@ -19,20 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
@@ -71,31 +67,6 @@ public class TestProperties extends AbstractNeo4jTestCase
         {
             // good
         }
-    }
-
-    @Test
-    public void setPropertyWithEmptyStringAsName() throws Exception
-    {
-        /*
-         * Tries to create a property with an empty string as a property key
-         * and then tries to read it back. Uses a separate EmbeddedGraphDatabase
-         * with a TargetDirectory because we have to restart to test hitting the
-         * PropertyKeyTokenStore on disk when reading it back.
-         */
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        String path = "empty-string";
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( path );
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        long nodeId = node.getId();
-        node.setProperty( "", "bar" );
-        tx.success();
-        tx.finish();
-        assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
-        db.shutdown();
-        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( path );
-        assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
-        fileSystem.shutdown();
     }
 
     @Test

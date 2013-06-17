@@ -50,24 +50,23 @@ public class DataIntegrityValidatingStatementContext extends CompositeStatementC
     public long propertyKeyGetOrCreateForName( String propertyKey ) throws SchemaKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
-        if ( propertyKey == null )
-        {
-            throw new IllegalTokenNameException( null );
-        }
+        return delegate.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKey ) );
+    }
 
-        return delegate.propertyKeyGetOrCreateForName( propertyKey );
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 
     @Override
     public long labelGetOrCreateForName( String label ) throws SchemaKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
-        if ( label == null || label.length() == 0 )
-        {
-            throw new IllegalTokenNameException( label );
-        }
-
-        return delegate.labelGetOrCreateForName( label );
+        return delegate.labelGetOrCreateForName( checkValidTokenName( label ) );
     }
 
     @Override
