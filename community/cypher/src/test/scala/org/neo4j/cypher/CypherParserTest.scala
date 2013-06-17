@@ -1384,6 +1384,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
+    testAll("start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p WHERE x.prop = 123)")
+      ))
+  }
+
+  @Test def filterWithColon() {
     testAll("start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
@@ -1391,6 +1402,28 @@ class CypherParserTest extends JUnitSuite with Assertions {
         namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
+      ))
+  }
+
+  @Test def extractWithColon() {
+    testAll("start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
+      ))
+  }
+
+  @Test def extract() {
+    testFrom_1_8("start x = NODE(1) match p=x-[r]->z return extract(x in p | x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p | x.prop)")
       ))
   }
 
@@ -1729,6 +1762,21 @@ create a-[r:REL]->b
   }
 
   @Test def foreach_on_path() {
+    val secondQ = Query.
+      updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), "touched"), Literal(true))))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("p"), "p"))
+
+    testFrom_1_9("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", q)
+  }
+
+  @Test def foreach_with_colon() {
     val secondQ = Query.
       updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), "touched"), Literal(true))))).
       returns()
