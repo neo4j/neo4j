@@ -59,9 +59,9 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique with 
   private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
       val namedPathPatterns: Maybe[Any] = patterns.
-                                          map(removeProperties).
-                                          map(matchTranslator).
-                                          reduce(_ ++ _)
+        map(removeProperties).
+        map(matchTranslator).
+        reduce(_ ++ _)
 
       val startItems = patterns.map(p => translate(p.makeOutgoing)).reduce(_ ++ _)
 
@@ -72,6 +72,9 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique with 
           Seq(NamedPathWStartItems(namedPath, stuff.map(_.asInstanceOf[StartItem])))
         })
       }
+
+    case ParsedRelation(_, _, _, _, _, dir, _) if dir == Direction.BOTH            =>
+      No(Seq("Relationships need to have a direction."))
 
     case ParsedRelation(name, props, a, b, relType, dir, map) if relType.size == 1 =>
 

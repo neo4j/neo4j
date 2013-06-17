@@ -290,6 +290,18 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
+  @Test def create_without_specifying_direction_should_fail() {
+    expectError("CREATE (a)-[:FOO]-(b) RETURN a,b",
+      v2_0 -> String.format("Relationships need to have a direction.")
+    )
+  }
+
+  @Test def create_without_specifying_direction_should_fail2() {
+    expectError("CREATE (a)<-[:FOO]->(b) RETURN a,b",
+      v2_0 -> String.format("Relationships need to have a direction.")
+    )
+  }
+
   private def expectError(query: String, variants: (CypherVersion, String)*) {
     for ((version, message) <- variants) {
       expectError(version, query, message)
