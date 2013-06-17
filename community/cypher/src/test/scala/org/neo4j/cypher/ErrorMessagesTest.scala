@@ -271,8 +271,22 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     createLabeledNode(Map("name"->"A"), "Person")
 
     expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      v2_0 -> (String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n"+
-        "Multiple nodes with label `Person` have property `name` = 'A':%n  existing node(1)%n  new node(2)"))
+      v2_0 -> String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
+        "Multiple nodes with label `Person` have property `name` = 'A':%n  node(1)%n  node(2)")
+    )
+  }
+
+  @Test def trying_to_add_a_constraint_that_already_exists() {
+    parseAndExecute("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
+
+    expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
+      v2_0 -> String.format("Already constrained CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE.")
+    )
+  }
+
+  @Test def drop_a_non_existent_constraint() {
+    expectError("DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
+      v2_0 -> String.format("Constraint not found")
     )
   }
 
