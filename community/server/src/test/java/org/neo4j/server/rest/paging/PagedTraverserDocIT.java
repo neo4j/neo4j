@@ -19,15 +19,9 @@
  */
 package org.neo4j.server.rest.paging;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -37,6 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -55,6 +50,11 @@ import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
 
@@ -67,9 +67,10 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     private static final int LONG_LIST_LENGTH = 444;
 
     @ClassRule
-    public static TemporaryFolder staticFolder = new TemporaryFolder(  );
+    public static TemporaryFolder staticFolder = new TemporaryFolder();
 
-    public @Rule
+    public
+    @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static FakeClock clock;
 
@@ -78,14 +79,15 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     {
         gen.get().setSection( "dev/rest-api" );
     }
+
     @BeforeClass
     public static void setupServer() throws IOException
     {
         clock = new FakeClock();
         server = ServerBuilder.server()
-        .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
-        .withClock( clock )
-        .build();
+                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .withClock( clock )
+                .build();
 
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -104,17 +106,18 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception {
-        theStartNode = createLinkedList(SHORT_LIST_LENGTH, server.getDatabase());
+    public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception
+    {
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(theStartNode.getId()));
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.nodeUri( theStartNode.getId() ) );
 
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
 
-        assertNotNull(jsonMap.containsKey(PAGED_TRAVERSE_LINK_REL));
-        assertThat(String.valueOf(jsonMap.get(PAGED_TRAVERSE_LINK_REL)),
-                containsString("/db/data/node/" + String.valueOf(theStartNode.getId())
-                        + "/paged/traverse/{returnType}{?pageSize,leaseTime}"));
+        assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
+        assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
+                containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() )
+                        + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
     }
 
     /**
@@ -131,12 +134,12 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         ResponseEntity entity = gen.get()
-        .expectedType( MediaType.APPLICATION_JSON_TYPE )
-        .expectedHeader( "Location" )
-        .expectedStatus( 201 )
-        .payload( traverserDescription() )
-        .payloadType( MediaType.APPLICATION_JSON_TYPE )
-        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" );
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedHeader( "Location" )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" );
         assertEquals( 201, entity.response()
                 .getStatus() );
         assertThat( entity.response()
@@ -155,12 +158,12 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
      * issues a HTTP GET request on the paged traversal URI which causes the
      * traversal to fill the next page (or partially fill it if insufficient
      * results are available).
-     * 
+     * <p/>
      * Note that if a traverser expires through inactivity it will cause a 404
      * response on the next +GET+ request. Traversers' leases are renewed on
      * every successful access for the same amount of time as originally
      * specified.
-     * 
+     * <p/>
      * When the paged traverser reaches the end of its results, the client can
      * expect a 404 response as the traverser is disposed by the server.
      */
@@ -177,29 +180,30 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         {
 
             gen.get()
-            .expectedType( MediaType.APPLICATION_JSON_TYPE )
-            .expectedStatus( 200 )
-            .payload( traverserDescription() )
-            .get( traverserLocation.toString() );
+                    .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                    .expectedStatus( 200 )
+                    .payload( traverserDescription() )
+                    .get( traverserLocation.toString() );
         }
 
-        JaxRsResponse response = new RestRequest(traverserLocation).get();
+        JaxRsResponse response = new RestRequest( traverserLocation ).get();
         assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldExpireTheTraverserAfterDefaultTimeoutAndGetA404Response() {
-        theStartNode = createLinkedList(SHORT_LIST_LENGTH, server.getDatabase());
+    public void shouldExpireTheTraverserAfterDefaultTimeoutAndGetA404Response()
+    {
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         JaxRsResponse postResponse = createPagedTraverser();
-        assertEquals(201, postResponse.getStatus());
+        assertEquals( 201, postResponse.getStatus() );
 
         final int TEN_MINUTES = 10;
-        clock.forwardMinutes(TEN_MINUTES);
+        clock.forwardMinutes( TEN_MINUTES );
 
-        JaxRsResponse getResponse = new RestRequest(postResponse.getLocation()).get();
+        JaxRsResponse getResponse = new RestRequest( postResponse.getLocation() ).get();
 
-        assertEquals(404, getResponse.getStatus() );
+        assertEquals( 404, getResponse.getStatus() );
     }
 
     /**
@@ -219,11 +223,11 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            JaxRsResponse response = new RestRequest(traverserLocation).get();
+            JaxRsResponse response = new RestRequest( traverserLocation ).get();
             assertEquals( 200, response.getStatus() );
         }
 
-        JaxRsResponse response = new RestRequest(traverserLocation).get();
+        JaxRsResponse response = new RestRequest( traverserLocation ).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -243,7 +247,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         clock.forwardMinutes( 11 );
 
-        JaxRsResponse response = new RestRequest(traverserLocation).get();
+        JaxRsResponse response = new RestRequest( traverserLocation ).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -258,11 +262,11 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            JaxRsResponse response = new RestRequest(traverserLocation).get();
+            JaxRsResponse response = new RestRequest( traverserLocation ).get();
             assertEquals( 200, response.getStatus() );
         }
 
-        JaxRsResponse response = new RestRequest(traverserLocation).get();
+        JaxRsResponse response = new RestRequest( traverserLocation ).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -274,7 +278,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         int negativeLeaseTime = -9;
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                + String.valueOf( negativeLeaseTime ) , traverserDescription() );
+                        + String.valueOf( negativeLeaseTime ), traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -287,7 +291,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         int negativePageSize = -99;
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                + String.valueOf( negativePageSize ) ,
+                        + String.valueOf( negativePageSize ),
                 traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
@@ -302,11 +306,12 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( 0 ) + "/paged/traverse/node?pageSize=50",
                 "{"
-                + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.getClass().getClassLoader();\"},"
-                + "\"order\":\"depth_first\","
-                + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
-                + "}");
+                        + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                        + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.getClass()" +
+                        ".getClassLoader();\"},"
+                        + "\"order\":\"depth_first\","
+                        + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
+                        + "}" );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -319,61 +324,104 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         JaxRsResponse response = createPagedTraverser();
 
         final RestRequest request = RestRequest.req();
-        JaxRsResponse deleteResponse = request.delete(response.getLocation());
+
+        JaxRsResponse deleteResponse = request.delete( response.getLocation() );
         assertEquals( 200, deleteResponse.getStatus() );
 
-        deleteResponse = request.delete(response.getLocation());
+        deleteResponse = request.delete( response.getLocation() );
         assertEquals( 404, deleteResponse.getStatus() );
     }
 
-    private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize(final int leaseTime, final int pageSize)
+    @Test
+    public void shouldAcceptJsonAndStreamingFlagAndProduceStreamedJson()
+    {
+        // given
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+
+        // when
+        JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
+
+        // then
+        assertNotNull( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( "application/json; stream=true", pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+    }
+
+    private JaxRsResponse createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTimeInSeconds,
+                                                                                        int pageSize )
+    {
+        String description = traverserDescription();
+
+        return RestRequest.req().header( "X-Stream", "true" ).post(
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                        + leaseTimeInSeconds + "&pageSize=" + pageSize, description );
+    }
+
+    @Test
+    public void should201WithAcceptJsonHeader()
+    {
+        // given
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+        String uri = functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node";
+
+        // when
+        JaxRsResponse response = RestRequest.req().accept( MediaType.APPLICATION_JSON_TYPE ).post( uri,
+                traverserDescription() );
+
+        // then
+        assertEquals( 201, response.getStatus() );
+        assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( MediaType.APPLICATION_JSON, response.getHeaders().getFirst( "Content-Type" ) );
+    }
+
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize( final int leaseTimeInSeconds,
+                                                                               final int pageSize )
     {
         String description = traverserDescription();
 
         return RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                + String.valueOf( leaseTime ) + "&pageSize=" + pageSize , description );
+                        + leaseTimeInSeconds + "&pageSize=" + pageSize, description );
     }
 
-    private JaxRsResponse createPagedTraverserWithTimeoutInMinutes(final int leaseTime)
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutes( final int leaseTime )
     {
         ResponseEntity responseEntity = gen.get()
-        .expectedType( MediaType.APPLICATION_JSON_TYPE )
-        .expectedStatus( 201 )
-        .payload( traverserDescription() )
-        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                + String.valueOf( leaseTime ) );
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                        + String.valueOf( leaseTime ) );
 
         return responseEntity.response();
     }
 
-    private JaxRsResponse createPagedTraverserWithPageSize(final int pageSize)
+    private JaxRsResponse createPagedTraverserWithPageSize( final int pageSize )
     {
         ResponseEntity responseEntity = gen.get()
-        .expectedType( MediaType.APPLICATION_JSON_TYPE )
-        .expectedStatus( 201 )
-        .payload( traverserDescription() )
-        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                + String.valueOf( pageSize ) );
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
+                        + String.valueOf( pageSize ) );
 
         return responseEntity.response();
     }
 
     private JaxRsResponse createPagedTraverser()
     {
-
-        final String uri = functionalTestHelper.nodeUri(theStartNode.getId()) + "/paged/traverse/node";
-        return RestRequest.req().post(uri, traverserDescription());
+        final String uri = functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node";
+        return RestRequest.req().post( uri, traverserDescription() );
     }
 
     private String traverserDescription()
     {
         String description = "{"
-            + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-            + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
-            + "\"order\":\"depth_first\","
-            + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
-            + "}";
+                + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name')" +
+                ".contains('1');\"},"
+                + "\"order\":\"depth_first\","
+                + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
+                + "}";
 
         return description;
     }

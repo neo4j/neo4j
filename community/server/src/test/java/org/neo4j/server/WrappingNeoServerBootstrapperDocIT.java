@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -31,6 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.jmx.Primitives;
@@ -47,6 +46,10 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
 {
@@ -136,17 +139,15 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
-        ServerConfigurator config = new ServerConfigurator(
-                myDb );
+        ServerConfigurator config = new ServerConfigurator( myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(
-                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress );
+                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress.toString() );
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
 
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb, config );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
 
         srv.start();
         try
