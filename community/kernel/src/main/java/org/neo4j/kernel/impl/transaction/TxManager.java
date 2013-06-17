@@ -372,127 +372,139 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         // mark as commit in log done TxImpl.doCommit()
         Throwable commitFailureCause = null;
         int xaErrorCode = -1;
-        if ( tx.getResourceCount() == 0 )
+        synchronized (this)
         {
-            tx.setStatus( Status.STATUS_COMMITTED );
-        }
-        else
-        {
-            try
+           /*
+            * The attempt to commit and the corresponding rollback in case of failure happens under the same lock.
+            * This is necessary for a transaction to be able to cleanup its state in case it fails to commit
+            * without any other transaction coming in and disrupting things. Hooks will be called under this
+            * lock in case of rollback but not if commit succeeds, which should be ok throughput wise. There is
+            * some performance degradation related to this, since now we hold a lock over commit() for
+            * (potentially) all resource managers, while without this monitor each commit() on each
+            * XaResourceManager locks only that.
+            */
+            if ( tx.getResourceCount() == 0 )
             {
-                tx.doCommit();
-            }
-            catch ( XAException e )
-            {
-                // Behold, the error handling decision maker of great power.
-                //
-                // The thinking behind the code below is that there are certain types of errors that we understand,
-                // and know that we can safely roll back after they occur. An example would be a user trying to delete
-                // a node that still has relationships. For these errors, we keep a whitelist (the switch below),
-                // and roll back when they occur.
-                //
-                // For *all* errors that we don't know exactly what they mean, we panic and run around in circles.
-                // Other errors could involve out of disk space (can't recover) or out of memory (can't recover)
-                // or anything else. The point is that there is no way for us to trust the state of the system any
-                // more, so we set transaction manager to not ok and expect the user to fix the problem and do recovery.
-                switch(e.errorCode)
-                {
-                    // These are error states that we can safely recover from
-
-                    /*
-                     * User tried to delete a node that still had relationships, or in some other way violated
-                     * data model constraints.
-                     */
-                    case XAException.XA_RBINTEGRITY:
-
-                    /*
-                     *  A network error occurred.
-                     */
-                    case XAException.XA_HEURCOM:
-                        xaErrorCode = e.errorCode;
-                        commitFailureCause = e;
-                        log.logMessage( "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
-                                ", errorCode=" + xaErrorCode, e );
-                        break;
-
-                    // Error codes where we are not *certain* that we still know the state of the system
-                    default:
-                        setTmNotOk( e );
-                        throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                                "commit threw exception", e ));
-                }
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-                log.logMessage( "Commit failed", t );
-
-                setTmNotOk( t );
-                // this should never be
-                throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                        "commit threw exception but status is committed?", t ));
-            }
-        }
-        if ( tx.getStatus() != Status.STATUS_COMMITTED )
-        {
-            try
-            {
-                tx.doRollback();
-            }
-            catch ( Throwable e )
-            {
-                log.logMessage( "Unable to rollback transaction. "
-                        + "Some resources may be commited others not. "
-                        + "Neo4j kernel should be SHUTDOWN for "
-                        + "resource maintance and transaction recovery ---->", e );
-                setTmNotOk( e );
-                String commitError;
-                if ( commitFailureCause != null )
-                {
-                    commitError = "error in commit: " + commitFailureCause;
-                }
-                else
-                {
-                    commitError = "error code in commit: " + xaErrorCode;
-                }
-                String rollbackErrorCode = "Unknown error code";
-                if ( e instanceof XAException )
-                {
-                    rollbackErrorCode = Integer.toString( ((XAException) e).errorCode );
-                }
-                throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicMixedException( "Unable " +
-                        "to rollback ---> " + commitError
-                        + " ---> error code for rollback: "
-                        + rollbackErrorCode ), e ) );
-            }
-            tx.doAfterCompletion();
-            try
-            {
-                if ( tx.isGlobalStartRecordWritten() )
-                {
-                    getTxLog().txDone( tx.getGlobalId() );
-                }
-            }
-            catch ( IOException e )
-            {
-                log.logMessage( "Error writing transaction log", e );
-                setTmNotOk( e );
-                throw logAndReturn( "TM error tx commit", Exceptions.withCause( new SystemException( "TM encountered " +
-                        "a problem, "
-                        + " error writing transaction log" ), e ) );
-            }
-            tx.setStatus( Status.STATUS_NO_TRANSACTION );
-            if ( commitFailureCause == null )
-            {
-                throw logAndReturn( "TM error tx commit", new HeuristicRollbackException(
-                        "Failed to commit, transaction rolledback ---> "
-                                + "error code was: " + xaErrorCode ) );
+                tx.setStatus( Status.STATUS_COMMITTED );
             }
             else
             {
-                throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicRollbackException(
-                        "Failed to commit, transaction rolledback ---> " +
-                                commitFailureCause ), commitFailureCause ) );
+                try
+                {
+                    tx.doCommit();
+                }
+                catch ( XAException e )
+                {
+                    // Behold, the error handling decision maker of great power.
+                    //
+                    // The thinking behind the code below is that there are certain types of errors that we understand,
+                    // and know that we can safely roll back after they occur. An example would be a user trying to delete
+                    // a node that still has relationships. For these errors, we keep a whitelist (the switch below),
+                    // and roll back when they occur.
+                    //
+                    // For *all* errors that we don't know exactly what they mean, we panic and run around in circles.
+                    // Other errors could involve out of disk space (can't recover) or out of memory (can't recover)
+                    // or anything else. The point is that there is no way for us to trust the state of the system any
+                    // more, so we set transaction manager to not ok and expect the user to fix the problem and do recovery.
+                    switch(e.errorCode)
+                    {
+                        // These are error states that we can safely recover from
+
+                        /*
+                         * User tried to delete a node that still had relationships, or in some other way violated
+                         * data model constraints.
+                         */
+                        case XAException.XA_RBINTEGRITY:
+
+                        /*
+                         *  A network error occurred.
+                         */
+                        case XAException.XA_HEURCOM:
+                            xaErrorCode = e.errorCode;
+                            commitFailureCause = e;
+                            log.logMessage( "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
+                                    ", errorCode=" + xaErrorCode, e );
+                            break;
+
+                        // Error codes where we are not *certain* that we still know the state of the system
+                        default:
+                            setTmNotOk( e );
+                            throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                                    "commit threw exception", e ));
+                    }
+                }
+                catch ( Throwable t )
+                {
+                    t.printStackTrace();
+                    log.logMessage( "Commit failed", t );
+
+                    setTmNotOk( t );
+                    // this should never be
+                    throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                            "commit threw exception but status is committed?", t ));
+                }
+            }
+            if ( tx.getStatus() != Status.STATUS_COMMITTED )
+            {
+                try
+                {
+                    tx.doRollback();
+                }
+                catch ( Throwable e )
+                {
+                    log.logMessage( "Unable to rollback transaction. "
+                            + "Some resources may be commited others not. "
+                            + "Neo4j kernel should be SHUTDOWN for "
+                            + "resource maintance and transaction recovery ---->", e );
+                    setTmNotOk( e );
+                    String commitError;
+                    if ( commitFailureCause != null )
+                    {
+                        commitError = "error in commit: " + commitFailureCause;
+                    }
+                    else
+                    {
+                        commitError = "error code in commit: " + xaErrorCode;
+                    }
+                    String rollbackErrorCode = "Unknown error code";
+                    if ( e instanceof XAException )
+                    {
+                        rollbackErrorCode = Integer.toString( ((XAException) e).errorCode );
+                    }
+                    throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicMixedException( "Unable " +
+                            "to rollback ---> " + commitError
+                            + " ---> error code for rollback: "
+                            + rollbackErrorCode ), e ) );
+                }
+                tx.doAfterCompletion();
+                try
+                {
+                    if ( tx.isGlobalStartRecordWritten() )
+                    {
+                        getTxLog().txDone( tx.getGlobalId() );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    log.logMessage( "Error writing transaction log", e );
+                    setTmNotOk( e );
+                    throw logAndReturn( "TM error tx commit", Exceptions.withCause( new SystemException( "TM encountered " +
+                            "a problem, "
+                            + " error writing transaction log" ), e ) );
+                }
+                tx.setStatus( Status.STATUS_NO_TRANSACTION );
+                if ( commitFailureCause == null )
+                {
+                    throw logAndReturn( "TM error tx commit", new HeuristicRollbackException(
+                            "Failed to commit, transaction rolledback ---> "
+                                    + "error code was: " + xaErrorCode ) );
+                }
+                else
+                {
+                    throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicRollbackException(
+                            "Failed to commit, transaction rolledback ---> " +
+                                    commitFailureCause ), commitFailureCause ) );
+                }
             }
         }
         tx.doAfterCompletion();
