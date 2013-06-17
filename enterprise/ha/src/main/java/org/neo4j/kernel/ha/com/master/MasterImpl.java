@@ -454,10 +454,19 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             otherTx = suspendOtherAndResumeThis( context, false );
         }
-        catch ( UnableToResumeTransactionException e )
+        catch ( Exception e )
         {
-            transactions.get( context ).markAsFinishAsap();
-            throw e;
+            MasterTransaction masterTransaction = transactions.get( context );
+            // It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
+            if ( masterTransaction != null )
+            {
+                masterTransaction.markAsFinishAsap();
+            }
+            if ( e instanceof RuntimeException )
+            {
+                throw (RuntimeException) e;
+            }
+            throw new RuntimeException( e );
         }
 
         finishThisAndResumeOther( otherTx, context, success );
