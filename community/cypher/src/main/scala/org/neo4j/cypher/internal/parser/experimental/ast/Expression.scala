@@ -221,6 +221,43 @@ trait FilterExpression extends Expression {
   }
 }
 
+case class ListComprehension(
+    identifier: Identifier,
+    expression: Expression,
+    innerPredicate: Option[Expression],
+    extractExpression: Option[Expression],
+    token: InputToken) extends FilterExpression
+{
+  val name = "list comprehension"
+
+  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then checkInnerExpression
+
+  private def checkInnerExpression : SemanticCheck = {
+    extractExpression match {
+      case Some(e) => withScopedState {
+        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      } then {
+        val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+        limitType(outerTypes)
+      }
+      case None    => limitType(expression.types)
+    }
+  }
+
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
+    val filter = inner match {
+      case commands.True() => command
+      case _               => commandexpressions.FilterFunction(command, name, inner)
+    }
+    val extract = extractExpression match {
+      case Some(e) => commandexpressions.ExtractFunction(filter, name, e.toCommand)
+      case None    => filter
+    }
+    extract
+  }
+}
+
 sealed trait IterablePredicateExpression extends FilterExpression {
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())
 

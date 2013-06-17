@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.parser.experimental
 
-trait InputPosition {
+abstract class InputPosition {
   val offset : Int
   val line : Int
   val column : Int
-  override def toString = "line " + line + ", column " + column;
+
+  override def toString = "line " + line + ", column " + column
 }
 
-trait InputToken {
+abstract class InputToken {
   def startPosition : InputPosition
   def endPosition : InputPosition
   def toString : String

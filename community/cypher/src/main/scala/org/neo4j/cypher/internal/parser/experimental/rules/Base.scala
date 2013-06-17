@@ -61,13 +61,13 @@ trait Base extends Parser {
   def operator(string: String) = group(string ~ !(OperatorCharacter))
 
   def identifier = withContext((s: String, ctx: Context[Any]) => {
-    ast.Identifier(s, ContextMatchToken(ctx))
+    ast.Identifier(s, ContextToken(ctx))
   })
 
-  def token[IndexRange, A] = withContext((_: IndexRange, ctx: Context[Any]) => ContextMatchToken(ctx))
-  def t[V, A](inner: ((V, InputToken) => A)) = withContext((v: V, ctx: Context[Any]) => inner(v, ContextMatchToken(ctx)))
-  def t[V1, V2, A](inner: ((V1, V2, InputToken) => A)) = withContext((v1: V1, v2: V2, ctx: Context[Any]) => inner(v1, v2, ContextMatchToken(ctx)))
-  def t[V1, V2, V3, A](inner: ((V1, V2, V3, InputToken) => A)) = withContext((v1: V1, v2: V2, v3: V3, ctx: Context[Any]) => inner(v1, v2, v3, ContextMatchToken(ctx)))
+  def token[IndexRange, A] = withContext((_: IndexRange, ctx: Context[Any]) => ContextToken(ctx))
+  def t[V, A](inner: ((V, InputToken) => A)) = withContext((v: V, ctx: Context[Any]) => inner(v, ContextToken(ctx)))
+  def t[V1, V2, A](inner: ((V1, V2, InputToken) => A)) = withContext((v1: V1, v2: V2, ctx: Context[Any]) => inner(v1, v2, ContextToken(ctx)))
+  def t[V1, V2, V3, A](inner: ((V1, V2, V3, InputToken) => A)) = withContext((v1: V1, v2: V2, v3: V3, ctx: Context[Any]) => inner(v1, v2, v3, ContextToken(ctx)))
   def t(inner: Rule0) : Rule1[InputToken] = inner ~>> token
   def t[V](inner: Rule1[V]) : Rule2[V, InputToken] = inner ~>> token
   def t[V1, V2](inner: Rule2[V1, V2]) : Rule3[V1, V2, InputToken] = inner ~>> token
@@ -75,13 +75,13 @@ trait Base extends Parser {
   def t[V1, V2, V3, V4](inner: Rule4[V1, V2, V3, V4]) : Rule5[V1, V2, V3, V4, InputToken] = inner ~>> token
 
   def rt[V, A](inner: ((V, InputToken) => A)) =
-      withContext((v: V, start: Int, end: Int, ctx: Context[Any]) => inner(v, ContextRangeToken(ctx, start, end)))
+      withContext((v: V, start: Int, end: Int, ctx: Context[Any]) => inner(v, ContextToken(ctx, start, end)))
   def rt[V1, V2, A](inner: ((V1, V2, InputToken) => A)) =
-      withContext((v1: V1, start: Int, v2: V2, end: Int, ctx: Context[Any]) => inner(v1, v2, ContextRangeToken(ctx, start, end)))
+      withContext((v1: V1, start: Int, v2: V2, end: Int, ctx: Context[Any]) => inner(v1, v2, ContextToken(ctx, start, end)))
   def rt[V1, V2, V3, A](inner: ((V1, V2, V3, InputToken) => A)) =
-      withContext((v1: V1, start: Int, v2: V2, v3: V3, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, ContextRangeToken(ctx, start, end)))
+      withContext((v1: V1, start: Int, v2: V2, v3: V3, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, ContextToken(ctx, start, end)))
   def rt[V1, V2, V3, V4, A](inner: ((V1, V2, V3, V4, InputToken) => A)) =
-      withContext((v1: V1, start: Int, v2: V2, v3: V3, v4: V4, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, v4, ContextRangeToken(ctx, start, end)))
+      withContext((v1: V1, start: Int, v2: V2, v3: V3, v4: V4, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, v4, ContextToken(ctx, start, end)))
 
   implicit class WSRule0(r: Rule0) {
     def ~~(other: Rule0) : Rule0 = r ~ WS ~ other

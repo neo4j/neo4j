@@ -1375,14 +1375,57 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
-    test(vAll diff List(vExperimental),
-      "start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
+    test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
         namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
         returns(
-        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
+        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p WHERE x.prop = 123)")
+      ))
+
+    test(vExperimental, "start x = NODE(1) match p=x-[r]->z return [x in p WHERE x.prop = 123]",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        returns(
+        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "[x in p WHERE x.prop = 123]")
+      ))
+  }
+
+  @Test def extract() {
+    test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
+      ))
+
+    test(vExperimental, "start x = NODE(1) match p=x-[r]->z return [x in p | x.prop]",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "[x in p | x.prop]")
+      ))
+  }
+
+  @Test def listComprehension() {
+    test(vExperimental, "start x = NODE(1) match p=x-[r]->z return [x in p WHERE x.prop > 123 | x.prop]",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        returns(
+        ReturnItem(ExtractFunction(
+          FilterFunction(Identifier("p"), "x", GreaterThan(Property(Identifier("x"), "prop"), Literal(123))),
+          "x",
+          Property(Identifier("x"), "prop")
+        ), "[x in p WHERE x.prop > 123 | x.prop]")
       ))
   }
 
