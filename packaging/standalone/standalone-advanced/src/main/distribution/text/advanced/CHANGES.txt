@@ -1,5 +1,10 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.1
+-----
+Packaging:
+o Improved handling of JAVA_HOME on OSX
+
 1.9 (2013-05-13)
 ----------------
 Kernel:
