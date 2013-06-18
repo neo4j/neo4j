@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.test;
 
 import java.io.File;
 import java.util.EnumMap;
@@ -32,14 +32,14 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
-public class JumpingIdGeneratorFactory implements IdGeneratorFactory
+public class IdJumpingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
     private final IdGenerator forTheRest = new EphemeralIdGenerator( null );
 
     private final int sizePerJump;
 
-    public JumpingIdGeneratorFactory( int sizePerJump )
+    public IdJumpingIdGeneratorFactory( int sizePerJump )
     {
         this.sizePerJump = sizePerJump;
     }
@@ -57,7 +57,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
             {
-                generator = new JumpingIdGenerator();
+                generator = new IdJumpingIdGenerator();
                 generators.put( idType, generator );
             }
             return generator;
@@ -69,7 +69,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     {
     }
 
-    private class JumpingIdGenerator implements IdGenerator
+    private class IdJumpingIdGenerator implements IdGenerator
     {
         private final AtomicLong nextId = new AtomicLong();
         private int leftToNextJump = sizePerJump/2;
