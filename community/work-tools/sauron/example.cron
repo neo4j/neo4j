@@ -1,7 +1,0 @@
-# Add something like this to cron to run automatic sauroning
-
-# Once an hour, refresh mordor
-0 * * * * sauron mordor
-
-# Twice an hour, update the deprecated card
-0,30 * * * * cd ~/sauron/community && git pull origin master && sauron deprecations http://github.com/neo4j/community 4f79f66e49be84e04103ba36 4fd73fe75027333d46776554

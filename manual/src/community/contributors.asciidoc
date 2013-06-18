@@ -86,5 +86,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Sevki Hasirci|https://github.com/Sevki[Sevki]
 |Max De Marzi|https://github.com/maxdemarzi[maxdemarzi]
 |Pieter-Jan Van Aeken|https://github.com/PieterJanVanAeken[PieterJanVanAeken]
+|Shane Gibbs|https://github.com/sgibbs-kellermed[sgibbs-kellermed]
 |=======
 

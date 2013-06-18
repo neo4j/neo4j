@@ -135,17 +135,15 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
-        ServerConfigurator config = new ServerConfigurator(
-                myDb );
+        ServerConfigurator config = new ServerConfigurator( myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(
-                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress );
+                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress.toString() );
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
 
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb, config );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
 
         srv.start();
         try
