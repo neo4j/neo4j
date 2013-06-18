@@ -363,6 +363,6 @@ checkjvmcompatibility() {
 }
 
 checkclasspath() {
-  echo $CLASSPATH | grep -q SNAPSHOT && \
+  echo $CLASSPATH | egrep -q 'neo4j-kernel-[0-9.]{2,8}-SNAPSHOT' && \
   echo -e "\nWARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
 }
