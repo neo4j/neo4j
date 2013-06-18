@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.server.rest.web;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.junit.After;
 import org.junit.Before;
@@ -71,8 +71,8 @@ public class RestfulGraphDatabasePagedTraversalTest
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
-        service = new RestfulGraphDatabase( uriInfo(), new JsonFormat(), output,
-                new DatabaseActions(database, leaseManager, ForceMode.forced, true) );
+        service = new RestfulGraphDatabase( new JsonFormat(), output,
+                new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
     }
 
     @After
@@ -92,8 +92,7 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .toString();
         assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
-        assertThat( response.getEntity()
-                .toString(), containsString( "\"name\" : \"19\"" ) );
+        assertThat( new String( (byte[]) response.getEntity() ), containsString( "\"name\" : \"19\"" ) );
     }
 
     @Test
@@ -107,10 +106,8 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         assertEquals( 200, response.getStatus() );
         assertNotNull( response.getEntity() );
-        assertThat( response.getEntity()
-                .toString(), not( containsString( "\"name\" : \"19\"" ) ) );
-        assertThat( response.getEntity()
-                .toString(), containsString( "\"name\" : \"91\"" ) );
+        assertThat( new String( (byte[]) response.getEntity() ), not( containsString( "\"name\" : \"19\"" ) ) );
+        assertThat( new String( (byte[]) response.getEntity() ), containsString( "\"name\" : \"91\"" ) );
     }
 
     @Test
@@ -124,7 +121,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     public void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
-        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 2 );
+        ((FakeClock) leaseManager.getClock()).forwardMinutes( 2 );
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
@@ -140,47 +137,33 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 10 ); // Long
-                                                                      // pause,
-                                                                      // expect
-                                                                      // lease
-                                                                      // to
-                                                                      // expire
+        ((FakeClock) leaseManager.getClock()).forwardMinutes( enoughMinutesToExpireTheLease() );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 404, response.getStatus() );
     }
 
-    private UriInfo uriInfo()
+    private int enoughMinutesToExpireTheLease()
     {
-        UriInfo mockUriInfo = mock( UriInfo.class );
-        try
-        {
-            when( mockUriInfo.getBaseUri() ).thenReturn( new URI( BASE_URI ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        return mockUriInfo;
+        return 10;
     }
 
     private Response createAPagedTraverser()
     {
         long startNodeId = createListOfNodes( 1000 );
         String description = "{"
-                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('9');\"},"
-                             + "\"order\":\"depth first\","
-                             + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
+                + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name')" +
+                ".contains('9');\"},"
+                + "\"order\":\"depth first\","
+                + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
 
         final int SIXTY_SECONDS = 60;
         final int PAGE_SIZE = 10;

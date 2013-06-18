@@ -841,7 +841,7 @@ public abstract class InternalAbstractGraphDatabase
             getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
             logging = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
         }
-        catch ( ClassNotFoundException e )
+        catch ( Exception e )
         {
             logging = new ClassicLoggingService( config );
         }

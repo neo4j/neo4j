@@ -496,12 +496,9 @@ public final class Settings
             @Override
             public T apply( T value, Function<String, String> settings )
             {
-                if ( value != null )
+                if ( value != null && value.compareTo( min ) < 0 )
                 {
-                    if ( value.compareTo( min ) < 0 )
-                    {
-                        throw new IllegalArgumentException( String.format( "minimum allowed value is: %s", min ) );
-                    }
+                    throw new IllegalArgumentException( String.format( "minimum allowed value is: %s", min ) );
                 }
                 return value;
             }
@@ -515,12 +512,9 @@ public final class Settings
             @Override
             public T apply( T value, Function<String, String> settings )
             {
-                if ( value != null )
+                if ( value != null && value.compareTo( max ) > 0 )
                 {
-                    if ( value.compareTo( max ) > 0 )
-                    {
-                        throw new IllegalArgumentException( String.format( "maximum allowed value is: %s", max ) );
-                    }
+                    throw new IllegalArgumentException( String.format( "maximum allowed value is: %s", max ) );
                 }
                 return value;
             }

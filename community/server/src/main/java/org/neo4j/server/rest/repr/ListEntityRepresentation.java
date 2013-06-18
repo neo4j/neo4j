@@ -21,39 +21,39 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public abstract class MappingRepresentation extends Representation
+public class ListEntityRepresentation extends Representation implements EntityRepresentation
 {
-    MappingRepresentation( RepresentationType type )
+    private ListRepresentation listRepresentation;
+    private URI selfUfi;
+
+    public ListEntityRepresentation( ListRepresentation listRepresentation, URI selfUfi )
     {
-        super( type );
+        super( "list" );
+        this.listRepresentation = listRepresentation;
+        this.selfUfi = selfUfi;
     }
 
-    public MappingRepresentation( String type )
+    @Override
+    public ValueRepresentation selfUri()
     {
-        super( type );
+        return ValueRepresentation.uri( selfUfi.getPath() );
     }
 
     @Override
     String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
     {
-        MappingWriter writer = format.serializeMapping( type );
-        Serializer.injectExtensions( writer, this, baseUri, extensions );
-        serialize( new MappingSerializer( writer, baseUri, extensions ) );
-        writer.done();
-        return format.complete( writer );
+        return listRepresentation.serialize( format, baseUri, extensions );
     }
-
-    protected abstract void serialize( MappingSerializer serializer );
 
     @Override
     void addTo( ListSerializer serializer )
     {
-        serializer.addMapping( this );
+        listRepresentation.addTo( serializer );
     }
 
     @Override
     void putTo( MappingSerializer serializer, String key )
     {
-        serializer.putMapping( key, this );
+        listRepresentation.putTo( serializer, key );
     }
 }
