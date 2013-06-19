@@ -335,6 +335,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
              */
             Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
             slave.other().set( System.currentTimeMillis() );
+            super.writeComplete( ctx, e );
         }
 
         @Override
@@ -433,7 +434,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                 {
                     finishOffChannel( null, slave );
                 }
-                catch ( IllegalStateException e )
+                catch ( TransactionNotPresentOnMasterException e )
                 {
                     // It's ok, there is nothing to finish anyway, since this is thrown when the transaction was not
                     // found
