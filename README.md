@@ -12,33 +12,35 @@ Using Neo4j
 
 Neo4j is available both as a standalone server, or an embeddable component. You can [download](http://neo4j.org/download/) or [try online](http://console.neo4j.org/).
 
-We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.
-
 Extending Neo4j
 ---------------
 
 We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
 
-*Please note* that this GitHub repository contains mixed GPL and AGPL code. Our community edition (in the community/ directory) is GPL. Our advanced and enterprise editions (advanced/ and enterprise/) are Affero GPL and so have different licensing.
+*Please note* that this GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the [community/](community/) directory) is GPL. Our Advanced and Enterprise editions ([advanced/](advanced/) and [enterprise/](enterprise/)) are differently licensed under the AGPL.
 
 Building Neo4j
 --------------
 
 Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
 
-A plain `mvn clean install` will only build the individual jar files. Test execution is, of course, part of the build.
+o A plain `mvn clean install` will only build the individual jar files. 
 
-To add execution of integration tests, use: `mvn clean install -DrunITs`
+o Test execution is, of course, part of the build.
 
-In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
+o To add execution of integration tests, use: `mvn clean install -DrunITs`
 
-To build everything, including running all tests, generating documentation and assembling product packages, use `mvn clean install -DfullBuild`
-The Python part of the build requires a working JPype installation.
+o In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
 
-For how to make the documentation build go, see the [Neo4j manual](manual)
+o To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
 
-When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
-The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
+o To build the documentation see the [Neo4j manual](manual)
+
+o The Python part of the build requires a working JPype installation.    
+
+o When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
+
+o The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
 
 For further details on building, please consult the [community docs](community/README.md).
 
