@@ -47,7 +47,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.tooling.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;

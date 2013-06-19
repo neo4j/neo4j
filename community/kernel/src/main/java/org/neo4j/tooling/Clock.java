@@ -17,15 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.tooling;
 
-public class RealClock implements Clock
+public interface Clock
 {
-
-    @Override
-    public long currentTimeInMilliseconds()
-    {
-        return System.currentTimeMillis();
-    }
-
+    long currentTimeMillis();
 }

@@ -48,7 +48,7 @@ import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.RealClock;
+import org.neo4j.tooling.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;

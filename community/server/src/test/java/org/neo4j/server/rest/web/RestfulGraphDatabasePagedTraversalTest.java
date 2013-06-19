@@ -42,14 +42,21 @@
 
 package org.neo4j.server.rest.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
@@ -58,16 +65,10 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import org.neo4j.tooling.FakeClock;
 
 public class RestfulGraphDatabasePagedTraversalTest
 {
@@ -137,7 +138,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     public void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
-        ((FakeClock) leaseManager.getClock()).forwardMinutes( 2 );
+        ((FakeClock) leaseManager.getClock()).forward( 2, TimeUnit.MINUTES);
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
@@ -153,15 +154,15 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
-        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forward( 30, TimeUnit.SECONDS );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forward( 30, TimeUnit.SECONDS );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ((FakeClock) leaseManager.getClock()).forwardMinutes( enoughMinutesToExpireTheLease() );
+        ((FakeClock) leaseManager.getClock()).forward( enoughMinutesToExpireTheLease(), TimeUnit.MINUTES );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 404, response.getStatus() );
     }

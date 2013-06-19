@@ -19,9 +19,16 @@
  */
 package org.neo4j.server.rest.paging;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -31,7 +38,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,11 +55,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import org.neo4j.tooling.FakeClock;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -199,7 +201,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertEquals( 201, postResponse.getStatus() );
 
         final int TEN_MINUTES = 10;
-        clock.forwardMinutes( TEN_MINUTES );
+        clock.forward( TEN_MINUTES, TimeUnit.MINUTES );
 
         JaxRsResponse getResponse = new RestRequest( postResponse.getLocation() ).get();
 
@@ -245,7 +247,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         URI traverserLocation = createPagedTraverserWithTimeoutInMinutes( 10 ).getLocation();
 
-        clock.forwardMinutes( 11 );
+        clock.forward( 11, TimeUnit.MINUTES );
 
         JaxRsResponse response = new RestRequest( traverserLocation ).get();
         assertEquals( 404, response.getStatus() );
