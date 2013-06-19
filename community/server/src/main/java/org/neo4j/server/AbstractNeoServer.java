@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -62,6 +61,8 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+
+import static org.neo4j.helpers.collection.Iterables.option;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -104,7 +105,7 @@ public abstract class AbstractNeoServer implements NeoServer
             }
             return null;
         }
-        
+
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
         {
@@ -435,12 +436,12 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( !certificatePath.exists() )
         {
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            SslCertificateFactory certFactory = new SslCertificateFactory();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
+            new SslCertificateFactory().createSelfSignedCertificate( certificatePath,
+                    privateKeyPath,
+                    getWebServerAddress() );
         }
 
-        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
-        return keyStoreFactory.createKeyStore( keystorePath, privateKeyPath, certificatePath );
+        return new KeyStoreFactory().createKeyStore( keystorePath, privateKeyPath, certificatePath );
     }
 
     @Override
