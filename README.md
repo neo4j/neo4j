@@ -24,23 +24,14 @@ Building Neo4j
 
 Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
 
-o A plain `mvn clean install` will only build the individual jar files. 
-
-o Test execution is, of course, part of the build.
-
-o To add execution of integration tests, use: `mvn clean install -DrunITs`
-
-o In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
-
-o To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
-
-o To build the documentation see the [Neo4j manual](manual)
-
-o When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
-
-o The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
-
-For further details on building, please consult the [community docs](community/README.md).
+* A plain `mvn clean install` will only build the individual jar files. 
+* Test execution is, of course, part of the build.
+* To add execution of integration tests, use: `mvn clean install -DrunITs`
+* In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
+* To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
+* To build the documentation see the [Neo4j manual](manual)
+* When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
+* The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
 
 Licensing
 ---------
