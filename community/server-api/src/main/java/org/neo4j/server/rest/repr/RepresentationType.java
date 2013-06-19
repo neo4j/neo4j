@@ -33,6 +33,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 public final class RepresentationType
 {
     private static final Map<Class<?>, Class<?>> boxed = new HashMap<Class<?>, Class<?>>();
+
     static
     {
         boxed.put( byte.class, Byte.class );
@@ -44,6 +45,7 @@ public final class RepresentationType
         boxed.put( double.class, Double.class );
         boxed.put( boolean.class, Boolean.class );
     }
+
     private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
     private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
     // Graph database types
@@ -83,6 +85,7 @@ public final class RepresentationType
             EXCEPTION = new RepresentationType( "exception" ),
             MAP = new RepresentationType( "map", "maps", Map.class );
 
+
     final String valueName;
     final String listName;
     final Class<?> extend;
@@ -97,19 +100,28 @@ public final class RepresentationType
         this.valueName = valueName;
         this.listName = listName;
         this.extend = extend;
-        if ( valueName != null ) types.put( valueName.replace( "-", "" ), this );
+        if ( valueName != null )
+        {
+            types.put( valueName.replace( "-", "" ), this );
+        }
         if ( extend != null )
         {
             extended.put( extend, this );
-            if ( extend.isPrimitive() ) extended.put( boxed.get( extend ), this );
+            if ( extend.isPrimitive() )
+            {
+                extended.put( boxed.get( extend ), this );
+            }
         }
     }
 
     RepresentationType( String type )
     {
-        if ( type == null ) throw new IllegalArgumentException( "type may not be null" );
+        if ( type == null )
+        {
+            throw new IllegalArgumentException( "type may not be null" );
+        }
         this.valueName = type;
-        this.listName = type+"s";
+        this.listName = type + "s";
         this.extend = null;
     }
 
@@ -127,7 +139,10 @@ public final class RepresentationType
     @Override
     public int hashCode()
     {
-        if ( valueName == null ) return listName.hashCode();
+        if ( valueName == null )
+        {
+            return listName.hashCode();
+        }
         return valueName.hashCode();
     }
 

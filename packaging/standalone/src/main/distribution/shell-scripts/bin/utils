@@ -145,6 +145,7 @@ reportstatus() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "$FRIENDLY_NAME is not running"
+	exit 3
   else
     echo "$FRIENDLY_NAME is running at pid $NEO4J_PID"
   fi
@@ -362,6 +363,6 @@ checkjvmcompatibility() {
 }
 
 checkclasspath() {
-  echo $CLASSPATH | grep -q SNAPSHOT && \
+  echo $CLASSPATH | egrep -q 'neo4j-kernel-[0-9.]{2,8}-SNAPSHOT' && \
   echo -e "\nWARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
 }

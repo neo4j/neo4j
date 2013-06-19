@@ -126,7 +126,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 {
                     channel = Triplet.of( channelFuture.getChannel(),
                             ChannelBuffers.dynamicBuffer(),
-                            ByteBuffer.allocateDirect( 1024 * 1024 ) );
+                            ByteBuffer.allocate( 1024 * 1024 ) );
                     msgLog.logMessage( "Opened a new channel to " + address, true );
                     return channel;
                 }
