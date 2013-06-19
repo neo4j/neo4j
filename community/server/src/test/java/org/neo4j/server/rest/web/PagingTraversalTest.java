@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,7 +71,7 @@ public class PagingTraversalTest
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
-        service = new RestfulGraphDatabase( uriInfo(), new JsonFormat(),
+        service = new RestfulGraphDatabase( new JsonFormat(),
                 output,
                 new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
     }
@@ -94,8 +93,7 @@ public class PagingTraversalTest
                 .toString();
         assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
-        assertThat( response.getEntity()
-                .toString(), containsString( "\"name\" : \"19\"" ) );
+        assertThat( new String( (byte[]) response.getEntity() ), containsString( "\"name\" : \"19\"" ) );
     }
 
     @Test
@@ -109,10 +107,8 @@ public class PagingTraversalTest
 
         assertEquals( 200, response.getStatus() );
         assertNotNull( response.getEntity() );
-        assertThat( response.getEntity()
-                .toString(), not( containsString( "\"name\" : \"19\"" ) ) );
-        assertThat( response.getEntity()
-                .toString(), containsString( "\"name\" : \"91\"" ) );
+        assertThat( new String( (byte[]) response.getEntity() ), not( containsString( "\"name\" : \"19\"" ) ) );
+        assertThat( new String( (byte[]) response.getEntity() ), containsString( "\"name\" : \"91\"" ) );
     }
 
     @Test
@@ -126,13 +122,18 @@ public class PagingTraversalTest
     public void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
-        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 2 );
+        ((FakeClock) leaseManager.getClock()).forwardMinutes( enoughMinutesToExpireTheTraversal() );
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
 
         assertEquals( 404, response.getStatus() );
+    }
+
+    private int enoughMinutesToExpireTheTraversal()
+    {
+        return 10;
     }
 
     @Test
@@ -166,15 +167,16 @@ public class PagingTraversalTest
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
+        ((FakeClock) leaseManager.getClock()).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 200, response.getStatus() );
 
-        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 10 ); // Long pause, expect lease to expire
+        ((FakeClock) leaseManager.getClock()).forwardMinutes( this.enoughMinutesToExpireTheTraversal() );
+
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
         assertEquals( 404, response.getStatus() );
     }
@@ -189,21 +191,6 @@ public class PagingTraversalTest
                 .getStatus() );
         assertEquals( 404, service.removePagedTraverser( traverserId )
                 .getStatus() );
-    }
-
-    private UriInfo uriInfo()
-    {
-        UriInfo mockUriInfo = mock( UriInfo.class );
-        try
-        {
-            when( mockUriInfo.getBaseUri() ).thenReturn( new URI( BASE_URI ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        return mockUriInfo;
     }
 
     private Response createAPagedTraverser()

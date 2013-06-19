@@ -24,17 +24,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
 /**
  * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
  * of required configuration on to the neo4j server.
- * <p>
+ * <p/>
  * If you want to change configuration for your
  * {@link WrappingNeoServerBootstrapper}, create an instance of this class, and
  * add configuration like so:
- * 
+ * <p/>
  * <pre>
  * {
  *     &#064;code EmbeddedServerConfigurator conf = new EmbeddedServerConfigurator( myDb );
@@ -42,7 +43,7 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
  *             .addProperty( WEBSERVER_PORT_PROPERTY_KEY, 8080 );
  * }
  * </pre>
- * 
+ * <p/>
  * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the static strings in {@link Configurator}.
  */
@@ -55,11 +56,6 @@ public class ServerConfigurator implements Configurator
     public ServerConfigurator( GraphDatabaseAPI db )
     {
         config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
-    }
-    
-    public ServerConfigurator( String dbDir )
-    {
-        config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, dbDir );
     }
 
     @Override
@@ -79,5 +75,4 @@ public class ServerConfigurator implements Configurator
     {
         return jaxRsPackages;
     }
-
 }
