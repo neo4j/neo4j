@@ -146,7 +146,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
                             {
                                 // Not really expected
                                 msgLog.logMessage( "Unable to roll back old tx " + entry.getKey() + ", " +
-                                        "" + entry.getValue().transaction + ", " + displayableTime );
+                                        "" + entry.getValue().transaction + ", " + displayableTime, t );
                             }
                         }
                     }
