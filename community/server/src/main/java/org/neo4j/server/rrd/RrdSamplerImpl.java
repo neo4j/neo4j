@@ -63,6 +63,7 @@ public class RrdSamplerImpl implements RrdSampler {
         }
         catch ( UnableToSampleException e )
         {
+            e.printStackTrace();
         }
         catch ( IOException e )
         {

@@ -435,15 +435,15 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 }
                 catch ( Throwable t )
                 {
-                    t.printStackTrace();
                     log.logMessage( "Commit failed", t );
 
-                    setTmNotOk( t );
-                    // this should never be
-                    throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                            "commit threw exception but status is committed?", t ));
+                        setTmNotOk( t );
+                        // this should never be
+                        throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                                "commit threw exception but status is committed?", t ));
                 }
             }
+
             if ( tx.getStatus() != Status.STATUS_COMMITTED )
             {
                 try

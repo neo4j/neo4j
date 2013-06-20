@@ -261,7 +261,6 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             log.logMessage( "Unknown error commit master transaction at slave", t );
         }
         finally

@@ -154,6 +154,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 catch ( Throwable t )
                 {
                     // The show must go on
+                    msgLog.logMessage( "Exception in MasterImpl", t );
                 }
             }
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
