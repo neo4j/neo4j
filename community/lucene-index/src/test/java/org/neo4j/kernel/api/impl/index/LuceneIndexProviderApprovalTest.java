@@ -17,34 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.inmemory;
+package org.neo4j.kernel.api.impl.index;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import org.neo4j.kernel.api.index.SchemaProviderApprovalTest;
 
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.index.IndexReader;
-
-class NonUniqueInMemoryIndexReader implements IndexReader
+public class LuceneIndexProviderApprovalTest extends SchemaProviderApprovalTest
 {
-    private final HashMap<Object, Set<Long>> indexData;
-
-    NonUniqueInMemoryIndexReader( Map<Object, Set<Long>> indexData )
+    public LuceneIndexProviderApprovalTest( TestValue value )
     {
-        this.indexData = new HashMap<Object, Set<Long>>( indexData );
-    }
-
-    @Override
-    public Iterator<Long> lookup( Object value )
-    {
-        Set<Long> result = indexData.get( value );
-        return result != null ? result.iterator() : IteratorUtil.<Long>emptyIterator();
-    }
-
-    @Override
-    public void close()
-    {
+        super( value );
     }
 }

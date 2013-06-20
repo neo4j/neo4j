@@ -41,27 +41,11 @@ class IntArrayProperty extends FullSizeProperty
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof int[])
+        if ( value instanceof int[] )
         {
-            return Arrays.equals(this.value, (int[])value);
+            return Arrays.equals( this.value, (int[]) value );
         }
-        if ( value instanceof Integer[] )
-        {
-            Integer[] otherValue = (Integer[]) value;
-            if ( this.value.length != otherValue.length )
-            {
-                return false;
-            }
-            for (int i = 0; i < otherValue.length; i++ )
-            {
-                if ( otherValue[i] == null || this.value[i] != otherValue[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
+        return valueCompare( this.value, value );
     }
 
     @Override
@@ -73,6 +57,6 @@ class IntArrayProperty extends FullSizeProperty
     @Override
     boolean hasEqualValue( FullSizeProperty that )
     {
-        return Arrays.equals( this.value, ((IntArrayProperty)that).value );
+        return Arrays.equals( this.value, ((IntArrayProperty) that).value );
     }
 }

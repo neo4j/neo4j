@@ -44,6 +44,12 @@ final class BooleanProperty extends PropertyWithValue
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        return other instanceof Boolean && (Boolean) value == other;
+    }
+
+    @Override
     public Boolean value()
     {
         return value;

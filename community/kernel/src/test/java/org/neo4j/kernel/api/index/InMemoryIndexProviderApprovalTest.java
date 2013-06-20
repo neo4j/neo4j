@@ -17,45 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.properties;
+package org.neo4j.kernel.api.index;
 
-final class StringProperty extends FullSizeProperty
+public class InMemoryIndexProviderApprovalTest extends SchemaProviderApprovalTest
 {
-    private final String value;
-
-    StringProperty( long propertyKeyId, String value )
+    public InMemoryIndexProviderApprovalTest( TestValue value )
     {
-        super( propertyKeyId );
-        assert value != null;
-        this.value = value;
-    }
-
-    @Override
-    public boolean valueEquals( Object other )
-    {
-        if ( other instanceof String )
-        {
-            return value.equals( other );
-        }
-
-        return valueCompare( value, other );
-    }
-
-    @Override
-    public String value()
-    {
-        return value;
-    }
-
-    @Override
-    int valueHash()
-    {
-        return value.hashCode();
-    }
-
-    @Override
-    boolean hasEqualValue( FullSizeProperty that )
-    {
-        return value.equals( ((StringProperty) that).value );
+        super( value );
     }
 }

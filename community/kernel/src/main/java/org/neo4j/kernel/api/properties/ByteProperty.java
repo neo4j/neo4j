@@ -44,6 +44,17 @@ final class ByteProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Byte )
+        {
+            return other == (byte)value;
+        }
+
+        return valueCompare( value, other );
+    }
+
+    @Override
     boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((ByteProperty) that).value;

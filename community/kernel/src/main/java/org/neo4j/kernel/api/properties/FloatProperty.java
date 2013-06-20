@@ -42,6 +42,18 @@ final class FloatProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Float )
+        {
+            boolean b = value == (float)other;
+            return b;
+        }
+
+        return valueCompare( value, other );
+    }
+
+    @Override
     boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((FloatProperty) that).value;
