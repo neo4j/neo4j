@@ -40,6 +40,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.Node;
@@ -276,9 +277,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     }
                     else
                     {
-                        throw new IllegalStateException( "Transaction " + txId + " has either timed out on the" +
-                                " master or was not started on this master. There may have been a master switch" +
-                                " between the time this transaction started and up to now. This transaction" +
+                        throw new TransactionNotPresentOnMasterException( "Transaction " + txId + " has either timed " +
+                                "out on the master or was not started on this master. There may have been a master " +
+                                "switch between the time this transaction started and up to now. This transaction" +
                                 " cannot continue since the state from the previous master isn't transferred." );
                     }
                 }
@@ -455,10 +456,19 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             otherTx = suspendOtherAndResumeThis( context, false );
         }
-        catch ( UnableToResumeTransactionException e )
+        catch ( Exception e )
         {
-            transactions.get( context ).markAsFinishAsap();
-            throw e;
+            MasterTransaction masterTransaction = transactions.get( context );
+            // It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
+            if ( masterTransaction != null )
+            {
+                masterTransaction.markAsFinishAsap();
+            }
+            if ( e instanceof RuntimeException )
+            {
+                throw (RuntimeException) e;
+            }
+            throw new RuntimeException( e );
         }
 
         finishThisAndResumeOther( otherTx, context, success );
