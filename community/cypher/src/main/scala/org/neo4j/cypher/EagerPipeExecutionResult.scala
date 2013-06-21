@@ -22,8 +22,10 @@ package org.neo4j.cypher
 import internal.pipes.QueryState
 import collection.Map
 import org.neo4j.cypher.internal.ClosingIterator
+import java.io.PrintWriter
+import org.neo4j.cypher.internal.spi.TokenContext
 
-class EagerPipeExecutionResult(result: ClosingIterator[Map[String, Any]],
+class EagerPipeExecutionResult(result: ClosingIterator,
                                columns: List[String],
                                state: QueryState,
                                planDescriptor: () => PlanDescription)
@@ -35,5 +37,6 @@ class EagerPipeExecutionResult(result: ClosingIterator[Map[String, Any]],
   override def next() = inner.next().toMap
   override def hasNext = inner.hasNext
 
-  override def queryStatistics = state.getStatistics
+
+  override def queryStatistics() = state.getStatistics
 }

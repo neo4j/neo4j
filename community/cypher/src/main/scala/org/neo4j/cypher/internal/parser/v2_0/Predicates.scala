@@ -80,7 +80,7 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
   }
 
   def hasProperty = HAS ~> parens(property) ^^ {
-    case prop:Property => Has(prop.mapExpr, prop.property)
+    case prop:Property => Has(prop.mapExpr, prop.propertyKey)
   }
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in

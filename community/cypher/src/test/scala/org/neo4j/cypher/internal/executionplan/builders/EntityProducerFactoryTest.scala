@@ -76,8 +76,8 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     // given
     val label: String = "label"
     val queryContext: QueryContext = mock[QueryContext]
-    when(planContext.getLabelId(label)).thenReturn(None)
-    when(queryContext.getLabelId(label)).thenReturn(None)
+    when(planContext.getOptLabelId(label)).thenReturn(None)
+    when(queryContext.getOptLabelId(label)).thenReturn(None)
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 
     // when
@@ -85,7 +85,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     assert(func(context, state) === Iterator.empty)
 
     // then
-    verify(queryContext, times(1)).getLabelId(label)
+    verify(queryContext, times(1)).getOptLabelId(label)
   }
 
   @Test

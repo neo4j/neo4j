@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.executionplan.verifiers.HintVerifier
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.{LabelScanHintException, IndexHintException}
+import org.neo4j.cypher.internal.commands.values.TokenType._
 import org.neo4j.cypher.internal.commands.Or
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.NodeByLabel
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.expressions.Property
 
@@ -39,8 +41,8 @@ class HintVerifierTest extends Assertions {
     //GIVEN
     val q = Query.empty.copy(
       where = Or(
-        Equals(Property(Identifier("n"), "name"), Literal("Stefan")),
-        Equals(Property(Identifier("n"), "age"), Literal(35))),
+        Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Stefan")),
+        Equals(Property(Identifier("n"), PropertyKey("age")), Literal(35))),
       hints = Seq(SchemaIndex("n", "Person", "name", None)))
 
     //THEN

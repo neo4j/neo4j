@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class UpdateActionBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder with UpdateCommandExpander {
-  def apply(plan: ExecutionPlanInProgress) = {
+class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, plan.pipe)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, plan.pipe)
     val startCmds = startItems.map(_.map(_.asInstanceOf[UpdatingStartItem].updateAction))
 
     val updateActions = (startCmds ++ updateCmds).map(_.token)
+
     val commands = expandCommands(updateActions, plan.pipe.symbols)
 
     val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, commands)
@@ -45,6 +47,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder wi
     )
   }
 
+
   private def extractValidStartItems(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[StartItem]] = {
     plan.query.start.filter(cmd => cmd.unsolved && cmd.token.mutating && cmd.token.symbolDependenciesMet(p.symbols))
   }
@@ -53,7 +56,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder wi
     plan.query.updates.filter(cmd => cmd.unsolved && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
     val sitems = extractValidStartItems(plan, plan.pipe).toSeq
 

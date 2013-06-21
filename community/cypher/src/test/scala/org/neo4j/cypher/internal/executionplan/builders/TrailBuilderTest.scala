@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
   val A = withName("A")
@@ -92,12 +93,12 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
   @Test def find_longest_path_between_two_points_with_a_predicate() {
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
-    val r1Pred = Equals(Property(Identifier("pr1"), "prop"), Literal(42))
-    val r2Pred = Equals(Property(Identifier("pr2"), "prop"), Literal("FOO"))
+    val r1Pred = Equals(Property(Identifier("pr1"), PropertyKey("prop")), Literal(42))
+    val r2Pred = Equals(Property(Identifier("pr2"), PropertyKey("prop")), Literal("FOO"))
     val predicates = Seq(r1Pred, r2Pred)
 
-    val rewrittenR1 = Equals(Property(RelationshipIdentifier(), "prop"), Literal(42))
-    val rewrittenR2 = Equals(Property(RelationshipIdentifier(), "prop"), Literal("FOO"))
+    val rewrittenR1 = Equals(Property(RelationshipIdentifier(), PropertyKey("prop")), Literal(42))
+    val rewrittenR2 = Equals(Property(RelationshipIdentifier(), PropertyKey("prop")), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", rewrittenR2, True(), pattern = BtoC, Seq(r2Pred))
@@ -112,10 +113,10 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)
     //WHERE b.prop = 42
 
-    val nodePred = Equals(Property(Identifier("b"), "prop"), Literal(42))
+    val nodePred = Equals(Property(Identifier("b"), PropertyKey("prop")), Literal(42))
     val predicates = Seq(nodePred)
 
-    val rewrittenPredicate = Equals(Property(NodeIdentifier(), "prop"), Literal(42))
+    val rewrittenPredicate = Equals(Property(NodeIdentifier(), PropertyKey("prop")), Literal(42))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
@@ -312,11 +313,11 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
 
-    val predForB = Equals(Property(Identifier("b"), "name"), Literal("b"))
-    val predForC = Equals(Property(Identifier("c"), "name"), Literal("c"))
+    val predForB = Equals(Property(Identifier("b"), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(Identifier("c"), PropertyKey("name")), Literal("c"))
 
-    val expectedForB = Equals(Property(NodeIdentifier(), "name"), Literal("b"))
-    val expectedForC = Equals(Property(NodeIdentifier(), "name"), Literal("c"))
+    val expectedForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
+    val expectedForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
 
     val s1 = RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, optional = false)
     val s2 = RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, optional = false)

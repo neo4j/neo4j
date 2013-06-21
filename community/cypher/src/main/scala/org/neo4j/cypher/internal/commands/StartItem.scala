@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.parser.OnAction
 import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.commands.expressions.Property
 import scala.collection.mutable
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {
@@ -135,13 +136,13 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) ex
       case ParsedEntity(name, _, props, labelsNames, _) =>
         val labelPredicates = labelsNames.map(labelName => HasLabel(Identifier(name), labelName))
         val propertyPredicates = props.map {
-          case (propertyKey, expression) => Equals(Nullable(Property(Identifier(name), propertyKey)), expression)
+          case (propertyKeyName, expression) => Equals(Nullable(Property(Identifier(name), PropertyKey(propertyKeyName))), expression)
         }
         val predicates = labelPredicates ++ propertyPredicates
 
         val labelActions = labelsNames.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
         val propertyActions = props.map {
-          case (propertyKey, expression) => PropertySetAction(Property(Identifier(name), propertyKey), expression)
+          case (propertyKeyName, expression) => PropertySetAction(Property(Identifier(name), PropertyKey(propertyKeyName)), expression)
         }
 
         val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)

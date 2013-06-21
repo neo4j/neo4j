@@ -78,12 +78,12 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     pc match {
       case n: Node => map.foreach {
         case (key, value) =>
-          state.query.nodeOps.setProperty(n, key, makeValueNeoSafe(value))
+          state.query.nodeOps.setProperty(n, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
-          state.query.relationshipOps.setProperty(r, key, makeValueNeoSafe(value))
+          state.query.relationshipOps.setProperty(r, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
     }
   }
@@ -92,10 +92,10 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     val value = makeValueNeoSafe(expression(context)(state))
     pc match {
       case n: Node =>
-        state.query.nodeOps.setProperty(n, key, value)
+        state.query.nodeOps.setProperty(n, state.query.getOrCreatePropertyKeyId(key), value)
 
       case r: Relationship =>
-        state.query.relationshipOps.setProperty(r, key, value)
+        state.query.relationshipOps.setProperty(r, state.query.getOrCreatePropertyKeyId(key), value)
     }
   }
 

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Prop
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class ExpanderStepReversalTest extends Assertions {
   val A = "A"
@@ -70,8 +71,8 @@ class ExpanderStepReversalTest extends Assertions {
     // GIVEN
     // MATCH (a)-[r1]->(b) (b)-[r2]->(c)  (c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
-    val predForB = Equals(Property(Identifier("b"), "name"), Literal("b"))
-    val predForC = Equals(Property(Identifier("c"), "name"), Literal("c"))
+    val predForB = Equals(Property(Identifier("b"), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(Identifier("c"), PropertyKey("name")), Literal("c"))
 
     val forward3 = step(2, Seq(), Direction.INCOMING, None)
     val forward2 = step(1, Seq(), Direction.OUTGOING, Some(forward3), nodePredicate = predForC)

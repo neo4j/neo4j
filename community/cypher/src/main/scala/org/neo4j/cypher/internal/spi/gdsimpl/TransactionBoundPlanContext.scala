@@ -28,7 +28,8 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 
-class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
+class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService)
+  extends TransactionBoundTokenContext(ctx) with PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
     val labelId = ctx.labelGetForName(labelName)
@@ -64,10 +65,4 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
       throw new MissingIndexException(idxName)
     }
   }
-
-  private def tryGet[T](f: => T): Option[T] = try Some(f) catch {
-    case _: KernelException => None
-  }
-
-  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.labelGetForName(labelName))
 }

@@ -25,6 +25,7 @@ import expressions._
 import org.neo4j.cypher.internal.parser.v2_0.{Updates, StartAndCreateClause, MatchClause}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 
 class MergeTest extends StartAndCreateClause with MatchClause with Updates with ParserTest {
@@ -35,7 +36,7 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
     val B = "b"
     val NO_PATHS = Seq.empty
     val labelName = KeyToken.Unresolved("Label", TokenType.Label)
-    def setProperty(id: String) = PropertySetAction(Property(Identifier(id), "property"), TimestampFunction())
+    def setProperty(id: String) = PropertySetAction(Property(Identifier(id), PropertyKey("property")), TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive
       (Seq(
@@ -92,5 +93,5 @@ ON MATCH b SET b.property = timestamp()
           ))), NO_PATHS)
   }
 
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
+  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), PropertyKey(propName))
 }
