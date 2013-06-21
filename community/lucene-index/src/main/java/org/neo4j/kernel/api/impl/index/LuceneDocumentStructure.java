@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-import static org.apache.lucene.document.Field.Store.NO;
-import static org.apache.lucene.document.Field.Store.YES;
-import static org.apache.lucene.search.BooleanClause.Occur.MUST;
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
-import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ArrayEncoder.encode;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
@@ -40,6 +32,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 import sun.misc.BASE64Encoder;
+
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.search.BooleanClause.Occur.MUST;
+import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
+import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
 {
@@ -87,7 +87,7 @@ class LuceneDocumentStructure
         {
             BooleanQuery booleanClauses = new BooleanQuery();
             booleanClauses.add( new TermQuery( new Term( TYPE_FIELD_IDENTIFIER, NOT_ARRAY ) ), MUST );
-            booleanClauses.add( new TermQuery( new Term( PROPERTY_FIELD_IDENTIFIER, (String) value ) ), MUST );
+            booleanClauses.add( new TermQuery( new Term( PROPERTY_FIELD_IDENTIFIER, value.toString() ) ), MUST );
             return booleanClauses;
         }
     }
