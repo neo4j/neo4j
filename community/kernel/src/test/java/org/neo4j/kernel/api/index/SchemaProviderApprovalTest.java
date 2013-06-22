@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.BeforeClass;
@@ -29,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -76,8 +78,9 @@ public abstract class SchemaProviderApprovalTest
             this.value = value;
         }
     }
-    private static HashMap<TestValue, Collection<Node>> noIndexRun;
-    private static HashMap<TestValue, Collection<Node>> indexRun;
+
+    private static Map<TestValue, Set<Object>> noIndexRun;
+    private static Map<TestValue, Set<Object>> indexRun;
 
     private final TestValue currentValue;
 
@@ -117,6 +120,14 @@ public abstract class SchemaProviderApprovalTest
 
     public static final String LABEL = "Person";
     public static final String PROPERTY_KEY = "name";
+    public static final Function<Node, Object> PROPERTY_EXTRACTOR = new Function<Node, Object>()
+    {
+        @Override
+        public Object apply( Node node )
+        {
+            return node.getProperty( PROPERTY_KEY );
+        }
+    };
 
     protected static void createIndex( GraphDatabaseService db )
     {
@@ -130,14 +141,17 @@ public abstract class SchemaProviderApprovalTest
     @Test
     public void test()
     {
-        Set<Node> noIndexResult = asSet( noIndexRun.get( currentValue ) );
-        Set<Node> indexResult = asSet( indexRun.get( currentValue ) );
-        assertEquals( currentValue.toString(), noIndexResult, indexResult );
+        Set<Object> noIndexResult = asSet( noIndexRun.get( currentValue ) );
+        Set<Object> indexResult = asSet( indexRun.get( currentValue ) );
+
+        String errorMessage = currentValue.toString();
+
+        assertEquals( errorMessage, noIndexResult, indexResult );
     }
 
-    private static HashMap<TestValue, Collection<Node>> runFindByLabelAndProperty( GraphDatabaseService db )
+    private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )
     {
-        HashMap<TestValue, Collection<Node>> results = new HashMap<>();
+        HashMap<TestValue, Set<Object>> results = new HashMap<>();
         for ( TestValue value : TestValue.values() )
         {
             addToResults( db, results, value );
@@ -155,9 +169,10 @@ public abstract class SchemaProviderApprovalTest
         return node;
     }
 
-    private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Collection<Node>> results, TestValue value )
+    private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results, TestValue value )
     {
-        Collection<Node> result = asCollection( db.findNodesByLabelAndProperty( label( LABEL ), PROPERTY_KEY, value.value ) );
-        results.put( value, result );
+        ResourceIterable<Node> foundNodes = db.findNodesByLabelAndProperty( label( LABEL ), PROPERTY_KEY, value.value );
+        Set<Object> propertyValues = asSet( map( PROPERTY_EXTRACTOR, foundNodes ) );
+        results.put( value, propertyValues );
     }
 }

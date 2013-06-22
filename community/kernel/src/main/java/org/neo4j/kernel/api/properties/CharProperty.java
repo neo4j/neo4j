@@ -44,6 +44,24 @@ final class CharProperty extends PropertyWithValue
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Character )
+        {
+            return other == value;
+        }
+        else if ( other instanceof String )
+        {
+            String b = ((String) other);
+            return b.length() == 1 && b.charAt( 0 ) == value;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
     public Character value()
     {
         return value;

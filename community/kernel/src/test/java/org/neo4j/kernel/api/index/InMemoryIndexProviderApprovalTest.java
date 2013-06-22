@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Ignore;
+
+@Ignore("Pretty far from done")
 public class InMemoryIndexProviderApprovalTest extends SchemaProviderApprovalTest
 {
     public InMemoryIndexProviderApprovalTest( TestValue value )

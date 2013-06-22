@@ -63,7 +63,7 @@ public abstract class Property
 
     public abstract long propertyKeyId();
 
-    public abstract boolean valueEquals( Object value );
+    public abstract boolean valueEquals( Object other );
 
     public abstract Object value() throws PropertyNotFoundException;
 

@@ -31,6 +31,17 @@ final class StringProperty extends FullSizeProperty
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Character )
+        {
+            return value.length() == 1 && value.equals( other.toString() );
+        }
+
+        return other instanceof String && value.equals( other );
+    }
+
+    @Override
     public String value()
     {
         return value;
@@ -45,6 +56,6 @@ final class StringProperty extends FullSizeProperty
     @Override
     boolean hasEqualValue( FullSizeProperty that )
     {
-        return value.equals( ((StringProperty)that).value );
+        return value.equals( ((StringProperty) that).value );
     }
 }

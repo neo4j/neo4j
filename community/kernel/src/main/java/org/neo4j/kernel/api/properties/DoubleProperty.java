@@ -33,6 +33,30 @@ final class DoubleProperty extends FullSizeProperty
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Number )
+        {
+            Number number = (Number) other;
+            if ( number instanceof Byte
+                    || number instanceof Short
+                    || number instanceof Integer
+                    || number instanceof Long )
+            {
+                return number.longValue() == value;
+            }
+
+            if ( number instanceof Float
+                    || number instanceof Double )
+            {
+                return number.doubleValue() == value;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
     public Double value()
     {
         return value;
@@ -50,7 +74,7 @@ final class DoubleProperty extends FullSizeProperty
     {
         return Double.compare( this.value, ((DoubleProperty) that).value ) == 0;
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()
