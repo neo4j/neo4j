@@ -28,7 +28,6 @@ import org.apache.lucene.search.TermQuery;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
@@ -38,10 +37,8 @@ import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 class LuceneDocumentStructure
 {
     private static final String NODE_ID_KEY = "_id_";
-    private static final String TYPE_FIELD_IDENTIFIER = "type";
     private static final String PROPERTY_FIELD_IDENTIFIER = "key";
-    private static final String ARRAY = "array";
-    private static final String NOT_ARRAY = "not-array";
+    private static final String ARRAY_PROPERTY_FIELD_IDENTIFIER = "array-key";
 
     Document newDocument( long nodeId, Object value )
     {
@@ -50,18 +47,15 @@ class LuceneDocumentStructure
 
         if ( value.getClass().isArray() )
         {
-            document.add( new Field( TYPE_FIELD_IDENTIFIER, ARRAY, NO, NOT_ANALYZED ) );
-            document.add( new Field( PROPERTY_FIELD_IDENTIFIER, encode( value ), YES,
+            document.add( new Field( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ), YES,
                     Field.Index.NOT_ANALYZED ) );
         }
         else if(value instanceof Number)
         {
-            document.add( new Field( TYPE_FIELD_IDENTIFIER, NOT_ARRAY, NO, NOT_ANALYZED ) );
             document.add( instantiateField( PROPERTY_FIELD_IDENTIFIER, ((Number) value).doubleValue(), NOT_ANALYZED ) );
         }
         else
         {
-            document.add( new Field( TYPE_FIELD_IDENTIFIER, NOT_ARRAY, NO, NOT_ANALYZED ) );
             document.add( instantiateField( PROPERTY_FIELD_IDENTIFIER, value, NOT_ANALYZED ) );
         }
 
@@ -78,14 +72,12 @@ class LuceneDocumentStructure
         else if ( value.getClass().isArray() )
         {
             BooleanQuery booleanClauses = new BooleanQuery();
-            booleanClauses.add( new TermQuery( new Term( TYPE_FIELD_IDENTIFIER, ARRAY ) ), MUST );
-            booleanClauses.add( new TermQuery( new Term( PROPERTY_FIELD_IDENTIFIER, encode( value ) ) ), MUST );
+            booleanClauses.add( new TermQuery( new Term( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) ), MUST );
             return booleanClauses;
         }
         else
         {
             BooleanQuery booleanClauses = new BooleanQuery();
-            booleanClauses.add( new TermQuery( new Term( TYPE_FIELD_IDENTIFIER, NOT_ARRAY ) ), MUST );
             booleanClauses.add( new TermQuery( new Term( PROPERTY_FIELD_IDENTIFIER, value.toString() ) ), MUST );
             return booleanClauses;
         }
