@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -75,12 +78,88 @@ class NonUniqueInMemoryIndex extends InMemoryIndex
 
     private Set<Long> getLongs( Object propertyValue )
     {
-        Set<Long> nodes = indexData.get( propertyValue );
+        Object key = encode( propertyValue );
+        Set<Long> nodes = indexData.get( key );
         if ( nodes == null )
         {
             nodes = new HashSet<Long>();
-            indexData.put( propertyValue, nodes );
+            indexData.put( key, nodes );
         }
         return nodes;
+    }
+
+    private static class ArrayKey
+    {
+        private final String arrayValue;
+
+        private ArrayKey( String arrayValue )
+        {
+            this.arrayValue = arrayValue;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            ArrayKey other = (ArrayKey) o;
+
+            return other.arrayValue.equals( this.arrayValue );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return arrayValue != null ? arrayValue.hashCode() : 0;
+        }
+    }
+
+    private static Object encode( Object propertyValue )
+    {
+        if ( propertyValue instanceof Number )
+        {
+            return ((Number) propertyValue).doubleValue();
+        }
+
+        if ( propertyValue instanceof Character )
+        {
+            return propertyValue.toString();
+        }
+
+        if ( propertyValue.getClass().isArray() )
+        {
+            return new ArrayKey( ArrayEncoder.encode( propertyValue ) );
+        }
+
+        return propertyValue;
+    }
+
+    static class NonUniqueInMemoryIndexReader implements IndexReader
+    {
+        private final HashMap<Object, Set<Long>> indexData;
+
+        NonUniqueInMemoryIndexReader( Map<Object, Set<Long>> indexData )
+        {
+            this.indexData = new HashMap<Object, Set<Long>>( indexData );
+        }
+
+        @Override
+        public Iterator<Long> lookup( Object value )
+        {
+            Set<Long> result = indexData.get( encode( value ) );
+            return result != null ? result.iterator() : IteratorUtil.<Long>emptyIterator();
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 }

@@ -69,7 +69,8 @@ public abstract class SchemaProviderApprovalTest
         SHORT_42( (short) 42 ),
         FLOAT_42( (float) 42 ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
-        ARRAY_OF_STRING( new String[]{"ALFA", "BETA", "GAMMA"} );
+        ARRAY_OF_DOUBLES( new double[]{1, 2, 3} ),
+        ARRAY_OF_STRING( new String[]{"1", "2", "3"} );
 
         private final Object value;
 

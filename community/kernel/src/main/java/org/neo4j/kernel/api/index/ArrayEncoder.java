@@ -19,10 +19,36 @@
  */
 package org.neo4j.kernel.api.index;
 
-public class InMemoryIndexProviderApprovalTest extends SchemaProviderApprovalTest
+import java.lang.reflect.Array;
+
+public class ArrayEncoder
 {
-    public InMemoryIndexProviderApprovalTest( TestValue value )
+    public static String encode( Object array )
     {
-        super( value );
+        if ( !array.getClass().isArray() )
+        {
+            throw new IllegalArgumentException( "Only works with arrays" );
+        }
+
+        StringBuilder builder = new StringBuilder( );
+        int length = Array.getLength( array );
+        String type = "";
+        for ( int i = 0; i < length; i++ )
+        {
+            Object o = Array.get( array, i );
+            if ( o instanceof Number )
+            {
+                type = "n";
+                builder.append( ((Number) o).doubleValue() );
+            } else
+            {
+                type = "o";
+                builder.append( o );
+            }
+            builder.append( "|" );
+        }
+
+        String result = type + builder.toString();
+        return result;
     }
 }

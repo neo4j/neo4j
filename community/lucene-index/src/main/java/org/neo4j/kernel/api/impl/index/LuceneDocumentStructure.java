@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
@@ -31,7 +26,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.index.impl.lucene.LuceneUtil;
-import sun.misc.BASE64Encoder;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
@@ -39,7 +33,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
 import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ArrayEncoder.encode;
+import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
 {
@@ -60,6 +54,11 @@ class LuceneDocumentStructure
             document.add( new Field( PROPERTY_FIELD_IDENTIFIER, encode( value ), YES,
                     Field.Index.NOT_ANALYZED ) );
         }
+        else if(value instanceof Number)
+        {
+            document.add( new Field( TYPE_FIELD_IDENTIFIER, NOT_ARRAY, NO, NOT_ANALYZED ) );
+            document.add( instantiateField( PROPERTY_FIELD_IDENTIFIER, ((Number) value).doubleValue(), NOT_ANALYZED ) );
+        }
         else
         {
             document.add( new Field( TYPE_FIELD_IDENTIFIER, NOT_ARRAY, NO, NOT_ANALYZED ) );
@@ -74,7 +73,7 @@ class LuceneDocumentStructure
         if ( value instanceof Number )
         {
             Number number = (Number) value;
-            return LuceneUtil.rangeQuery( PROPERTY_FIELD_IDENTIFIER, number, number, true, true );
+            return LuceneUtil.rangeQuery( PROPERTY_FIELD_IDENTIFIER, number.doubleValue(), number.doubleValue(), true, true );
         }
         else if ( value.getClass().isArray() )
         {
@@ -100,41 +99,5 @@ class LuceneDocumentStructure
     public long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
-    }
-
-    static class ArrayEncoder
-    {
-        private static final BASE64Encoder base64Encoder = new BASE64Encoder();
-
-        static String encode( Object value )
-        {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutput out = null;
-            try
-            {
-                out = new ObjectOutputStream( bos );
-                out.writeObject( value );
-                out.flush();
-                return base64Encoder.encode( bos.toByteArray() );
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalStateException( "Unable to encode array for indexing", e );
-            }
-            finally
-            {
-                try
-                {
-                    if ( out != null )
-                    {
-                        out.close();
-                    }
-                }
-                catch ( IOException e )
-                {
-                    // ignore
-                }
-            }
-        }
     }
 }
