@@ -48,7 +48,7 @@ final class IntProperty extends NumberPropertyWithin4Bytes
     {
         if ( other instanceof Integer )
         {
-            return value == other;
+            return value == (int)other;
         }
 
         return valueCompare( value, other );

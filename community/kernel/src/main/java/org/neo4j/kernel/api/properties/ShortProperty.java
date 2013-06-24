@@ -48,7 +48,7 @@ final class ShortProperty extends NumberPropertyWithin4Bytes
     {
         if ( other instanceof Short )
         {
-            return value == other;
+            return value == (short)other;
         }
 
         return valueCompare( value, other );

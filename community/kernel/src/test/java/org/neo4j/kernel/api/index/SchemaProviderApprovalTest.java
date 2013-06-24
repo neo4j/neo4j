@@ -66,11 +66,14 @@ public abstract class SchemaProviderApprovalTest
         LONG_42( (long) 42 ),
         BYTE_42( (byte) 42 ),
         DOUBLE_42( (double) 42 ),
+        DOUBLE_42andAHalf( 42.1d ),
         SHORT_42( (short) 42 ),
         FLOAT_42( (float) 42 ),
+        FLOAT_42andAHalf( 42.1f ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
         ARRAY_OF_DOUBLES( new double[]{1, 2, 3} ),
-        ARRAY_OF_STRING( new String[]{"1", "2", "3"} );
+        ARRAY_OF_STRING( new String[]{"1", "2", "3"} ),
+        ARRAY_OF_CHAR( new char[]{'1', '2', '3'} );
 
         private final Object value;
 
@@ -90,7 +93,7 @@ public abstract class SchemaProviderApprovalTest
         currentValue = value;
     }
 
-    @Parameters
+    @Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
         Iterable<TestValue> testValues = asIterable( TestValue.values() );

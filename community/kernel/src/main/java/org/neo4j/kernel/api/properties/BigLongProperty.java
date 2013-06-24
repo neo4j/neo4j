@@ -37,7 +37,7 @@ final class BigLongProperty extends FullSizeProperty
     {
         if ( other instanceof Long )
         {
-            return value == other;
+            return value == (long)other;
         }
 
         return valueCompare( value, other );

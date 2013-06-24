@@ -46,7 +46,7 @@ final class FloatProperty extends NumberPropertyWithin4Bytes
     {
         if ( other instanceof Float )
         {
-            boolean b = value == (Float)other;
+            boolean b = value == (float)other;
             return b;
         }
 

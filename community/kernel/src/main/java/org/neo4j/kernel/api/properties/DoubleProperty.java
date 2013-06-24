@@ -37,7 +37,7 @@ final class DoubleProperty extends FullSizeProperty
     {
         if ( other instanceof Double )
         {
-            return value == (Double) other;
+            return value == (double) other;
         }
 
         return valueCompare( value, other );

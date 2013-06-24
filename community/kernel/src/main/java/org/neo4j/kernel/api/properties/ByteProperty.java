@@ -48,7 +48,7 @@ final class ByteProperty extends NumberPropertyWithin4Bytes
     {
         if ( other instanceof Byte )
         {
-            return other == value;
+            return other == (byte)value;
         }
 
         return valueCompare( value, other );
