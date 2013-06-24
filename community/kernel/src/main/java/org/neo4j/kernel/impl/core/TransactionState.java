@@ -67,13 +67,13 @@ public interface TransactionState
 
     boolean hasLocks();
 
-    void dumpLocks();
-
     ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive );
 
     ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
 
-    PrimitiveElement getPrimitiveElement( boolean create );
+    PrimitiveElement getPrimitiveElement();
+
+    PrimitiveElement getOrCreatePrimitiveElement();
 
     ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
             Primitive primitive );

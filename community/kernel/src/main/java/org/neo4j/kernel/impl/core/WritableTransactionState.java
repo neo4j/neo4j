@@ -159,7 +159,6 @@ public class WritableTransactionState implements TransactionState
             super( id );
         }
 
-        private long firstRel = Record.NO_NEXT_RELATIONSHIP.intValue();
         private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
@@ -324,21 +323,20 @@ public class WritableTransactionState implements TransactionState
     @Override
     public Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
     {
-        return getPrimitiveElement( true ).nodeElement( node.getId(), true ).getRelationshipRemoveMap( type, true );
+        return getOrCreatePrimitiveElement().nodeElement( node.getId(), true ).getRelationshipRemoveMap( type, true );
     }
 
     @Override
     public void setFirstIds( long nodeId, long firstRel, long firstProp )
     {
-        CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
-        nodeElement.firstRel = firstRel;
+        CowNodeElement nodeElement = getOrCreatePrimitiveElement().nodeElement( nodeId, true );
         nodeElement.firstProp = firstProp;
     }
 
     @Override
     public ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
-        PrimitiveElement primitiveElement = getPrimitiveElement( false );
+        PrimitiveElement primitiveElement = getPrimitiveElement();
         if ( primitiveElement == null )
         {
             return null;
@@ -350,7 +348,7 @@ public class WritableTransactionState implements TransactionState
     @Override
     public RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type )
     {
-        return getPrimitiveElement( true ).nodeElement( node.getId(), true ).getRelationshipAddMap( type, true );
+        return getOrCreatePrimitiveElement().nodeElement( node.getId(), true ).getRelationshipAddMap( type, true );
     }
 
     @Override
@@ -483,28 +481,6 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    // non thread safe but let exception be thrown instead of risking deadlock
-    @Override
-    public void dumpLocks()
-    {
-        //        System.out.print( "Locks held: " );
-        //        java.util.Iterator<?> itr = lockMap.keySet().iterator();
-        //        if ( !itr.hasNext() )
-        //        {
-        //            System.out.println( "NONE" );
-        //        }
-        //        else
-        //        {
-        //            System.out.println();
-        //        }
-        //        while ( itr.hasNext() )
-        //        {
-        //            Transaction transaction = (Transaction) itr.next();
-        //            System.out.println( "" + transaction + "->" +
-        //                lockMap.get( transaction ).size() );
-        //        }
-    }
-
     @Override
     public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap(
             Primitive primitive )
@@ -530,9 +506,15 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public PrimitiveElement getPrimitiveElement( boolean create )
+    public PrimitiveElement getPrimitiveElement()
     {
-        if ( primitiveElement == null && create )
+        return primitiveElement;
+    }
+
+    @Override
+    public PrimitiveElement getOrCreatePrimitiveElement()
+    {
+        if ( primitiveElement == null )
         {
             primitiveElement = new PrimitiveElement();
         }
@@ -543,20 +525,20 @@ public class WritableTransactionState implements TransactionState
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
             Primitive primitive )
     {
-        return primitive.getEntityElement( getPrimitiveElement( true ), true ).getPropertyAddMap( true );
+        return primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).getPropertyAddMap( true );
     }
 
     @Override
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
             Primitive primitive )
     {
-        return primitive.getEntityElement( getPrimitiveElement( true ), true ).getPropertyRemoveMap( true );
+        return primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).getPropertyRemoveMap( true );
     }
 
     @Override
     public void deletePrimitive( Primitive primitive )
     {
-        primitive.getEntityElement( getPrimitiveElement( true ), true ).deleted = true;
+        primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).deleted = true;
     }
 
     @Override
@@ -618,14 +600,8 @@ public class WritableTransactionState implements TransactionState
         {
             return result;
         }
-        if ( primitiveElement.nodes != null )
-        {
-            populateNodeRelEvent( primitiveElement, result );
-        }
-        if ( primitiveElement.relationships != null )
-        {
-            populateRelationshipPropertyEvents( primitiveElement, result );
-        }
+        populateNodeRelEvent( primitiveElement, result );
+        populateRelationshipPropertyEvents( primitiveElement, result );
         return result;
     }
 
@@ -767,7 +743,7 @@ public class WritableTransactionState implements TransactionState
         for ( RelIdIterator iterator = createdNodes.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
         {
             long nodeId = iterator.next();
-            if ( element != null && element.nodes != null )
+            if ( element != null )
             {
                 CowNodeElement nodeElement = element.nodes.get( nodeId );
                 if ( nodeElement != null && nodeElement.deleted )

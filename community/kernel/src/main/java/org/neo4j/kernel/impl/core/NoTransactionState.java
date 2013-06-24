@@ -100,11 +100,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void dumpLocks()
-    {
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive )
     {
         return null;
@@ -117,7 +112,14 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public PrimitiveElement getPrimitiveElement( boolean create )
+    public PrimitiveElement getPrimitiveElement()
+    {
+        return null;
+    }
+
+
+    @Override
+    public PrimitiveElement getOrCreatePrimitiveElement()
     {
         return null;
     }
