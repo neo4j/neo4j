@@ -33,12 +33,12 @@ final class StringProperty extends FullSizeProperty
     @Override
     public boolean valueEquals( Object other )
     {
-        if ( other instanceof Character )
+        if ( other instanceof String )
         {
-            return value.length() == 1 && value.equals( other.toString() );
+            return value.equals( other );
         }
 
-        return other instanceof String && value.equals( other );
+        return valueCompare( value, other );
     }
 
     @Override

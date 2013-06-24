@@ -178,7 +178,9 @@ abstract class PropertyWithValue extends Property
                 || aNumber instanceof Double
                 || bNumber instanceof Double )
         {
-            return aNumber.doubleValue() == bNumber.doubleValue();
+            double b = bNumber.doubleValue();
+            double a = aNumber.doubleValue();
+            return a == b;
         }
 
         return aNumber.longValue() == bNumber.longValue();

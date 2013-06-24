@@ -46,25 +46,12 @@ final class SmallLongProperty extends NumberPropertyWithin4Bytes
     @Override
     public boolean valueEquals( Object other )
     {
-        if ( other instanceof Number )
+        if ( other instanceof Integer )
         {
-            Number number = (Number) other;
-            if ( number instanceof Byte
-                    || number instanceof Short
-                    || number instanceof Integer
-                    || number instanceof Long )
-            {
-                return number.longValue() == value;
-            }
-
-            if ( number instanceof Float
-                    || number instanceof Double )
-            {
-                return number.doubleValue() == value;
-            }
+            return value == other;
         }
 
-        return false;
+        return valueCompare( value, other );
     }
 
     @Override

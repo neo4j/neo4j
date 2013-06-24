@@ -48,17 +48,9 @@ final class CharProperty extends PropertyWithValue
     {
         if ( other instanceof Character )
         {
-            return other.equals( value );
+            return other == value ;
         }
-        else if ( other instanceof String )
-        {
-            String b = ((String) other);
-            return b.length() == 1 && b.charAt( 0 ) == value;
-        }
-        else
-        {
-            return false;
-        }
+        return valueCompare( value, other );
     }
 
     @Override

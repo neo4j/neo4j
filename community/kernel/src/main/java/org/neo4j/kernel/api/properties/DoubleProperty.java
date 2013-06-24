@@ -35,25 +35,12 @@ final class DoubleProperty extends FullSizeProperty
     @Override
     public boolean valueEquals( Object other )
     {
-        if ( other instanceof Number )
+        if ( other instanceof Double )
         {
-            Number number = (Number) other;
-            if ( number instanceof Byte
-                    || number instanceof Short
-                    || number instanceof Integer
-                    || number instanceof Long )
-            {
-                return number.longValue() == value;
-            }
-
-            if ( number instanceof Float
-                    || number instanceof Double )
-            {
-                return number.doubleValue() == value;
-            }
+            return value == (Double) other;
         }
 
-        return false;
+        return valueCompare( value, other );
     }
 
     @Override

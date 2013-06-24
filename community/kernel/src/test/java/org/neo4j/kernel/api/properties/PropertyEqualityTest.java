@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,58 +37,105 @@ import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 @RunWith(value = Parameterized.class)
 public class PropertyEqualityTest
 {
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
-        int integerValue = 87;
-        double doubleValue = 42.5;
-        int[] intArray = {11, 27, 43};
-        long[] longArray = {11, 27, 43};
-        short[] shortArray = {11, 27, 43};
-        byte[] byteArray = {11, 27, 43};
-        float[] floatArray = {11, 27, 43};
-        double[] doubleArray = {11, 27, 43};
-        double[] decimalDoubles = {11.5, 27.5, 43.5};
-        float[] decimalFloats = {11.5f, 27.5f, 43.5f};
-
         Iterable<Test> testValues = asIterable(
-                new Test( new IntProperty( 0, integerValue ), integerValue, true ),
-                new Test( new DoubleProperty( 0, integerValue ), integerValue, true ),
-                new Test( new FloatProperty( 0, integerValue ), integerValue, true ),
-                new Test( new ShortProperty( 0, (short) integerValue ), integerValue, true ),
-                new Test( new ByteProperty( 0, (byte) integerValue ), integerValue, true ),
-                new Test( new BigLongProperty( 0, integerValue ), integerValue, true ),
-                new Test( new SmallLongProperty( 0, integerValue ), integerValue, true ),
+                // boolean properties
+                shouldMatch( true, true ),
+                shouldMatch( false, false ),
+                shouldNotMatch( true, false ),
+                shouldNotMatch( false, true ),
+                shouldNotMatch( true, 0 ),
+                shouldNotMatch( false, 0 ),
+                shouldNotMatch( true, 1 ),
+                shouldNotMatch( false, 1 ),
+                shouldNotMatch( false, "false" ),
+                shouldNotMatch( true, "true" ),
 
-                new Test( new IntProperty( 0, (int) doubleValue ), doubleValue, false ),
-                new Test( new DoubleProperty( 0, doubleValue ), doubleValue, true ),
-                new Test( new FloatProperty( 0, (float) doubleValue ), doubleValue, true ),
-                new Test( new ShortProperty( 0, (short) doubleValue ), doubleValue, false ),
-                new Test( new ByteProperty( 0, (byte) doubleValue ), doubleValue, false ),
-                new Test( new BigLongProperty( 0, (long) doubleValue ), doubleValue, false ),
-                new Test( new SmallLongProperty( 0, (int) doubleValue ), doubleValue, false ),
+                //byte properties
+                shouldMatch( (byte) 42, (byte) 42 ),
+                shouldMatch( (byte) 42, (short) 42 ),
+                shouldNotMatch( (byte) 42, 42 + 256 ),
+                shouldMatch( (byte) 43, (int) 43 ),
+                shouldMatch( (byte) 43, (long) 43 ),
+                shouldMatch( (byte) 23, 23.0d ),
+                shouldMatch( (byte) 23, 23.0f ),
+                shouldNotMatch( (byte) 23, 23.5 ),
+                shouldNotMatch( (byte) 23, 23.5f ),
 
-                new Test( new IntArrayProperty( 0, intArray ), intArray, true ),
-                new Test( new LongArrayProperty( 0, longArray ), intArray, true ),
-                new Test( new ShortArrayProperty( 0, shortArray ), intArray, true ),
-                new Test( new ByteArrayProperty( 0, byteArray ), intArray, true ),
-                new Test( new FloatArrayProperty( 0, floatArray ), intArray, true ),
-                new Test( new DoubleArrayProperty( 0, doubleArray ), intArray, true ),
+                //short properties
+                shouldMatch( (short) 11, (byte) 11 ),
+                shouldMatch( (short) 42, (short) 42 ),
+                shouldNotMatch( (short) 42, 42 + 65536 ),
+                shouldMatch( (short) 43, (int) 43 ),
+                shouldMatch( (short) 43, (long) 43 ),
+                shouldMatch( (short) 23, 23.0f ),
+                shouldMatch( (short) 23, 23.0d ),
+                shouldNotMatch( (short) 23, 23.5 ),
+                shouldNotMatch( (short) 23, 23.5f ),
 
-                new Test( new IntArrayProperty( 0, intArray ), longArray, true ),
-                new Test( new LongArrayProperty( 0, longArray ), longArray, true ),
-                new Test( new ShortArrayProperty( 0, shortArray ), longArray, true ),
-                new Test( new ByteArrayProperty( 0, byteArray ), longArray, true ),
-                new Test( new FloatArrayProperty( 0, floatArray ), longArray, true ),
-                new Test( new DoubleArrayProperty( 0, doubleArray ), longArray, true ),
+                //int properties
+                shouldMatch( 11, (byte) 11 ),
+                shouldMatch( 42, (short) 42 ),
+                shouldNotMatch( 42, 42 + 4294967296L ),
+                shouldMatch( 43, (short) 43 ),
+                shouldMatch( 43, (long) 43 ),
+                shouldMatch( 23, 23.0 ),
+                shouldNotMatch( 23, 23.5 ),
+                shouldNotMatch( 23, 23.5f ),
 
-                new Test( new IntArrayProperty( 0, intArray ), decimalDoubles, false ),
-                new Test( new LongArrayProperty( 0, longArray ), decimalDoubles, false ),
-                new Test( new ShortArrayProperty( 0, shortArray ), decimalDoubles, false ),
-                new Test( new ByteArrayProperty( 0, byteArray ), decimalDoubles, false ),
-                new Test( new FloatArrayProperty( 0, decimalFloats ), decimalDoubles, true ),
-                new Test( new DoubleArrayProperty( 0, decimalDoubles ), decimalDoubles, true )
+                //long properties
+                shouldMatch( 11L, (byte) 11 ),
+                shouldMatch( 42L, (short) 42 ),
+                shouldMatch( 43L, (int) 43 ),
+                shouldMatch( 43L, (long) 43 ),
+                shouldMatch( 23L, 23.0 ),
+                shouldNotMatch( 23L, 23.5 ),
+                shouldNotMatch( 23L, 23.5f ),
+                shouldMatch(9007199254740992L, 9007199254740992D),
+                shouldMatch(9007199254740993L, 9007199254740992D),
 
+                // floats goddamnit
+                shouldMatch( 11f, (byte) 11 ),
+                shouldMatch( 42f, (short) 42 ),
+                shouldMatch( 43f, (int) 43 ),
+                shouldMatch( 43f, (long) 43 ),
+                shouldMatch( 23f, 23.0 ),
+                shouldNotMatch( 23f, 23.5 ),
+                shouldNotMatch( 23f, 23.5f ),
+                shouldMatch( 3.14f, 3.14f ),
+                shouldNotMatch( 3.14f, 3.14d ),   // Would be nice if they matched, but they don't
+
+                // doubles
+                shouldMatch( 11d, (byte) 11 ),
+                shouldMatch( 42d, (short) 42 ),
+                shouldMatch( 43d, (int) 43 ),
+                shouldMatch( 43d, (long) 43 ),
+                shouldMatch( 23d, 23.0 ),
+                shouldNotMatch( 23d, 23.5 ),
+                shouldNotMatch( 23d, 23.5f ),
+                shouldNotMatch( 3.14d, 3.14f ),   // this really is sheeeet
+                shouldMatch( 3.14d, 3.14d ),
+
+                // strings
+                shouldMatch( "A", "A" ),
+                shouldMatch( 'A', 'A' ),
+                shouldMatch( 'A', "A" ),
+                shouldMatch( "A", 'A' ),
+                shouldNotMatch( "AA", 'A' ),
+                shouldNotMatch( "a", "A" ),
+                shouldNotMatch( "A", "a" ),
+                shouldNotMatch( "0", 0 ),
+                shouldNotMatch( '0', 0 ),
+
+                // arrays
+                shouldMatch( new int[]{1, 2, 3}, new int[]{1, 2, 3} ),
+                shouldMatch( new int[]{1, 2, 3}, new long[]{1, 2, 3} ),
+                shouldMatch( new int[]{1, 2, 3}, new double[]{1.0, 2.0, 3.0} ),
+                shouldMatch( new String[]{"A", "B", "C"}, new String[]{"A", "B", "C"} ),
+                shouldMatch( new String[]{"A", "B", "C"}, new char[]{'A', 'B', 'C'} ),
+                shouldMatch( new char[]{'A', 'B', 'C'},  new String[]{"A", "B", "C"} )
         );
         return asCollection( map( new Function<Test, Object[]>()
         {
@@ -112,17 +160,143 @@ public class PropertyEqualityTest
         currentTest.checkAssertion();
     }
 
+    public static Test shouldMatch( boolean propertyValue, Object value )
+    {
+        return new Test( new BooleanProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( boolean propertyValue, Object value )
+    {
+        return new Test( new BooleanProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( byte propertyValue, Object value )
+    {
+        return new Test( new ByteProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( byte propertyValue, Object value )
+    {
+        return new Test( new ByteProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( short propertyValue, Object value )
+    {
+        return new Test( new ShortProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( short propertyValue, Object value )
+    {
+        return new Test( new ShortProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( float propertyValue, Object value )
+    {
+        return new Test( new FloatProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( float propertyValue, Object value )
+    {
+        return new Test( new FloatProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( long propertyValue, Object value )
+    {
+        return new Test( new BigLongProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( long propertyValue, Object value )
+    {
+        return new Test( new BigLongProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( double propertyValue, Object value )
+    {
+        return new Test( new DoubleProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( double propertyValue, Object value )
+    {
+        return new Test( new DoubleProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( String propertyValue, Object value )
+    {
+        return new Test( new StringProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( String propertyValue, Object value )
+    {
+        return new Test( new StringProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( char propertyValue, Object value )
+    {
+        return new Test( new CharProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( char propertyValue, Object value )
+    {
+        return new Test( new CharProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( int[] propertyValue, Object value )
+    {
+        return new Test( new IntArrayProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( int[] propertyValue, Object value )
+    {
+        return new Test( new IntArrayProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( char[] propertyValue, Object value )
+    {
+        return new Test( new CharArrayProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( char[] propertyValue, Object value )
+    {
+        return new Test( new CharArrayProperty( 0, propertyValue ), value, false );
+    }
+
+    public static Test shouldMatch( String[] propertyValue, Object value )
+    {
+        return new Test( new StringArrayProperty( 0, propertyValue ), value, true );
+    }
+
+    public static Test shouldNotMatch( String[] propertyValue, Object value )
+    {
+        return new Test( new StringArrayProperty( 0, propertyValue ), value, false );
+    }
+
     private static class Test
     {
         final Property property;
         final Object value;
         final boolean shouldMatch;
 
-        Test( Property property, Object value, boolean shouldMatch )
+
+        private Test( Property property, Object value, boolean shouldMatch )
         {
             this.property = property;
             this.value = value;
             this.shouldMatch = shouldMatch;
+        }
+
+        @Override
+        public String toString()
+        {
+            try
+            {
+                return String.format( "%s (%s) %s %s (%s)",
+                        property.value(), property.value().getClass().getSimpleName(), shouldMatch ? "==" : "!=", value,
+                        value.getClass().getSimpleName() );
+            }
+            catch ( PropertyNotFoundException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         void checkAssertion()
@@ -175,6 +349,5 @@ public class PropertyEqualityTest
             assertFalse( String.format( "Expected the value %s to not be equal to %s but it was.",
                     getValueRepresentation( value ), property.toString() ), property.valueEquals( value ) );
         }
-
     }
 }
