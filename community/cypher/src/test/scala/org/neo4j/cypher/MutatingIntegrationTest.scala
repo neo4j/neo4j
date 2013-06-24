@@ -442,7 +442,7 @@ return distinct center""")
   def full_path_in_one_create() {
     createNode()
     createNode()
-    val result = parseAndExecute("start a=node(1), b=node(2) create a-[:KNOWS]->()<-[:LOVES]->b")
+    val result = parseAndExecute("start a=node(1), b=node(2) create a-[:KNOWS]->()-[:LOVES]->b")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }

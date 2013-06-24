@@ -16,7 +16,7 @@ As with +MATCH+, +MERGE+ can match multiple occurrences of a pattern. If there a
 passed on to later stages of the query.
 
 The last part of +MERGE+ is the +ON CREATE+ and +ON MATCH+. These allow a query to express additional changes to the
-properties of a node or relationship, depending on if the element was +MATCH+ed in the database or if it was +CREATE+d.
+properties of a node or relationship, depending on if the element was ++MATCH++ed in the database or if it was ++CREATE++d.
 
 The following graph is used for the examples below:
 

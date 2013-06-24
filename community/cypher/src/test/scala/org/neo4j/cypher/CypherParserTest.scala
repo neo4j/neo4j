@@ -2084,7 +2084,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(AllIdentifiers())
     }
 
-    val string = "start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b"
+    val string = "start a=node(1), b=node(2) create a-[r1:KNOWS]->()-[r2:LOVES]->b"
 
     test(vFrom2_0, string, query("  UNNAMED49"))
     test(vPre2_0, string, query("  UNNAMED1"))
@@ -2113,17 +2113,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
-  @Test def undirected_relationship() {
+  @Test def undirected_relationship_1_9() {
     val string = "create (a {name:'A'})-[:KNOWS]-(b {name:'B'})"
-    def query(DIFFERENCE: (String, Boolean)): Query = Query.
-      start(CreateRelationshipStartItem(CreateRelationship(DIFFERENCE._1,
-      RelationshipEndpoint(Identifier("a"), Map("name" -> Literal("A")), Seq.empty, DIFFERENCE._2),
-      RelationshipEndpoint(Identifier("b"), Map("name" -> Literal("B")), Seq.empty, DIFFERENCE._2), "KNOWS", Map()))).
+    def query = Query.
+      start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
+      RelationshipEndpoint(Identifier("a"), Map("name" -> Literal("A")), Seq.empty, true),
+      RelationshipEndpoint(Identifier("b"), Map("name" -> Literal("B")), Seq.empty, true), "KNOWS", Map()))).
       returns()
 
-    testVariants(string, query,
-      ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED21", false) -> vFrom2_0)
+    test(v1_9, string, query)
   }
 
   @Test def relate_and_assign_to_path_identifier() {

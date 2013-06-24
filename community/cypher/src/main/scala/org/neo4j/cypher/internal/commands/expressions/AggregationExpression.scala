@@ -36,7 +36,10 @@ abstract class AggregationExpression extends Expression {
 abstract class AggregationWithInnerExpression(inner:Expression) extends AggregationExpression {
   if(inner.containsAggregate)
     throw new SyntaxException("Can't use aggregate functions inside of aggregate functions.")
-  
+
+  if(! inner.isDeterministic)
+    throw new SyntaxException("Can't use non-deterministic (random) functions inside of aggregate functions.")
+
   def expectedInnerType: CypherType
 
   def children = Seq(inner)

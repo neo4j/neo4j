@@ -25,6 +25,8 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import CypherVersion._
+import org.neo4j.cypher.internal.commands.{ReturnItem, SortItem, NodeById, Query}
+import org.neo4j.cypher.internal.commands.expressions.CountStar
 
 class SyntaxExceptionTest extends JUnitSuite with Assertions {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
@@ -158,6 +160,12 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
   @Test def unknownFunction() {
     test("start a=node(0) return foo(a)",
       v2_0 -> "unknown function"
+    )
+  }
+
+  @Test def usingRandomFunctionInAggregate() {
+    test("start a=node(0) return count(rand())",
+      v2_0 -> "Can't use non-deterministic (random) functions inside of aggregate functions."
     )
   }
 

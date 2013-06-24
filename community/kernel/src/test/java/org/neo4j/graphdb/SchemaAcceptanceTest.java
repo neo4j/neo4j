@@ -396,8 +396,8 @@ public class SchemaAcceptanceTest
                 String.format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
                         "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
                         "'value1':%n" +
-                        "  existing node(1)%n" +
-                        "  new node(2)" ), e.getMessage() );
+                        "  node(1)%n" +
+                        "  node(2)" ), e.getMessage() );
         }
     }
 

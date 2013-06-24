@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -46,7 +47,7 @@ public class OldTxStateBridgeImplTest
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 
-        NodeImpl node = new NodeImpl( nodeId, -1, -1 );
+        NodeImpl node = new NodeImpl( nodeId );
 
         // And Given that I've added a relevant property
         state.getOrCreateCowPropertyAddMap( node ).put( 2, PropertyDatas.forInt( propertyKey, -1l, value ) );
@@ -71,7 +72,7 @@ public class OldTxStateBridgeImplTest
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 
-        NodeImpl node = new NodeImpl( nodeId, -1, -1 );
+        NodeImpl node = new NodeImpl( nodeId );
 
         // And Given that I've added a relevant property
         state.getOrCreateCowPropertyRemoveMap( node ).put( 2, PropertyDatas.forInt( propertyKey, -1l, value ) );
@@ -96,7 +97,7 @@ public class OldTxStateBridgeImplTest
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 
-        NodeImpl node = new NodeImpl( nodeId, -1, -1 );
+        NodeImpl node = new NodeImpl( nodeId );
 
         // And Given that I've added a relevant property
         state.getOrCreateCowPropertyAddMap( node ).put( 2, PropertyDatas.forInt( propertyKey, -1l,

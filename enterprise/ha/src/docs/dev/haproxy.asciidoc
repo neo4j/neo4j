@@ -89,13 +89,14 @@ be moved to run on port 80, and authentication can also be added. See the HAProx
 
 == Configuring separate sets for master and slaves ==
 
-It is possible to set HAProxy backends up to only include slaves or the master. For example, it may be desired
-to only write to slaves. To accomplish this, Neo4j provides _health check URLs_ that HAProxy (or any load balancer for that matter) can use to distinguish machines using HTTP response codes. The two URLs are:
+It is possible to set HAProxy backends up to only include slaves or the master. To accomplish this, 
+Neo4j provides _health check URLs_ that HAProxy (or any load balancer for that matter) can use to 
+distinguish machines using HTTP response codes. The two URLs are:
 
 * +/db/manage/server/ha/master+, which returns 200 if the machine is the master, and 404 if the machine is a slave
 * +/db/manage/server/ha/slave+, which returns 200 if the machine is a slave, and 404 if the machine is the master
 
-The following example excludes the master from the set of machines. Request will only be sent to the slaves.
+The following example excludes the master from the set of machines, so that requests are only be sent to slaves.
 
 [source]
 ----
@@ -123,6 +124,15 @@ listen admin
     bind *:8080
     stats enable
 ----
+ 
+[NOTE]
+====
+In practice, writing to a slave is uncommon. While writing to slaves has the benefit of ensuring that data is 
+persisted in two places (the slave and the master), it comes at a cost. The cost is that the slave must immediately
+become consistent with the master by applying any missing transactions and then synchronously apply the new transaction
+with the master. This is a more expensive operation than writing to the master and having the master push changes to
+one or more slaves.
+====
 
 == Cache-based sharding with HAProxy ==
 

@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.cache.SizeOf;
+import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 
-public class RelIdArray implements SizeOf
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
+public class RelIdArray implements SizeOfObject
 {
     private static final DirectionWrapper[] DIRECTIONS_FOR_OUTGOING =
             new DirectionWrapper[] { DirectionWrapper.OUTGOING, DirectionWrapper.BOTH };
@@ -94,14 +94,14 @@ public class RelIdArray implements SizeOf
         this.type = type;
     }
     
-    public int size()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
         return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
     }
     
     static int sizeOfBlockWithReference( IdBlock block )
     {
-        return withReference( block != null ? block.size() : 0 );
+        return withReference( block != null ? block.sizeOfObjectInBytesIncludingOverhead() : 0 );
     }
 
     public int getType()
@@ -376,7 +376,7 @@ public class RelIdArray implements SizeOf
         }
     }
     
-    public static abstract class IdBlock implements SizeOf
+    public static abstract class IdBlock implements SizeOfObject
     {
         // First element is the actual length w/o the slack
         private int[] ids = new int[3];
@@ -394,7 +394,7 @@ public class RelIdArray implements SizeOf
             return copy;
         }
         
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
             return withObjectOverhead( withReference( withArrayOverhead( 4*ids.length ) ) );
         }
@@ -523,12 +523,12 @@ public class RelIdArray implements SizeOf
             this.highBits = highBits;
         }
         
-        public int size()
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            int size = super.size() + 8 + SizeOfs.REFERENCE_SIZE;
+            int size = super.sizeOfObjectInBytesIncludingOverhead() + 8 + SizeOfs.REFERENCE_SIZE;
             if ( prev != null )
             {
-                size += prev.size();
+                size += prev.sizeOfObjectInBytesIncludingOverhead();
             }
             return size;
         }

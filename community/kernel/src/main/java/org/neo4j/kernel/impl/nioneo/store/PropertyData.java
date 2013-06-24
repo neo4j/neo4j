@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.cache.SizeOf;
+import org.neo4j.kernel.impl.cache.SizeOfObject;
 
-public interface PropertyData extends SizeOf
+public interface PropertyData extends SizeOfObject
 {
     /**
      * @return the property record id.

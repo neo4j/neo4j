@@ -31,7 +31,7 @@ Although there are many parameters, most of them have defaults that should work 
 | ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
 | ha.state_switch_timeout | how long max time to gracefully await a slave/master role switch | 20s | no
 | ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes | 100 | no
-| ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_last,keep_none,shutdown} | keep_none | no
+| ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_last,keep_none} | keep_none | no
 | ha.tx_push_factor     | amount of slaves the master will push each committed transaction to | 1 (default) | no
 | ha.tx_push_strategy   | the strategy for selecting which slaves to push committed transactions to. "fixed" (default) will push to slaves with descending server_id order; "round_robin" will have slaves take turn receiving the transactions | fixed | no
 | ha.slave_only | whether this instance should only participate as slave in cluster; if enabled it will never be elected as master | false | no

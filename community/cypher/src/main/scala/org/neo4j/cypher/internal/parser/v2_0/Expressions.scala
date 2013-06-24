@@ -189,6 +189,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "log10" -> func(1, args => Log10Function(args.head)),
     "pi" -> func(0, args => PiFunction()),
     "radians" -> func(1, args => RadiansFunction(args.head)),
+    "rand" -> func(0, args => RandFunction()),
     "round" -> func(1, args => RoundFunction(args.head)),
     "sqrt" -> func(1, args => SqrtFunction(args.head)),
     "sign" -> func(1, args => SignFunction(args.head)),
@@ -222,7 +223,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames: Parser[String] = COUNT | SUM | MIN | MAX | AVG | COLLECT
+  def aggregateFunctionNames: Parser[String] = COUNT | SUM | MIN | MAX | AVG | COLLECT | STDEV | STDEVP
 
   def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(DISTINCT) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
@@ -234,6 +235,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         case "max" => Max(inner)
         case "avg" => Avg(inner)
         case "collect" => Collect(inner)
+        case "stdev" => Stdev(inner)
+        case "stdevp" => StdevP(inner)
       }
 
       if (distinct.isEmpty) {
