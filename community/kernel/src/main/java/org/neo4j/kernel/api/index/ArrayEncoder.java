@@ -21,8 +21,12 @@ package org.neo4j.kernel.api.index;
 
 import java.lang.reflect.Array;
 
+import sun.misc.BASE64Encoder;
+
 public class ArrayEncoder
 {
+    private static final BASE64Encoder base64Encoder = new BASE64Encoder();
+
     public static String encode( Object array )
     {
         if ( !array.getClass().isArray() )
@@ -38,17 +42,22 @@ public class ArrayEncoder
             Object o = Array.get( array, i );
             if ( o instanceof Number )
             {
-                type = "n";
+                type = "D";
                 builder.append( ((Number) o).doubleValue() );
-            } else
+            }
+            else if ( o instanceof Boolean )
             {
-                type = "o";
+                type = "Z";
                 builder.append( o );
+            }
+            else
+            {
+                type = "L";
+                String str = o.toString();
+                builder.append( base64Encoder.encode( str.getBytes() ) );
             }
             builder.append( "|" );
         }
-
-        String result = type + builder.toString();
-        return result;
+        return type + builder.toString();
     }
 }

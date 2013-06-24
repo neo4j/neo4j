@@ -58,6 +58,10 @@ public abstract class SchemaProviderApprovalTest
      */
     public enum TestValue
     {
+        BOOLEAN_TRUE( true ),
+        BOOLEAN_FALSE( false ),
+        STRING_TRUE( "true" ),
+        STRING_FALSE( "false" ),
         STRING_UPPER_A( "A" ),
         STRING_LOWER_A( "a" ),
         CHAR_UPPER_A( 'A' ),
@@ -66,13 +70,18 @@ public abstract class SchemaProviderApprovalTest
         LONG_42( (long) 42 ),
         BYTE_42( (byte) 42 ),
         DOUBLE_42( (double) 42 ),
-        DOUBLE_42andAHalf( 42.1d ),
+        DOUBLE_42andAHalf( 42.5d ),
         SHORT_42( (short) 42 ),
         FLOAT_42( (float) 42 ),
-        FLOAT_42andAHalf( 42.1f ),
+        FLOAT_42andAHalf( 42.5f ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
+        ARRAY_OF_BOOL_LIKE_STRING( new String[]{"true", "false", "true"} ),
+        ARRAY_OF_BOOLS( new boolean[]{true, false, true} ),
         ARRAY_OF_DOUBLES( new double[]{1, 2, 3} ),
         ARRAY_OF_STRING( new String[]{"1", "2", "3"} ),
+        ONE( new String[]{"", "||"} ),
+        OTHER( new String[]{"||", ""} ),
+        ANOTHER_ARRAY_OF_STRING( new String[]{"1|2|3"} ),
         ARRAY_OF_CHAR( new char[]{'1', '2', '3'} );
 
         private final Object value;
@@ -173,7 +182,8 @@ public abstract class SchemaProviderApprovalTest
         return node;
     }
 
-    private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results, TestValue value )
+    private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results,
+                                      TestValue value )
     {
         ResourceIterable<Node> foundNodes = db.findNodesByLabelAndProperty( label( LABEL ), PROPERTY_KEY, value.value );
         Set<Object> propertyValues = asSet( map( PROPERTY_EXTRACTOR, foundNodes ) );

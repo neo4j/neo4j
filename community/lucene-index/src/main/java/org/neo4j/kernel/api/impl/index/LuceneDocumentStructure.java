@@ -21,45 +21,56 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
-import static org.apache.lucene.search.BooleanClause.Occur.MUST;
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
 import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
 import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
 {
-    private static final String NODE_ID_KEY = "_id_";
-    private static final String PROPERTY_FIELD_IDENTIFIER = "key";
-    private static final String ARRAY_PROPERTY_FIELD_IDENTIFIER = "array-key";
+    private static final String NODE_ID_KEY = "id";
+    private static final String STRING_PROPERTY_FIELD_IDENTIFIER = "string";
+    private static final String ARRAY_PROPERTY_FIELD_IDENTIFIER = "array";
+    private static final String BOOL_PROPERTY_FIELD_IDENTIFIER = "bool";
+    private static final String NUMBER_PROPERTY_FIELD_IDENTIFIER = "number";
 
     Document newDocument( long nodeId, Object value )
     {
         Document document = newBaseDocument( nodeId );
         document.add( new Field( NODE_ID_KEY, "" + nodeId, YES, NOT_ANALYZED ) );
 
-        if ( value.getClass().isArray() )
+        if ( value instanceof Number )
         {
-            document.add( new Field( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ), YES,
-                    Field.Index.NOT_ANALYZED ) );
+            NumericField numberField = new NumericField( NUMBER_PROPERTY_FIELD_IDENTIFIER, NO, true );
+            numberField.setDoubleValue( ((Number) value).doubleValue() );
+            document.add( numberField );
         }
-        else if(value instanceof Number)
+        else if ( value instanceof Boolean )
         {
-            document.add( instantiateField( PROPERTY_FIELD_IDENTIFIER, ((Number) value).doubleValue(), NOT_ANALYZED ) );
+            document.add( field( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            document.add( field( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
         }
         else
         {
-            document.add( instantiateField( PROPERTY_FIELD_IDENTIFIER, value, NOT_ANALYZED ) );
+            document.add( field( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
         }
 
         return document;
+    }
+
+    private Field field( String fieldIdentifier, String value )
+    {
+        return new Field( fieldIdentifier, value, NO, NOT_ANALYZED );
     }
 
     public Query newQuery( Object value )
@@ -67,19 +78,20 @@ class LuceneDocumentStructure
         if ( value instanceof Number )
         {
             Number number = (Number) value;
-            return LuceneUtil.rangeQuery( PROPERTY_FIELD_IDENTIFIER, number.doubleValue(), number.doubleValue(), true, true );
+            return LuceneUtil.rangeQuery( NUMBER_PROPERTY_FIELD_IDENTIFIER, number.doubleValue(),
+                    number.doubleValue(), true, true );
+        }
+        else if ( value instanceof Boolean )
+        {
+            return new TermQuery( new Term( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
         }
         else if ( value.getClass().isArray() )
         {
-            BooleanQuery booleanClauses = new BooleanQuery();
-            booleanClauses.add( new TermQuery( new Term( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) ), MUST );
-            return booleanClauses;
+            return new TermQuery( new Term( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
         }
         else
         {
-            BooleanQuery booleanClauses = new BooleanQuery();
-            booleanClauses.add( new TermQuery( new Term( PROPERTY_FIELD_IDENTIFIER, value.toString() ) ), MUST );
-            return booleanClauses;
+            return new TermQuery( new Term( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
         }
     }
 
