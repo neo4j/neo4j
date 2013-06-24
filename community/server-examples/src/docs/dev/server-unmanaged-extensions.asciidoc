@@ -17,7 +17,7 @@ For this we've introduced an unmanaged extension API.
 This is a sharp tool, allowing users to deploy arbitrary http://en.wikipedia.org/wiki/JAX-RS[JAX-RS] classes to the server and so you should be careful when thinking about using this.
 In particular you should understand that it's easy to consume lots of heap space on the server and hinder performance if you're not careful.
 
-Still, if you understand the disclaimer, then you load your JAX-RS classes into the Neo4j server simply by adding adding a @Context annotation to your code, compiling against the JAX-RS jar and any Neo4j jars you're making use of.
+Still, if you understand the disclaimer, then you load your JAX-RS classes into the Neo4j server simply by adding a @Context annotation to your code, compiling against the JAX-RS jar and any Neo4j jars you're making use of.
 Then add your classes to the runtime classpath (just drop it in the lib directory of the Neo4j server).
 In return you get access to the hosted environment of the Neo4j server like logging through the +org.neo4j.server.logging.Logger+.
 
@@ -56,6 +56,18 @@ Build this code, and place the resulting jar file (and any custom dependencies) 
 Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
 to jar directories instead of specifying single files.
 
+[TIP]
+You will need to include a dependency to JAX-RS API on your classpath when you compile. In Maven this would be achieved by adding the following to the pom file:
+
+[source,xml]
+--------
+<dependency>
+    <groupId>javax.ws.rs</groupId>
+    <artifactId>javax.ws.rs-api</artifactId>
+    <version>2.0</version>
+    <scope>provided</scope>
+</dependency>
+--------
 
 [source]
 ------
