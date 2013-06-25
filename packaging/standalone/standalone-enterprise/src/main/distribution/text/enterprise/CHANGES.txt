@@ -1,5 +1,22 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.8.3 (2013-06-26)
+------------------
+HA:
+o Fixes bug where an HA slave could get overwhelmed with push notifications and the
+  corresponding pull requests on master commit
+
+Kernel:
+o Made sure that auto-indexing removed graph elements from indexes when they are deleted
+o Log rotation does not read excessively from the log anymore
+o Fixes bug in Node.getSingleRelationship() which would fail under a race condition
+o GlobalGraphOperations now takes transaction state into account
+
+Server:
+o fixes #697 passing arrays as properties to unique node creation
+  by making sure all the collections in the supplied properties are converted into arrays
+  like in other places in the REST API
+
 1.8.2 (2013-02-25)
 -------------------
 HA:

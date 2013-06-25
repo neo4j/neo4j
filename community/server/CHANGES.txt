@@ -1,3 +1,9 @@
+1.8.3 (2013-06-26)
+------------------
+o fixes #697 passing arrays as properties to unique node creation
+  by making sure all the collections in the supplied properties are converted into arrays
+  like in other places in the REST API
+
 1.8.RC1 (2012-09-05)
 --------------------
 o Upgraded Jackson JAXRS to version 1.9.7 

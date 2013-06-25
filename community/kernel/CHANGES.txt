@@ -1,6 +1,9 @@
-1.8.3
------
+1.8.3 (2013-06-26)
+------------------
 o Made sure that auto-indexing removed graph elements from indexes when they are deleted
+o Log rotation does not read excessively from the log anymore
+o Fixes bug in Node.getSingleRelationship() which would fail under a race condition
+o GlobalGraphOperations now takes transaction state into account
 
 1.8.2 (2013-02-25)
 -------------------
