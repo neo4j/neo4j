@@ -19,17 +19,10 @@
  */
 package org.neo4j.server.rest.paging;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -39,6 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -56,13 +50,14 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.tooling.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.test.Mute.muteAll;
-import org.neo4j.tooling.FakeClock;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -130,6 +125,41 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
             }
         } );
     }
+
+//    @Test
+//    public void shouldFindTheSameNodeThroughBothAPICalls()
+//    {
+//        // given
+//        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+//        GraphDatabaseAPI graphDb = (GraphDatabaseAPI)database;
+//
+//        Node node = createNode( database );
+//
+//        // when
+//        Node node1 = graphDb.getNodeById( node.getId() );
+//        Node node2 = database.getNodeById( node.getId() );
+//
+//        // then
+//        assertEquals( node1, node2 );
+//    }
+//
+//    private Node createNode( final GraphDatabaseService db )
+//    {
+//        Node node;
+//
+//        Transaction tx = db.beginTx();
+//        try
+//        {
+//            node = db.createNode();
+//            tx.success();
+//
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+//        return node;
+//    }
 
     @Test
     public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception
@@ -348,6 +378,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         JaxRsResponse response = createPagedTraverser();
+        assertNotNull( response.getLocation() );
 
         final RestRequest request = RestRequest.req();
 
@@ -420,7 +451,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     public void shouldHaveTransportEncodingChunkedOnResponseHeader()
     {
         // given
-        theStartNode =  createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         // when
         JaxRsResponse response = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
