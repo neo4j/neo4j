@@ -588,21 +588,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         neoStoreCommand = null;
     }
 
-    private void removePropertyFromCache( PropertyCommand command )
-    {
-        long nodeId = command.getNodeId();
-        long relId = command.getRelId();
-        if ( nodeId != -1 )
-        {
-            removeNodeFromCache( nodeId );
-        }
-        else if ( relId != -1 )
-        {
-            removeRelationshipFromCache( relId );
-        }
-        // else means record value did not change
-    }
-
     private RelationshipTypeStore getRelationshipTypeStore()
     {
         return neoStore.getRelationshipTypeStore();
@@ -876,6 +861,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
     }
 
+    @Override
     public long getRelationshipChainPosition( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -886,6 +872,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return getNodeStore().getRecord( nodeId ).getNextRel();
     }
 
+    @Override
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships( long nodeId,
         long position )
     {
@@ -1466,6 +1453,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     static class CommandSorter implements Comparator<Command>, Serializable
     {
+        @Override
         public int compare( Command o1, Command o2 )
         {
             long id1 = o1.getKey();
@@ -1709,6 +1697,21 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return createdNodes;
     }
 
+    @Override
+    public RelIdArray getCreatedRelationships()
+    {
+        RelIdArray createdRelationships = new RelIdArray( null );
+        for ( RelationshipRecord record : relRecords.values() )
+        {
+            if ( record.isCreated() )
+            {
+                // TODO Direction doesn't matter... misuse of RelIdArray?
+                createdRelationships.add( record.getId(), DirectionWrapper.OUTGOING );
+            }
+        }
+        return createdRelationships;
+    }
+    
     @Override
     public boolean isNodeCreated( long nodeId )
     {

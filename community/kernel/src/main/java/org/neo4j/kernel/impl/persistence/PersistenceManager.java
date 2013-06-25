@@ -57,6 +57,7 @@ public class PersistenceManager
     private final TransactionManager transactionManager;
     private LockReleaser lockReleaser;
 
+
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
         new ArrayMap<Transaction,NeoStoreTransaction>( (byte)5, true, true );
 
@@ -244,7 +245,7 @@ public class PersistenceManager
 
     private NeoStoreTransaction getResource( boolean registerEventHooks )
     {
-        NeoStoreTransaction con = null;
+        NeoStoreTransaction con;
 
         Transaction tx = this.getCurrentTransaction();
         if ( tx == null )
@@ -389,6 +390,11 @@ public class PersistenceManager
         return getResource( true ).getCreatedNodes();
     }
 
+    public RelIdArray getCreatedRelationships()
+    {
+        return getResource( true ).getCreatedRelationships();
+    }
+    
     public boolean isNodeCreated( long nodeId )
     {
         return getResource( true ).isNodeCreated( nodeId );
@@ -397,10 +403,5 @@ public class PersistenceManager
     public boolean isRelationshipCreated( long relId )
     {
         return getResource( true ).isRelationshipCreated( relId );
-    }
-
-    public int getKeyIdForProperty( PropertyData property )
-    {
-        return getReadOnlyResourceIfPossible().getKeyIdForProperty( property );
     }
 }

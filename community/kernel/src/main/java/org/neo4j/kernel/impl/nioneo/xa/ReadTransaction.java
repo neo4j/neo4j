@@ -245,12 +245,6 @@ class ReadTransaction implements NeoStoreTransaction
         return loadProperties( getPropertyStore(), neoStore.getGraphNextProp() );
     }
 
-    // Duplicated code
-    public Object propertyGetValueOrNull( PropertyBlock propertyBlock )
-    {
-        return propertyBlock.getType().getValue( propertyBlock, null );
-    }
-
     @Override
     public Object loadPropertyValue( PropertyData property )
     {
@@ -284,15 +278,6 @@ class ReadTransaction implements NeoStoreTransaction
         return indexStore.getNames( count );
     }
 
-    /*
-        @Override
-        public int getKeyIdForProperty( long propertyId )
-        {
-            PropertyRecord propRecord =
-                getPropertyStore().getLightRecord( propertyId );
-            return propRecord.getKeyIndexId();
-        }
-    */
     @Override
     public void setXaConnection( XaConnection connection )
     {
@@ -411,6 +396,12 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
+    public RelIdArray getCreatedRelationships()
+    {
+        return RelIdArray.EMPTY;
+    }
+    
+    @Override
     public boolean isNodeCreated( long nodeId )
     {
         return false;
@@ -422,18 +413,15 @@ class ReadTransaction implements NeoStoreTransaction
         return false;
     }
 
-    public static int getKeyIdForProperty( PropertyData property,
-            PropertyStore store )
+    public static int getKeyIdForProperty( PropertyData property, PropertyStore store )
     {
-        // PropertyRecord propRecord = store.getLightRecord( property.getId() );
-        // return propRecord.getKeyIndexIds();
         return property.getIndex();
     }
 
     @Override
     public int getKeyIdForProperty( PropertyData property )
     {
-        return getKeyIdForProperty( property, getPropertyStore() );
+        return getKeyIdForProperty( property );
     }
 
     @Override
