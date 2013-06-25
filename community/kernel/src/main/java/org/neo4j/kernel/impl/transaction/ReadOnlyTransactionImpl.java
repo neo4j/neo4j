@@ -310,7 +310,7 @@ class ReadOnlyTransactionImpl implements Transaction
                 catch ( Throwable t )
                 {
                     logger.warn( "Caught exception from tx syncronization[" + s
-                            + "] beforeCompletion()" );
+                            + "] beforeCompletion()", t );
                 }
             }
             // execute any hooks added since we entered doBeforeCompletion
@@ -342,7 +342,7 @@ class ReadOnlyTransactionImpl implements Transaction
             catch ( Throwable t )
             {
                 logger.warn( "Caught exception from tx syncronization[" + s
-                        + "] afterCompletion()" );
+                        + "] afterCompletion()", t );
             }
         }
         syncHooks = null; // help gc

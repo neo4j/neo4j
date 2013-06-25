@@ -26,7 +26,6 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.WebApplicationException;
 
 import org.codehaus.jackson.JsonFactory;
@@ -35,6 +34,7 @@ import org.codehaus.jackson.impl.Utf8Generator;
 import org.codehaus.jackson.io.IOContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -46,48 +46,58 @@ import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 import org.neo4j.server.rest.repr.StreamingFormat;
 
-@Service.Implementation( RepresentationFormat.class )
+@Service.Implementation(RepresentationFormat.class)
 public class StreamingJsonFormat extends RepresentationFormat implements StreamingFormat
 {
 
     private final JsonFactory factory;
+    private JsonGenerator g;
+
     public StreamingJsonFormat()
     {
-        super(MEDIA_TYPE);
+        super( MEDIA_TYPE );
         this.factory = createJsonFactory();
     }
 
-    private JsonFactory createJsonFactory() {
+    private JsonFactory createJsonFactory()
+    {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.getSerializationConfig().disable(SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE);
-        JsonFactory factory = new JsonFactory(objectMapper)
+        objectMapper.getSerializationConfig().disable( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
+        JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
-            protected JsonGenerator _createUTF8JsonGenerator(OutputStream out, IOContext ctxt) throws IOException {
+            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt ) throws IOException
+            {
                 final int bufferSize = 1024 * 8;
-                Utf8Generator gen = new Utf8Generator(ctxt, _generatorFeatures, _objectCodec, out,new byte[bufferSize],0,true);
-                if (_characterEscapes != null) {
-                    gen.setCharacterEscapes(_characterEscapes);
+                Utf8Generator gen = new Utf8Generator( ctxt, _generatorFeatures, _objectCodec, out,
+                        new byte[bufferSize], 0, true );
+                if ( _characterEscapes != null )
+                {
+                    gen.setCharacterEscapes( _characterEscapes );
                 }
                 return gen;
             }
         };
-        factory.enable(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM);
+        factory.enable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
         return factory;
     }
 
     @Override
-    public StreamingRepresentationFormat writeTo(OutputStream output) {
-        try {
-            final JsonGenerator g = factory.createJsonGenerator(output);
-            return new StreamingRepresentationFormat(g,this);
-        } catch (IOException e) {
+    public StreamingRepresentationFormat writeTo( OutputStream output )
+    {
+        try
+        {
+            g = factory.createJsonGenerator( output );
+            return new StreamingRepresentationFormat( g, this );
+        }
+        catch ( IOException e )
+        {
             throw new WebApplicationException( e );
         }
     }
 
     @Override
-    protected ListWriter serializeList(String type)
+    protected ListWriter serializeList( String type )
     {
         throw new UnsupportedOperationException();
     }
@@ -124,7 +134,10 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     @Override
     public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
     {
-        if ( empty( input ) ) return DefaultFormat.validateKeys( Collections.<String,Object>emptyMap(), requiredKeys );
+        if ( empty( input ) )
+        {
+            return DefaultFormat.validateKeys( Collections.<String, Object>emptyMap(), requiredKeys );
+        }
         try
         {
             return DefaultFormat.validateKeys( JsonHelper.jsonToMap( stripByteOrderMark( input ) ), requiredKeys );
@@ -145,7 +158,10 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     @Override
     public Object readValue( String input ) throws BadInputException
     {
-        if ( empty( input ) ) return Collections.emptyMap();
+        if ( empty( input ) )
+        {
+            return Collections.emptyMap();
+        }
         try
         {
             return JsonHelper.jsonToSingleValue( stripByteOrderMark( input ) );
@@ -178,189 +194,250 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         return string;
     }
 
-    private static class StreamingMappingWriter extends MappingWriter {
+    private static class StreamingMappingWriter extends MappingWriter
+    {
         private final JsonGenerator g;
 
-        public StreamingMappingWriter(JsonGenerator g) {
+        public StreamingMappingWriter( JsonGenerator g )
+        {
             this.g = g;
-            try {
+            try
+            {
                 g.writeStartObject();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
-        public StreamingMappingWriter(JsonGenerator g, String key) {
+        public StreamingMappingWriter( JsonGenerator g, String key )
+        {
             this.g = g;
-            try {
-                g.writeObjectFieldStart(key);
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            try
+            {
+                g.writeObjectFieldStart( key );
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        public MappingWriter newMapping(String type, String key) {
-            return new StreamingMappingWriter(g,key);
+        public MappingWriter newMapping( String type, String key )
+        {
+            return new StreamingMappingWriter( g, key );
         }
 
         @Override
-        public ListWriter newList(String type, String key) {
-            return new StreamingListWriter(g,key);
+        public ListWriter newList( String type, String key )
+        {
+            return new StreamingListWriter( g, key );
         }
 
         @Override
-        public void writeValue(String type, String key, Object value) {
-            try {
-                g.writeObjectField(key, value); // todo individual fields
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+        public void writeValue( String type, String key, Object value )
+        {
+            try
+            {
+                g.writeObjectField( key, value ); // todo individual fields
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        public void done() {
-            try {
+        public void done()
+        {
+            try
+            {
                 g.writeEndObject();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
     }
 
-    private static class StreamingListWriter extends ListWriter {
+    private static class StreamingListWriter extends ListWriter
+    {
         private final JsonGenerator g;
 
-        public StreamingListWriter(JsonGenerator g) {
+        public StreamingListWriter( JsonGenerator g )
+        {
             this.g = g;
-            try {
+            try
+            {
                 g.writeStartArray();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
-        public StreamingListWriter(JsonGenerator g, String key) {
+        public StreamingListWriter( JsonGenerator g, String key )
+        {
             this.g = g;
-            try {
-                g.writeArrayFieldStart(key);
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            try
+            {
+                g.writeArrayFieldStart( key );
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        public MappingWriter newMapping(String type) {
-            return new StreamingMappingWriter(g);
+        public MappingWriter newMapping( String type )
+        {
+            return new StreamingMappingWriter( g );
         }
 
         @Override
-        public ListWriter newList(String type) {
-            return new StreamingListWriter(g);
+        public ListWriter newList( String type )
+        {
+            return new StreamingListWriter( g );
         }
 
         @Override
-        public void writeValue(String type, Object value) {
-            try {
-                g.writeObject(value);
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+        public void writeValue( String type, Object value )
+        {
+            try
+            {
+                g.writeObject( value );
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        public void done() {
-            try {
+        public void done()
+        {
+            try
+            {
                 g.writeEndArray();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
     }
 
-    public static class StreamingRepresentationFormat extends RepresentationFormat {
+    public static class StreamingRepresentationFormat extends RepresentationFormat
+    {
         private final JsonGenerator g;
         private final InputFormat inputFormat;
 
-        public StreamingRepresentationFormat(JsonGenerator g, InputFormat inputFormat) {
-            super(StreamingFormat.MEDIA_TYPE);
+        public StreamingRepresentationFormat( JsonGenerator g, InputFormat inputFormat )
+        {
+            super( StreamingFormat.MEDIA_TYPE );
             this.g = g;
             this.inputFormat = inputFormat;
         }
 
-        public StreamingRepresentationFormat usePrettyPrinter() {
+        public StreamingRepresentationFormat usePrettyPrinter()
+        {
             g.useDefaultPrettyPrinter();
             return this;
         }
 
         @Override
-        protected String serializeValue(String type, Object value) {
-            try {
-                g.writeObject(value);
+        protected String serializeValue( String type, Object value )
+        {
+            try
+            {
+                g.writeObject( value );
                 return null;
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        protected ListWriter serializeList(String type) {
-            return new StreamingListWriter(g);
+        protected ListWriter serializeList( String type )
+        {
+            return new StreamingListWriter( g );
         }
 
         @Override
-        public MappingWriter serializeMapping(String type) {
-            return new StreamingMappingWriter(g);
+        public MappingWriter serializeMapping( String type )
+        {
+            return new StreamingMappingWriter( g );
         }
 
         @Override
-        protected String complete(ListWriter serializer) {
+        protected String complete( ListWriter serializer )
+        {
             flush();
             return null; // already done in done()
         }
 
         @Override
-        protected String complete(MappingWriter serializer) {
+        protected String complete( MappingWriter serializer )
+        {
             flush();
             return null;  // already done in done()
         }
 
-        private void flush() {
-            try {
+        private void flush()
+        {
+            try
+            {
                 g.flush();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
 
         @Override
-        public Object readValue(String input) throws BadInputException {
-            return inputFormat.readValue(input);
+        public Object readValue( String input ) throws BadInputException
+        {
+            return inputFormat.readValue( input );
         }
 
         @Override
-        public Map<String, Object> readMap(String input, String... requiredKeys) throws BadInputException {
-            return inputFormat.readMap(input, requiredKeys);
+        public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
+        {
+            return inputFormat.readMap( input, requiredKeys );
         }
 
         @Override
-        public List<Object> readList(String input) throws BadInputException {
-            return inputFormat.readList(input);
+        public List<Object> readList( String input ) throws BadInputException
+        {
+            return inputFormat.readList( input );
         }
 
         @Override
-        public URI readUri(String input) throws BadInputException {
-            return inputFormat.readUri(input);
+        public URI readUri( String input ) throws BadInputException
+        {
+            return inputFormat.readUri( input );
         }
 
         @Override
-        public void complete() {
-            try {
+        public void complete()
+        {
+            try
+            {
                 // todo only if needed
                 g.flush();
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
+            }
+            catch ( IOException e )
+            {
+                throw new WebApplicationException( e );
             }
         }
     }

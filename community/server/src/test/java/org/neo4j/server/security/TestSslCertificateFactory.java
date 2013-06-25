@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -36,25 +37,26 @@ public class TestSslCertificateFactory
     private File pkPath;
 
     @Test
-    public void shouldCreateASelfSignedCertificate() throws Exception
-    {
+    public void shouldCreateASelfSignedCertificate() throws Exception {
         SslCertificateFactory sslFactory = new SslCertificateFactory();
-        sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
+        sslFactory.createSelfSignedCertificate(cPath, pkPath, "myhost");
 
         // Attempt to load certificate
-        Certificate c = sslFactory.loadCertificate( cPath );
-        assertThat( c, notNullValue() );
+        Certificate[] c = sslFactory.loadCertificates(cPath);
+        assertThat(c, notNullValue());
+        assertThat(c.length, greaterThan(0));
 
         // Attempt to load private key
-        PrivateKey pk = sslFactory.loadPrivateKey( pkPath );
-        assertThat( pk, notNullValue() );
+        PrivateKey pk = sslFactory.loadPrivateKey(pkPath);
+        assertThat(pk, notNullValue());
     }
-    
+
+
     @Before
     public void createFiles() throws Exception
     {
-        cPath = File.createTempFile( "cert", "test" );
-        pkPath = File.createTempFile( "privatekey", "test" );
+        cPath = File.createTempFile("cert", "test");
+        pkPath = File.createTempFile("privatekey", "test");
     }
 
     @After
