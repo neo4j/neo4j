@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -366,9 +367,10 @@ public class ResourcePoolTest
     private class ResourceHolder implements Runnable
     {
         private final Semaphore latch = new Semaphore( 0 );
+        private final CountDownLatch released = new CountDownLatch( 1 );
         private final CountDownLatch onAcquire;
         private final ResourcePool pool;
-        private volatile boolean release;
+        private final AtomicBoolean release = new AtomicBoolean(  );
 
         private ResourceHolder( ResourcePool pool, CountDownLatch onAcquire )
         {
@@ -379,26 +381,42 @@ public class ResourcePoolTest
         @Override
         public void run()
         {
-            pool.acquire();
-            onAcquire.countDown();
             try
             {
-                latch.acquire();
+                pool.acquire();
+                onAcquire.countDown();
+                try
+                {
+                    latch.acquire();
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                if ( release.get() )
+                {
+                    pool.release();
+                    released.countDown();
+                }
             }
-            catch ( InterruptedException e )
+            catch ( Throwable e )
             {
-                throw new RuntimeException( e );
-            }
-            if ( release )
-            {
-                pool.release();
+                e.printStackTrace();
             }
         }
 
         public void release()
         {
-            this.release = true;
+            this.release.set( true);
             latch.release();
+            try
+            {
+                released.await();
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
         }
 
         public void release( CountDownLatch releaseLatch )
@@ -409,7 +427,7 @@ public class ResourcePoolTest
 
         public void end()
         {
-            this.release = false;
+            this.release.set( false);
             latch.release();
         }
     }
