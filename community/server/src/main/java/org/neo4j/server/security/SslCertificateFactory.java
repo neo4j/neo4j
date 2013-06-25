@@ -41,6 +41,7 @@ import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Collection;
 import java.util.Date;
 
 import javax.crypto.NoSuchPaddingException;
@@ -113,13 +114,14 @@ public class SslCertificateFactory {
         }
     }
 
-    public Certificate loadCertificate(File certFile)
+    public Certificate[] loadCertificates(File certFile)
             throws CertificateException, FileNotFoundException {
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(certFile);
-            return CertificateFactory.getInstance(CERTIFICATE_TYPE).generateCertificate(
+            Collection<? extends Certificate> certificates = CertificateFactory.getInstance(CERTIFICATE_TYPE).generateCertificates(
                     fis);
+            return certificates.toArray(new Certificate[]{});
         } finally {
             if (fis != null) {
                 try {

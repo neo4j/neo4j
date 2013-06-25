@@ -75,6 +75,7 @@ public class Script extends ConfigurationParser
                         }
                         catch ( NoSuchMethodException fallthrough )
                         {
+                            // Ignore
                         }
                     }
                 }

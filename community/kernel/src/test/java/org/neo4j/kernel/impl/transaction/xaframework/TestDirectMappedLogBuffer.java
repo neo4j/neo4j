@@ -31,7 +31,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class TestDirectMappedLogBuffer
 {
@@ -58,13 +57,13 @@ public class TestDirectMappedLogBuffer
         @Override
         public int write( ByteBuffer byteBuffer ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public long write( ByteBuffer[] byteBuffers, int i, int i1 ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -110,7 +109,7 @@ public class TestDirectMappedLogBuffer
         @Override
         public FileChannel truncate( long l ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -119,43 +118,43 @@ public class TestDirectMappedLogBuffer
         @Override
         public long transferTo( long l, long l1, WritableByteChannel writableByteChannel ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public long transferFrom( ReadableByteChannel readableByteChannel, long l, long l1 ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public int read( ByteBuffer byteBuffer, long l ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public MappedByteBuffer map( MapMode mapMode, long l, long l1 ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public FileLock lock( long l, long l1, boolean b ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public FileLock tryLock( long l, long l1, boolean b ) throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         protected void implCloseChannel() throws IOException
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
     }
 

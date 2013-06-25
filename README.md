@@ -36,5 +36,5 @@ For further details on building, please consult the [community docs](community/R
 
 Licensing
 ---------
-             
+
 Neo4j is an open source product. We support a Community edition under the GPLv3 license. Advanced and Enterprise editions are available under the AGPLv3 license for open source projects otherwise under a commercial license from [Neo Technology](http://info.neotechnology.com/contactus.html).

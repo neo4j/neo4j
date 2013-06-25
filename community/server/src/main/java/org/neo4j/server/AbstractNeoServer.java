@@ -51,7 +51,7 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.RealClock;
+import org.neo4j.tooling.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -79,6 +79,7 @@ import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TI
 import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
+import static org.neo4j.helpers.collection.Iterables.option;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -99,6 +100,38 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
     private Logging logging;
+
+    private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
+    {
+        private <T> T resolveKnownSingleDependency( Class<T> type )
+        {
+            if ( type.equals( Database.class ) )
+            {
+                return (T) database;
+            }
+            else if ( type.equals( PreFlightTasks.class ) )
+            {
+                return (T) preflight;
+            }
+            else if ( type.equals( InterruptThreadTimer.class ) )
+            {
+                return (T) interruptStartupTimer;
+            }
+            else if ( type.equals( Logging.class ) )
+            {
+                // TODO logging should be owned by server, waiting for logging refactoring
+                DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
+                return (T) kernelDependencyResolver.resolveDependency( Logging.class );
+            }
+            return null;
+        }
+
+        @Override
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        {
+            return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
+        }
+    };
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -460,12 +493,12 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( !certificatePath.exists() )
         {
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            SslCertificateFactory certFactory = new SslCertificateFactory();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
+            new SslCertificateFactory().createSelfSignedCertificate( certificatePath,
+                    privateKeyPath,
+                    getWebServerAddress() );
         }
 
-        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
-        return keyStoreFactory.createKeyStore( keystorePath, privateKeyPath, certificatePath );
+        return new KeyStoreFactory().createKeyStore( keystorePath, privateKeyPath, certificatePath );
     }
 
     @Override

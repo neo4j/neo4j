@@ -30,11 +30,13 @@ import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.MAX_VALUE;
+import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.SillyUtils.ignore;

@@ -27,8 +27,8 @@ import org.neo4j.cypher.SyntaxException
 trait Updates extends Base with Expressions with StartClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] = rep(delete | set | foreach) ^^ (cmds => reduce(cmds))
 
-  def foreach: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
-    case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates => {
+  def foreach: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ (":" | "|") ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
+    case id ~ _ ~ collection ~ _ ~ creates ~ innerUpdates => {
       val createCmds = creates.toSeq.map(_._1.map(_.asInstanceOf[UpdatingStartItem].updateAction)).flatten
       val reducedItems: (Seq[UpdateAction], Seq[NamedPath]) = reduce(innerUpdates.toSeq)
       val updateCmds = reducedItems._1

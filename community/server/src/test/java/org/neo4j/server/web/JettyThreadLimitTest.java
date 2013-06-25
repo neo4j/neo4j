@@ -93,9 +93,11 @@ public class JettyThreadLimitTest
                     }
                     catch ( InterruptedException e )
                     {
+                        e.printStackTrace();
                     }
                     catch ( BrokenBarrierException e )
                     {
+                        e.printStackTrace();
                     }
                 }
             } );

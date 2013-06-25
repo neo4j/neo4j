@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.security;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -44,12 +48,13 @@ public class TestSslCertificateFactory
         // Attempt to load certificate
         Certificate c = sslFactory.loadCertificate( cPath );
         assertThat( c, notNullValue() );
+        assertThat(c.length, greaterThan(0));
 
         // Attempt to load private key
         PrivateKey pk = sslFactory.loadPrivateKey( pkPath );
         assertThat( pk, notNullValue() );
     }
-    
+
     @Before
     public void createFiles() throws Exception
     {

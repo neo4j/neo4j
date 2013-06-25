@@ -30,24 +30,23 @@ import org.neo4j.kernel.logging.Logging;
 public class DefaultSlaveFactory implements SlaveFactory
 {
     private final Logging logging;
-    private final int maxConcurrentChannelsPerSlave;
     private final int chunkSize;
     private StoreId storeId;
 
-    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging,
-            int maxConcurrentChannelsPerSlave, int chunkSize )
+    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging, int chunkSize )
     {
         this.logging = logging;
-        this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
         this.chunkSize = chunkSize;
         xaDsm.addDataSourceRegistrationListener( new StoreIdSettingListener() );
     }
-    
+
     @Override
     public Slave newSlave( ClusterMember clusterMember )
     {
         return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
-                clusterMember.getHAUri().getPort(), logging, storeId, maxConcurrentChannelsPerSlave, chunkSize );
+                clusterMember.getHAUri().getPort(), logging, storeId,
+                2, // and that's 1 too many, because we push from the master from one thread only anyway
+                chunkSize );
     }
 
     private class StoreIdSettingListener extends DataSourceRegistrationListener.Adapter
