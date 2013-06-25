@@ -454,7 +454,7 @@ public class UdcExtensionImplTest
 
     private void assertGotPingWithRetry( Map<String, Integer> counts, Condition<Integer> condition ) throws Exception
     {
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 50; i++ )
         {
             Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();
