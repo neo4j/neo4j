@@ -20,19 +20,18 @@
 package org.neo4j.server.rest.transactional;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
+import org.neo4j.tooling.FakeClock;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TransactionHandleRegistryTest
@@ -138,11 +137,11 @@ public class TransactionHandleRegistryTest
 
         // And given one transaction was stored one minute ago, and another was stored just now
         registry.release( txId1, oldTx );
-        clock.forwardMinutes( 1 );
+        clock.forward( 1, MINUTES );
         registry.release( txId2, newTx );
 
         // When
-        registry.rollbackSuspendedTransactionsIdleSince( clock.currentTimeInMilliseconds() - 1000 );
+        registry.rollbackSuspendedTransactionsIdleSince( clock.currentTimeMillis() - 1000 );
 
         // Then
         assertThat( registry.acquire( txId2 ), equalTo( newTx ) );

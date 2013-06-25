@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -49,9 +48,7 @@ import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
-import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -68,11 +65,12 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.tooling.Clock;
+import org.neo4j.tooling.RealClock;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
@@ -222,7 +220,7 @@ public abstract class AbstractNeoServer implements NeoServer
             @Override
             public void run()
             {
-                long maxAge = clock.currentTimeInMilliseconds() - timeoutMillis;
+                long maxAge = clock.currentTimeMillis() - timeoutMillis;
                 transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
             }
         }, runEvery, MILLISECONDS );
@@ -460,12 +458,12 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( !certificatePath.exists() )
         {
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            SslCertificateFactory certFactory = new SslCertificateFactory();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
+            new SslCertificateFactory().createSelfSignedCertificate( certificatePath,
+                    privateKeyPath,
+                    getWebServerAddress() );
         }
 
-        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
-        return keyStoreFactory.createKeyStore( keystorePath, privateKeyPath, certificatePath );
+        return new KeyStoreFactory().createKeyStore( keystorePath, privateKeyPath, certificatePath );
     }
 
     @Override
