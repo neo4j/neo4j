@@ -47,6 +47,7 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -324,6 +325,21 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         }
 
         @Override
+        public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+        {
+            /*
+             * This is here to ensure that channels that have stuff written to them for a long time, long transaction
+             * pulls and store copies (mainly the latter), will not timeout and have their transactions rolled back.
+             * This is actually not a problem, since both mentioned above have no transaction associated with them
+             * but it is more sanitary and leaves less exceptions in the logs
+             * Each time a write completes, simply update the corresponding channel's timestamp.
+             */
+            Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
+            slave.other().set( System.currentTimeMillis() );
+            super.writeComplete( ctx, e );
+        }
+
+        @Override
         public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
                 throws Exception
         {
@@ -348,7 +364,6 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                 tryToFinishOffChannel( ctx.getChannel() );
             }
         }
-
 
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
@@ -420,11 +435,17 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                 {
                     finishOffChannel( null, slave );
                 }
+                catch ( TransactionNotPresentOnMasterException e )
+                {
+                    // It's ok, there is nothing to finish anyway, since this is thrown when the transaction was not
+                    // found
+                    return;
+                }
                 catch ( Throwable e )
                 {
                     // Introduce some delay here. it becomes like a busy wait if it never succeeds
                     sleepNicely( 200 );
-                    unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+                    unfinishedTransactionExecutor.submit( this );
                 }
             }
 

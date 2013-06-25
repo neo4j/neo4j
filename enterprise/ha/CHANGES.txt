@@ -1,3 +1,10 @@
+1.9.1 (2013-06-24)
+------------------
+o Access guard is now raised during recovery
+o Properly throttle push notifications from the master, preventing an exhaustion of resources
+  and accompanying failures to pull from slaves
+o Slaves will now not participate in elections if not eligible (e.g. when copying the store)
+
 1.9.RC1 (2013-04-15)
 --------------------
 o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop

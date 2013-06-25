@@ -88,7 +88,8 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
  * to the cluster it's new status.
  */
-public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
+public class
+        HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
