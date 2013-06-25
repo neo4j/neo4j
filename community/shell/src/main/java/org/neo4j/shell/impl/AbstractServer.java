@@ -32,12 +32,15 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TabCompletion;
 import org.neo4j.shell.Welcome;
 
+import static org.neo4j.shell.Variables.PROMPT_KEY;
+
 /**
  * A common implementation of a {@link ShellServer}.
  */
 public abstract class AbstractServer implements ShellServer
 {
     private ShellServer remoteEndPoint;
+    protected final BashVariableInterpreter bashInterpreter = new BashVariableInterpreter();
     
 	/**
 	 * The default RMI name for a shell server,
@@ -65,7 +68,8 @@ public abstract class AbstractServer implements ShellServer
 		super();
 	}
 	
-	public String getName()
+	@Override
+    public String getName()
 	{
 		return DEFAULT_NAME;
 	}
@@ -127,9 +131,22 @@ public abstract class AbstractServer implements ShellServer
     {
     }
 
-    protected String getPrompt( Session session ) throws ShellException
+    /**
+     * Returns a prompt given a session, where the session may contain a custom "PS1" prompt variable.
+     * 
+     * @param session the session to get custom prompt and other variables from.
+     * @return the interpreted prompt to return to the client.
+     */
+    protected final String getPrompt( Session session ) throws ShellException
     {
-	    return "sh$ ";
+        Object rawCustomPrompt = session.get( PROMPT_KEY );
+        String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
+        return bashInterpreter.interpret( customPrompt, this, session );
+    }
+
+    protected String getDefaultPrompt()
+    {
+        return "sh$ ";
     }
 
     protected String getWelcomeMessage()
@@ -154,6 +171,7 @@ public abstract class AbstractServer implements ShellServer
             throw new IllegalStateException( "Client " + clientID + " not initialized" );
     }
 
+    @Override
     public synchronized void shutdown() throws RemoteException
 	{
 	    if ( remoteEndPoint != null )
@@ -163,7 +181,8 @@ public abstract class AbstractServer implements ShellServer
 	    }
 	}
 
-	public synchronized void makeRemotelyAvailable( int port, String name )
+	@Override
+    public synchronized void makeRemotelyAvailable( int port, String name )
 		throws RemoteException
 	{
 	    if ( remoteEndPoint == null )
@@ -171,7 +190,8 @@ public abstract class AbstractServer implements ShellServer
 	    remoteEndPoint.makeRemotelyAvailable( port, name );
 	}
 	
-	public String[] getAllAvailableCommands()
+	@Override
+    public String[] getAllAvailableCommands()
 	{
 		return new String[0];
 	}

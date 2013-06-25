@@ -20,11 +20,11 @@
 package org.neo4j.shell;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
+
+import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
 
 /**
  * Parses a line from the client with the intention of interpreting it as
@@ -301,58 +301,5 @@ public class AppCommandParser
     public String getLineWithoutApp()
     {
         return this.line.substring( this.appName.length() ).trim();
-    }
-
-    /**
-     * Tokenizes a string, regarding quotes.
-     *
-     * @param string the string to tokenize.
-     * @return the tokens from the line.
-     */
-    public static String[] tokenizeStringWithQuotes( String string )
-    {
-        return tokenizeStringWithQuotes( string, true );
-    }
-
-    /**
-     * Tokenizes a string, regarding quotes.
-     *
-     * @param string the string to tokenize.
-     * @param trim   wether or not to trim each token or not.
-     * @return the tokens from the line.
-     */
-    public static String[] tokenizeStringWithQuotes( String string, boolean trim )
-    {
-        if ( trim )
-        {
-            string = string.trim();
-        }
-        ArrayList<String> result = new ArrayList<String>();
-        string = string.trim();
-        boolean inside = string.startsWith( "\"" );
-        StringTokenizer quoteTokenizer = new StringTokenizer( string, "\"" );
-        while ( quoteTokenizer.hasMoreTokens() )
-        {
-            String token = quoteTokenizer.nextToken();
-            if ( trim )
-            {
-                token = token.trim();
-            }
-            if ( token.length() == 0 )
-            {
-                // Skip it
-            }
-            else if ( inside )
-            {
-                // Don't split
-                result.add( token );
-            }
-            else
-            {
-                Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, false ) );
-            }
-            inside = !inside;
-        }
-        return result.toArray( new String[result.size()] );
     }
 }
