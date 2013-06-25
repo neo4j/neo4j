@@ -651,13 +651,13 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 return (T) interruptStartupTimer;
             }
-            else if ( type.equals( Logging.class ) )
-            {
-                // TODO logging should be owned by server, waiting for logging refactoring
-                DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
-                return (T) kernelDependencyResolver.resolveDependency( Logging.class );
-            }
-            return null;
+
+            // TODO: Note that several component dependencies are inverted here. For instance, logging
+            // should be provided by the server to the kernel, not the other way around. Same goes for job
+            // scheduling and configuration. Probably several others as well.
+
+            DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
+            return kernelDependencyResolver.resolveDependency( type );
         }
 
         @Override
