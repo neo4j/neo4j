@@ -126,41 +126,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         } );
     }
 
-//    @Test
-//    public void shouldFindTheSameNodeThroughBothAPICalls()
-//    {
-//        // given
-//        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-//        GraphDatabaseAPI graphDb = (GraphDatabaseAPI)database;
-//
-//        Node node = createNode( database );
-//
-//        // when
-//        Node node1 = graphDb.getNodeById( node.getId() );
-//        Node node2 = database.getNodeById( node.getId() );
-//
-//        // then
-//        assertEquals( node1, node2 );
-//    }
-//
-//    private Node createNode( final GraphDatabaseService db )
-//    {
-//        Node node;
-//
-//        Transaction tx = db.beginTx();
-//        try
-//        {
-//            node = db.createNode();
-//            tx.success();
-//
-//        }
-//        finally
-//        {
-//            tx.finish();
-//        }
-//        return node;
-//    }
-
     @Test
     public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception
     {
