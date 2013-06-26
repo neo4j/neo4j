@@ -605,6 +605,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     {
                         result = type.cast( members );
                     }
+                    else if ( RequestContextFactory.class.isAssignableFrom( type ))
+                    {
+                        result = type.cast( requestContextFactory );
+                    }
                     else
                     {
                         throw e;
