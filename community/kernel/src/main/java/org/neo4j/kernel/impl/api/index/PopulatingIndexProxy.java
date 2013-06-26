@@ -132,6 +132,12 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         throw new IllegalStateException( "Cannot validate index while it is still populating." );
     }
+    
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        throw new IllegalStateException( this + " is POPULATING" );
+    }
 
     @Override
     public String toString()

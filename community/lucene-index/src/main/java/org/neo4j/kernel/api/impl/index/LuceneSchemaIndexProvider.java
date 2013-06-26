@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -39,17 +38,16 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final IndexWriterStatus writerStatus = new IndexWriterStatus();
     private final File rootDirectory;
+    private final FailureStorage failureStorage;
+    private final FolderLayout folderLayout;
 
     public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         this.rootDirectory = getRootDirectory( config, LuceneSchemaIndexProviderFactory.KEY );
-    }
-
-    private File dirFile( long indexId )
-    {
-        return new File( rootDirectory, "" + indexId );
+        this.folderLayout = new FolderLayout( rootDirectory );
+        this.failureStorage = new FailureStorage( folderLayout );
     }
 
     @Override
@@ -59,13 +57,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             return new UniqueLuceneIndexPopulator(
                     UniqueLuceneIndexPopulator.DEFAULT_BATCH_SIZE, documentStructure, standard(), writerStatus,
-                    directoryFactory, dirFile( indexId ) );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
                     NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
-                    directoryFactory, dirFile( indexId ) );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
         }
     }
 
@@ -75,12 +73,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new UniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
-                                                  dirFile( indexId ) );
+                    folderLayout.getFolder( indexId ) );
         }
         else
         {
             return new NonUniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
-                                                     dirFile( indexId ) );
+                    folderLayout.getFolder( indexId ) );
         }
     }
 
@@ -94,7 +92,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            Directory directory = directoryFactory.open( dirFile( indexId ) );
+            String failure = failureStorage.load( indexId );
+            if ( failure != null )
+            {
+                return InternalIndexState.FAILED;
+            }
+            
+            Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) );
             try
             {
                 boolean status = writerStatus.isOnline( directory );
@@ -109,5 +113,16 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    {
+        String failure = failureStorage.load( indexId );
+        if ( failure == null )
+        {
+            throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+        }
+        return failure;
     }
 }

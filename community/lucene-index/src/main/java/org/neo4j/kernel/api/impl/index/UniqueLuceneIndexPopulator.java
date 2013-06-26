@@ -29,7 +29,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
@@ -44,9 +43,10 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
                                 LuceneIndexWriterFactory indexWriterFactory,
-                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
+                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.batchSize = batchSize;
     }
 

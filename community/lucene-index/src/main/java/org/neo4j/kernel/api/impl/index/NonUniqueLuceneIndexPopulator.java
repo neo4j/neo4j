@@ -34,9 +34,10 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
-                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
+                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                   FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
     }
 

@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.EntityType;
+import java.io.File;
 
-public class EntityNotFoundException extends KernelException
+public class FolderLayout
 {
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
-    {
-        super( cause, "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
+    private final File rootDirectory;
 
-    public EntityNotFoundException( EntityType entityType, long entityId )
+    public FolderLayout( File rootDirectory )
     {
-        super( "Unable to load %s with id %s.", entityType.name(), entityId );
+        this.rootDirectory = rootDirectory;
+    }
+    
+    public File getFolder( long indexId )
+    {
+        return new File( rootDirectory, "" + indexId );
     }
 }

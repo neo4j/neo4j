@@ -131,6 +131,12 @@ public class OnlineIndexProxy implements IndexProxy
     {
         // ok, it's online so it's valid
     }
+    
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        throw new IllegalStateException( this + " is ONLINE" );
+    }
 
     @Override
     public String toString()

@@ -76,6 +76,11 @@ public interface IndexProxy
     SchemaIndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
+    
+    /**
+     * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}. 
+     */
+    IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 
     void force() throws IOException;
     
@@ -167,6 +172,12 @@ public interface IndexProxy
         @Override
         public void validate()
         {
+        }
+
+        @Override
+        public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+        {
+            throw new IllegalStateException( "This index isn't failed" );
         }
     }
 }

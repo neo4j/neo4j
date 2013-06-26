@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 
@@ -31,7 +30,7 @@ import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
@@ -46,7 +45,7 @@ public class UniqueLuceneIndexPopulatorTest
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 documentStructure, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory );
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
 
         // when
@@ -69,7 +68,7 @@ public class UniqueLuceneIndexPopulatorTest
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 documentStructure, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory );
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
 
         // when
@@ -90,7 +89,8 @@ public class UniqueLuceneIndexPopulatorTest
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 new LuceneDocumentStructure(), standard(),
-                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" )
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ),
+                failureStorage, indexId
         );
         populator.create();
         populator.add( 1, "value1" );
@@ -119,7 +119,7 @@ public class UniqueLuceneIndexPopulatorTest
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 2,
                 documentLogic, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory );
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
 
         populator.add( 1, "value1" );
@@ -147,7 +147,8 @@ public class UniqueLuceneIndexPopulatorTest
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 new LuceneDocumentStructure(), standard(),
-                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" )
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ),
+                failureStorage, indexId
         );
         populator.create();
         populator.add( 1, "value1" );
@@ -168,4 +169,7 @@ public class UniqueLuceneIndexPopulatorTest
             assertEquals( 2, conflict.getAddedNodeId() );
         }
     }
+    
+    private final FailureStorage failureStorage = mock( FailureStorage.class );
+    private final long indexId = 1;
 }
