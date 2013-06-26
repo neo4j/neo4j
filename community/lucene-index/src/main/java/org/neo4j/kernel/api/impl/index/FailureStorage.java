@@ -21,11 +21,16 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import static java.lang.System.lineSeparator;
+import static java.nio.ByteBuffer.wrap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
@@ -38,7 +43,24 @@ public class FailureStorage
         this.folderLayout = folderLayout;
     }
     
-    public void store( long indexId, String failure ) throws IOException
+    public synchronized void reserve( long indexId ) throws IOException
+    {
+        File failureFile = failureFile( indexId );
+        RandomAccessFile rwFile = new RandomAccessFile( failureFile, "rw" );
+        try
+        {
+            FileChannel channel = rwFile.getChannel();
+            channel.write( wrap( new byte[16384] ) );
+            channel.force( true );
+            channel.close();
+        }
+        finally
+        {
+            rwFile.close();
+        }
+    }
+    
+    public synchronized void store( long indexId, String failure ) throws IOException
     {
         File failureFile = failureFile( indexId );
         BufferedWriter writer = new BufferedWriter(
@@ -63,13 +85,21 @@ public class FailureStorage
     
     /**
      * @return the failure, if any. Otherwise {@code null} marking no failure.
+     * @throws FileNotFoundException 
      */
-    public String load( long indexId )
+    public synchronized String load( long indexId )
     {
         File failureFile = failureFile( indexId );
-        if ( !failureFile.exists() )
+        try
         {
-            return null;
+            if ( !failureFile.exists() || !isFailed( failureFile ) )
+            {
+                return null;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
         
         StringBuilder result = new StringBuilder();
@@ -85,7 +115,37 @@ public class FailureStorage
         return result.toString();
     }
 
-    public void clear( long indexId )
+    private boolean isFailed( File failureFile ) throws IOException
+    {
+        RandomAccessFile rFile = new RandomAccessFile( failureFile, "r" );
+        try
+        {
+            FileChannel channel = rFile.getChannel();
+            byte[] data = new byte[(int) channel.size()];
+            data[0] = 1;
+            channel.read( ByteBuffer.wrap( data ) );
+            channel.close();
+            return !allZero( data );
+        }
+        finally
+        {
+            rFile.close();
+        }
+    }
+
+    private boolean allZero( byte[] data )
+    {
+        for ( byte b : data )
+        {
+            if ( b != 0 )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public synchronized void clear( long indexId )
     {
         failureFile( indexId ).delete();
     }

@@ -80,4 +80,17 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // THEN
         assertEquals( FAILED, indexProvider.getInitialState( 17 ) );
     }
+    
+    @Test
+    public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
+    {
+        // GIVEN
+        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        populator.close( false );
+        
+        // WHEN
+        populator.drop();
+        
+        // THEN - no exception should be thrown (it's been known to!)
+    }
 }

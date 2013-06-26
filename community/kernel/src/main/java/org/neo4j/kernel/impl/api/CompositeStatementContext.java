@@ -517,6 +517,23 @@ public class CompositeStatementContext implements StatementContext
         afterOperation();
         return result;
     }
+    
+    @Override
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        beforeOperation();
+        beforeReadOperation();
+        try
+        {
+            // TODO Shouldn't all methods have a try-finally like this?
+            return schemaOperations.indexGetFailure( descriptor );
+        }
+        finally
+        {
+            afterReadOperation();
+            afterOperation();
+        }
+    }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )

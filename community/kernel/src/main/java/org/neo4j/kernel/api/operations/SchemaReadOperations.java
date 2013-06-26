@@ -58,6 +58,11 @@ public interface SchemaReadOperations
      * Retrieve the state of an index.
      */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    
+    /**
+     * Returns the failure description of a failed index.
+     */
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
