@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.util.FailureStorage;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {

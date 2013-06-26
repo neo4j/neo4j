@@ -23,11 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
@@ -92,7 +95,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            String failure = failureStorage.load( indexId );
+            String failure = failureStorage.loadIndexFailure( indexId );
             if ( failure != null )
             {
                 return InternalIndexState.FAILED;
@@ -118,7 +121,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String failure = failureStorage.load( indexId );
+        String failure = failureStorage.loadIndexFailure( indexId );
         if ( failure == null )
         {
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );

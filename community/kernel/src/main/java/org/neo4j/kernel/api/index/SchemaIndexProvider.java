@@ -159,14 +159,17 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     public abstract IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException;
     
     /**
-     * Returns a failure previously gotten from {@link IndexPopulator#closeWithFailure(String)}
+     * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
+     *
+     * Implementations are expected to persist this failure and may elect to make use of
+     * {@link org.neo4j.kernel.api.index.util.FailureStorage} for this purpose
      */
     public abstract String getPopulationFailure( long indexId ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
      * is returned then a further call to {@link #getPopulationFailure(long)} is expected and should return
-     * the failure accepted by any call to {@link IndexPopulator#closeWithFailure(String)} call at the time
+     * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
     public abstract InternalIndexState getInitialState( long indexId );

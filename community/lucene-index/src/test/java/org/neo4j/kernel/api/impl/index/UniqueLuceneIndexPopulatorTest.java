@@ -23,8 +23,10 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.util.FailureStorage;
 
 import static java.util.Arrays.asList;
 

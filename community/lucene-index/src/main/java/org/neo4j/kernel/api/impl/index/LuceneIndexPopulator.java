@@ -25,7 +25,9 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.util.FailureStorage;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
@@ -54,7 +56,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         this.indexId = indexId;
         try
         {
-            failureStorage.reserve( indexId );
+            failureStorage.reserveForIndex( indexId );
         }
         catch ( IOException e )
         {
@@ -90,7 +92,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         {
             directory.close();
         }
-        failureStorage.clear( indexId );
+        failureStorage.clearForIndex( indexId );
     }
 
     @Override
@@ -120,7 +122,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        failureStorage.store( indexId, failure );
+        failureStorage.storeIndexFailure( indexId, failure );
     }
 
     protected abstract void flush() throws IOException;
