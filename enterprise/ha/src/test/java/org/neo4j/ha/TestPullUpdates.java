@@ -33,7 +33,11 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -108,7 +112,60 @@ public class TestPullUpdates
         setProperty( cluster.getMaster(), 1 );
         callPullUpdatesViaShell( 2 );
         assertEquals( 1, cluster.getAnySlave().getReferenceNode().getProperty( "i" ) );
+    }
 
+    @Test
+    public void shouldPullUpdatesOnStartupNoMatterWhat() throws Exception
+    {
+        GraphDatabaseService slave = null;
+        GraphDatabaseService master = null;
+        try
+        {
+            File masterDir = TargetDirectory.forTest( getClass() ).directory( "master", true );
+            master = new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .newGraphDatabase();
+
+            // Copy the store, then shutdown, so update pulling later makes sense
+            File slaveDir = TargetDirectory.forTest( getClass() ).directory( "slave", true );
+            slave = new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
+                    .setConfig( ClusterSettings.server_id, "2" )
+                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .newGraphDatabase();
+            slave.shutdown();
+
+            long nodeId = -1;
+            Transaction tx = master.beginTx();
+            Node node = master.createNode();
+            node.setProperty( "from", "master" );
+            nodeId = node.getId();
+            tx.success();
+            tx.finish();
+
+            // Store is already in place, should pull updates
+            slave = new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
+                    .setConfig( ClusterSettings.server_id, "2" )
+                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
+                    .newGraphDatabase();
+
+            assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
+        }
+        finally
+        {
+            if ( slave != null)
+            {
+                slave.shutdown();
+            }
+            if ( master != null )
+            {
+                master.shutdown();
+            }
+        }
     }
 
     private void callPullUpdatesViaShell( int i ) throws ShellException
