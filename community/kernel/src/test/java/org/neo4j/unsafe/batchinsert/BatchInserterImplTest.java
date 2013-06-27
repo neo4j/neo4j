@@ -19,16 +19,26 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.test.ReflectionUtil;
@@ -64,6 +74,46 @@ public class BatchInserterImplTest
         
         Boolean memoryMappingConfig = createInserterAndGetMemoryMappingConfig( stringMap() );
         assertFalse( "memory mapped config is active", memoryMappingConfig );
+    }
+
+    @Test
+    public void testCreatesStoreLockFile()
+    {
+        // Given
+        File file = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+
+        // When
+        BatchInserterImpl inserter = new BatchInserterImpl( file.getAbsolutePath() );
+
+        // Then
+        assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
+        inserter.shutdown();
+    }
+
+    @Test
+    public void testFailsOnExistingStoreLockFile() throws IOException
+    {
+        // Given
+        File parent = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() );
+        lock.checkLock( parent );
+
+        // When
+        try
+        {
+            BatchInserterImpl inserter = new BatchInserterImpl( parent.getAbsolutePath() );
+
+            // Then
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            // Ok
+            e.printStackTrace();
+        } finally
+        {
+            lock.release();
+        }
     }
 
     private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception

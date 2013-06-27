@@ -43,6 +43,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -89,6 +90,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private final StringLogger msgLog;
     private final FileSystemAbstraction fileSystem;
+    private StoreLocker storeLocker;
 
     BatchInserterImpl( String storeDir )
     {
@@ -115,6 +117,11 @@ public class BatchInserterImpl implements BatchInserter
         params.putAll( stringParams );
 
         Config config = new Config( params, GraphDatabaseSettings.class );
+
+        storeLocker = new StoreLocker( fileSystem );
+
+        storeLocker.checkLock( this.storeDir );
+
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
@@ -713,6 +720,16 @@ public class BatchInserterImpl implements BatchInserter
     public void shutdown()
     {
         neoStore.close();
+
+        try
+        {
+            storeLocker.release();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Could not release store lock", e );
+        }
+
         msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         msgLog.close();
     }

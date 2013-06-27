@@ -343,7 +343,7 @@ public abstract class InternalAbstractGraphDatabase
         config.setLogger( msgLog );
 
         this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
-                new StoreLocker( config, fileSystem ), storeDir ));
+                new StoreLocker( fileSystem ), storeDir ));
 
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
