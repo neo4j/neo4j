@@ -90,7 +90,7 @@ public class StoreLockerTest
         }
         catch ( StoreLockException e )
         {
-            String msg = format( "Unable to create path for store dir: %s", storeDir );
+            String msg = format( "Unable to create path for store dir: %s. Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", storeDir );
             assertThat( e.getMessage(), is( msg ) );
         }
     }
@@ -110,7 +110,7 @@ public class StoreLockerTest
         }
         catch ( StoreLockException e )
         {
-            String msg = format( "Unable to obtain lock on store lock file: %s", new File( storeDir,
+            String msg = format( "Unable to obtain lock on store lock file: %s. Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", new File( storeDir,
                     STORE_LOCK_FILENAME ) );
             assertThat( e.getMessage(), is( msg ) );
         }

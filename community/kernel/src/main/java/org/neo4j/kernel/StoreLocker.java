@@ -64,7 +64,7 @@ public class StoreLocker
         }
         catch ( IOException e )
         {
-            throw new StoreLockException( "Unable to create path for store dir: " + storeDir, e );
+            throw new StoreLockException( "Unable to create path for store dir: " + storeDir+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
 
         try
@@ -79,11 +79,11 @@ public class StoreLocker
         }
         catch ( OverlappingFileLockException e )
         {
-            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access.", e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
         catch ( IOException e )
         {
-            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access", e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
     }
 
