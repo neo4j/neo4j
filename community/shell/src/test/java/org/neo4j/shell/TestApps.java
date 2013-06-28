@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
-
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -51,7 +50,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -448,7 +446,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "export a=true" );
         executeCommand( "export b=100" );
         executeCommand( "export c=\"foo\"" );
-        executeCommand( "env", "a=true", "b=100", "c=\"foo\"" );
+        executeCommand( "env", "a=true", "b=100", "c=foo" );
     }
 
     @Test
