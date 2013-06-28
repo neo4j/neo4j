@@ -101,6 +101,53 @@ public abstract class FutureAdapter<V> implements Future<V>
         };
     }
     
+    public static Future<Integer> processFuture( final Process process )
+    {
+        return new FutureAdapter<Integer>()
+        {
+            @Override
+            public boolean isDone()
+            {
+                return tryGetExitValue( process ) != null;
+            }
+
+            private Integer tryGetExitValue( final Process process )
+            {
+                try
+                {
+                    return process.exitValue();
+                }
+                catch ( IllegalThreadStateException e )
+                {   // Thrown if this process hasn't exited yet.
+                    return null;
+                }
+            }
+
+            @Override
+            public Integer get() throws InterruptedException
+            {
+                return process.waitFor();
+            }
+
+            @Override
+            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException,
+                    TimeoutException
+            {
+                long end = System.currentTimeMillis() + unit.toMillis( timeout );
+                while ( System.currentTimeMillis() < end )
+                {
+                    Integer result = tryGetExitValue( process );
+                    if ( result != null )
+                    {
+                        return result;
+                    }
+                    Thread.sleep( 10 );
+                }
+                throw new TimeoutException( "Process '" + process + "' didn't exit within " + timeout + " " + unit );
+            }
+        };
+    }
+    
     public static <T> Future<T> future( final Callable<T> task )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor();
