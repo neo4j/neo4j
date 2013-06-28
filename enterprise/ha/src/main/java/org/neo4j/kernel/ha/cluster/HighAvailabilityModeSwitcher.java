@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.graphdb.DependencyResolver;
@@ -88,7 +89,8 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
  * to the cluster it's new status.
  */
-public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
+public class
+        HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
@@ -296,7 +298,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                      * or we already had a store, so we have already started the ds. Either way, make sure it's there.
                      */
                     NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
-                    if ( !checkDataConsistency( xaDataSourceManager, nioneoDataSource, masterUri ) )
+                    if ( !checkDataConsistency( xaDataSourceManager,
+                            resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri ) )
                         continue; // to the outer loop for a retry
 
                     if ( !startHaCommunication( xaDataSourceManager, nioneoDataSource, masterUri ) )
@@ -378,8 +381,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         };
     }
 
-    private boolean checkDataConsistency( XaDataSourceManager xaDataSourceManager,
-            NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
+    private boolean checkDataConsistency( HaXaDataSourceManager xaDataSourceManager,
+                                          RequestContextFactory requestContextFactory,
+                                          NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
     {
         // Must be called under lock on XaDataSourceManager
         LifeSupport checkConsistencyLife = new LifeSupport();
@@ -392,6 +396,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             console.log( "Checking store consistency with master" );
             checkDataConsistencyWithMaster( checkConsistencyMaster, nioneoDataSource );
             console.log( "Store is consistent" );
+
+            /*
+             * Pull updates, since the store seems happy and everything. No matter how far back we are, this is just
+             * one thread doing the pulling, while the guard is up. This will prevent a race between all transactions
+             * that may start the moment the database becomes available, where all of them will pull the same txs from
+             * the master but eventually only one will get to apply them.
+             */
+            RequestContext context = requestContextFactory.newRequestContext( -1 );
+            xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
             return true;
         }
         catch ( StoreUnableToParticipateInClusterException upe )

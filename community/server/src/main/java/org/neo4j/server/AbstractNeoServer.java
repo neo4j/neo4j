@@ -49,9 +49,7 @@ import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
-import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -68,6 +66,8 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.tooling.Clock;
+import org.neo4j.tooling.RealClock;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -222,7 +222,7 @@ public abstract class AbstractNeoServer implements NeoServer
             @Override
             public void run()
             {
-                long maxAge = clock.currentTimeInMilliseconds() - timeoutMillis;
+                long maxAge = clock.currentTimeMillis() - timeoutMillis;
                 transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
             }
         }, runEvery, MILLISECONDS );

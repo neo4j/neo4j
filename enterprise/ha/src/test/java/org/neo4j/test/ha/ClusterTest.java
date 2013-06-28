@@ -78,10 +78,10 @@ public class ClusterTest
         HighlyAvailableGraphDatabase first = null;
         try
         {
-            String storeDir =
-                    TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPorts", true ).getAbsolutePath();
+            String masterStoreDir =
+                    TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPortsMaster", true ).getAbsolutePath();
             first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( storeDir )
+                    newHighlyAvailableDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -90,8 +90,10 @@ public class ClusterTest
 
             try
             {
+                String slaveStoreDir =
+                        TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPortsSlave", true ).getAbsolutePath();
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( storeDir )
+                        newHighlyAvailableDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.server_id, "2" )

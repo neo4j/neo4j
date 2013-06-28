@@ -25,12 +25,14 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
+import org.neo4j.tooling.FakeClock;
 
 public class LeaseTest
 {
     private static final long SIXTY_SECONDS = 60;
-    private static final long THIRTY_SECONDS = 30;
 
     @Test
     public void shouldReturnHexIdentifierString() throws Exception
@@ -56,7 +58,7 @@ public class LeaseTest
     {
         FakeClock clock = new FakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
-        clock.forwardMinutes( 10 );
+        clock.forward( 10, TimeUnit.MINUTES );
         assertTrue( lease.expired() );
     }
 
@@ -66,15 +68,15 @@ public class LeaseTest
         FakeClock clock = new FakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
 
-        clock.forwardSeconds( THIRTY_SECONDS );
+        clock.forward( 30, TimeUnit.SECONDS );
 
         lease.getLeasedItemAndRenewLease(); // has side effect of renewing the
                                             // lease
 
-        clock.forwardSeconds( 30 );
+        clock.forward( 30, TimeUnit.SECONDS );
         assertFalse( lease.expired() );
 
-        clock.forwardMinutes( 10 );
+        clock.forward( 10, TimeUnit.MINUTES );
         assertTrue( lease.expired() );
     }
 }

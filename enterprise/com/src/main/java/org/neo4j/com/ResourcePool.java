@@ -24,15 +24,102 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.tooling.Clock;
+import org.neo4j.tooling.RealClock;
+
 public abstract class ResourcePool<R>
 {
+    public interface Monitor<R>
+    {
+        public void updatedCurrentPeakSize( int currentPeakSize );
+        public void updatedTargetSize( int targetSize );
+        public void created( R resource );
+        public void acquired( R resource );
+        public void disposed( R resource );
+
+        public class Adapter<R> implements Monitor<R>
+        {
+            @Override
+            public void updatedCurrentPeakSize( int currentPeakSize )
+            {
+            }
+
+            @Override
+            public void updatedTargetSize( int targetSize )
+            {
+            }
+
+            @Override
+            public void created( R resource )
+            {
+            }
+
+            @Override
+            public void acquired( R resource )
+            {
+            }
+
+            @Override
+            public void disposed( R resource )
+            {
+            }
+        }
+    }
+
+    public interface CheckStrategy
+    {
+        public boolean shouldCheck();
+
+        public class TimeoutCheckStrategy implements CheckStrategy
+        {
+            private final long interval;
+            private long lastCheckTime;
+            private final Clock clock;
+
+            public TimeoutCheckStrategy( long interval, Clock clock )
+            {
+                this.interval = interval;
+                this.lastCheckTime = clock.currentTimeMillis();
+                this.clock = clock;
+            }
+
+            @Override
+            public boolean shouldCheck()
+            {
+                long currentTime = clock.currentTimeMillis();
+                if (currentTime > lastCheckTime + interval)
+                {
+                    lastCheckTime = currentTime;
+                    return true;
+                }
+                return false;
+            }
+        }
+    }
+
+    public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
+
     private final LinkedList<R> unused = new LinkedList<R>();
     private final Map<Thread, R> current = new ConcurrentHashMap<Thread, R>();
-    private int maxUnused; // Guarded by unused
+    private final Monitor monitor;
+    private final int minSize;
+    private final CheckStrategy checkStrategy;
+    // Guarded by nothing. Those are estimates, losing some values doesn't matter much
+    private int currentPeakSize;
+    private int targetSize;
 
-    protected ResourcePool( int maxUnused )
+    protected ResourcePool( int minSize )
     {
-        this.maxUnused = maxUnused;
+        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, new RealClock() ), new Monitor.Adapter() );
+    }
+
+    protected ResourcePool( int minSize, CheckStrategy strategy, Monitor monitor )
+    {
+        this.minSize = minSize;
+        this.currentPeakSize = 0;
+        this.targetSize = minSize;
+        this.checkStrategy = strategy;
+        this.monitor = monitor;
     }
 
     protected abstract R create();
@@ -67,15 +154,26 @@ public abstract class ResourcePool<R>
             if ( resource == null )
             {
                 resource = create();
+                monitor.created( resource );
             }
             current.put( thread, resource );
+            monitor.acquired( resource );
             if ( garbage != null )
             {
                 for ( R dead : garbage )
                 {
                     dispose( dead );
+                    monitor.disposed( dead );
                 }
             }
+        }
+        currentPeakSize = Math.max( currentPeakSize, current.size() );
+        if ( checkStrategy.shouldCheck() )
+        {
+            targetSize = Math.max( minSize, currentPeakSize );
+            monitor.updatedCurrentPeakSize( currentPeakSize );
+            currentPeakSize = 0;
+            monitor.updatedTargetSize( targetSize );
         }
         return resource;
     }
@@ -89,7 +187,7 @@ public abstract class ResourcePool<R>
             boolean dead = false;
             synchronized ( unused )
             {
-                if ( unused.size() < maxUnused )
+                if ( unused.size() < targetSize )
                 {
                     unused.add( resource );
                 }
@@ -98,7 +196,11 @@ public abstract class ResourcePool<R>
                     dead = true;
                 }
             }
-            if ( dead ) dispose( resource );
+            if ( dead )
+            {
+                dispose( resource );
+                monitor.disposed( resource );
+            }
         }
     }
 
@@ -109,7 +211,6 @@ public abstract class ResourcePool<R>
         {
             dead.addAll( unused );
             unused.clear();
-            maxUnused = 0;
         }
         if ( force ) dead.addAll( current.values() );
         for ( R resource : dead )

@@ -37,6 +37,40 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
+1.9.1 (2013-06-24)
+------------------
+HA:
+o Access guard is now raised during recovery
+o Properly throttle push notifications from the master, preventing an exhaustion of resources
+  and accompanying failures to pull from slaves
+o Slaves will now not participate in elections if not eligible (e.g. when copying the store)
+
+Kernel:
+o Fixes bug where creating an Index with an invalid configuration would not properly clean up
+  the configuration for it.
+o Fixes race condition that occasionally would make Node.getSingleRelationship() mistakenly fail.
+o Fixes compliance for non-logback logging implementations
+o Cleanup of transactions that fail commit happens under the same lock as the commit
+
+Cypher:
+o Cypher execution results are now closeable
+o Allow | to be used as a separator in foreach and extract+reduce
+
+Server:
+o Fixes bug where the last security rule would be the only one respected, if multiple would
+  be present
+o Support for chained certificates
+o Enabled streaming support for paged traversals
+
+Com:
+o Client now uses heap buffers, reduces GC requirements and out of memory errors
+o Master will now not timeout long running write operations, like store copying
+o Redesigned ResourcePool, now it properly pools and reuses resources, should be more
+  easy going on the garbage collector
+
+Packaging:
+o Improved handling of JAVA_HOME on OSX
+
 1.9 (2013-05-13)
 ----------------
 Cluster:

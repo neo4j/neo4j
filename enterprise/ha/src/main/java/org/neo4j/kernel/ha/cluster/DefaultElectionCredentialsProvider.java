@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 
@@ -43,9 +45,13 @@ public class DefaultElectionCredentialsProvider
     }
 
     @Override
-    public DefaultElectionCredentials getCredentials( String role )
+    public ElectionCredentials getCredentials( String role )
     {
-        return new DefaultElectionCredentials( serverId, lastTxIdGetter.getLastTxId(), isMasterOrToMaster() );
+        if ( masterInfo.getHighAvailabilityMemberState().isEligibleForElection() )
+        {
+            return new DefaultElectionCredentials( serverId, lastTxIdGetter.getLastTxId(), isMasterOrToMaster() );
+        }
+        return new NotElectableElectionCredentials();
     }
 
     private boolean isMasterOrToMaster()

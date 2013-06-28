@@ -28,11 +28,8 @@ Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
 * In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
 * To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
 * To build the documentation see the [Neo4j manual](manual)
-* The Python part of the build requires a working JPype installation.    
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
 * The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
-
-For further details on building, please consult the [community docs](community/README.md).
 
 Licensing
 ---------

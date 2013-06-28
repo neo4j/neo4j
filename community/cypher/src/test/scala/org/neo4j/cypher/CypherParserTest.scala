@@ -1276,11 +1276,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def first_last_and_rest() {
-    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)
+    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, optional = false)
     test("start x = NODE(1) match p=x-[r]->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
-        matches(p1).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
         namedPaths(NamedPath("p", p1)).
         returns(
         ReturnItem(HeadFunction(NodesFunction(Identifier("p"))), "head(nodes(p))"),
@@ -1290,13 +1290,35 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
+    test("start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        returns(
+        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p WHERE x.prop = 123)")
+      ))
+  }
+
+  @Test def filterWithColon() {
     test("start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
+      ))
+  }
+
+  @Test def extractWithColon() {
+    test("start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
       ))
   }
 
