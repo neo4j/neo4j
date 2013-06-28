@@ -44,11 +44,12 @@ public class UdcKernelExtension implements Lifecycle
     private XaDataSourceManager xadsm;
     private KernelData kernelData;
 
-    public UdcKernelExtension( Config config, XaDataSourceManager xadsm, KernelData kernelData )
+    public UdcKernelExtension( Config config, XaDataSourceManager xadsm, KernelData kernelData, Timer timer )
     {
         this.config = config;
         this.xadsm = xadsm;
         this.kernelData = kernelData;
+        this.timer = timer;
     }
 
     @Override
@@ -59,11 +60,6 @@ public class UdcKernelExtension implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        if ( timer != null )
-        {
-            timer.cancel();
-        }
-
         if ( !config.get( UdcSettings.udc_enabled ) )
         {
             return;
@@ -76,7 +72,6 @@ public class UdcKernelExtension implements Lifecycle
         UdcInformationCollector collector = new DefaultUdcInformationCollector( config, xadsm, kernelData );
         UdcTimerTask task = new UdcTimerTask( hostAddress, collector );
 
-        timer = new Timer( "Neo4j UDC Timer", /*isDaemon=*/true );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
     }
 
