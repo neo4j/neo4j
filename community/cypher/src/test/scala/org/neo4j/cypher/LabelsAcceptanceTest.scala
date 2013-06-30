@@ -52,7 +52,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
   }
 
   @Test def Add_labels_to_nodes_in_a_foreach() {
-    assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes : SET n :FOO:BAR)", List("FOO", "BAR"))
+    assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes | SET n :FOO:BAR)", List("FOO", "BAR"))
   }
 
   @Test def Using_labels_in_RETURN_clauses() {

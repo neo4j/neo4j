@@ -40,7 +40,7 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
         self relationships. Using said match, relationships between all these nodes are created. Lastly, 
         the center node and all relationships connected to it are removed.""",
       queryText = """create center
-foreach( x in range(1,6) : 
+foreach( x in range(1,6) |
    create (leaf {count : x}), center-[:X]->leaf
 )
 WITH center

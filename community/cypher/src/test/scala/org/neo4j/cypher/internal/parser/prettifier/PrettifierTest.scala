@@ -41,13 +41,13 @@ class PrettifierTest extends Assertions {
 
   @Test
   def shouldNotBreakCreateInForeach() {
-    assertIsPrettified("MATCH p=n%nFOREACH (x IN p : CREATE x--())", "match p=n foreach(x in p : create x--())")
+    assertIsPrettified("MATCH p=n%nFOREACH (x IN p | CREATE x--())", "match p=n foreach(x in p | create x--())")
   }
 
   @Test
   def shouldNotBreakCreateInComplexForeach() {
-    assertIsPrettified("MATCH p=n%nFOREACH (x IN p : CREATE x--()%nSET x.foo = 'bar')%nRETURN DISTINCT p;",
-      "match p=n foreach(x in p : create x--() set x.foo = 'bar') return distinct p;")
+    assertIsPrettified("MATCH p=n%nFOREACH (x IN p | CREATE x--()%nSET x.foo = 'bar')%nRETURN DISTINCT p;",
+      "match p=n foreach(x in p | create x--() set x.foo = 'bar') return distinct p;")
   }
 
   @Test

@@ -50,7 +50,7 @@ class ForeachTest extends DocumentingTestBase {
     testQuery(
       title = "Mark all nodes along a path",
       text = "This query will set the property `marked` to true on all nodes along a path.",
-      queryText = "match p = begin -[*]-> end where begin.name='A' and end.name='D' foreach(n in nodes(p) : set n.marked = true)",
+      queryText = "match p = begin -[*]-> end where begin.name='A' and end.name='D' foreach(n in nodes(p) | set n.marked = true)",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
