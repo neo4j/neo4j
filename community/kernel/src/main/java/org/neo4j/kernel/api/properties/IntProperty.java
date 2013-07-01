@@ -44,6 +44,17 @@ final class IntProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Integer )
+        {
+            return value == (int)other;
+        }
+
+        return valueCompare( value, other );
+    }
+
+    @Override
     boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((IntProperty) that).value;
@@ -66,7 +77,7 @@ final class IntProperty extends NumberPropertyWithin4Bytes
     {
         return value;
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()

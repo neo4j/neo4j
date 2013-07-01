@@ -38,9 +38,9 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def assignToPathInsideForeachShouldWork() {
     val result = parseAndExecute(
 """start n=node(0)
-foreach(x in [1,2,3] :
+foreach(x in [1,2,3] |
   create p = ({foo:x})-[:X]->()
-  foreach( i in p :
+  foreach( i in p |
     set i.touched = true))""")
     println(result.dumpToString())
   }
@@ -1691,9 +1691,9 @@ RETURN x0.name?
     val b = createNode("foo" -> 3)
     val r = relate(a, b, "rel", Map("foo" -> 2))
 
-    val result = parseAndExecute("start a=node(1) match p=a-->() return filter(x in p : x.foo = 2)").toList
+    val result = parseAndExecute("start a=node(1) match p=a-->() return filter(x in p WHERE x.foo = 2)").toList
 
-    val resultingCollection = result.head("filter(x in p : x.foo = 2)").asInstanceOf[Seq[_]].toList
+    val resultingCollection = result.head("filter(x in p WHERE x.foo = 2)").asInstanceOf[Seq[_]].toList
 
     assert(List(r) == resultingCollection)
   }
@@ -1896,7 +1896,7 @@ RETURN x0.name?
 
   @Test def length_on_filter() {
     // https://github.com/neo4j/community/issues/526
-    val q = "start n=node(*) match n-[r?]->m return length(filter(x in collect(r) : x <> null)) as cn"
+    val q = "start n=node(*) match n-[r?]->m return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
     assert(executeScalar[Long](q) === 0)
   }
@@ -2045,7 +2045,7 @@ RETURN x0.name?
     relate(a,b)
     relate(a,c)
 
-    val result = parseAndExecute("CYPHER 1.9 START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
+    val result = parseAndExecute("CYPHER 1.9 START a=node(1) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").dumpToString()
   }
 
   @Test
@@ -2305,7 +2305,7 @@ RETURN x0.name?
 
   @Test
   def can_use_identifiers_created_inside_the_foreach() {
-    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create (a { name: 'foo'})  set a.id = x)")
+    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     assert(result.toList === List())
   }
@@ -2346,7 +2346,7 @@ RETURN x0.name?
   def extract_string_from_node_collection() {
     val a = createNode("name"->"a")
 
-    val result = parseAndExecute("""START n=node(1) with collect(n) as nodes return head(extract(x in nodes: x.name)) + "test" as test """)
+    val result = parseAndExecute("""START n=node(1) with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
     assert(result.toList === List(Map("test" -> "atest")))
   }

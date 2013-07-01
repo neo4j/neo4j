@@ -33,6 +33,17 @@ final class BigLongProperty extends FullSizeProperty
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Long )
+        {
+            return value == (long)other;
+        }
+
+        return valueCompare( value, other );
+    }
+
+    @Override
     public Long value()
     {
         return value;
@@ -59,9 +70,9 @@ final class BigLongProperty extends FullSizeProperty
     @Override
     boolean hasEqualValue( FullSizeProperty that )
     {
-        return value == ((BigLongProperty)that).value;
+        return value == ((BigLongProperty) that).value;
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()

@@ -119,20 +119,20 @@ public class MultiPaxosServerFactory
         AtomicBroadcastContext atomicBroadcastContext = new AtomicBroadcastContext( clusterContext, executor );
 
         stateMachines.addStateMachine( new StateMachine( atomicBroadcastContext,
-                AtomicBroadcastMessage.class, AtomicBroadcastState.start ) );
+                AtomicBroadcastMessage.class, AtomicBroadcastState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( acceptorContext, AcceptorMessage.class,
-                AcceptorState.start ) );
+                AcceptorState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( context, ProposerMessage.class,
-                ProposerState.start ) );
-        stateMachines.addStateMachine( new StateMachine( context, LearnerMessage.class, LearnerState.start ) );
+                ProposerState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context, LearnerMessage.class, LearnerState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( heartbeatContext, HeartbeatMessage.class,
-                HeartbeatState.start ) );
+                HeartbeatState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( electionContext, ElectionMessage.class,
-                ElectionState.start ) );
+                ElectionState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
-                SnapshotState.start ) );
+                SnapshotState.start, logging ) );
         stateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
-                ClusterState.start ) );
+                ClusterState.start, logging ) );
 
         final ProtocolServer server = new ProtocolServer( me, stateMachines, logging );
 

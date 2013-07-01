@@ -48,6 +48,7 @@ class BooleanArrayProperty extends FullSizeProperty
         {
             return Arrays.equals(this.value, (boolean[])value);
         }
+
         if ( value instanceof Boolean[] )
         {
             Boolean[] otherValue = (Boolean[]) value;

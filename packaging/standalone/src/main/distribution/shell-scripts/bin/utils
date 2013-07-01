@@ -31,14 +31,12 @@ function getconfig {
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
         value="${BASH_REMATCH[2]}"
         if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
-          key=${BASH_REMATCH[1]}
-          if [[ ${!key} ]]; then
-            export ${key}="${!key} ${value}"
-          else
-            export ${key}="$value"
-          fi
+          key="${BASH_REMATCH[1]}"
+        fi
+        if [[ ${!key} ]]; then
+          export ${key}="${!key} ${value}"
         else
-          export ${key}="${value}"
+          export ${key}="$value"
         fi
       fi
     done < "$1"
@@ -53,13 +51,11 @@ function getconfigquoted {
         value="${BASH_REMATCH[2]}"
         if [[ ${key} =~ "^(.*)(_[0-9]+)?$" ]]; then
           key=${BASH_REMATCH[1]}
-          if [[ ${!key} ]]; then
-            export ${key}="${!key} ${value}"
-          else
-            export ${key}="$value"
-          fi
+        fi
+        if [[ ${!key} ]]; then
+          export ${key}="${!key} ${value}"
         else
-          export ${key}="${value}"
+          export ${key}="$value"
         fi
       fi
     done < "$1"
@@ -80,7 +76,7 @@ findjava() {
              echo "Using Java version: $JAVA_VERSION"
            fi
            if [ -z "$JAVA_HOME" ] ; then
-             JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/${JAVA_VERSION}/Home
+             JAVA_HOME=`/usr/libexec/java_home -v 1.7`
            fi
            ;;
   esac
@@ -145,6 +141,7 @@ reportstatus() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "$FRIENDLY_NAME is not running"
+	exit 3
   else
     echo "$FRIENDLY_NAME is running at pid $NEO4J_PID"
   fi
@@ -362,6 +359,6 @@ checkjvmcompatibility() {
 }
 
 checkclasspath() {
-  echo $CLASSPATH | grep -q SNAPSHOT && \
-  echo -e "\nWARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
+  echo $CLASSPATH | egrep -q 'neo4j-kernel-[0-9.]{2,8}-SNAPSHOT' && \
+  echo -e "\nWARNING! Latest Development Build. Not intended for general-purpose use. May be unstable."
 }

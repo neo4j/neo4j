@@ -34,15 +34,13 @@ public class StoreLocker
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";
 
-    private final Config configuration;
     private final FileSystemAbstraction fileSystemAbstraction;
 
     private FileLock storeLockFileLock;
     private FileChannel storeLockFileChannel;
 
-    public StoreLocker( Config configuration, FileSystemAbstraction fileSystemAbstraction )
+    public StoreLocker( FileSystemAbstraction fileSystemAbstraction )
     {
-        this.configuration = configuration;
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
@@ -61,18 +59,12 @@ public class StoreLocker
         {
             if ( !fileSystemAbstraction.fileExists( storeLockFile ) )
             {
-                if ( configuration.get( read_only ) )
-                {
-                    String msg = "Unable to lock store as store dir does not exist and instance is in read-only mode";
-                    throw new StoreLockException( msg );
-                }
-
                 fileSystemAbstraction.mkdirs( storeLockFile.getParentFile() );
             }
         }
         catch ( IOException e )
         {
-            throw new StoreLockException( "Unable to create path for store dir: " + storeDir, e );
+            throw new StoreLockException( "Unable to create path for store dir: " + storeDir+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
 
         try
@@ -87,11 +79,11 @@ public class StoreLocker
         }
         catch ( OverlappingFileLockException e )
         {
-            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
         catch ( IOException e )
         {
-            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile+". Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", e );
         }
     }
 

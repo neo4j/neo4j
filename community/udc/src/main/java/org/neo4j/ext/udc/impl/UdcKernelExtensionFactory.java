@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
@@ -73,7 +74,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     public Lifecycle newKernelExtension( UdcKernelExtensionFactory.Dependencies dependencies ) throws Throwable
     {
         return new UdcKernelExtension( loadConfig( dependencies.getConfig() ), dependencies.getXaDataSourceManager(),
-                dependencies.getKernelData() );
+                dependencies.getKernelData(), new Timer( "Neo4j UDC Timer", /*isDaemon=*/true ) );
     }
 
     private Config loadConfig( Config config )

@@ -37,7 +37,6 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.SimpleAppServer;
 import org.neo4j.shell.Variables;
-import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 
@@ -48,7 +47,6 @@ import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 public class GraphDatabaseShellServer extends SimpleAppServer
 {
     private final GraphDatabaseAPI graphDb;
-    private final BashVariableInterpreter bashInterpreter;
     private boolean graphDbCreatedHere;
     protected final Map<Serializable, Transaction> transactions = new ConcurrentHashMap<Serializable, Transaction>();
 
@@ -73,7 +71,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     {
         super();
         this.graphDb = readOnly ? new ReadOnlyGraphDatabaseProxy( graphDb ) : graphDb;
-        this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
         this.graphDbCreatedHere = false;
     }
@@ -150,7 +147,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
-    protected String getShellPrompt()
+    @Override
+    protected String getDefaultPrompt()
     {
         String name = "neo4j-sh";
         if ( this.graphDb instanceof ReadOnlyGraphDatabaseProxy )
@@ -165,12 +163,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     protected String getWelcomeMessage()
     {
         return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
-    }
-
-    @Override
-    protected String getPrompt( Session session ) throws ShellException
-    {
-        return this.bashInterpreter.interpret( getShellPrompt(), this, session );
     }
 
     /**
@@ -188,6 +180,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
      */
     public static class WorkingDirReplacer implements Replacer
     {
+        @Override
         public String getReplacement( ShellServer server, Session session )
                 throws ShellException
         {

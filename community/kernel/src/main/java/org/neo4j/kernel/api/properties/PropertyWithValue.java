@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import java.lang.reflect.Array;
+
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 
-/** Base class for properties that have a value. */
+/**
+ * Base class for properties that have a value.
+ */
 abstract class PropertyWithValue extends Property
 {
     @Override
@@ -34,13 +38,6 @@ abstract class PropertyWithValue extends Property
         return value();
     }
 
-    @Override
-    public boolean valueEquals( Object value )
-    {
-        return value().equals( value ); // TODO: specialize sub-classes to avoid the boxing performed by value()
-    }
-
-    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueToString() + "]";
@@ -120,11 +117,72 @@ abstract class PropertyWithValue extends Property
     {
         return booleanValue();
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()
     {
         return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
+    }
+
+    protected boolean valueCompare( Object a, Object b )
+    {
+        // COMPARE NUMBERS
+        if ( a instanceof Number && b instanceof Number )
+        {
+            return compareNumbers( (Number) a, (Number) b );
+        }
+
+        // COMPARE STRINGS
+        if ( (a instanceof String || a instanceof Character) &&
+                (b instanceof String || b instanceof Character) )
+        {
+            return a.toString().equals( b.toString() );
+        }
+
+        // COMPARE ARRAYS
+        if ( a.getClass().isArray() && b.getClass().isArray() )
+        {
+            return compareArrays( a, b );
+        }
+
+        return false;
+    }
+
+    private boolean compareArrays( Object a, Object b )
+    {
+        int aLength = Array.getLength( a );
+        int bLength = Array.getLength( b );
+        if ( aLength != bLength )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < aLength; i++ )
+        {
+            Object aObj = Array.get( a, i );
+            Object bObj = Array.get( b, i );
+            if ( !valueCompare( aObj, bObj ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean compareNumbers( Number aNumber, Number bNumber )
+    {
+        // If any of the two are non-integers
+        if ( aNumber instanceof Float
+                || bNumber instanceof Float
+                || aNumber instanceof Double
+                || bNumber instanceof Double )
+        {
+            double b = bNumber.doubleValue();
+            double a = aNumber.doubleValue();
+            return a == b;
+        }
+
+        return aNumber.longValue() == bNumber.longValue();
     }
 }

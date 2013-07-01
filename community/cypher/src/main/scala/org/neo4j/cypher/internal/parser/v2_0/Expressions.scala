@@ -102,12 +102,12 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
     property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse)
 
-  def extract: Parser[Expression] = EXTRACT ~> parens(identity ~ IN ~ expression ~ ":" ~ expression) ^^ {
-    case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
+  def extract: Parser[Expression] = EXTRACT ~> parens(identity ~ IN ~ expression ~ (":" | "|") ~ expression) ^^ {
+    case (id ~ _ ~ iter ~ _ ~ expression) => ExtractFunction(iter, id, expression)
   }
 
-  def reduce: Parser[Expression] = REDUCE ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ IN ~ expression ~ ":" ~ expression) ^^ {
-    case (acc ~ "=" ~ init ~ "," ~ id ~ in ~ iter ~ ":" ~ expression) => ReduceFunction(iter, id, expression, acc, init)
+  def reduce: Parser[Expression] = REDUCE ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ IN ~ expression ~ (":" | "|") ~ expression) ^^ {
+    case (acc ~ _ ~ init ~ _ ~ id ~ _ ~ iter ~ _ ~ expression) => ReduceFunction(iter, id, expression, acc, init)
   }
 
   def coalesceFunc: Parser[Expression] = COALESCE ~> parens(commaList(expression)) ^^ {

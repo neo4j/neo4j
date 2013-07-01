@@ -21,6 +21,8 @@ package org.neo4j.server.rest.paging;
 
 import java.util.UUID;
 
+import org.neo4j.tooling.Clock;
+
 public class Lease
 {
     private long startTime;
@@ -39,7 +41,7 @@ public class Lease
 
         this.clock = clock;
         this.leasedTraverser = leasedTraverser;
-        this.startTime = clock.currentTimeInMilliseconds();
+        this.startTime = clock.currentTimeMillis();
         this.leasePeriod = leasePeriodInSeconds * 1000;
         this.id = toHexOnly( UUID.randomUUID() );
     }
@@ -65,13 +67,13 @@ public class Lease
     {
         if ( !expired() )
         {
-            startTime = clock.currentTimeInMilliseconds();
+            startTime = clock.currentTimeMillis();
         }
     }
 
     public boolean expired()
     {
-        return startTime + leasePeriod < clock.currentTimeInMilliseconds();
+        return startTime + leasePeriod < clock.currentTimeMillis();
     }
 
     public long getStartTime()

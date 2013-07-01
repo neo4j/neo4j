@@ -73,9 +73,11 @@ public class ReflectionUtil
         }
         catch ( NoSuchFieldError e )
         {
+            // Ignore - it might be in the super type
         }
         catch ( NoSuchFieldException e )
         {
+            // Ignore - it might be in the super type
         }
         return getField( fieldName, type.getSuperclass() );
     }

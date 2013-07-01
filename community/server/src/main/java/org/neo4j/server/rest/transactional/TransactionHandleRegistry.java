@@ -29,10 +29,10 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.tooling.Clock;
 
 import static java.lang.String.format;
 
@@ -85,7 +85,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         private SuspendedTransaction( TransactionHandle transactionHandle )
         {
             this.transactionHandle = transactionHandle;
-            this.lastActiveTimestamp = clock.currentTimeInMilliseconds();
+            this.lastActiveTimestamp = clock.currentTimeMillis();
         }
 
         @Override

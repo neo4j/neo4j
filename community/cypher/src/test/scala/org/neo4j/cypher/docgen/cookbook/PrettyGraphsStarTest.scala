@@ -36,7 +36,7 @@ class PrettyGraphsStarTest extends DocumentingTestBase {
       text =
 """The graph is created by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center.""",
       queryText = """create center
-foreach( x in range(1,6) : 
+foreach( x in range(1,6) |
    create leaf, center-[:X]->leaf
 )
 return id(center) as id;""",

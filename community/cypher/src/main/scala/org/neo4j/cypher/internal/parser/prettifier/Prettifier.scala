@@ -120,6 +120,7 @@ case object Prettifier extends (String => String) {
     else {
       (token, tail.head) match {
         // FOREACH : <NEXT>
+        case (_: SyntaxToken,         _) if token.text.endsWith("|") => token.toString + space
         case (_: SyntaxToken,         _) if token.text.endsWith(":") => token.toString + space
 
         // <NON-BREAKING-KW> <NEXT>

@@ -116,6 +116,13 @@ public interface GraphDatabaseService
      * If no indexes exist for the label/property combination, the database will
      * scan all labelled nodes looking for the property value.
      *
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     *
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     *
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     *
      * If you call this operation outside of a transaction, please take care that the returned 
      * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
      *   

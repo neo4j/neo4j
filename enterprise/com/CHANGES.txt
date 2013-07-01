@@ -1,3 +1,10 @@
+1.9.1 (2013-06-24)
+------------------
+o Client now uses heap buffers, reduces GC requirements and out of memory errors
+o Master will now not timeout long running write operations, like store copying
+o Redesigned ResourcePool, now it properly pools and reuses resources, should be more
+  easy going on the garbage collector
+
 1.9.RC2 (2013-04-30)
 --------------------
 o Upgrades to Netty 3.6.3
