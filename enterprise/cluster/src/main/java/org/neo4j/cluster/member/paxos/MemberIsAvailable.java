@@ -88,4 +88,11 @@ public class MemberIsAvailable
         clusterUri = URI.create( in.readUTF() );
         roleUri = URI.create(in.readUTF() );
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "MemberIsAvailable[ Role: %s, InstanceId: %s, Role URI: %s, Cluster URI: %s]",
+                role, instanceId.toString(), roleUri.toString(), clusterUri.toString() );
+    }
 }
