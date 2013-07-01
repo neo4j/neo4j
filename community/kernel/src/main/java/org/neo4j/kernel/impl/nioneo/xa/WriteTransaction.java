@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.xa.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
@@ -692,7 +693,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
 
             // primitives
-//            java.util.Collections.sort( nodeCommands, sorter ); // it's a TreeMap so already sorted.
             java.util.Collections.sort( relCommands, sorter );
             java.util.Collections.sort( propCommands, sorter );
             executeCreated( isRecovered, propCommands, relCommands, nodeCommands.values() );
@@ -797,6 +797,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         final NodeStore nodeStore = getNodeStore();
         for ( NodeCommand nodeCommand : nodeCommands.values() )
         {
+            if ( nodeCommand.getMode() == Mode.CREATE )
+            {
+                // For created nodes rely on the updates from the perspective of properties to cover it all
+                // otherwise we'll get duplicate update during recovery.
+                continue;
+            }
+            
             long nodeId = nodeCommand.getKey();
             long[] labelsBefore = nodeStore.getLabelsForNode( nodeCommand.getBefore() );
             long[] labelsAfter = nodeStore.getLabelsForNode( nodeCommand.getAfter() );
