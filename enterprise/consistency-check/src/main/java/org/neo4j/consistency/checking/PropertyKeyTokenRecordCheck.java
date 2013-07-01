@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 
 class PropertyKeyTokenRecordCheck
-        extends NameRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+        extends NameRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )
@@ -35,13 +35,13 @@ class PropertyKeyTokenRecordCheck
     }
 
     @Override
-    void nameNotInUse( ConsistencyReport.PropertyKeyConsistencyReport report, DynamicRecord name )
+    void nameNotInUse( ConsistencyReport.PropertyKeyTokenConsistencyReport report, DynamicRecord name )
     {
         report.nameBlockNotInUse( name );
     }
 
     @Override
-    void emptyName( ConsistencyReport.PropertyKeyConsistencyReport report, DynamicRecord name )
+    void emptyName( ConsistencyReport.PropertyKeyTokenConsistencyReport report, DynamicRecord name )
     {
         report.emptyName( name );
     }

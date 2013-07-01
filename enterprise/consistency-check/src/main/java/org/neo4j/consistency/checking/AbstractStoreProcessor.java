@@ -19,9 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import static java.lang.String.format;
-import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.IdType;
@@ -35,15 +32,19 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
+import static java.lang.String.format;
+
+import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
+
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
     private final RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreChecker;
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker;
     private final RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
-    private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> propertyKeyTokenChecker;
+    private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
     private final RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
-    private final RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> labelTokenChecker;
+    private final RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> labelTokenChecker;
 
     public AbstractStoreProcessor()
     {
@@ -82,12 +83,12 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     protected abstract void checkLabelName(
             RecordStore<LabelTokenRecord> store,
             LabelTokenRecord record,
-            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker );
+            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
 
     protected abstract void checkPropertyKeyToken(
             RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
             RecordCheck<PropertyKeyTokenRecord,
-                    ConsistencyReport.PropertyKeyConsistencyReport> checker );
+                    ConsistencyReport.PropertyKeyTokenConsistencyReport> checker );
 
     protected abstract void checkDynamic(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,

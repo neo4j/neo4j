@@ -19,14 +19,15 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static org.mockito.Mockito.verify;
 
 public class RelationshipRecordCheckTest extends
                                          RecordCheckTestBase<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport, RelationshipRecordCheck>
@@ -95,7 +96,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportIllegalLabel() throws Exception
+    public void shouldReportIllegalRelationshipType() throws Exception
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, NONE ) );
@@ -106,16 +107,16 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verify( report ).illegalLabel();
+        verify( report ).illegalRelationshipType();
         verifyOnlyReferenceDispatch( report );
     }
 
     @Test
-    public void shouldReportLabelNotInUse() throws Exception
+    public void shouldReportRelationshipTypeNotInUse() throws Exception
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        RelationshipTypeTokenRecord label = add( notInUse( new RelationshipTypeTokenRecord( 4 ) ) );
+        RelationshipTypeTokenRecord relationshipType = add( notInUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
 
@@ -123,7 +124,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verify( report ).labelNotInUse( label );
+        verify( report ).relationshipTypeNotInUse( relationshipType );
         verifyOnlyReferenceDispatch( report );
     }
 
@@ -620,7 +621,7 @@ public class RelationshipRecordCheckTest extends
         // then
         verify( report ).sourceNodeNotInUse( source );
         verify( report ).targetNodeNotInUse( target );
-        verify( report ).labelNotInUse( label );
+        verify( report ).relationshipTypeNotInUse( label );
         verifyOnlyReferenceDispatch( report );
     }
 

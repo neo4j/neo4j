@@ -106,6 +106,12 @@ public class CacheSmallStoresRecordAccess implements DiffRecordAccess
     }
 
     @Override
+    public RecordReference<DynamicRecord> nodeLabels( long id )
+    {
+        return delegate.nodeLabels( id );
+    }
+
+    @Override
     public RecordReference<LabelTokenRecord> label( int id )
     {
         return delegate.label( id );

@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 
 class LabelTokenRecordCheck
-    extends NameRecordCheck<LabelTokenRecord,ConsistencyReport.LabelNameConsistencyReport>
+    extends NameRecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )
@@ -35,13 +35,13 @@ class LabelTokenRecordCheck
     }
 
     @Override
-    void nameNotInUse( ConsistencyReport.LabelNameConsistencyReport report, DynamicRecord name )
+    void nameNotInUse( ConsistencyReport.LabelTokenConsistencyReport report, DynamicRecord name )
     {
         report.nameBlockNotInUse( name );
     }
 
     @Override
-    void emptyName( ConsistencyReport.LabelNameConsistencyReport report, DynamicRecord name )
+    void emptyName( ConsistencyReport.LabelTokenConsistencyReport report, DynamicRecord name )
     {
         report.emptyName( name );
     }

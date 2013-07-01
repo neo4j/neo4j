@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
-enum RelationshipNodeField implements
+enum NodeField implements
         RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
         ComparativeRecordChecker<RelationshipRecord, NodeRecord, ConsistencyReport.RelationshipConsistencyReport>
 {
@@ -146,12 +146,12 @@ enum RelationshipNodeField implements
     @Override
     public abstract long valueFrom( RelationshipRecord relationship );
 
-    public static RelationshipNodeField select( RelationshipRecord relationship, NodeRecord node )
+    public static NodeField select( RelationshipRecord relationship, NodeRecord node )
     {
         return select( relationship, node.getId() );
     }
 
-    public static RelationshipNodeField select( RelationshipRecord relationship, long nodeId )
+    public static NodeField select( RelationshipRecord relationship, long nodeId )
     {
         if ( relationship.getFirstNode() == nodeId )
         {

@@ -90,6 +90,12 @@ public class DirectRecordAccess implements DiffRecordAccess
     }
 
     @Override
+    public RecordReference<DynamicRecord> nodeLabels( long id )
+    {
+        return new DirectRecordReference<DynamicRecord>( access.getNodeDynamicLabelStore().forceGetRecord( id ), this );
+    }
+
+    @Override
     public RecordReference<LabelTokenRecord> label( int id )
     {
         return new DirectRecordReference<LabelTokenRecord>( access.getLabelTokenStore().forceGetRecord( id ), this );

@@ -25,7 +25,6 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 class ReadTransaction implements NeoStoreTransaction
 {
@@ -478,7 +478,7 @@ class ReadTransaction implements NeoStoreTransaction
     public Iterator<Long> getLabelsForNode( long nodeId )
     {
         NodeRecord node = getNodeStore().getRecord( nodeId );
-        return asIterator( getNodeStore().getLabelsForNode( node ) );
+        return asIterator( parseLabelsField( node ).get( getNodeStore() ) );
     }
 
     @Override

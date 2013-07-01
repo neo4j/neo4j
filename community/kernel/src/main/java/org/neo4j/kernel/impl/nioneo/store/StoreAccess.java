@@ -46,6 +46,7 @@ public class StoreAccess
     private final RecordStore<RelationshipRecord> relStore;
     private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
     private final RecordStore<LabelTokenRecord> labelTokenStore;
+    private final RecordStore<DynamicRecord> nodeDynamicLabelStore;
     private final RecordStore<PropertyRecord> propStore;
     // Transitive stores
     private final RecordStore<DynamicRecord> stringStore, arrayStore;
@@ -85,6 +86,7 @@ public class StoreAccess
         this.arrayStore = wrapStore( propStore.getArrayStore() );
         this.relationshipTypeTokenStore = wrapStore( typeStore );
         this.labelTokenStore = wrapStore( labelTokenStore );
+        this.nodeDynamicLabelStore = wrapStore( nodeStore.getDynamicLabelStore() );
         this.propertyKeyTokenStore = wrapStore( propStore.getPropertyKeyTokenStore() );
         this.relationshipTypeNameStore = wrapStore( typeStore.getNameStore() );
         this.labelNameStore = wrapStore( labelTokenStore.getNameStore() );
@@ -161,6 +163,11 @@ public class StoreAccess
     public RecordStore<LabelTokenRecord> getLabelTokenStore()
     {
         return labelTokenStore;
+    }
+
+    public RecordStore<DynamicRecord> getNodeDynamicLabelStore()
+    {
+        return nodeDynamicLabelStore;
     }
 
     public RecordStore<PropertyKeyTokenRecord> getPropertyKeyTokenStore()
