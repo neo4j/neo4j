@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,7 +65,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -78,6 +82,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.neo4j.test.AllItemsMatcher.matchesAll;
 
 public class WriteTransactionTest
 {
@@ -413,7 +418,6 @@ public class WriteTransactionTest
         int nodeId = 5, relId = 10, relationshipType = 3, propertyKeyId = 4, ruleId = 8;
 
         // WHEN
-        tx.setRecovered();
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( relationshipType, "type" );
         tx.relationshipCreate( relId, 0, nodeId, nodeId );
@@ -425,7 +429,7 @@ public class WriteTransactionTest
         for ( int i = 0; i < 10; i++ )
             tx.addLabelToNode( 10000 + i, nodeId );
         tx.createSchemaRule( IndexRule.indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        prepareAndCommit( tx );
+        prepareAndCommitRecovered( tx );
 
         // THEN
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
@@ -514,7 +518,43 @@ public class WriteTransactionTest
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         prepareAndCommit( tx );
     }
+    
+    @Test
+    public void shouldCreateEqualNodePropertyUpdatesOnRecoveryOfCreatedNode() throws Exception
+    {
+        /* There was an issue where recovering a tx where a node with a label and a property
+         * was created resulted in two exact copies of NodePropertyUpdates. */
+        
+        // GIVEN
+        long labelId = 5, propertyKeyId = 7, nodeId = 1;
+        NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[] {labelId} );
+        
+        // -- an index
+        long ruleId = 0;
+        WriteTransaction tx = newWriteTransaction( NO_INDEXING );
+        SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        tx.createSchemaRule( rule );
+        prepareAndCommit( tx );
+        
+        // -- and a tx creating a node with that label and property key
+        IndexingService index = mock( IndexingService.class );
+        CommandCapturingVisitor commandCapturingVisitor = new CommandCapturingVisitor();
+        tx = newWriteTransaction( index, commandCapturingVisitor );
+        tx.nodeCreate( nodeId );
+        tx.addLabelToNode( labelId, nodeId );
+        tx.nodeAddProperty( nodeId, (int) propertyKeyId, "Neo" );
+        prepareAndCommit( tx );
+        verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
+        reset( index );
 
+        // WHEN
+        // -- later recovering that tx, there should be only one update
+        tx = newWriteTransaction( index );
+        commandCapturingVisitor.injectInto( tx );
+        prepareAndCommitRecovered( tx );
+        verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
+    }
+    
     private String string( int length )
     {
         StringBuilder result = new StringBuilder();
@@ -562,6 +602,26 @@ public class WriteTransactionTest
         }
     }
     
+    private static class CommandCapturingVisitor implements Visitor<XaCommand,RuntimeException>
+    {
+        private final Collection<XaCommand> commands = new ArrayList<>();
+
+        @Override
+        public boolean visit( XaCommand element ) throws RuntimeException
+        {
+            commands.add( element );
+            return true;
+        }
+        
+        public void injectInto( WriteTransaction tx )
+        {
+            for ( XaCommand command : commands )
+            {
+                tx.injectCommand( command );
+            }
+        }
+    }
+    
     static IndexingService NO_INDEXING = mock( IndexingService.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
@@ -569,7 +629,8 @@ public class WriteTransactionTest
         return newWriteTransaction( indexing, nullVisitor );
     }
     
-    private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand, RuntimeException> verifier )
+    private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand,
+            RuntimeException> verifier )
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
@@ -624,6 +685,12 @@ public class WriteTransactionTest
         };
     }
 
+    private void prepareAndCommitRecovered( WriteTransaction tx ) throws XAException
+    {
+        tx.setRecovered();
+        prepareAndCommit( tx );
+    }
+    
     private void prepareAndCommit( WriteTransaction tx ) throws XAException
     {
         tx.doPrepare();
