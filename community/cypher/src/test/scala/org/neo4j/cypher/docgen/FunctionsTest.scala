@@ -133,7 +133,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def extract() {
     testThis(
       title = "EXTRACT",
-      syntax = "EXTRACT( identifier in collection : expression )",
+      syntax = "EXTRACT( identifier in collection | expression )",
       arguments = List(
         "collection" -> "An expression that returns a collection",
         "identifier" -> "The closure will have an identifier introduced in it's context. Here you decide which identifier to use.",
@@ -142,15 +142,15 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return a single property, or the value of a function from a collection of nodes or relationships,
  you can use `EXTRACT`. It will go through a collection, run an expression on every element, and return the results
  in an collection with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
-      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) : n.age)""",
+      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) | n.age)""",
       returns = """The age property of all nodes in the path are returned.""",
-      assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) : n.age)" -> List(38, 25, 54))), p.toList))
+      assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) | n.age)" -> List(38, 25, 54))), p.toList))
   }
 
   @Test def reduce() {
     testThis(
       title = "REDUCE",
-      syntax = "REDUCE( accumulator = initial,  identifier in collection : expression )",
+      syntax = "REDUCE( accumulator = initial,  identifier in collection | expression )",
       arguments = List(
         "accumulator" -> "An identifier that will hold the result and the partial results as the collection is iterated",
         "initial"    -> "An expression that runs once to give a starting value to the accumulator",
@@ -161,9 +161,9 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
  an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
-      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
+      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) | totalAge + n.age)""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
-      assertions = (p) => assertEquals(List(Map("reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)" -> 117)), p.toList))
+      assertions = (p) => assertEquals(List(Map("reduce(totalAge = 0, n in nodes(p) | totalAge + n.age)" -> 117)), p.toList))
   }
 
   @Test def head() {
@@ -211,13 +211,13 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def filter() {
     testThis(
       title = "FILTER",
-      syntax = "FILTER(identifier in collection : predicate)",
+      syntax = "FILTER(identifier in collection WHERE predicate)",
       arguments = common_arguments,
       text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
-      queryText = """match a where a.name='Eskil' return a.array, filter(x in a.array : length(x) = 3)""",
+      queryText = """match a where a.name='Eskil' return a.array, filter(x in a.array WHERE length(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
       assertions = (p) => {
-        val array = p.columnAs[Iterable[_]]("filter(x in a.array : length(x) = 3)").toList.head
+        val array = p.columnAs[Iterable[_]]("filter(x in a.array WHERE length(x) = 3)").toList.head
         assert(List("one","two") === array.toList)
       })
   }

@@ -42,7 +42,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
 - Find the minimum and maximum leaf and connect these.
 - Return the id of the center node.""",
       queryText = """CREATE center
-foreach( x in range(1,6) : 
+foreach( x in range(1,6) |
    CREATE (leaf {count:x}), center-[:X]->leaf
 )
 WITH center
