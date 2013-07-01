@@ -45,23 +45,7 @@ class ShortArrayProperty extends FullSizeProperty
         {
             return Arrays.equals(this.value, (short[])value);
         }
-        if ( value instanceof Short[] )
-        {
-            Short[] otherValue = (Short[]) value;
-            if ( this.value.length != otherValue.length )
-            {
-                return false;
-            }
-            for (int i = 0; i < otherValue.length; i++ )
-            {
-                if ( otherValue[i] == null || this.value[i] != otherValue[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
+        return valueCompare( value, this.value );
     }
 
     @Override

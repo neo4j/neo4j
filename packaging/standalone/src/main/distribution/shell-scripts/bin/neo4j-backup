@@ -47,7 +47,7 @@ case "`uname`" in
              echo "Using Java version: $JAVA_VERSION"
            fi
            if [ -z "$JAVA_HOME" ] ; then
-             JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/${JAVA_VERSION}/Home
+             JAVA_HOME=`/usr/libexec/java_home -v 1.7`
            fi
            ;;
 esac

@@ -21,42 +21,78 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-
 import org.neo4j.index.impl.lucene.LuceneUtil;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
 import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
+import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
 {
-    private static final String NODE_ID_KEY = "_id_";
-    private static final String SINGLE_PROPERTY_KEY = "key";
+    private static final String NODE_ID_KEY = "id";
+    private static final String STRING_PROPERTY_FIELD_IDENTIFIER = "string";
+    private static final String ARRAY_PROPERTY_FIELD_IDENTIFIER = "array";
+    private static final String BOOL_PROPERTY_FIELD_IDENTIFIER = "bool";
+    private static final String NUMBER_PROPERTY_FIELD_IDENTIFIER = "number";
 
     Document newDocument( long nodeId, Object value )
     {
         Document document = newBaseDocument( nodeId );
-        document.add( new Field( NODE_ID_KEY, "" + nodeId, Field.Store.YES, NOT_ANALYZED ) );
-        document.add( instantiateField( SINGLE_PROPERTY_KEY, value, NOT_ANALYZED ) );
+        document.add( new Field( NODE_ID_KEY, "" + nodeId, YES, NOT_ANALYZED ) );
+
+        if ( value instanceof Number )
+        {
+            NumericField numberField = new NumericField( NUMBER_PROPERTY_FIELD_IDENTIFIER, NO, true );
+            numberField.setDoubleValue( ((Number) value).doubleValue() );
+            document.add( numberField );
+        }
+        else if ( value instanceof Boolean )
+        {
+            document.add( field( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            document.add( field( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
+        }
+        else
+        {
+            document.add( field( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+        }
+
         return document;
+    }
+
+    private Field field( String fieldIdentifier, String value )
+    {
+        return new Field( fieldIdentifier, value, NO, NOT_ANALYZED );
     }
 
     public Query newQuery( Object value )
     {
-        if ( value instanceof String )
-        {
-            return new TermQuery( new Term( SINGLE_PROPERTY_KEY, (String) value ) );
-        }
-        else if ( value instanceof Number )
+        if ( value instanceof Number )
         {
             Number number = (Number) value;
-            return LuceneUtil.rangeQuery( SINGLE_PROPERTY_KEY, number, number, true, true );
+            return LuceneUtil.rangeQuery( NUMBER_PROPERTY_FIELD_IDENTIFIER, number.doubleValue(),
+                    number.doubleValue(), true, true );
         }
-        throw new UnsupportedOperationException( value.toString() + ", " + value.getClass() );
+        else if ( value instanceof Boolean )
+        {
+            return new TermQuery( new Term( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            return new TermQuery( new Term( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
+        }
+        else
+        {
+            return new TermQuery( new Term( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+        }
     }
 
     public Term newQueryForChangeOrRemove( long nodeId )

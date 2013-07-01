@@ -1361,11 +1361,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def first_last_and_rest() {
-    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)
+    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, optional = false)
     test("start x = NODE(1) match p=x-[r]->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
-        matches(p1).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
         namedPaths(NamedPath("p", p1)).
         returns(
         ReturnItem(HeadFunction(NodesFunction(Identifier("p"))), "head(nodes(p))"),
@@ -1378,8 +1378,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p WHERE x.prop = 123)")
       ))
@@ -1394,14 +1394,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
       ))
   }
 
-  @Test def extract() {
-    test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+  @Test def filterWithColon() {
+    test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
         returns(
-        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
+        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
+      ))
+  }
+
+  @Test def extract() {
+    test(vAll diff List(vExperimental),
+      "start x = NODE(1) match p=x-[r]->z return extract(x in p | x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p | x.prop)")
       ))
 
     test(vExperimental, "start x = NODE(1) match p=x-[r]->z return [x in p | x.prop]",
@@ -1411,6 +1423,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
         namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
         returns(
         ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "[x in p | x.prop]")
+      ))
+  }
+
+  @Test def extractWithColon() {
+    test(vAll diff List(vExperimental),
+      "start x = NODE(1) match p=x-[r]->z return extract(x in p : x.prop)",
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        returns(
+        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), "prop")), "extract(x in p : x.prop)")
       ))
   }
 
@@ -1906,6 +1930,21 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
+    test(vPre2_0, "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", q)
+  }
+
+  @Test def foreach_on_pathOld_with_colon() {
+    val secondQ = Query.
+      updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), "touched"), Literal(true))))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("p"), "p"))
+
     test(vPre2_0, "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
@@ -1921,8 +1960,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
-    test(vFrom2_0 diff List(vExperimental),
-      "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
+    test(vFrom2_0 diff List(vExperimental), "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", q)
+  }
+
+  @Test def foreach_on_path_with_colon() {
+    val secondQ = Query.
+      updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), "touched"), True())))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("p"), "p"))
+
+    test(vFrom2_0 diff List(vExperimental), "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
   @Test def simple_read_first_and_update_next() {
@@ -2016,7 +2069,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def simple_foreach_on_path() {
-    val string = "start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) : set n.touched = true ) "
+    val string = "start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) | set n.touched = true ) "
 
     def query(literal: Expression): Query = {
       val secondQ = Query.
@@ -2163,7 +2216,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     ).returns()
 
     test(vPre2_0,
-      "create root foreach(x in [1,2,3] : create (a {number:x}))",
+      "create root foreach(x in [1,2,3] | create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
         tail(q2).
@@ -2173,7 +2226,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def foreach_with_literal_collection() {
     test(vFrom2_0 diff List(vExperimental),
-      "create root foreach(x in [1,2,3] : create (a {number:x}))",
+      "create root foreach(x in [1,2,3] | create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
         updates(ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty, false)))).
@@ -2263,7 +2316,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(AllIdentifiers())
     }
 
-    val string = "start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b"
+    val string = "start a=node(1), b=node(2) create a-[r1:KNOWS]->()-[r2:LOVES]->b"
 
     test(vFrom2_0, string, query("  UNNAMED49"))
     test(vPre2_0, string, query("  UNNAMED1"))
@@ -2292,17 +2345,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
-  @Test def undirected_relationship() {
+  @Test def undirected_relationship_1_9() {
     val string = "create (a {name:'A'})-[:KNOWS]-(b {name:'B'})"
-    def query(DIFFERENCE: (String, Boolean)): Query = Query.
-      start(CreateRelationshipStartItem(CreateRelationship(DIFFERENCE._1,
-      RelationshipEndpoint(Identifier("a"), Map("name" -> Literal("A")), Seq.empty, DIFFERENCE._2),
-      RelationshipEndpoint(Identifier("b"), Map("name" -> Literal("B")), Seq.empty, DIFFERENCE._2), "KNOWS", Map()))).
+    def query = Query.
+      start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
+      RelationshipEndpoint(Identifier("a"), Map("name" -> Literal("A")), Seq.empty, true),
+      RelationshipEndpoint(Identifier("b"), Map("name" -> Literal("B")), Seq.empty, true), "KNOWS", Map()))).
       returns()
 
-    testVariants(string, query,
-      ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED21", false) -> vFrom2_0)
+    test(v1_9, string, query)
   }
 
   @Test def relate_and_assign_to_path_identifier() {

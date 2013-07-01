@@ -42,10 +42,10 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
-import org.neo4j.server.rest.paging.Clock;
-import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.tooling.Clock;
+import org.neo4j.tooling.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.RealClock;
+import org.neo4j.tooling.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.server.ServerTestUtils.asOneLine;

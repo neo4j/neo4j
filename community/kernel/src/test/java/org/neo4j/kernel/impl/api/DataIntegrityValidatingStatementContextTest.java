@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -227,6 +228,55 @@ public class DataIntegrityValidatingStatementContextTest
         verify( inner, never() ).indexCreate( anyLong(), anyLong() );
     }
 
+    @Test
+    public void shouldDisallowNullOrEmptyPropertyKey() throws Exception
+    {
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+
+        try
+        {
+            ctx.propertyKeyGetOrCreateForName( null );
+            fail( "Should not be able to create null property key" );
+        }
+        catch ( IllegalTokenNameException e )
+        {   // good
+        }
+
+        try
+        {
+            ctx.propertyKeyGetOrCreateForName( "" );
+            fail( "Should not be able to create empty property key" );
+        }
+        catch ( IllegalTokenNameException e )
+        {   // good
+        }
+    }
+
+    @Test
+    public void shouldDisallowNullOrEmptyLabelName() throws Exception
+    {
+        StatementContext inner = mock( StatementContext.class );
+        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+
+        try
+        {
+            ctx.labelGetOrCreateForName( null );
+            fail( "Should not be able to create null label" );
+        }
+        catch ( IllegalTokenNameException e )
+        {   // good
+        }
+
+        try
+        {
+            ctx.labelGetOrCreateForName( "" );
+            fail( "Should not be able to create empty label" );
+        }
+        catch ( IllegalTokenNameException e )
+        {   // good
+        }
+    }
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
     {

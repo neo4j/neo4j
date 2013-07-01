@@ -74,6 +74,12 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
+                public boolean isEligibleForElection()
+                {
+                    return true;
+                }
+
+                @Override
                 public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return false;
@@ -136,6 +142,12 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
+                public boolean isEligibleForElection()
+                {
+                    return false;
+                }
+
+                @Override
                 public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return false;
@@ -182,6 +194,12 @@ public enum HighAvailabilityMemberState
                         throw new RuntimeException( "Cannot be transitioning to master and slave at the same time" );
                     }
                     return this;
+                }
+
+                @Override
+                public boolean isEligibleForElection()
+                {
+                    return true;
                 }
 
                 @Override
@@ -233,6 +251,12 @@ public enum HighAvailabilityMemberState
                         throw new RuntimeException( "Cannot be master and transition to slave at the same time" );
                     }
                     return this;
+                }
+
+                @Override
+                public boolean isEligibleForElection()
+                {
+                    return true;
                 }
 
                 @Override
@@ -291,6 +315,12 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
+                public boolean isEligibleForElection()
+                {
+                    return true;
+                }
+
+                @Override
                 public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return true;
@@ -303,6 +333,8 @@ public enum HighAvailabilityMemberState
                                                                    URI masterHaURI );
 
     public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, InstanceId slaveId, URI slaveUri );
+
+    public abstract boolean isEligibleForElection();
 
     public abstract boolean isAccessAllowed( HighAvailabilityMemberContext context );
 }

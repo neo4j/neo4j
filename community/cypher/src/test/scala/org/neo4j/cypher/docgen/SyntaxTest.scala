@@ -53,14 +53,14 @@ class SyntaxTest extends DocumentingTestBase {
   @Test def simple_case() {
     testThis(
       title = "Simple CASE",
-      syntax = """+CASE+ in
-    +WHEN+ value +THEN+ result
-    [+WHEN+ ...]
-    [+ELSE+ default]
-+END+""",
+      syntax = """CASE expr
+WHEN value THEN result
+[WHEN ...]
+[ELSE default]
+END""",
 
       arguments = List(
-        "in" -> "A valid expression",
+        "expr" -> "A valid expression",
         "value" -> "An expression whose result will be compared to expression",
         "result" -> "This is the result expression used if the value expression matches the in expression",
         "default" -> "The expression to use if no match is found."
@@ -81,11 +81,11 @@ END as result""",
   @Test def generic_case() {
     testThis(
       title = "Generic CASE",
-      syntax = """+CASE+
-     +WHEN+ predicate +THEN+ result
-     [+WHEN+ ...]
-     [+ELSE+ result]
-+END+""",
+      syntax = """CASE
+WHEN predicate THEN result
+[WHEN ...]
+[ELSE result]
+END""",
 
       arguments = List(
         "predicate" -> "A predicate that is tested to find a valid alternative",
@@ -100,7 +100,7 @@ END as result""",
     WHEN n.age < 40       THEN 2
                           ELSE 3
 END as result""",
-      returns = "A string.",
+      returns = "",
       assertions = (p) => assert(List(Map("result" -> 3), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toList)
     )
   }
@@ -109,7 +109,11 @@ END as result""",
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 
-*Syntax:* `%s`
+*Syntax:*
+[source,cypher]
+----
+%s
+----
 
 *Arguments:*
 

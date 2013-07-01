@@ -53,6 +53,7 @@ import org.neo4j.kernel.IndexDefinitionImpl;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalSchemaActions;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
+import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -145,6 +146,7 @@ public class BatchInserterImpl implements BatchInserter
     };
 
     private final BatchInserterImpl.BatchSchemaActions actions;
+    private final StoreLocker storeLocker;
 
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
@@ -159,6 +161,9 @@ public class BatchInserterImpl implements BatchInserter
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
         params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
+
+        storeLocker = new StoreLocker( fileSystem );
+        storeLocker.checkLock( this.storeDir );
 
         config = new Config( params, GraphDatabaseSettings.class );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
@@ -961,6 +966,16 @@ public class BatchInserterImpl implements BatchInserter
             throw new RuntimeException( e );
         }
         neoStore.close();
+
+        try
+        {
+            storeLocker.release();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Could not release store lock", e );
+        }
+
         msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         msgLog.close();
         life.shutdown();

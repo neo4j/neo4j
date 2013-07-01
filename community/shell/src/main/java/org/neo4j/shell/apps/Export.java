@@ -30,6 +30,8 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.util.json.JSONParser;
 
+import static org.neo4j.shell.TextUtil.stripFromQuotes;
+
 /**
  * Mimics the Bash application "export" and uses the client session
  * {@link Session} as the data container.
@@ -73,7 +75,8 @@ public class Export extends AbstractApp
             return Continuation.INPUT_COMPLETE;
         }
         Object value = JSONParser.parse( valueString );
-        if ( value == null || value instanceof String && value.toString().isEmpty() )
+        value = stripFromQuotesIfString( value );
+        if ( value instanceof String && value.toString().isEmpty() )
         {
             session.remove( key );
         }
@@ -84,4 +87,8 @@ public class Export extends AbstractApp
         return Continuation.INPUT_COMPLETE;
     }
 
+    private Object stripFromQuotesIfString( Object value )
+    {
+        return value instanceof String ? stripFromQuotes( value.toString() ) : value;
+    }
 }

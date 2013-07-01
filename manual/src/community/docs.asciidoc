@@ -95,8 +95,6 @@ This makes it easy to move content around, and also easy to spot (too) long sent
 == Gotchas ==
 
 * A chapter can't be empty. (the build will fail on the docbook xml validity check)
-* The document title should be "underlined" by the same
-  number of +=+ as there are characters in the title.
 * Always leave a blank line at the end of documents
   (or the title of the next document might end up in the last
   paragraph of the document)
@@ -156,6 +154,7 @@ NOTE: It's ok to have a dot right after the URL, it won't be part of the link.
   (note: the content between the `+` signs _will_ be parsed).
 * \`command` is rendered as `command` (typically used for command-line)
   (note: the content between the +`+ signs _will not_ be parsed).
+* Mono\+\+space\++d is rendered as Mono++space++d and is used for monospaced letters.
 * \'my/path/' is rendered as 'my/path/' (used for file names and paths).
 * \\``Double quoted'' (that is two grave accents to the left and two acute accents to the right) renders as ``Double quoted''.
 * \`Single quoted' (that is a single grave accent to the left and a single acute accent to the right) renders as `Single quoted'.

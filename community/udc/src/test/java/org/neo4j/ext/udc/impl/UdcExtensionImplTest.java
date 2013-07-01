@@ -19,35 +19,25 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.ext.udc.UdcConstants.EDITION;
-import static org.neo4j.ext.udc.UdcConstants.MAC;
-import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
-import static org.neo4j.ext.udc.UdcConstants.SOURCE;
-import static org.neo4j.ext.udc.UdcConstants.TAGS;
-import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
-import static org.neo4j.ext.udc.UdcConstants.VERSION;
-
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
@@ -59,6 +49,23 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.SOURCE;
+import static org.neo4j.ext.udc.UdcConstants.TAGS;
+import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
+import static org.neo4j.ext.udc.UdcConstants.VERSION;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -119,8 +126,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        GraphDatabaseService graphdb1 = createDatabase( "graphDb1", null );
-        GraphDatabaseService graphdb2 = createDatabase( "graphDb2", null );
+        GraphDatabaseService graphdb1 = createDatabase( null );
+        GraphDatabaseService graphdb2 = createDatabase( null );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -173,12 +180,54 @@ public class UdcExtensionImplTest
         server.register( "/*", handler );
         server.start();
 
-        final String hostname = server.getServiceHostName();
-        serverAddress = hostname + ":" + server.getServicePort();
+        int servicePort = server.getServicePort();
+        String serviceHostName = server.getServiceHostName();
+        serverAddress = serviceHostName + ":" + servicePort;
 
         config = new HashMap<String, String>();
         config.put( UdcSettings.first_delay.name(), "100" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
+
+        blockUntilServerAvailable( new URL( "http", serviceHostName, servicePort, "/" ) );
+    }
+
+    private void blockUntilServerAvailable( final URL url ) throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch( 1 );
+        final PointerTo<Boolean> flag = new PointerTo<Boolean>( false );
+
+        Thread t = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                while ( !flag.getValue() )
+                {
+                    try
+                    {
+                        HttpGet httpget = new HttpGet( url.toURI() );
+                        httpget.addHeader( "Accept", "application/json" );
+                        DefaultHttpClient client = new DefaultHttpClient();
+                        client.execute( httpget );
+
+                        // If we get here, the server's ready
+                        flag.setValue( true );
+                        latch.countDown();
+                    }
+                    catch ( Exception e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            }
+        } );
+
+
+        t.run();
+
+        latch.await( 1000, TimeUnit.MILLISECONDS );
+
+        t.join();
     }
 
     @Test
@@ -283,22 +332,6 @@ public class UdcExtensionImplTest
         destroy( graphdb );
     }
 
-    /*
-    @Test
-    public void shouldBeAbleToDetermineClusterFromSettings() throws Exception
-    {
-        setupServer();
-        config.put(HaSettings.cluster_name.name(),"udc-test");
-        GraphDatabaseService graphdb = createTempDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        String clusterHash = ((Integer) Math.abs("udc-test".hashCode())).toString();
-        assertEquals(clusterHash, handler.getQueryMap().get(CLUSTER_HASH));
-
-
-        destroy( graphdb );
-    }
-    */
-
     @Test
     public void shouldIncludeMacAddressInConfig() throws Exception
     {
@@ -395,27 +428,34 @@ public class UdcExtensionImplTest
     }
 
     @Test
-    public void testUdcPropertyFileKeysMatchSettings() throws Exception 
+    public void testUdcPropertyFileKeysMatchSettings() throws Exception
     {
-        Map<String, String> config = MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" ) );
-        assertEquals( "test-reg", config.get(UdcSettings.udc_registration_key.name() ) );
+        Map<String, String> config = MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc" +
+                ".properties" ) );
+        assertEquals( "test-reg", config.get( UdcSettings.udc_registration_key.name() ) );
         assertEquals( "unit-testing", config.get( UdcSettings.udc_source.name() ) );
     }
 
     @Test
-    public void shouldFilterPlusBuildNumbers() throws Exception {
-        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("1.9.0-M01+00001"), is(equalTo("1.9.0-M01")));
+    public void shouldFilterPlusBuildNumbers() throws Exception
+    {
+        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "1.9.0-M01+00001" ),
+                is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
-    public void shouldNotFilterSnapshotBuildNumbers() throws Exception {
-        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("2.0-SNAPSHOT"), is(equalTo("2.0-SNAPSHOT")));
+    public void shouldNotFilterSnapshotBuildNumbers() throws Exception
+    {
+        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "2.0-SNAPSHOT" ),
+                is( equalTo( "2.0-SNAPSHOT" ) ) );
 
     }
 
     @Test
-    public void shouldNotFilterReleaseBuildNumbers() throws Exception {
-        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
+    public void shouldNotFilterReleaseBuildNumbers() throws Exception
+    {
+        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "1.9" ),
+                is( equalTo( "1.9" ) ) );
     }
 
 
@@ -454,7 +494,7 @@ public class UdcExtensionImplTest
 
     private void assertGotPingWithRetry( Map<String, Integer> counts, Condition<Integer> condition ) throws Exception
     {
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 50; i++ )
         {
             Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();
@@ -468,11 +508,6 @@ public class UdcExtensionImplTest
     }
 
     private GraphDatabaseService createDatabase( Map<String, String> config ) throws IOException
-    {
-        return createDatabase( "db", config );
-    }
-
-    private GraphDatabaseService createDatabase( String name, Map<String, String> config ) throws IOException
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
@@ -492,4 +527,23 @@ public class UdcExtensionImplTest
         FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
     }
 
+    private static class PointerTo<T>
+    {
+        private T value;
+
+        public PointerTo( T value )
+        {
+            this.value = value;
+        }
+
+        public T getValue()
+        {
+            return value;
+        }
+
+        public void setValue( T value )
+        {
+            this.value = value;
+        }
+    }
 }

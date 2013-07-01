@@ -18,6 +18,14 @@ o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary c
 o Adds support for adding, listing, removing, and testing of labels
 o Adds support for creating, querying, and dropping label-based indexes
 
+1.9.1 (2013-06-24)
+------------------
+o Fixes bug where creating an Index with an invalid configuration would not properly clean up
+  the configuration for it.
+o Fixes race condition that occasionally would make Node.getSingleRelationship() mistakenly fail.
+o Fixes compliance for non-logback logging implementations
+o Cleanup of transactions that fail commit happens under the same lock as the commit
+
 1.9 (2013-05-13)
 ----------------
 o Performance improvement on initial loading of relationship types during startup

@@ -35,8 +35,8 @@ public class PreexistingIndexEntryConflictExceptionTest
 
         // then
         assertEquals( format( "Multiple nodes have property value 'value1':%n" +
-                "  existing node(11)%n" +
-                "  new node(22)" ), e.getMessage() );
+                "  node(11)%n" +
+                "  node(22)" ), e.getMessage() );
     }
 
     @Test
@@ -47,7 +47,7 @@ public class PreexistingIndexEntryConflictExceptionTest
 
         // then
         assertEquals( format( "Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':%n" +
-                "  existing node(11)%n" +
-                "  new node(22)" ), e.evidenceMessage("Label1", "propertyKey1") );
+                "  node(11)%n" +
+                "  node(22)" ), e.evidenceMessage("Label1", "propertyKey1") );
     }
 }

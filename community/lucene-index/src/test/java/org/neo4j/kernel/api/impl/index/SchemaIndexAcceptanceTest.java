@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.After;
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.junit.Assert.assertEquals;
@@ -68,6 +70,61 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
+    public void shouldIndexArrays() throws Exception
+    {
+        long[] arrayPropertyValue = {42, 23, 87};
+        IndexDefinition index = createIndex( label, propertyKey );
+        Transaction tx = db.beginTx();
+        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
+        tx.success();
+        tx.finish();
+
+        restart();
+
+        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new long[]{42,23} ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+    }
+
+    @Test
+    public void shouldIndexStringArrays() throws Exception
+    {
+        String[] arrayPropertyValue = {"A, B", "C"};
+        IndexDefinition index = createIndex( label, propertyKey );
+        Transaction tx = db.beginTx();
+        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
+        tx.success();
+        tx.finish();
+
+        restart();
+
+        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"} ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+    }
+
+    @Test
+    public void shouldIndexArraysPostPopulation() throws Exception
+    {
+        long[] arrayPropertyValue = {42, 23, 87};
+        Transaction tx = db.beginTx();
+        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
+        tx.success();
+        tx.finish();
+
+        IndexDefinition index = createIndex( label, propertyKey );
+
+        restart();
+
+        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23} ) ) );
+        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+    }
+
+    @Test
     public void recoveryAfterCreateAndDropIndex() throws Exception
     {
         // GIVEN
@@ -76,14 +133,14 @@ public class SchemaIndexAcceptanceTest
         doStuff( db, label, propertyKey );
         dropIndex( indexDefinition );
         doStuff( db, label, propertyKey );
-        
+
         // WHEN
         crashAndRestart();
-        
+
         // THEN
         assertEquals( emptySetOf( IndexDefinition.class ), asSet( db.schema().getIndexes( label ) ) );
     }
-    
+
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );

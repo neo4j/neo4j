@@ -21,14 +21,21 @@ package org.neo4j.kernel.ha.transaction;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.transaction.xa.XAException;
 
@@ -149,6 +156,12 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     public void stop() throws Throwable
     {
         this.slaveCommitters.shutdown();
+
+        for ( ExecutorService pullUpdateWorker : pullUpdateWorkers )
+        {
+            pullUpdateWorker.shutdown();
+            pullUpdateWorker.awaitTermination( 30, TimeUnit.SECONDS );
+        }
     }
 
     @Override
@@ -186,7 +199,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             // Start as many initial committers as needed
             for ( int i = 0; i < replicationFactor && slaveList.hasNext(); i++ )
             {
-                committers.add( slaveCommitters.submit( slaveCommitter( dataSource, identifier, slaveList.next(),
+                committers.add( slaveCommitters.submit( slaveCommitter( dataSource, slaveList.next(),
                         txId, notifier ) ) );
             }
 
@@ -213,7 +226,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                     else if ( slaveList.hasNext() )
                     // This committer failed, spawn another one
                     {
-                        toAdd.add( slaveCommitters.submit( slaveCommitter( dataSource, identifier, slaveList.next(),
+                        toAdd.add( slaveCommitters.submit( slaveCommitter( dataSource, slaveList.next(),
                                 txId, notifier ) ) );
                     }
                     toRemove.add( committer );
@@ -248,7 +261,6 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             log.logMessage( "Unknown error commit master transaction at slave", t );
         }
         finally
@@ -334,7 +346,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
     }
 
-    private Callable<Void> slaveCommitter( final XaDataSource dataSource, final int identifier,
+    private Callable<Void> slaveCommitter( final XaDataSource dataSource,
                                            final Slave slave, final long txId, final CompletionNotifier notifier )
     {
         return new Callable<Void>()
@@ -344,7 +356,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             {
                 try
                 {
-                    commitAtSlave( dataSource, identifier, slave, txId );
+                    commitAtSlave( dataSource, slave, txId );
                     return null;
                 }
                 finally
@@ -355,11 +367,95 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         };
     }
 
-    private void commitAtSlave( final XaDataSource dataSource, final int identifier, Slave slave, final long txId )
+    private Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<Integer, BlockingQueue<PullUpdateFuture>>(  );
+    private List<ExecutorService> pullUpdateWorkers = new ArrayList<ExecutorService>(  );
+
+    private void commitAtSlave( final XaDataSource dataSource, Slave slave, final long txId )
     {
-        // Go for plain ping-the-slave-to-pull-updates
-        Response<Void> response = slave.pullUpdates( dataSource.getName(), txId );
-        response.close();
+        PullUpdateFuture pullRequest = new PullUpdateFuture(slave, txId);
+
+        synchronized ( pullUpdateQueues )
+        {
+            BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
+            if (queue == null)
+            {
+                // Create queue and worker
+                queue = new ArrayBlockingQueue<PullUpdateFuture>( 100 );
+                pullUpdateQueues.put(slave.getServerId(), queue);
+
+                final ExecutorService executorService = Executors.newSingleThreadExecutor(new NamedThreadFactory( "pull-worker" ));
+                pullUpdateWorkers.add( executorService );
+                final BlockingQueue<PullUpdateFuture> finalQueue = queue;
+                executorService.submit( new Runnable()
+                {
+                    List<PullUpdateFuture> currentPulls = new ArrayList<PullUpdateFuture>();
+
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            while (true)
+                            {
+                                // Poll queue and call pullUpdate
+                                currentPulls.clear();
+                                currentPulls.add( finalQueue.take() );
+
+                                PullUpdateFuture pullRequest;
+                                while ( (pullRequest = finalQueue.poll()) != null )
+                                {
+                                    currentPulls.add( pullRequest );
+                                }
+
+                                try
+                                {
+                                    PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
+                                    Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( dataSource.getName(), pullUpdateFuture.getTxId() );
+                                    response.close();
+
+                                    // Notify the futures
+                                    for ( PullUpdateFuture currentPull : currentPulls )
+                                    {
+                                        currentPull.done();
+                                    }
+                                }
+                                catch ( Exception e )
+                                {
+                                    // Notify the futures
+                                    for ( PullUpdateFuture currentPull : currentPulls )
+                                    {
+                                        currentPull.setException( e );
+                                    }
+                                }
+                            }
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            // Quit
+                        }
+                    }
+                } );
+            }
+
+            queue.offer( pullRequest );
+        }
+
+        // Wait for pull request to finish
+        try
+        {
+            pullRequest.get();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( ExecutionException e )
+        {
+            if (e.getCause() instanceof RuntimeException)
+                throw ((RuntimeException)e.getCause());
+            else
+                throw new RuntimeException( e.getCause() );
+        }
     }
 
     public int getCurrentMasterId()
@@ -371,5 +467,49 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     public int getMyId()
     {
         return config.getServerId();
+    }
+
+    private static class PullUpdateFuture
+        extends FutureTask<Object>
+    {
+        private Slave slave;
+        private long txId;
+
+        public PullUpdateFuture( Slave slave, long txId )
+        {
+            super( new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    return null;
+                }
+            });
+            this.slave = slave;
+            this.txId = txId;
+        }
+
+        @Override
+        public void done()
+        {
+            super.set( null );
+            super.done();
+        }
+
+        @Override
+        public void setException( Throwable t )
+        {
+            super.setException( t );
+        }
+
+        public Slave getSlave()
+        {
+            return slave;
+        }
+
+        private long getTxId()
+        {
+            return txId;
+        }
     }
 }

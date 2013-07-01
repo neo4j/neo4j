@@ -23,7 +23,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
+import org.neo4j.tooling.FakeClock;
 
 public class LeaseManagerTest
 {
@@ -58,7 +61,7 @@ public class LeaseManagerTest
 
         Lease lease = manager.createLease( 120, mock( PagedTraverser.class ) );
 
-        fakeClock.forwardMinutes( 1 );
+        fakeClock.forward( 1, TimeUnit.MINUTES );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 
@@ -72,7 +75,7 @@ public class LeaseManagerTest
 
         Lease lease = manager.createLease( SIXTY_SECONDS, mock( PagedTraverser.class ) );
 
-        fakeClock.forwardMinutes( 2 );
+        fakeClock.forward( 2, TimeUnit.MINUTES );
 
         assertNull( manager.getLeaseById( lease.getId() ) );
     }
@@ -86,7 +89,7 @@ public class LeaseManagerTest
         Lease leaseA = manager.createLease( SIXTY_SECONDS, mock( PagedTraverser.class ) );
         Lease leaseB = manager.createLease( SIXTY_SECONDS * 3, mock( PagedTraverser.class ) );
 
-        fakeClock.forwardMinutes( 2 );
+        fakeClock.forward( 2, TimeUnit.MINUTES );
 
         assertNotNull( manager.getLeaseById( leaseB.getId() ) );
         assertNull( manager.getLeaseById( leaseA.getId() ) );

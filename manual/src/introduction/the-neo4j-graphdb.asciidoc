@@ -272,7 +272,12 @@ Once you’ve specified which properties to index, Neo4j will make sure your ind
 Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
 
 Indexes in Neo4j are _eventually available_. That means that when you first create an index, the operation returns immediately.
-The index is not immediately available for querying, however. The new index will be created in the background, and eventually come online.
+The index is *populating* in the background and so is not immediately available for querying.
+When the index has been fully populated it will eventually come *online*. That means that it is now ready to be used in
+queries.
+
+If something should go wrong with the index, it can end up in a *failed* state. When it is failed, it will not be used
+to speed up queries. To rebuild it, you can drop and recreate the index. Look at logs for clues about the failure.
 
 You can track the status of your index by asking for the index state through the API you are using.
 Note, however, that this is not yet possible through cypher.
