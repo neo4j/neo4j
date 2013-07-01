@@ -185,7 +185,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def set_a_property_to_an_empty_collection() {
     createNode("Andres")
 
-    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create ({x : names})")
+    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -234,7 +234,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
 start a = node(1), c = node(3)
 match p=a-->b-->c
 with p
-foreach(n in nodes(p) :
+foreach(n in nodes(p) |
   set n.marked = true
 )
             """
@@ -326,7 +326,7 @@ foreach(n in nodes(p) :
   def create_node_and_rel_in_foreach() {
     parseAndExecute("""
 create center
-foreach(x in range(1,10) :
+foreach(x in range(1,10) |
   create (leaf1 {number : x}) , center-[:X]->leaf1
 )
 return distinct center""")
@@ -334,7 +334,7 @@ return distinct center""")
 
   @Test
   def extract_on_arrays() {
-    val result = parseAndExecute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x : i/2.0) as x""")
+    val result = parseAndExecute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x""")
     assert(result.toList === List(Map("x" -> List(0.5, 1.0, 1.5))))
   }
 
@@ -450,7 +450,7 @@ return distinct center""")
   @Test
   def delete_and_delete_again() {
     createNode()
-    val result = parseAndExecute("start a=node(1) delete a foreach( x in [1] : delete a)")
+    val result = parseAndExecute("start a=node(1) delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -510,14 +510,14 @@ return distinct center""")
 
   @Test
   def can_create_anonymous_nodes_inside_foreach() {
-    val result = parseAndExecute("start me=node(0) foreach (i in range(1,10) : create me-[:FRIEND]->())")
+    val result = parseAndExecute("start me=node(0) foreach (i in range(1,10) | create me-[:FRIEND]->())")
 
     assert(result.toList === List())
   }
 
   @Test
   def should_be_able_to_use_external_identifiers_inside_foreach() {
-    val result = parseAndExecute("start a=node(0), b=node(0) foreach(x in [b] : create x-[:FOO]->a) ")
+    val result = parseAndExecute("start a=node(0), b=node(0) foreach(x in [b] | create x-[:FOO]->a) ")
 
     assert(result.toList === List())
   }

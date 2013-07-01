@@ -28,8 +28,8 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[Seq[UpdateAction]]=
     rep(foreach | set | remove | delete) ^^ { x => x.flatten }
 
-  private def foreach: Parser[Seq[UpdateAction]] = FOREACH ~> parens( identity ~ IN ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) ) ^^ {
-    case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates =>
+  private def foreach: Parser[Seq[UpdateAction]] = FOREACH ~> parens( identity ~ IN ~ expression ~ (":" | "|") ~ opt(createStart) ~ opt(updates) ) ^^ {
+    case id ~ _ ~ collection ~ _ ~ creates ~ innerUpdates =>
       val createCmds: Seq[UpdateAction] = creates.toSeq.map(_._1.map(_.asInstanceOf[UpdatingStartItem].updateAction)).flatten
       val updateCmds = innerUpdates.toSeq.flatten.toSeq
 

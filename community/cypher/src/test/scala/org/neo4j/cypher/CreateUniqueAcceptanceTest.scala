@@ -359,7 +359,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val result = parseAndExecute("""
 START root = node(1)
 CREATE book
-FOREACH(name in ['a','b','c'] :
+FOREACH(name in ['a','b','c'] |
   CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book
 )
 return book
@@ -392,7 +392,7 @@ return book
 
     val result = parseAndExecute("""
 START root = node(1)
-FOREACH(name in ['a','b','c'] :
+FOREACH(name in ['a','b','c'] |
   CREATE UNIQUE root-[:tag]->(tag {name:name})
 )
 """)
@@ -455,8 +455,8 @@ RETURN x""")
     val result = parseAndExecute("""
 START a = node(*)
 WITH collect(a) as nodes
-FOREACH( x in nodes :
-      FOREACH( y in nodes :
+FOREACH( x in nodes |
+      FOREACH( y in nodes |
           CREATE UNIQUE x-[:FOO]->y
       )
 )""")

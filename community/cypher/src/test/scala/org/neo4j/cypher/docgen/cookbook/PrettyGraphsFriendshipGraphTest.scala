@@ -36,7 +36,7 @@ class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
       text =
 """This query first creates a center node, and then once per element in the range, creates a cycle graph and connects it to the center""",
       queryText = """CREATE center
-foreach( x in range(1,3) : 
+foreach( x in range(1,3) |
    CREATE leaf1, leaf2, center-[:X]->leaf1, center-[:X]->leaf2, leaf1-[:X]->leaf2
 )
 RETURN ID(center) as id""",

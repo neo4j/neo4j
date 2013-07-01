@@ -25,7 +25,7 @@ not a Scalar expression.
 Lastly, an expression has dependencies on what identifiers exists in the symbol table,
 and their types. An example is always in place:
 
-+`LENGTH(FILTER(n in nodes(p) : n.prop = 'foo'))`+
++`LENGTH(FILTER(n in nodes(p) WHERE n.prop = 'foo'))`+
 
 In this expression, LENGTH has an expectation on FILTER, and FILTER has one on NODES,
 and so one. But the dependency on identifiers on the symbol table is just one - it has
