@@ -20,7 +20,6 @@
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
     <jta.version>1.1.1</jta.version>
-    <cuke4duke.version>0.4.4</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
@@ -301,12 +300,6 @@
         <artifactId>httpclient</artifactId>
         <version>4.0.1</version>
         <classifier>tests</classifier>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>cuke4duke</groupId>
-        <artifactId>cuke4duke</artifactId>
-        <version>${cuke4duke.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>

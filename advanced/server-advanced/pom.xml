@@ -48,9 +48,6 @@
       which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
-    <!-- For cucumber "feature" tests -->
-    <cukeArgs />
-
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
@@ -467,13 +464,6 @@
       </releases>
     </repository>
   </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>cukes</id>
-      <url>http://cukes.info/maven</url>
-    </pluginRepository>
-  </pluginRepositories>
 
   <distributionManagement>
     <site>
