@@ -22,6 +22,8 @@ package org.neo4j.server.rest.paging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.tooling.Clock;
+
 public class LeaseManager
 {
     private Clock clock;
@@ -65,7 +67,7 @@ public class LeaseManager
             try
             {
                 Lease lease = leases.get( key );
-                if ( lease.getStartTime() + lease.getPeriod() < clock.currentTimeInMilliseconds() )
+                if ( lease.getStartTime() + lease.getPeriod() < clock.currentTimeMillis() )
                 {
                     remove( key );
                 }

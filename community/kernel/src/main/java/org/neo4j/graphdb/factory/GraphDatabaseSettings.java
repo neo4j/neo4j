@@ -70,7 +70,7 @@ public abstract class GraphDatabaseSettings
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
     @Title("Read only database")
-    @Description("Only allow read operations from this Neo4j instance.")
+    @Description("Only allow read operations from this Neo4j instance. This mode still requires write access to the directory for lock purposes")
     public static final BooleanSetting read_only = new BooleanSetting( setting( "read_only", BOOLEAN, FALSE ));
 
     @Description("The type of cache to use for nodes and relationships. "

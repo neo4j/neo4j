@@ -25,17 +25,15 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.{CouldNotCreateConstraintException, EntityNotFoundException, CouldNotDropIndexException,
-IndexAlreadyDefinedException}
+import org.neo4j.cypher._
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.kernel.api.operations.KeyNameLookup
+import org.neo4j.kernel.api.exceptions.{KernelException, LabelNotFoundKernelException}
+import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
 import scala.Some
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException
-import org.neo4j.kernel.api.exceptions.schema.{ConstraintCreationKernelException, DropIndexFailureException,
-SchemaKernelException}
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
@@ -204,13 +202,18 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     try {
       ctx.uniquenessConstraintCreate(labelId, propertyKeyId)
     } catch {
-        case e: ConstraintCreationKernelException =>
+        case e: KernelException =>
           throw new CouldNotCreateConstraintException(e.getUserMessage(new KeyNameLookup(ctx)), e)
     }
   }
 
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    val constraint = IteratorUtil.single(ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    val constraint = IteratorUtil.singleOrNull(ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId))
+
+    if (constraint == null) {
+      throw new MissingConstraintException()
+    }
+
     ctx.constraintDrop(constraint)
   }
 }

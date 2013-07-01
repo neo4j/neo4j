@@ -21,9 +21,11 @@ package org.neo4j.shell;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 public class TextUtil
 {
@@ -152,5 +154,74 @@ public class TextUtil
         while ( command.length() > 0 && command.charAt( 0 ) == ' ' ) command = command.substring( 1 );
         while ( command.length() > 0 && command.charAt( command.length()-1 ) == ' ' ) command = command.substring( 0, command.length()-1 );
         return command;
+    }
+
+    /**
+     * Tokenizes a string, regarding quotes.
+     *
+     * @param string the string to tokenize.
+     * @return the tokens from the line.
+     */
+    public static String[] tokenizeStringWithQuotes( String string )
+    {
+        return tokenizeStringWithQuotes( string, true );
+    }
+
+    /**
+     * Tokenizes a string, regarding quotes. Examples:
+     * 
+     * o '"One two"'              ==> [ "One two" ]
+     * o 'One two'                ==> [ "One", "two" ]
+     * o 'One "two three" four'   ==> [ "One", "two three", "four" ]
+     *
+     * @param string the string to tokenize.
+     * @param trim  whether or not to trim each token.
+     * @return the tokens from the line.
+     */
+    public static String[] tokenizeStringWithQuotes( String string, boolean trim )
+    {
+        if ( trim )
+        {
+            string = string.trim();
+        }
+        ArrayList<String> result = new ArrayList<String>();
+        string = string.trim();
+        boolean inside = string.startsWith( "\"" );
+        StringTokenizer quoteTokenizer = new StringTokenizer( string, "\"" );
+        while ( quoteTokenizer.hasMoreTokens() )
+        {
+            String token = quoteTokenizer.nextToken();
+            if ( trim )
+            {
+                token = token.trim();
+            }
+            if ( token.length() == 0 )
+            {
+                // Skip it
+            }
+            else if ( inside )
+            {
+                // Don't split
+                result.add( token );
+            }
+            else
+            {
+                Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, false ) );
+            }
+            inside = !inside;
+        }
+        return result.toArray( new String[result.size()] );
+    }
+    
+    public static String stripFromQuotes( String string )
+    {
+        if ( string != null )
+        {
+            if ( string.startsWith( "\"" ) && string.endsWith( "\"" ) )
+            {
+                return string.substring( 1, string.length()-1 );
+            }
+        }
+        return string;
     }
 }

@@ -45,23 +45,7 @@ class DoubleArrayProperty extends FullSizeProperty
         {
             return Arrays.equals(this.value, (double[])value);
         }
-        if ( value instanceof Double[] )
-        {
-            Double[] otherValue = (Double[]) value;
-            if ( this.value.length != otherValue.length )
-            {
-                return false;
-            }
-            for (int i = 0; i < otherValue.length; i++ )
-            {
-                if ( otherValue[i] == null || this.value[i] != otherValue[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
+        return valueCompare( this.value, value );
     }
 
 

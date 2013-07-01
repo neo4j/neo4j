@@ -34,7 +34,7 @@ class ReturnTest extends DocumentingTestBase {
   @Test def returnNode() {
     testQuery(
       title = "Return nodes",
-      text = "To return a node, list it in the `RETURN` statemenet.",
+      text = "To return a node, list it in the `RETURN` statement.",
       queryText = """match n where n.name='B' return n""",
       returns = """The example will return the node.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))

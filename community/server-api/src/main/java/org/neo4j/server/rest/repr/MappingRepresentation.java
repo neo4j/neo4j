@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
-import java.util.Map;
 
 public abstract class MappingRepresentation extends Representation
 {
@@ -56,20 +55,5 @@ public abstract class MappingRepresentation extends Representation
     void putTo( MappingSerializer serializer, String key )
     {
         serializer.putMapping( key, this );
-    }
-
-    public static MappingRepresentation stringMap(String type, final Map<String,String> map)
-    {
-        return new MappingRepresentation(type)
-        {
-            @Override
-            protected void serialize( final MappingSerializer serializer )
-            {
-                for(Map.Entry<String,String> pair : map.entrySet())
-                {
-                    serializer.putString( pair.getKey(), pair.getValue() );
-                }
-            }
-        };
     }
 }

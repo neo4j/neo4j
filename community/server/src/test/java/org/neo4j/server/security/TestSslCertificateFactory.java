@@ -27,6 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -42,8 +44,8 @@ public class TestSslCertificateFactory
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
 
         // Attempt to load certificate
-        Certificate c = sslFactory.loadCertificate( cPath );
-        assertThat( c, notNullValue() );
+        Certificate[] certificates = sslFactory.loadCertificates( cPath );
+        assertThat( certificates.length, is( greaterThan( 0 ) ) );
 
         // Attempt to load private key
         PrivateKey pk = sslFactory.loadPrivateKey( pkPath );

@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.RealClock;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -114,7 +115,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
-        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels )
+        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, new RealClock() ),
+                new LoggingResourcePoolMonitor())
         {
             @Override
             protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()
@@ -126,7 +129,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 {
                     channel = Triplet.of( channelFuture.getChannel(),
                             ChannelBuffers.dynamicBuffer(),
-                            ByteBuffer.allocateDirect( 1024 * 1024 ) );
+                            ByteBuffer.allocate( 1024 * 1024 ) );
                     msgLog.logMessage( "Opened a new channel to " + address, true );
                     return channel;
                 }
@@ -433,5 +436,26 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
     {
         mismatchingVersionHandlers.add( toAdd );
+    }
+
+    private class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<Triplet<Channel, ChannelBuffer, ByteBuffer>>
+    {
+        @Override
+        public void updatedCurrentPeakSize( int currentPeakSize )
+        {
+            msgLog.debug( "ResourcePool updated currentPeakSize to " + currentPeakSize );
+        }
+
+        @Override
+        public void created( Triplet<Channel, ChannelBuffer, ByteBuffer> resource  )
+        {
+            msgLog.debug( "ResourcePool create resource " + resource );
+        }
+
+        @Override
+        public void updatedTargetSize( int targetSize )
+        {
+            msgLog.debug( "ResourcePool updated targetSize to " + targetSize );
+        }
     }
 }

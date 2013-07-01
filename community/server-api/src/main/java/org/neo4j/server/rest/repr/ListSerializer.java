@@ -46,11 +46,6 @@ public class ListSerializer extends Serializer
         writer.writeString( value );
     }
 
-    public void addBoolean( boolean value )
-    {
-        writer.writeBoolean( value );
-    }
-
     public void addMapping( MappingRepresentation value )
     {
         serialize( writer.newMapping( value.type ), value );
@@ -73,5 +68,4 @@ public class ListSerializer extends Serializer
             writer.writeInteger( RepresentationType.valueOf( value.getClass() ), value.longValue() );
         }
     }
-
 }

@@ -44,6 +44,17 @@ final class SmallLongProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Integer )
+        {
+            return value == (int)other;
+        }
+
+        return valueCompare( value, other );
+    }
+
+    @Override
     boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((SmallLongProperty) that).value;

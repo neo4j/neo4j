@@ -27,10 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+
+import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
 
 /**
  * Executes groovy scripts purely via reflection
@@ -73,8 +74,7 @@ public abstract class ScriptExecutor
 		Map<String, Object> properties, String line, String[] paths )
 		throws Exception
 	{
-		ArgReader reader = new ArgReader(
-			AppCommandParser.tokenizeStringWithQuotes( line ) );
+		ArgReader reader = new ArgReader( tokenizeStringWithQuotes( line ) );
 		while ( reader.hasNext() )
 		{
 			String arg = reader.next();
@@ -159,7 +159,7 @@ public abstract class ScriptExecutor
 		private static final int START_INDEX = -1;
 		
 		private int index = START_INDEX;
-		private String[] args;
+		private final String[] args;
 		private Integer mark;
 		
 		ArgReader( String[] args )
@@ -167,12 +167,14 @@ public abstract class ScriptExecutor
 			this.args = args;
 		}
 		
-		public boolean hasNext()
+		@Override
+        public boolean hasNext()
 		{
 			return this.index + 1 < this.args.length;
 		}
 		
-		public String next()
+		@Override
+        public String next()
 		{
 			if ( !hasNext() )
 			{
@@ -194,7 +196,8 @@ public abstract class ScriptExecutor
 			}
 		}
 		
-		public void remove()
+		@Override
+        public void remove()
 		{
 			throw new UnsupportedOperationException();
 		}

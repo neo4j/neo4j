@@ -44,6 +44,16 @@ final class ShortProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
+    public boolean valueEquals( Object other )
+    {
+        if ( other instanceof Short )
+        {
+            return value == (short)other;
+        }
+
+        return valueCompare( value, other );
+    }
+    @Override
     boolean hasEqualValue( NumberPropertyWithin4Bytes that )
     {
         return value == ((ShortProperty) that).value;
@@ -66,7 +76,7 @@ final class ShortProperty extends NumberPropertyWithin4Bytes
     {
         return value;
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()

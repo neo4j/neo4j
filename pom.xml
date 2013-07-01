@@ -20,11 +20,11 @@
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
     <jta.version>1.1.1</jta.version>
-    <cuke4duke.version>0.4.4</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
+    <powermock.version>1.4.12</powermock.version>
   </properties>
 
   <modules>
@@ -303,12 +303,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>cuke4duke</groupId>
-        <artifactId>cuke4duke</artifactId>
-        <version>${cuke4duke.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.picocontainer</groupId>
         <artifactId>picocontainer</artifactId>
         <version>${pico.version}</version>
@@ -318,6 +312,18 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-all</artifactId>
         <version>1.9.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-module-junit4</artifactId>
+        <version>${powermock.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-api-mockito</artifactId>
+        <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
 

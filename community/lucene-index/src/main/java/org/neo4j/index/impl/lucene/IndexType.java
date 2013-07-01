@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,6 +42,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
 
 public abstract class IndexType
 {
@@ -310,7 +310,7 @@ public abstract class IndexType
     
     public static Fieldable instantiateField( String key, Object value, Index analyzed )
     {
-        Fieldable field = null;
+        Fieldable field;
         if ( value instanceof Number )
         {
             Number number = (Number) value;

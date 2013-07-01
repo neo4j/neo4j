@@ -66,7 +66,7 @@ function createCypherConsoles( $ )
   $('p.cypherdoc-console').first().each( function()
   {
     var context = $( this );
-    var url = getUrl( "none", "none", "\n\nClick the play buttons to run the queries!" ) + "&no_root=true";
+    var url = getUrl( "none", "none", "\n\nClick the play buttons to run the queries!" );
     var iframe = $( "<iframe/>" ).attr( "id", "cypherdoc-console" ).addClass( "cypherdoc-console" ).attr( "src", url );
     context.append( iframe );
     context.height( iframe.height() );
@@ -113,7 +113,7 @@ function createCypherConsoles( $ )
     {
       url += "&version=" + encodeURIComponent( neo4jVersion );
     }
-    return url;
+    return url + "&no_root=true";
   }
   
   function handleCypherClick( button, link, url, title )

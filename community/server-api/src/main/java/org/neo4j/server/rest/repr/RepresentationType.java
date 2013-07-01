@@ -33,6 +33,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 public final class RepresentationType
 {
     private static final Map<Class<?>, Class<?>> boxed = new HashMap<Class<?>, Class<?>>();
+
     static
     {
         boxed.put( byte.class, Byte.class );
@@ -44,44 +45,46 @@ public final class RepresentationType
         boxed.put( double.class, Double.class );
         boxed.put( boolean.class, Boolean.class );
     }
+
     private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
     private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
     // Graph database types
     public static final RepresentationType
-            GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),//
-            NODE = new RepresentationType( "node", "nodes", Node.class ),//
-            RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),//
-            PATH = new RepresentationType( "path", "paths", Path.class ),//
-            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class), //
-            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),//
-            PROPERTIES = new RepresentationType( "properties" ),//
-            INDEX = new RepresentationType( "index" ),//
-            NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
-            RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),//
-            INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),//
-            CONSTRAINT_DEFINITION = new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class ),//
-            PLUGINS = new RepresentationType( "plugins" ),//
-            PLUGIN = new RepresentationType( "plugin" ),//
-            PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),//
-            SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null ),//
-            PLUGIN_PARAMETER = new RepresentationType( "plugin-parameter", "plugin-parameter-list" ),//
+            GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),
+            NODE = new RepresentationType( "node", "nodes", Node.class ),
+            RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),
+            PATH = new RepresentationType( "path", "paths", Path.class ),
+            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class),
+            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),
+            PROPERTIES = new RepresentationType( "properties" ),
+            INDEX = new RepresentationType( "index" ),
+            NODE_INDEX_ROOT = new RepresentationType( "node-index" ),
+            RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),
+            INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),
+            CONSTRAINT_DEFINITION = new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class ),
+            PLUGINS = new RepresentationType( "plugins" ),
+            PLUGIN = new RepresentationType( "plugin" ),
+            PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),
+            SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null ),
+            PLUGIN_PARAMETER = new RepresentationType( "plugin-parameter", "plugin-parameter-list" ),
             // Value types
-            URI = new RepresentationType( "uri", null ),//
-            TEMPLATE = new RepresentationType( "uri-template" ),//
-            STRING = new RepresentationType( "string", "strings", String.class ),//
+            URI = new RepresentationType( "uri", null ),
+            TEMPLATE = new RepresentationType( "uri-template" ),
+            STRING = new RepresentationType( "string", "strings", String.class ),
             // primitives
-            BYTE = new RepresentationType( "byte", "bytes", byte.class ),//
-            CHAR = new RepresentationType( "character", "characters", char.class ),//
-            SHORT = new RepresentationType( "short", "shorts", short.class ),//
-            INTEGER = new RepresentationType( "integer", "integers", int.class ),//
-            LONG = new RepresentationType( "long", "longs", long.class ),//
-            FLOAT = new RepresentationType( "float", "floats", float.class ),//
-            DOUBLE = new RepresentationType( "double", "doubles", double.class ),//
-            BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),//
-            NOTHING = new RepresentationType( "void", null ),//
+            BYTE = new RepresentationType( "byte", "bytes", byte.class ),
+            CHAR = new RepresentationType( "character", "characters", char.class ),
+            SHORT = new RepresentationType( "short", "shorts", short.class ),
+            INTEGER = new RepresentationType( "integer", "integers", int.class ),
+            LONG = new RepresentationType( "long", "longs", long.class ),
+            FLOAT = new RepresentationType( "float", "floats", float.class ),
+            DOUBLE = new RepresentationType( "double", "doubles", double.class ),
+            BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),
+            NOTHING = new RepresentationType( "void", null ),
             // System
             EXCEPTION = new RepresentationType( "exception" ),
             MAP = new RepresentationType( "map", "maps", Map.class );
+
 
     final String valueName;
     final String listName;
@@ -97,19 +100,28 @@ public final class RepresentationType
         this.valueName = valueName;
         this.listName = listName;
         this.extend = extend;
-        if ( valueName != null ) types.put( valueName.replace( "-", "" ), this );
+        if ( valueName != null )
+        {
+            types.put( valueName.replace( "-", "" ), this );
+        }
         if ( extend != null )
         {
             extended.put( extend, this );
-            if ( extend.isPrimitive() ) extended.put( boxed.get( extend ), this );
+            if ( extend.isPrimitive() )
+            {
+                extended.put( boxed.get( extend ), this );
+            }
         }
     }
 
     RepresentationType( String type )
     {
-        if ( type == null ) throw new IllegalArgumentException( "type may not be null" );
+        if ( type == null )
+        {
+            throw new IllegalArgumentException( "type may not be null" );
+        }
         this.valueName = type;
-        this.listName = type+"s";
+        this.listName = type + "s";
         this.extend = null;
     }
 
@@ -127,7 +139,10 @@ public final class RepresentationType
     @Override
     public int hashCode()
     {
-        if ( valueName == null ) return listName.hashCode();
+        if ( valueName == null )
+        {
+            return listName.hashCode();
+        }
         return valueName.hashCode();
     }
 

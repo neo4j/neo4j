@@ -68,7 +68,6 @@ public class ToFileStoreWriter implements StoreWriter
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             throw new IOException( t );
         }
     }
