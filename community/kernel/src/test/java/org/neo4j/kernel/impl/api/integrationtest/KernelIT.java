@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -124,12 +125,12 @@ public class KernelIT extends KernelIntegrationTest
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         Transaction outerTx = db.beginTx();
         TransactionContext tx = kernel.newTransactionContext();
-        StatementContext statement = tx.newStatementContext();
+        StatementContextParts statement = tx.newStatementContext();
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.labelGetOrCreateForName( "labello" );
-        statement.nodeAddLabel( node.getId(), labelId );
+        long labelId = statement.keyWriteOperations().labelGetOrCreateForName( "labello" );
+        statement.entityWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.commit();
         outerTx.finish();

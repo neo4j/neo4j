@@ -42,7 +42,7 @@ public interface TransactionContext
      *
      * @return a new {@link StatementContext} to do operations on.
      */
-    StatementContext newStatementContext();
+    StatementContextParts newStatementContext();
 
     // NOTE: The below methods don't yet do actual transaction work, that is still carried by
     //       the old TransactionImpl, WriteTransaction and friends.

@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -70,10 +71,10 @@ public class KernelTest
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         db.beginTx();
         TransactionContext tx = kernelAPI.newTransactionContext();
-        StatementContext ctx = tx.newStatementContext();
+        StatementContextParts ctx = tx.newStatementContext();
         try
         {
-            ctx.uniquenessConstraintCreate( 1, 1 );
+            ctx.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
             fail("expected exception here");
         }
         catch ( UnsupportedSchemaModificationException e )

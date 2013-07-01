@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -54,15 +54,16 @@ public class RemoveOrphanConstraintIndexesOnStartup
             boolean success = false;
             try
             {
-                StatementContext context = tx.newStatementContext();
+                StatementContextParts context = tx.newStatementContext();
                 try
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.uniqueIndexesGetAll(); indexes.hasNext(); )
+                    for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll();
+                            indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.indexGetOwningUniquenessConstraintId( index ) == null )
+                        if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                         {
-                            context.uniqueIndexDrop( index );
+                            context.schemaWriteOperations().uniqueIndexDrop( index );
                         }
                     }
                 }

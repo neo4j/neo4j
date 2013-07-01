@@ -338,7 +338,14 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     {
         return properties.values().iterator();
     }
-
+    
+    @Override
+    protected Property getCachedProperty( int key )
+    {
+        Property property = properties.get( key );
+        return property != null ? property : Property.noGraphProperty( key );
+    }
+    
     @Override
     protected PropertyData getPropertyForIndex( int keyId )
     {

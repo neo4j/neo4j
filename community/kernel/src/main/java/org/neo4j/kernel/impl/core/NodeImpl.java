@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
@@ -744,5 +745,11 @@ public class NodeImpl extends ArrayBasedPrimitive
             }
             labels = newLabels;
         }
+    }
+    
+    @Override
+    protected Property noProperty( long key )
+    {
+        return Property.noNodeProperty( getId(), key );
     }
 }

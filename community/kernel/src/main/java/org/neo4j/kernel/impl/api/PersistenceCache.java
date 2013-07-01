@@ -140,14 +140,32 @@ public class PersistenceCache
         return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
     
+    public Property nodeGetProperty( long nodeId, long propertyKeyId, CacheLoader<Iterator<Property>> cacheLoader )
+            throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getProperty( cacheLoader, NODE_CACHE_SIZE_LISTENER, (int) propertyKeyId );
+    }
+    
     public Iterator<Property> relationshipGetProperties( long relationshipId,
             CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperties( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER );
     }
 
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId,
+            CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
+    {
+        return getRelationship( relationshipId ).getProperty( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
+                (int) propertyKeyId );
+    }
+    
     public Iterator<Property> graphGetProperties( CacheLoader<Iterator<Property>> cacheLoader )
     {
         return graphProperties.evaluate().getProperties( cacheLoader, NO_UPDATES );
+    }
+
+    public Property graphGetProperty( CacheLoader<Iterator<Property>> cacheLoader, long propertyKeyId )
+    {
+        return graphProperties.evaluate().getProperty( cacheLoader, NO_UPDATES, (int) propertyKeyId );
     }
 }

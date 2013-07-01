@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.impl.api.DiffSets;
+import java.io.Closeable;
 
-public final class NodeState extends PropertyContainerState
+public interface LifecycleOperations extends Closeable
 {
-    private DiffSets<Long> labelDiffSets;
-
-    public NodeState( long id )
-    {
-        super( id );
-    }
-
-    public DiffSets<Long> getLabelDiffSets()
-    {
-        if ( null == labelDiffSets )
-        {
-            labelDiffSets = new DiffSets<Long>();
-        }
-        return labelDiffSets;
-    }
+    /**
+     * Closes this statement. Statements must be closed when done and before
+     * their parent transaction finishes.
+     * As an example statement-bound locks can be released when closing
+     * a statement.
+     */
+    @Override
+    void close();
+    
+    boolean isOpen();
 }

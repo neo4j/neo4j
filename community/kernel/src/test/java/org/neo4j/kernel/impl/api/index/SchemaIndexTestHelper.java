@@ -27,10 +27,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
 import org.neo4j.helpers.FutureAdapter;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -113,7 +113,7 @@ public class SchemaIndexTestHelper
         }
     }
     
-    public static void awaitIndexOnline( StatementContext ctx, IndexDescriptor indexRule ) 
+    public static void awaitIndexOnline( SchemaReadOperations ctx, IndexDescriptor indexRule ) 
             throws IndexNotFoundKernelException
     {
 

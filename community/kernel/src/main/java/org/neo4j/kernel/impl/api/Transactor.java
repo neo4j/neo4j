@@ -25,7 +25,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -37,7 +37,7 @@ public class Transactor
 {
     public interface Statement<RESULT, FAILURE extends KernelException>
     {
-        RESULT perform( StatementContext statementContext ) throws FAILURE;
+        RESULT perform( StatementContextParts statementContext ) throws FAILURE;
     }
 
     private final AbstractTransactionManager txManager;
@@ -60,7 +60,7 @@ public class Transactor
             try
             {
                 RESULT result;
-                StatementContext context = tx.newStatementContext();
+                StatementContextParts context = tx.newStatementContext();
                 try
                 {
                     result = statement.perform( context );

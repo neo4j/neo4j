@@ -29,8 +29,6 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.impl.api.CompositeStatementContext;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -42,6 +40,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -58,25 +57,11 @@ public class StateHandlingStatementContextTest
     @Test
     public void shouldNeverDelegateWrites() throws Exception
     {
-        // Given
-        StatementContext hatesWritesCtx = new CompositeStatementContext()
-        {
-            @Override
-            protected void beforeWriteOperation()
-            {
-                throw new RuntimeException( "RAWR SO ANGRY, HOW DID YOU GET THIS NUMBER DONT EVER CALL ME AGAIN" );
-            }
+        StatementContext inner = mock( StatementContext.class );
 
-            @Override
-            public boolean nodeHasLabel( long nodeId, long labelId )
-            {
-                return false;
-            }
-        };
-
-        StateHandlingStatementContext ctx = new StateHandlingStatementContext( hatesWritesCtx,
-                mock( SchemaStateOperations.class ), mock( TxState.class ), mock( ConstraintIndexCreator.class ),
-                mock( AuxiliaryStoreOperations.class ) );
+        StateHandlingStatementContext ctx = new StateHandlingStatementContext( inner, inner,
+                mock( AuxiliaryStoreOperations.class ),
+                mock( TxState.class ), mock( ConstraintIndexCreator.class ) );
 
         // When
         ctx.indexCreate( 0l, 0l );
@@ -91,7 +76,8 @@ public class StateHandlingStatementContextTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        // Then no exception should have been thrown
+        verify( inner, times( 2 ) ).nodeHasLabel( 0l, 0l );
+        verifyNoMoreInteractions( inner );
     }
 
     @Test
@@ -102,9 +88,8 @@ public class StateHandlingStatementContextTest
         StatementContext delegate = mock( StatementContext.class );
         when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( asList( constraint ) ) );
         TxState state = mock( TxState.class );
-        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
-                mock( AuxiliaryStoreOperations.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate, delegate,
+                mock( AuxiliaryStoreOperations.class ), state, mock( ConstraintIndexCreator.class ) );
 
         // when
         context.uniquenessConstraintCreate( 10, 66 );
@@ -124,9 +109,8 @@ public class StateHandlingStatementContextTest
         when( delegate.constraintsGetForLabelAndPropertyKey( 10, 66 ) ).thenAnswer( asAnswer( Collections.emptyList() ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
-                mock( AuxiliaryStoreOperations.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate, delegate,
+                mock( AuxiliaryStoreOperations.class ), state, mock( ConstraintIndexCreator.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
 
         // when
@@ -150,9 +134,8 @@ public class StateHandlingStatementContextTest
         when( delegate.constraintsGetForLabel( 11 ) ).thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
-                mock( AuxiliaryStoreOperations.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate, delegate,
+                mock( AuxiliaryStoreOperations.class ), state, mock( ConstraintIndexCreator.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
         context.uniquenessConstraintCreate( 11, 99 );
 
@@ -163,7 +146,6 @@ public class StateHandlingStatementContextTest
         assertEquals( asSet( constraint1, constraint2 ), result );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldGetAllConstraints() throws Exception
     {
@@ -177,9 +159,8 @@ public class StateHandlingStatementContextTest
         when( delegate.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
         TxState state = new TxState( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate,
-                mock( SchemaStateOperations.class ), state, mock( ConstraintIndexCreator.class ),
-                mock( AuxiliaryStoreOperations.class ) );
+        StateHandlingStatementContext context = new StateHandlingStatementContext( delegate, delegate,
+                mock( AuxiliaryStoreOperations.class ), state, mock( ConstraintIndexCreator.class ) );
         context.uniquenessConstraintCreate( 10, 66 );
 
         // when

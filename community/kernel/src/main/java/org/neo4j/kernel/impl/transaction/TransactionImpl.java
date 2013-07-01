@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -592,7 +593,7 @@ class TransactionImpl implements Transaction
 
     public StatementContext newStatementContext()
     {
-        return transactionContext.newStatementContext();
+        return transactionContext.newStatementContext().asStatementContext();
     }
 
     /*

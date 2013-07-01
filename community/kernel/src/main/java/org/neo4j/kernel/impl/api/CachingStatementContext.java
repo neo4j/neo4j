@@ -43,9 +43,15 @@ import java.util.Set;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.EntityReadOperations;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -55,7 +61,9 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class CachingStatementContext extends StoreOperationTranslatingStatementContext
+public class CachingStatementContext implements
+    EntityReadOperations,
+    SchemaReadOperations
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
             new Function<SchemaRule, IndexDescriptor>()
@@ -72,7 +80,7 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         @Override
         public Iterator<Property> load( long id ) throws EntityNotFoundException
         {
-            return delegate.nodeGetAllProperties( id );
+            return entityReadDelegate.nodeGetAllProperties( id );
         }
     };
     private final CacheLoader<Iterator<Property>> relationshipPropertyLoader = new CacheLoader<Iterator<Property>>()
@@ -80,7 +88,7 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         @Override
         public Iterator<Property> load( long id ) throws EntityNotFoundException
         {
-            return delegate.relationshipGetAllProperties( id );
+            return entityReadDelegate.relationshipGetAllProperties( id );
         }
     };
     private final CacheLoader<Iterator<Property>> graphPropertyLoader = new CacheLoader<Iterator<Property>>()
@@ -88,7 +96,7 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         @Override
         public Iterator<Property> load( long id ) throws EntityNotFoundException
         {
-            return delegate.graphGetAllProperties();
+            return entityReadDelegate.graphGetAllProperties();
         }
     };
     private final CacheLoader<Set<Long>> nodeLabelLoader = new CacheLoader<Set<Long>>()
@@ -96,20 +104,24 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         @Override
         public Set<Long> load( long id ) throws EntityNotFoundException
         {
-            return asSet( delegate.nodeGetLabels( id ) );
+            return asSet( entityReadDelegate.nodeGetLabels( id ) );
         }
     };
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
-    private final StatementContext delegate;
+    private final EntityReadOperations entityReadDelegate;
+    private final SchemaReadOperations schemaReadDelegate;
 
-    public CachingStatementContext( StatementContext actual, PersistenceCache persistenceCache,
-                                    SchemaCache schemaCache )
+    public CachingStatementContext(
+            EntityReadOperations entityReadDelegate,
+            SchemaReadOperations schemaReadDelegate,
+            PersistenceCache persistenceCache,
+            SchemaCache schemaCache )
     {
-        super( actual );
+        this.entityReadDelegate = entityReadDelegate;
+        this.schemaReadDelegate = schemaReadDelegate;
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
-        this.delegate = actual;
     }
 
     @Override
@@ -171,7 +183,7 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         {
             return rule.getOwningConstraint();
         }
-        return delegate.indexGetOwningUniquenessConstraintId( index );
+        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( index );
     }
 
     @Override
@@ -182,9 +194,9 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         {
             return rule.getId();
         }
-        return delegate.indexGetCommittedId( index );
+        return schemaReadDelegate.indexGetCommittedId( index );
     }
-
+    
     private IndexRule indexRule( IndexDescriptor index )
     {
         for ( SchemaRule rule : schemaCache.getSchemaRulesForLabel( index.getLabelId() ) )
@@ -200,11 +212,63 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
         }
         return null;
     }
+    
+    @Override
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    {
+        return new IteratorWrapper<Long,Property>( nodeGetAllProperties( nodeId ) )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        return persistenceCache.nodeGetProperty( nodeId, propertyKeyId, nodePropertyLoader );
+    }
+    
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        return !nodeGetProperty( nodeId, propertyKeyId ).isNoProperty();
+    }
 
     @Override
     public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeGetProperties( nodeId, nodePropertyLoader );
+    }
+    
+    @Override
+    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    {
+        return new IteratorWrapper<Long,Property>( relationshipGetAllProperties( relationshipId ) )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId, relationshipPropertyLoader );
+    }
+    
+    @Override
+    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        return !relationshipGetProperty( relationshipId, propertyKeyId ).isNoProperty();
     }
     
     @Override
@@ -214,8 +278,87 @@ public class CachingStatementContext extends StoreOperationTranslatingStatementC
     }
     
     @Override
+    public Iterator<Long> graphGetPropertyKeys()
+    {
+        return new IteratorWrapper<Long,Property>( graphGetAllProperties() )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property graphGetProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        return persistenceCache.graphGetProperty( graphPropertyLoader, propertyKeyId );
+    }
+    
+    @Override
+    public boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        return !graphGetProperty( propertyKeyId ).isNoProperty();
+    }
+    
+    @Override
     public Iterator<Property> graphGetAllProperties()
     {
         return persistenceCache.graphGetProperties( graphPropertyLoader );
+    }
+    
+    // === TODO Below is unnecessary delegation methods
+
+    @Override
+    public Iterator<Long> nodesGetForLabel( long labelId )
+    {
+        return entityReadDelegate.nodesGetForLabel( labelId );
+    }
+
+    @Override
+    public Iterator<Long> nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
+    {
+        return entityReadDelegate.nodesGetFromIndexLookup( index, value );
+    }
+
+    @Override
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey )
+            throws SchemaRuleNotFoundException
+    {
+        return schemaReadDelegate.indexesGetForLabelAndPropertyKey( labelId, propertyKey );
+    }
+
+    @Override
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return schemaReadDelegate.indexGetState( descriptor );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+    {
+        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
+    {
+        return schemaReadDelegate.constraintsGetForLabel( labelId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetAll()
+    {
+        return schemaReadDelegate.constraintsGetAll();
+    }
+
+    // === TODO Below is unnecessary delegate methods
+    
+    @Override
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return schemaReadDelegate.indexGetFailure( descriptor );
     }
 }

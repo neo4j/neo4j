@@ -36,12 +36,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -51,7 +49,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -82,57 +80,6 @@ public class StoreStatementContextTest
         }
     }
 
-    @Test
-    public void should_be_able_to_read_a_node_property() throws Exception
-    {
-        // GIVEN
-        String propertyKey = "myproperty";
-        int propertyValue = 42;
-
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        long nodeId = node.getId();
-        node.setProperty( propertyKey, propertyValue );
-        tx.success();
-        tx.finish();
-
-        // WHEN
-        long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
-        int result = (Integer) statement.nodeGetProperty( nodeId, propertyKeyId ).value();
-
-        // THEN
-        assertThat( propertyValue, equalTo( result ) );
-    }
-
-    @Test
-    public void should_throw_when_reading_a_missing_node_property() throws Exception
-    {
-        // GIVEN
-        String propertyKey = "myproperty";
-        int propertyValue = 42;
-
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( propertyKey, propertyValue );
-        long nodeId = db.createNode().getId();
-        tx.success();
-        tx.finish();
-
-        // WHEN
-        long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
-        Property property = statement.nodeGetProperty( nodeId, propertyKeyId );
-        try
-        {
-            property.value();
-            fail( "Should have thrown exception" );
-        }
-        // THEN
-        catch ( PropertyNotFoundException e )
-        {
-            assertEquals( "No property with propertyKeyId=0", e.getMessage() );
-        }
-    }
-    
     @Test
     public void should_be_able_to_list_labels_for_node() throws Exception
     {
@@ -341,7 +288,6 @@ public class StoreStatementContextTest
         statement = new StoreStatementContext(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
-                resolver.resolveDependency( NodeManager.class ),
                 new SchemaStorage( neoStoreDataSource.getNeoStore().getSchemaStore() ),
                 neoStoreDataSource.getNeoStore(),
                 resolver.resolveDependency( PersistenceManager.class ), indexingService,
