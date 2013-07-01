@@ -51,13 +51,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -176,11 +177,8 @@ public class StoreStatementContextTest
                 .setConfig( cache_type, "none" ).newGraphDatabase();
         Node node = createLabeledNode( db, map( "name", "Node" ), label );
 
-        // WHEN
-        Iterable<String> propertyKeys = node.getPropertyKeys();
-        
-        // THEN
-        assertEquals( asSet( "name" ), asSet( propertyKeys ) );
+        // WHEN THEN
+        assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
     }
 
     @Test
@@ -316,12 +314,14 @@ public class StoreStatementContextTest
         IndexDescriptor index = createIndexAndAwaitOnline( label, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label );
+        Transaction tx = db.beginTx();
 
         // WHEN
         Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( index, name ) );
 
         // THEN
         assertEquals( asSet( mrTaylor.getId() ), foundNodes );
+        tx.finish();
     }
     
     private GraphDatabaseAPI db;
@@ -384,10 +384,18 @@ public class StoreStatementContextTest
         {
             tx.finish();
         }
-        
-        db.schema().awaitIndexOnline( index, 10, SECONDS );
-        return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
-                                                           statement.propertyKeyGetForName( propertyKey ) );
+
+        tx = db.beginTx();
+        try
+        {
+            db.schema().awaitIndexOnline( index, 10, SECONDS );
+            return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
+                    statement.propertyKeyGetForName( propertyKey ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private Object array( int length, Class<?> componentType )

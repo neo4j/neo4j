@@ -22,42 +22,22 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
     long labelId = 5, propertyKey = 8;
-
-    @Test
-    public void createANewIndex() throws Exception
-    {
-        // GIVEN
-        newTransaction();
-
-        // WHEN
-        IndexDescriptor rule = statement.indexCreate( labelId, propertyKey );
-        commit();
-
-        // AND WHEN the index is created
-        awaitIndexOnline( rule );
-
-        // THEN
-    }
 
     @Test
     public void addIndexRuleInATransaction() throws Exception
@@ -70,10 +50,11 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // THEN
-        StatementContext roStatement = readOnlyContext();
+        newTransaction();
         assertEquals( asSet( expectedRule ),
-                      asSet( roStatement.indexesGetForLabel( labelId ) ) );
-        assertEquals( expectedRule, roStatement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
+                      asSet( statement.indexesGetForLabel( labelId ) ) );
+        assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
+        commit();
     }
 
     @Test
@@ -107,7 +88,9 @@ public class IndexIT extends KernelIntegrationTest
         rollback();
 
         // THEN
+        newTransaction();
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().indexesGetForLabel( labelId ) ) );
+        commit();
     }
 
     @Test
@@ -122,7 +105,9 @@ public class IndexIT extends KernelIntegrationTest
         restartDb();
 
         // then
+        newTransaction();
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().indexesGetForLabel( labelId ) ) );
+        commit();
     }
 
     @Test
@@ -212,6 +197,7 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // when
+        newTransaction();
         Set<IndexDefinition> indexes = asSet( db.schema().getIndexes() );
 
         // then
@@ -234,6 +220,7 @@ public class IndexIT extends KernelIntegrationTest
             assertEquals( "Constraint indexes cannot be dropped directly, " +
                     "instead drop the owning uniqueness constraint.", e.getMessage() );
         }
+        commit();
     }
 
     @Test

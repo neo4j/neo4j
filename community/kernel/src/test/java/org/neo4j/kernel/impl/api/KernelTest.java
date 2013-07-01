@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
@@ -36,8 +36,8 @@ import static org.junit.Assert.fail;
 
 public class KernelTest
 {
-    @Test
-    public void readOnlyStatementContextLifecycleShouldBeThredSafe() throws Exception
+    @Test @Ignore("2013-07-01 AT This should probably be removed")
+    public void readOnlyStatementContextLifecycleShouldBeThreadSafe() throws Exception
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
