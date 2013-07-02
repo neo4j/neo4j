@@ -24,6 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
+import org.neo4j.kernel.api.StatementContext
 
 
 class UniqueConstraintAcceptanceTest
@@ -37,14 +38,15 @@ class UniqueConstraintAcceptanceTest
     parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
-    val statementCtx = graph.statementContextForReading
+    graph.inTx {
+      context: StatementContext =>
+        val prop = context.propertyKeyGetForName("propertyKey")
+        val label = context.labelGetForName("Label")
 
-    val prop = statementCtx.propertyKeyGetForName("propertyKey")
-    val label = statementCtx.labelGetForName("Label")
+        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
-
-    assert(constraints.size === 1)
+        assert(constraints.size === 1)
+    }
   }
 
   @Test
@@ -56,14 +58,15 @@ class UniqueConstraintAcceptanceTest
     parseAndExecute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
-    val statementCtx = graph.statementContextForReading
+    graph.inTx {
+      context: StatementContext =>
+        val prop = context.propertyKeyGetForName("name")
+        val label = context.labelGetForName("Person")
 
-    val prop = statementCtx.propertyKeyGetForName("name")
-    val label = statementCtx.labelGetForName("Person")
+        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
-
-    assertTrue("Constraint should exist", constraints.size == 1)
+        assertTrue("Constraint should exist", constraints.size == 1)
+    }
   }
 
   @Test
@@ -77,14 +80,15 @@ class UniqueConstraintAcceptanceTest
     parseAndExecute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
-    val statementCtx = graph.statementContextForReading
+    graph.inTx {
+      context:StatementContext =>
+        val prop = context.propertyKeyGetForName("name")
+        val label = context.labelGetForName("Person")
 
-    val prop = statementCtx.propertyKeyGetForName("name")
-    val label = statementCtx.labelGetForName("Person")
+        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
-
-    assertTrue("Constraint should exist", constraints.size == 1)
+        assertTrue("Constraint should exist", constraints.size == 1)
+    }
   }
 
   @Test
@@ -96,15 +100,17 @@ class UniqueConstraintAcceptanceTest
     parseAndExecute("drop constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
-    val statementCtx = graph.statementContextForReading
+    graph.inTx {
+      context: StatementContext =>
+        val prop = context.propertyKeyGetForName("propertyKey")
+        val label = context.labelGetForName("Label")
 
-    val prop = statementCtx.propertyKeyGetForName("propertyKey")
-    val label = statementCtx.labelGetForName("Label")
+        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
-
-    assertTrue("No constraints should exist", constraints.isEmpty)
+        assertTrue("No constraints should exist", constraints.isEmpty)
+    }
   }
+
   @Test
   def should_fail_to_add_constraint_when_existing_data_conflicts() {
     // GIVEN
@@ -123,13 +129,15 @@ class UniqueConstraintAcceptanceTest
       case ex: CouldNotCreateConstraintException =>
     }
 
-    val statementCtx = graph.statementContextForReading
+    graph.inTx {
+      context: StatementContext =>
 
-    val prop = statementCtx.propertyKeyGetForName("id")
-    val label = statementCtx.labelGetForName("Person")
+        val prop = context.propertyKeyGetForName("id")
+        val label = context.labelGetForName("Person")
 
-    val constraints = statementCtx.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-    assertTrue("No constraints should exist", constraints.isEmpty)
+        assertTrue("No constraints should exist", constraints.isEmpty)
+    }
   }
 }

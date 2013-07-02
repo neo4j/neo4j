@@ -25,7 +25,6 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -35,16 +34,16 @@ import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static java.util.Collections.emptySet;
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
+import static org.neo4j.graphdb.Neo4jMatchers.haveState;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class SchemaIndexAcceptanceTest
@@ -58,22 +57,21 @@ public class SchemaIndexAcceptanceTest
         Node node3 = createNode( label, "name", "Three" );
         tx.success();
         tx.finish();
-        
-        IndexDefinition index = createIndex( label, propertyKey );
-        
+
+        createIndex( db, label, propertyKey );
+
         restart();
-        
-        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
-        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "One" ) ) );
-        assertEquals( asSet( node2 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "Two" ) ) );
-        assertEquals( asSet( node3 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "Three" ) ) );
+
+        assertThat( findNodesByLabelAndProperty( label, "name", "One", db ), containsOnly( node1 ) );
+        assertThat( findNodesByLabelAndProperty( label, "name", "Two", db ), containsOnly( node2 ) );
+        assertThat( findNodesByLabelAndProperty( label, "name", "Three", db ), containsOnly( node3 ) );
     }
 
     @Test
     public void shouldIndexArrays() throws Exception
     {
         long[] arrayPropertyValue = {42, 23, 87};
-        IndexDefinition index = createIndex( label, propertyKey );
+        createIndex( db, label, propertyKey );
         Transaction tx = db.beginTx();
         Node node1 = createNode( label, propertyKey, arrayPropertyValue );
         tx.success();
@@ -81,17 +79,17 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
-        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new long[]{42,23} ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ));
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
     }
 
     @Test
     public void shouldIndexStringArrays() throws Exception
     {
         String[] arrayPropertyValue = {"A, B", "C"};
-        IndexDefinition index = createIndex( label, propertyKey );
+        createIndex( db, label, propertyKey );
         Transaction tx = db.beginTx();
         Node node1 = createNode( label, propertyKey, arrayPropertyValue );
         tx.success();
@@ -99,10 +97,11 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
-        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"} ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+
     }
 
     @Test
@@ -114,21 +113,21 @@ public class SchemaIndexAcceptanceTest
         tx.success();
         tx.finish();
 
-        IndexDefinition index = createIndex( label, propertyKey );
+        createIndex( db, label, propertyKey );
 
         restart();
 
-        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
-        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23} ) ) );
-        assertEquals( emptySet(), asUniqueSet( db.findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ) ) ) );
+        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
     }
 
     @Test
     public void recoveryAfterCreateAndDropIndex() throws Exception
     {
         // GIVEN
-        IndexDefinition indexDefinition = createIndex( label, propertyKey );
+        IndexDefinition indexDefinition = createIndex( db, label, propertyKey );
         createSomeData( label, propertyKey );
         doStuff( db, label, propertyKey );
         dropIndex( indexDefinition );
@@ -138,14 +137,14 @@ public class SchemaIndexAcceptanceTest
         crashAndRestart();
 
         // THEN
-        assertEquals( emptySetOf( IndexDefinition.class ), asSet( db.schema().getIndexes( label ) ) );
+        assertThat( getIndexes( db, label ), isEmpty() );
     }
 
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
-    
+
     @Before
     public void before() throws Exception
     {
@@ -156,7 +155,7 @@ public class SchemaIndexAcceptanceTest
     {
         return new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
     }
-    
+
     private void crashAndRestart()
     {
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
@@ -165,13 +164,13 @@ public class SchemaIndexAcceptanceTest
         fs = snapshot;
         db = newDb();
     }
-    
+
     private void restart()
     {
         db.shutdown();
         db = newDb();
     }
-    
+
     @After
     public void after() throws Exception
     {
@@ -182,7 +181,9 @@ public class SchemaIndexAcceptanceTest
     {
         Node node = db.createNode( label );
         for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
+        {
             node.setProperty( property.getKey(), property.getValue() );
+        }
         return node;
     }
 
@@ -194,21 +195,21 @@ public class SchemaIndexAcceptanceTest
         tx.finish();
     }
 
-    private IndexDefinition createIndex( Label label, String propertyKey )
-    {
-        Transaction tx = db.beginTx();
-        IndexDefinition indexDefinition = db.schema().indexFor( label ).on( propertyKey ).create();
-        tx.success();
-        tx.finish();
-        db.schema().awaitIndexOnline( indexDefinition, 1, MINUTES );
-        return indexDefinition;
-    }
-
     private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )
     {
-        Iterable<Node> nodes = db.findNodesByLabelAndProperty( label, propertyKey, 3323 );
-        for ( Node node : nodes )
-            count( node.getLabels() );
+        Transaction tx = db.beginTx();
+        try
+        {
+            Iterable<Node> nodes = db.findNodesByLabelAndProperty( label, propertyKey, 3323 );
+            for ( Node node : nodes )
+            {
+                count( node.getLabels() );
+            }
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private void createSomeData( Label label, String propertyKey )

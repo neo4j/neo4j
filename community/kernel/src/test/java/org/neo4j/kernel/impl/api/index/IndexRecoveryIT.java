@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -33,11 +32,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
@@ -55,8 +52,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -65,20 +60,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
+import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
+import static org.neo4j.graphdb.Neo4jMatchers.haveState;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class IndexRecoveryIT
 {
+    private final Label myLabel = label( "MyLabel" );
+
     @Test
     public void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws Exception
     {
         // Given
         startDb();
-        Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
@@ -96,12 +94,8 @@ public class IndexRecoveryIT
         startDb();
 
         // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo( 1 ) );
-
-        IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         latch.countDown();
@@ -112,7 +106,6 @@ public class IndexRecoveryIT
     {
         // Given
         startDb();
-        Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
@@ -131,23 +124,18 @@ public class IndexRecoveryIT
         startDb();
 
         // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo( 1 ) );
-
-        IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         latch.countDown();
     }
-    
+
     @Test
     public void shouldBeAbleToRecoverAndUpdateOnlineIndex() throws Exception
     {
         // Given
         startDb();
-        Label myLabel = label( "MyLabel" );
 
         createIndex( myLabel );
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
@@ -162,23 +150,18 @@ public class IndexRecoveryIT
         startDb();
 
         // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo( 1 ) );
-
-        IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
         verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
-        assertEquals( expectedUpdates, writer.updates ); 
+        assertEquals( expectedUpdates, writer.updates );
     }
-    
+
     @Test
     public void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
     {
         // Given
         startDb();
-        Label myLabel = label( "MyLabel" );
         createIndex( myLabel );
 
         // And Given
@@ -190,15 +173,11 @@ public class IndexRecoveryIT
         startDb();
 
         // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo( 1 ) );
-
-        IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index ), equalTo( Schema.IndexState.FAILED ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
     }
-    
+
     private GraphDatabaseAPI db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
@@ -206,13 +185,13 @@ public class IndexRecoveryIT
             singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
                     mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
-    
+
     @Before
     public void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
     }
-    
+
     private void startDb()
     {
         if ( db != null )
@@ -223,7 +202,7 @@ public class IndexRecoveryIT
         factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
-    
+
     private void killDb()
     {
         if ( db != null )
@@ -239,7 +218,7 @@ public class IndexRecoveryIT
             } );
         }
     }
-    
+
     private Future<Void> killDbInSeparateThread()
     {
         ExecutorService executor = newSingleThreadExecutor();
@@ -255,7 +234,7 @@ public class IndexRecoveryIT
         executor.shutdown();
         return result;
     }
-    
+
     @After
     public void after()
     {
@@ -302,11 +281,11 @@ public class IndexRecoveryIT
             tx.finish();
         }
     }
-    
+
     private static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
-        
+
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {

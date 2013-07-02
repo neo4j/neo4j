@@ -37,8 +37,11 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
@@ -146,8 +149,8 @@ public class TestReadOnlyNeo4j
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
         ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         
-        assertEquals( "value1", node1.getProperty( "key1" ) );
-        Relationship loadedRel = node1.getSingleRelationship( 
+        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" )  ) );
+        Relationship loadedRel = node1.getSingleRelationship(
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
         assertEquals( "value1", loadedRel.getProperty( "key1" ) );

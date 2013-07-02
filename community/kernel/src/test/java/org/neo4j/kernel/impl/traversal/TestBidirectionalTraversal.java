@@ -19,17 +19,20 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
-import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.SideSelectorPolicies;
@@ -53,6 +56,19 @@ import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
 public class TestBidirectionalTraversal extends AbstractTestBase
 {
     RelationshipType to = withName( "TO" );
+    private Transaction tx;
+
+    @Before
+    public void init()
+    {
+        tx = beginTx();
+    }
+
+    @After
+    public void tearDown()
+    {
+        tx.finish();
+    }
     
     @Test( expected = IllegalArgumentException.class )
     public void bothSidesMustHaveSameUniqueness() throws Exception

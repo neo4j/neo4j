@@ -212,7 +212,9 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         rollback();
 
         // then
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().uniqueIndexesGetAll() ) );
+        newTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+        commit();
     }
 
     @Test
@@ -230,7 +232,9 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOnlyContext().uniqueIndexesGetAll() ) );
+        newTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+        commit();
     }
 
     @Test

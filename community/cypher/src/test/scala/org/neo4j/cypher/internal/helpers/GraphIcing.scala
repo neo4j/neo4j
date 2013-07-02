@@ -49,12 +49,14 @@ trait GraphIcing {
       }
     }
 
-    def createIndex(label:String, property:String) {
+    def createIndex(label: String, property: String) {
       val indexDef = inTx {
         graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
       }
 
-      graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
+      inTx {
+        graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
+      }
     }
 
     def statementContextForReading: StatementContext = graph.
@@ -62,15 +64,23 @@ trait GraphIcing {
       resolveDependency(classOf[ThreadToStatementContextBridge]).
       getCtxForReading
 
-    def inTx[T](f:  => T):T = {
+    def inTx[T](f: StatementContext => T): T = {
       val tx = graph.beginTx()
       try {
-        val result = f
+        val context = graph.
+          getDependencyResolver.
+          resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
+
+        val result = f(context)
         tx.success()
         result
       } finally {
         tx.finish()
       }
+    }
+
+    def inTx[T](f: => T): T = inTx {
+      _ => f
     }
   }
 }

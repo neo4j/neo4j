@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.OrderedByTypeExpander;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestOrderByTypeExpander extends AbstractTestBase
 {
@@ -97,6 +100,7 @@ public class TestOrderByTypeExpander extends AbstractTestBase
     
     private void assertOrder( Iterator<Node> itr, String... names )
     {
+        Transaction tx = beginTx();
         for ( String name : names )
         {
             Node node = itr.next();
@@ -104,5 +108,7 @@ public class TestOrderByTypeExpander extends AbstractTestBase
                     getNodeWithName( name ), node );
         }
         assertFalse( itr.hasNext() );
+        tx.success();
+        tx.finish();
     }
 }

@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -37,14 +36,12 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -153,7 +150,8 @@ public class KernelIT extends KernelIntegrationTest
         tx.finish();
 
         // THEN
-        statement = statementContextProvider.getCtxForReading();
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
         try
         {
             statement.nodeHasLabel( node.getId(), labelId );
@@ -163,6 +161,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
+        tx.finish();
     }
 
     @Test
@@ -181,7 +180,8 @@ public class KernelIT extends KernelIntegrationTest
         tx.finish();
 
         // THEN
-        statement = statementContextProvider.getCtxForReading();
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
         try
         {
             statement.nodeHasLabel( node.getId(), labelId );
@@ -191,6 +191,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
+        tx.finish();
     }
 
     @Test
@@ -211,8 +212,12 @@ public class KernelIT extends KernelIntegrationTest
         tx.finish();
 
         // THEN
-        statement = statementContextProvider.getCtxForReading();
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+
         assertEquals( asSet( labelId1 ), asSet( statement.nodeGetLabels( node.getId() ) ) );
+
+        tx.finish();
     }
 
     @Test

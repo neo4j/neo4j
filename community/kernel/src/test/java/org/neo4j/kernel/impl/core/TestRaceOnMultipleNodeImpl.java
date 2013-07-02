@@ -32,8 +32,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestRaceOnMultipleNodeImpl
 {
@@ -110,7 +113,7 @@ public class TestRaceOnMultipleNodeImpl
         await( done );
         clearCaches(); // to make sure that we do verification on the persistent state in the db
         // verify
-        assertEquals( "root should have a key property", "root", root.getProperty( "key" ) );
+        assertThat( root, inTx( graphdb, hasProperty( "key" )  ) );
         assertTrue( "invalid precondition", precondition.get() );
     }
 
@@ -185,7 +188,7 @@ public class TestRaceOnMultipleNodeImpl
         waitChainSetUp.countDown();
         await( done );
         clearCaches();
-        assertEquals( "'offender' should be the last writer", "offender", root.getProperty( "tx" ) );
+        assertThat( root, inTx( graphdb, hasProperty( "tx" ).withValue( "offender" )  ) );
         assertTrue( "node should not have any properties when entering second tx", precondition.get() );
     }
 

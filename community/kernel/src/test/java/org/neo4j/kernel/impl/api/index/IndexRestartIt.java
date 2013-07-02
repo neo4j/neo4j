@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -39,17 +38,17 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexState;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
+import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
+import static org.neo4j.graphdb.Neo4jMatchers.haveState;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
@@ -73,10 +72,10 @@ public class IndexRestartIt
         dropIndex( index, populationCompletionLatch );
 
         // THEN
-        assertEquals( emptySetOf( IndexDefinition.class ), asSet( db.schema().getIndexes( myLabel ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 0 ) ) );
         try
         {
-            db.schema().getIndexState( index );
+            getIndexState( db, index );
             fail( "This index should have been deleted" );
         }
         catch ( NotFoundException e )
@@ -101,8 +100,7 @@ public class IndexRestartIt
         startDb();
 
         // Then
-        IndexDefinition index = getSingleIndex();
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         assertEquals( 1, provider.populatorCallCount.get() );
         assertEquals( 2, provider.writerCallCount.get() );
     }
@@ -121,8 +119,7 @@ public class IndexRestartIt
         // When
         startDb();
 
-        IndexDefinition index = getSingleIndex();
-        assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, not( haveState( db, Schema.IndexState.FAILED ) ) ) );
         assertEquals( 2, provider.populatorCallCount.get() );
     }
 
@@ -170,13 +167,6 @@ public class IndexRestartIt
         return index;
     }
 
-    private IndexDefinition getSingleIndex()
-    {
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-        assertThat( indexes.size(), equalTo(1));
-        return single( indexes );
-    }
-    
     private void dropIndex( IndexDefinition index, DoubleLatch populationCompletionLatch )
     {
         Transaction tx = db.beginTx();
