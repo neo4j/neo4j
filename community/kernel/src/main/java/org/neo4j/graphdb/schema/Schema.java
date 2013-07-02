@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes
@@ -79,6 +80,15 @@ public interface Schema
      * @return the current {@link IndexState} of the index
      */
     IndexState getIndexState( IndexDefinition index );
+    
+    /**
+     * If {@link #getIndexState(IndexDefinition)} return {@link IndexState#FAILED} this method will
+     * return the failure description.
+     * @param index the {@link IndexDescriptor} to get failure from.
+     * @return the failure description.
+     * @throws IllegalStateException if the {@code index} isn't in a {@link IndexState#FAILED} state.
+     */
+    String getIndexFailure( IndexDefinition index );
 
     /**
      * Returns a {@link ConstraintCreator} where details about the constraint can be

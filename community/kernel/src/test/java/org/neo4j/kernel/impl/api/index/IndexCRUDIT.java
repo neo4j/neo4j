@@ -30,7 +30,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -54,7 +53,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -222,6 +220,11 @@ public class IndexCRUDIT
 
         @Override
         public void close( boolean populationCompletedSuccessfully )
+        {
+        }
+        
+        @Override
+        public void markAsFailed( String failure )
         {
         }
     }

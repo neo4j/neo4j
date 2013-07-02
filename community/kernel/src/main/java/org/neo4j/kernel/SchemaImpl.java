@@ -193,7 +193,6 @@ public class SchemaImpl implements Schema
         }
     }
 
-
     @Override
     public IndexState getIndexState( IndexDefinition index )
     {
@@ -216,6 +215,42 @@ public class SchemaImpl implements Schema
             default:
                 throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s",
+                                                 index.getLabel().name(), propertyKey ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s",
+                                                 index.getLabel().name(), propertyKey ), e );
+        }
+        finally
+        {
+            context.close();
+        }
+    }
+    
+    @Override
+    public String getIndexFailure( IndexDefinition index )
+    {
+        StatementContext context = ctxProvider.getCtxForReading();
+        String propertyKey = single( index.getPropertyKeys() );
+        try
+        {
+            long labelId = context.labelGetForName( index.getLabel().name() );
+            long propertyKeyId = context.propertyKeyGetForName( propertyKey );
+            IndexDescriptor indexId = context.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            return context.indexGetFailure( indexId );
         }
         catch ( LabelNotFoundKernelException e )
         {

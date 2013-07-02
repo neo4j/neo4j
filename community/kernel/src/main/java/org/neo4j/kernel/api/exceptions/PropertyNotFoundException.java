@@ -28,6 +28,6 @@ public class PropertyNotFoundException extends KernelException
 
     public PropertyNotFoundException( long propertyKeyId )
     {
-        super( null, "No property with propertyKeyId=%s", propertyKeyId );
+        super( "No property with propertyKeyId=%s", propertyKeyId );
     }
 }

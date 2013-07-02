@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 
 public class Exceptions
@@ -143,5 +145,14 @@ public class Exceptions
             cause = cause.getCause();
         }
         return root;
+    }
+    
+    public static String stringify( Throwable cause )
+    {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        PrintStream target = new PrintStream( bytes );
+        cause.printStackTrace( target );
+        target.flush();
+        return bytes.toString();
     }
 }

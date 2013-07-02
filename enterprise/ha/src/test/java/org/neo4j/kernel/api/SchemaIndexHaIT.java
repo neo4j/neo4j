@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -58,7 +57,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -303,6 +301,12 @@ public class SchemaIndexHaIT
         public InternalIndexState getInitialState( long indexId )
         {
             return inMemoryDelegate.getInitialState( indexId );
+        }
+
+        @Override
+        public String getPopulationFailure( long indexId ) throws IllegalStateException
+        {
+            return inMemoryDelegate.getPopulationFailure( indexId );
         }
     }
 

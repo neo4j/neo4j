@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
-
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -132,5 +131,4 @@ public class SchemaIndexTestHelper
            }
         }
     }
-    
 }

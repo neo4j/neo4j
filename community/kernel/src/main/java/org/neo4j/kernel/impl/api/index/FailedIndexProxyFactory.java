@@ -17,19 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.EntityType;
-
-public class EntityNotFoundException extends KernelException
+public interface FailedIndexProxyFactory
 {
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
-    {
-        super( cause, "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
-
-    public EntityNotFoundException( EntityType entityType, long entityId )
-    {
-        super( "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
+    IndexProxy create( Throwable failure );
 }

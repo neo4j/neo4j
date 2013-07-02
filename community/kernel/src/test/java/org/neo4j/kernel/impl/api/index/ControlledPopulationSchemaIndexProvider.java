@@ -42,6 +42,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     private InternalIndexState initialIndexState = POPULATING;
     public final AtomicInteger populatorCallCount = new AtomicInteger();
     public final AtomicInteger writerCallCount = new AtomicInteger();
+    private String failure;
     
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
@@ -96,5 +97,15 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     public void setInitialIndexState( InternalIndexState initialIndexState )
     {
         this.initialIndexState = initialIndexState;
+    }
+
+    @Override
+    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    {
+        if ( this.failure == null )
+        {
+            throw new IllegalStateException();
+        }
+        return this.failure;
     }
 }

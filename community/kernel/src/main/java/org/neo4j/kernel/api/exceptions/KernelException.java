@@ -26,11 +26,13 @@ public abstract class KernelException extends Exception
 {
     protected KernelException( Throwable cause, String message, Object... parameters )
     {
+        this( message, parameters );
+        initCause( cause );
+    }
+    
+    protected KernelException( String message, Object... parameters )
+    {
         super( String.format( message, parameters ) );
-        if ( cause != null )
-        {
-            initCause( cause );
-        }
     }
 
     @Deprecated

@@ -42,6 +42,7 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -85,6 +86,7 @@ public class IndexPopulationJob implements Runnable
     public void run()
     {
         boolean success = false;
+        Throwable failureCause = null;
         try
         {
             log.info( format( "Index population started for label id %d on property id %d",
@@ -109,9 +111,14 @@ public class IndexPopulationJob implements Runnable
                 }
             };
 
-            FailedIndexProxy failureTarget = new FailedIndexProxy( descriptor, providerDescriptor, populator );
-
-            flipper.flip( duringFlip, failureTarget );
+            flipper.flip( duringFlip, new FailedIndexProxyFactory()
+            {
+                @Override
+                public IndexProxy create( Throwable failure )
+                {
+                    return new FailedIndexProxy( descriptor, providerDescriptor, populator, failure( failure ) );
+                }
+            } );
             success = true;
             log.info( format( "Index population completed for label id %d on property id %d, index is now online.",
                     descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
@@ -127,12 +134,15 @@ public class IndexPopulationJob implements Runnable
                     t = cause;
                 }
             }
+            failureCause = t;
+            
             // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
                 log.error( "Failed to populate index.", t );
                 log.flush();
             }
+            
             // The flipper will have already flipped to a failed index context here, but
             // it will not include the cause of failure, so we do another flip to a failed
             // context that does.
@@ -140,7 +150,7 @@ public class IndexPopulationJob implements Runnable
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
-            flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, populator, t ) );
+            flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, populator, failure( t ) ) );
         }
         finally
         {
@@ -148,6 +158,11 @@ public class IndexPopulationJob implements Runnable
             {
                 if ( !success )
                 {
+                    if ( failureCause != null )
+                    {
+                        populator.markAsFailed( failure( failureCause ).asString() );
+                    }
+                    
                     populator.close( false );
                 }
             }
