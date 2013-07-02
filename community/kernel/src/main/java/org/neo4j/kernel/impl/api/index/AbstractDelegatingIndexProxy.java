@@ -110,6 +110,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     {
         getDelegate().validate();
     }
+    
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        return getDelegate().getPopulationFailure();
+    }
 
     @Override
     public String toString()

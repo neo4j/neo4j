@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 abstract class InMemoryIndex
 {
     private InternalIndexState state = InternalIndexState.POPULATING;
+    String failure;
 
     abstract IndexPopulator getPopulator();
 
@@ -72,6 +73,13 @@ abstract class InMemoryIndex
             {
                 state = InternalIndexState.ONLINE;
             }
+        }
+        
+        @Override
+        public void markAsFailed( String failureString )
+        {
+            failure = failureString;
+            state = InternalIndexState.FAILED;
         }
     }
 
@@ -134,7 +142,6 @@ abstract class InMemoryIndex
     {
         clear();
     }
-
 
     protected void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
     {

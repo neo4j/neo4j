@@ -52,6 +52,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -216,7 +217,8 @@ public class IndexingService extends LifecycleAdapter
             IndexDescriptor descriptor = createDescriptor( indexRule );
             IndexProxy indexProxy = null;
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
-            InternalIndexState initialState = providerMap.apply( providerDescriptor ).getInitialState( ruleId );
+            SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
+            InternalIndexState initialState = provider.getInitialState( ruleId );
             logger.info( format( "IndexingService.initIndexes: index on %s is %s",
                     descriptor.toString(), initialState.name() ) );
             switch ( initialState )
@@ -231,8 +233,10 @@ public class IndexingService extends LifecycleAdapter
                 break;
             case FAILED:
                 indexProxy = createFailedIndexProxy( ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex(),
-                                                     null );
+                                                     failure( provider.getPopulationFailure( ruleId ) ) );
                 break;
+            default:
+                throw new IllegalArgumentException( "" + initialState );
             }
             indexes.put( ruleId, indexProxy );
         }
@@ -354,7 +358,7 @@ public class IndexingService extends LifecycleAdapter
                 }
                 catch ( IOException e )
                 {
-                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, e );
+                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
                 }
             }
         } );
@@ -379,18 +383,19 @@ public class IndexingService extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, e );
+            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
         }
     }
 
     private IndexProxy createFailedIndexProxy( long ruleId,
                                                IndexDescriptor descriptor,
                                                SchemaIndexProvider.Descriptor providerDescriptor, boolean unique,
-                                               Throwable cause )
+                                               IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
                                                                   new IndexConfiguration( unique ) );
-        IndexProxy result = new FailedIndexProxy( descriptor, providerDescriptor, indexPopulator, cause );
+        IndexProxy result = new FailedIndexProxy( descriptor, providerDescriptor, indexPopulator,
+                populationFailure );
         result = contractCheckedProxy( result, true );
         return serviceDecoratedProxy( ruleId, result );
     }
@@ -499,17 +504,5 @@ public class IndexingService extends LifecycleAdapter
                 throw new UnderlyingStorageException( "Unable to force " + index, e );
             }
         }
-    }
-
-    public static IndexProxyFactory singleProxy( final IndexProxy proxy )
-    {
-        return new IndexProxyFactory()
-        {
-            @Override
-            public IndexProxy create()
-            {
-                return proxy;
-            }
-        };
     }
 }

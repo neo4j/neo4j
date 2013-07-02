@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 
 public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -51,5 +51,46 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
         reader.close();
         accessor.close();
+    }
+    
+    @Test
+    public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
+    {
+        // GIVEN
+        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        String failure = "The contrived failure";
+        
+        // WHEN
+        populator.markAsFailed( failure );
+        
+        // THEN
+        assertEquals( failure, indexProvider.getPopulationFailure( 17 ) );
+    }
+    
+    @Test
+    public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
+    {
+        // GIVEN
+        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        String failure = "The contrived failure";
+        
+        // WHEN
+        populator.markAsFailed( failure );
+        
+        // THEN
+        assertEquals( FAILED, indexProvider.getInitialState( 17 ) );
+    }
+    
+    @Test
+    public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
+    {
+        // GIVEN
+        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        populator.close( false );
+        
+        // WHEN
+        populator.drop();
+        
+        // THEN - no exception should be thrown (it's been known to!)
     }
 }

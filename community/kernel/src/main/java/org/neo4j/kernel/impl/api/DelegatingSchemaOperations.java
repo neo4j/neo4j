@@ -75,6 +75,12 @@ public class DelegatingSchemaOperations implements SchemaOperations
     {
         return delegate.indexGetState( descriptor );
     }
+    
+    @Override
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return delegate.indexGetFailure( descriptor );
+    }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )

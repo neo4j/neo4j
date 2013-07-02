@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -1042,6 +1043,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public IndexState getIndexState( IndexDefinition index )
         {
             return actual.getIndexState( index );
+        }
+        
+        @Override
+        public String getIndexFailure( IndexDefinition index )
+        {
+            return actual.getIndexFailure( index );
         }
 
         @Override

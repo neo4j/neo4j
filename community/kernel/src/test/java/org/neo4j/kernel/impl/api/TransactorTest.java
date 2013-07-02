@@ -25,7 +25,6 @@ import javax.transaction.Transaction;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
@@ -294,7 +293,7 @@ public class TransactorTest
     {
         protected SpecificKernelException()
         {
-            super( null, "very specific" );
+            super( "very specific" );
         }
     }
 }

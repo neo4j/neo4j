@@ -30,7 +30,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -70,7 +69,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -244,9 +242,7 @@ public class IndexPopulationJobTest
 
         // THEN
         verify( populator, times( 1 ) ).close( false );
-        verify( index, times( 0 ) ).flip();
-        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any() );
-        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<IndexProxy>any() );
+        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<FailedIndexProxyFactory>any() );
     }
 
     @Test
@@ -293,6 +289,28 @@ public class IndexPopulationJobTest
 
         // Then
         logger.assertAtLeastOnce( error( "Failed to populate index.", failure ) );
+    }
+    
+    @Test
+    public void shouldCloseAndFailOnFailure() throws Exception
+    {
+        createNode( map( name, "irrelephant" ), FIRST );
+        TestLogger logger = new TestLogger();
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        NeoStoreIndexStoreView store = new NeoStoreIndexStoreView(
+                db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore() );
+
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger);
+
+        String failureMessage = "not successful";
+        IllegalStateException failure = new IllegalStateException( failureMessage );
+        doThrow( failure ).when( populator ).create();
+
+        // When
+        job.run();
+
+        // Then
+        verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>

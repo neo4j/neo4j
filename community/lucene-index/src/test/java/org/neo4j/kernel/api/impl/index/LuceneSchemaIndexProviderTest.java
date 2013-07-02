@@ -22,12 +22,15 @@ package org.neo4j.kernel.api.impl.index;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
     protected LuceneSchemaIndexProvider createIndexProvider()
     {
-        return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(), new Config() );
+        return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(),
+                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) ) );
     }
 }
-

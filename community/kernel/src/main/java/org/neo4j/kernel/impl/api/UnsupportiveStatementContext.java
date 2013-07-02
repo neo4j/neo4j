@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -286,6 +287,12 @@ public enum UnsupportiveStatementContext implements StatementContext
 
     @Override
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
+    {
+        throw unsupported();
+    }
+    
+    @Override
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         throw unsupported();
     }

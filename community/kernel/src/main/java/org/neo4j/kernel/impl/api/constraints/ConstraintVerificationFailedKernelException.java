@@ -66,7 +66,7 @@ public class ConstraintVerificationFailedKernelException extends KernelException
 
     public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
     {
-        super( null, "Existing data does not satisfy %s.", constraint );
+        super( "Existing data does not satisfy %s.", constraint );
         this.constraint = constraint;
         this.evidence = evidence;
     }
