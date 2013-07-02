@@ -19,16 +19,33 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.graphdb.*;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import java.lang.annotation.*;
-import java.util.*;
-
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.test.GraphDescription.PropType.ERROR;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
 
 public class GraphDescription implements GraphDefinition
@@ -85,6 +102,8 @@ public class GraphDescription implements GraphDefinition
         String value();
 
         PropType type() default STRING;
+
+        PropType componentType() default ERROR;
     }
     
     @Target( {} )
@@ -96,12 +115,31 @@ public class GraphDescription implements GraphDefinition
     @SuppressWarnings( "boxing" )
     public enum PropType
     {
+
+        ARRAY
+        {
+            @Override Object convert( PropType componentType, String value )
+            {
+                String[] items  = value.split( " *, *" );
+                Object[] result = (Object[]) Array.newInstance( componentType.componentClass(), items.length );
+                for ( int i =0 ; i < items.length; i++ )
+                {
+                    result[i] = componentType.convert( items[i] );
+                }
+                return result;
+            }
+        },
         STRING
         {
             @Override
             String convert( String value )
             {
                 return value;
+            }
+
+            @Override Class<?> componentClass()
+            {
+                return String.class;
             }
         },
         INTEGER
@@ -111,6 +149,11 @@ public class GraphDescription implements GraphDefinition
             {
                 return Long.parseLong( value );
             }
+
+            @Override Class<?> componentClass()
+            {
+                return Long.class;
+            }
         },
         DOUBLE
         {
@@ -118,6 +161,11 @@ public class GraphDescription implements GraphDefinition
             Double convert( String value )
             {
                 return Double.parseDouble( value );
+            }
+
+            @Override Class<?> componentClass()
+            {
+                return Double.class;
             }
         },
         BOOLEAN
@@ -127,8 +175,27 @@ public class GraphDescription implements GraphDefinition
             {
                 return Boolean.parseBoolean( value );
             }
+
+            @Override Class<?> componentClass()
+            {
+                return Boolean.class;
+            }
+        },
+
+        ERROR{
         };
-        abstract Object convert( String value );
+
+        Class<?> componentClass() {
+            throw new UnsupportedOperationException( "Not implemented for property type" + name() );
+        }
+
+        Object convert( String value ) {
+            throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
+        }
+
+        Object convert( PropType componentType, String value ) {
+            throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
+        }
     }
 
     public static TestData.Producer<Map<String, Node>> createGraphFor( final GraphHolder holder, final boolean destroy )
@@ -193,7 +260,14 @@ public class GraphDescription implements GraphDefinition
             {
                 autoindex.startAutoIndexingProperty( prop.key() );
             }
-            entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
+            PropType tpe = prop.type();
+            switch(tpe) {
+                case ARRAY:
+                    entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
+                    break;
+                default:
+                    entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
+            }
         }
         if ( name != null )
         {

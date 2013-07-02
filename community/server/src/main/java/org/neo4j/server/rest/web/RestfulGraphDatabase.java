@@ -50,7 +50,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
-import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -68,7 +68,6 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.toMap;
-import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -1816,9 +1815,14 @@ public class RestfulGraphDatabase
         {
             try
             {
-                return Pair.of( queryEntry.getKey(), readJson( queryEntry.getValue().get( 0 ) ) );
+                Object propertyValue = input.readValue( queryEntry.getValue().get( 0 ) );
+                if ( propertyValue instanceof Collection<?> )
+                {
+                    propertyValue = PropertySettingStrategy.convertToNativeArray( (Collection<?>) propertyValue );
+                }
+                return Pair.of( queryEntry.getKey(), propertyValue );
             }
-            catch ( JsonParseException e )
+            catch ( BadInputException e )
             {
                 throw new IllegalArgumentException(
                         String.format( "Unable to deserialize property value for %s.", queryEntry.getKey() ),
