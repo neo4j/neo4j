@@ -55,7 +55,7 @@ public class IndexPopulationJob implements Runnable
     private final IndexStoreView storeView;
 
     // NOTE: unbounded queue expected here
-    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
+    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
 
     private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
@@ -111,7 +111,7 @@ public class IndexPopulationJob implements Runnable
                 }
             };
 
-            flipper.flip( duringFlip, new FailedIndexProxyFactory()
+            flipper.flipIfOpen( duringFlip, new FailedIndexProxyFactory()
             {
                 @Override
                 public IndexProxy create( Throwable failure )

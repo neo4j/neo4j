@@ -145,6 +145,9 @@ public class LuceneIndexRecoveryIT
         // And Given
         killDb();
 
+        // This avoids a lucene locking issue
+        resetDirectoryFactories();
+
         // When
         startDb( createLuceneIndexFactory() );
 
@@ -181,19 +184,7 @@ public class LuceneIndexRecoveryIT
 
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
-    private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
-    {
-        @Override
-        public Directory open( File dir ) throws IOException
-        {
-            return directoryFactory.open( dir );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    private DirectoryFactory ignoreCloseDirectoryFactory;
 
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -231,7 +222,26 @@ public class LuceneIndexRecoveryIT
     @Before
     public void before()
     {
-        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        resetDirectoryFactories();
+    }
+
+    private void resetDirectoryFactories()
+    {
+        final DirectoryFactory newDirectoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        directoryFactory = newDirectoryFactory;
+        ignoreCloseDirectoryFactory = new DirectoryFactory()
+        {
+            @Override
+            public Directory open( File dir ) throws IOException
+            {
+                return newDirectoryFactory.open( dir );
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
     }
 
     @After
