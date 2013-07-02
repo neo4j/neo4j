@@ -1960,7 +1960,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
-    test(vFrom2_0 diff List(vExperimental), "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", q)
+    test(vFrom2_0, "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", q)
   }
 
   @Test def foreach_on_path_with_colon() {
@@ -2086,7 +2086,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       Literal(true) -> vPre2_0,
-      True() -> (vFrom2_0 diff List(vExperimental)))
+      True() -> vFrom2_0)
   }
 
   @Test def returnAll() {
@@ -2210,7 +2210,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def foreach_with_literal_collectionOld() {
-
     val q2 = Query.updates(
       ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty)))
     ).returns()
@@ -2225,7 +2224,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def foreach_with_literal_collection() {
-    test(vFrom2_0 diff List(vExperimental),
+    test(vFrom2_0,
       "create root foreach(x in [1,2,3] | create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).

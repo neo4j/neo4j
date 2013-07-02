@@ -56,7 +56,6 @@ abstract class Expression extends AstNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   // double-dispatch helpers
-  type TypeGenerator = SemanticState => Set[CypherType]
   final def types : TypeGenerator = s => s.expressionTypes(this) match {
     case None => throw new IllegalStateException(s"Types of $this have not been evaluated (${token.startPosition})")
     case Some(types) => types

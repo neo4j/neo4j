@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.parser.{Action, On, OnAction}
 import org.neo4j.cypher.internal.commands.MergeAst
-import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
 
 sealed trait Clause extends AstNode with SemanticCheckable
 
@@ -82,7 +82,6 @@ case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClaus
 
 
 case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
-  def children = patterns ++ actions
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 
   def toCommand: MergeAst = MergeAst(patterns.flatMap(_.toAbstractPatterns), actions.map(_.toAction))
@@ -104,4 +103,14 @@ case class OnCreate(identifier: Identifier, action: SetClause, token: InputToken
 case class OnMatch(identifier: Identifier, action: SetClause, token: InputToken)
   extends MergeAction(identifier, action, token) {
   def verb: Action = On.Match
+}
+
+
+case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[UpdateClause], token: InputToken) extends UpdateClause with SemanticChecking {
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then withScopedState {
+    val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+    identifier.declare(innerTypes) then updates.semanticCheck
+  }
+
+  def toLegacyUpdateActions = Seq(ForeachAction(expression.toCommand, identifier.name, updates.flatMap { _.toLegacyUpdateActions }))
 }
