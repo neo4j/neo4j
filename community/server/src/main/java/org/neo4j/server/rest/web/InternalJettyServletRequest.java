@@ -96,6 +96,7 @@ public class InternalJettyServletRequest extends Request
         setCharacterEncoding( encoding );
         setRequestURI( null );
         setQueryString( null );
+        setScheme(uri.getScheme());
     }
 
     @Override
