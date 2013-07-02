@@ -54,14 +54,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         this.dirFile = dirFile;
         this.failureStorage = failureStorage;
         this.indexId = indexId;
-        try
-        {
-            failureStorage.reserveForIndex( indexId );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     @Override
@@ -69,6 +61,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     {
         this.directory = dirFactory.open( dirFile );
         DirectorySupport.deleteDirectoryContents( directory );
+        failureStorage.reserveForIndex( indexId );
         writer = indexWriterFactory.create( directory );
     }
 
@@ -90,7 +83,10 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         }
         finally
         {
-            directory.close();
+            if ( directory != null )
+            {
+                directory.close();
+            }
         }
         failureStorage.clearForIndex( indexId );
     }
