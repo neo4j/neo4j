@@ -34,11 +34,14 @@ import org.neo4j.graphdb.Traverser.Order
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.api.StatementContext
-import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore, CompositeStatementContext}
+import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
+import org.mockito.Matchers
+import org.mockito.stubbing.Answer
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -184,9 +187,22 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val fakeCtx = mock[StatementContext]
     val schemaState = new KernelSchemaStateStore()
     val schemaOps = new SchemaStateConcern(schemaState)
-    val comboCtx = new CompositeStatementContext(fakeCtx, schemaOps)
+    
+    when( fakeCtx.schemaStateContains( Matchers.any() ) ).thenAnswer( new Answer[Boolean]()
+        {
+            override def answer(invocation: InvocationOnMock): Boolean = {
+                schemaOps.schemaStateContains( invocation.getArguments()(0) )
+            }
+        } )
+    when( fakeCtx.schemaStateGetOrCreate( Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Any]()
+        {
+            override def answer(invocation: InvocationOnMock): Any = {
+                schemaOps.schemaStateGetOrCreate( invocation.getArguments()(0), invocation.getArguments()(1).asInstanceOf[org.neo4j.helpers.Function[Any, Any]] )
+            }
+        } )
+    
     when(nodeMgre.getAllNodes).thenReturn(iter)
-    when(bridge.getCtxForWriting).thenReturn(comboCtx)
+    when(bridge.getCtxForWriting).thenReturn(fakeCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeMgre)

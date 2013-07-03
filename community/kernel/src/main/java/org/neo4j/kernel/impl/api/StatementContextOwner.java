@@ -19,22 +19,34 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 
+/**
+ * Captures functionality for implicit {@link StatementContext} creation and retention for read-only operations
+ * through the core {@link GraphDatabaseService} API, where the concept of statements is missing.
+ * The idea is to implicitly create a read-only (as light-weight as possible) {@link StatementContext}
+ * if there are none open. Tying it into one level above the most granular operations (such as
+ * get single property from a node, get next relationship from iterator or similar)
+ * @author Mattias
+ *
+ */
 public abstract class StatementContextOwner
 {
     private ReferencedStatementContext reference;
 
-    public StatementContext getStatementContext()
+    public StatementContextParts getStatementContext()
     {
         if ( reference == null )
         {
             reference = new ReferencedStatementContext( createStatementContext() );
         }
-        return reference.new StatementContextReference();
+        return reference.newReference();
     }
 
-    protected abstract StatementContext createStatementContext();
+    protected abstract StatementContextParts createStatementContext();
 
     public void closeAllStatements()
     {
@@ -48,41 +60,49 @@ public abstract class StatementContextOwner
     private class ReferencedStatementContext
     {
         private int count;
-        private final StatementContext statementContext;
+        private final StatementContextParts originalParts;
 
-        ReferencedStatementContext( StatementContext statementContext )
+        ReferencedStatementContext( StatementContextParts statementContextParts )
         {
-            this.statementContext = statementContext;
+            this.originalParts = statementContextParts;
+        }
+
+        @SuppressWarnings( "resource" )
+        public StatementContextParts newReference()
+        {
+            count++;
+            return originalParts.override( null, null, null, null, null, null, null,
+                    new CountingLifecycleOperations() );
         }
 
         void close()
         {
             if ( count > 0 )
             {
-                statementContext.close();
+                originalParts.close();
                 reference = null;
             }
             count = 0;
         }
-
-        class StatementContextReference extends InteractionStoppingStatementContext
+        
+        class CountingLifecycleOperations implements LifecycleOperations
         {
             private boolean open = true;
-
-            StatementContextReference()
-            {
-                super( statementContext );
-                count++;
-            }
-
+            
             @Override
-            protected void markAsClosed()
+            public void close()
             {
+                if ( !isOpen() )
+                {
+                    throw new IllegalStateException(
+                            "This StatementContext has been closed. No more interaction allowed" );
+                }
+                
                 open = false;
                 count--;
                 if ( count == 0 )
                 {
-                    statementContext.close();
+                    originalParts.close();
                     reference = null;
                 }
             }
@@ -91,12 +111,6 @@ public abstract class StatementContextOwner
             public boolean isOpen()
             {
                 return open && count > 0;
-            }
-
-            @Override
-            protected void doClose()
-            {
-                // do nothing - we close when the count reaches 0
             }
         }
     }

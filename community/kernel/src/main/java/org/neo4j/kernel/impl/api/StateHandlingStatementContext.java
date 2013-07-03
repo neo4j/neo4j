@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -39,7 +39,10 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.api.operations.EntityReadOperations;
+import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -50,26 +53,28 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
-public class StateHandlingStatementContext extends StoreOperationTranslatingStatementContext
+public class StateHandlingStatementContext implements
+    EntityReadOperations,
+    EntityWriteOperations,
+    SchemaReadOperations,
+    SchemaWriteOperations
 {
-    private final TxState state;
-    private final StatementContext delegate;
-    private final ConstraintIndexCreator constraintIndexCreator;
+    private final EntityReadOperations entityReadDelegate;
+    private final SchemaReadOperations schemaReadDelegate;
     private final AuxiliaryStoreOperations auxStoreOps;
+    private final TxState state;
+    private final ConstraintIndexCreator constraintIndexCreator;
 
-    public StateHandlingStatementContext( StatementContext actual,
-                                          SchemaStateOperations schemaStateOperations,
-                                          TxState state,
-                                          ConstraintIndexCreator constraintIndexCreator,
-                                          AuxiliaryStoreOperations auxStoreOps )
+    public StateHandlingStatementContext(
+            EntityReadOperations entityReadDelegate,
+            SchemaReadOperations schemaReadDelegate,
+            AuxiliaryStoreOperations auxStoreOps, TxState state, ConstraintIndexCreator constraintIndexCreator )
     {
-        // TODO: I'm not sure schema state operations should go here.. as far as I can tell, it isn't transactional,
-        // and so having it here along with transactional state makes little sense to me. Reconsider and refactor.
-        super( actual, schemaStateOperations );
-        this.state = state;
-        this.delegate = actual;
-        this.constraintIndexCreator = constraintIndexCreator;
+        this.entityReadDelegate = entityReadDelegate;
+        this.schemaReadDelegate = schemaReadDelegate;
         this.auxStoreOps = auxStoreOps;
+        this.state = state;
+        this.constraintIndexCreator = constraintIndexCreator;
     }
 
     @Override
@@ -109,7 +114,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             }
         }
 
-        return delegate.nodeHasLabel( nodeId, labelId );
+        return entityReadDelegate.nodeHasLabel( nodeId, labelId );
     }
 
     @Override
@@ -125,7 +130,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             return state.getNodeStateLabelDiffSets( nodeId ).getAdded().iterator();
         }
 
-        Iterator<Long> committed = delegate.nodeGetLabels( nodeId );
+        Iterator<Long> committed = entityReadDelegate.nodeGetLabels( nodeId );
         return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
 
@@ -159,7 +164,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     @Override
     public Iterator<Long> nodesGetForLabel( long labelId )
     {
-        Iterator<Long> committed = delegate.nodesGetForLabel( labelId );
+        Iterator<Long> committed = entityReadDelegate.nodesGetForLabel( labelId );
         if ( !state.hasChanges() )
         {
             return committed;
@@ -203,18 +208,20 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         if ( !state.unRemoveConstraint( constraint ) )
         {
-            for ( Iterator<UniquenessConstraint> it = delegate.constraintsGetForLabelAndPropertyKey( labelId,
-                                                                                                     propertyKeyId ); it.hasNext(); )
+            for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+                    labelId, propertyKeyId ); it.hasNext(); )
             {
                 if ( it.next().equals( labelId, propertyKeyId ) )
                 {
                     return constraint;
                 }
             }
-            long indexId;
+            
             try
             {
-                indexId = constraintIndexCreator.createUniquenessConstraintIndex( this, labelId, propertyKeyId );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex(
+                        this, labelId, propertyKeyId );
+                state.addConstraint( constraint, indexId );
             }
             catch ( TransactionalException e )
             {
@@ -224,7 +231,6 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             {
                 throw new ConstraintCreationKernelException( constraint, e );
             }
-            state.addConstraint( constraint, indexId );
         }
         return constraint;
     }
@@ -232,20 +238,20 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
-        return applyConstraintsDiff( delegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ),
+        return applyConstraintsDiff( schemaReadDelegate.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ),
                 labelId, propertyKeyId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
-        return applyConstraintsDiff( delegate.constraintsGetForLabel( labelId ), labelId );
+        return applyConstraintsDiff( schemaReadDelegate.constraintsGetForLabel( labelId ), labelId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
-        return applyConstraintsDiff( delegate.constraintsGetAll() );
+        return applyConstraintsDiff( schemaReadDelegate.constraintsGetAll() );
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Iterator<UniquenessConstraint> constraints,
@@ -292,7 +298,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
         Iterable<IndexDescriptor> committedRules;
         try
         {
-            committedRules = option( delegate.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
+            committedRules = option( schemaReadDelegate.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -322,7 +328,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             return InternalIndexState.POPULATING;
         }
 
-        return delegate.indexGetState( descriptor );
+        return schemaReadDelegate.indexGetState( descriptor );
     }
 
     private boolean checkIndexState( IndexDescriptor indexRule, DiffSets<IndexDescriptor> diffSet )
@@ -345,26 +351,26 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
-        return state.getIndexDiffSetsByLabel( labelId ).apply( delegate.indexesGetForLabel( labelId ) );
+        return state.getIndexDiffSetsByLabel( labelId ).apply( schemaReadDelegate.indexesGetForLabel( labelId ) );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return state.getIndexDiffSets().apply( delegate.indexesGetAll() );
+        return state.getIndexDiffSets().apply( schemaReadDelegate.indexesGetAll() );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
-        return state.getConstraintIndexDiffSetsByLabel( labelId ).apply( delegate.uniqueIndexesGetForLabel(
+        return state.getConstraintIndexDiffSetsByLabel( labelId ).apply( schemaReadDelegate.uniqueIndexesGetForLabel(
                 labelId ) );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
-        return state.getConstraintIndexDiffSets().apply( delegate.uniqueIndexesGetAll() );
+        return state.getConstraintIndexDiffSets().apply( schemaReadDelegate.uniqueIndexesGetAll() );
     }
 
     @Override
@@ -387,7 +393,7 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return state.getDeletedNodes().apply( diff.apply( delegate.nodesGetFromIndexLookup( index, value ) ) );
+        return state.getDeletedNodes().apply( diff.apply( entityReadDelegate.nodesGetFromIndexLookup( index, value ) ) );
     }
 
     @Override
@@ -520,6 +526,41 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
         }
     }
+    
+    @Override
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    {
+        return new IteratorWrapper<Long,Property>( nodeGetAllProperties( nodeId ) )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        Iterator<Property> properties = nodeGetAllProperties( nodeId );
+        while ( properties.hasNext() )
+        {
+            Property property = properties.next();
+            if ( property.propertyKeyId() == propertyKeyId )
+            {
+                return property;
+            }
+        }
+        return Property.noNodeProperty( nodeId, propertyKeyId );
+    }
+    
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        return !nodeGetProperty( nodeId, propertyKeyId ).isNoProperty();
+    }
 
     @Override
     public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
@@ -534,7 +575,43 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             // EntityDeletedException instead and use it instead of returning empty values in similar places
             throw new IllegalStateException( "Node " + nodeId + " has been deleted" );
         }
-        return state.getNodePropertyDiffSets( nodeId ).apply( delegate.nodeGetAllProperties( nodeId ) );
+        return state.getNodePropertyDiffSets( nodeId ).apply( entityReadDelegate.nodeGetAllProperties( nodeId ) );
+    }
+    
+    @Override
+    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    {
+        return new IteratorWrapper<Long,Property>( relationshipGetAllProperties( relationshipId ) )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws EntityNotFoundException
+    {
+        Iterator<Property> properties = relationshipGetAllProperties( relationshipId );
+        while ( properties.hasNext() )
+        {
+            Property property = properties.next();
+            if ( property.propertyKeyId() == propertyKeyId )
+            {
+                return property;
+            }
+        }
+        return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+    }
+    
+    @Override
+    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        return !relationshipGetProperty( relationshipId, propertyKeyId ).isNoProperty();
     }
 
     @Override
@@ -551,13 +628,47 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
             throw new IllegalStateException( "Relationship " + relationshipId + " has been deleted" );
         }
         return state.getRelationshipPropertyDiffSets( relationshipId )
-                    .apply( delegate.relationshipGetAllProperties( relationshipId ) );
+                    .apply( entityReadDelegate.relationshipGetAllProperties( relationshipId ) );
+    }
+    
+    @Override
+    public Iterator<Long> graphGetPropertyKeys()
+    {
+        return new IteratorWrapper<Long,Property>( graphGetAllProperties() )
+        {
+            @Override
+            protected Long underlyingObjectToObject( Property property )
+            {
+                return property.propertyKeyId();
+            }
+        };
+    }
+    
+    @Override
+    public Property graphGetProperty( long propertyKeyId )
+    {
+        Iterator<Property> properties = graphGetAllProperties();
+        while ( properties.hasNext() )
+        {
+            Property property = properties.next();
+            if ( property.propertyKeyId() == propertyKeyId )
+            {
+                return property;
+            }
+        }
+        return Property.noGraphProperty( propertyKeyId );
+    }
+    
+    @Override
+    public boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        return !graphGetProperty( propertyKeyId ).isNoProperty();
     }
     
     @Override
     public Iterator<Property> graphGetAllProperties()
     {
-        return state.getGraphPropertyDiffSets().apply( delegate.graphGetAllProperties() );
+        return state.getGraphPropertyDiffSets().apply( entityReadDelegate.graphGetAllProperties() );
     }
 
     private class HasPropertyFilter implements Predicate<Long>
@@ -615,5 +726,25 @@ public class StateHandlingStatementContext extends StoreOperationTranslatingStat
                 return false;
             }
         }
+    }
+    
+    // === TODO Below is unnecessary delegate methods
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( index );
+    }
+
+    @Override
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        return schemaReadDelegate.indexGetCommittedId( index );
+    }
+    
+    @Override
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return schemaReadDelegate.indexGetFailure( descriptor );
     }
 }

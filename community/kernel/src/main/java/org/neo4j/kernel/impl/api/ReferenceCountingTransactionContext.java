@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
@@ -28,19 +28,19 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     private final StatementContextOwner statementContextOwner = new StatementContextOwner()
     {
         @Override
-        protected StatementContext createStatementContext()
+        protected StatementContextParts createStatementContext()
         {
             return ReferenceCountingTransactionContext.this.createStatementContext();
         }
     };
 
-    public ReferenceCountingTransactionContext( TransactionContext inner )
+    public ReferenceCountingTransactionContext( TransactionContext delegate )
     {
-        super( inner );
+        super( delegate );
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
         return statementContextOwner.getStatementContext();
     }
@@ -59,7 +59,7 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
         delegate.rollback();
     }
 
-    private StatementContext createStatementContext()
+    private StatementContextParts createStatementContext()
     {
         return delegate.newStatementContext();
     }

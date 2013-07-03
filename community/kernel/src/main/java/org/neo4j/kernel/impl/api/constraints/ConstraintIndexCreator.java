@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -151,10 +151,10 @@ public class ConstraintIndexCreator
         return new Transactor.Statement<IndexDescriptor, SchemaKernelException>()
         {
             @Override
-            public IndexDescriptor perform( StatementContext statement ) throws
+            public IndexDescriptor perform( StatementContextParts statement ) throws
                     SchemaKernelException
             {
-                return statement.uniqueIndexCreate( labelId, propertyKeyId );
+                return statement.schemaWriteOperations().uniqueIndexCreate( labelId, propertyKeyId );
             }
         };
     }
@@ -165,9 +165,9 @@ public class ConstraintIndexCreator
         return new Transactor.Statement<Void, SchemaKernelException>()
         {
             @Override
-            public Void perform( StatementContext statement ) throws SchemaKernelException
+            public Void perform( StatementContextParts statement ) throws SchemaKernelException
             {
-                statement.uniqueIndexDrop( descriptor );
+                statement.schemaWriteOperations().uniqueIndexDrop( descriptor );
                 return null;
             }
         };

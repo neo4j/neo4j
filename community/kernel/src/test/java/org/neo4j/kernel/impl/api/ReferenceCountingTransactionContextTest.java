@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 
 import static org.junit.Assert.assertEquals;
@@ -33,20 +32,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.StatementContextTestHelper.mockedParts;
 
 public class ReferenceCountingTransactionContextTest
 {
     private TransactionContext inner;
-    private StatementContext actualContext;
-    private StatementContext otherActualContext;
+    private StatementContextParts actualContext;
+    private StatementContextParts otherActualContext;
     private ReferenceCountingTransactionContext singleContext;
 
     @Before
     public void given() throws Exception
     {
         inner = mock( TransactionContext.class );
-        actualContext = mock( StatementContext.class );
-        otherActualContext = mock( StatementContext.class );
+        actualContext = mockedParts();
+        otherActualContext = mockedParts();
         when( inner.newStatementContext() )
                 .thenReturn( actualContext )
                 .thenReturn( otherActualContext );
@@ -68,29 +68,29 @@ public class ReferenceCountingTransactionContextTest
     public void shouldNotCloseUnderlyingContextIfAnyoneIsStillUsingIt() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
+        StatementContextParts first = singleContext.newStatementContext();
         singleContext.newStatementContext();
 
         // WHEN
         first.close();
 
         // THEN
-        verify( actualContext, never() ).close();
+        verify( actualContext.lifecycleOperations(), never() ).close();
     }
 
     @Test
     public void closingAllStatementContextClosesUnderlyingContext() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
-        StatementContext other = singleContext.newStatementContext();
+        StatementContextParts first = singleContext.newStatementContext();
+        StatementContextParts other = singleContext.newStatementContext();
 
         // WHEN
         first.close();
         other.close();
 
         // THEN
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualContext.lifecycleOperations(), times( 1 ) ).close();
     }
 
     @Test
@@ -102,22 +102,22 @@ public class ReferenceCountingTransactionContextTest
 
         // THEN
         verify( inner, times( 2 ) ).newStatementContext();
-        verify( actualContext ).close();
-        verify( otherActualContext ).close();
+        verify( actualContext.lifecycleOperations() ).close();
+        verify( otherActualContext.lifecycleOperations() ).close();
     }
 
     @Test
     public void shouldNotBeAbleToInteractWithAClosedStatementContext() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
+        StatementContextParts first = singleContext.newStatementContext();
         singleContext.newStatementContext();
         first.close();
 
         // WHEN
         try
         {
-            first.labelGetName( 0 );
+            first.asStatementContext().labelGetName( 0 );
 
             fail( "expected exception" );
         }
@@ -132,7 +132,7 @@ public class ReferenceCountingTransactionContextTest
     public void shouldNotBeAbleToCloseTheSameStatementContextTwice() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
+        StatementContextParts first = singleContext.newStatementContext();
         singleContext.newStatementContext();
         first.close();
 
@@ -148,14 +148,14 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
         }
-        verify( actualContext, never() ).close();
+        verify( actualContext.lifecycleOperations(), never() ).close();
     }
 
     @Test
     public void shouldCloseAllStatementContextsOnCommit() throws Exception
     {
         // given
-        StatementContext context = singleContext.newStatementContext();
+        StatementContextParts context = singleContext.newStatementContext();
 
         // when
         singleContext.commit();
@@ -171,14 +171,14 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
         }
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualContext.lifecycleOperations(), times( 1 ) ).close();
     }
 
     @Test
     public void shouldCloseAllStatementContextsOnRollback() throws Exception
     {
         // given
-        StatementContext context = singleContext.newStatementContext();
+        StatementContextParts context = singleContext.newStatementContext();
 
         // when
         singleContext.rollback();
@@ -194,20 +194,20 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
         }
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualContext.lifecycleOperations(), times( 1 ) ).close();
     }
 
     @Test
     public void shouldBeAbleToOpenNewStatementContextsAfterCommit() throws Exception
     {
         // given
-        StatementContext before = singleContext.newStatementContext();
+        StatementContextParts before = singleContext.newStatementContext();
 
         // when
         singleContext.commit();
 
         // then
-        StatementContext after = singleContext.newStatementContext();
+        StatementContextParts after = singleContext.newStatementContext();
 
         try
         {
@@ -219,9 +219,9 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
         }
-        verify( actualContext, times( 1 ) ).close();
-        verifyZeroInteractions( otherActualContext );
+        verify( actualContext.lifecycleOperations(), times( 1 ) ).close();
+        verifyZeroInteractions( otherActualContext.lifecycleOperations() );
         after.close();
-        verify( otherActualContext, times( 1 ) ).close();
+        verify( otherActualContext.lifecycleOperations(), times( 1 ) ).close();
     }
 }

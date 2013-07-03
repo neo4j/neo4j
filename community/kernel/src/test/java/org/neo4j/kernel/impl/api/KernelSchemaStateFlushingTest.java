@@ -23,11 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -134,8 +133,8 @@ public class KernelSchemaStateFlushingTest
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
-        StatementContext ctx = txc.newStatementContext();
-        UniquenessConstraint descriptor = ctx.uniquenessConstraintCreate( 1, 1 );
+        StatementContextParts ctx = txc.newStatementContext();
+        UniquenessConstraint descriptor = ctx.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
         ctx.close();
         tx.success();
         tx.finish();
@@ -146,8 +145,8 @@ public class KernelSchemaStateFlushingTest
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
-        StatementContext ctx = txc.newStatementContext();
-        ctx.constraintDrop( descriptor );
+        StatementContextParts ctx = txc.newStatementContext();
+        ctx.schemaWriteOperations().constraintDrop( descriptor );
         ctx.close();
         tx.success();
         tx.finish();
@@ -157,8 +156,8 @@ public class KernelSchemaStateFlushingTest
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
-        StatementContext ctx = txc.newStatementContext();
-        IndexDescriptor descriptor = ctx.indexCreate( 1, 1 );
+        StatementContextParts ctx = txc.newStatementContext();
+        IndexDescriptor descriptor = ctx.schemaWriteOperations().indexCreate( 1, 1 );
         ctx.close();
         tx.success();
         tx.finish();
@@ -169,8 +168,8 @@ public class KernelSchemaStateFlushingTest
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
-        StatementContext ctx = txc.newStatementContext();
-        ctx.indexDrop( descriptor );
+        StatementContextParts ctx = txc.newStatementContext();
+        ctx.schemaWriteOperations().indexDrop( descriptor );
         ctx.close();
         tx.success();
         tx.finish();
@@ -180,8 +179,8 @@ public class KernelSchemaStateFlushingTest
     {
         Transaction tx = db.beginTx();
         TransactionContext txc = txManager.getTransactionContext();
-        StatementContext ctx = txc.newStatementContext();
-        SchemaIndexTestHelper.awaitIndexOnline( ctx, descriptor );
+        StatementContextParts ctx = txc.newStatementContext();
+        SchemaIndexTestHelper.awaitIndexOnline( ctx.schemaReadOperations(), descriptor );
         ctx.close();
         tx.success();
         tx.finish();
@@ -206,10 +205,10 @@ public class KernelSchemaStateFlushingTest
     
     private String getOrCreateFromState( TransactionContext tx, String key, final String value )
     {
-        StatementContext ctx = tx.newStatementContext();
+        StatementContextParts ctx = tx.newStatementContext();
         try 
         {
-            return ctx.schemaStateGetOrCreate( key, new Function<String, String>()
+            return ctx.schemaStateOperations().schemaStateGetOrCreate( key, new Function<String, String>()
             {
                 @Override
                 public String apply( String from )

@@ -56,6 +56,13 @@ public abstract class Primitive implements SizeOfObject
         return ensurePropertiesLoaded( loader, updateListener );
     }
 
+    public Property getProperty( CacheLoader<Iterator<Property>> loader, CacheUpdateListener updateListener,
+            int key )
+    {
+        ensurePropertiesLoaded( loader, updateListener );
+        return getCachedProperty( key );
+    }
+    
     private Iterator<Property> ensurePropertiesLoaded( CacheLoader<Iterator<Property>> loader,
             CacheUpdateListener updateListener )
     {
@@ -87,6 +94,8 @@ public abstract class Primitive implements SizeOfObject
     }
 
     protected abstract Iterator<Property> getCachedProperties();
+    
+    protected abstract Property getCachedProperty( int key );
 
     protected abstract boolean hasLoadedProperties();
 

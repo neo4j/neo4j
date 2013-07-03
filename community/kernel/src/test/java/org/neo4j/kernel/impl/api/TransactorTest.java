@@ -25,7 +25,7 @@ import javax.transaction.Transaction;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -43,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.StatementContextTestHelper.mockedParts;
 
 @SuppressWarnings("deprecation")
 public class TransactorTest
@@ -59,8 +60,7 @@ public class TransactorTest
         TransactionContext txContext = mock( TransactionContext.class );
         when( txManager.getTransactionContext() ).thenReturn( txContext );
 
-        StatementContext stmtContext = mock( StatementContext.class );
-        when( txContext.newStatementContext() ).thenReturn( stmtContext );
+        StatementContextParts stmtContext = mockedParts( txContext );
 
         @SuppressWarnings("unchecked")
         Transactor.Statement<Object, KernelException> statement = mock( Transactor.Statement.class );
@@ -74,16 +74,16 @@ public class TransactorTest
 
         // then
         assertEquals( expectedResult, result );
-        InOrder order = inOrder( txManager, txContext, stmtContext, statement );
+        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getTransactionContext();
         order.verify( txContext ).newStatementContext();
         order.verify( statement ).perform( stmtContext );
-        order.verify( stmtContext ).close();
+        order.verify( stmtContext.lifecycleOperations() ).close();
         order.verify( txContext ).commit();
         order.verify( txManager ).resume( existingTransaction );
-        verifyNoMoreInteractions( txManager, txContext, stmtContext, statement );
+        order.verifyNoMoreInteractions();
     }
 
     @Test
@@ -98,13 +98,13 @@ public class TransactorTest
         TransactionContext txContext = mock( TransactionContext.class );
         when( txManager.getTransactionContext() ).thenReturn( txContext );
 
-        StatementContext stmtContext = mock( StatementContext.class );
+        StatementContextParts stmtContext = mockedParts( txContext );
         when( txContext.newStatementContext() ).thenReturn( stmtContext );
 
         @SuppressWarnings("unchecked")
         Transactor.Statement<Object, KernelException> statement = mock( Transactor.Statement.class );
         SpecificKernelException exception = new SpecificKernelException();
-        when( statement.perform( any( StatementContext.class ) ) ).thenThrow( exception );
+        when( statement.perform( any( StatementContextParts.class ) ) ).thenThrow( exception );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -120,16 +120,16 @@ public class TransactorTest
         {
             assertSame( exception, e );
         }
-        InOrder order = inOrder( txManager, txContext, stmtContext, statement );
+        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getTransactionContext();
         order.verify( txContext ).newStatementContext();
         order.verify( statement ).perform( stmtContext );
-        order.verify( stmtContext ).close();
+        order.verify( stmtContext.lifecycleOperations() ).close();
         order.verify( txContext ).rollback();
         order.verify( txManager ).resume( existingTransaction );
-        verifyNoMoreInteractions( txManager, txContext, stmtContext, statement );
+        order.verifyNoMoreInteractions();
     }
 
     @Test
@@ -141,7 +141,7 @@ public class TransactorTest
         TransactionContext txContext = mock( TransactionContext.class );
         when( txManager.getTransactionContext() ).thenReturn( txContext );
 
-        StatementContext stmtContext = mock( StatementContext.class );
+        StatementContextParts stmtContext = mockedParts( txContext );
         when( txContext.newStatementContext() ).thenReturn( stmtContext );
 
         @SuppressWarnings("unchecked")
@@ -156,15 +156,15 @@ public class TransactorTest
 
         // then
         assertEquals( expectedResult, result );
-        InOrder order = inOrder( txManager, txContext, stmtContext, statement );
+        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getTransactionContext();
         order.verify( txContext ).newStatementContext();
         order.verify( statement ).perform( stmtContext );
-        order.verify( stmtContext ).close();
+        order.verify( stmtContext.lifecycleOperations() ).close();
         order.verify( txContext ).commit();
-        verifyNoMoreInteractions( txManager, txContext, stmtContext, statement );
+        order.verifyNoMoreInteractions();
     }
 
     @Test

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -199,25 +200,35 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         checkIfShutdown();
 
+        /* The StatementContext cake produced from the TransactionContext returned here (MP 2013-07-01):
+         * 
+         * x  = implements parts of that interface
+         * xx = implements the whole interface
+         * 
+         *                                  | KR | ER | SR | KW | EW | SW | SS |
+         * Ref counting                     |    |    |    |    |    |    |    |   statefull
+         * Locking                          |    |    | xx |    | xx | xx | xx |   statefull
+         * Constraint checking              |    |    |    | xx |    | x  |    |   stateless
+         * Tx state                         |    | x  | x  |    | xx | xx |    |   statefull
+         * Cache                            |    | x  | x  |    |    |    |    |   stateless
+         * Store                            | xx | xx | xx | xx | x  |    |    |   stateless
+         *                                  |----------------------------------|
+         */
 
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
-        StoreTransactionContext storeTransactionContext = new StoreTransactionContext(
-                transactionManager, persistenceManager,
-                propertyKeyTokenHolder, labelTokenHolder, nodeManager, neoStore, indexService
-        );
+        StoreTransactionContext storeTransactionContext = new StoreTransactionContext( transactionManager,
+                persistenceManager, propertyKeyTokenHolder, labelTokenHolder, neoStore, indexService );
 
         // + Transaction state and Caching
-        TransactionContext result =
-                new StateHandlingTransactionContext(
-                    storeTransactionContext,
-                    new SchemaStorage( neoStore.getSchemaStore() ),
-                    newTxState(), providerMap, persistenceCache, schemaCache,
-                    persistenceManager, schemaState,
-                    new ConstraintIndexCreator( new Transactor( transactionManager ), indexService ),
-                    propertyKeyTokenHolder, nodeManager
-                );
+        TransactionContext result = new StateHandlingTransactionContext(
+                storeTransactionContext,
+                new SchemaStorage( neoStore.getSchemaStore() ),
+                newTxState(), providerMap, persistenceCache, schemaCache,
+                persistenceManager, schemaState,
+                new ConstraintIndexCreator( new Transactor( transactionManager ), indexService ),
+                propertyKeyTokenHolder, nodeManager );
 
         // + Constraint evaluation
         result = new ConstraintValidatingTransactionContext( result );
@@ -250,36 +261,45 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementContext newReadOnlyStatementContext()
     {
         checkIfShutdown();
-        return statementContextOwners.get().getStatementContext();
+        return statementContextOwners.get().getStatementContext().asStatementContext();
     }
 
-    private StatementContext createReadOnlyStatementContext()
+    @SuppressWarnings( "resource" )
+    private StatementContextParts createReadOnlyStatementContext()
     {
         checkIfShutdown();
+        
+        /* The StatementContext cake produced here (MP 2013-07-01):
+         *
+         * Schema-state
+         * Read-only asserting
+         * Tx state
+         * Cache
+         * Store
+         */
 
         // I/O
         SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        StatementContext result = new StoreStatementContext(
+        StoreStatementContext storeContext = new StoreStatementContext(
                 propertyKeyTokenHolder, labelTokenHolder,
-                nodeManager, schemaStorage, neoStore, persistenceManager,
-                indexService, new IndexReaderFactory.Caching( indexService )
-        );
+                schemaStorage, neoStore, persistenceManager,
+                indexService, new IndexReaderFactory.Caching( indexService ) );
 
         // + Cache
-        result = new CachingStatementContext( result, persistenceCache, schemaCache );
+        CachingStatementContext cachingContext = new CachingStatementContext(
+                storeContext,
+                storeContext,
+                persistenceCache, schemaCache );
 
         // + Read only access
-        result = new ReadOnlyStatementContext( result );
+        ReadOnlyStatementContext readOnlyContext = new ReadOnlyStatementContext(
+                new SchemaStateConcern( schemaState ) );
 
-        // + Schema state handling
-        result = createSchemaStateStatementContext( result );
-
-        return result;
-    }
-
-    private StatementContext createSchemaStateStatementContext( StatementContext inner )
-    {
-        return new CompositeStatementContext( inner, new SchemaStateConcern( schemaState ) );
+        return new StatementContextParts(
+                storeContext, readOnlyContext,
+                cachingContext, storeContext,
+                cachingContext, readOnlyContext,
+                readOnlyContext, storeContext );
     }
 
     private TxState newTxState()
@@ -315,7 +335,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             StatementContextOwner owner = new StatementContextOwner()
             {
                 @Override
-                protected StatementContext createStatementContext()
+                protected StatementContextParts createStatementContext()
                 {
                     return Kernel.this.createReadOnlyStatementContext();
                 }

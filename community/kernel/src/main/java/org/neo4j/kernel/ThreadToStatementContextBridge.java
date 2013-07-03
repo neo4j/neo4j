@@ -45,7 +45,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
     public StatementContext getCtxForReading()
     {
         StatementContext ctx = getStatementContext();
-        if(ctx != null)
+        if ( ctx != null )
         {
             return ctx;
         }
@@ -83,6 +83,4 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
             throw new DatabaseShutdownException();
         }
     }
-
-
 }

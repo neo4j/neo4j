@@ -27,8 +27,6 @@ import java.nio.channels.FileChannel;
 
 import static java.nio.ByteBuffer.wrap;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-
 /**
  * Helper class for storing a failure message that happens during an OutOfDisk situation in
  * a pre-allocated file

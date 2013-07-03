@@ -22,7 +22,7 @@ package org.neo4j.server.rest.transactional;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -41,7 +41,7 @@ class TransitionalTxManagementTransactionContext implements TransactionContext
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
         return ctx.newStatementContext();
     }

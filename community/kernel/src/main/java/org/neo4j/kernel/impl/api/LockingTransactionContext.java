@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -32,10 +32,10 @@ public class LockingTransactionContext extends DelegatingTransactionContext
 {
     private final LockHolder lockHolder;
 
-    public LockingTransactionContext( TransactionContext actual, LockManager lockManager,
+    public LockingTransactionContext( TransactionContext delegate, LockManager lockManager,
             TransactionManager transactionManager, NodeManager nodeManager )
     {
-        super( actual );
+        super( delegate );
         try
         {
             // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
@@ -49,15 +49,22 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
         // The actual transaction context
-        StatementContext result = super.newStatementContext();
-        // + Locking
-        result = new LockingStatementContext( result, lockHolder );
+        StatementContextParts parts = delegate.newStatementContext();
         
-        // done
-        return result;
+        // + Locking
+        LockingStatementContext lockingContext = new LockingStatementContext(
+                parts.entityWriteOperations(),
+                parts.schemaReadOperations(),
+                parts.schemaWriteOperations(),
+                parts.schemaStateOperations(),
+                lockHolder );
+        
+        parts.replace(
+                null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, null );
+        return parts;
     }
 
     @Override
@@ -65,7 +72,7 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     {
         try
         {
-            super.commit();
+            delegate.commit();
         }
         finally
         {
@@ -78,7 +85,7 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     {
         try
         {
-            super.rollback();
+            delegate.rollback();
         }
         finally
         {

@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -56,7 +56,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private final NodeManager nodeManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
-    public StateHandlingTransactionContext( StoreTransactionContext actual,
+    public StateHandlingTransactionContext( StoreTransactionContext delegate,
                                             SchemaStorage schemaStorage,
                                             TxState state,
                                             SchemaIndexProviderMap providerMap,
@@ -67,7 +67,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                                             PropertyKeyTokenHolder propertyKeyTokenHolder,
                                             NodeManager nodeManager )
     {
-        super( actual );
+        super( delegate );
         this.schemaStorage = schemaStorage;
         this.providerMap = providerMap;
         this.persistenceCache = persistenceCache;
@@ -81,24 +81,34 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
         // Store stuff
-        StoreStatementContext storeContext = (StoreStatementContext) super.newStatementContext();
-        StatementContext result = storeContext;
+        StatementContextParts parts = delegate.newStatementContext();
 
         // + Caching
-        result = new CachingStatementContext( result, persistenceCache, schemaCache );
+        CachingStatementContext cachingContext = new CachingStatementContext(
+                parts.entityReadOperations(),
+                parts.schemaReadOperations(),
+                persistenceCache, schemaCache );
+        parts.replace( null, null, cachingContext, null, cachingContext, null, null, null );
 
         // + Transaction-local state awareness
-        AuxiliaryStoreOperations auxStoreOperations = storeContext; // StoreStatementContext implements it too
+        AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
         auxStoreOperations = new LegacyAutoIndexAuxStoreOps( auxStoreOperations, propertyKeyTokenHolder,
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
         
-        result = new StateHandlingStatementContext( result,
-                new SchemaStateConcern( schemaState ), state, constraintIndexCreator, auxStoreOperations );
+        StateHandlingStatementContext stateHandlingContext = new StateHandlingStatementContext(
+                parts.entityReadOperations(),
+                parts.schemaReadOperations(),
+                auxStoreOperations,
+                state, constraintIndexCreator );
+        parts.replace(
+                null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
+                new SchemaStateConcern( schemaState ), null );
+                
         // done
-        return result;
+        return parts;
     }
 
     @Override
