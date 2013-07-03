@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class UniquenessConstraintStoppingTransactionContext extends DelegatingTransactionContext
@@ -35,21 +35,26 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
-        StatementContext delegate = super.newStatementContext();
-        UniquenessConstraintStoppingStatementContext schemaOperations =
-                new UniquenessConstraintStoppingStatementContext( delegate );
-        return new CompositeStatementContext( delegate, schemaOperations );
+        StatementContextParts parts = delegate.newStatementContext();
+        
+        UniquenessConstraintStoppingStatementContext stoppingContext =
+                new UniquenessConstraintStoppingStatementContext( parts.schemaWriteOperations() );
+        
+        parts.replace( null, null, null, null, null, stoppingContext, null, null );
+        return parts;
     }
 
-    private class UniquenessConstraintStoppingStatementContext extends DelegatingSchemaOperations
+    private static class UniquenessConstraintStoppingStatementContext implements SchemaWriteOperations
     {
-        private UniquenessConstraintStoppingStatementContext( SchemaOperations schemaOperations )
-        {
-            super( schemaOperations );
-        }
+        private final SchemaWriteOperations schemaWriteDeletage;
 
+        public UniquenessConstraintStoppingStatementContext( SchemaWriteOperations schemaWriteDeletage )
+        {
+            this.schemaWriteDeletage = schemaWriteDeletage;
+        }
+        
         @Override
         public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
                 throws SchemaKernelException
@@ -78,6 +83,20 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
         private RuntimeException unsupportedOperation()
         {
             return new UnsupportedSchemaModificationException();
+        }
+        
+        // === TODO Below is unnecessary delegate methods
+
+        @Override
+        public IndexDescriptor indexCreate( long labelId, long propertyKeyId ) throws SchemaKernelException
+        {
+            return schemaWriteDeletage.indexCreate( labelId, propertyKeyId );
+        }
+
+        @Override
+        public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+        {
+            schemaWriteDeletage.indexDrop( descriptor );
         }
     }
 }

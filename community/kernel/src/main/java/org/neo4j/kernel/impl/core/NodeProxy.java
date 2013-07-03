@@ -214,8 +214,8 @@ public class NodeProxy implements Node
         StatementContext context = statementCtxProvider.getCtxForWriting();
         try
         {
-            long propertyId = context.propertyKeyGetOrCreateForName( key );
-            return context.nodeRemoveProperty( nodeId, propertyId ).value( null );
+            long propertyKeyId = context.propertyKeyGetOrCreateForName( key );
+            return context.nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -247,8 +247,8 @@ public class NodeProxy implements Node
         StatementContext context = statementCtxProvider.getCtxForReading();
         try
         {
-            long propertyId = context.propertyKeyGetForName( key );
-            return context.nodeGetProperty( nodeId, propertyId ).value(defaultValue);
+            long propertyKeyId = context.propertyKeyGetForName( key );
+            return context.nodeGetProperty( nodeId, propertyKeyId ).value(defaultValue);
         }
         catch ( EntityNotFoundException e )
         {
@@ -343,8 +343,8 @@ public class NodeProxy implements Node
         StatementContext context = statementCtxProvider.getCtxForReading();
         try
         {
-            long propertyId = context.propertyKeyGetForName( key );
-            return context.nodeGetProperty( nodeId, propertyId ).value();
+            long propertyKeyId = context.propertyKeyGetForName( key );
+            return context.nodeGetProperty( nodeId, propertyKeyId ).value();
         }
         catch ( EntityNotFoundException e )
         {
@@ -377,8 +377,8 @@ public class NodeProxy implements Node
         StatementContext context = statementCtxProvider.getCtxForReading();
         try
         {
-            long propertyId = context.propertyKeyGetForName( key );
-            return context.nodeHasProperty( nodeId, propertyId );
+            long propertyKeyId = context.propertyKeyGetForName( key );
+            return context.nodeHasProperty( nodeId, propertyKeyId );
         }
         catch ( EntityNotFoundException e )
         {

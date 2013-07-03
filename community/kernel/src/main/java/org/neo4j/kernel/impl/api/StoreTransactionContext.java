@@ -24,12 +24,12 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -42,29 +42,30 @@ public class StoreTransactionContext implements TransactionContext
     private final NeoStore neoStore;
     private final IndexingService indexingService;
     private final LabelTokenHolder labelTokenHolder;
-    private final NodeManager nodeManager;
     private final PersistenceManager persistenceManager;
 
     public StoreTransactionContext( AbstractTransactionManager transactionManager,
                                     PersistenceManager persistenceManager,
                                     PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                    NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
+                                    NeoStore neoStore, IndexingService indexingService )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;
-        this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
     }
 
+    @SuppressWarnings( "resource" )
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
-        return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
-                                          new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
-                                          indexingService, new IndexReaderFactory.Caching( indexingService ) );
+        StoreStatementContext context = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder,
+                new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
+                indexingService, new IndexReaderFactory.Caching( indexingService ) );
+        return new StatementContextParts( context, context, context, context, context, null, null, context )
+            .additionalPart( AuxiliaryStoreOperations.class, context );
     }
 
     @Override

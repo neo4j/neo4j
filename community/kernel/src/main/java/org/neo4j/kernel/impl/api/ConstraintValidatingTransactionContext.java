@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementContextParts;
 import org.neo4j.kernel.api.TransactionContext;
 
 /**
@@ -36,12 +36,17 @@ public class ConstraintValidatingTransactionContext extends DelegatingTransactio
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementContextParts newStatementContext()
     {
-        StatementContext result = super.newStatementContext();
+        StatementContextParts parts = delegate.newStatementContext();
+        
         // + Constraints
-        result = new DataIntegrityValidatingStatementContext( result );
+        DataIntegrityValidatingStatementContext dataIntegrityContext = new DataIntegrityValidatingStatementContext(
+                parts.keyWriteOperations(),
+                parts.schemaReadOperations(),
+                parts.schemaWriteOperations() );
 
-        return result;
+        parts.replace( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null, null );
+        return parts;
     }
 }

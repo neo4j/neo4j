@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -33,6 +32,9 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -53,9 +55,11 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
@@ -69,7 +73,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -78,10 +82,12 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( inner.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
@@ -95,7 +101,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -104,10 +110,12 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( inner.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
@@ -121,7 +129,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -130,10 +138,12 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
 
         // WHEN
         try
@@ -147,7 +157,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -156,10 +166,13 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
-        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+                withIterator( indexDescriptor ) );
+        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
@@ -173,7 +186,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -182,10 +195,13 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
-        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+                withIterator( indexDescriptor ) );
+        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
@@ -199,7 +215,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
@@ -208,10 +224,13 @@ public class DataIntegrityValidatingStatementContextTest
         // GIVEN
         long label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
-        when( inner.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( indexDescriptor ) );
-        when( inner.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
+        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
+        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+                withIterator( indexDescriptor ) );
+        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
@@ -225,14 +244,15 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( inner, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
     }
 
     @Test
     public void shouldDisallowNullOrEmptyPropertyKey() throws Exception
     {
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        KeyWriteOperations inner = mock( KeyWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( inner, null, null );
 
         try
         {
@@ -256,8 +276,9 @@ public class DataIntegrityValidatingStatementContextTest
     @Test
     public void shouldDisallowNullOrEmptyLabelName() throws Exception
     {
-        StatementContext inner = mock( StatementContext.class );
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( inner );
+        KeyWriteOperations inner = mock( KeyWriteOperations.class );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( inner, null, null );
 
         try
         {
@@ -290,24 +311,25 @@ public class DataIntegrityValidatingStatementContextTest
         };
     }
 
-    @Test(expected = SchemaKernelException.class)
+    @Test( expected = SchemaKernelException.class )
     public void shouldFailInvalidLabelNames() throws Exception
     {
         // Given
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, null, null );
 
         // When
         ctx.labelGetOrCreateForName( "" );
     }
 
-    @Test(expected = SchemaKernelException.class)
+    @Test( expected = SchemaKernelException.class )
     public void shouldFailOnNullLabel() throws Exception
     {
         // Given
-        DataIntegrityValidatingStatementContext ctx = new DataIntegrityValidatingStatementContext( null );
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, null, null );
 
         // When
         ctx.labelGetOrCreateForName( null );
     }
-
 }

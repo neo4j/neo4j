@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.Closeable;
-
 import org.neo4j.kernel.api.operations.EntityOperations;
 import org.neo4j.kernel.api.operations.KeyOperations;
 import org.neo4j.kernel.api.operations.ReadOperations;
@@ -51,17 +49,13 @@ import org.neo4j.kernel.api.operations.WriteOperations;
  *
  * Parameter order for all methods, should reflect the order of words in the method name, with the most prominent entity
  * being the first parameter.
+ * 
+ * This interface should not be implemented directly by classes providing just some parts of it all. Instead
+ * implement the specific sub-interfaces.
  */
 public interface StatementContext
         extends ReadOperations, WriteOperations,
                 KeyOperations, EntityOperations, SchemaOperations,
-                Closeable
+                LifecycleOperations
 {
-    /**
-     * Closes this statement. Statements must be closed when done and before
-     * their parent transaction finishes.
-     * As an example statement-bound locks can be released when closing
-     * a statement.
-     */
-    void close();
 }

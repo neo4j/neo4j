@@ -34,7 +34,6 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementContext;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -289,9 +288,8 @@ public class LabelTransactionStateTest
         state = new TxState( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
 
-        txContext = new StateHandlingStatementContext( store, mock( SchemaStateOperations.class), state,
-                                                       mock( ConstraintIndexCreator.class ),
-                                                       mock( AuxiliaryStoreOperations.class ) );
+        txContext = new StateHandlingStatementContext( store, store, mock( AuxiliaryStoreOperations.class ), state,
+                                                       mock( ConstraintIndexCreator.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

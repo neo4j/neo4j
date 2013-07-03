@@ -28,10 +28,10 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -44,11 +44,15 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.api.operations.EntityReadOperations;
+import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -83,45 +87,38 @@ import static org.neo4j.helpers.collection.IteratorUtil.contains;
  * Cache reading and invalidation is not the concern of this part of the system, that is an optimization on top of the
  * committed data in the database, and should as such live under that abstraction.
  */
-public class StoreStatementContext extends StoreOperationTranslatingStatementContext implements AuxiliaryStoreOperations
+public class StoreStatementContext implements
+    KeyReadOperations,
+    KeyWriteOperations,
+    EntityReadOperations,
+    EntityWriteOperations,
+    SchemaReadOperations,
+    AuxiliaryStoreOperations,
+    LifecycleOperations
 {
+    private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
+            new Function<UniquenessConstraintRule, UniquenessConstraint>()
+    {
+        @Override
+        public UniquenessConstraint apply( UniquenessConstraintRule rule )
+        {
+            // We can use propertyKeyId straight up here, without reading from the record, since we have
+            // verified that it has that propertyKeyId in the predicate. And since we currently only support
+            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+            return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
+        }
+    };
+    
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
-    private final NodeManager nodeManager;
     private final NeoStore neoStore;
     private final IndexingService indexService;
     private final IndexReaderFactory indexReaderFactory;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
-    private final Function<String, Long> propertyStringToId = new Function<String, Long>()
-    {
-        @Override
-        public Long apply( String s )
-        {
-            try
-            {
-                return propertyKeyGetForName( s );
-            }
-            catch ( PropertyKeyNotFoundException e )
-            {
-                throw new ThisShouldNotHappenError( "Jake", "Property key id stored in store should exist." );
-            }
-        }
-    };
-    private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
-            new Function<UniquenessConstraintRule, UniquenessConstraint>()
-            {
-                @Override
-                public UniquenessConstraint apply( UniquenessConstraintRule rule )
-                {
-                    // We can use propertyKeyId straight up here, without reading from the record, since we have
-                    // verified that it has that propertyKeyId in the predicate. And since we currently only support
-                    // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-                    return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
-                }
-            };
     private final SchemaStorage schemaStorage;
+    private boolean open = true;
     
     // TODO this is here since the move of properties from Primitive and friends to the Kernel API.
     // ideally we'd have StateHandlingStatementContext not delegate setProperty to this StoreStatementContext,
@@ -129,7 +126,7 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
     private final PersistenceManager persistenceManager;
 
     public StoreStatementContext( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                  NodeManager nodeManager, SchemaStorage schemaStorage, NeoStore neoStore,
+                                  SchemaStorage schemaStorage, NeoStore neoStore,
                                   PersistenceManager persistenceManager,
                                   IndexingService indexService, IndexReaderFactory indexReaderFactory )
     {
@@ -140,7 +137,6 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
         this.indexReaderFactory = indexReaderFactory;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.nodeStore = neoStore.getNodeStore();
         this.relationshipStore = neoStore.getRelationshipStore();
@@ -148,17 +144,36 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
         this.persistenceManager = persistenceManager;
     }
 
-    @Override
-    protected void beforeWriteOperation()
+    private UnsupportedOperationException shouldNotManipulateStoreDirectly()
     {
         throw new UnsupportedOperationException(
                 "The storage layer can not be written to directly, you have to go through a transaction." );
+    }
+    
+    private UnsupportedOperationException shouldNotHaveReachedAllTheWayHere()
+    {
+        throw new UnsupportedOperationException(
+                "This call should not reach all the way here" );
+    }
+    
+    private UnsupportedOperationException shouldCallAuxiliaryInstead()
+    {
+        return new UnsupportedOperationException(
+                "This shouldn't be called directly, but instead to an appropriate method in the " + 
+                        AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
     }
 
     @Override
     public void close()
     {
         indexReaderFactory.close();
+        open = false;
+    }
+    
+    @Override
+    public boolean isOpen()
+    {
+        return open;
     }
 
     @Override
@@ -462,7 +477,7 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
             throw new PropertyKeyIdNotFoundException( propertyKeyId, e );
         }
     }
-
+    
     @Override
     public Iterator<Property> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
@@ -518,18 +533,6 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
             throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId( index ) ).lookup( value );
-    }
-
-    @Override
-    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
-    {
-        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
-    }
-
-    @Override
-    public <K> boolean schemaStateContains( K key )
-    {
-        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
     }
 
     @Override
@@ -647,10 +650,85 @@ public class StoreStatementContext extends StoreOperationTranslatingStatementCon
         throw shouldCallAuxiliaryInstead();
     }
     
-    private UnsupportedOperationException shouldCallAuxiliaryInstead()
+    @Override
+    public void nodeDelete( long nodeId )
     {
-        return new UnsupportedOperationException(
-                "This shouldn't be called directly, but instead to an appropriate method in the " + 
-                        AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
+        throw shouldNotManipulateStoreDirectly();
+    }
+
+    @Override
+    public void relationshipDelete( long relationshipId )
+    {
+        throw shouldNotManipulateStoreDirectly();
+    }
+
+    @Override
+    public boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    {
+        throw shouldNotManipulateStoreDirectly();
+    }
+
+    @Override
+    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    {
+        throw shouldNotManipulateStoreDirectly();
+    }
+
+    @Override
+    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public Property graphGetProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public boolean nodeHasProperty( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
+            EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public Iterator<Long> nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public Iterator<Long> relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
+    }
+
+    @Override
+    public Iterator<Long> graphGetPropertyKeys()
+    {
+        throw shouldNotHaveReachedAllTheWayHere();
     }
 }
