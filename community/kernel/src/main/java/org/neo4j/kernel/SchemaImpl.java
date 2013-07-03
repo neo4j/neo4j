@@ -84,7 +84,7 @@ public class SchemaImpl implements Schema
         StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            List<IndexDefinition> definitions = new ArrayList<>();
+            List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
             long labelId = context.labelGetForName( label.name() );
             addDefinitions( definitions, context, context.indexesGetForLabel( labelId ), false );
             addDefinitions( definitions, context, context.uniqueIndexesGetForLabel( labelId ), true );
@@ -106,7 +106,7 @@ public class SchemaImpl implements Schema
         StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            List<IndexDefinition> definitions = new ArrayList<>();
+            List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
             addDefinitions( definitions, context, context.indexesGetAll(), false );
             addDefinitions( definitions, context, context.uniqueIndexesGetAll(), true );
             return definitions;
@@ -156,7 +156,7 @@ public class SchemaImpl implements Schema
             case ONLINE:
                 return;
             case FAILED:
-                throw new IllegalStateException( "Index entered a FAILED state: " + getIndexFailure( index ) );
+                throw new IllegalStateException( "Index entered a FAILED state. Please see database logs." );
             default:
                 try
                 {
@@ -175,7 +175,7 @@ public class SchemaImpl implements Schema
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
-        Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
+        Collection<IndexDefinition> onlineIndexes = new ArrayList<IndexDefinition>();
 
         for ( Iterator<IndexDefinition> iter = getIndexes().iterator(); iter.hasNext(); )
         {

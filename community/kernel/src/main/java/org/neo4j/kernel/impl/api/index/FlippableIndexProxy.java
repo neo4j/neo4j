@@ -296,41 +296,19 @@ public class FlippableIndexProxy implements IndexProxy
     public void flip( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
             throws FlipFailedKernelException
     {
-        flip( false, actionDuringFlip, failureDelegate );
-    }
-
-    public void flipIfOpen( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
-            throws FlipFailedKernelException
-    {
-        flip( true, actionDuringFlip, failureDelegate );
-    }
-
-    private void flip( boolean flipOnlyIfOpen, Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
-            throws FlipFailedKernelException
-    {
         lock.writeLock().lock();
         try
         {
-            if ( closed )
+            assertStillOpenForBusiness();
+            try
             {
-                if (! flipOnlyIfOpen )
-                {
-                    throw new IllegalStateException(
-                            this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
-                }
+                actionDuringFlip.call();
+                this.delegate = flipTarget.create();
             }
-            else
+            catch ( Exception e )
             {
-                try
-                {
-                    actionDuringFlip.call();
-                    this.delegate = flipTarget.create();
-                }
-                catch ( Exception e )
-                {
-                    this.delegate = failureDelegate.create( e );
-                    throw new FlipFailedKernelException( e );
-                }
+                this.delegate = failureDelegate.create( e );
+                throw new FlipFailedKernelException( e );
             }
         }
         finally
@@ -343,5 +321,14 @@ public class FlippableIndexProxy implements IndexProxy
     public String toString()
     {
         return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + "]";
+    }
+
+    private void assertStillOpenForBusiness()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException(
+                    this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
+        }
     }
 }
