@@ -274,24 +274,6 @@ public class FlippableIndexProxy implements IndexProxy
             lock.writeLock().unlock();
         }
     }
-//
-//    public void flip()
-//    {
-//        try
-//        {
-//            flip( NO_OP );
-//        }
-//        catch ( FlipFailedKernelException e )
-//        {
-//            throw new ThisShouldNotHappenError( "Mattias",
-//                                                "Flipping without a particular action should not fail this way" );
-//        }
-//    }
-//
-//    public void flip( Callable<Void> actionDuringFlip ) throws FlipFailedKernelException
-//    {
-//        flip( actionDuringFlip, delegate );
-//    }
 
     public void flip( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
             throws FlipFailedKernelException
