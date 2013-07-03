@@ -19,32 +19,50 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.LifecycleOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 
 public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
 {
-    private final StatementContextOwner statementContextOwner = new StatementContextOwner()
-    {
-        @Override
-        protected StatementContextParts createStatementContext()
-        {
-            return ReferenceCountingTransactionContext.this.createStatementContext();
-        }
-    };
+    private StatementStateOwner statementContextOwner;
 
-    public ReferenceCountingTransactionContext( TransactionContext delegate )
+    public ReferenceCountingTransactionContext( KernelTransaction delegate,
+            LifecycleOperations refCountingOperations )
     {
         super( delegate );
+        statementContextOwner = new StatementStateOwner( refCountingOperations )
+        {
+            @Override
+            protected StatementState createStatementState()
+            {
+                return ReferenceCountingTransactionContext.this.createOwnedStatementState();
+            }
+        };
     }
-
+    
     @Override
-    public StatementContextParts newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        return statementContextOwner.getStatementContext();
+        StatementOperationParts parts = delegate.newStatementOperations();
+        ReferenceCountingStatementOperations ops = new ReferenceCountingStatementOperations();
+        parts.replace( null, null, null, null, null, null, null, ops );
+        return parts;
     }
-
+    
+    @Override
+    public StatementState newStatementState()
+    {
+        return statementContextOwner.getStatementState();
+    }
+    
+    private StatementState createOwnedStatementState()
+    {
+        return delegate.newStatementState();
+    }
+    
     @Override
     public void commit() throws TransactionFailureException
     {
@@ -57,10 +75,5 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     {
         statementContextOwner.closeAllStatements();
         delegate.rollback();
-    }
-
-    private StatementContextParts createStatementContext()
-    {
-        return delegate.newStatementContext();
     }
 }

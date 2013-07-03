@@ -35,7 +35,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -64,7 +67,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class StoreStatementContextTest
+public class StoreStatementOperationsTest
 {
 
     @Test
@@ -72,7 +75,7 @@ public class StoreStatementContextTest
     {
         // When
         try {
-            statement.nodeAddLabel( 12, 12 );
+            statement.nodeAddLabel( state, 12, 12 );
             fail("Should have thrown unsupported operation.");
         } catch(UnsupportedOperationException e)
         {
@@ -87,13 +90,13 @@ public class StoreStatementContextTest
         Transaction tx = db.beginTx();
         long nodeId = db.createNode(label, label2).getId();
         String labelName1 = label.name(), labelName2 = label2.name();
-        long labelId1 = statement.labelGetForName( labelName1 );
-        long labelId2 = statement.labelGetOrCreateForName( labelName2 );
+        long labelId1 = statement.labelGetForName( state, labelName1 );
+        long labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
         tx.success();
         tx.finish();
 
         // THEN
-        Iterator<Long> readLabels = statement.nodeGetLabels( nodeId );
+        Iterator<Long> readLabels = statement.nodeGetLabels( state, nodeId );
         assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
@@ -103,10 +106,10 @@ public class StoreStatementContextTest
     {
         // GIVEN
         String labelName = label.name();
-        long labelId = statement.labelGetOrCreateForName( labelName );
+        long labelId = statement.labelGetOrCreateForName( state, labelName );
 
         // WHEN
-        String readLabelName = statement.labelGetName( labelId );
+        String readLabelName = statement.labelGetName( state, labelId );
 
         // THEN
         assertEquals( labelName, readLabelName );
@@ -136,8 +139,8 @@ public class StoreStatementContextTest
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label, label2 );
 
         // WHEN
-        Iterator<Long> nodesForLabel1 = statement.nodesGetForLabel( statement.labelGetForName( label.name() ) );
-        Iterator<Long> nodesForLabel2 = statement.nodesGetForLabel( statement.labelGetForName( label2.name() ) );
+        Iterator<Long> nodesForLabel1 = statement.nodesGetForLabel( state, statement.labelGetForName( state, label.name() ) );
+        Iterator<Long> nodesForLabel2 = statement.nodesGetForLabel( state, statement.labelGetForName( state, label2.name() ) );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
@@ -196,7 +199,7 @@ public class StoreStatementContextTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label ).getId();
 
             // when
-            Property property = single( statement.nodeGetAllProperties( nodeId ) );
+            Property property = single( statement.nodeGetAllProperties( state, nodeId ) );
 
             //then
             assertTrue( property + ".valueEquals(" + value + ")", property.valueEquals( value ) );
@@ -207,7 +210,7 @@ public class StoreStatementContextTest
     public void should_create_property_key_if_not_exists() throws Exception
     {
         // WHEN
-        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
 
         // THEN
         assertTrue( "Should have created a non-negative id", id >= 0 );
@@ -217,10 +220,10 @@ public class StoreStatementContextTest
     public void should_get_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
 
         // WHEN
-        long secondId = statement.propertyKeyGetForName( propertyKey );
+        long secondId = statement.propertyKeyGetForName( state, propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -230,10 +233,10 @@ public class StoreStatementContextTest
     public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
 
         // WHEN
-        long secondId = statement.propertyKeyGetOrCreateForName( propertyKey );
+        long secondId = statement.propertyKeyGetOrCreateForName( state, propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -245,7 +248,7 @@ public class StoreStatementContextTest
         // WHEN
         try
         {
-            statement.propertyKeyGetForName( "non-existent-property-key" );
+            statement.propertyKeyGetForName( state, "non-existent-property-key" );
             fail( "Should have failed with property key not found exception" );
         }
         catch ( PropertyKeyNotFoundException e )
@@ -264,7 +267,7 @@ public class StoreStatementContextTest
         Transaction tx = db.beginTx();
 
         // WHEN
-        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( index, name ) );
+        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
 
         // THEN
         assertEquals( asSet( mrTaylor.getId() ), foundNodes );
@@ -272,26 +275,29 @@ public class StoreStatementContextTest
     }
     
     private GraphDatabaseAPI db;
-    private StoreStatementContext statement;
     private final Label label = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
+    private StatementState state;
+    private StatementOperations statement;
 
     @Before
     public void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
         @SuppressWarnings("deprecation")// Ooh, jucky
         NeoStoreXaDataSource neoStoreDataSource = resolver
                 .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
-        statement = new StoreStatementContext(
+
+        StoreTransactionContext txContext = new StoreTransactionContext(
+                resolver.resolveDependency( AbstractTransactionManager.class ),
+                resolver.resolveDependency( PersistenceManager.class ),
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
-                new SchemaStorage( neoStoreDataSource.getNeoStore().getSchemaStore() ),
                 neoStoreDataSource.getNeoStore(),
-                resolver.resolveDependency( PersistenceManager.class ), indexingService,
-                new IndexReaderFactory.Caching( indexingService ));
+                resolver.resolveDependency( IndexingService.class ) );
+        statement = txContext.newStatementOperations().asStatementOperations();
+        state = txContext.newStatementState();
     }
 
     @After
@@ -335,8 +341,8 @@ public class StoreStatementContextTest
         try
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
-            return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
-                    statement.propertyKeyGetForName( propertyKey ) );
+            return statement.indexesGetForLabelAndPropertyKey( state, statement.labelGetForName( state, label.name() ),
+                    statement.propertyKeyGetForName( state, propertyKey ) );
         }
         finally
         {

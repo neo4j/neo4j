@@ -32,8 +32,6 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TabCompletion;
 import org.neo4j.shell.Welcome;
 
-import static org.neo4j.shell.Variables.PROMPT_KEY;
-
 /**
  * A common implementation of a {@link ShellServer}.
  */

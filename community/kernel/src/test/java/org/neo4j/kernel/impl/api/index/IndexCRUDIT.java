@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -82,8 +84,10 @@ public class IndexCRUDIT
         Transaction tx = db.beginTx();
         try
         {
-            long propertyKey1 = ctxProvider.getCtxForWriting().propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{ctxProvider.getCtxForWriting().labelGetForName( myLabel.name() )};
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForWriting();
+            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
+            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
         }
@@ -123,8 +127,10 @@ public class IndexCRUDIT
         tx = db.beginTx();
         try
         {
-            long propertyKey1 = ctxProvider.getCtxForWriting().propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{ctxProvider.getCtxForWriting().labelGetForName( myLabel.name() )};
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForWriting();
+            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
+            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
         }
@@ -201,9 +207,10 @@ public class IndexCRUDIT
         {
             try
             {
-                updates.add( NodePropertyUpdate.add( nodeId, ctxProvider.getCtxForReading().propertyKeyGetForName(
-                        propertyKey ),
-                        propertyValue, new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )} ) );
+                StatementOperations context = ctxProvider.getCtxForReading();
+                StatementState state = ctxProvider.statementForReading();
+                updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
+                        propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );
             }
             catch ( PropertyKeyNotFoundException e )
             {

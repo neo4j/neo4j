@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
@@ -33,7 +34,7 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public class ReadOnlyStatementContext implements
+public class ReadOnlyStatementOperations implements
     KeyWriteOperations,
     EntityWriteOperations,
     SchemaWriteOperations,
@@ -41,7 +42,7 @@ public class ReadOnlyStatementContext implements
 {
     private final SchemaStateOperations schemaStateDelegate;
 
-    public ReadOnlyStatementContext(
+    public ReadOnlyStatementOperations(
             SchemaStateOperations schemaStateDelegate )
     {
         this.schemaStateDelegate = schemaStateDelegate;
@@ -54,127 +55,127 @@ public class ReadOnlyStatementContext implements
     }
 
     @Override
-    public long labelGetOrCreateForName( String labelName ) throws SchemaKernelException
+    public long labelGetOrCreateForName( StatementState state, String labelName ) throws SchemaKernelException
     {
         throw notInTransaction();
     }
 
     @Override
-    public long propertyKeyGetOrCreateForName( String propertyKeyName ) throws SchemaKernelException
+    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException
     {
         throw notInTransaction();
     }
 
     @Override
-    public void nodeDelete( long nodeId )
+    public void nodeDelete( StatementState state, long nodeId )
     {
         throw notInTransaction();
     }
 
     @Override
-    public void relationshipDelete( long relationshipId )
+    public void relationshipDelete( StatementState state, long relationshipId )
     {
         throw notInTransaction();
     }
 
     @Override
-    public boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
+    public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property relationshipSetProperty( long relationshipId, Property property )
+    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property graphSetProperty( Property property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
+    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property graphRemoveProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public IndexDescriptor indexCreate( long labelId, long propertyKeyId ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
     {
         throw notInTransaction();
     }
 
     @Override
-    public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
+    public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
     {
         throw notInTransaction();
     }
 
     @Override
-    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw notInTransaction();
     }
 
     @Override
-    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw notInTransaction();
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
             throws SchemaKernelException
     {
         throw notInTransaction();
     }
 
     @Override
-    public void constraintDrop( UniquenessConstraint constraint )
+    public void constraintDrop( StatementState state, UniquenessConstraint constraint )
     {
         throw notInTransaction();
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( StatementState state, K key, Function<K, V> creator )
     {
-        return schemaStateDelegate.schemaStateGetOrCreate( key, creator );
+        return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
     }
 
     @Override
-    public <K> boolean schemaStateContains( K key )
+    public <K> boolean schemaStateContains( StatementState state, K key )
     {
-        return schemaStateDelegate.schemaStateContains( key );
+        return schemaStateDelegate.schemaStateContains( state, key );
     }
 }

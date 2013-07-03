@@ -29,12 +29,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -77,6 +79,43 @@ public class XaDataSourceManager
     public XaDataSourceManager( StringLogger msgLog )
     {
         this.msgLog = msgLog;
+    }
+    
+    public static DataSourceRegistrationListener filterListener( final DataSourceRegistrationListener listener,
+            final Predicate<XaDataSource> filter )
+    {
+        return new DataSourceRegistrationListener()
+        {
+            @Override
+            public void registeredDataSource( XaDataSource ds )
+            {
+                if ( filter.accept( ds ) )
+                {
+                    listener.registeredDataSource( ds );
+                }
+            }
+            
+            @Override
+            public void unregisteredDataSource( XaDataSource ds )
+            {
+                if ( filter.accept( ds ) )
+                {
+                    listener.unregisteredDataSource( ds );
+                }
+            }
+        };
+    }
+    
+    public static DataSourceRegistrationListener neoStoreListener( DataSourceRegistrationListener listener )
+    {
+        return filterListener( listener, new Predicate<XaDataSource>()
+        {
+            @Override
+            public boolean accept( XaDataSource item )
+            {
+                return item.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            }
+        } );
     }
 
     public void addDataSourceRegistrationListener( DataSourceRegistrationListener listener )

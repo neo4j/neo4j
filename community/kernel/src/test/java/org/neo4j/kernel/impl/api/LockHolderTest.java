@@ -39,7 +39,7 @@ public class LockHolderTest
         LockManager mgr = mock( LockManager.class );
         Transaction tx = mock( Transaction.class );
         NodeManager nm = mock( NodeManager.class );
-        LockHolder holder = new LockHolder( mgr, tx, nm );
+        LockHolder holder = new LockHolderImpl( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaReadLock();
@@ -56,7 +56,7 @@ public class LockHolderTest
         LockManager mgr = mock( LockManager.class );
         Transaction tx = mock( Transaction.class );
         NodeManager nm = mock( NodeManager.class );
-        LockHolder holder = new LockHolder( mgr, tx, nm );
+        LockHolder holder = new LockHolderImpl( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaWriteLock();
@@ -73,7 +73,7 @@ public class LockHolderTest
         LockManager mgr = mock( LockManager.class );
         Transaction tx = mock( Transaction.class );
         NodeManager nm = mock( NodeManager.class );
-        LockHolder holder = new LockHolder( mgr, tx, nm );
+        LockHolder holder = new LockHolderImpl( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaReadLock();
@@ -91,7 +91,7 @@ public class LockHolderTest
         LockManager mgr = mock( LockManager.class );
         Transaction tx = mock( Transaction.class );
         NodeManager nm = mock( NodeManager.class );
-        LockHolder holder = new LockHolder( mgr, tx, nm );
+        LockHolder holder = new LockHolderImpl( mgr, tx, nm );
 
         // WHEN
         holder.acquireSchemaWriteLock();

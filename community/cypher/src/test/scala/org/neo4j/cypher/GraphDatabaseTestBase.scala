@@ -25,12 +25,13 @@ import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.ThreadToStatementContextBridge
-import org.neo4j.kernel.api.StatementContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.scalatest.Assertions
+import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.kernel.api.operations.StatementState
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -96,7 +97,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
-  def execStatement[T](f: (StatementContext => T)): T = {
+  def execStatement[T](f: (StatementOperations => T)): T = {
     val tx = graph.beginTx
     val ctx = graph
       .getDependencyResolver
@@ -175,13 +176,19 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     (a, b, c, d)
   }
 
-  def statementContext:StatementContext=
+  def statementContext:StatementOperations =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
 
-  def readOnlyStatementContext:StatementContext=
+  def cakeState:StatementState =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForWriting
+    
+  def readOnlyStatementContext:StatementOperations =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForReading
 
-  def planContext:PlanContext= new TransactionBoundPlanContext(statementContext, graph)
+  def planContext:PlanContext= new TransactionBoundPlanContext(statementContext, cakeState, graph)
+
+  def readOnlyCakeState:StatementState =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForReading
 }
 
 trait Snitch extends GraphDatabaseAPI {

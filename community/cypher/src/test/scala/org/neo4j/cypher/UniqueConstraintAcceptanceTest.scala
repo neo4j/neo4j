@@ -24,8 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
-import org.neo4j.kernel.api.StatementContext
-
+import org.neo4j.kernel.api.StatementOperations
 
 class UniqueConstraintAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
@@ -39,11 +38,12 @@ class UniqueConstraintAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: StatementContext =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
+      context: StatementOperations =>
+        val state = graph.state
+        val prop = context.propertyKeyGetForName(state, "propertyKey")
+        val label = context.labelGetForName(state, "Label")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
 
         assert(constraints.size === 1)
     }
@@ -59,11 +59,12 @@ class UniqueConstraintAcceptanceTest
 
     // THEN
     graph.inTx {
-      context: StatementContext =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
+      context: StatementOperations =>
+        val state = graph.state
+        val prop = context.propertyKeyGetForName(state, "name")
+        val label = context.labelGetForName(state, "Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
 
         assertTrue("Constraint should exist", constraints.size == 1)
     }
@@ -81,11 +82,12 @@ class UniqueConstraintAcceptanceTest
 
     // THEN
     graph.inTx {
-      context:StatementContext =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
+      context:StatementOperations =>
+        val state = graph.state
+        val prop = context.propertyKeyGetForName(state, "name")
+        val label = context.labelGetForName(state, "Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
 
         assertTrue("Constraint should exist", constraints.size == 1)
     }
@@ -101,11 +103,12 @@ class UniqueConstraintAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: StatementContext =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
+      context: StatementOperations =>
+        val state = graph.state
+        val prop = context.propertyKeyGetForName(state, "propertyKey")
+        val label = context.labelGetForName(state, "Label")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
 
         assertTrue("No constraints should exist", constraints.isEmpty)
     }
@@ -130,12 +133,13 @@ class UniqueConstraintAcceptanceTest
     }
 
     graph.inTx {
-      context: StatementContext =>
+      context: StatementOperations =>
 
-        val prop = context.propertyKeyGetForName("id")
-        val label = context.labelGetForName("Person")
+        val state = graph.state
+        val prop = context.propertyKeyGetForName(state, "id")
+        val label = context.labelGetForName(state, "Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
+        val constraints = context.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
 
         assertTrue("No constraints should exist", constraints.isEmpty)
     }

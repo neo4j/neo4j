@@ -25,6 +25,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.api.CacheUpdateListener;
@@ -50,20 +51,20 @@ public abstract class Primitive implements SizeOfObject
 
     public abstract long getId();
     
-    public Iterator<Property> getProperties( CacheLoader<Iterator<Property>> loader,
+    public Iterator<Property> getProperties( StatementState state, CacheLoader<Iterator<Property>> loader,
             CacheUpdateListener updateListener )
     {
-        return ensurePropertiesLoaded( loader, updateListener );
+        return ensurePropertiesLoaded( state, loader, updateListener );
     }
 
-    public Property getProperty( CacheLoader<Iterator<Property>> loader, CacheUpdateListener updateListener,
+    public Property getProperty( StatementState state, CacheLoader<Iterator<Property>> loader, CacheUpdateListener updateListener,
             int key )
     {
-        ensurePropertiesLoaded( loader, updateListener );
+        ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
     }
     
-    private Iterator<Property> ensurePropertiesLoaded( CacheLoader<Iterator<Property>> loader,
+    private Iterator<Property> ensurePropertiesLoaded( StatementState state, CacheLoader<Iterator<Property>> loader,
             CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() ) synchronized ( this )
@@ -72,7 +73,7 @@ public abstract class Primitive implements SizeOfObject
             {
                 try
                 {
-                    Iterator<Property> loadedProperties = loader.load( getId() );
+                    Iterator<Property> loadedProperties = loader.load( state, getId() );
                     setProperties( loadedProperties );
                     updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                 }

@@ -34,10 +34,10 @@ public interface SchemaStateOperations
      * NOTE: This currently is solely used by Cypher and might or might not be turned into
      * a more generic facility in teh future
      */
-    <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+    <K, V> V schemaStateGetOrCreate( StatementState state, K key, Function<K, V> creator );
 
     /**
      * Check if some key is in the schema state.
      */
-    <K> boolean schemaStateContains( K key );
+    <K> boolean schemaStateContains( StatementState state, K key );
 }
