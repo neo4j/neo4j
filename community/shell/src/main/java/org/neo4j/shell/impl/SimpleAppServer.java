@@ -37,7 +37,7 @@ import static org.neo4j.shell.Variables.PROMPT_KEY;
 /**
  * A common implementation of a {@link ShellServer}.
  */
-public abstract class AbstractServer implements ShellServer
+public abstract class SimpleAppServer implements ShellServer
 {
     private ShellServer remoteEndPoint;
     protected final BashVariableInterpreter bashInterpreter = new BashVariableInterpreter();
@@ -62,7 +62,7 @@ public abstract class AbstractServer implements ShellServer
 	 * Constructs a new server.
 	 * @throws RemoteException if an RMI exception occurs.
 	 */
-	public AbstractServer()
+	public SimpleAppServer()
 		throws RemoteException
 	{
 		super();
@@ -137,12 +137,7 @@ public abstract class AbstractServer implements ShellServer
      * @param session the session to get custom prompt and other variables from.
      * @return the interpreted prompt to return to the client.
      */
-    protected final String getPrompt( Session session ) throws ShellException
-    {
-        Object rawCustomPrompt = session.get( PROMPT_KEY );
-        String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
-        return bashInterpreter.interpret( customPrompt, this, session );
-    }
+    protected abstract String getPrompt( Session session ) throws ShellException;
 
     protected String getDefaultPrompt()
     {
@@ -195,7 +190,7 @@ public abstract class AbstractServer implements ShellServer
 	{
 		return new String[0];
 	}
-	
+
 	public TabCompletion tabComplete( String partOfLine, Session session )
 	        throws ShellException, RemoteException
 	{

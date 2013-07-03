@@ -30,7 +30,7 @@ import org.neo4j.shell.Session;
  * Exposes the javax.script.ScriptEngine as a shell app. It's purely via reflection so
  * it's OK even if the script engine isn't on the classpath.
  */
-public class Eval extends GraphDatabaseApp
+public class Eval extends TransactionProvidingApp
 {
     private ScriptEngineViaReflection scripting;
     

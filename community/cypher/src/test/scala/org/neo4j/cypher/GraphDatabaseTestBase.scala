@@ -44,6 +44,12 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     refNode = graph.getReferenceNode
   }
 
+  def assertInTx(f: => Option[String]) {
+    graph.inTx {
+      assert(f)
+    }
+  }
+
   @After
   def cleanUp() {
     if (graph != null) graph.shutdown()
@@ -136,7 +142,9 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     }
   }
 
-  def node(name: String): Node = nodes.find(_.getProperty("name") == name).get
+  def node(name: String): Node = graph.inTx {
+    nodes.find(_.getProperty("name") == name).get
+  }
 
   def relType(name: String): RelationshipType = graph.getRelationshipTypes.asScala.find(_.name() == name).get
 
@@ -173,7 +181,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def readOnlyStatementContext:StatementContext=
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForReading
 
-  def planContext:PlanContext= new TransactionBoundPlanContext(readOnlyStatementContext, graph)
+  def planContext:PlanContext= new TransactionBoundPlanContext(statementContext, graph)
 }
 
 trait Snitch extends GraphDatabaseAPI {

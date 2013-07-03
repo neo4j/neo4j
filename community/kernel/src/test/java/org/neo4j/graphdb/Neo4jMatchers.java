@@ -136,14 +136,14 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Node item, Description mismatchDescription )
             {
                 foundLabels = asLabelNameSet( item.getLabels() );
-                if ( !expectedLabels.containsAll( foundLabels ) )
+
+                if ( foundLabels.size() == expectedLabels.size() && foundLabels.containsAll( expectedLabels ) )
                 {
-                    mismatchDescription.appendText( "was " + foundLabels.toString() );
-                    return false;
+                    return true;
                 }
 
-                return true;
-
+                mismatchDescription.appendText( "was " + foundLabels.toString() );
+                return false;
             }
         };
     }

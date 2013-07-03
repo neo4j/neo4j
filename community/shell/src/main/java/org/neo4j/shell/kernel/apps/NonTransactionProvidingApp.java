@@ -17,24 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
+import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
+import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
 
-import org.neo4j.shell.impl.AbstractAppServer;
-
-/**
- * A common concrete implement of an {@link AppShellServer} which contains
- * default packages and exit app.
- */
-public class SimpleAppServer extends AbstractAppServer
+public abstract class NonTransactionProvidingApp extends TransactionProvidingApp
 {
-	/**
-	 * Creates a new simple app server and adds default packages.
-	 * @throws RemoteException RMI error.
-	 */
-	public SimpleAppServer() throws RemoteException
-	{
-		super();
-	}
+    @Override
+    public Continuation execute( AppCommandParser parser, Session session, Output out ) throws Exception
+    {
+        return this.exec( parser, session, out );
+    }
 }

@@ -25,7 +25,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.SimpleAppServer;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.util.regex.Pattern.compile;
 
@@ -34,6 +38,9 @@ import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 public class ServerClientInteractionTest
 {
+
+    private GraphDatabaseAPI db;
+
     @Test
     public void shouldConsiderAndInterpretCustomClientPrompt() throws Exception
     {
@@ -56,7 +63,8 @@ public class ServerClientInteractionTest
     @Before
     public void before() throws Exception
     {
-        server = new SimpleAppServer();
+        db = new ImpermanentGraphDatabase(  );
+        server = new GraphDatabaseShellServer( db );
         out = new SilentLocalOutput();
         client = new SameJvmClient( MapUtil.<String,Serializable>genericMap(), server, out );
     }
@@ -65,5 +73,6 @@ public class ServerClientInteractionTest
     public void after() throws Exception
     {
         server.shutdown();
+        db.shutdown();
     }
 }

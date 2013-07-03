@@ -34,7 +34,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation(App.class)
-public class Begin extends ReadOnlyGraphDatabaseApp
+public class Begin extends NonTransactionProvidingApp
 {
     @Override
     public String getDescription()

@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole:Boolean
-  def db: GraphDatabaseService
+  def db: GraphDatabaseAPI
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -71,7 +71,10 @@ trait DocumentationHelper extends GraphIcing {
   private def emitGraphviz(dir:File, testid:String, graphVizOptions:String): String = {
     val out = new ByteArrayOutputStream()
     val writer = new GraphvizWriter(getGraphvizStyle)
-    writer.emit(out, Walker.fullGraph(db))
+
+    db.inTx {
+      writer.emit(out, Walker.fullGraph(db))
+    }
 
     val graphOutput = """["dot", "%s.svg", "neoviz", "%s"]
 ----
@@ -106,8 +109,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     if (generateConsole) {
       if (generateInitialGraphForConsole) {
         val out = new StringWriter()
-        new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
-        consoleData = out.toString
+        db.inTx {
+          new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+          consoleData = out.toString
+        }
       }
       if (consoleData.isEmpty) {
         consoleData = "(0)"

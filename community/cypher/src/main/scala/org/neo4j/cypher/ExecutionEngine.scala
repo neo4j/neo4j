@@ -117,7 +117,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       }
       catch {
         case (t: Throwable) =>
-          statementContext.close()
+          if (statementContext != null)
+            statementContext.close()
           tx.failure()
           tx.finish()
           throw t

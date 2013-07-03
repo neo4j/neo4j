@@ -26,10 +26,8 @@ import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Expression, Literal}
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.spi.QueryContext
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
@@ -76,7 +74,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     tx.finish()
 
     val n = graph.getNodeById(1)
-    assert(n.getProperty("name") === "Andres")
+    assertInTx(n.getProperty("name") === "Andres")
   }
 
   private def getNode(key: String, n: Node) = InjectValue(n, NodeType())

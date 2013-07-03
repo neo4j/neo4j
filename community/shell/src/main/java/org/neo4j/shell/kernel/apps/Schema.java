@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.Iterables.sort;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 
-public class Schema extends GraphDatabaseApp
+public class Schema extends TransactionProvidingApp
 {
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()

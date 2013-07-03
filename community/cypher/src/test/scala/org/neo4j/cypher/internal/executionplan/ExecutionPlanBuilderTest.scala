@@ -34,20 +34,21 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.commands.values.TokenType.{Label, PropertyKey}
-import scala._
 import org.neo4j.cypher.internal.mutation.DeletePropertyAction
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed {
+class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with MockitoSugar {
   @Test def should_not_accept_returning_the_input_execution_plan() {
     val q = Query.empty
+    val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val epi = new FakeExecPlanBuilder(graph, Seq(new BadBuilder))
       epi.build(planContext, q)
     })
 
-    assertTrue("Execution plan builder didn't throw expected exception", exception.getCause.isInstanceOf[InternalException])
+    assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
+      exception.getCause.isInstanceOf[InternalException])
   }
 
   @Test def should_close_transactions_if_pipe_throws_when_creating_iterator() {
@@ -148,8 +149,6 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
     def executionPlanDescription: PlanDescription = null
   }
-
-
 }
 
 class ExplodingException extends Exception

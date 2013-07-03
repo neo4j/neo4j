@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherUpdateMapTest
 {
@@ -48,8 +50,8 @@ public class CypherUpdateMapTest
 
         Node node1 = gdb.getNodeById(0);
 
-        assertEquals("value1", node1.getProperty("key1"));
-        assertEquals(1234, node1.getProperty("key2"));
+        assertThat( node1, inTx( gdb, hasProperty( "key1" ).withValue( "value1" ) ) );
+        assertThat( node1, inTx( gdb, hasProperty( "key2" ).withValue( 1234 ) ) );
 
         engine.execute(
                 "START n=node(0) SET n = {data} RETURN n",
@@ -60,10 +62,9 @@ public class CypherUpdateMapTest
 
         Node node2 = gdb.getNodeById(0);
 
-        assertFalse(node2.hasProperty("key1"));
-        assertFalse(node2.hasProperty("key2"));
-        assertEquals(5678, node2.getProperty("key3"));
-
+        assertThat( node2, inTx( gdb, not( hasProperty( "key1" ) ) ) );
+        assertThat( node2, inTx( gdb, not( hasProperty( "key2" ) ) ) );
+        assertThat( node2, inTx( gdb, hasProperty( "key3" ).withValue(5678) ) );
     }
 
     @Before

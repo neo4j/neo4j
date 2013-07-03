@@ -69,7 +69,7 @@ import static org.neo4j.shell.ShellException.stackTraceAsString;
  * An implementation of {@link App} which has common methods and functionality
  * to use with neo4j.
  */
-public abstract class GraphDatabaseApp extends AbstractApp
+public abstract class TransactionProvidingApp extends AbstractApp
 {
     private static final Label[] EMPTY_LABELS = new Label[0];
 

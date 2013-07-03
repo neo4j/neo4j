@@ -903,11 +903,13 @@ foreach(x in [1,2,3] |
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
 
-    val number_of_relationships_in_path = result.length()
-    assert(number_of_relationships_in_path === 1)
-    assert(result.startNode() === node("A"))
-    assert(result.endNode() === node("B"))
-    assert(result.lastRelationship() === r1)
+    graph.inTx {
+      val number_of_relationships_in_path = result.length()
+      assert(number_of_relationships_in_path === 1)
+      assert(result.startNode() === node("A"))
+      assert(result.endNode() === node("B"))
+      assert(result.lastRelationship() === r1)
+    }
   }
 
   @Test def shouldReturnShortestPathUnboundLength() {
@@ -2140,7 +2142,7 @@ RETURN x0.name?
 
     assert(result.size === 1)
     assert(result(0)("c").asInstanceOf[Long] === 0)
-    assert(result(0)("x").asInstanceOf[Node].getProperty("name") === id)
+    assertInTx(result(0)("x").asInstanceOf[Node].getProperty("name") === id)
   }
 
   @Test
@@ -2150,7 +2152,7 @@ RETURN x0.name?
     val result = parseAndExecute("start n=node({id}) with n set n.foo={id} return n", "id" -> id).toList
 
     assert(result.size === 1)
-    assert(result(0)("n").asInstanceOf[Node].getProperty("foo") === id)
+    assertInTx(result(0)("n").asInstanceOf[Node].getProperty("foo") === id)
   }
 
   @Ignore("This pattern is currently not supported. Revisit when we do support it.")
@@ -2552,11 +2554,13 @@ RETURN x0.name?
     parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // THEN
-    val indexDefinitions = graph.schema().getIndexes(DynamicLabel.label(labelName)).asScala.toSet
-    assert(1 === indexDefinitions.size)
+    graph.inTx {
+      val indexDefinitions = graph.schema().getIndexes(DynamicLabel.label(labelName)).asScala.toSet
+      assert(1 === indexDefinitions.size)
 
-    val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
-    assert(propertyKeys == actual)
+      val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
+      assert(propertyKeys == actual)
+    }
   }
 
   @Test def should_not_create_existing_index() {
