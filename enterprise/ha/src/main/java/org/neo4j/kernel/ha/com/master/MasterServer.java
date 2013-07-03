@@ -37,6 +37,7 @@ import org.neo4j.kernel.ha.HaRequestType20;
 import org.neo4j.kernel.ha.MasterClient20;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.RealClock;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -49,7 +50,7 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient20.PROTOCOL_VERSION, txVerifier );
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient20.PROTOCOL_VERSION, txVerifier, new RealClock() );
     }
 
     @Override

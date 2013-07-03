@@ -64,6 +64,9 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.Clock;
+
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 
@@ -87,6 +90,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 {
 
     private InetSocketAddress socketAddress;
+    private Clock clock;
 
     public interface Configuration
     {
@@ -137,7 +141,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
-                   byte applicationProtocolVersion, TxChecksumVerifier txVerifier )
+                   byte applicationProtocolVersion, TxChecksumVerifier txVerifier, Clock clock )
     {
         this.requestTarget = requestTarget;
         this.config = config;
@@ -145,6 +149,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.txVerifier = txVerifier;
+        this.clock = clock;
     }
 
     @Override
@@ -335,8 +340,11 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
              * Each time a write completes, simply update the corresponding channel's timestamp.
              */
             Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
-            slave.other().set( System.currentTimeMillis() );
-            super.writeComplete( ctx, e );
+            if ( slave != null )
+            {
+                slave.other().set( clock.currentTimeMillis() );
+                super.writeComplete( ctx, e );
+            }
         }
 
         @Override

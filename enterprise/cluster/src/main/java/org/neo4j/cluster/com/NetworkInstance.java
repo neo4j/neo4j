@@ -72,8 +72,7 @@ import org.neo4j.kernel.logging.Logging;
 
 /**
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
- * sending
- * outgoing messages
+ * sending outgoing messages
  */
 public class NetworkInstance
         implements MessageSource, MessageSender, Lifecycle
@@ -102,7 +101,6 @@ public class NetworkInstance
     private ExecutorService sendExecutor;
     private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
-    //    private Channel channel;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
     // Sending
@@ -140,6 +138,7 @@ public class NetworkInstance
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
                 Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
+        serverBootstrap.setOption( "child.tcpNoDelay", true );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();
@@ -151,6 +150,7 @@ public class NetworkInstance
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
                 Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
+        clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         // Try all ports in the given range
@@ -263,7 +263,7 @@ public class NetworkInstance
                     }
                 }
             }
-        });
+        } );
     }
 
     @Override
@@ -367,7 +367,9 @@ public class NetworkInstance
                 public void operationComplete( ChannelFuture future ) throws Exception
                 {
                     if ( !future.isSuccess() )
+                    {
                         msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                    }
                 }
             } );
         }
@@ -423,10 +425,10 @@ public class NetworkInstance
 
     private Channel openChannel( URI clusterUri )
     {
-        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config.defaultPort() : clusterUri.getPort() );
+        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config
+                .defaultPort() : clusterUri.getPort() );
 
         ChannelFuture channelFuture = clientBootstrap.connect( address );
-//            channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
 
         try
         {
@@ -457,12 +459,12 @@ public class NetworkInstance
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addFirst( "log", new LoggingHandler() );
-            addSerialization( pipeline, 1024 * 1000 );
+            addSerialization( pipeline );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
         }
 
-        private void addSerialization( ChannelPipeline pipeline, int frameLength )
+        private void addSerialization( ChannelPipeline pipeline )
         {
             pipeline.addLast( "frameDecoder",
                               new ObjectDecoder( frameLength, ClassResolvers.cacheDisabled(
@@ -486,12 +488,8 @@ public class NetworkInstance
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
             final Message message = (Message) event.getMessage();
-            msgLog.debug("Received:" + message);
-//            StringBuilder uri = new StringBuilder( "cluster://" ).append( ((InetSocketAddress) event.getRemoteAddress()).getAddress() )
-//                    .append( ":" ).append( ((InetSocketAddress) event.getRemoteAddress()).getPort() );
-//            message.setHeader( Message.FROM, uri.toString() );
-              receive( message );
-
+            msgLog.debug( "Received:" + message );
+            receive( message );
         }
 
         @Override
