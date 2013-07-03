@@ -19,25 +19,33 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Collections;
+
+import org.mockito.Matchers;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LifecycleOperations;
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.state.TxState;
 
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class StatementContextTestHelper
 {
-    public static StatementContextParts mockedParts()
+    public static StatementOperationParts mockedParts()
     {
-        StatementContextParts stmtContextParts = new StatementContextParts(
+        StatementOperationParts stmtContextParts = new StatementOperationParts(
             mock( KeyReadOperations.class ),
             mock( KeyWriteOperations.class ),
             mock( EntityReadOperations.class ),
@@ -49,11 +57,37 @@ public abstract class StatementContextTestHelper
         return stmtContextParts;
     }
     
-    public static StatementContextParts mockedParts( TransactionContext txContext )
+    public static StatementOperationParts mockedParts( KernelTransaction txContext )
     {
-        StatementContextParts mock = mockedParts();
-        when( txContext.newStatementContext() ).thenReturn( mock );
+        StatementOperationParts mock = mockedParts();
+        when( txContext.newStatementOperations() ).thenReturn( mock );
         return mock;
+    }
+    
+    public static StatementState mockedState()
+    {
+        return mockedState( mock( TxState.class ) );
+    }
+    
+    public static StatementState mockedState( TxState txState )
+    {
+        StatementState state = mock( StatementState.class );
+        LockHolder lockHolder = mock( LockHolder.class );
+        IndexReaderFactory indexReaderFactory = mock( IndexReaderFactory.class );
+        try
+        {
+            IndexReader indexReader = mock( IndexReader.class );
+            when( indexReader.lookup( Matchers.any() ) ).thenReturn( Collections.<Long>emptyList().iterator() );
+            when( indexReaderFactory.newReader( anyLong() ) ).thenReturn( indexReader );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new Error( e );
+        }
+        when( state.txState() ).thenReturn( txState );
+        when( state.locks() ).thenReturn( lockHolder );
+        when( state.indexReaderFactory() ).thenReturn( indexReaderFactory );
+        return state;
     }
     
     private StatementContextTestHelper()

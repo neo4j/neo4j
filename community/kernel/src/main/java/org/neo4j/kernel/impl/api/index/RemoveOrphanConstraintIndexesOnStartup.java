@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -37,10 +39,13 @@ public class RemoveOrphanConstraintIndexesOnStartup
 {
     private final AbstractTransactionManager txManager;
     private final StringLogger log;
+    private final ThreadToStatementContextBridge ctxProvider;
 
-    public RemoveOrphanConstraintIndexesOnStartup( AbstractTransactionManager txManager, Logging logging )
+    public RemoveOrphanConstraintIndexesOnStartup( AbstractTransactionManager txManager,
+            ThreadToStatementContextBridge ctxProvider, Logging logging )
     {
         this.txManager = txManager;
+        this.ctxProvider = ctxProvider;
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -50,26 +55,27 @@ public class RemoveOrphanConstraintIndexesOnStartup
         {
             txManager.begin( ForceMode.unforced );
             @SuppressWarnings("deprecation")
-            TransactionContext tx = txManager.getTransactionContext();
+            KernelTransaction tx = txManager.getTransactionContext();
+            StatementState state = ctxProvider.statementForWriting();
             boolean success = false;
             try
             {
-                StatementContextParts context = tx.newStatementContext();
+                StatementOperationParts context = tx.newStatementOperations();
                 try
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll();
+                    for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll( state );
                             indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( index ) == null )
+                        if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( state, index ) == null )
                         {
-                            context.schemaWriteOperations().uniqueIndexDrop( index );
+                            context.schemaWriteOperations().uniqueIndexDrop( state, index );
                         }
                     }
                 }
                 finally
                 {
-                    context.close();
+                    context.lifecycleOperations().close( state );
                 }
                 success = true;
             }

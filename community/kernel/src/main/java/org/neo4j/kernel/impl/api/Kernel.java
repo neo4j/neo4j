@@ -25,14 +25,17 @@ import java.util.Collection;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -50,6 +53,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import static java.util.Collections.synchronizedList;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -63,7 +67,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  *
  * The Kernel itself has a simple API - it lets you start transactions. The transactions, in turn, allow you to
  * create statements, which, in turn, operate against the database. The reason for the separation between statements
- * and transactions is database isolation. Please refer to the {@link TransactionContext} javadoc for details.
+ * and transactions is database isolation. Please refer to the {@link KernelTransaction} javadoc for details.
  *
  * The architecture of the kernel is based around a layered design, where one layer performs some task, and potentially
  * delegates down to a lower layer. For instance, writing to the database will pass through
@@ -125,6 +129,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private NodeManager nodeManager;
     private PersistenceCache persistenceCache;
     private boolean isShutdown = false;
+    private StatementOperations statementLogic;
+    private StatementOperations readOnlyStatementLogic;
 
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -151,41 +157,49 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
 
-        dataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
+        dataSourceManager.addDataSourceRegistrationListener( neoStoreListener( new DataSourceRegistrationListener()
         {
             @Override
             public void registeredDataSource( XaDataSource ds )
             {
-                if ( isNeoDataSource( ds ) )
-                {
-                    NeoStoreXaDataSource neoDataSource = (NeoStoreXaDataSource) ds;
-                    neoStore = neoDataSource.getNeoStore();
-                    indexService = neoDataSource.getIndexService();
-                    providerMap = neoDataSource.getProviderMap();
-                    persistenceCache = neoDataSource.getPersistenceCache();
-                    schemaCache = neoDataSource.getSchemaCache();
+                NeoStoreXaDataSource neoDataSource = (NeoStoreXaDataSource) ds;
+                neoStore = neoDataSource.getNeoStore();
+                indexService = neoDataSource.getIndexService();
+                providerMap = neoDataSource.getProviderMap();
+                persistenceCache = neoDataSource.getPersistenceCache();
+                schemaCache = neoDataSource.getSchemaCache();
 
-                    for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
-                    {
-                        schemaCache.addSchemaRule( schemaRule );
-                    }
+                for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
+                {
+                    schemaCache.addSchemaRule( schemaRule );
                 }
+                
+                startForReal();
             }
 
             @Override
             public void unregisteredDataSource( XaDataSource ds )
             {
-                if ( isNeoDataSource( ds ) )
-                {
-                    neoStore = null;
-                }
+                neoStore = null;
             }
+        } ) );
+    }
 
-            private boolean isNeoDataSource( XaDataSource ds )
-            {
-                return ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-            }
-        } );
+    protected void startForReal()
+    {
+        StatementOperationParts parts = newTransaction().newStatementOperations();
+        this.statementLogic = parts.asStatementContext();
+        
+        ReadOnlyStatementContext readOnlyParts = new ReadOnlyStatementContext( parts.schemaStateOperations() );
+        this.readOnlyStatementLogic = parts.override(
+                parts.keyReadOperations(),
+                readOnlyParts,
+                parts.entityReadOperations(),
+                readOnlyParts,
+                parts.schemaReadOperations(),
+                readOnlyParts,
+                readOnlyParts,
+                parts.lifecycleOperations() ).asStatementContext();
     }
 
     @Override
@@ -196,25 +210,25 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public TransactionContext newTransactionContext()
+    public KernelTransaction newTransaction()
     {
         checkIfShutdown();
-
+        
         /* The StatementContext cake produced from the TransactionContext returned here (MP 2013-07-01):
          * 
          * x  = implements parts of that interface
          * xx = implements the whole interface
          * 
          *                                  | KR | ER | SR | KW | EW | SW | SS |
-         * Ref counting                     |    |    |    |    |    |    |    |   statefull
-         * Locking                          |    |    | xx |    | xx | xx | xx |   statefull
-         * Constraint checking              |    |    |    | xx |    | x  |    |   stateless
-         * Tx state                         |    | x  | x  |    | xx | xx |    |   statefull
-         * Cache                            |    | x  | x  |    |    |    |    |   stateless
-         * Store                            | xx | xx | xx | xx | x  |    |    |   stateless
+         * Ref counting                     |    |    |    |    |    |    |    |   state
+         * Locking                          |    |    | xx |    | xx | xx | xx |   state
+         * Constraint checking              |    |    |    | xx |    | x  |    |   no state
+         * Tx state                         |    | x  | x  |    | xx | xx |    |   state
+         * Cache                            |    | x  | x  |    |    |    |    |   no state
+         * Store                            | xx | xx | xx | xx | x  |    |    |   state
          *                                  |----------------------------------|
          */
-
+        
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
@@ -222,7 +236,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 persistenceManager, propertyKeyTokenHolder, labelTokenHolder, neoStore, indexService );
 
         // + Transaction state and Caching
-        TransactionContext result = new StateHandlingTransactionContext(
+        KernelTransaction result = new StateHandlingTransactionContext(
                 storeTransactionContext,
                 new SchemaStorage( neoStore.getSchemaStore() ),
                 newTxState(), providerMap, persistenceCache, schemaCache,
@@ -243,8 +257,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         }
 
         // + Single statement at a time
-        result = new ReferenceCountingTransactionContext( result );
-
+        // TODO statementLogic is null the first call (since we're building the cake), but that's OK
+        // it's ugly, fix it.
+        result = new ReferenceCountingTransactionContext( result, statementLogic );
+        
         // done
         return result;
     }
@@ -258,53 +274,58 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public StatementContext newReadOnlyStatementContext()
+    public StatementOperations statementOperations()
     {
-        checkIfShutdown();
-        return statementContextOwners.get().getStatementContext().asStatementContext();
+        return statementLogic;
+    }
+    
+    @Override
+    public StatementOperations readOnlyStatementOperations()
+    {
+        return readOnlyStatementLogic;
     }
 
-    @SuppressWarnings( "resource" )
-    private StatementContextParts createReadOnlyStatementContext()
-    {
-        checkIfShutdown();
-        
-        /* The StatementContext cake produced here (MP 2013-07-01):
-         *
-         * Schema-state
-         * Read-only asserting
-         * Tx state
-         * Cache
-         * Store
-         */
-
-        // I/O
-        SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        StoreStatementContext storeContext = new StoreStatementContext(
-                propertyKeyTokenHolder, labelTokenHolder,
-                schemaStorage, neoStore, persistenceManager,
-                indexService, new IndexReaderFactory.Caching( indexService ) );
-
-        // + Cache
-        CachingStatementContext cachingContext = new CachingStatementContext(
-                storeContext,
-                storeContext,
-                persistenceCache, schemaCache );
-
-        // + Read only access
-        ReadOnlyStatementContext readOnlyContext = new ReadOnlyStatementContext(
-                new SchemaStateConcern( schemaState ) );
-
-        return new StatementContextParts(
-                storeContext, readOnlyContext,
-                cachingContext, storeContext,
-                cachingContext, readOnlyContext,
-                readOnlyContext, storeContext );
-    }
+//    @SuppressWarnings( "resource" )
+//    private StatementContextParts createReadOnlyStatementContext()
+//    {
+//        checkIfShutdown();
+//        
+//        /* The StatementContext cake produced here (MP 2013-07-01):
+//         *
+//         * Schema-state
+//         * Read-only asserting
+//         * Tx state
+//         * Cache
+//         * Store
+//         */
+//
+//        // I/O
+//        SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+//        StoreStatementContext storeContext = new StoreStatementContext(
+//                propertyKeyTokenHolder, labelTokenHolder,
+//                schemaStorage, neoStore, persistenceManager,
+//                indexService, new IndexReaderFactory.Caching( indexService ) );
+//
+//        // + Cache
+//        CachingStatementContext cachingContext = new CachingStatementContext(
+//                storeContext,
+//                storeContext,
+//                persistenceCache, schemaCache );
+//
+//        // + Read only access
+//        ReadOnlyStatementContext readOnlyContext = new ReadOnlyStatementContext(
+//                new SchemaStateConcern( schemaState ) );
+//
+//        return new StatementContextParts(
+//                storeContext, readOnlyContext,
+//                cachingContext, storeContext,
+//                cachingContext, readOnlyContext,
+//                readOnlyContext, storeContext );
+//    }
 
     private TxState newTxState()
     {
-        return new TxState(
+        return new TxStateImpl(
                 new OldTxStateBridgeImpl( nodeManager, transactionManager.getTransactionState() ),
                 persistenceManager,
                 new TxState.IdGeneration()
@@ -332,12 +353,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         @Override
         protected StatementContextOwner initialValue()
         {
-            StatementContextOwner owner = new StatementContextOwner()
+            StatementContextOwner owner = new StatementContextOwner( statementLogic )
             {
                 @Override
-                protected StatementContextParts createStatementContext()
+                protected StatementState createStatementState()
                 {
-                    return Kernel.this.createReadOnlyStatementContext();
+                    return new ReadOnlyStatementState( new IndexReaderFactory.Caching( indexService ) );
                 }
             };
             all.add( owner );

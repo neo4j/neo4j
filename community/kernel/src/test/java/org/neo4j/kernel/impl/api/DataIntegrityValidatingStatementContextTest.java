@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -41,6 +42,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -59,12 +61,12 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.indexCreate( label, propertyKey );
+            ctx.indexCreate( state, label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( AddIndexFailureException e )
@@ -73,7 +75,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -86,13 +88,13 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.uniqueIndexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.indexCreate( label, propertyKey );
+            ctx.indexCreate( state, label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( AddIndexFailureException e )
@@ -101,7 +103,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -114,13 +116,13 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.uniqueIndexesGetForLabel( rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.uniqueIndexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
         {
-            ctx.uniqueIndexCreate( label, propertyKey );
+            ctx.uniqueIndexCreate( state, label, propertyKey );
             fail( "Should have thrown exception." );
         }
         catch ( AddIndexFailureException e )
@@ -129,7 +131,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -142,13 +144,13 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
+        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
 
         // WHEN
         try
         {
-            ctx.indexDrop( indexDescriptor );
+            ctx.indexDrop( state, indexDescriptor );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -157,7 +159,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -170,14 +172,14 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
         {
-            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            ctx.indexDrop( state, new IndexDescriptor( label, propertyKey ) );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -186,7 +188,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -199,14 +201,14 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
         {
-            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            ctx.indexDrop( state, new IndexDescriptor( label, propertyKey ) );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -215,7 +217,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -228,14 +230,14 @@ public class DataIntegrityValidatingStatementContextTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementContext ctx =
                 new DataIntegrityValidatingStatementContext( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer(
+        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
 
         // WHEN
         try
         {
-            ctx.indexDrop( new IndexDescriptor( label, propertyKey ) );
+            ctx.indexDrop( state, new IndexDescriptor( label, propertyKey ) );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -244,7 +246,7 @@ public class DataIntegrityValidatingStatementContextTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
     }
 
     @Test
@@ -256,7 +258,7 @@ public class DataIntegrityValidatingStatementContextTest
 
         try
         {
-            ctx.propertyKeyGetOrCreateForName( null );
+            ctx.propertyKeyGetOrCreateForName( state, null );
             fail( "Should not be able to create null property key" );
         }
         catch ( IllegalTokenNameException e )
@@ -265,7 +267,7 @@ public class DataIntegrityValidatingStatementContextTest
 
         try
         {
-            ctx.propertyKeyGetOrCreateForName( "" );
+            ctx.propertyKeyGetOrCreateForName( state, "" );
             fail( "Should not be able to create empty property key" );
         }
         catch ( IllegalTokenNameException e )
@@ -282,7 +284,7 @@ public class DataIntegrityValidatingStatementContextTest
 
         try
         {
-            ctx.labelGetOrCreateForName( null );
+            ctx.labelGetOrCreateForName( state, null );
             fail( "Should not be able to create null label" );
         }
         catch ( IllegalTokenNameException e )
@@ -291,12 +293,34 @@ public class DataIntegrityValidatingStatementContextTest
 
         try
         {
-            ctx.labelGetOrCreateForName( "" );
+            ctx.labelGetOrCreateForName( state, "" );
             fail( "Should not be able to create empty label" );
         }
         catch ( IllegalTokenNameException e )
         {   // good
         }
+    }
+
+    @Test( expected = SchemaKernelException.class )
+    public void shouldFailInvalidLabelNames() throws Exception
+    {
+        // Given
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, null, null );
+
+        // When
+        ctx.labelGetOrCreateForName( state, "" );
+    }
+
+    @Test( expected = SchemaKernelException.class )
+    public void shouldFailOnNullLabel() throws Exception
+    {
+        // Given
+        DataIntegrityValidatingStatementContext ctx =
+                new DataIntegrityValidatingStatementContext( null, null, null );
+
+        // When
+        ctx.labelGetOrCreateForName( state, null );
     }
 
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
@@ -310,26 +334,6 @@ public class DataIntegrityValidatingStatementContextTest
             }
         };
     }
-
-    @Test( expected = SchemaKernelException.class )
-    public void shouldFailInvalidLabelNames() throws Exception
-    {
-        // Given
-        DataIntegrityValidatingStatementContext ctx =
-                new DataIntegrityValidatingStatementContext( null, null, null );
-
-        // When
-        ctx.labelGetOrCreateForName( "" );
-    }
-
-    @Test( expected = SchemaKernelException.class )
-    public void shouldFailOnNullLabel() throws Exception
-    {
-        // Given
-        DataIntegrityValidatingStatementContext ctx =
-                new DataIntegrityValidatingStatementContext( null, null, null );
-
-        // When
-        ctx.labelGetOrCreateForName( null );
-    }
+    
+    private final StatementState state = StatementContextTestHelper.mockedState();
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.KernelTransaction;
 
 /**
  * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
@@ -30,15 +30,15 @@ public class ConstraintValidatingTransactionContext extends DelegatingTransactio
     // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
     // both user and system level constraints.
 
-    public ConstraintValidatingTransactionContext( TransactionContext delegate )
+    public ConstraintValidatingTransactionContext( KernelTransaction delegate )
     {
         super( delegate );
     }
 
     @Override
-    public StatementContextParts newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        StatementContextParts parts = delegate.newStatementContext();
+        StatementOperationParts parts = delegate.newStatementOperations();
         
         // + Constraints
         DataIntegrityValidatingStatementContext dataIntegrityContext = new DataIntegrityValidatingStatementContext(

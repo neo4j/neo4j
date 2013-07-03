@@ -60,11 +60,12 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -345,7 +346,7 @@ public abstract class InternalAbstractGraphDatabase
         KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
         if ( isMaster )
         {
-            new RemoveOrphanConstraintIndexesOnStartup( txManager, logging ).perform();
+            new RemoveOrphanConstraintIndexesOnStartup( txManager, statementContextProvider, logging ).perform();
         }
     }
 
@@ -476,7 +477,7 @@ public abstract class InternalAbstractGraphDatabase
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager ) );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager, xaDataSourceManager ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -1470,28 +1471,29 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        StatementContext ctx = statementContextProvider.getCtxForReading();
+        StatementOperations ctx = statementContextProvider.getCtxForReading();
+        StatementState state = statementContextProvider.statementForReading();
 
         long propertyId;
         long labelId;
         try
         {
-            propertyId = ctx.propertyKeyGetForName( key );
-            labelId = ctx.labelGetForName( myLabel.name() );
+            propertyId = ctx.propertyKeyGetForName( state, key );
+            labelId = ctx.labelGetForName( state, myLabel.name() );
         }
         catch ( KernelException e )
         {
-            ctx.close();
+            ctx.close( state );
             return IteratorUtil.emptyIterator();
         }
 
         try
         {
-            IndexDescriptor indexRule = ctx.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-            if(ctx.indexGetState( indexRule ) == InternalIndexState.ONLINE)
+            IndexDescriptor indexRule = ctx.indexesGetForLabelAndPropertyKey( state, labelId, propertyId );
+            if ( ctx.indexGetState( state, indexRule ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.nodesGetFromIndexLookup( indexRule, value ), ctx );
+                return map2nodes( ctx.nodesGetFromIndexLookup( state, indexRule, value ), state );
             }
         }
         catch ( SchemaRuleNotFoundException e )
@@ -1503,12 +1505,13 @@ public abstract class InternalAbstractGraphDatabase
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, ctx, labelId );
+        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, ctx, state, labelId );
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value, final StatementContext ctx, long labelId )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value,
+            final StatementOperations ctx, final StatementState state, long labelId )
     {
-        Iterator<Long> nodesWithLabel = ctx.nodesGetForLabel( labelId );
+        Iterator<Long> nodesWithLabel = ctx.nodesGetForLabel( state, labelId );
 
         Iterator<Long> matches = filter( new Predicate<Long>()
         {
@@ -1517,7 +1520,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 try
                 {
-                    return ctx.nodeGetProperty( item, propertyId ).valueEquals( value );
+                    return ctx.nodeGetProperty( state, item, propertyId ).valueEquals( value );
                 }
                 catch ( KernelException e )
                 {
@@ -1526,10 +1529,10 @@ public abstract class InternalAbstractGraphDatabase
             }
         }, nodesWithLabel );
 
-        return map2nodes( matches, ctx );
+        return map2nodes( matches, state );
     }
 
-    private ResourceIterator<Node> map2nodes( Iterator<Long> input, StatementContext ctx )
+    private ResourceIterator<Node> map2nodes( Iterator<Long> input, StatementState state )
     {
         return cleanupService.resourceIterator( map( new Function<Long, Node>()
         {
@@ -1538,6 +1541,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return getNodeById( id );
             }
-        }, input ), ctx );
+        }, input ), state.closeable( kernelAPI.statementOperations() ) );
     }
 }

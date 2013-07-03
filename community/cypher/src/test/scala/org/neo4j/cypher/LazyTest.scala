@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.StatementContext
 import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
+import org.neo4j.kernel.api.operations.KernelStatement
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -188,16 +189,17 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val schemaState = new KernelSchemaStateStore()
     val schemaOps = new SchemaStateConcern(schemaState)
     
-    when( fakeCtx.schemaStateContains( Matchers.any() ) ).thenAnswer( new Answer[Boolean]()
+    when( fakeCtx.schemaStateContains( Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Boolean]()
         {
             override def answer(invocation: InvocationOnMock): Boolean = {
-                schemaOps.schemaStateContains( invocation.getArguments()(0) )
+                schemaOps.schemaStateContains( invocation.getArguments()(0).asInstanceOf[KernelStatement], invocation.getArguments()(1) )
             }
         } )
-    when( fakeCtx.schemaStateGetOrCreate( Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Any]()
+    when( fakeCtx.schemaStateGetOrCreate( Matchers.any(), Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Any]()
         {
             override def answer(invocation: InvocationOnMock): Any = {
-                schemaOps.schemaStateGetOrCreate( invocation.getArguments()(0), invocation.getArguments()(1).asInstanceOf[org.neo4j.helpers.Function[Any, Any]] )
+                schemaOps.schemaStateGetOrCreate( invocation.getArguments()(0).asInstanceOf[KernelStatement],
+                    invocation.getArguments()(1), invocation.getArguments()(2).asInstanceOf[org.neo4j.helpers.Function[Any, Any]] )
             }
         } )
     

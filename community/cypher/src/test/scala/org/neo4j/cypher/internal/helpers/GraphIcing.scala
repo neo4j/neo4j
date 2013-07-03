@@ -25,6 +25,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.api.operations.KernelStatement
 
 trait GraphIcing {
 
@@ -63,6 +64,15 @@ trait GraphIcing {
       getDependencyResolver.
       resolveDependency(classOf[ThreadToStatementContextBridge]).
       getCtxForReading
+    def stateForReading: KernelStatement = graph.
+      getDependencyResolver.
+      resolveDependency(classOf[ThreadToStatementContextBridge]).
+      stateForReading
+      
+    def state: KernelStatement = graph.
+      getDependencyResolver.
+      resolveDependency(classOf[ThreadToStatementContextBridge]).
+      stateForWriting
 
     def inTx[T](f: StatementContext => T): T = {
       val tx = graph.beginTx()

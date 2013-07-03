@@ -24,10 +24,12 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -35,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class StoreTransactionContext implements TransactionContext
+public class StoreTransactionContext implements KernelTransaction
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final AbstractTransactionManager transactionManager;
@@ -57,14 +59,13 @@ public class StoreTransactionContext implements TransactionContext
         this.indexingService = indexingService;
     }
 
-    @SuppressWarnings( "resource" )
     @Override
-    public StatementContextParts newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
         StoreStatementContext context = new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder,
                 new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
-                indexingService, new IndexReaderFactory.Caching( indexingService ) );
-        return new StatementContextParts( context, context, context, context, context, null, null, context )
+                indexingService );
+        return new StatementOperationParts( context, context, context, context, context, null, null, context )
             .additionalPart( AuxiliaryStoreOperations.class, context );
     }
 
@@ -124,5 +125,13 @@ public class StoreTransactionContext implements TransactionContext
         {
             throw new TransactionFailureException( e );
         }
+    }
+
+    @Override
+    public StatementState newStatementState()
+    {
+        WritableStatementState result = new WritableStatementState();
+        result.provide( new IndexReaderFactory.Caching( indexingService ) );
+        return result;
     }
 }

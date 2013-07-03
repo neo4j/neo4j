@@ -27,14 +27,14 @@ import org.neo4j.kernel.api.operations.WriteOperations;
 
 /**
  * Interface for accessing and modifying the underlying graph.
- * A statement is executing within a {@link TransactionContext transaction}
+ * A statement is executing within a {@link KernelTransaction transaction}
  * and will be able to see all previous changes made within that transaction.
  * When done using a statement it must be closed.
  *
  * Note that this interface only combines a set of interfaces that define operations that the
  * database can perform.
  *
- * One main difference between a {@link TransactionContext} and a {@link StatementContext}
+ * One main difference between a {@link KernelTransaction} and a {@link StatementOperations}
  * is life cycle of some locks, where read locks can live within one statement,
  * whereas write locks will live for the entire transaction.
  *
@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.operations.WriteOperations;
  * This interface should not be implemented directly by classes providing just some parts of it all. Instead
  * implement the specific sub-interfaces.
  */
-public interface StatementContext
+public interface StatementOperations
         extends ReadOperations, WriteOperations,
                 KeyOperations, EntityOperations, SchemaOperations,
                 LifecycleOperations

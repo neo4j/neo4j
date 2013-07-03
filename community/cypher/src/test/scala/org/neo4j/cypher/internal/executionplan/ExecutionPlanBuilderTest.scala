@@ -53,7 +53,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
-    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext, cakeState)
 
     // when
     intercept[ExplodingException] {

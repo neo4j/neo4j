@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -43,8 +44,8 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -282,7 +283,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
 
-        tx.setTransactionContext(kernel.newTransactionContext() );
+        tx.setTransactionContext(kernel.newTransaction() );
     }
 
     private void assertTmOk() throws SystemException
@@ -946,7 +947,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public StatementContext getStatementContext()
+    public StatementState newStatement()
     {
         Transaction tx;
         try
@@ -957,7 +958,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             throw new RuntimeException( e );
         }
-        return tx != null ? ((TransactionImpl)tx).newStatementContext() : null;
+        return tx != null ? ((TransactionImpl)tx).newStatement() : null;
     }
 
     @Override
@@ -967,7 +968,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
     
     @Override
-    public TransactionContext getTransactionContext()
+    public KernelTransaction getTransactionContext()
     {
         Transaction tx;
         try

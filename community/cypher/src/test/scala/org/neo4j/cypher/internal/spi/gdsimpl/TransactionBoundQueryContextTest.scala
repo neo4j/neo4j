@@ -27,24 +27,27 @@ import org.mockito.Mockito
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.api.operations.KernelStatement
 
 class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with MockitoSugar {
 
   var graph: ImpermanentGraphDatabase = null
   var outerTx: Transaction = null
   var statementContext: StatementContext = null
+  var state: KernelStatement = null
 
   @Before
   def init() {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
     statementContext = mock[StatementContext]
+    state = mock[KernelStatement]
   }
 
   @Test def should_mark_transaction_successful_if_successful() {
     // GIVEN
     Mockito.when(outerTx.failure()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext)
+    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext, state)
 
     // WHEN
     context.close(success = true)
@@ -58,7 +61,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
   @Test def should_mark_transaction_failed_if_not_successful() {
     // GIVEN
     Mockito.when(outerTx.success()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext)
+    val context = new TransactionBoundQueryContext(graph, outerTx, statementContext, state)
 
     // WHEN
     context.close(success = false)

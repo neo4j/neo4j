@@ -19,34 +19,65 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.io.Closeable;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.LifecycleOperations;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.StatementContextParts;
+import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.operations.RefCounting;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
- * Captures functionality for implicit {@link StatementContext} creation and retention for read-only operations
+ * Captures functionality for implicit {@link StatementOperations} creation and retention for read-only operations
  * through the core {@link GraphDatabaseService} API, where the concept of statements is missing.
- * The idea is to implicitly create a read-only (as light-weight as possible) {@link StatementContext}
+ * The idea is to implicitly create a read-only (as light-weight as possible) {@link StatementOperations}
  * if there are none open. Tying it into one level above the most granular operations (such as
  * get single property from a node, get next relationship from iterator or similar)
- * @author Mattias
+ * 
+ * given scenario:
  *
+ *  relationships = node.getRelationships();
+ *  for ( Relationship rel : relationships )
+ *  {
+ *      rel.getProperty( "name" );
+ *  }
+ *
+ *
+ *                      KernelTransaction
+ *                           |
+ *                           v
+ *                      ReferencedStatementState (actual StatementState + ref counter)
+ *                      /            \
+ *                     /              \------------
+ *                    v                            \
+ *   StatementState (+boolean open)   StatementState (+boolean open)
+ *           ^                                     
+ *           |                                    
+ *           |                                    
+ *      action: close()                      
  */
 public abstract class StatementContextOwner
 {
-    private ReferencedStatementContext reference;
+    private ReferencedStatementState reference;
+    private final LifecycleOperations operations;
+    
+    StatementContextOwner( LifecycleOperations operations )
+    {
+        this.operations = operations;
+    }
 
-    public StatementContextParts getStatementContext()
+    public StatementState getStatementState()
     {
         if ( reference == null )
         {
-            reference = new ReferencedStatementContext( createStatementContext() );
+            reference = new ReferencedStatementState( createStatementState() );
         }
         return reference.newReference();
     }
-
-    protected abstract StatementContextParts createStatementContext();
+    
+    protected abstract StatementState createStatementState();
 
     public void closeAllStatements()
     {
@@ -56,62 +87,91 @@ public abstract class StatementContextOwner
             reference = null;
         }
     }
-
-    private class ReferencedStatementContext
+    
+    private class ReferencedStatementState
     {
         private int count;
-        private final StatementContextParts originalParts;
+        private final StatementState parentState;
 
-        ReferencedStatementContext( StatementContextParts statementContextParts )
+        ReferencedStatementState( StatementState statement )
         {
-            this.originalParts = statementContextParts;
+            this.parentState = statement;
         }
 
-        @SuppressWarnings( "resource" )
-        public StatementContextParts newReference()
+        public StatementState newReference()
         {
             count++;
-            return originalParts.override( null, null, null, null, null, null, null,
-                    new CountingLifecycleOperations() );
+            final AtomicReference<RefCounting> refCounting = new AtomicReference<>();
+            final StatementState referencedState = new StatementState()
+            {
+                @Override
+                public TxState txState()
+                {
+                    return parentState.txState();
+                }
+                
+                @Override
+                public RefCounting refCounting()
+                {
+                    return refCounting.get();
+                }
+                
+                @Override
+                public LockHolder locks()
+                {
+                    return parentState.locks();
+                }
+                
+                @Override
+                public IndexReaderFactory indexReaderFactory()
+                {
+                    return parentState.indexReaderFactory();
+                }
+                
+                @Override
+                public Closeable closeable( StatementOperations logic )
+                {
+                    return parentState.closeable( logic );
+                }
+            };
+            refCounting.set( new RefCounting()
+            {
+                private boolean open = true;
+                
+                @Override
+                public boolean isOpen()
+                {
+                    return open && count > 0;
+                }
+                
+                @Override
+                public void close()
+                {
+                    if ( !isOpen() )
+                    {
+                        throw new IllegalStateException(
+                                "This StatementContext has been closed. No more interaction allowed" );
+                    }
+
+                    open = false;
+                    if ( --count == 0 )
+                    {
+                        operations.close( parentState );
+                        reference = null;
+                    }
+                }
+            } );
+            return referencedState;
         }
 
         void close()
         {
             if ( count > 0 )
             {
-                originalParts.close();
+                operations.close( parentState );
                 reference = null;
             }
             count = 0;
-        }
-        
-        class CountingLifecycleOperations implements LifecycleOperations
-        {
-            private boolean open = true;
-            
-            @Override
-            public void close()
-            {
-                if ( !isOpen() )
-                {
-                    throw new IllegalStateException(
-                            "This StatementContext has been closed. No more interaction allowed" );
-                }
-                
-                open = false;
-                count--;
-                if ( count == 0 )
-                {
-                    originalParts.close();
-                    reference = null;
-                }
-            }
-
-            @Override
-            public boolean isOpen()
-            {
-                return open && count > 0;
-            }
         }
     }
 }

@@ -27,15 +27,16 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.operations.KernelStatement
 
-class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
+class TransactionBoundPlanContext(ctx: StatementContext, state: KernelStatement, gdb:GraphDatabaseService) extends PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
-    val labelId = ctx.labelGetForName(labelName)
-    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
+    val labelId = ctx.labelGetForName(state, labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(state, propertyKey)
 
-    val rule = ctx.indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    ctx.indexGetState(rule) match {
+    val rule = ctx.indexesGetForLabelAndPropertyKey(state, labelId, propertyKeyId)
+    ctx.indexGetState(state, rule) match {
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
@@ -44,10 +45,10 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
   }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = ctx.labelGetForName(labelName)
-    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
+    val labelId = ctx.labelGetForName(state, labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(state, propertyKey)
 
-    val matchingConstraints = ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    val matchingConstraints = ctx.constraintsGetForLabelAndPropertyKey(state, labelId, propertyKeyId)
     if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
   } catch {
     case _: KernelException => None
@@ -69,5 +70,5 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
     case _: KernelException => None
   }
 
-  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.labelGetForName(labelName))
+  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.labelGetForName(state, labelName))
 }

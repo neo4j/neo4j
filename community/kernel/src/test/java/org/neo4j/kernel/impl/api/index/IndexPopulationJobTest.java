@@ -38,12 +38,13 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
@@ -456,10 +457,11 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
 
         Transaction tx = db.beginTx();
-        StatementContext ctxForWriting = ctxProvider.getCtxForWriting();
-        firstLabelId = ctxForWriting.labelGetOrCreateForName( FIRST.name() );
-        ctxForWriting.labelGetOrCreateForName( SECOND.name() );
-        ctxForWriting.close();
+        StatementOperations ctxForWriting = ctxProvider.getCtxForWriting();
+        StatementState state = ctxProvider.statementForReading();
+        firstLabelId = ctxForWriting.labelGetOrCreateForName( state, FIRST.name() );
+        ctxForWriting.labelGetOrCreateForName( state, SECOND.name() );
+        ctxForWriting.close( state );
         tx.success();
         tx.finish();
     }
@@ -489,9 +491,10 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            StatementContext ctx = ctxProvider.getCtxForWriting();
-            descriptor = new IndexDescriptor( ctx.labelGetForName( label.name() ),
-                    ctx.propertyKeyGetForName( propertyKey ) );
+            StatementOperations ctx = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForReading();
+            descriptor = new IndexDescriptor( ctx.labelGetForName( state, label.name() ),
+                    ctx.propertyKeyGetForName( state, propertyKey ) );
             tx.success();
         }
         finally
@@ -530,7 +533,8 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            result = ctxProvider.getCtxForWriting().propertyKeyGetForName( name );
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            result = context.propertyKeyGetForName( ctxProvider.statementForWriting(), name );
             tx.success();
         }
         finally

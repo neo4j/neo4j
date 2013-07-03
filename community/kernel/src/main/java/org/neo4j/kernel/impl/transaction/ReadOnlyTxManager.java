@@ -30,13 +30,20 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.ThreadLocalWithSize;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 public class ReadOnlyTxManager extends AbstractTransactionManager
         implements Lifecycle
@@ -48,6 +55,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     private XaDataSourceManager xaDsManager = null;
     private final StringLogger logger;
     private KernelAPI kernel;
+    private IndexingService indexingService;
 
     public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
     {
@@ -70,6 +78,14 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throws Throwable
     {
         txThreadMap = new ThreadLocalWithSize<ReadOnlyTransactionImpl>();
+        xaDsManager.addDataSourceRegistrationListener( neoStoreListener( new DataSourceRegistrationListener.Adapter()
+        {
+            @Override
+            public void registeredDataSource( XaDataSource ds )
+            {
+                indexingService = ((NeoStoreXaDataSource)ds).getIndexService();
+            }
+        } ) );
     }
 
     @Override
@@ -324,9 +340,9 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
     @Override
-    public StatementContext getStatementContext()
+    public StatementState newStatement()
     {
-        return kernel.newReadOnlyStatementContext();
+        return new ReadOnlyStatementState( new IndexReaderFactory.Caching( indexingService ) );
     }
 
     @Override

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.Closeable;
+import org.neo4j.kernel.api.operations.StatementState;
 
-public interface LifecycleOperations extends Closeable
+public interface LifecycleOperations
 {
     /**
      * Closes this statement. Statements must be closed when done and before
@@ -29,8 +29,7 @@ public interface LifecycleOperations extends Closeable
      * As an example statement-bound locks can be released when closing
      * a statement.
      */
-    @Override
-    void close();
+    void close( StatementState state );
     
-    boolean isOpen();
+    boolean isOpen( StatementState state );
 }

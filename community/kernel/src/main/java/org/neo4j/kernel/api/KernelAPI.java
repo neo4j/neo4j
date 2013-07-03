@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api;
 
+
 /**
  * The main API through which access to the Neo4j kernel is made, both read
  * and write operations are supported as well as transactions.
  * 
  * Changes to the graph (i.e. write operations) are performed via a
- * {@link #newTransactionContext() transaction context} where changes done
- * inside the transaction are visible in read operations for {@link StatementContext statements}
- * executed within that transaction context. Once {@link TransactionContext#finish() committed}
+ * {@link #newTransaction() transaction context} where changes done
+ * inside the transaction are visible in read operations for {@link StatementOperations statements}
+ * executed within that transaction context. Once {@link KernelTransaction#finish() committed}
  * those changes are applied to the graph storage and made visible to all other transactions.
  * 
  * Read operations not associated with any particular transaction can be performed via
@@ -35,21 +36,23 @@ package org.neo4j.kernel.api;
 public interface KernelAPI
 {
     /**
-     * Creates and returns a new {@link TransactionContext} capable of modifying the
+     * Creates and returns a new {@link KernelTransaction} capable of modifying the
      * underlying graph. Changes made in it are visible within the transaction and can
      * be committed or rolled back.
      * 
-     * @return a new {@link TransactionContext} for modifying the underlying graph.
+     * @return a new {@link KernelTransaction} for modifying the underlying graph.
      */
-    TransactionContext newTransactionContext();
+    KernelTransaction newTransaction();
 
     /**
-     * Returns a {@link StatementContext context} that can be used for read operations
+     * Returns a {@link StatementOperations context} that can be used for read operations
      * that aren't associated with any specific transaction. Write operations on this
      * statement will throw exception.
      * 
-     * @return a new {@link StatementContext} used for read operations not associated
+     * @return a new {@link StatementOperations} used for read operations not associated
      * with any transaction.
      */
-    StatementContext newReadOnlyStatementContext();
+    StatementOperations statementOperations();
+
+    StatementOperations readOnlyStatementOperations();
 }
