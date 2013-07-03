@@ -70,6 +70,7 @@ trait Query extends Parser
     | SetClause
     | RemoveClause
     | Merge
+    | Foreach
   )
 
   private def CreateClause : Rule1[ast.Create] = rule("CREATE") {
@@ -109,6 +110,10 @@ trait Query extends Parser
       group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch
     | group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate
   )
+
+  private def Foreach : Rule1[ast.Foreach] = rule("FOREACH") {
+    group(keyword("FOREACH") ~~ "(" ~~ Identifier ~~ keyword("IN") ~~ Expression ~~ "|" ~~ oneOrMore(Updates) ~~ ")") ~>> token ~~> ast.Foreach
+  }
 
   private def With : Rule1[ast.With] = rule("WITH") (
       group(keyword("WITH", "DISTINCT") ~~ ReturnBody) ~>> token ~~ SingleQuery ~~> (new ast.With(_, _, _, _, _, _) with ast.DistinctQueryClose)
