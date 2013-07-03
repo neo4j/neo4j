@@ -30,45 +30,78 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
 {
-    private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
-    private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
+    private final SchemaIndexProvider delegate;
+
+    private IndexPopulator mockedPopulator = null;
+    private IndexAccessor mockedWriter = null;
+
+    private DoubleLatch populationCompletionLatch = null;
+
     private final CountDownLatch writerLatch = new CountDownLatch( 1 );
+
     private InternalIndexState initialIndexState = POPULATING;
     public final AtomicInteger populatorCallCount = new AtomicInteger();
     public final AtomicInteger writerCallCount = new AtomicInteger();
-    private String failure;
-    
+
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
     
-    public ControlledPopulationSchemaIndexProvider()
+
+    public ControlledPopulationSchemaIndexProvider( SchemaIndexProvider delegate )
     {
         super( PROVIDER_DESCRIPTOR, 10 );
         setInitialIndexState( initialIndexState );
+        this.delegate = delegate;
     }
-    
-    public DoubleLatch installPopulationJobCompletionLatch()
+
+    public ControlledPopulationSchemaIndexProvider()
     {
-        final DoubleLatch populationCompletionLatch = new DoubleLatch();
-        mockedPopulator = new IndexPopulator.Adapter()
+        this( mockIndexProvider() );
+    }
+
+    private static SchemaIndexProvider mockIndexProvider()
+    {
+        SchemaIndexProvider result = mock(SchemaIndexProvider.class);
+        when( result.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+            .thenReturn( new IndexPopulator.Adapter() );
+        when( result.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+
+        try
         {
-            @Override
-            public void create() throws IOException
-            {
-                populationCompletionLatch.startAndAwaitFinish();
-                super.create();
-            }
-        };
+            when( result.getOnlineAccessor( anyLong(), any( IndexConfiguration.class) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return result;
+    }
+
+    public DoubleLatch installPopulationJobCompletionLatch( )
+    {
+        if ( null == populationCompletionLatch )
+        {
+            populationCompletionLatch = new DoubleLatch();
+        }
+        else
+        {
+            throw new IllegalStateException( "Invalid attempt to install completion latch twice" );
+        }
         return populationCompletionLatch;
     }
-    
-    public void awaitFullyPopulated()
+
+    public void awaitWriterStarted()
     {
         awaitLatch( writerLatch );
     }
@@ -76,13 +109,46 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
+        if ( null == mockedPopulator )
+        {
+            mockedPopulator = delegate.getPopulator( indexId, config );
+
+            if ( null != populationCompletionLatch )
+            {
+                final IndexPopulator oldPopulator = mockedPopulator;
+                mockedPopulator = new IndexPopulator.Adapter()
+                {
+                    @Override
+                    public void create() throws IOException
+                    {
+                        populationCompletionLatch.startAndAwaitFinish();
+                        oldPopulator.create();
+                    }
+
+                    @Override
+                    public void close( boolean populationCompletedSuccessfully ) throws IOException
+                    {
+                        oldPopulator.close( populationCompletedSuccessfully );
+
+                        if ( null != populationCompletionLatch )
+                        {
+                            populationCompletionLatch.finish();
+                        }
+                    }
+                };
+            }
+        }
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException
     {
+        if ( null == mockedWriter )
+        {
+            mockedWriter = delegate.getOnlineAccessor( indexId, config );
+        }
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
         return mockedWriter;
@@ -102,10 +168,6 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        if ( this.failure == null )
-        {
-            throw new IllegalStateException();
-        }
-        return this.failure;
+        throw new IllegalStateException();
     }
 }

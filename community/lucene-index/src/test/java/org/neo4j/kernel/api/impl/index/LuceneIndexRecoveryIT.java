@@ -39,6 +39,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -57,7 +58,7 @@ public class LuceneIndexRecoveryIT
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, true );
+        createIndex( myLabel );
 
         createNode( myLabel, 12 );
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
@@ -78,7 +79,7 @@ public class LuceneIndexRecoveryIT
         // Given
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
-        createIndex( myLabel, true );
+        createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
         
@@ -101,7 +102,7 @@ public class LuceneIndexRecoveryIT
         // Given
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
-        createIndex( myLabel, true );
+        createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
         
@@ -135,10 +136,10 @@ public class LuceneIndexRecoveryIT
     public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
     {
         // Given
-        startDb(createPopulationBlockingIndexFactory());
+        startDb( createControlledLuceneIndexFactory() );
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, false );
+        createIndex( myLabel );
         long nodeId = createNode( myLabel, 12 );
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
 
@@ -146,7 +147,7 @@ public class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb( createControlledLuceneIndexFactory() );
 
         IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
         db.schema().awaitIndexOnline( indexDefinition, 2l, TimeUnit.SECONDS );
@@ -163,7 +164,7 @@ public class LuceneIndexRecoveryIT
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, true );
+        createIndex( myLabel );
 
         long nodeId = createNode( myLabel, 12 );
         updateNode(nodeId, 14);
@@ -248,14 +249,13 @@ public class LuceneIndexRecoveryIT
        db.getXaDataSourceManager().rotateLogicalLogs();
     }
 
-    private void createIndex( Label label, boolean wait )
+    private void createIndex( Label label )
     {
        Transaction tx = db.beginTx();
        IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
        tx.success();
        tx.finish();
-       if (wait)
-         db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+       db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
     }
 
     private Set<Node> doIndexLookup( Label myLabel, Object value )
@@ -301,7 +301,7 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createLuceneIndexFactory()
+    private KernelExtensionFactory<?> createControlledLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
@@ -310,13 +310,16 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
+                LuceneSchemaIndexProvider luceneProvider = new LuceneSchemaIndexProvider(
+                        ignoreCloseDirectoryFactory, dependencies.getConfig() );
+                return new ControlledPopulationSchemaIndexProvider( luceneProvider );
             }
         };
     }
 
-    // Creates a lucene index factory with the shared in-memory directory, which waits for a latch on population
-    private KernelExtensionFactory<?> createPopulationBlockingIndexFactory()
+
+    // Creates a lucene index factory with the shared in-memory directory
+    private KernelExtensionFactory<?> createLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )

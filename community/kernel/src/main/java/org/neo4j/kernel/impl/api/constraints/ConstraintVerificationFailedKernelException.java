@@ -87,7 +87,7 @@ public class ConstraintVerificationFailedKernelException extends KernelException
     public String getUserMessage( KeyNameLookup keyNameLookup )
     {
         StringBuilder message = new StringBuilder();
-        for ( Evidence evidenceItem : evidence )
+        for ( Evidence evidenceItem : evidence() )
         {
             IndexEntryConflictException conflict = evidenceItem.conflict;
             message.append( conflict.evidenceMessage(
