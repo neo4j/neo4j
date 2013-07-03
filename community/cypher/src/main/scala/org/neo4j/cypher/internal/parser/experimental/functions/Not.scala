@@ -33,6 +33,6 @@ case object Not extends Function with LegacyPredicate {
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    nullable(invocation, constructCommandPredicate(invocation.arguments) { a => commands.Not(a(0)) })
+    constructCommandPredicate(invocation.arguments) { a => commands.Not(a(0)) }
   }
 }

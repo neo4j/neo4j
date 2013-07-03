@@ -65,7 +65,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | coalesceFunc
       | filterFunc
       | shortestPathFunc
-      | nullableProperty
       | property
       | stringLit
       | numberLiteral
@@ -97,11 +96,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   private val message = "Cypher does not support != for inequality comparisons. " +
     "It's used for nullable properties instead.\n" +
     "You probably meant <> instead. Read more about this in the operators chapter in the manual."
-
-  def nullableProperty: Parser[Expression] =
-    property ~> "!=" ^^^ (throw new SyntaxException(message)) |
-    property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
-    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse)
 
   def extract: Parser[Expression] = EXTRACT ~> parens(identity ~ IN ~ expression ~ (":" | "|") ~ expression) ^^ {
     case (id ~ _ ~ iter ~ _ ~ expression) => ExtractFunction(iter, id, expression)

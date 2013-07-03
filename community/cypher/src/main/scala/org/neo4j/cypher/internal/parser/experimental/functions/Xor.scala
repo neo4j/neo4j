@@ -33,6 +33,6 @@ case object Xor extends Function with LegacyPredicate {
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    nullable(invocation, constructCommandPredicate(invocation.arguments) { a => commands.Xor(a(0), a(1)) })
+    constructCommandPredicate(invocation.arguments) { a => commands.Xor(a(0), a(1)) }
   }
 }

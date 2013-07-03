@@ -35,6 +35,6 @@ case object LessThanOrEqual extends Function with LegacyPredicate {
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
-    nullable(invocation, commands.LessThanOrEqual(left.toCommand, right.toCommand))
+    commands.LessThanOrEqual(left.toCommand, right.toCommand)
   }
 }

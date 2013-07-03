@@ -32,6 +32,6 @@ case object Or extends Function with LegacyPredicate {
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    nullable(invocation, constructCommandPredicate(invocation.arguments) { a => commands.Or(a(0), a(1)) })
+    constructCommandPredicate(invocation.arguments) { a => commands.Or(a(0), a(1)) }
   }
 }

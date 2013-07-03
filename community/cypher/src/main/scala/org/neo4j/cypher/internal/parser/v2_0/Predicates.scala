@@ -90,33 +90,24 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
       |identity ~> IN ~ expression ~> failure("expected where"))
 
   def in: Parser[Predicate] = expression ~ IN ~ expression ^^ {
-    case checkee ~ in ~ collection => nullable(AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
+    case checkee ~ in ~ collection => AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-")))
   }
 
-  def allInSeq: Parser[Predicate] = ALL ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInCollection(x._1, x._2, x._3), x._1))
-  def anyInSeq: Parser[Predicate] = ANY ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInCollection(x._1, x._2, x._3), x._1))
-  def noneInSeq: Parser[Predicate] = NONE ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInCollection(x._1, x._2, x._3), x._1))
-  def singleInSeq: Parser[Predicate] = SINGLE ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInCollection(x._1, x._2, x._3), x._1))
+  def allInSeq: Parser[Predicate] = ALL ~> parens(symbolIterablePredicate) ^^ (x => AllInCollection(x._1, x._2, x._3))
+  def anyInSeq: Parser[Predicate] = ANY ~> parens(symbolIterablePredicate) ^^ (x => AnyInCollection(x._1, x._2, x._3))
+  def noneInSeq: Parser[Predicate] = NONE ~> parens(symbolIterablePredicate) ^^ (x => NoneInCollection(x._1, x._2, x._3))
+  def singleInSeq: Parser[Predicate] = SINGLE ~> parens(symbolIterablePredicate) ^^ (x => SingleInCollection(x._1, x._2, x._3))
 
   def operators:Parser[Predicate] =
-    (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
-      expression ~ ("<"~">") ~ expression ^^ { case l ~ wut ~ r => nullable(Not(Equals(l, r)),l,r) } |
-      expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => nullable(LessThan(l, r),l,r) } |
-      expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => nullable(GreaterThan(l, r),l,r) } |
-      expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => nullable(LessThanOrEqual(l, r),l,r) } |
-      expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => nullable(GreaterThanOrEqual(l, r),l,r) } |
-      expression ~ "=~" ~ stringLit ^^ { case a ~ "=~" ~ b => nullable(LiteralRegularExpression(a, b),a,b) } |
-      expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) } |
-      expression ~> "!" ~> failure("The exclamation symbol is used as a nullable property operator in Cypher. The 'not equal to' operator is <>"))
-
-  private def nullable(pred: Predicate, e: Expression*): Predicate = if (!e.exists(_.isInstanceOf[Nullable]))
-    pred
-  else {
-    val map = e.filter(x => x.isInstanceOf[Nullable]).
-      map(x => (x, x.isInstanceOf[DefaultTrue]))
-
-    NullablePredicate(pred, map)
-  }
+    (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => Equals(l, r)  } |
+      expression ~ ("<"~">") ~ expression ^^ { case l ~ wut ~ r => Not(Equals(l, r)) } |
+      expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => LessThan(l, r) } |
+      expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => GreaterThan(l, r) } |
+      expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => LessThanOrEqual(l, r) } |
+      expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => GreaterThanOrEqual(l, r) } |
+      expression ~ "=~" ~ stringLit ^^ { case a ~ "=~" ~ b => LiteralRegularExpression(a, b) } |
+      expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => RegularExpression(a, b) } |
+      expression ~> "!" ~> failure("Cypher does not support != for inequality comparisons. Use <> instead."))
 
   def patternPredicate: Parser[Predicate] = {
     def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
