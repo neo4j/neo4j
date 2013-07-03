@@ -37,9 +37,9 @@ case object RegularExpression extends Function with LegacyPredicate {
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
-    nullable(invocation, right.toCommand match {
+    right.toCommand match {
       case literal: commandexpressions.Literal => commands.LiteralRegularExpression(left.toCommand, literal)
       case command => commands.RegularExpression(left.toCommand, command)
-    })
+    }
   }
 }

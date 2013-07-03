@@ -65,7 +65,7 @@ weighted for the weight of the relationship `r2`, and boosted with a factor of 2
 WHERE origin.name = "Clark Kent"
 AND type(r1)=type(r2) AND (NOT (origin-[:KNOWS]-candidate))
 RETURN origin.name as origin, candidate.name as candidate, 
-    SUM(ROUND(r2.weight + (COALESCE(r2.activity?, 0) * 2))) as boost 
+    SUM(ROUND(r2.weight + (COALESCE(r2.activity, 0) * 2))) as boost
 ORDER BY boost desc limit 10""",
       returns =
 """This returns the recommended friends for the origin nodes and their recommendation score.""",

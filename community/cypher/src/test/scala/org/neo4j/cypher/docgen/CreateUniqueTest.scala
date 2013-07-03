@@ -52,7 +52,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create node if missing",
       text = "If the pattern described needs a node, and it can't be matched, a new node will be created.",
-      queryText = "match root where root.name! = 'root' create unique root-[:LOVES]-someone return someone",
+      queryText = "match root where root.name = 'root' create unique root-[:LOVES]-someone return someone",
       returns = "The root node doesn't have any `LOVES` relationships, and so a node is created, and also a relationship " +
         "to that node.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1))
@@ -72,7 +72,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create relationship with values",
       text = "Relationships to be created can also be matched on values.",
-      queryText = "match root where root.name! = 'root' create unique root-[r:X {since:'forever'}]-() return r",
+      queryText = "match root where root.name = 'root' create unique root-[r:X {since:'forever'}]-() return r",
       returns = "In this example, we want the relationship to have a value, and since no such relationship can be found," +
         " a new node and relationship are created. Note that since we are not interested in the created node, we don't " +
         "name it.",
@@ -83,7 +83,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Describe complex pattern",
       text = "The pattern described by +CREATE UNIQUE+ can be separated by commas, just like in +MATCH+ and +CREATE+.",
-      queryText = "match root where root.name! = 'root' create unique root-[:FOO]->x, root-[:BAR]->x return x",
+      queryText = "match root where root.name = 'root' create unique root-[:FOO]->x, root-[:BAR]->x return x",
       returns = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
   }
@@ -93,7 +93,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create labeled node if missing",
       text = "If the pattern described needs a labeled node and there is none with the given labels, " +
              "Cypher will create a new one.",
-      queryText = "match a where a.name! = 'A' create unique a-[:KNOWS]-c:blue return c",
+      queryText = "match a where a.name = 'A' create unique a-[:KNOWS]-c:blue return c",
       returns = "The A node is connected in a `KNOWS` relationship to the c node, but since C doesn't have " +
                 "the `:blue` label, a new node labeled as `:blue` is created along with a `KNOWS` relationship "+
                 "from A to it.",

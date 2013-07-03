@@ -18,29 +18,17 @@
  */
 package org.neo4j.examples;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.index.Index;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.index.Index;
 
 public class CypherSql
 {
@@ -149,7 +137,7 @@ public class CypherSql
                         "LeftJoin",
                         "SELECT `Person`.name, `Email`.address FROM `Person` LEFT JOIN `Email` ON `Person`.id = `Email`.person_id".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person('name: *') MATCH person-[?:email]->email RETURN person.name, email.address?",
+                        "START person=node:Person('name: *') MATCH person-[?:email]->email RETURN person.name, email.address",
                         "Anakin", "anakin@example.org", "Bridget", "<null>",
                         "3 rows" ) );
                 add( new TestData(

@@ -377,15 +377,6 @@ foreach(x in [1,2,3] |
     assertEquals(List(Map("node.name?" -> null)), result.toList)
   }
 
-  @Test def testOnlyIfPropertyExists() {
-    createNode(Map("prop" -> "A"))
-    createNode()
-
-    val result = parseAndExecute("start a=node(1,2) where a.prop? = 'A' return a")
-
-    assert(2 === result.toSeq.length)
-  }
-
   @Test def shouldHandleComparisonBetweenNodeProperties() {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
     val n1 = createNode(Map("animal" -> "monkey"))
@@ -641,12 +632,12 @@ foreach(x in [1,2,3] |
     createNode(Map("y" -> "a"))
     createNode(Map("y" -> "b", "x" -> 42))
 
-    val result = parseAndExecute("start n=node(1,2,3) return n.y, count(n.x?)")
+    val result = parseAndExecute("start n=node(1,2,3) return n.y, count(n.x)")
 
     assertThat(result.toList.asJava,
       hasItems[Map[String, Any]](
-        Map("n.y" -> "a", "count(n.x?)" -> 1),
-        Map("n.y" -> "b", "count(n.x?)" -> 1)))
+        Map("n.y" -> "a", "count(n.x)" -> 1),
+        Map("n.y" -> "b", "count(n.x)" -> 1)))
   }
 
   @Test def shouldSumNonNullValues() {
@@ -1262,9 +1253,9 @@ order by b.name""")
 
     val result = parseAndExecute( """
 start a  = node(1)
-return coalesce(a.title?, a.name?)""")
+return coalesce(a.title, a.name)""")
 
-    assert(List(Map("coalesce(a.title?, a.name?)" -> "A")) === result.toList)
+    assert(List(Map("coalesce(a.title, a.name)" -> "A")) === result.toList)
   }
 
   @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
@@ -1371,14 +1362,6 @@ order by a.COL1
     ) === result.toList)
   }
 
-  @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
-    val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
-
-    val exception = intercept[EntityNotFoundException](execute(query).toList)
-
-    assert(exception.getMessage === "The property 'A_PROPERTY_THAT_IS_MISSING' does not exist on Node[0]")
-  }
-
   @Test def shouldAllowAllPredicateOnArrayProperty() {
     val a = createNode("array" -> Array(1, 2, 3, 4))
 
@@ -1410,7 +1393,7 @@ order by a.COL1
     val result = parseAndExecute( """START n=node(1)
 MATCH n-->x0-[?]->x1
 WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.`label`) AND x1.`label`="Reservoir Dogs"
-RETURN x0.name?
+RETURN x0.name
                                   """)
     assert(List() === result.toList)
   }
@@ -1605,13 +1588,6 @@ RETURN x0.name?
     assert(List(Map("abs(-1)" -> 1)) === result.toList)
   }
 
-  @Test def shouldHandleAllOperatorsWithNull() {
-    val a = createNode()
-
-    val result = parseAndExecute("start a=node(1) where a.x? =~ '.*?blah.*?' and a.x? = 13 and a.x? <> 13 and a.x? > 13 return a")
-    assert(List(Map("a" -> a)) === result.toList)
-  }
-
   @Test def shouldBeAbleToDoDistinctOnNull() {
     val a = createNode()
 
@@ -1794,9 +1770,9 @@ RETURN x0.name?
     createNode()
     createNode()
 
-    val result = parseAndExecute("start a=node(1,2,3) return distinct a.name?").toList
+    val result = parseAndExecute("start a=node(1,2,3) return distinct a.name").toList
 
-    assert(result === List(Map("a.name?" -> "Florescu"), Map("a.name?" -> null)))
+    assert(result === List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
@@ -1985,12 +1961,6 @@ RETURN x0.name?
     assertEquals(result.endNode(), c)
     assertEquals(result.startNode(), a)
     assertEquals(result.length(), 2)
-  }
-
-  @Test
-  def in_against_non_existing_collection() {
-    val result = parseAndExecute("start a=node(0) where 'z' in a.array_prop? return a")
-    assert(result.toList === List(Map("a" -> refNode)))
   }
 
   @Test

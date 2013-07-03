@@ -35,6 +35,6 @@ case object Equals extends Function with LegacyPredicate {
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
-    nullable(invocation, commands.Equals(left.toCommand, right.toCommand))
+    commands.Equals(left.toCommand, right.toCommand)
   }
 }

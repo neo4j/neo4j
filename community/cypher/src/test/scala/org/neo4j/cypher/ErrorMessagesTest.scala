@@ -139,13 +139,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Test def nonExistingProperty() {
-    expectError("start n = node(0) return n.month",
-      v2_0    -> "The property 'month' does not exist on Node[0]",
-      vExperimental -> "The property 'month' does not exist on Node[0]"
-    )
-  }
-
   @Test def noNodeIdInStart() {
     expectSyntaxError("start r = node() return r",
       v2_0    -> ("expected node id, or *", 15),
@@ -211,7 +204,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def warn_about_exclamation_mark() {
     expectError("start n=node(0) where n.foo != 2 return n",
-      v2_0    -> "Cypher does not support != for inequality comparisons. It's used for nullable properties instead.\nYou probably meant <> instead. Read more about this in the operators chapter in the manual.",
+      v2_0    -> "Cypher does not support != for inequality comparisons. Use <> instead.",
       vExperimental -> "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 29)"
     )
   }

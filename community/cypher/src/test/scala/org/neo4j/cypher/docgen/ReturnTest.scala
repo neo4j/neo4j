@@ -78,11 +78,10 @@ return `This isn't a common identifier`.happy""",
   @Test def nullable_properties() {
     testQuery(
       title = "Optional properties",
-      text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
-like this:""",
-      queryText = """match n return n.age?""",
+      text = """If a property might or might not be there, you can still select it as usual. It will be treated as null if it is missing""",
+      queryText = """match n return n.age""",
       returns = """This example returns the age when the node has that property, or +null+ if the property is not there.""",
-      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age?").toList))
+      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
   }
 
   @Test def distinct_output() {
