@@ -90,7 +90,7 @@ public class IndexRestartIt
         // Given
         startDb();
         createIndex();
-        provider.awaitFullyPopulated();
+        provider.awaitWriterStarted();
 
         // And Given
         stopDb();
