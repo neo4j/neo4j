@@ -40,7 +40,7 @@
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/enterprise/tree/master/server-enterprise</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/server-enterprise</url>
   </scm>
 
   <licenses>
