@@ -24,12 +24,14 @@ import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.profiler.Profiler
 import internal.spi.{PlanContext, QueryContext}
-import internal.{ExecutionContext, ClosingIterator}
+import internal.ClosingIterator
 import internal.commands._
 import internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.commands.expressions.ExpressionResolver
+import org.neo4j.cypher.internal.helpers.IsMap
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -73,7 +75,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
-    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution((name) => resolveLabel(name, context)))
+    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(ExpressionResolver(context))
 
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
@@ -105,9 +107,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
 
     (planInProgress.pipe, planInProgress.isUpdating)
   }
-
-  private def resolveLabel(name: String, context:PlanContext): Option[KeyToken.Resolved] =
-    context.getLabelId(name).map(id => KeyToken.Resolved(name, id, TokenType.Label))
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
     case in: Query =>
@@ -149,7 +148,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean):
-    (QueryState, ClosingIterator[collection.Map[String, Any]], () => PlanDescription) = {
+    (QueryState, ClosingIterator, () => PlanDescription) = {
 
     try {
       val decorator = if (profile) new Profiler() else NullDecorator

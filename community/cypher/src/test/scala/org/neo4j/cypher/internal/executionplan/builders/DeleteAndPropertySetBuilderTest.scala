@@ -24,16 +24,19 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.mutation.DeleteEntityAction
 import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.mockito.Mockito
+import org.neo4j.cypher.internal.spi.PlanContext
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
   val builder = new UpdateActionBuilder(null)
+  val planContext = Mockito.mock(classOf[PlanContext])
 
   @Test
   def does_not_offer_to_solve_done_queries() {
     val q = PartiallySolvedQuery().
       copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x")))))
 
-    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
+    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q), planContext))
   }
 
   @Test
@@ -44,9 +47,9 @@ class DeleteAndPropertySetBuilderTest extends BuilderTest {
     val pipe = createPipe(nodes = Seq("x"))
 
     val executionPlan = plan(pipe, q)
-    assertTrue("Should accept this", builder.canWorkWith(executionPlan))
+    assertTrue("Should accept this", builder.canWorkWith(executionPlan, planContext))
 
-    val resultPlan = builder(executionPlan)
+    val resultPlan = builder(executionPlan, planContext)
     val resultQ = resultPlan.query
 
     assert(resultQ === q.copy(updates = q.updates.map(_.solve)))
@@ -59,6 +62,6 @@ class DeleteAndPropertySetBuilderTest extends BuilderTest {
       copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
 
     val executionPlan = plan(q)
-    assertFalse("Should not accept this", builder.canWorkWith(executionPlan))
+    assertFalse("Should not accept this", builder.canWorkWith(executionPlan, planContext))
   }
 }

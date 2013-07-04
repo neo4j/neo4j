@@ -17,15 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.executionplan
+package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.kernel.api.exceptions.KernelException
 
-case class LabelResolution(labelMapper: String => Option[KeyToken.Resolved]) extends (Expression => Expression) {
+trait TokenContext {
+  def getLabelName(id: Long): String
 
-  def apply(expr: Expression) = expr match {
-    case label: KeyToken.Unresolved => labelMapper(label.name).getOrElse(label)
-    case _                          => expr
-  }
+  def getOptLabelId(labelName: String): Option[Long]
+
+  def getLabelId(labelName: String): Long
+
+  def getPropertyKeyName(id: Long): String
+
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Long]
+
+  def getPropertyKeyId(propertyKeyName: String): Long
+}
+
+object TokenContext
+{
+  def tryGet[T <: KernelException : Manifest](result: => Long) = try { Some(result) } catch { case (_: T) => None }
 }

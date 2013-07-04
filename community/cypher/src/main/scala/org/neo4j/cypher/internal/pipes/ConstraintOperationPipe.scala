@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.commands.values.KeyToken
 
 class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val labelId = label.getId(state)
-    val propertyKeyId = propertyKey.getId(state)
+    val labelId = label.getOrCreateId(state.query)
+    val propertyKeyId = propertyKey.getOrCreateId(state.query)
 
     op match {
       case _: CreateUniqueConstraint => state.query.createUniqueConstraint(labelId, propertyKeyId)

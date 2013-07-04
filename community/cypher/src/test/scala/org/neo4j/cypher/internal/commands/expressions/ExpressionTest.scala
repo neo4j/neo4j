@@ -25,16 +25,20 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.pipes.QueryState
+import scala.Some
+import org.neo4j.cypher.internal.symbols.AnyType
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
-    val a = Collect(Nullable(Property(Identifier("r"), "age")))
+    val a = Collect(Nullable(Property(Identifier("r"), PropertyKey("age"))))
 
     val b = a.rewrite {
-      case Property(n, p) => Literal(n + "." + p)
+      case Property(n, p) => Literal(n + "." + p.name)
       case x              => x
     }
 
@@ -68,25 +72,25 @@ class ExpressionTest extends Assertions {
   @Test
   def should_find_inner_aggregations() {
     //GIVEN
-    val e = LengthFunction(Collect(Property(Identifier("n"), "bar")))
+    val e = LengthFunction(Collect(Property(Identifier("n"), PropertyKey("bar"))))
 
     //WHEN
     val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    assert(aggregates.toList ===  List(Collect(Property(Identifier("n"), "bar"))))
+    assert(aggregates.toList ===  List(Collect(Property(Identifier("n"), PropertyKey("bar")))))
   }
 
   @Test
   def should_find_inner_aggregations2() {
     //GIVEN
-    val r = ReturnItem(Avg(Property(Identifier("a"), "age")), "avg(a.age)")
+    val r = ReturnItem(Avg(Property(Identifier("a"), PropertyKey("age"))), "avg(a.age)")
 
     //WHEN
     val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), "age"))))
+    assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), PropertyKey("age")))))
   }
 
   private def expectFailure(a: Map[String, CypherType], b: Map[String, CypherType]) {

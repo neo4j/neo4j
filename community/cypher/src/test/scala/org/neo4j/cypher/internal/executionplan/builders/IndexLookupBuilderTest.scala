@@ -22,12 +22,16 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Property, Identifier}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.IndexHintException
-import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.Equals
+import scala.Some
 import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -43,7 +47,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val label = "label"
     val property = "prop"
     val valueExpression = Literal(42)
-    val predicate = Equals(Property(Identifier(identifier), property), valueExpression)
+    val predicate = Equals(Property(Identifier(identifier), PropertyKey(property)), valueExpression)
 
 
     test(identifier, label, property, predicate, valueExpression)
@@ -55,7 +59,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val label = "label"
     val property = "prop"
     val valueExpression = Literal(42)
-    val predicate = Equals(valueExpression, Property(Identifier(identifier), property))
+    val predicate = Equals(valueExpression, Property(Identifier(identifier), PropertyKey(property)))
 
 
     test(identifier, label, property, predicate, valueExpression)
@@ -86,7 +90,7 @@ class IndexLookupBuilderTest extends BuilderTest {
 
     val label1Predicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label1, TokenType.Label))
     val label2Predicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label2, TokenType.Label))
-    val propertyPredicate = Equals(valueExpression, Property(Identifier(identifier), property))
+    val propertyPredicate = Equals(valueExpression, Property(Identifier(identifier), PropertyKey(property)))
 
     val predicates: Seq[Unsolved[Predicate]] = Seq(
       Unsolved(label1Predicate),

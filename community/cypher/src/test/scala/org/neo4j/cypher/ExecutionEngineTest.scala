@@ -30,6 +30,24 @@ import org.junit.{Ignore, Test}
 import org.neo4j.test.ImpermanentGraphDatabase
 import util.Random
 import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.commands.RegularExpression
+import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
+import org.neo4j.cypher.internal.commands.SortItem
+import scala.Some
+import org.neo4j.cypher.internal.commands.NodeByIndex
+import org.neo4j.cypher.internal.commands.Xor
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.expressions.RelationshipTypeFunction
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.commands.expressions.Property
+import org.neo4j.cypher.internal.commands.Or
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.expressions.CountStar
+import org.neo4j.cypher.internal.commands.LessThan
+import org.neo4j.cypher.internal.commands.expressions.Nullable
 
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
@@ -78,7 +96,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId)).
-      where(RegularExpression(Property(Identifier("node"), "name"), Literal("And.*"))).
+      where(RegularExpression(Property(Identifier("node"), PropertyKey("name")), Literal("And.*"))).
       returns(ReturnItem(Identifier("node"), "node"))
 
     val result = execute(query)
@@ -135,7 +153,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("node", node.getId)).
-      returns(ReturnItem(Property(Identifier("node"), "name"), "node.name"))
+      returns(ReturnItem(Property(Identifier("node"), PropertyKey("name")), "node.name"))
 
     val result = execute(query)
     val list = result.columnAs[String]("node.name").toList
@@ -153,7 +171,7 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("start", start.getId)).
       matches(RelatedTo("start", "a", "rel", "x", Direction.BOTH)).
-      where(Equals(Property(Identifier("a"), "name"), Literal(name))).
+      where(Equals(Property(Identifier("a"), PropertyKey("name")), Literal(name))).
       returns(ReturnItem(Identifier("a"), "a"))
 
     val result = execute(query)
@@ -170,7 +188,7 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("start", start.getId)).
       matches(RelatedTo("start", "a", "r", "KNOWS", Direction.BOTH)).
-      where(Equals(Property(Identifier("r"), "name"), Literal("monkey"))).
+      where(Equals(Property(Identifier("r"), PropertyKey("name")), Literal("monkey"))).
       returns(ReturnItem(Identifier("a"), "a"))
 
     val result = execute(query)
@@ -330,8 +348,8 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId)).
       where(Or(
-      Equals(Property(Identifier("n"), "name"), Literal("boy")),
-      Equals(Property(Identifier("n"), "name"), Literal("girl")))).
+      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("boy")),
+      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("girl")))).
       returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
@@ -346,8 +364,8 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId)).
       where(Xor(
-      Equals(Property(Identifier("n"), "name"), Literal("boy")),
-      Equals(Property(Identifier("n"), "name"), Literal("girl")))).
+      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("boy")),
+      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("girl")))).
       returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
@@ -364,11 +382,11 @@ foreach(x in [1,2,3] |
       start(NodeById("n", n1.getId, n2.getId, n3.getId)).
       where(Or(
       And(
-        Equals(Property(Identifier("n"), "animal"), Literal("monkey")),
-        Equals(Property(Identifier("n"), "food"), Literal("banana"))),
+        Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("monkey")),
+        Equals(Property(Identifier("n"), PropertyKey("food")), Literal("banana"))),
       And(
-        Equals(Property(Identifier("n"), "animal"), Literal("cow")),
-        Equals(Property(Identifier("n"), "food"), Literal("grass"))))).
+        Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("cow")),
+        Equals(Property(Identifier("n"), PropertyKey("food")), Literal("grass"))))).
       returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
@@ -379,7 +397,7 @@ foreach(x in [1,2,3] |
   @Test def shouldBeAbleToOutputNullForMissingProperties() {
     val query = Query.
       start(NodeById("node", 0)).
-      returns(ReturnItem(Nullable(Property(Identifier("node"), "name")), "node.name?"))
+      returns(ReturnItem(Nullable(Property(Identifier("node"), PropertyKey("name"))), "node.name?"))
 
     val result = execute(query)
     assertEquals(List(Map("node.name?" -> null)), result.toList)
@@ -408,8 +426,8 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, false)).
-      where(Equals(Property(Identifier("n"), "animal"), Property(Identifier("x"), "animal"))).
+      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, optional = false)).
+      where(Equals(Property(Identifier("n"), PropertyKey("animal")), Property(Identifier("x"), PropertyKey("animal")))).
       returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Identifier("x"), "x"))
 
     val result = execute(query)
@@ -430,7 +448,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)).
-      where(LessThan(Property(Identifier("n"), "x"), Literal(100))).
+      where(LessThan(Property(Identifier("n"), PropertyKey("x")), Literal(100))).
       returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
@@ -445,8 +463,8 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId)).
       where(And(
-      LessThan(Property(Identifier("n"), "x"), Literal("Z")),
-      LessThan(Property(Identifier("n"), "x"), Literal('Z')))).
+      LessThan(Property(Identifier("n"), PropertyKey("x")), Literal("Z")),
+      LessThan(Property(Identifier("n"), PropertyKey("x")), Literal('Z')))).
       returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
@@ -517,7 +535,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(Property(Identifier("start"), "name"), true)).
+      orderBy(SortItem(Property(Identifier("start"), PropertyKey("name")), ascending = true)).
       skip(2).
       returns(ReturnItem(Identifier("start"), "start"))
 
@@ -531,7 +549,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(Property(Identifier("start"), "name"), true)).
+      orderBy(SortItem(Property(Identifier("start"), PropertyKey("name")), ascending = true)).
       skip("skippa").
       returns(ReturnItem(Identifier("start"), "start"))
 
@@ -545,7 +563,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(Property(Identifier("start"), "name"), true)).
+      orderBy(SortItem(Property(Identifier("start"), PropertyKey("name")), ascending =  true)).
       limit(2).
       skip(2).
       returns(ReturnItem(Identifier("start"), "start"))
@@ -560,7 +578,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(Property(Identifier("start"), "name"), true)).
+      orderBy(SortItem(Property(Identifier("start"), PropertyKey("name")), ascending = true)).
       limit("l").
       skip("s").
       returns(ReturnItem(Identifier("start"), "start"))
@@ -592,8 +610,8 @@ foreach(x in [1,2,3] |
       aggregation(CountStar()).
       orderBy(
       SortItem(CountStar(), false),
-      SortItem(Property(Identifier("n"), "division"), true)).
-      returns(ReturnItem(Property(Identifier("n"), "division"), "n.division"), ReturnItem(CountStar(), "count(*)"))
+      SortItem(Property(Identifier("n"), PropertyKey("division")), ascending = true)).
+      returns(ReturnItem(Property(Identifier("n"), PropertyKey("division")), "n.division"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -637,7 +655,7 @@ foreach(x in [1,2,3] |
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
       aggregation(CountStar()).
-      returns(ReturnItem(Property(Identifier("node"), "x"), "node.x"), ReturnItem(CountStar(), "count(*)"))
+      returns(ReturnItem(Property(Identifier("node"), PropertyKey("x")), "node.x"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -957,7 +975,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("a", 1)).
-      where(Equals(Property(Identifier("a"), "name"), ParameterExpression("name")))
+      where(Equals(Property(Identifier("a"), PropertyKey("name")), ParameterExpression("name")))
       .returns(ReturnItem(Identifier("a"), "a"))
 
     assert(0 === execute(query, "name" -> "Tobias").toList.size)
@@ -1741,7 +1759,7 @@ RETURN x0.name?
     // START x = node(1) WITH x WHERE x.foo = 42 RETURN x
     val secondQ = Query.
       start().
-      where(Equals(Property(Identifier("x"), "foo"), Literal(42))).
+      where(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal(42))).
       returns(ReturnItem(Identifier("x"), "x"))
 
     val q = Query.

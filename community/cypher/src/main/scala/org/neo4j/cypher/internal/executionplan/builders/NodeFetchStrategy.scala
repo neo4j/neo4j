@@ -108,10 +108,10 @@ object IndexSeekStrategy extends NodeStrategy {
 
   private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
-      case predicate @ Equals(Property(Identifier(id), propertyName), expression) if id == identifier => SolvedPredicate(propertyName, predicate)
-      case predicate @ Equals(expression, Property(Identifier(id), propertyName)) if id == identifier => SolvedPredicate(propertyName, predicate)
-      case predicate @ Equals(nullable @ Nullable(Property(Identifier(id), propertyName)), expression) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyName, predicate)
-      case predicate @ Equals(expression, nullable @ Nullable(Property(Identifier(id), propertyName))) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyName, predicate)
+      case predicate @ Equals(Property(Identifier(id), propertyKey), expression) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
+      case predicate @ Equals(expression, Property(Identifier(id), propertyKey)) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
+      case predicate @ Equals(nullable @ Nullable(Property(Identifier(id), propertyKey)), expression) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyKey.name, predicate)
+      case predicate @ Equals(expression, nullable @ Nullable(Property(Identifier(id), propertyKey))) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyKey.name, predicate)
     }
 }
 

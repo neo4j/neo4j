@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.commands.AllNodes
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
@@ -103,14 +104,14 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
   @Test
   def offers_to_solve_query_with_index_hints() {
-    val propertyKey: String = "name"
+    val propertyKey= PropertyKey("name")
     val labelName: String = "Person"
     //GIVEN
     val q = PartiallySolvedQuery().copy(
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
-      start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey, Some(Literal("a"))))))
+      start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey.name, Some(Literal("a"))))))
 
-    when(context.getIndexRule(labelName, propertyKey)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyKey.name)).thenReturn(Some(new IndexDescriptor(123,456)))
 
     //THEN
     val producedPlan = assertAccepts(q)
@@ -121,8 +122,9 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def throws_exception_if_no_index_is_found() {
     //GIVEN
+    val propertyKey= PropertyKey("name")
     val q = PartiallySolvedQuery().copy(
-      where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
+      where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", "Person", "name", None))))
 
     when(context.getIndexRule(any(), any())).thenReturn(None)

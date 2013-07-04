@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Expression, Collection, Property, Identifier}
-import org.neo4j.cypher.SyntaxException
+import expressions.{Expression, Property, Identifier}
 
 trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[Seq[UpdateAction]]=
@@ -65,7 +64,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   private def mapExpression(pf: PartialFunction[Expression, UpdateAction]): Parser[UpdateAction] = expression ^^ pf
 
   private def propertyRemover: PartialFunction[Expression, UpdateAction] = {
-    case Property(entity, property) => DeletePropertyAction(entity, property)
+    case Property(entity, propertyKey) => DeletePropertyAction(entity, propertyKey)
   }
 
   private def entityRemover: PartialFunction[Expression, UpdateAction] = {

@@ -44,24 +44,22 @@ trait MapSupport {
     case x: Any if x.isInstanceOf[JavaMap[_, _]] =>
       (_: QueryContext) => x.asInstanceOf[JavaMap[String, Any]].asScala
     case x: Node  =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps)
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx, ctx.nodeOps)
     case x: Relationship =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps)
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx, ctx.relationshipOps)
   }
 
-  class PropertyContainerMap[T <: PropertyContainer](n: T, ops: Operations[T]) extends Map[String, Any] {
+  class PropertyContainerMap[T <: PropertyContainer](n: T, ctx: QueryContext, ops: Operations[T]) extends Map[String, Any] {
     def +[B1 >: Any](kv: (String, B1)) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = {
-      val property = ops.getProperty(n, key)
-      Option(property)
-    }
+    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Long) => Option(ops.getProperty(n, pkId)) )
 
-    def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).map(k => k -> ops.getProperty(n, k)).toIterator
+    def iterator: Iterator[(String, Any)] =
+      ops.propertyKeyIds(n).map(id => ctx.getPropertyKeyName(id) -> ops.getProperty(n, id)).toIterator
 
-    override def contains(key: String) = ops.hasProperty(n, key)
+    override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(n, _))
 
     override def apply(key: String) =
       get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
