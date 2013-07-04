@@ -75,6 +75,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.contains;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -232,7 +233,7 @@ public class StoreStatementContext implements
     {
         try
         {
-            return asIterator( nodeStore.getLabelsForNode( nodeStore.getRecord( nodeId ) ) );
+            return asIterator( parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore ) );
         }
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
@@ -271,7 +272,7 @@ public class StoreStatementContext implements
                     NodeRecord node = nodeStore.forceGetRecord( id++ );
                     if ( node.inUse() )
                     {
-                        for ( long label : nodeStore.getLabelsForNode( node ) )
+                        for ( long label : parseLabelsField( node ).get( nodeStore ) )
                         {
                             if ( label == labelId )
                             {

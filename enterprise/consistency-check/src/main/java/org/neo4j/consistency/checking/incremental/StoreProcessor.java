@@ -73,7 +73,7 @@ class StoreProcessor extends AbstractStoreProcessor
     @Override
     protected void checkLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record,
                                               RecordCheck<LabelTokenRecord,
-                                                      ConsistencyReport.LabelNameConsistencyReport> checker )
+                                                      ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         report.forLabelNameChange( store.forceGetRaw( record ), record, checker );
     }
@@ -81,7 +81,7 @@ class StoreProcessor extends AbstractStoreProcessor
     @Override
     protected void checkPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
                                           RecordCheck<PropertyKeyTokenRecord,
-                                                  ConsistencyReport.PropertyKeyConsistencyReport> checker )
+                                                  ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         report.forPropertyKeyChange( store.forceGetRaw( record ), record, checker );
     }

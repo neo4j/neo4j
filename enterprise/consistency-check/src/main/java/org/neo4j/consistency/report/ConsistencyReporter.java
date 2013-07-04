@@ -19,10 +19,6 @@
  */
 package org.neo4j.consistency.report;
 
-import static java.lang.reflect.Proxy.getInvocationHandler;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.Exceptions.withCause;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -44,6 +40,11 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static java.lang.reflect.Proxy.getInvocationHandler;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
@@ -72,10 +73,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.PropertyConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipTypeConsistencyReport> RELATIONSHIP_TYPE_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipTypeConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.LabelNameConsistencyReport> LABEL_KEY_REPORT =
-            ProxyFactory.create( ConsistencyReport.LabelNameConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.PropertyKeyConsistencyReport> PROPERTY_KEY_REPORT =
-            ProxyFactory.create( ConsistencyReport.PropertyKeyConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.LabelTokenConsistencyReport> LABEL_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.LabelTokenConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.PropertyKeyTokenConsistencyReport> PROPERTY_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
             ProxyFactory.create( ConsistencyReport.DynamicConsistencyReport.class );
 
@@ -386,11 +387,11 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
+    public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipTypeTokenRecord,
                                          RecordCheck<RelationshipTypeTokenRecord,
                                                  ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatch( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, relationshipType, checker );
+        dispatch( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
     }
 
     @Override
@@ -402,29 +403,28 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord, ConsistencyReport
-            .LabelNameConsistencyReport> checker )
+    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         dispatch( RecordType.LABEL_KEY, LABEL_KEY_REPORT, label, checker );
     }
 
     @Override
     public void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel, RecordCheck<LabelTokenRecord,
-            ConsistencyReport.LabelNameConsistencyReport> checker )
+            ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         dispatchChange( RecordType.LABEL_KEY, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
     }
 
     @Override
     public void forPropertyKey( PropertyKeyTokenRecord key,
-                                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+                                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         dispatch( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, key, checker );
     }
 
     @Override
     public void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
-                                      RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+                                      RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         dispatchChange( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, oldKey, newKey, checker );
     }

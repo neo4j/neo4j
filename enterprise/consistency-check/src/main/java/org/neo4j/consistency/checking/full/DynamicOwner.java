@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -28,12 +26,14 @@ import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
+
+import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 {
@@ -172,7 +172,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             }
             else if ( record instanceof PropertyKeyTokenRecord )
             {
-                ((ConsistencyReport.PropertyKeyConsistencyReport) report)
+                ((ConsistencyReport.PropertyKeyTokenConsistencyReport) report)
                         .nameMultipleOwners( (PropertyKeyTokenRecord) record );
             }
             else if ( record instanceof DynamicRecord )
@@ -182,7 +182,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    static class PropertyKey extends NameOwner<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+    static class PropertyKey extends NameOwner<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
     {
         private final int id;
 
@@ -198,7 +198,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    static class LabelToken extends NameOwner<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport>
+    static class LabelToken extends NameOwner<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport>
     {
         private final int id;
 

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -33,6 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -40,16 +36,24 @@ import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static java.nio.ByteBuffer.allocate;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
 
 public class NodeCommandTest
 {
     private NodeStore nodeStore;
-    private ImpermanentGraphDatabase gdb;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
@@ -97,8 +101,8 @@ public class NodeCommandTest
 
         NodeRecord after = new NodeRecord( 12, 2, 1 );
         after.setInUse( true );
-        NodeLabelRecordLogic labelLogic = new NodeLabelRecordLogic( after, nodeStore );
-        labelLogic.add( 1337l );
+        NodeLabels nodeLabels = parseLabelsField( after );
+        nodeLabels.add( 1337l, nodeStore );
 
         // When
         assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
@@ -113,9 +117,11 @@ public class NodeCommandTest
 
         NodeRecord after = new NodeRecord( 12, 2, 1 );
         after.setInUse( true );
-        NodeLabelRecordLogic labelLogic = new NodeLabelRecordLogic( after, nodeStore );
+        NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
-            labelLogic.add( i );
+        {
+            nodeLabels.add( i, nodeStore );
+        }
 
         // When
         assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
@@ -141,7 +147,7 @@ public class NodeCommandTest
 
     private Set<Long> labels( NodeRecord record )
     {
-        long[] rawLabels = nodeStore.getLabelsForNode( record );
+        long[] rawLabels = parseLabelsField( record ).get( nodeStore );
         Set<Long> labels = new HashSet<Long>( rawLabels.length );
         for ( long label : rawLabels )
             labels.add( label );
