@@ -220,6 +220,49 @@ trait FilterExpression extends Expression {
   }
 }
 
+
+case class FilterFunction(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends FilterExpression {
+  val name = "FILTER"
+
+  override def semanticCheck(ctx: SemanticContext) =
+      checkPredicateDefined then super.semanticCheck(ctx) then limitType(expression.types)
+
+  def checkPredicateDefined = if (innerPredicate.isDefined) None else Some(SemanticError(s"${name} requires a WHERE predicate", token))
+
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.FilterFunction(command, name, inner)
+}
+
+
+case class ExtractFunction(
+    identifier: Identifier,
+    expression: Expression,
+    innerPredicate: Option[Expression],
+    extractExpression: Option[Expression],
+    token: InputToken) extends FilterExpression
+{
+  val name = "EXTRACT"
+
+  override def semanticCheck(ctx: SemanticContext) = checkPredicateNotDefined then super.semanticCheck(ctx) then checkInnerExpression
+
+  def checkPredicateNotDefined = if (innerPredicate.isEmpty) None else Some(SemanticError(s"${name} should not contain a WHERE predicate", token))
+
+  private def checkInnerExpression : SemanticCheck = {
+    extractExpression match {
+      case Some(e) => withScopedState {
+        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      } then {
+        val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+        limitType(outerTypes)
+      }
+      case None    => SemanticError(s"${name} requires an extract expression", token)
+    }
+  }
+
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.ExtractFunction(command, name, extractExpression.get.toCommand)
+}
+
+
 case class ListComprehension(
     identifier: Identifier,
     expression: Expression,
@@ -227,7 +270,7 @@ case class ListComprehension(
     extractExpression: Option[Expression],
     token: InputToken) extends FilterExpression
 {
-  val name = "list comprehension"
+  val name = "[...]"
 
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then checkInnerExpression
 
@@ -256,6 +299,7 @@ case class ListComprehension(
     extract
   }
 }
+
 
 sealed trait IterablePredicateExpression extends FilterExpression {
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())

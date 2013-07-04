@@ -100,6 +100,8 @@ trait Expressions extends Parser
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
+    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterFunction
+    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~~ ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~ ")") ~>> token ~~> ast.ExtractFunction
     | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate

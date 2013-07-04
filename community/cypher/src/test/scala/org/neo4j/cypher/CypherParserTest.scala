@@ -1375,7 +1375,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
-    test(vAll diff List(vExperimental), "start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
+    test("start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
@@ -1406,8 +1406,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def extract() {
-    test(vAll diff List(vExperimental),
-      "start x = NODE(1) match p=x-[r]->z return extract(x in p | x.prop)",
+    test("start x = NODE(1) match p=x-[r]->z return extract(x in p | x.prop)",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
