@@ -22,9 +22,9 @@
   </properties>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/advanced.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/advanced.git</developerConnection>
-    <url>https://github.com/neo4j/advanced</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+	<url>https://github.com/neo4j/neo4j/tree/master/advanced</url>
   </scm>
 
   <modules>
