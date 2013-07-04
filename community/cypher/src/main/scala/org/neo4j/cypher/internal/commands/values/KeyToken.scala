@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.{StringType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.spi.{TokenContext, QueryContext}
 
 
 /*
@@ -33,7 +34,11 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def name: String
 
-  def getId(state: QueryState): Long
+  def getOrCreateId(state: QueryContext): Long
+  def getIdOrFail(state: TokenContext): Long
+  def getOptId(state: TokenContext): Option[Long]
+
+  def resolve(tokenContext: TokenContext): KeyToken
 
   def children = Seq.empty
 
@@ -47,12 +52,21 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 }
 
 object KeyToken {
+
   case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
-    def getId(state: QueryState): Long = typ.getIdFromName(name, state)
+    def getOrCreateId(state: QueryContext): Long = typ.getOrCreateIdForName(name, state)
+    def getIdOrFail(state: TokenContext): Long = typ.getIdForNameOrFail(name, state)
+    def getOptId(state: TokenContext): Option[Long] = typ.getOptIdForName(name, state)
+
+    def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
   }
 
-  case class Resolved(name: String, labelId: Long, typ: TokenType) extends KeyToken(typ) {
-    def getId(state: QueryState): Long = labelId
+  case class Resolved(name: String, id: Long, typ: TokenType) extends KeyToken(typ) {
+    def getOrCreateId(state: QueryContext): Long = id
+    def getIdOrFail(state: TokenContext): Long = id
+    def getOptId(state: TokenContext): Option[Long] = Some(id)
+
+    override def resolve(tokenContext: TokenContext): Resolved = this
   }
 }
 

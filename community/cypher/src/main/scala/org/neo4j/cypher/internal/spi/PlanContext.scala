@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
  * want to control what operations can be executed at runtime.  For example, we do not give access
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
-trait PlanContext {
+trait PlanContext extends TokenContext {
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
@@ -38,7 +38,5 @@ trait PlanContext {
   def checkNodeIndex(idxName: String)
 
   def checkRelIndex(idxName: String)
-
-  def getLabelId(labelName: String): Option[Long]
 }
 

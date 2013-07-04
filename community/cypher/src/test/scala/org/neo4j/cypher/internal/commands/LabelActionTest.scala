@@ -107,6 +107,8 @@ class SnitchingQueryContext extends QueryContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String) = ???
 
+  def getOptPropertyKeyId(propertyKey: String): Option[Long] = ???
+
   def getPropertyKeyId(propertyKey: String) = ???
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) = ???
@@ -123,9 +125,15 @@ class SnitchingQueryContext extends QueryContext {
 
   def schemaStateContains(key: String) = ???
 
-  def getLabelId(labelName: String): Option[Long] = labels.get(labelName)
+  def getOptLabelId(labelName: String): Option[Long] = labels.get(labelName)
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
 
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
+
+  def getLabelId(labelName: String): Long = ???
+
+  def getPropertyKeyName(id: Long): String = ???
+
+  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 }

@@ -24,6 +24,7 @@ import expressions._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.AbstractPattern
 import org.neo4j.cypher.internal.HasOptionalDefault
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
   def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {
@@ -90,7 +91,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
   def property: Parser[Expression] = identity ~ "." ~ escapableString ^^ {
-    case v ~ "." ~ p => Property(Identifier(v), p)
+    case v ~ "." ~ p => Property(Identifier(v), PropertyKey(p))
   }
 
   private val message = "Cypher does not support != for inequality comparisons. " +

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api._
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
@@ -31,24 +31,55 @@ import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.kernel.api.operations.KeyNameLookup
-import org.neo4j.kernel.api.exceptions.{KernelException, LabelNotFoundKernelException}
+import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
-import scala.Some
 
-class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext)
+  extends TransactionBoundTokenContext(ctx) with QueryContext {
+
+  private var open = true
 
   def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (ctx.nodeAddLabel(node, labelId)) count + 1 else count
   }
 
   def close(success: Boolean) {
-    ctx.close()
+    try {
+      ctx.close()
 
-    if (success)
-      tx.success()
-    else
-      tx.failure()
-    tx.finish()
+      if (success)
+        tx.success()
+      else
+        tx.failure()
+      tx.finish()
+    }
+    finally {
+      open = false
+    }
+  }
+
+  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
+    if (open) {
+      work(this)
+    }
+    else {
+      val tx = graph.beginTx()
+      try {
+        val bridge   = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+        val stmCtx   = bridge.getCtxForReading
+        val result   = try {
+          work(new TransactionBoundQueryContext(graph, tx, stmCtx))
+        }
+        finally {
+          stmCtx.close()
+        }
+        tx.success()
+        result
+      }
+      finally {
+        tx.finish()
+      }
+    }
   }
 
   def createNode(): Node =
@@ -56,9 +87,6 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
-
-  def getLabelName(id: Long) =
-    ctx.labelGetName(id)
 
   def getLabelsForNode(node: Long) =
     ctx.nodeGetLabels(node).asScala.map(_.asInstanceOf[Long])
@@ -68,13 +96,6 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def getOrCreateLabelId(labelName: String) =
     ctx.labelGetOrCreateForName(labelName)
-
-
-  def getLabelId(labelName: String): Option[Long] = try {
-    Some(ctx.labelGetForName(labelName))
-  } catch {
-    case _: LabelNotFoundKernelException => None
-  }
 
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = types match {
@@ -99,8 +120,25 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      obj.delete()
+      ctx.nodeDelete(obj.getId)
     }
+
+    def propertyKeyIds(obj: Node): Iterator[Long] = ctx.nodeGetPropertyKeys(obj.getId).asScala.map(_.longValue())
+
+    def getProperty(obj: Node, propertyKeyId: Long): Any = {
+      ctx.nodeGetProperty(obj.getId, propertyKeyId).value(null)
+    }
+
+    def hasProperty(obj: Node, propertyKey: Long) = ctx.nodeHasProperty(obj.getId, propertyKey)
+
+    def removeProperty(obj: Node, propertyKeyId: Long) {
+      ctx.nodeRemoveProperty(obj.getId, propertyKeyId)
+    }
+
+    def setProperty(obj: Node, propertyKeyId: Long, value: Any) {
+      ctx.nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
+    }
+
 
     def getById(id: Long) = try {
       graph.getNodeById(id)
@@ -120,7 +158,23 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     def delete(obj: Relationship) {
-      obj.delete()
+      ctx.relationshipDelete(obj.getId)
+    }
+
+    def propertyKeyIds(obj: Relationship): Iterator[Long] =
+      ctx.relationshipGetPropertyKeys(obj.getId).asScala.map(_.longValue())
+
+    def getProperty(obj: Relationship, propertyKeyId: Long): Any =
+      ctx.relationshipGetProperty(obj.getId, propertyKeyId).value(null)
+
+    def hasProperty(obj: Relationship, propertyKey: Long) = ctx.relationshipHasProperty(obj.getId, propertyKey)
+
+    def removeProperty(obj: Relationship, propertyKeyId: Long) {
+      ctx.relationshipRemoveProperty(obj.getId, propertyKeyId)
+    }
+
+    def setProperty(obj: Relationship, propertyKeyId: Long, value: Any) {
+      ctx.relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)
@@ -137,9 +191,6 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def getOrCreatePropertyKeyId(propertyKey: String) =
     ctx.propertyKeyGetOrCreateForName(propertyKey)
-
-  def getPropertyKeyId(propertyKey: String) =
-    ctx.propertyKeyGetForName(propertyKey)
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) {
     try {
@@ -174,19 +225,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   })
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
-    def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey, null)
-
-    def hasProperty(obj: T, propertyKey: String) = obj.hasProperty(propertyKey)
-
     def propertyKeys(obj: T) = obj.getPropertyKeys.asScala
-
-    def removeProperty(obj: T, propertyKey: String) {
-      obj.removeProperty(propertyKey)
-    }
-
-    def setProperty(obj: T, propertyKey: String, value: Any) {
-      obj.setProperty(propertyKey, value)
-    }
   }
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {

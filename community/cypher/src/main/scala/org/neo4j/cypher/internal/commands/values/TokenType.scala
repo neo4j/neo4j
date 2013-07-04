@@ -19,21 +19,37 @@
  */
 package org.neo4j.cypher.internal.commands.values
 
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.spi.{TokenContext, QueryContext}
 
 
 object TokenType extends Enumeration {
   case object Label extends TokenType {
-    def getIdFromName(name: String, state: QueryState): Long = state.query.getOrCreateLabelId(name)
+    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptLabelId(name)
+
+    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getLabelId(name)
+
+    def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreateLabelId(name)
   }
 
   case object PropertyKey extends TokenType {
-    def getIdFromName(name: String, state: QueryState): Long = state.query.getOrCreatePropertyKeyId(name)
+    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptPropertyKeyId(name)
+
+    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getPropertyKeyId(name)
+
+    def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreatePropertyKeyId(name)
   }
 }
 
-trait TokenType {
-  def getIdFromName(name: String, state: QueryState): Long
+trait TokenType  {
+  def apply(name: String) = KeyToken.Unresolved(name, this)
+
+  def apply(name: String, id: Long) = KeyToken.Resolved(name, id, this)
+
+  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Long]
+
+  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Long
+
+  def getOrCreateIdForName(name: String, queryContext: QueryContext): Long
 }
 
 

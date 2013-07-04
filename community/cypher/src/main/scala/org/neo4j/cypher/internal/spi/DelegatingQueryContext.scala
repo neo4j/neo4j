@@ -36,13 +36,15 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def createRelationship(start: Node, end: Node, relType: String) = inner.createRelationship(start, end, relType)
 
-  def getLabelName(id: Long) = inner.getLabelName(id)
-
   def getLabelsForNode(node: Long) = inner.getLabelsForNode(node)
 
-  def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
+  def getLabelName(id: Long) = inner.getLabelName(id)
 
-  def getLabelId(labelName: String): Option[Long] = inner.getLabelId(labelName)
+  def getOptLabelId(labelName: String): Option[Long] = inner.getOptLabelId(labelName)
+
+  def getLabelId(labelName: String): Long = inner.getLabelId(labelName)
+
+  def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = inner.getRelationshipsFor(node, dir, types)
 
@@ -54,9 +56,13 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
     inner.removeLabelsFromNode(node, labelIds)
   }
 
-  def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
+  def getPropertyKeyName(propertyKeyId: Long): String = inner.getPropertyKeyName(propertyKeyId)
+
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Long] = inner.getOptPropertyKeyId(propertyKeyName)
 
   def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
+
+  def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) { inner.addIndexRule(labelIds, propertyKeyId) }
 
@@ -79,6 +85,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)
   }
+
+  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
@@ -86,20 +94,22 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
     inner.delete(obj)
   }
 
-  def setProperty(obj: T, propertyKey: String, value: Any) {
+  def setProperty(obj: T, propertyKey: Long, value: Any) {
     inner.setProperty(obj, propertyKey, value)
   }
 
   def getById(id: Long) = inner.getById(id)
 
-  def getProperty(obj: T, propertyKey: String) = inner.getProperty(obj, propertyKey)
+  def getProperty(obj: T, propertyKeyId: Long) = inner.getProperty(obj, propertyKeyId)
 
-  def hasProperty(obj: T, propertyKey: String) = inner.hasProperty(obj, propertyKey)
+  def hasProperty(obj: T, propertyKeyId: Long) = inner.hasProperty(obj, propertyKeyId)
 
   def propertyKeys(obj: T) = inner.propertyKeys(obj)
 
-  def removeProperty(obj: T, propertyKey: String) {
-    inner.removeProperty(obj, propertyKey)
+  def propertyKeyIds(obj: T) = inner.propertyKeyIds(obj)
+
+  def removeProperty(obj: T, propertyKeyId: Long) {
+    inner.removeProperty(obj, propertyKeyId)
   }
 
   def indexGet(name: String, key: String, value: Any): Iterator[T] = inner.indexGet(name, key, value)

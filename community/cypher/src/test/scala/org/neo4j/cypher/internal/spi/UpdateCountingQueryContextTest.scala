@@ -55,25 +55,25 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   }
 
   @Test def set_property() {
-    context.nodeOps.setProperty(nodeA, "key", "value")
+    context.nodeOps.setProperty(nodeA, 1, "value")
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def remove_property() {
-    context.nodeOps.removeProperty(nodeA, "key")
+    context.nodeOps.removeProperty(nodeA, context.getPropertyKeyId("key"))
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def set_property_relationship() {
-    context.relationshipOps.setProperty(rel, "key", "value")
+    context.relationshipOps.setProperty(rel, 1, "value")
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def remove_property_relationship() {
-    context.relationshipOps.removeProperty(rel, "key")
+    context.relationshipOps.removeProperty(rel, context.getPropertyKeyId("key"))
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }

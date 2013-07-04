@@ -64,10 +64,10 @@ class IndexLookupBuilder extends PlanBuilder {
   private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(Unsolved[Predicate], Expression)] =
     plan.query.where.collect {
       case predicate@Unsolved(Equals(Property(Identifier(id), prop), expression))
-        if id == hint.identifier && prop == hint.property => (predicate, expression)
+        if id == hint.identifier && prop.name == hint.property => (predicate, expression)
 
       case predicate@Unsolved(Equals(expression, Property(Identifier(id), prop)))
-        if id == hint.identifier && prop == hint.property => (predicate, expression)
+        if id == hint.identifier && prop.name == hint.property => (predicate, expression)
     }
 
   private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =
