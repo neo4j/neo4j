@@ -45,6 +45,7 @@ trait CypherType {
   def rewrite(f: CypherType => CypherType) = f(this)
 }
 
+
 object CypherType {
   def fromJava(obj: Any): CypherType = obj match {
     case _: String                          => StringType()
@@ -57,6 +58,7 @@ object CypherType {
     case _                                  => AnyType()
   }
 }
+
 
 /*
 TypeSafe is everything that needs to check it's types
@@ -72,6 +74,7 @@ trait TypeSafe {
   private def check(symbols: SymbolTable, name: String): Boolean = symbols.identifiers.contains(name)
 }
 
+
 /*
 Typed is the trait all classes that have a return type, or have dependencies on an expressions' type.
  */
@@ -86,4 +89,30 @@ trait Typed {
   Checks if internal type dependencies are met and returns the actual type of the expression
   */
   def getType(symbols: SymbolTable): CypherType = evaluateType(AnyType(), symbols)
+}
+
+
+case class MergeableCypherTypeSet[T <: CypherType](set: Set[T]) {
+  def mergeDown(other: Set[CypherType]) : Set[CypherType] = {
+    set.foldLeft(Vector.empty[CypherType])((ts, t) => {
+      val dt = other.map { _.mergeDown(t) } reduce { (t1, t2) => (t1 mergeUp t2).get }
+      ts.filter(_.mergeUp(dt) != Some(dt)) :+ dt
+    }).toSet
+  }
+
+  def mergeUp(other: Set[CypherType]) : Set[CypherType] = {
+    set.flatMap { t => other.flatMap { _ mergeUp t } }
+  }
+}
+
+
+case class FormattableCypherTypeSet[T <: CypherType](set: Set[T]) {
+  def formattedString : String = {
+    val types = set.toIndexedSeq.map(_.toString)
+    types.length match {
+      case 0 => ""
+      case 1 => types.head
+      case _ => s"${types.dropRight(1).mkString(", ")} or ${types.last}"
+    }
+  }
 }

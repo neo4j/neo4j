@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.experimental
+package org.neo4j.cypher.internal.symbols
 
-import org.neo4j.cypher.internal.symbols._
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.symbols.CypherType
-
 package object experimental {
   type SemanticCheck = SemanticState => SemanticCheckResult
 
@@ -62,10 +60,4 @@ package object experimental {
   implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]) = SemanticCheckableOption(option)
   // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
   implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) = SemanticCheckableTraversableOnce(traversable)
-
-  // Allows Sets of CypherType to be merged
-  implicit def mergeableCypherTypeSet[T <: CypherType](set: Set[T]) = MergeableCypherTypeSet(set)
-
-  // Allows Sets of CypherType to be formatted for pretty printing
-  implicit def formattableCypherTypeSet[T <: CypherType](set: Set[T]) = FormattableCypherTypeSet(set)
 }
