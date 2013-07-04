@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.util.Map;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,6 +34,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class AbstractJavaDocTestbase implements GraphHolder
 {
@@ -42,6 +44,12 @@ public class AbstractJavaDocTestbase implements GraphHolder
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
     protected static GraphDatabaseService db;
     protected ExecutionEngine engine;
+    
+    protected String createCypherSnippet( String cypherQuery )
+    {
+        String snippet = org.neo4j.cypher.internal.parser.prettifier.Prettifier$.MODULE$.apply( cypherQuery );
+        return AsciidocHelper.createAsciiDocSnippet( "cypher", snippet );
+    }
 
     @BeforeClass
     public static void init()

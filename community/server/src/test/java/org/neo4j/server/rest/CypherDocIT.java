@@ -59,7 +59,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
      */
     @Test
     @Documented
-    @Title( "Send a Query" )
+    @Title( "Send a query" )
     @Graph( nodes = {
             @NODE( name = "I", setNameProperty = true ),
             @NODE( name = "you", setNameProperty = true ),
@@ -80,12 +80,12 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     /**
-     * By passing in an additional GET header when you execute cypher queries, meta data about the query will
+     * By passing in an additional GET header when you execute Cypher queries, metadata about the query will
      * be returned, such as how many labels were added or removed by the query.
      */
     @Test
     @Documented
-    @Title( "Retrieve query meta data" )
+    @Title( "Retrieve query metadata" )
     @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("bar") } ) } )
     public void testQueryStatistics() throws JsonParseException
     {
@@ -182,6 +182,22 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "data" ) );
     }
 
+    /**
+     * Create a node with a label and a property using Cypher.
+     */
+    @Test
+    @Documented
+    @Title( "Create a node" )
+    @Graph
+    public void send_query_to_create_a_node() throws Exception {
+        data.get();
+        String script = "create (n:Person { name : {name} }) return n";
+        String response = cypherRestCall( script, Status.OK, Pair.of( "name", "Andres" ) );
+
+        assertTrue( response.contains( "name" ) );
+        assertTrue( response.contains( "Andres" ) );
+    }
+    
     @Test
     @Graph( nodes = {
             @NODE( name = "I", properties = {

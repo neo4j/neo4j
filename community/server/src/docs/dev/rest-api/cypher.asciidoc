@@ -11,13 +11,15 @@ In order to speed up queries in repeated scenarios, try not to use literals but 
 
 include::send-queries-with-parameters.asciidoc[]
 
+include::create-a-node.asciidoc[]
+
 include::send-a-query.asciidoc[]
 
 include::return-paths.asciidoc[]
 
 include::nested-results.asciidoc[]
 
-include::retrieve-query-meta-data.asciidoc[]
+include::retrieve-query-metadata.asciidoc[]
 
 include::profile-a-query.asciidoc[]
 
