@@ -69,8 +69,9 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         return TYPE_DESCRIPTOR;
     }
-    
-    private Collection<DynamicRecord> allocateFromNumbers( Object array, Iterator<DynamicRecord> recordsToUseFirst )
+
+    public static Collection<DynamicRecord> allocateFromNumbers( Object array, Iterator<DynamicRecord> recordsToUseFirst,
+                                                                 DynamicRecordAllocator recordAllocator )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
@@ -108,10 +109,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
             type.writeAll(array, arrayLength,requiredBits,bits);
             bytes = bits.asBytes();
         }
-        return allocateRecordsFromBytes( bytes, recordsToUseFirst );
+        return allocateRecordsFromBytes( bytes, recordsToUseFirst, recordAllocator );
     }
 
-    private Collection<DynamicRecord> allocateFromString( String[] array, Iterator<DynamicRecord> recordsToUseFirst )
+    private static Collection<DynamicRecord> allocateFromString( String[] array, Iterator<DynamicRecord> recordsToUseFirst,
+                                                                 DynamicRecordAllocator recordAllocator )
     {
         List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
@@ -130,7 +132,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             buf.putInt( stringAsBytes.length );
             buf.put( stringAsBytes );
         }
-        return allocateRecordsFromBytes( buf.array(), recordsToUseFirst );
+        return allocateRecordsFromBytes( buf.array(), recordsToUseFirst, recordAllocator );
     }
 
     public Collection<DynamicRecord> allocateRecords( Object array )
@@ -148,15 +150,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
-            return allocateFromString( (String[]) array, recordsToUseFirst );
+            return allocateFromString( (String[]) array, recordsToUseFirst, recordAllocator );
         }
         else
         {
-            return allocateFromNumbers( array, recordsToUseFirst );
+            return allocateFromNumbers( array, recordsToUseFirst, recordAllocator );
         }
     }
 
-    public Object getRightArray( Pair<byte[],byte[]> data )
+    public static Object getRightArray( Pair<byte[],byte[]> data )
     {
         byte[] header = data.first();
         byte[] bArray = data.other();

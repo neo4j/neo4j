@@ -65,7 +65,8 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
-        return allocateRecordsFromBytes( serializer.serialize(), asList( forceGetRecord( rule.getId() ) ).iterator() );
+        return allocateRecordsFromBytes( serializer.serialize(), asList( forceGetRecord( rule.getId() ) ).iterator(),
+                recordAllocator );
     }
     
     public Iterator<SchemaRule> loadAll()

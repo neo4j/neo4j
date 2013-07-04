@@ -19,12 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
@@ -41,6 +35,12 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         REPORT extends ConsistencyReport<RECORD, REPORT>,
@@ -149,19 +149,19 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         };
     }
 
-    public static RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> dummyPropertyKeyCheck()
+    public static RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> dummyPropertyKeyCheck()
     {
         return new PropertyKeyTokenRecordCheck()
         {
             @Override
-            public void check( PropertyKeyTokenRecord record, ConsistencyReport.PropertyKeyConsistencyReport report,
+            public void check( PropertyKeyTokenRecord record, ConsistencyReport.PropertyKeyTokenConsistencyReport report,
                                RecordAccess records )
             {
             }
 
             @Override
             public void checkChange( PropertyKeyTokenRecord oldRecord, PropertyKeyTokenRecord newRecord,
-                                     ConsistencyReport.PropertyKeyConsistencyReport report, DiffRecordAccess records )
+                                     ConsistencyReport.PropertyKeyTokenConsistencyReport report, DiffRecordAccess records )
             {
             }
         };
@@ -225,14 +225,24 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return records.add( record );
     }
 
+    DynamicRecord addNodeDynamicLabels( DynamicRecord labels )
+    {
+        return records.addNodeDynamicLabels( labels );
+    }
+
     DynamicRecord addKeyName( DynamicRecord name )
     {
-        return records.addKeyName( name );
+        return records.addPropertyKeyName( name );
+    }
+
+    DynamicRecord addRelationshipTypeName(DynamicRecord name )
+    {
+        return records.addRelationshipTypeName( name );
     }
 
     DynamicRecord addLabelName( DynamicRecord name )
     {
-        return records.addRelationshipTypeName( name );
+        return records.addLabelName( name );
     }
 
     public static DynamicRecord string( DynamicRecord record )

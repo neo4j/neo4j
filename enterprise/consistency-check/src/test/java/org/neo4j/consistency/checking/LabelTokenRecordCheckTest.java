@@ -23,26 +23,26 @@ import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 
 import static org.mockito.Mockito.verify;
 
-public class RelationshipTypeTokenRecordCheckTest extends
-        RecordCheckTestBase<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
+public class LabelTokenRecordCheckTest extends
+                                        RecordCheckTestBase<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport, LabelTokenRecordCheck>
 {
-    public RelationshipTypeTokenRecordCheckTest()
+    public LabelTokenRecordCheckTest()
     {
-        super( new RelationshipTypeTokenRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class );
+        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class );
     }
 
     @Test
     public void shouldNotReportAnythingForRecordNotInUse() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord label = notInUse( new RelationshipTypeTokenRecord( 42 ) );
+        LabelTokenRecord key = notInUse( new LabelTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -52,10 +52,10 @@ public class RelationshipTypeTokenRecordCheckTest extends
     public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
+        LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -65,12 +65,12 @@ public class RelationshipTypeTokenRecordCheckTest extends
     public void shouldReportDynamicBlockNotInUse() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( notInUse( new DynamicRecord( 6 ) ) );
-        label.setNameId( (int) name.getId() );
+        LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -81,12 +81,12 @@ public class RelationshipTypeTokenRecordCheckTest extends
     public void shouldReportEmptyName() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( inUse( new DynamicRecord( 6 ) ) );
-        label.setNameId( (int) name.getId() );
+        LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
+        key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).emptyName( name );
@@ -99,14 +99,14 @@ public class RelationshipTypeTokenRecordCheckTest extends
     public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
-        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( inUse( new DynamicRecord( 6 ) ) );
+        LabelTokenRecord oldRecord = notInUse( new LabelTokenRecord( 42 ) );
+        LabelTokenRecord newRecord = inUse( new LabelTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
         name.setData( new byte[1] );
-        newRecord.setNameId( (int) name.getId()  );
+        newRecord.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.LabelTokenConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verifyOnlyReferenceDispatch( report );
@@ -116,13 +116,13 @@ public class RelationshipTypeTokenRecordCheckTest extends
     public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
     {
         // given
-        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
-        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( notInUse( new DynamicRecord( 6 ) ) );
-        newRecord.setNameId( (int) name.getId()  );
+        LabelTokenRecord oldRecord = notInUse( new LabelTokenRecord( 42 ) );
+        LabelTokenRecord newRecord = inUse( new LabelTokenRecord( 42 ) );
+        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        newRecord.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
+        ConsistencyReport.LabelTokenConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
         verify( report ).nameBlockNotInUse( name );

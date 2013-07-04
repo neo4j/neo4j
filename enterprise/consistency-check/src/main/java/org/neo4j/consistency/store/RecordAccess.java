@@ -46,6 +46,8 @@ public interface RecordAccess
 
     RecordReference<DynamicRecord> relationshipTypeName( final int id );
 
+    RecordReference<DynamicRecord> nodeLabels( final long id );
+
     RecordReference<LabelTokenRecord> label( final int id );
 
     RecordReference<DynamicRecord> labelName( final int id );
