@@ -80,4 +80,10 @@ public class MemberIsUnavailable
         clusterUri = URI.create( in.readUTF() );
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format( "MemberIsUnavailable[ Role: %s, InstanceId: %s, ClusterURI: %s ]",
+                role, instanceId.toString(), clusterUri.toString() );
+    }
 }
