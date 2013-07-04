@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * TODO
  */
-public class NetworkSendReceiveTest
+public class NetworkInstanceSendAndReceiveTest
 {
     public enum TestMessage
             implements MessageType
@@ -50,7 +50,7 @@ public class NetworkSendReceiveTest
     }
 
     @Test
-    public void testSendReceive() throws Exception
+    public void shouldSendAMessageFromAClientWhichIsReceivedByAServer() throws Exception
     {
 
         // given
