@@ -15,29 +15,10 @@ action() {
 
 }
 
-set -e
-
-read -p "I need to know the ticket number that you're uploading the data store with: " ticket_number
-[ -n "${ticket_number}" ] || die "Sorry, I really need that support ticket number"
-
-read -p "THIS WILL UPLOAD ALL YOUR DATA TO A PRIVATE S3 BUCKET. Do you agree with this? (Y/N): " confirmation
-
-shopt -s nocasematch
-case "${confirmation}" in 
-  y)
-    echo "Ok. Starting the upload process in 10 seconds"
-    sleep 1 #0
-  ;;
-  n)
-    echo "OK. This script will exit and NOT upload your data"
-    exit 0 
-  ;;
-  *)
-    "I need to press you for an answer on that one"
-    exit 1
-  ;;
-
-esac
+[ $# -eq 1 ] || die "Usage: $0 <support ticket number>"  
+echo "THIS WILL UPLOAD ALL YOUR DATA TO A PRIVATE S3 BUCKET. Hit <ctrl>-c now if you disagree with this"
+sleep 10 
+echo "Waited 10 seconds, proceeding to upload"
 
 script_dir=$(dirname $0)
 data_dir="${script_dir}/../data"
