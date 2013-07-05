@@ -76,7 +76,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
         this.conf = conf;
-        this.recordAllocator = new UsePreExistingRecordsThenAllocateNewRecords( this, this );
+        this.recordAllocator = new ExistingThenNewRecordAllocator( this, this );
     }
 
     @Override
@@ -257,51 +257,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         while ( nextRecord != null );
         return recordList;
-    }
-
-    public static interface DynamicRecordAllocator
-    {
-        int dataSize();
-
-        DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst );
-    }
-
-    static class UsePreExistingRecordsThenAllocateNewRecords implements DynamicRecordAllocator
-    {
-        private final DynamicBlockSize blockSize;
-        private final IdSequence idSequence;
-
-        UsePreExistingRecordsThenAllocateNewRecords( DynamicBlockSize blockSize, IdSequence idSequence )
-        {
-            this.blockSize = blockSize;
-            this.idSequence = idSequence;
-        }
-
-        public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
-        {
-            DynamicRecord record;
-            if ( recordsToUseFirst.hasNext() )
-            {
-                record = recordsToUseFirst.next();
-                if ( !record.inUse() )
-                {
-                    record.setCreated();
-                }
-            }
-            else
-            {
-                record = new DynamicRecord( idSequence.nextId() );
-                record.setCreated();
-            }
-            record.setInUse( true );
-            return record;
-        }
-
-        @Override
-        public int dataSize()
-        {
-            return blockSize.getBlockSize() - BLOCK_HEADER_SIZE;
-        }
     }
 
     public Collection<DynamicRecord> getLightRecords( long startBlockId )
@@ -626,38 +581,15 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
-        byte[] header = null;
-        List<byte[]> byteList = new LinkedList<>();
-        int totalSize = 0, i = 0;
         for ( DynamicRecord record : records )
         {
             ensureHeavy( record );
+        }
 
-            int offset = 0;
-            if ( i++ == 0 )
-            {   // This is the first one, read out the header separately
-                header = propertyType.readDynamicRecordHeader( record.getData() );
-                offset = header.length;
-            }
-            
-            byteList.add( record.getData() );
-            totalSize += (record.getData().length-offset);
-        }
-        byte[] bArray = new byte[totalSize];
-        assert header != null : "header should be non-null since records should not be empty";
-        int sourceOffset = header.length;
-        int offset = 0;
-        for ( byte[] currentArray : byteList )
-        {
-            System.arraycopy( currentArray, sourceOffset, bArray, offset,
-                currentArray.length-sourceOffset );
-            offset += (currentArray.length-sourceOffset);
-            sourceOffset = 0;
-        }
-        return Pair.of( header, bArray );
+        return readFullByteArrayFromHeavyRecords( records, propertyType );
     }
 
-    public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArrayWithoutMakingHeavy(
+    public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;

@@ -229,7 +229,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                 private long[] labelIds( List<DynamicRecord> recordList )
                 {
                     return (long[]) DynamicArrayStore.getRightArray( AbstractDynamicStore
-                            .readFullByteArrayWithoutMakingHeavy( recordList, PropertyType.ARRAY ) );
+                            .readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) );
                 }
             }
         }
