@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -47,11 +47,13 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -263,16 +265,18 @@ public class IndexRecoveryIT
         Transaction tx = db.beginTx();
         try
         {
-            StatementContext context = db.getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getCtxForWriting();
+            ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
+                    ThreadToStatementContextBridge.class );
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForReading();
             for ( int number : new int[] {4, 10} )
             {
                 Node node = db.createNode( label );
                 node.setProperty( key, number );
-                updates.add( NodePropertyUpdate.add( node.getId(), context.propertyKeyGetForName( key ), number,
-                        new long[] {context.labelGetForName( label.name() )} ) );
+                updates.add( NodePropertyUpdate.add( node.getId(), context.propertyKeyGetForName( state, key ), number,
+                        new long[] {context.labelGetForName( state, label.name() )} ) );
             }
-            context.close();
+            context.close( state );
             tx.success();
             return updates;
         }

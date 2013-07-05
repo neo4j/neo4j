@@ -19,21 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface LockHolder
+import org.neo4j.kernel.api.LifecycleOperations;
+import org.neo4j.kernel.api.operations.StatementState;
+
+public class ReferenceCountingStatementOperations implements LifecycleOperations
 {
-    public abstract void acquireNodeReadLock( long nodeId );
-
-    public abstract void acquireNodeWriteLock( long nodeId );
-
-    public abstract void acquireRelationshipReadLock( long relationshipId );
-
-    public abstract void acquireRelationshipWriteLock( long relationshipId );
-
-    public abstract void acquireGraphWriteLock();
-
-    public abstract void acquireSchemaReadLock();
-
-    public abstract void acquireSchemaWriteLock();
-
-    public abstract void releaseLocks();
+    @Override
+    public void close( StatementState state )
+    {
+        state.refCounting().close();
+    }
 }

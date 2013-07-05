@@ -24,7 +24,8 @@ import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
-import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.kernel.api.operations.StatementState
 
 trait GraphIcing {
 
@@ -59,12 +60,21 @@ trait GraphIcing {
       }
     }
 
-    def statementContextForReading: StatementContext = graph.
+    def statementContextForReading: StatementOperations = graph.
       getDependencyResolver.
       resolveDependency(classOf[ThreadToStatementContextBridge]).
       getCtxForReading
+    def stateForReading: StatementState = graph.
+      getDependencyResolver.
+      resolveDependency(classOf[ThreadToStatementContextBridge]).
+      statementForReading
+      
+    def state: StatementState = graph.
+      getDependencyResolver.
+      resolveDependency(classOf[ThreadToStatementContextBridge]).
+      statementForWriting
 
-    def inTx[T](f: StatementContext => T): T = {
+    def inTx[T](f: StatementOperations => T): T = {
       val tx = graph.beginTx()
       try {
         val context = graph.

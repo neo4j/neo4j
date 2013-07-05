@@ -17,23 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.operations;
 
-public interface LockHolder
+public interface RefCounting
 {
-    public abstract void acquireNodeReadLock( long nodeId );
+    boolean isOpen();
+    
+    void close();
+    
+    public static class Default implements RefCounting
+    {
+        private boolean open = true;
 
-    public abstract void acquireNodeWriteLock( long nodeId );
+        @Override
+        public boolean isOpen()
+        {
+            return open;
+        }
 
-    public abstract void acquireRelationshipReadLock( long relationshipId );
-
-    public abstract void acquireRelationshipWriteLock( long relationshipId );
-
-    public abstract void acquireGraphWriteLock();
-
-    public abstract void acquireSchemaReadLock();
-
-    public abstract void acquireSchemaWriteLock();
-
-    public abstract void releaseLocks();
+        @Override
+        public void close()
+        {
+            open = false;
+        }
+    }
 }

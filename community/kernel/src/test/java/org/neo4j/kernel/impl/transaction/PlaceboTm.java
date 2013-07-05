@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -33,11 +31,13 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.LockElement;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class PlaceboTm extends AbstractTransactionManager
 {
@@ -137,7 +137,7 @@ public class PlaceboTm extends AbstractTransactionManager
     }
 
     @Override
-    public StatementContext getStatementContext()
+    public StatementState newStatement()
     {
         return null;
     }

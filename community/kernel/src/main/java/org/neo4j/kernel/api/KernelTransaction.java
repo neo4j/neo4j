@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 
 /**
  * Represents a transaction of changes to the underlying graph.
- * Actual changes are made in the {@link #newStatementContext() statements}
+ * Actual changes are made in the {@link #newStatementOperations() statements}
  * created from this transaction context. Changes made within a transaction
  * are visible to all operations within it.
  *
@@ -33,17 +34,22 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  *
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
+ * 
+ * TODO currently a {@link KernelTransaction} is used both for building the statement logic (once per db), as well as
+ * being a transaction.
  */
-public interface TransactionContext
+public interface KernelTransaction
 {
     /**
-     * Creates a new {@link StatementContext statement} which operations can be performed on.
-     * When done it must be {@link StatementContext#close() closed}.
+     * Creates a new {@link StatementOperations statement} which operations can be performed on.
+     * When done it must be {@link StatementOperations#close() closed}.
      *
-     * @return a new {@link StatementContext} to do operations on.
+     * @return a new {@link StatementOperations} to do operations on.
      */
-    StatementContextParts newStatementContext();
+    StatementOperationParts newStatementOperations();
 
+    StatementState newStatementState();
+    
     // NOTE: The below methods don't yet do actual transaction work, that is still carried by
     //       the old TransactionImpl, WriteTransaction and friends.
 

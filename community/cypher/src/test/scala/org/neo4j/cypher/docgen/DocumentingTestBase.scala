@@ -39,7 +39,6 @@ import org.neo4j.cypher.export.{SubGraphExporter, DatabaseSubGraph}
 import org.neo4j.helpers.Settings
 import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 
-
 trait DocumentationHelper extends GraphIcing {
   def generateConsole:Boolean
   def db: GraphDatabaseAPI

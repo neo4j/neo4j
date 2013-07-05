@@ -21,22 +21,23 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.kernel.api.StatementContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperations
 
-class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService)
-  extends TransactionBoundTokenContext(ctx) with PlanContext {
+class TransactionBoundPlanContext(ctx: StatementOperations, state: StatementState, gdb:GraphDatabaseService)
+  extends TransactionBoundTokenContext(ctx, state) with PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
-    val labelId = ctx.labelGetForName(labelName)
-    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
+    val labelId = ctx.labelGetForName(state, labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(state, propertyKey)
 
-    val rule = ctx.indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    ctx.indexGetState(rule) match {
+    val rule = ctx.indexesGetForLabelAndPropertyKey(state, labelId, propertyKeyId)
+    ctx.indexGetState(state, rule) match {
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
@@ -45,10 +46,10 @@ class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseServic
   }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = ctx.labelGetForName(labelName)
-    val propertyKeyId = ctx.propertyKeyGetForName(propertyKey)
+    val labelId = ctx.labelGetForName(state, labelName)
+    val propertyKeyId = ctx.propertyKeyGetForName(state, propertyKey)
 
-    val matchingConstraints = ctx.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    val matchingConstraints = ctx.constraintsGetForLabelAndPropertyKey(state, labelId, propertyKeyId)
     if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
   } catch {
     case _: KernelException => None
