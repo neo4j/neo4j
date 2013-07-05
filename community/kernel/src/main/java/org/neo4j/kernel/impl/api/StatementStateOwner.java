@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.Closeable;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.operations.RefCounting;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
@@ -101,19 +99,32 @@ public abstract class StatementStateOwner
         public StatementState newReference()
         {
             count++;
-            final AtomicReference<RefCounting> refCounting = new AtomicReference<>();
-            final StatementState referencedState = new StatementState()
+            return new StatementState()
             {
+                private boolean open = true;
+                
+                @Override
+                public void markAsClosed()
+                {
+                    boolean isOpen = open && count > 0;
+                    if ( !isOpen )
+                    {
+                        throw new IllegalStateException( "This " + StatementState.class.getSimpleName() +
+                                " has been closed. No more interaction allowed" );
+                    }
+
+                    open = false;
+                    if ( --count == 0 )
+                    {
+                        operations.close( parentState );
+                        reference = null;
+                    }
+                }
+                
                 @Override
                 public TxState txState()
                 {
                     return parentState.txState();
-                }
-                
-                @Override
-                public RefCounting refCounting()
-                {
-                    return refCounting.get();
                 }
                 
                 @Override
@@ -129,39 +140,11 @@ public abstract class StatementStateOwner
                 }
                 
                 @Override
-                public Closeable closeable( StatementOperations logic )
+                public Closeable closeable( LifecycleOperations logic )
                 {
                     return parentState.closeable( logic );
                 }
             };
-            refCounting.set( new RefCounting()
-            {
-                private boolean open = true;
-                
-                @Override
-                public boolean isOpen()
-                {
-                    return open && count > 0;
-                }
-                
-                @Override
-                public void close()
-                {
-                    if ( !isOpen() )
-                    {
-                        throw new IllegalStateException( "This " + StatementState.class.getSimpleName() +
-                                " has been closed. No more interaction allowed" );
-                    }
-
-                    open = false;
-                    if ( --count == 0 )
-                    {
-                        operations.close( parentState );
-                        reference = null;
-                    }
-                }
-            } );
-            return referencedState;
         }
 
         void close()

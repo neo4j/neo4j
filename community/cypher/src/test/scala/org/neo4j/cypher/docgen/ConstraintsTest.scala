@@ -63,9 +63,9 @@ class ConstraintsTest extends DocumentingTestBase {
     val statementCtx = db.statementContextForReading
     val state = db.stateForReading
 
-    val prop = statementCtx.propertyKeyGetForName(state, propName)
-    val label = statementCtx.labelGetForName(state, labelName)
+    val prop = statementCtx.keyReadOperations.propertyKeyGetForName(state, propName)
+    val label = statementCtx.keyReadOperations.labelGetForName(state, labelName)
 
-    statementCtx.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
+    statementCtx.schemaReadOperations.constraintsGetForLabelAndPropertyKey(state, label, prop).asScala
   }
 }

@@ -84,7 +84,7 @@ public class IndexCRUDIT
         Transaction tx = db.beginTx();
         try
         {
-            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementOperations context = ctxProvider.getCtxForWriting().asStatementOperations();
             StatementState state = ctxProvider.statementForWriting();
             long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
             long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
@@ -127,7 +127,7 @@ public class IndexCRUDIT
         tx = db.beginTx();
         try
         {
-            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementOperations context = ctxProvider.getCtxForWriting().asStatementOperations();
             StatementState state = ctxProvider.statementForWriting();
             long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
             long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
@@ -207,7 +207,7 @@ public class IndexCRUDIT
         {
             try
             {
-                StatementOperations context = ctxProvider.getCtxForReading();
+                StatementOperations context = ctxProvider.getCtxForReading().asStatementOperations();
                 StatementState state = ctxProvider.statementForReading();
                 updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
                         propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );

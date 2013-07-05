@@ -117,6 +117,7 @@ public class TxStateImpl implements TxState
     private final OldTxStateBridge legacyState;
     private final PersistenceManager persistenceManager; // should go away dammit!
     private final IdGeneration idGeneration; // needed when we move createNode() and createRelationship() to here...
+    private boolean hasChanges;
 
     public TxStateImpl( OldTxStateBridge legacyState,
                     PersistenceManager legacyTransaction,
@@ -174,91 +175,57 @@ public class TxStateImpl implements TxState
     @Override
     public boolean hasChanges()
     {
-        return !nodeStates.isEmpty() ||
-               !relationshipStates.isEmpty() ||
-               !labelStates.isEmpty() ||
-               !nodes.isEmpty() ||
-               !relationships.isEmpty() ||
-               !indexChanges.isEmpty() ||
-               !constraintsChanges.isEmpty() ||
-               legacyState.hasChanges();
+        return hasChanges || legacyState.hasChanges();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodeStates()
-     */
     @Override
     public Iterable<NodeState> getNodeStates()
     {
         return nodeStates.values();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getLabelStateNodeDiffSets(long)
-     */
     @Override
     public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
     {
         return getOrCreateLabelState( labelId ).getNodeDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodeStateLabelDiffSets(long)
-     */
     @Override
     public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getLabelDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodePropertyDiffSets(long)
-     */
     @Override
     public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getPropertyDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getRelationshipPropertyDiffSets(long)
-     */
     @Override
     public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
     {
         return getOrCreateRelationshipState( relationshipId ).getPropertyDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getGraphPropertyDiffSets()
-     */
     @Override
     public DiffSets<Property> getGraphPropertyDiffSets()
     {
         return getOrCreateGraphState().getPropertyDiffSets();
     }
     
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeIsAddedInThisTx(long)
-     */
     @Override
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
         return legacyState.nodeIsAddedInThisTx( nodeId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#relationshipIsAddedInThisTx(long)
-     */
     @Override
     public boolean relationshipIsAddedInThisTx( long relationshipId )
     {
         return legacyState.relationshipIsAddedInThisTx( relationshipId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeDelete(long)
-     */
     @Override
     public void nodeDelete( long nodeId )
     {
@@ -266,18 +233,12 @@ public class TxStateImpl implements TxState
         nodes.remove( nodeId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeIsDeletedInThisTx(long)
-     */
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
         return nodes.isRemoved( nodeId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#relationshipDelete(long)
-     */
     @Override
     public void relationshipDelete( long relationshipId )
     {
@@ -285,18 +246,12 @@ public class TxStateImpl implements TxState
         relationships.remove( relationshipId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#relationshipIsDeletedInThisTx(long)
-     */
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
         return relationships.isRemoved( relationshipId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeReplaceProperty(long, org.neo4j.kernel.api.properties.Property, org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException, EntityNotFoundException
@@ -313,9 +268,6 @@ public class TxStateImpl implements TxState
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#relationshipReplaceProperty(long, org.neo4j.kernel.api.properties.Property, org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException, EntityNotFoundException
@@ -332,9 +284,6 @@ public class TxStateImpl implements TxState
         }
     }
     
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#graphReplaceProperty(org.neo4j.kernel.api.properties.Property, org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void graphReplaceProperty( Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException
@@ -351,9 +300,6 @@ public class TxStateImpl implements TxState
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeRemoveProperty(long, org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void nodeRemoveProperty( long nodeId, Property removedProperty )
             throws PropertyNotFoundException, EntityNotFoundException
@@ -365,9 +311,6 @@ public class TxStateImpl implements TxState
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#relationshipRemoveProperty(long, org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
             throws PropertyNotFoundException, EntityNotFoundException
@@ -379,9 +322,6 @@ public class TxStateImpl implements TxState
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#graphRemoveProperty(org.neo4j.kernel.api.properties.Property)
-     */
     @Override
     public void graphRemoveProperty( Property removedProperty )
             throws PropertyNotFoundException
@@ -393,9 +333,6 @@ public class TxStateImpl implements TxState
         }
     }
     
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeAddLabel(long, long)
-     */
     @Override
     public void nodeAddLabel( long labelId, long nodeId )
     {
@@ -404,9 +341,6 @@ public class TxStateImpl implements TxState
         persistenceManager.addLabelToNode( labelId, nodeId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#nodeRemoveLabel(long, long)
-     */
     @Override
     public void nodeRemoveLabel( long labelId, long nodeId )
     {
@@ -415,9 +349,6 @@ public class TxStateImpl implements TxState
         persistenceManager.removeLabelFromNode( labelId, nodeId );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getLabelState(long, long)
-     */
     @Override
     public Boolean getLabelState( long nodeId, long labelId )
     {
@@ -436,10 +367,7 @@ public class TxStateImpl implements TxState
         }
         return null;
     }
-
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodesWithLabelAdded(long)
-     */
+    
     @Override
     public Set<Long> getNodesWithLabelAdded( long labelId )
     {
@@ -447,9 +375,6 @@ public class TxStateImpl implements TxState
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getAdded();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodesWithLabelChanged(long)
-     */
     @Override
     public DiffSets<Long> getNodesWithLabelChanged( long labelId )
     {
@@ -457,9 +382,6 @@ public class TxStateImpl implements TxState
         return state == null ? DiffSets.<Long>emptyDiffSets() : state.getNodeDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#addIndexRule(org.neo4j.kernel.impl.api.index.IndexDescriptor)
-     */
     @Override
     public void addIndexRule( IndexDescriptor descriptor )
     {
@@ -467,9 +389,6 @@ public class TxStateImpl implements TxState
         getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().add( descriptor );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#addConstraintIndexRule(org.neo4j.kernel.impl.api.index.IndexDescriptor)
-     */
     @Override
     public void addConstraintIndexRule( IndexDescriptor descriptor )
     {
@@ -477,9 +396,6 @@ public class TxStateImpl implements TxState
         getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().add( descriptor );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#dropIndex(org.neo4j.kernel.impl.api.index.IndexDescriptor)
-     */
     @Override
     public void dropIndex( IndexDescriptor descriptor )
     {
@@ -487,9 +403,6 @@ public class TxStateImpl implements TxState
         getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().remove( descriptor );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#dropConstraintIndex(org.neo4j.kernel.impl.api.index.IndexDescriptor)
-     */
     @Override
     public void dropConstraintIndex( IndexDescriptor descriptor )
     {
@@ -497,9 +410,6 @@ public class TxStateImpl implements TxState
         getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().remove( descriptor );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getIndexDiffSetsByLabel(long)
-     */
     @Override
     public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
     {
@@ -507,9 +417,6 @@ public class TxStateImpl implements TxState
         return labelState != null ? labelState.indexChanges() : DiffSets.<IndexDescriptor>emptyDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getConstraintIndexDiffSetsByLabel(long)
-     */
     @Override
     public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
     {
@@ -517,36 +424,24 @@ public class TxStateImpl implements TxState
         return labelState != null ? labelState.constraintIndexChanges() : DiffSets.<IndexDescriptor>emptyDiffSets();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getIndexDiffSets()
-     */
     @Override
     public DiffSets<IndexDescriptor> getIndexDiffSets()
     {
         return indexChanges;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getConstraintIndexDiffSets()
-     */
     @Override
     public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
     {
         return constraintIndexChanges;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getNodesWithChangedProperty(long, java.lang.Object)
-     */
     @Override
     public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
     {
         return legacyState.getNodesWithChangedProperty( propertyKeyId, value );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#getDeletedNodes()
-     */
     @Override
     public DiffSets<Long> getDeletedNodes()
     {
@@ -594,13 +489,11 @@ public class TxStateImpl implements TxState
         {
             result = creator.newState( id );
             states.put( id, result );
+            hasChanges = true;
         }
         return result;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#addConstraint(org.neo4j.kernel.api.constraints.UniquenessConstraint, long)
-     */
     @Override
     public void addConstraint( UniquenessConstraint constraint, long indexId )
     {
@@ -610,9 +503,6 @@ public class TxStateImpl implements TxState
     }
 
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#constraintsChangesForLabelAndProperty(long, long)
-     */
     @Override
     public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( long labelId, final long propertyKey )
     {
@@ -626,27 +516,18 @@ public class TxStateImpl implements TxState
         } );
     }
     
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#constraintsChangesForLabel(long)
-     */
     @Override
     public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
     {
         return getOrCreateLabelState( labelId ).constraintsChanges();
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#constraintsChanges()
-     */
     @Override
     public DiffSets<UniquenessConstraint> constraintsChanges()
     {
         return constraintsChanges;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#dropConstraint(org.neo4j.kernel.api.constraints.UniquenessConstraint)
-     */
     @Override
     public void dropConstraint( UniquenessConstraint constraint )
     {
@@ -659,18 +540,12 @@ public class TxStateImpl implements TxState
         constraintsChangesForLabel( constraint.label() ).remove( constraint );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#unRemoveConstraint(org.neo4j.kernel.api.constraints.UniquenessConstraint)
-     */
     @Override
     public boolean unRemoveConstraint( UniquenessConstraint constraint )
     {
         return constraintsChanges.unRemove( constraint );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.kernel.impl.api.state.TxoState#createdConstraintIndexes()
-     */
     @Override
     public Iterable<IndexDescriptor> createdConstraintIndexes()
     {

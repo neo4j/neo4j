@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
@@ -65,13 +64,12 @@ public class ReadOnlyStatementState implements StatementState
     }
     
     @Override
-    public RefCounting refCounting()
+    public void markAsClosed()
     {
-        return WritableStatementState.NO_REF_COUNTING;
     }
-
+    
     @Override
-    public Closeable closeable( final StatementOperations logic )
+    public Closeable closeable( final LifecycleOperations logic )
     {
         return new Closeable()
         {

@@ -23,8 +23,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -140,6 +142,32 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     protected Iterator<Property> getCachedProperties()
     {
         return iterator( properties );
+    }
+    
+    @Override
+    protected PrimitiveLongIterator getCachedPropertyKeys()
+    {
+        return new PrimitiveLongIterator()
+        {
+            private final Property[] localProperties = properties;
+            private int i;
+            
+            @Override
+            public long next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return localProperties[i++].propertyKeyId();
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return i < localProperties.length;
+            }
+        };
     }
     
     @SuppressWarnings( "unchecked" )

@@ -253,7 +253,7 @@ public class PropertyIT extends KernelIntegrationTest
                 equalTo( Collections.<Long>emptySet() ) );
         commit();
     }
-
+    
     @Test
     public void shouldListRelationshipPropertyKeys() throws Exception
     {

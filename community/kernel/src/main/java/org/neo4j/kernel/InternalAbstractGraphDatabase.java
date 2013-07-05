@@ -60,7 +60,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -1482,15 +1482,15 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        StatementOperations ctx = statementContextProvider.getCtxForReading();
+        StatementOperationParts ctx = statementContextProvider.getCtxForReading();
         StatementState state = statementContextProvider.statementForReading();
 
         long propertyId;
         long labelId;
         try
         {
-            propertyId = ctx.propertyKeyGetForName( state, key );
-            labelId = ctx.labelGetForName( state, myLabel.name() );
+            propertyId = ctx.keyReadOperations().propertyKeyGetForName( state, key );
+            labelId = ctx.keyReadOperations().labelGetForName( state, myLabel.name() );
         }
         catch ( KernelException e )
         {
@@ -1500,11 +1500,11 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = ctx.indexesGetForLabelAndPropertyKey( state, labelId, propertyId );
-            if ( ctx.indexGetState( state, indexRule ) == InternalIndexState.ONLINE )
+            IndexDescriptor indexRule = ctx.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyId );
+            if ( ctx.schemaReadOperations().indexGetState( state, indexRule ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.nodesGetFromIndexLookup( state, indexRule, value ), state );
+                return map2nodes( ctx.entityReadOperations().nodesGetFromIndexLookup( state, indexRule, value ), state );
             }
         }
         catch ( SchemaRuleNotFoundException e )
@@ -1520,9 +1520,9 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value,
-            final StatementOperations ctx, final StatementState state, long labelId )
+            final StatementOperationParts ctx, final StatementState state, long labelId )
     {
-        Iterator<Long> nodesWithLabel = ctx.nodesGetForLabel( state, labelId );
+        Iterator<Long> nodesWithLabel = ctx.entityReadOperations().nodesGetForLabel( state, labelId );
 
         Iterator<Long> matches = filter( new Predicate<Long>()
         {
@@ -1531,7 +1531,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 try
                 {
-                    return ctx.nodeGetProperty( state, item, propertyId ).valueEquals( value );
+                    return ctx.entityReadOperations().nodeGetProperty( state, item, propertyId ).valueEquals( value );
                 }
                 catch ( KernelException e )
                 {
@@ -1552,6 +1552,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return getNodeById( id );
             }
-        }, input ), state.closeable( kernelAPI.statementOperations() ) );
+        }, input ), state.closeable( kernelAPI.statementOperations().lifecycleOperations() ) );
     }
 }
