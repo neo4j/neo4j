@@ -19,17 +19,12 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.StringWriter;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -46,8 +41,19 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.GraphStoreFixture;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
@@ -80,7 +86,7 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( StoreAccess access ) throws ConsistencyCheckIncompleteException
     {
-        FullCheck checker = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ), ProgressMonitorFactory.NONE );
+        FullCheck checker = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ), ProgressMonitorFactory.NONE );
         return checker.execute( access, StringLogger.wrap( log ) );
     }
 
@@ -144,6 +150,58 @@ public class FullCheckIntegrationTest
 
         // when
         ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportInlineNodeLabelInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 1, null );
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        System.out.println( "stats = " + stats );
+        System.out.println( "log.toString() = " + log.toString() );
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportDynamicNodeLabelInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                nodeRecord.setLabelField( dynamicPointer( asList( new DynamicRecord( next.nodeLabels() ))) );
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        System.out.println( "stats = " + stats );
+        System.out.println( "log.toString() = " + log.toString() );
 
         // then
         verifyInconsistency( RecordType.NODE, stats );

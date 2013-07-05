@@ -137,9 +137,8 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                 {
                     DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
                     long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
-                    NodeLabelsComparativeRecordChecker checker = new NodeLabelsComparativeRecordChecker();
                     RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
-                    report.forReference( firstRecordReference, checker );
+                    report.forReference( firstRecordReference, new NodeLabelsComparativeRecordChecker() );
                 }
                 else
                 {
