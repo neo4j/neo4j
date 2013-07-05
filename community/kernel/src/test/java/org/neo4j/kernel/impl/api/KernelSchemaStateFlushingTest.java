@@ -26,12 +26,14 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -45,6 +47,8 @@ public class KernelSchemaStateFlushingTest
 
     private GraphDatabaseAPI db;
     private AbstractTransactionManager txManager;
+
+    private ThreadToStatementContextBridge ctxProvider;
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -132,10 +136,11 @@ public class KernelSchemaStateFlushingTest
     private UniquenessConstraint createConstraint() throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
-        StatementContextParts ctx = txc.newStatementContext();
-        UniquenessConstraint descriptor = ctx.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
-        ctx.close();
+        KernelTransaction txc = txManager.getKernelTransaction();
+        StatementOperationParts ctx = txc.newStatementOperations();
+        StatementState state = ctxProvider.statementForWriting();
+        UniquenessConstraint descriptor = ctx.schemaWriteOperations().uniquenessConstraintCreate( state, 1, 1 );
+        ctx.lifecycleOperations().close( state );
         tx.success();
         tx.finish();
         return descriptor;
@@ -144,10 +149,11 @@ public class KernelSchemaStateFlushingTest
     private void dropConstraint( UniquenessConstraint descriptor )
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
-        StatementContextParts ctx = txc.newStatementContext();
-        ctx.schemaWriteOperations().constraintDrop( descriptor );
-        ctx.close();
+        KernelTransaction txc = txManager.getKernelTransaction();
+        StatementOperationParts ctx = txc.newStatementOperations();
+        StatementState state = ctxProvider.statementForWriting();
+        ctx.schemaWriteOperations().constraintDrop( state, descriptor );
+        ctx.lifecycleOperations().close( state );
         tx.success();
         tx.finish();
     }
@@ -155,10 +161,11 @@ public class KernelSchemaStateFlushingTest
     private IndexDescriptor createIndex() throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
-        StatementContextParts ctx = txc.newStatementContext();
-        IndexDescriptor descriptor = ctx.schemaWriteOperations().indexCreate( 1, 1 );
-        ctx.close();
+        KernelTransaction txc = txManager.getKernelTransaction();
+        StatementOperationParts ctx = txc.newStatementOperations();
+        StatementState state = ctxProvider.statementForWriting();
+        IndexDescriptor descriptor = ctx.schemaWriteOperations().indexCreate( state, 1, 1 );
+        ctx.lifecycleOperations().close( state );
         tx.success();
         tx.finish();
         return descriptor;
@@ -167,10 +174,11 @@ public class KernelSchemaStateFlushingTest
     private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
-        StatementContextParts ctx = txc.newStatementContext();
-        ctx.schemaWriteOperations().indexDrop( descriptor );
-        ctx.close();
+        KernelTransaction txc = txManager.getKernelTransaction();
+        StatementOperationParts ctx = txc.newStatementOperations();
+        StatementState state = ctxProvider.statementForWriting();
+        ctx.schemaWriteOperations().indexDrop( state, descriptor );
+        ctx.lifecycleOperations().close( state );
         tx.success();
         tx.finish();
     }
@@ -178,10 +186,11 @@ public class KernelSchemaStateFlushingTest
     private void awatIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
-        StatementContextParts ctx = txc.newStatementContext();
-        SchemaIndexTestHelper.awaitIndexOnline( ctx.schemaReadOperations(), descriptor );
-        ctx.close();
+        KernelTransaction txc = txManager.getKernelTransaction();
+        StatementOperationParts ctx = txc.newStatementOperations();
+        StatementState state = ctxProvider.statementForReading();
+        SchemaIndexTestHelper.awaitIndexOnline( ctx.schemaReadOperations(), state, descriptor );
+        ctx.lifecycleOperations().close( state );
         tx.success();
         tx.finish();
     }
@@ -189,7 +198,7 @@ public class KernelSchemaStateFlushingTest
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
         Transaction tx = db.beginTx();
-        TransactionContext txc = txManager.getTransactionContext();
+        KernelTransaction txc = txManager.getKernelTransaction();
         String result;
         try 
         {
@@ -203,12 +212,13 @@ public class KernelSchemaStateFlushingTest
         }
     }
     
-    private String getOrCreateFromState( TransactionContext tx, String key, final String value )
+    private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
-        StatementContextParts ctx = tx.newStatementContext();
+        StatementOperationParts ctx = tx.newStatementOperations();
+        StatementState state = ctxProvider.statementForReading();
         try 
         {
-            return ctx.schemaStateOperations().schemaStateGetOrCreate( key, new Function<String, String>()
+            return ctx.schemaStateOperations().schemaStateGetOrCreate( state, key, new Function<String, String>()
             {
                 @Override
                 public String apply( String from )
@@ -219,7 +229,7 @@ public class KernelSchemaStateFlushingTest
         }
         finally 
         {
-            ctx.close();
+            ctx.lifecycleOperations().close( state );
         }
     }
     
@@ -228,6 +238,7 @@ public class KernelSchemaStateFlushingTest
     {
         db = dbRule.getGraphDatabaseAPI();         
         txManager = db.getDependencyResolver().resolveDependency( AbstractTransactionManager.class );
+        ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
     
     @After

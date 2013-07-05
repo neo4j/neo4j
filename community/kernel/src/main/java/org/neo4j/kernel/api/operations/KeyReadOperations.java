@@ -32,20 +32,20 @@ public interface KeyReadOperations
      * Returns a label id for a label name. If the label doesn't exist a
      * {@link org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException} will be thrown.
      */
-    long labelGetForName( String labelName ) throws LabelNotFoundKernelException;
+    long labelGetForName( StatementState state, String labelName ) throws LabelNotFoundKernelException;
 
     /** Returns the label name for the given label id. */
-    String labelGetName( long labelId ) throws LabelNotFoundKernelException;
+    String labelGetName( StatementState state, long labelId ) throws LabelNotFoundKernelException;
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist a
      * {@link org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException} will be thrown.
      */
-    long propertyKeyGetForName( String propertyKeyName ) throws PropertyKeyNotFoundException;
+    long propertyKeyGetForName( StatementState state, String propertyKeyName ) throws PropertyKeyNotFoundException;
 
     /** Returns the name of a property given its property key id */
-    String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundException;
+    String propertyKeyGetName( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException;
 
     /** Returns the labels currently stored in the database **/
-    Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
+    Iterator<Token> labelsGetAllTokens( StatementState state ); // TODO: Token is a store level concern, should not make it this far up the stack
 }

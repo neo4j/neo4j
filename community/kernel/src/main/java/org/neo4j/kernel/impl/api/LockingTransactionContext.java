@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.api;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.kernel.api.StatementContextParts;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
@@ -32,7 +34,7 @@ public class LockingTransactionContext extends DelegatingTransactionContext
 {
     private final LockHolder lockHolder;
 
-    public LockingTransactionContext( TransactionContext delegate, LockManager lockManager,
+    public LockingTransactionContext( KernelTransaction delegate, LockManager lockManager,
             TransactionManager transactionManager, NodeManager nodeManager )
     {
         super( delegate );
@@ -40,7 +42,7 @@ public class LockingTransactionContext extends DelegatingTransactionContext
         {
             // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
             // equality comparison between GraphProperties instances. It should change.
-            this.lockHolder = new LockHolder( lockManager, transactionManager.getTransaction(), nodeManager );
+            this.lockHolder = new LockHolderImpl( lockManager, transactionManager.getTransaction(), nodeManager );
         }
         catch ( SystemException e )
         {
@@ -49,22 +51,29 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     }
 
     @Override
-    public StatementContextParts newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
         // The actual transaction context
-        StatementContextParts parts = delegate.newStatementContext();
+        StatementOperationParts parts = delegate.newStatementOperations();
         
         // + Locking
-        LockingStatementContext lockingContext = new LockingStatementContext(
+        LockingStatementOperations lockingContext = new LockingStatementOperations(
                 parts.entityWriteOperations(),
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations(),
-                parts.schemaStateOperations(),
-                lockHolder );
+                parts.schemaStateOperations() );
         
         parts.replace(
                 null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, null );
         return parts;
+    }
+    
+    @Override
+    public StatementState newStatementState()
+    {
+        StatementState statement = super.newStatementState();
+        ((WritableStatementState)statement).provide( lockHolder );
+        return statement;
     }
 
     @Override

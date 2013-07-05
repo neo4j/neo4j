@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -39,27 +39,36 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public abstract class KernelIntegrationTest
 {
     protected GraphDatabaseAPI db;
-    protected StatementContext statement;
+    protected StatementOperations statement;
     protected KernelAPI kernel;
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
     private EphemeralFileSystemAbstraction fs;
+    private StatementState state;
 
-    protected void newTransaction()
+    protected StatementState newTransaction()
     {
         beansTx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
+        return (state = statementContextProvider.statementForWriting());
+    }
+    
+    public StatementState getState()
+    {
+        return state;
     }
 
-    protected StatementContext readOnlyContext()
+    protected StatementOperations readOnlyContext()
     {
-        return statementContextProvider.getCtxForReading();
+        StatementOperations context = statementContextProvider.getCtxForReading();
+        state = statementContextProvider.statementForReading();
+        return context;
     }
 
     protected void commit()
     {
-        statement.close();
+        statement.close( state );
         statement = null;
         beansTx.success();
         beansTx.finish();
@@ -67,7 +76,7 @@ public abstract class KernelIntegrationTest
 
     protected void rollback()
     {
-        statement.close();
+        statement.close( state );
         statement = null;
         beansTx.failure();
         beansTx.finish();

@@ -38,9 +38,9 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -72,7 +72,7 @@ class TransactionImpl implements Transaction
     private Thread owner;
 
     private final TransactionState state;
-    private TransactionContext transactionContext;
+    private KernelTransaction transactionContext;
 
     TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
                      StringLogger logger )
@@ -591,9 +591,9 @@ class TransactionImpl implements Transaction
         status = Status.STATUS_ROLLEDBACK;
     }
 
-    public StatementContext newStatementContext()
+    public StatementState newStatement()
     {
-        return transactionContext.newStatementContext().asStatementContext();
+        return transactionContext.newStatementState();
     }
 
     /*
@@ -607,7 +607,7 @@ class TransactionImpl implements Transaction
      * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
      * points to not have to do the full move in one step.
      */
-    public void setTransactionContext( TransactionContext transactionContext )
+    public void setTransactionContext( KernelTransaction transactionContext )
     {
         this.transactionContext = transactionContext;
     }
@@ -737,7 +737,7 @@ class TransactionImpl implements Transaction
         getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
     }
 
-    public TransactionContext getTransactionContext()
+    public KernelTransaction getTransactionContext()
     {
         return transactionContext;
     }

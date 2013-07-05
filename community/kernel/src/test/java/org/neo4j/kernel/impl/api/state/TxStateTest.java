@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -38,7 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TxStateTest
@@ -274,7 +272,7 @@ public class TxStateTest
     {
         legacyState = mock( OldTxStateBridge.class );
         persistenceManager = mock( PersistenceManager.class );
-        state = new TxState( legacyState,
+        state = new TxStateImpl( legacyState,
                 persistenceManager, mock( TxState.IdGeneration.class )
         );
     }

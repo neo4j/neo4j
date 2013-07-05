@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;

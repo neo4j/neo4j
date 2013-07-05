@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
@@ -36,6 +35,7 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.LABEL;
 import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
 
 import static java.util.Arrays.asList;
 
@@ -44,14 +44,12 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.test.GraphDescription.PROP;
 import static org.neo4j.test.GraphDescription.PropType.ARRAY;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
 
@@ -278,7 +276,6 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String labelName = "Person";
 
         String uri = getNodesWithLabelAndPropertyUri( labelName, "names", new String[] { "bob", "ross" } );
-        System.out.println( "uri = " + uri );
 
         String result = gen.get()
                 .expectedStatus( 200 )

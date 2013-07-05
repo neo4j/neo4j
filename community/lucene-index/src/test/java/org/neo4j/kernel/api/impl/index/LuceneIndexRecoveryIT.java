@@ -200,7 +200,7 @@ public class LuceneIndexRecoveryIT
     private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
 
 
-    private void startDb(KernelExtensionFactory<?> indexProviderFactory)
+    private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {
        if ( db != null )
            db.shutdown();
