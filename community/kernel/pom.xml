@@ -51,7 +51,7 @@
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/community/tree/master/kernel</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/kernel</url>
   </scm>
 
   <licenses>

@@ -26,7 +26,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/enterprise/tree/master/neo4j-enterprise</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/neo4j-enterprise</url>
   </scm>
 
 

@@ -25,7 +25,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <url>https://github.com/neo4j/community/tree/master/graph-algo</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/graph-algo</url>
   </scm>
 
   <licenses>
