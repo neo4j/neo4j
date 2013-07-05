@@ -19,22 +19,19 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
+
 import static java.lang.String.format;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
 
 public class StoreLockerTest
 {

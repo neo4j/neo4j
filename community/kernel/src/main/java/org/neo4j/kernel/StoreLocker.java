@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
