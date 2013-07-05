@@ -21,6 +21,7 @@ package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.visualization.PropertyType;
 
 class DefaultNodeStyle implements NodeStyle
@@ -37,7 +38,12 @@ class DefaultNodeStyle implements NodeStyle
 	{
 		stream.append( "  N" + node.getId() + " [\n" );
 		config.emit( node, stream );
-		stream.append( "    label = \"{" + config.escapeLabel( config.getTitle( node )) + "|" );
+		stream.append( "    label = \"{" + config.escapeLabel( config.getTitle( node )));
+		ResourceIterator<Label> labels = corporation.getLabels().iterator();
+	        while (labels.hasNext()) {
+	            stream.append(":" + labels.next() + " ");
+	        }
+		stream.append("|");
 	}
 
 	public void emitEnd( Appendable stream ) throws IOException
