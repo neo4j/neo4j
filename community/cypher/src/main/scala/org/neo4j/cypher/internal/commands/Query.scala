@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
 import expressions.{Expression, AggregationExpression}
+import org.neo4j.cypher.internal.commands
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
@@ -57,6 +58,43 @@ case class Query(returns: Return,
         namedPaths == other.namedPaths &&
         tail == other.tail
     }
+
+  def compact: Query = {
+    val compactableStart = start.forall(_.mutating) && start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+      returns == Return(List("*"), AllIdentifiers()) &&
+      where.isEmpty &&
+      matching.isEmpty &&
+      sort.isEmpty &&
+      slice.isEmpty
+
+    lazy val tailQ = tail.map(_.compact).get
+
+    val compactableEnd = tail.nonEmpty &&
+      tailQ.matching.isEmpty &&
+      tailQ.where.isEmpty &&
+      tailQ.start.forall(_.mutating) && tailQ.start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+      tailQ.sort.isEmpty &&
+      tailQ.slice.isEmpty &&
+      tailQ.aggregation.isEmpty
+
+    if (compactableStart && compactableEnd) {
+      val result = commands.Query(
+        start = start ++ tailQ.start,
+        returns = tailQ.returns,
+        updatedCommands = updatedCommands ++ tailQ.updatedCommands,
+        matching = Seq(),
+        where = None,
+        aggregation = None,
+        sort = Seq(),
+        slice = None,
+        namedPaths = Seq(),
+        tail = tailQ.tail
+      )
+      result
+    } else this
+
+  }
+
 
   override def toString: String =
 """

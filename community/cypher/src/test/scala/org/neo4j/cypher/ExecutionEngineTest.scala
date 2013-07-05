@@ -30,6 +30,7 @@ import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import collection.mutable
 import util.Random
+import java.util.concurrent.TimeUnit
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -2509,4 +2510,14 @@ RETURN x0.name?
     val result = parseAndExecute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     assert(result.toList === List())
   }
+
+  @Test
+  def should_not_see_updates_created_by_itself() {
+
+    timeOutIn(5, TimeUnit.SECONDS) {
+      val result = parseAndExecute("start n=node(*) create ()")
+      assert(result.toList === List())
+    }
+  }
+
 }
