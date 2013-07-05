@@ -69,7 +69,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       planInProgress.query.tail match {
         case None => continue = false
         case Some(q) =>
-          val pipe = if (q.containsUpdates) {
+          val pipe = if (q.containsUpdates && planInProgress.pipe.isLazy) {
             new EagerPipe(planInProgress.pipe)
           }
           else {

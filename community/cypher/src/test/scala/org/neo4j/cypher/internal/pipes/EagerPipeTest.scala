@@ -21,15 +21,13 @@ package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.PlanDescription
-import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 
 class EagerPipeTest extends Assertions {
   @Test
   def shouldMakeLazyEager() {
     // Given a lazy iterator that is not empty
-    val lazyIterator = new LazyIterator[ExecutionContext](10, ExecutionContext.empty)
+    val lazyIterator = new LazyIterator[ExecutionContext](10, (_)=>ExecutionContext.empty)
     val src = new FakePipe(lazyIterator)
     val eager = new EagerPipe(src)
     assert(lazyIterator.nonEmpty, "Should not be empty")
@@ -41,27 +39,4 @@ class EagerPipeTest extends Assertions {
     assert(lazyIterator.isEmpty, "Should be empty")
     assert(resultIterator.nonEmpty, "Should not be empty")
   }
-
-  case class FakePipe(data: Iterator[ExecutionContext]) extends Pipe {
-    protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = data
-
-    def symbols: SymbolTable = new SymbolTable()
-
-    def executionPlanDescription: PlanDescription = ???
-  }
-
-  class LazyIterator[T](count: Int, f: => T) extends Iterator[T]() {
-
-    var counter = 0
-
-    def hasNext: Boolean = counter < count
-
-    def next(): T = {
-      counter += 1
-      f
-    }
-
-    override def toString(): String = counter.toString
-  }
-
 }

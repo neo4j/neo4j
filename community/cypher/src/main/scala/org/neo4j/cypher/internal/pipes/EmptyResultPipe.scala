@@ -41,4 +41,6 @@ class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
   def symbols = SymbolTable()
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
+
+  override def isLazy = false
 }
