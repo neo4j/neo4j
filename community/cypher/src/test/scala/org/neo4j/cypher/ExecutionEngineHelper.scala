@@ -21,7 +21,10 @@ package org.neo4j.cypher
 
 import internal.commands.Query
 import org.junit.Before
-
+import java.util.concurrent.TimeUnit
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase {
 
@@ -49,6 +52,14 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
       fail("expected scalar value: " + m)
       else m.head._2.asInstanceOf[T]
     case x => fail(x.toString())
+  }
+
+  protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
+    val future = Future {
+      f
+    }
+
+    Await.result(future, Duration.apply(length, timeUnit))
   }
 
 }

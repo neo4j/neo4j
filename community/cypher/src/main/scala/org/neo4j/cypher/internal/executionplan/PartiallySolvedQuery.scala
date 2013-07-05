@@ -33,24 +33,26 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val patterns = q.matching.map(Unsolved(_))
+    val inputQuery = q.compact
+
+    val patterns = inputQuery.matching.map(Unsolved(_))
 
     new PartiallySolvedQuery(
-      returns = q.returns.returnItems.map(Unsolved(_)),
-      start = q.start.map(Unsolved(_)),
-      updates = q.updatedCommands.map(Unsolved(_)),
+      returns = inputQuery.returns.returnItems.map(Unsolved(_)),
+      start = inputQuery.start.map(Unsolved(_)),
+      updates = inputQuery.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
-      where = q.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
-      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
-      sort = q.sort.map(Unsolved(_)),
-      slice = q.slice.map(Unsolved(_)),
-      namedPaths = q.namedPaths.map(Unsolved(_)),
-      aggregateQuery = if (q.aggregation.isDefined)
+      where = inputQuery.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
+      aggregation = inputQuery.aggregation.toSeq.flatten.map(Unsolved(_)),
+      sort = inputQuery.sort.map(Unsolved(_)),
+      slice = inputQuery.slice.map(Unsolved(_)),
+      namedPaths = inputQuery.namedPaths.map(Unsolved(_)),
+      aggregateQuery = if (inputQuery.aggregation.isDefined)
         Unsolved(true)
       else
         Solved(false),
       extracted = false,
-      tail = q.tail.map(q => PartiallySolvedQuery(q))
+      tail = inputQuery.tail.map(q => PartiallySolvedQuery(q))
     )
   }
 
@@ -176,6 +178,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
 
+  def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, containsTransaction: Boolean=false)

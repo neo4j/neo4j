@@ -64,10 +64,18 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
         produceAndThrowException(planInProgress)
       }
 
+      // This is hard to test. Break up into smaller pieces and test each of them
+
       planInProgress.query.tail match {
-        case None    => continue = false
+        case None => continue = false
         case Some(q) =>
-          planInProgress = planInProgress.copy(query = q)
+          val pipe = if (q.containsUpdates) {
+            new EagerPipe(planInProgress.pipe)
+          }
+          else {
+            planInProgress.pipe
+          }
+          planInProgress = planInProgress.copy(query = q, pipe = pipe)
       }
     }
 
