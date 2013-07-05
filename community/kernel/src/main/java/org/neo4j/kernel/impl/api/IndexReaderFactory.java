@@ -37,7 +37,6 @@ public interface IndexReaderFactory
     {
         private Map<Long,IndexReader> indexReaders = null;
         private final IndexingService indexingService;
-        private Exception closedAt;
 
         public Caching( IndexingService indexingService )
         {
@@ -65,16 +64,6 @@ public interface IndexReaderFactory
         @Override
         public void close()
         {
-            if ( closedAt == null )
-            {
-                closedAt = new Exception( "Closed here" );
-                closedAt.printStackTrace();
-            }
-            else
-            {
-                new Exception( "Closed a second time" ).printStackTrace();
-            }
-            
             if ( indexReaders != null )
             {
                 for ( IndexReader indexReader : indexReaders.values() )
