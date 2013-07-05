@@ -78,19 +78,21 @@ We will now briefly describe the modules and their roles.
   see [this blogpost](http://blog.neo4j.org/2012/05/graph-this-rendering-your-graph-with.html)
   by Peter Neubauer.
 - *neo4j-jmx*  
-  The jmx module offers a JMX interface to the neo4j-server.
+  The jmx module offers a JMX interface to the neo4j-kernel module.
   Its details and usage information can be found [here](http://docs.neo4j.org/chunked/milestone/jmx-mxbeans.html).
 - *neo4j-graph-algo*  
   This module offers some graph algorithms which can be performed on your graphs.
   They can be called using any of the interfaces to the system, 
   like the REST api as documented [here](http://docs.neo4j.org/chunked/milestone/rest-api-graph-algos.html),
-  or the traversal API as documented [here](http://docs.neo4j.org/chunked/stable/tutorials-java-embedded-graph-algo.html).
+  or the traversal API as documented [here](http://docs.neo4j.org/chunked/milestone/tutorials-java-embedded-graph-algo.html).
   Finally, the graph algorithms are integrated into [the Cypher Query Language](http://docs.neo4j.org/chunked/milestone/cypher-query-lang.html)
-  as is illustrated [here](http://stackoverflow.com/questions/16286793/neo4js-graphalgofactory).
+  as is illustrated [here](http://docs.neo4j.org/chunked/milestone/query-match.html#match-shortest-path).
 - *neo4j-graph-matching*  
-  This module provides an API to perform pattern matching on graphs.
-  It can be used in the embedded server using the provided [API](http://components.neo4j.org/neo4j-graph-matching/snapshot/apidocs/index.html),
-  but it is also integrated into the Cypher Query Language.
+  This module provides an [API](http://components.neo4j.org/neo4j-graph-matching/snapshot/apidocs/index.html)
+  to perform pattern matching on graphs.
+  It is mainly intended for internal use by the Cypher Execution Engine.
+  Although its API can be used when using an embedded version of Neo4j,
+  this is not recommended.
 - *neo4j-lucene-index*
   This module provides indexing capabilities to allow users to lookup nodes based on their properties.
   As described in [the manual](http://docs.neo4j.org/chunked/milestone/indexing.html),
@@ -100,17 +102,18 @@ We will now briefly describe the modules and their roles.
   It contains the functionality of the [REST API](http://docs.neo4j.org/chunked/milestone/rest-api.html)
   and [the WebAdmin tool](http://docs.neo4j.org/chunked/milestone/tools-webadmin.html).
 - *neo4j/neo4j-community*  
-  These modules are very similar and we do not know exactly what the difference is between the two.
-  The overview only shows the dependencies of neo4j-community, but these are the same as those of neo4j.
+  The neo4j module and the neo4j-community module are pretty much the same.
+  The overview only shows the dependencies of neo4j-community,
+  but these are the same as those of the neo4j module.
   Both modules are dependencies of other modules and therefore in use.
-  As only the neo4j module contains documentation, we assume that neo4j-community is being slowly replaced by
-  the neo4j module instead.
+  They both still exist for historical reasons.
+  It is important to note, however, that only the neo4j module contains documentation.
 
-  The module is simply a meta-package which allows you to include all its dependencies at once.
+  Both modules are simply a meta-package which allows you to include all its dependencies at once.
 - *neo4j-shell*  
   The shell module provides a simple shell to monitor a Neo4j database.
-  It is documented [here](http://docs.neo4j.org/chunked/stable/shell.html)
-  and [here](http://docs.neo4j.org/chunked/milestone/re02.html).
+  It is documented [here](http://docs.neo4j.org/chunked/milestone/shell.html)
+  and its manpage can be found in the [manpages section](http://docs.neo4j.org/chunked/milestone/manpages.html) of the manual.
 - *neo4j-cypher*  
   This module provides the Cypher Execution Engine, which allows users to query using the Cypher Query Language.
   As it is partly written in Scala, 
@@ -135,7 +138,7 @@ We will now briefly describe the modules and their roles.
 
 - *neo4j-ha*  
   The high availability (ha) module allows the Neo4j server to be clustered,
-  to allow for fault-tolerance and read-scalability as discussed [here](http://docs.neo4j.org/chunked/stable/ha.html).
+  to allow for fault-tolerance and read-scalability as discussed [here](http://docs.neo4j.org/chunked/milestone/ha.html).
 - *neo4j-cluster*  
   This module is a library to provide [Heartbeat](http://en.wikipedia.org/wiki/Heartbeat_network)
   and [Paxos][paxoslink] implementations,
@@ -144,7 +147,8 @@ We will now briefly describe the modules and their roles.
 - *neo4j-backup*  
   This modules provides the possibility of easily creating backups, even from remote machines.
   The features of this module and its usage are documented [here](http://docs.neo4j.org/chunked/milestone/operations-backup.html)
-  and [here](http://docs.neo4j.org/chunked/milestone/re03.html).
+  and the manpage can be found in the [manpages section](http://docs.neo4j.org/chunked/milestone/manpages.html)
+  of the manual.
 - *neo4j-com*  
   The communication module supports the communication between the nodes in the high availability cluster.
 - *neo4j-consistency-check*  
@@ -167,8 +171,7 @@ Finally, the use of git and Github for source code configuration management is d
 
 ### Overview of the directory structure
 The [main repository](https://github.com/neo4j/neo4j)
-is ordered according to [maven](http://maven.apache.org/)
-conventions and reflects the structure of components and modules
+reflects the structure of components and modules
 as discussed in the Module Structure section.
 
 The top-level directories in the repository contain the main components:
@@ -222,6 +225,15 @@ and the following names are allowed (using \* as wildcard for any number of char
 - \*Tests.java
 - \*TestCase.java
 
+For unit tests related to the documentation there is addition configuration in the
+[main repository's pom file](https://github.com/neo4j/neo4j/blob/master/pom.xml),
+which allows the following names:
+
+- DocTest\*.java
+- \*DocTest.java
+- \*DocTests.java
+- \*DocTestCase.java
+
 Integration tests are run using the [failsafe plugin](http://maven.apache.org/surefire/maven-failsafe-plugin/).
 So these should be named according to the configuration of the failsafe plugin.
 At the time of writing the [default configuration](http://maven.apache.org/surefire/maven-failsafe-plugin/examples/inclusion-exclusion.html)
@@ -231,6 +243,13 @@ So please name your integration tests accordingly:
 - IT\*.java
 - \*IT.java
 - \*ITCase.java
+
+Again, there is extra configuration for the test cases related to documentation.
+This also allows the following names:
+
+- DocIT\*.java
+- \*DocIT.java
+- \*DocITCase.java
 
 ### Contributing Process
 If you want to contribute to the system,
