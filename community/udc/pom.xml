@@ -25,7 +25,7 @@
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/community/tree/master/udc</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/udc</url>
   </scm>
 
   <licenses>

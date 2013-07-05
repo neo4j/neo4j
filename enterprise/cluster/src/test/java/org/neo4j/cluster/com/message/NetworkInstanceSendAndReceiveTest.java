@@ -21,8 +21,11 @@ package org.neo4j.cluster.com.message;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.helpers.HostnamePort;
@@ -33,10 +36,12 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * TODO
  */
-public class NetworkSendReceiveTest
+public class NetworkInstanceSendAndReceiveTest
 {
     public enum TestMessage
             implements MessageType
@@ -45,30 +50,39 @@ public class NetworkSendReceiveTest
     }
 
     @Test
-    public void testSendReceive()
+    public void shouldSendAMessageFromAClientWhichIsReceivedByAServer() throws Exception
     {
+
+        // given
+
+        CountDownLatch latch = new CountDownLatch( 1 );
+
         LifeSupport life = new LifeSupport();
 
-        Server server1;
-        life.add( server1 = new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                    "localhost:1234", ClusterSettings.server_id.name(), "1",
-                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) ) );
-        life.add( new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235",
+        Server server1 = new Server( latch, MapUtil.stringMap( ClusterSettings.cluster_server.name(),
+                "localhost:1234", ClusterSettings.server_id.name(), "1",
+                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) );
+
+        life.add( server1 );
+
+        Server server2 = new Server( latch, MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235",
                 ClusterSettings.server_id.name(), "2",
-                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235") ) );
+                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) );
+
+        life.add( server2 );
 
         life.start();
 
+        // when
+
         server1.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World" ) );
 
-        try
-        {
-            Thread.sleep( 2000 );
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-        }
+        // then
+
+        latch.await( 2, TimeUnit.SECONDS );
+
+        assertTrue( server1.processedMessage() );
+        assertTrue( server2.processedMessage() );
 
         life.shutdown();
     }
@@ -76,14 +90,15 @@ public class NetworkSendReceiveTest
     private static class Server
             implements Lifecycle, MessageProcessor
     {
-        protected NetworkInstance node;
+        protected NetworkInstance networkInstance;
 
         private final LifeSupport life = new LifeSupport();
+        private boolean processedMessage = false;
 
-        private Server( final Map<String, String> config )
+        private Server( final CountDownLatch latch, final Map<String, String> config )
         {
             final Config conf = new Config( config, ClusterSettings.class );
-            node = new NetworkInstance( new NetworkInstance.Configuration()
+            networkInstance = new NetworkInstance( new NetworkInstance.Configuration()
             {
                 @Override
                 public HostnamePort clusterServer()
@@ -98,18 +113,20 @@ public class NetworkSendReceiveTest
                 }
             }, new DevNullLoggingService() );
 
-            life.add( node );
+            life.add( networkInstance );
             life.add( new LifecycleAdapter()
             {
                 @Override
                 public void start() throws Throwable
                 {
-                    node.addMessageProcessor( new MessageProcessor()
+                    networkInstance.addMessageProcessor( new MessageProcessor()
                     {
                         @Override
                         public boolean process( Message<? extends MessageType> message )
                         {
-                            System.out.println( message );
+                            // server receives a message
+                            latch.countDown();
+                            processedMessage = true;
                             return true;
                         }
                     } );
@@ -143,8 +160,14 @@ public class NetworkSendReceiveTest
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
-            node.process( message );
-            return true;
+            // server sends a message
+            this.processedMessage = true;
+            return networkInstance.process( message );
+        }
+
+        public boolean processedMessage()
+        {
+            return this.processedMessage;
         }
     }
 }

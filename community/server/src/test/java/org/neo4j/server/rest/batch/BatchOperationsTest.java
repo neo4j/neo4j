@@ -22,6 +22,7 @@ package org.neo4j.server.rest.batch;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,5 +49,25 @@ public class BatchOperationsTest {
         assertEquals("foo bar", ops.replaceLocationPlaceholders("foo {100}", map));
         assertEquals("bar foo bar", ops.replaceLocationPlaceholders("{100} foo {100}", map));
         assertEquals("bar bar foo bar bar", ops.replaceLocationPlaceholders("bar {100} foo {100} bar", map));
+    }
+
+    @Test
+    public void testSchemeInInternalJettyServletRequestForHttp() throws UnsupportedEncodingException
+    {
+        // when
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "http://localhost:7473/db/data/node", "{'name':'node1'}" );
+
+        // then
+        assertEquals("http",req.getScheme());
+    }
+
+    @Test
+    public void testSchemeInInternalJettyServletRequestForHttps() throws UnsupportedEncodingException
+    {
+        // when
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "https://localhost:7473/db/data/node", "{'name':'node1'}" );
+
+        // then
+        assertEquals("https",req.getScheme());
     }
 }

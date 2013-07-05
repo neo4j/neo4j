@@ -27,7 +27,7 @@
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/community/tree/master/jmx</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/jmx</url>
   </scm>
 
   <licenses>

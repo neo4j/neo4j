@@ -15,9 +15,9 @@
   <version>2.0-SNAPSHOT</version>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/testing-utils.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/testing-utils.git</developerConnection>
-    <url>https://github.com/neo4j/testing-utils</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+	<url>https://github.com/neo4j/neo4j/tree/master/testing-utils</url>
   </scm>
 
   <properties>

@@ -24,7 +24,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/enterprise/tree/master/ha</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/ha</url>
   </scm>
 
   <licenses>
