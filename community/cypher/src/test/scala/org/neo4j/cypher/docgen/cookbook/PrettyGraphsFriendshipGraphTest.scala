@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
   def graphDescription = List()
@@ -29,6 +31,9 @@ class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"
   override val graphvizExecutedAfter = true
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   @Test def completeGraph() {
     testQuery(

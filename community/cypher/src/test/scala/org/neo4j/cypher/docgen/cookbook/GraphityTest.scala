@@ -23,8 +23,14 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.junit.Ignore
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class GraphityTest extends DocumentingTestBase {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def graphDescription = List(
     "Joe has Joe_s1",
     "Joe_s1 next Joe_s2",
