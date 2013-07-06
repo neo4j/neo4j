@@ -110,12 +110,14 @@ public abstract class AbstractTestBase
                 return node;
             }
         }
+
         return null;
     }
 
     protected void assertLevels( Traverser traverser, Stack<Set<String>> levels )
     {
         Set<String> current = levels.pop();
+
         for ( Path position : traverser )
         {
             String nodeName = (String) position.endNode().getProperty( "name" );
@@ -124,7 +126,7 @@ public abstract class AbstractTestBase
                 current = levels.pop();
             }
             assertTrue( "Should not contain node (" + nodeName
-                        + ") at level " + ( 3 - levels.size() ),
+                    + ") at level " + (3 - levels.size()),
                     current.remove( nodeName ) );
         }
 

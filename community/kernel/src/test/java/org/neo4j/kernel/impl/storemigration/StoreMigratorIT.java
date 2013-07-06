@@ -57,9 +57,12 @@ import static java.lang.Integer.MAX_VALUE;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
 
 public class StoreMigratorIT
@@ -115,15 +118,15 @@ public class StoreMigratorIT
         // verify that the "name" property for both the involved nodes
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Node nodeA = getNodeWithName( db, "A" );
-        assertEquals( "A", nodeA.getProperty( "name" ) );
-        
+        assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
+
         Node nodeB = getNodeWithName( db, "B" );
-        assertEquals( "B", nodeB.getProperty( "name" ) );
-        
+        assertThat( nodeB, inTx( db, hasProperty( "name" ).withValue( "B" ) ) );
+
         Node nodeC = getNodeWithName( db, "C" );
-        assertEquals( "C", nodeC.getProperty( "name" ) );
-        assertEquals( "a value", nodeC.getProperty( "other" ) );
-        assertEquals( "something", nodeC.getProperty( "third" ) );
+        assertThat( nodeC, inTx( db, hasProperty( "name" ).withValue( "C" )  ) );
+        assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
+        assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
         db.shutdown();
         
         // THEN
@@ -209,6 +212,7 @@ public class StoreMigratorIT
         private void verifyNodes()
         {
             int nodeCount = 0;
+            Transaction tx = database.beginTx();
             for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
             {
                 nodeCount++;
@@ -217,6 +221,8 @@ public class StoreMigratorIT
                     verifyProperties( node );
                 }
             }
+            tx.success();
+            tx.finish();
             assertEquals( 501, nodeCount );
         }
 

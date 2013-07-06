@@ -56,7 +56,7 @@ import org.neo4j.shell.ShellException;
  * properties/relationships on a node or a relationship.
  */
 @Service.Implementation( App.class )
-public class Ls extends ReadOnlyGraphDatabaseApp
+public class Ls extends TransactionProvidingApp
 {
     private static final int DEFAULT_MAX_RELS_PER_TYPE_LIMIT = 10;
     

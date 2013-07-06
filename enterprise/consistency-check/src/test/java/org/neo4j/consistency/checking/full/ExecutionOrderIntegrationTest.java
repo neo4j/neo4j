@@ -19,15 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -37,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
@@ -66,6 +58,16 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.GraphStoreFixture;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class ExecutionOrderIntegrationTest
 {
@@ -252,9 +254,9 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
         decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -267,8 +269,8 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
+        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -460,6 +462,12 @@ public class ExecutionOrderIntegrationTest
         public RecordReference<DynamicRecord> relationshipTypeName( int id )
         {
             return logging( access.relationshipTypeName( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> nodeLabels( long id )
+        {
+            return logging( access.nodeLabels( id ) );
         }
 
         @Override

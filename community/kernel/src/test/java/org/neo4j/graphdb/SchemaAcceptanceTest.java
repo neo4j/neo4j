@@ -24,14 +24,11 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
-import org.neo4j.helpers.Function;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -39,14 +36,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.graphdb.Neo4jMatchers.contains;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
+import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaAcceptanceTest
 {
@@ -70,17 +69,10 @@ public class SchemaAcceptanceTest
         Schema schema = db.schema();
 
         // When
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label , propertyKey );
 
         // Then
-        assertEquals( asSet( propertyKey ), asSet( singlePropertyKey( schema.getIndexes( label ) ) ) );
-        assertTrue( asSet( schema.getIndexes( label ) ).contains( index ) );
-        
-        // Then
-        Iterable<IndexDefinition> indexes = schema.getIndexes( Labels.MY_LABEL );
-
-        assertEquals( asSet( propertyKey ), asSet( singlePropertyKey( indexes ) ) );
-        schema.awaitIndexOnline( single( indexes), 5L, TimeUnit.SECONDS );
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
     @Test
@@ -175,21 +167,20 @@ public class SchemaAcceptanceTest
     public void droppingExistingIndexRuleShouldSucceed() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label , propertyKey );
 
         // WHEN
         dropIndex( index );
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index
-        ) );
+        assertThat( getIndexes( db, label ), isEmpty() );
     }
 
     @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label , propertyKey );
 
         // WHEN
         Transaction tx = db.beginTx();
@@ -213,14 +204,14 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index ) );
+        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
     }
 
     @Test
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label , propertyKey );
         dropIndex( index );
 
         // WHEN
@@ -235,7 +226,7 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertFalse( "Index should have been deleted", asSet( db.schema().getIndexes( label ) ).contains( index ) );
+        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
     }
 
     @Test
@@ -244,13 +235,21 @@ public class SchemaAcceptanceTest
         // GIVEN
 
         // WHEN
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
 
         // PASS
-        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
-        // THEN
-        assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
+            // THEN
+            assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
     
     @Test
@@ -259,14 +258,23 @@ public class SchemaAcceptanceTest
         // GIVEN
 
         // WHEN
-        IndexDefinition index = createIndex( label, propertyKey );
-        createIndex( label, "other_property" );
+        IndexDefinition index = createIndex( db, label , propertyKey );
+        createIndex( db, label , "other_property" );
 
         // PASS
-        db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
+        waitForIndex( db, index );
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
 
-        // THEN
-        assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
+            // THEN
+            assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @Test
@@ -276,20 +284,19 @@ public class SchemaAcceptanceTest
         Node node = createNode( db, propertyKey, "Neo", label );
 
         // create an index
-        IndexDefinition index = createIndex( label, propertyKey );
-        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        IndexDefinition index = createIndex( db, label , propertyKey );
+        waitForIndex( db, index );
 
         // delete the index right away
         dropIndex( index );
 
         // WHEN recreating that index
-        createIndex( label, propertyKey );
-        db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+        createIndex( db, label, propertyKey );
+        waitForIndex( db, index );
 
         // THEN it should exist and be usable
-        index = single( db.schema().getIndexes( label ) );
-        assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
-        assertEquals( asSet( node ), asSet( db.findNodesByLabelAndProperty( label, propertyKey, "Neo" ) ) );
+        assertThat( getIndexes( db, label ), contains( index ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
     
     @Test
@@ -314,11 +321,8 @@ public class SchemaAcceptanceTest
         // GIVEN
         ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
 
-        // WHEN
-        Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints( label );
-
-        // THEN
-        assertEquals( createdConstraint, single( listedConstraints ) );
+        // WHEN THEN
+        assertThat( getConstraints( db, label ), containsOnly( createdConstraint ) );
     }
 
     @Test
@@ -327,12 +331,8 @@ public class SchemaAcceptanceTest
         // GIVEN
         ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
 
-        // WHEN
-        Iterable<ConstraintDefinition> listedConstraints = db.schema().getConstraints();
-
-        // THEN
-        ConstraintDefinition foundConstraint = single( listedConstraints );
-        assertEquals( createdConstraint, foundConstraint );
+        // WHEN THEN
+        assertThat( getConstraints( db ), containsOnly( createdConstraint ) );
     }
 
     @Test
@@ -345,14 +345,14 @@ public class SchemaAcceptanceTest
         dropConstraint( db, constraint );
         
         // THEN
-        assertEquals( 0, count( db.schema().getConstraints( label ) ) );
+        assertThat( getConstraints( db, label ), isEmpty() );
     }
 
     @Test
     public void addingConstraintWhenIndexAlreadyExistsGivesNiceError() throws Exception
     {
         // GIVEN
-        createIndex( label, propertyKey );
+        createIndex( db, label , propertyKey );
 
         // WHEN
         try
@@ -429,7 +429,7 @@ public class SchemaAcceptanceTest
         // WHEN
         try
         {
-            createIndex( label, propertyKey );
+            createIndex( db, label , propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
@@ -443,12 +443,12 @@ public class SchemaAcceptanceTest
     public void addingIndexWhenAlreadyIndexed() throws Exception
     {
         // GIVEN
-        createIndex( label, propertyKey );
+        createIndex( db, label, propertyKey );
 
         // WHEN
         try
         {
-            createIndex( label, propertyKey );
+            createIndex( db, label, propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
@@ -493,21 +493,6 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private IndexDefinition createIndex( Label label, String property )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            IndexDefinition result = db.schema().indexFor( label ).on( property ).create();
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
     private void dropIndex( IndexDefinition index )
     {
         Transaction tx = db.beginTx();
@@ -522,18 +507,6 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )
-    {
-        return map( new Function<IndexDefinition, String>()
-        {
-            @Override
-            public String apply( IndexDefinition from )
-            {
-                return single( from.getPropertyKeys() );
-            }
-        }, indexes );
-    }
-    
     private Node createNode( GraphDatabaseService db, String key, Object value, Label label )
     {
         Transaction tx = db.beginTx();

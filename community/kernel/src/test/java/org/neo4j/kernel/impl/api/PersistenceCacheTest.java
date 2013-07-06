@@ -23,8 +23,8 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.Thunk;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PersistenceCacheTest
@@ -46,18 +45,18 @@ public class PersistenceCacheTest
         final Set<Long> labels = asSet( 1L, 2L, 3L );
         @SuppressWarnings( "unchecked" )
         CacheLoader<Set<Long>> loader = mock( CacheLoader.class );
-        when( loader.load( nodeId ) ).thenReturn( labels );
+        when( loader.load( state, nodeId ) ).thenReturn( labels );
         NodeImpl node = new NodeImpl( nodeId );
         when( nodeCache.get( nodeId ) ).thenReturn( node );
         
         // WHEN
-        boolean hasLabel1 = persistenceCache.nodeHasLabel( nodeId, 1, loader );
-        boolean hasLabel2 = persistenceCache.nodeHasLabel( nodeId, 2, loader );
+        boolean hasLabel1 = persistenceCache.nodeHasLabel( state, nodeId, 1, loader );
+        boolean hasLabel2 = persistenceCache.nodeHasLabel( state, nodeId, 2, loader );
         
         // THEN
         assertTrue( hasLabel1 );
         assertTrue( hasLabel2 );
-        verify( loader, times( 1 ) ).load( nodeId );
+        verify( loader, times( 1 ) ).load( state, nodeId );
         verify( nodeCache, times( 2 ) ).get( nodeId );
     }
     
@@ -74,6 +73,7 @@ public class PersistenceCacheTest
     private PersistenceCache persistenceCache;
     private LockStripedCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
+    private final StatementState state = mock( StatementState.class );
     
     @SuppressWarnings( "unchecked" )
     @Before

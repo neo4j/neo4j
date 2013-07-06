@@ -53,7 +53,7 @@ public class StartupTimeoutDocIT
     private static final String DIRSEP = File.separator;
 
     @Rule
-    public TargetDirectory.TestDirectory test = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory test = target.testDirectory();
 
     public CommunityNeoServer server;
 

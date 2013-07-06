@@ -25,19 +25,20 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class Transactor
 {
     public interface Statement<RESULT, FAILURE extends KernelException>
     {
-        RESULT perform( StatementContext statementContext ) throws FAILURE;
+        RESULT perform( StatementOperationParts statementContext, StatementState statement ) throws FAILURE;
     }
 
     private final AbstractTransactionManager txManager;
@@ -55,19 +56,20 @@ public class Transactor
         {
             beginTransaction();
             @SuppressWarnings("deprecation")
-            TransactionContext tx = txManager.getTransactionContext();
+            KernelTransaction tx = txManager.getKernelTransaction();
+            StatementState state = tx.newStatementState();
             boolean success = false;
             try
             {
                 RESULT result;
-                StatementContext context = tx.newStatementContext();
+                StatementOperationParts context = tx.newStatementOperations();
                 try
                 {
-                    result = statement.perform( context );
+                    result = statement.perform( context, state );
                 }
                 finally
                 {
-                    context.close();
+                    context.lifecycleOperations().close( state );
                 }
                 success = true;
                 return result;

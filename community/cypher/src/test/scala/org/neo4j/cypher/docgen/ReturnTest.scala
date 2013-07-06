@@ -22,10 +22,15 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class ReturnTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A BLOCKS B")
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def section = "Return"
 
   override val properties =

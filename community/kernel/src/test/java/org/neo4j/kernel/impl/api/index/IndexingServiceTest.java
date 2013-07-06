@@ -51,6 +51,7 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -279,6 +280,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
+        verify( provider ).getPopulationFailure( 3 );
         logger.assertAtLeastOnce(
                 info( "IndexingService.start: index on :label[1](property[1]) is ONLINE" ) );
         logger.assertAtLeastOnce(
@@ -286,7 +288,7 @@ public class IndexingServiceTest
         logger.assertAtLeastOnce(
                 info( "IndexingService.start: index on :label[3](property[3]) is FAILED" ) );
     }
-
+    
     private static Logging mockLogging( StringLogger logger )
     {
         Logging logging = mock( Logging.class );

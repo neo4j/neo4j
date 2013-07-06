@@ -19,23 +19,24 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 
-public class DelegatingTransactionContext implements TransactionContext
+public class DelegatingTransactionContext implements KernelTransaction
 {
-    protected final TransactionContext delegate;
+    protected final KernelTransaction delegate;
 
-    public DelegatingTransactionContext( TransactionContext delegate )
+    public DelegatingTransactionContext( KernelTransaction delegate )
     {
         this.delegate = delegate;
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        return delegate.newStatementContext();
+        return delegate.newStatementOperations();
     }
 
     @Override
@@ -54,5 +55,11 @@ public class DelegatingTransactionContext implements TransactionContext
     public void rollback() throws TransactionFailureException
     {
         delegate.rollback();
+    }
+
+    @Override
+    public StatementState newStatementState()
+    {
+        return delegate.newStatementState();
     }
 }

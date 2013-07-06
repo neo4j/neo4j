@@ -28,7 +28,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     parseAndExecute("CREATE INDEX ON :Person(name)")
 
     // THEN
-    assert(List(List("name")) === graph.indexPropsForLabel("Person"))
+    assertInTx(List(List("name")) === graph.indexPropsForLabel("Person"))
   }
 
   @Test def dropIndex() {
@@ -39,7 +39,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     parseAndExecute("DROP INDEX ON :Person(name)")
 
     // THEN
-    assert(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
+    assertInTx(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
   }
 
   @Test def drop_index_that_does_not_exist() {

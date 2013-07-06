@@ -40,7 +40,7 @@ import org.neo4j.shell.ShellException;
  * directories (if you look at Neo4j in a certain perspective).
  */
 @Service.Implementation( App.class )
-public class Mkrel extends GraphDatabaseApp
+public class Mkrel extends TransactionProvidingApp
 {
     public static final String KEY_LAST_CREATED_NODE = "LAST_CREATED_NODE";
     public static final String KEY_LAST_CREATED_RELATIONSHIP = "LAST_CREATED_RELATIONSHIP";

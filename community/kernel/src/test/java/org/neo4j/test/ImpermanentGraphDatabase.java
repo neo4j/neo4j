@@ -60,7 +60,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
     
-    static final String PATH = "test-data/impermanent-db";
+    static final String PATH = "target/test-data/impermanent-db";
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead

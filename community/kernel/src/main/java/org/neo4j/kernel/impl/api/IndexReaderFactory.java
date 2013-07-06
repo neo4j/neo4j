@@ -64,7 +64,7 @@ public interface IndexReaderFactory
         @Override
         public void close()
         {
-            if(indexReaders != null)
+            if ( indexReaders != null )
             {
                 for ( IndexReader indexReader : indexReaders.values() )
                 {

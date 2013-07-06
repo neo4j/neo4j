@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,6 +35,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class CircularGraphTest extends AbstractTestBase
 {
@@ -51,10 +52,16 @@ public class CircularGraphTest extends AbstractTestBase
     {
         final long timestamp = 3;
         Transaction tx = beginTx();
-        getNodeWithName( "2" ).setProperty( "timestamp", 1L );
-        getNodeWithName( "3" ).setProperty( "timestamp", 2L );
-        tx.success();
-        tx.finish();
+        try
+        {
+            getNodeWithName( "2" ).setProperty( "timestamp", 1L );
+            getNodeWithName( "3" ).setProperty( "timestamp", 2L );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
 
         final RelationshipType type = DynamicRelationshipType.withName( "TO" );
         Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
@@ -83,8 +90,17 @@ public class CircularGraphTest extends AbstractTestBase
             }
         }, type, Direction.OUTGOING );
         Iterator<Node> nodes = t.iterator();
-        assertEquals( "2", nodes.next().getProperty( "name" ) );
-        assertEquals( "3", nodes.next().getProperty( "name" ) );
-        assertFalse( nodes.hasNext() );
+        Transaction tx2 = beginTx();
+        try
+        {
+            assertEquals( "2", nodes.next().getProperty( "name" ) );
+            assertEquals( "3", nodes.next().getProperty( "name" ) );
+            assertFalse( nodes.hasNext() );
+            tx2.success();
+        }
+        finally
+        {
+            tx2.finish();
+        }
     }
 }

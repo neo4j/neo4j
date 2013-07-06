@@ -21,8 +21,14 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def graphDescription = List(
     "root X A",
     "root X B",

@@ -63,4 +63,10 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     {
         return VOID;
     }
+    
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        throw new IllegalStateException( this + " is recovering" );
+    }
 }

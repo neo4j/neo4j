@@ -37,7 +37,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 @Service.Implementation( App.class )
-public class Rmnode extends GraphDatabaseApp
+public class Rmnode extends TransactionProvidingApp
 {
     public Rmnode()
     {

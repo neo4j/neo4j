@@ -19,58 +19,64 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class UniquenessConstraintStoppingTransactionContext extends DelegatingTransactionContext
 {
-    public UniquenessConstraintStoppingTransactionContext( TransactionContext delegate )
+    public UniquenessConstraintStoppingTransactionContext( KernelTransaction delegate )
     {
         super( delegate );
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        StatementContext delegate = super.newStatementContext();
-        UniquenessConstraintStoppingStatementContext schemaOperations =
-                new UniquenessConstraintStoppingStatementContext( delegate );
-        return new CompositeStatementContext( delegate, schemaOperations );
+        StatementOperationParts parts = delegate.newStatementOperations();
+        
+        UniquenessConstraintStoppingStatementOperations stoppingContext =
+                new UniquenessConstraintStoppingStatementOperations( parts.schemaWriteOperations() );
+        
+        parts.replace( null, null, null, null, null, stoppingContext, null, null );
+        return parts;
     }
 
-    private class UniquenessConstraintStoppingStatementContext extends DelegatingSchemaOperations
+    private static class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOperations
     {
-        private UniquenessConstraintStoppingStatementContext( SchemaOperations schemaOperations )
-        {
-            super( schemaOperations );
-        }
+        private final SchemaWriteOperations schemaWriteDeletage;
 
+        public UniquenessConstraintStoppingStatementOperations( SchemaWriteOperations schemaWriteDeletage )
+        {
+            this.schemaWriteDeletage = schemaWriteDeletage;
+        }
+        
         @Override
-        public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
+        public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
                 throws SchemaKernelException
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public void constraintDrop( UniquenessConstraint constraint )
+        public void constraintDrop( StatementState state, UniquenessConstraint constraint )
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public IndexDescriptor uniqueIndexCreate( long labelId, long propertyKey ) throws SchemaKernelException
+        public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
         {
             throw unsupportedOperation();
         }
 
         @Override
-        public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+        public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
         {
             throw unsupportedOperation();
         }
@@ -78,6 +84,20 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
         private RuntimeException unsupportedOperation()
         {
             return new UnsupportedSchemaModificationException();
+        }
+        
+        // === TODO Below is unnecessary delegate methods
+
+        @Override
+        public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
+        {
+            return schemaWriteDeletage.indexCreate( state, labelId, propertyKeyId );
+        }
+
+        @Override
+        public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+        {
+            schemaWriteDeletage.indexDrop( state, descriptor );
         }
     }
 }

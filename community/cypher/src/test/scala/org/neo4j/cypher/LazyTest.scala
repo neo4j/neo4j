@@ -34,11 +34,15 @@ import org.neo4j.graphdb.Traverser.Order
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.kernel.api.StatementContext
-import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore, CompositeStatementContext}
+import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
+import org.mockito.Matchers
+import org.mockito.stubbing.Answer
+import org.neo4j.kernel.api.operations.StatementState
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -114,16 +118,14 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   @Test def distinct_is_lazy() {
     //Given:
-    val a = mock[Node]
-    val b = mock[Node]
+    val a = createNode(Map("name" -> "Andres"))
+    val b = createNode(Map("name" -> "Jake"))
+
     val c = mock[Node]
 
-    when(a.hasProperty("name")).thenReturn(true)
-    when(a.getProperty("name", null)).thenReturn("Andres", Array())
-    when(b.hasProperty("name")).thenReturn(true)
-    when(b.getProperty("name", null)).thenReturn("Jake", Array())
-
     // Because we use a prefetching iterator, it will cache one more result than we have pulled
+    // if it doesn't it will try to get the name property from the mock c and fail
+
     when(c.hasProperty("name")).thenThrow(new RuntimeException("Distinct was not lazy!"))
 
     val engine = new ExecutionEngine(graph)
@@ -137,14 +139,10 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   @Test def union_is_lazy() {
     //Given:
-    val a = mock[Node]
-    val b = mock[Node]
-    val c = mock[Node]
+    val a = createNode(Map("name" -> "Andres"))
+    val b = createNode(Map("name" -> "Jake"))
 
-    when(a.hasProperty("name")).thenReturn(true)
-    when(a.getProperty("name", null)).thenReturn("Andres", Array())
-    when(b.hasProperty("name")).thenReturn(true)
-    when(b.getProperty("name", null)).thenReturn("Jake", Array())
+    val c = mock[Node]
 
     // Because we use a pre-fetching iterator, it will cache one more result than we have pulled
     when(c.hasProperty("name")).thenThrow(new RuntimeException("Union was not lazy!"))
@@ -181,12 +179,26 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val nodeMgre = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
-    val fakeCtx = mock[StatementContext]
+    val fakeCtx = mock[StatementOperations]
     val schemaState = new KernelSchemaStateStore()
     val schemaOps = new SchemaStateConcern(schemaState)
-    val comboCtx = new CompositeStatementContext(fakeCtx, schemaOps)
+    
+    when( fakeCtx.schemaStateContains( Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Boolean]()
+        {
+            override def answer(invocation: InvocationOnMock): Boolean = {
+                schemaOps.schemaStateContains( invocation.getArguments()(0).asInstanceOf[StatementState], invocation.getArguments()(1) )
+            }
+        } )
+    when( fakeCtx.schemaStateGetOrCreate( Matchers.any(), Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Any]()
+        {
+            override def answer(invocation: InvocationOnMock): Any = {
+                schemaOps.schemaStateGetOrCreate( invocation.getArguments()(0).asInstanceOf[StatementState],
+                    invocation.getArguments()(1), invocation.getArguments()(2).asInstanceOf[org.neo4j.helpers.Function[Any, Any]] )
+            }
+        } )
+    
     when(nodeMgre.getAllNodes).thenReturn(iter)
-    when(bridge.getCtxForWriting).thenReturn(comboCtx)
+    when(bridge.getCtxForWriting).thenReturn(fakeCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeMgre)
@@ -196,7 +208,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val engine = new ExecutionEngine(fakeGraph)
 
     //When:
-    engine.execute("start n=node(*) return n.number? limit 5").toList
+    engine.execute("start n=node(*) return n limit 5").toList
 
     //Then:
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")

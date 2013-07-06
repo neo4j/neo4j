@@ -21,8 +21,14 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class MergeTest extends DocumentingTestBase with StatisticsChecker {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+
   def section = "Merge"
 
   def graphDescription = List(
@@ -50,7 +56,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge single node with a label",
       text = "Merging a single node with a given label.",
       queryText = "merge (robert:Critic)\nreturn robert, labels(robert)",
-      returns = "Because there are no nodes labeled Critic in the database, a new node is created.",
+      returns = "Because there are no nodes labeled +Critic+ in the database, a new node is created.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1)
     )
   }
@@ -58,7 +64,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
   @Test def merge_single_node_with_properties() {
     testQuery(
       title = "Merge single node with properties",
-      text = "Merging a single node with properties where not all matches any existing node.",
+      text = "Merging a single node with properties where not all properties match any existing node.",
       queryText = "merge (charlie {name:'Charlie Sheen', age:10})\nreturn charlie",
       returns = "A new node with the name Charlie Sheen will be created since not all properties " +
         "matched the existing Charlie Sheen node.",
@@ -71,7 +77,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge single node specifying both label and property",
       text = "Merging a single node with both label and property matching an existing node.",
       queryText = "merge (michael:Person {name:'Michael Douglas'})\nreturn michael",
-      returns = "Michael Douglas will be matched and returned",
+      returns = "Michael Douglas will be matched and returned.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0)
     )
   }
@@ -93,7 +99,7 @@ return keanu""",
       title = "Merge with ON MATCH",
       text = "Merging nodes and setting properties on found nodes.",
       queryText = "merge (person:Person)\non match person set person.found = true\nreturn person",
-      returns = "Finds all the :Person nodes, sets a property on them, and returns them.",
+      returns = "Finds all the +Person+ nodes, sets a property on them, and returns them.",
       assertions = (p) => assertStats(p, propertiesSet = 5)
     )
   }
@@ -107,8 +113,8 @@ return keanu""",
 on create keanu set keanu.created = timestamp()
 on match keanu set keanu.lastSeen = timestamp()
 return keanu""",
-      returns = "Creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
-        "different property would be set",
+      returns = "The query creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
+        "different property would have been set.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }

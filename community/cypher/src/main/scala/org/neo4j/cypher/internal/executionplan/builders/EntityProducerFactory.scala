@@ -80,8 +80,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
   val nodeByLabel: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     // The label exists at compile time - no need to look up the label id for every run
-    case (planContext, startItem@NodeByLabel(identifier, label)) if planContext.getLabelId(label).nonEmpty =>
-      val labelId: Long = planContext.getLabelId(label).get
+    case (planContext, startItem@NodeByLabel(identifier, label)) if planContext.getOptLabelId(label).nonEmpty =>
+      val labelId: Long = planContext.getOptLabelId(label).get
       asProducer[Node](startItem) {
         (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId)
       }
@@ -89,7 +89,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     // The label is missing at compile time - we look it up every time this plan is run
     case (planContext, startItem@NodeByLabel(identifier, label)) => asProducer(startItem) {
       (m: ExecutionContext, state: QueryState) =>
-        state.query.getLabelId(label) match {
+        state.query.getOptLabelId(label) match {
           case Some(labelId) => state.query.getNodesByLabel(labelId)
           case None          => Iterator.empty
         }

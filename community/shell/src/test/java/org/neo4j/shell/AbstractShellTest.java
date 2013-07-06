@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -126,14 +126,14 @@ public abstract class AbstractShellTest
         if ( remotelyAvailableOnPort == null )
         {
             remotelyAvailableOnPort = findFreePort();
-            shellServer.makeRemotelyAvailable( remotelyAvailableOnPort.intValue(), AbstractServer.DEFAULT_NAME );
+            shellServer.makeRemotelyAvailable( remotelyAvailableOnPort.intValue(), SimpleAppServer.DEFAULT_NAME );
         }
     }
     
     private int findFreePort()
     {
         // TODO
-        return AbstractServer.DEFAULT_PORT;
+        return SimpleAppServer.DEFAULT_PORT;
     }
 
     protected void restartServer() throws Exception

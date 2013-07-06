@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.commands.MergeAst
 import org.neo4j.cypher.internal.parser.experimental.ast
 import org.neo4j.cypher.internal.parser.experimental.rules.{Expressions, Query}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
-
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class MergeTest extends ParserExperimentalTest[ast.Merge, MergeAst] with Query with Expressions {
 
@@ -36,11 +36,10 @@ class MergeTest extends ParserExperimentalTest[ast.Merge, MergeAst] with Query w
     val nodeOther = "fooName"
     val A = "a"
     val B = "b"
-    val NO_PATHS = Seq.empty
     val labelName = KeyToken.Unresolved("Label", TokenType.Label)
     val labelOther = KeyToken.Unresolved("Other", TokenType.Label)
     def setProperty(id: String) = PropertySetAction(
-      expressions.Property(expressions.Identifier(id), "property"), expressions.TimestampFunction())
+      expressions.Property(expressions.Identifier(id), PropertyKey("property")), expressions.TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive
       MergeAst(Seq(

@@ -19,13 +19,28 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
+import java.util.Collection;
+import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
+import org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.verify;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -190,6 +205,161 @@ public class NodeRecordCheckTest
         verifyOnlyReferenceDispatch( report );
     }
 
+    @Test
+    public void shouldReportLabelNotInUse() throws Exception
+    {
+        // given
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        new InlineNodeLabels( node.getLabelField(), node ).add( 1, null );
+        LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
+
+        add( labelRecordNotInUse );
+        add( node );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelNotInUse( labelRecordNotInUse );
+    }
+
+    @Test
+    public void shouldReportDynamicLabelsNotInUse() throws Exception
+    {
+        // given
+        long[] labelIds = createLabels( 100 );
+
+        LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( labelIds.length ) );
+        add( labelRecordNotInUse );
+
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        add( node );
+
+        DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
+        DynamicRecord labelsRecord2 = inUse( array( new DynamicRecord( 2 ) ) );
+        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
+
+        labelIds[12] = labelIds.length;
+        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
+        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
+
+        addNodeDynamicLabels( labelsRecord1 );
+        addNodeDynamicLabels( labelsRecord2 );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelNotInUse( labelRecordNotInUse );
+    }
+
+    @Test
+    public void shouldReportDuplicateLabels() throws Exception
+    {
+        // given
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        new InlineNodeLabels( node.getLabelField(), node ).put( new long[]{1, 2, 1}, null );
+        LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
+        LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
+
+        add( label1 );
+        add( label2 );
+        add( node );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelDuplicate( 1 );
+    }
+
+    @Test
+    public void shouldReportDuplicateDynamicLabels() throws Exception
+    {
+        // given
+        long[] labelIds = createLabels( 100 );
+
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        add( node );
+
+        DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
+        DynamicRecord labelsRecord2 = inUse( array( new DynamicRecord( 2 ) ) );
+        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
+
+        labelIds[12] = 11;
+        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
+        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
+
+        addNodeDynamicLabels( labelsRecord1 );
+        addNodeDynamicLabels( labelsRecord2 );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelDuplicate( 11 );
+    }
+
+    @Test
+    public void shouldDynamicLabelRecordsNotInUse() throws Exception
+    {
+        // given
+        long[] labelIds = createLabels( 100 );
+
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        add( node );
+
+        DynamicRecord labelsRecord1 = notInUse( array( new DynamicRecord( 1 ) ) );
+        DynamicRecord labelsRecord2 = notInUse( array( new DynamicRecord( 2 ) ) );
+        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
+
+        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
+        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
+
+        labelsRecord2.setNextBlock( 1l );
+
+        addNodeDynamicLabels( labelsRecord1 );
+        addNodeDynamicLabels( labelsRecord2 );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).dynamicLabelRecordNotInUse( labelsRecord1 );
+        verify( report ).dynamicLabelRecordNotInUse( labelsRecord2 );
+    }
+
+    @Test
+    public void shouldReportCyclicDynamicLabelRecords() throws Exception
+    {
+        // given
+        long[] labelIds = createLabels( 100 );
+
+        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        add( node );
+
+        DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
+        DynamicRecord labelsRecord2 = inUse( array( new DynamicRecord( 2 ) ) );
+        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
+
+        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
+        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
+
+        labelsRecord2.setNextBlock( 1l );
+
+        addNodeDynamicLabels( labelsRecord1 );
+        addNodeDynamicLabels( labelsRecord2 );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).cyclicDynamicLabelRecords( labelsRecord2 );
+    }
     // change checking
 
     @Test
@@ -200,14 +370,14 @@ public class NodeRecordCheckTest
         NodeRecord newNode = inUse( new NodeRecord( 42, 12, 2 ) );
 
         addChange( inUse( new RelationshipRecord( 11, 42, 0, 0 ) ),
-                   notInUse( new RelationshipRecord( 11, 0, 0, 0 ) ) );
+                notInUse( new RelationshipRecord( 11, 0, 0, 0 ) ) );
         addChange( notInUse( new RelationshipRecord( 12, 0, 0, 0 ) ),
-                   inUse( new RelationshipRecord( 12, 42, 0, 0 ) ) );
+                inUse( new RelationshipRecord( 12, 42, 0, 0 ) ) );
 
         addChange( inUse( new PropertyRecord( 1 ) ),
-                   notInUse( new PropertyRecord( 1 ) ) );
+                notInUse( new PropertyRecord( 1 ) ) );
         addChange( notInUse( new PropertyRecord( 2 ) ),
-                   inUse( new PropertyRecord( 2 ) ) );
+                inUse( new PropertyRecord( 2 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
@@ -241,7 +411,7 @@ public class NodeRecordCheckTest
         NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, NONE ) );
         NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 10 ) );
 
-       addChange( notInUse( new PropertyRecord( 10 ) ), inUse( new PropertyRecord( 10 ) ) );
+        addChange( notInUse( new PropertyRecord( 10 ) ), inUse( new PropertyRecord( 10 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
@@ -258,9 +428,9 @@ public class NodeRecordCheckTest
         NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 11 ) );
 
         PropertyRecord oldProp = addChange( inUse( new PropertyRecord( 10 ) ),
-                                            inUse( new PropertyRecord( 10 ) ) );
+                inUse( new PropertyRecord( 10 ) ) );
         PropertyRecord newProp = addChange( notInUse( new PropertyRecord( 11 ) ),
-                                            inUse( new PropertyRecord( 11 ) ) );
+                inUse( new PropertyRecord( 11 ) ) );
         oldProp.setPrevProp( newProp.getId() );
         newProp.setNextProp( oldProp.getId() );
 
@@ -279,7 +449,7 @@ public class NodeRecordCheckTest
         NodeRecord newNode = inUse( new NodeRecord( 42, 10, NONE ) );
 
         addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
-                   inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
+                inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
@@ -296,9 +466,9 @@ public class NodeRecordCheckTest
         NodeRecord newNode = inUse( new NodeRecord( 42, 10, NONE ) );
 
         RelationshipRecord rel1 = addChange( inUse( new RelationshipRecord( 9, 42, 0, 0 ) ),
-                                             inUse( new RelationshipRecord( 9, 42, 0, 0 ) ) );
+                inUse( new RelationshipRecord( 9, 42, 0, 0 ) ) );
         RelationshipRecord rel2 = addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
-                                             inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
+                inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
         rel1.setFirstPrevRel( rel2.getId() );
         rel2.setFirstNextRel( rel1.getId() );
 
@@ -316,7 +486,7 @@ public class NodeRecordCheckTest
         NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, 1 ) );
         NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 2 ) );
         addChange( notInUse( new PropertyRecord( 2 ) ),
-                   inUse( new PropertyRecord( 2 ) ) );
+                inUse( new PropertyRecord( 2 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
@@ -333,7 +503,7 @@ public class NodeRecordCheckTest
         NodeRecord oldNode = inUse( new NodeRecord( 42, 1, NONE ) );
         NodeRecord newNode = inUse( new NodeRecord( 42, 2, NONE ) );
         addChange( notInUse( new RelationshipRecord( 2, 0, 0, 0 ) ),
-                   inUse( new RelationshipRecord( 2, 42, 0, 0 ) ) );
+                inUse( new RelationshipRecord( 2, 42, 0, 0 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
@@ -357,5 +527,49 @@ public class NodeRecordCheckTest
         verify( report ).relationshipNotUpdated();
         verify( report ).propertyNotUpdated();
         verifyOnlyReferenceDispatch( report );
+    }
+
+    private long[] createLabels( int labelCount )
+    {
+        long[] labelIds = new long[labelCount];
+        for ( int i = 0; i < labelIds.length; i++ )
+        {
+            labelIds[i] = i;
+            add( inUse( new LabelTokenRecord( i ) ) );
+        }
+        return labelIds;
+    }
+
+    private void assertDynamicRecordChain( DynamicRecord... records )
+    {
+        if ( records.length > 0)
+        {
+            for ( int i = 1; i < records.length; i++ )
+            {
+                assertEquals( records[i].getId(), records[i - 1].getNextBlock() );
+            }
+            assertTrue( Record.NO_NEXT_BLOCK.is( records[records.length - 1].getNextBlock() ) );
+        }
+    }
+
+    public static class PreAllocatedRecords implements DynamicRecordAllocator
+    {
+        private final int dataSize;
+
+        public PreAllocatedRecords( int dataSize )
+        {
+            this.dataSize = dataSize;
+        }
+
+        @Override public int dataSize()
+        {
+            return dataSize;
+        }
+
+        @Override
+        public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+        {
+            return recordsToUseFirst.next();
+        }
     }
 }

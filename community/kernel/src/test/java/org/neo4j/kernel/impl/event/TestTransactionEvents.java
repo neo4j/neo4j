@@ -38,8 +38,12 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestTransactionEvents extends AbstractNeo4jTestCase
 {
@@ -602,7 +606,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         commit();
         
         // Then
-        assertEquals( value2, node.getProperty( key ) );
+        assertThat(node, inTx(getGraphDb(), hasProperty(key).withValue(value2)));
         getGraphDb().unregisterTransactionEventHandler( handler );
     } 
 }

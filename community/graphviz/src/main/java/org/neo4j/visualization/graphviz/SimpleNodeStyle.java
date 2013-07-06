@@ -20,10 +20,15 @@
 package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
+
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 
 public class SimpleNodeStyle extends DefaultNodeStyle
 {
+    boolean hasLabels = false;
+
     SimpleNodeStyle( DefaultStyleConfiguration configuration )
     {
         super( configuration );
@@ -36,11 +41,35 @@ public class SimpleNodeStyle extends DefaultNodeStyle
         stream.append( "  N" + node.getId() + " [\n" );
         config.emit( node, stream );
         stream.append( "    label = \"" );
+        ResourceIterator<Label> labels = node.getLabels()
+                .iterator();
+        hasLabels = labels.hasNext();
+        if ( hasLabels )
+        {
+            stream.append( "{" );
+            while ( labels.hasNext() )
+            {
+                stream.append( labels.next()
+                        .name() );
+                if ( labels.hasNext() )
+                {
+                    stream.append( ", " );
+                }
+            }
+            stream.append( "|" );
+        }
     }
 
     @Override
     public void emitEnd( Appendable stream ) throws IOException
     {
-        stream.append( "\"\n  ]\n" );
+        if ( hasLabels )
+        {
+            stream.append( "}\"\n  ]\n" );
+        }
+        else
+        {
+            stream.append( "\"\n  ]\n" );
+        }
     }
 }

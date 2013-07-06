@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.ExecutionContext
 
-class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
+class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.filter(ctx => predicate.isMatch(ctx)(state))

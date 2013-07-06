@@ -22,10 +22,15 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.Node
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class SkipTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+ 
   def section: String = "Skip"
 
   @Test def returnFromThree() {

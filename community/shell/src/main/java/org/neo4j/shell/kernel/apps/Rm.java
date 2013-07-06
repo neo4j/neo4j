@@ -37,7 +37,7 @@ import org.neo4j.shell.ShellException;
  * but it doesn't.
  */
 @Service.Implementation( App.class )
-public class Rm extends GraphDatabaseApp
+public class Rm extends TransactionProvidingApp
 {
     {
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,

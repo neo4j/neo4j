@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
@@ -34,10 +35,13 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestShortStringProperties extends TestShortString
 {
@@ -70,19 +74,20 @@ public class TestShortStringProperties extends TestShortString
         node.setProperty( "reverse", "esrever" );
         commit();
         assertEquals( recordCount, dynamicRecordsInUse() );
-        assertEquals( "value", node.getProperty( "key" ) );
-        assertEquals( "esrever", node.getProperty( "reverse" ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "value" )  ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "reverse" ).withValue( "esrever" )  ) );
     }
 
     @Test
     public void canAddShortStringToRelationship() throws Exception
     {
         long recordCount = dynamicRecordsInUse();
-        Relationship rel = graphdb.getGraphDatabaseService().createNode().createRelationshipTo( graphdb.getGraphDatabaseService().createNode(), withName( "REL_TYPE" ) );
+        GraphDatabaseService db = graphdb.getGraphDatabaseService();
+        Relationship rel = db.createNode().createRelationshipTo( db.createNode(), withName( "REL_TYPE" ) );
         rel.setProperty( "type", rel.getType().name() );
         commit();
         assertEquals( recordCount, dynamicRecordsInUse() );
-        assertEquals( rel.getType().name(), rel.getProperty( "type" ) );
+        assertThat( rel, inTx( db, hasProperty( "type" ).withValue( rel.getType().name() ) ) );
     }
 
     @Test
@@ -106,7 +111,7 @@ public class TestShortStringProperties extends TestShortString
 
             assertEquals( recordCount, dynamicRecordsInUse() );
             assertEquals( propCount + 1, propertyRecordsInUse() );
-            assertEquals( "other", node.getProperty( "key" ) );
+            assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "other" )  ) );
         }
         catch ( Exception e )
         {
@@ -133,7 +138,7 @@ public class TestShortStringProperties extends TestShortString
 
         assertEquals( recordCount, dynamicRecordsInUse() );
         assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertEquals( "value", node.getProperty( "key" ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "value" )  ) );
     }
 
     @Test
@@ -154,7 +159,7 @@ public class TestShortStringProperties extends TestShortString
 
         assertEquals( recordCount + 1, dynamicRecordsInUse() );
         assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertEquals( LONG_STRING, node.getProperty( "key" ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( LONG_STRING )  ) );
     }
 
     @Test
@@ -162,7 +167,8 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
+        GraphDatabaseService db = graphdb.getGraphDatabaseService();
+        Node node = db.createNode();
         node.setProperty( "key", "value" );
         newTx();
 
@@ -175,7 +181,7 @@ public class TestShortStringProperties extends TestShortString
 
         assertEquals( recordCount, dynamicRecordsInUse() );
         assertEquals( propCount, propertyRecordsInUse() );
-        assertFalse( node.hasProperty( "key" ) );
+        assertThat( node, inTx( db, not( hasProperty( "key" ) ) ) );
     }
 
     // === reuse the test cases from the encoding ===

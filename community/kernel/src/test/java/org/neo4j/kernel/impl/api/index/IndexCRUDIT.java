@@ -24,19 +24,17 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -54,8 +53,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -64,13 +63,16 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 
 public class IndexCRUDIT
 {
+
+    private Transaction transaction;
+
     @Test
     public void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
         // Given
         String indexProperty = "indexProperty";
         GatheringIndexWriter writer = newWriter( indexProperty );
-        createIndex( myLabel, indexProperty );
+        createIndex( db, myLabel, indexProperty );
 
         // When
         int value1 = 12;
@@ -79,11 +81,20 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        long propertyKey1 = ctxProvider.getCtxForReading().propertyKeyGetForName( indexProperty );
-        long[] labels = new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )};
-        assertThat( writer.updates, equalTo( asSet(
-                NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
-
+        Transaction tx = db.beginTx();
+        try
+        {
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForWriting();
+            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
+            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
+            assertThat( writer.updates, equalTo( asSet(
+                    NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
         // We get two updates because we both add a label and a property to be indexed
         // in the same transaction, in the future, we should optimize this down to
         // one NodePropertyUpdate.
@@ -95,7 +106,7 @@ public class IndexCRUDIT
         // GIVEN
         String indexProperty = "indexProperty";
         GatheringIndexWriter writer = newWriter( indexProperty );
-        createIndex( myLabel, indexProperty );
+        createIndex( db, myLabel, indexProperty );
 
         // WHEN
         String otherProperty = "otherProperty";
@@ -113,10 +124,21 @@ public class IndexCRUDIT
         tx.finish();
 
         // THEN
-        long propertyKey1 = ctxProvider.getCtxForReading().propertyKeyGetForName( indexProperty );
-        long[] labels = new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )};
-        assertThat( writer.updates, equalTo( asSet(
-                NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
+        tx = db.beginTx();
+        try
+        {
+            StatementOperations context = ctxProvider.getCtxForWriting();
+            StatementState state = ctxProvider.statementForWriting();
+            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
+            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
+            assertThat( writer.updates, equalTo( asSet(
+                    NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
+
     }
 
     private GraphDatabaseAPI db;
@@ -138,15 +160,6 @@ public class IndexCRUDIT
         tx.success();
         tx.finish();
         return node;
-    }
-
-    private void createIndex( Label myLabel, String indexProperty )
-    {
-        Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexFor( myLabel ).on( indexProperty ).create();
-        tx.success();
-        tx.finish();
-        db.schema().awaitIndexOnline( index, 10, TimeUnit.SECONDS );
     }
 
     @Before
@@ -194,9 +207,10 @@ public class IndexCRUDIT
         {
             try
             {
-                updates.add( NodePropertyUpdate.add( nodeId, ctxProvider.getCtxForReading().propertyKeyGetForName(
-                        propertyKey ),
-                        propertyValue, new long[] {ctxProvider.getCtxForReading().labelGetForName( myLabel.name() )} ) );
+                StatementOperations context = ctxProvider.getCtxForReading();
+                StatementState state = ctxProvider.statementForReading();
+                updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
+                        propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );
             }
             catch ( PropertyKeyNotFoundException e )
             {
@@ -222,6 +236,11 @@ public class IndexCRUDIT
 
         @Override
         public void close( boolean populationCompletedSuccessfully )
+        {
+        }
+        
+        @Override
+        public void markAsFailed( String failure )
         {
         }
     }

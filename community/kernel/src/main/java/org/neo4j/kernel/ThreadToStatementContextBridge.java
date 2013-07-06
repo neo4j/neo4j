@@ -22,52 +22,87 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
- * will use this to get the appropriate {@link StatementContext} when it performs operations.
+ * will use this to get the appropriate {@link StatementOperations} when it performs operations.
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
-    private final KernelAPI kernelAPI;
+    final KernelAPI kernelAPI;
     private final AbstractTransactionManager txManager;
     private boolean isShutdown = false;
+    private final XaDataSourceManager xaDataSourceManager;
+    private IndexingService indexingService;
 
-    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager )
+    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager,
+            XaDataSourceManager xaDataSourceManager )
     {
         this.kernelAPI = kernelAPI;
         this.txManager = txManager;
+        this.xaDataSourceManager = xaDataSourceManager;
     }
     
-    public StatementContext getCtxForReading()
+    @Override
+    public void start() throws Throwable
     {
-        StatementContext ctx = getStatementContext();
-        if(ctx != null)
+        xaDataSourceManager.addDataSourceRegistrationListener( neoStoreListener( new DataSourceRegistrationListener.Adapter()
         {
-            return ctx;
-        }
-
-        return kernelAPI.newReadOnlyStatementContext();
+            @Override
+            public void registeredDataSource( XaDataSource ds )
+            {
+                indexingService = ((NeoStoreXaDataSource)ds).getIndexService();
+            }
+        } ) );
+    }
+    
+    public StatementOperations getCtxForReading()
+    {
+        return kernelAPI.readOnlyStatementOperations();
     }
 
-    public StatementContext getCtxForWriting()
+    public StatementOperations getCtxForWriting()
     {
-        StatementContext ctx = getStatementContext();
-        if ( ctx != null )
+        return kernelAPI.statementOperations();
+    }
+    
+    public StatementState statementForReading()
+    {
+        StatementState statement = newStatementIfInTx();
+        if ( statement != null )
         {
-            return ctx;
+            return statement;
         }
-
-        throw new NotInTransactionException( "You have to start a transaction to perform write operations." );
+        return new ReadOnlyStatementState( new IndexReaderFactory.Caching( indexingService ) );
+    }
+    
+    public StatementState statementForWriting()
+    {
+        StatementState statement = newStatementIfInTx();
+        if ( statement != null )
+        {
+            return statement;
+        }
+        throw new NotInTransactionException();
     }
 
-    private StatementContext getStatementContext()
+    private StatementState newStatementIfInTx()
     {
         checkIfShutdown();
-        return txManager.getStatementContext();
+        return txManager.newStatement();
     }
 
     @Override
@@ -83,6 +118,25 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
             throw new DatabaseShutdownException();
         }
     }
+    
+    public static class ReadOnly extends ThreadToStatementContextBridge
+    {
+        public ReadOnly( KernelAPI kernelAPI, AbstractTransactionManager txManager,
+                XaDataSourceManager xaDataSourceManager )
+        {
+            super( kernelAPI, txManager, xaDataSourceManager );
+        }
+        
+        @Override
+        public StatementOperations getCtxForWriting()
+        {
+            return kernelAPI.readOnlyStatementOperations();
+        }
 
-
+        @Override
+        public StatementOperations getCtxForReading()
+        {
+            return kernelAPI.readOnlyStatementOperations();
+        }
+    }
 }

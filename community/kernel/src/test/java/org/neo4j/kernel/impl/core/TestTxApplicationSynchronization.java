@@ -136,7 +136,16 @@ public class TestTxApplicationSynchronization
         Thread.sleep( 100 ); // I don't know why this is necessary
         localLatch.await(); // Wait for tx apply to start
         waitForSuspend(); // Wait for tx apply breakpoint to trigger
-        targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
+        Transaction tx2 = targetDb.beginTx();
+        try
+        {
+            targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
+            tx2.success();
+        }
+        finally
+        {
+            tx2.finish();
+        }
         resumeAll(); // Restart all threads
         updatePuller.join(); // Join so we don't leave stuff hanging
     }

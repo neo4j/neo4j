@@ -25,7 +25,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -37,16 +36,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 public class FlippableIndexProxy implements IndexProxy
 {
     private boolean closed;
-
-    private static final Callable<Void> NO_OP = new Callable<Void>()
-    {
-        @Override
-        public Void call() throws Exception
-        {
-            return null;
-        }
-    };
-
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     private IndexProxyFactory flipTarget;
     private IndexProxy delegate;
@@ -245,7 +234,21 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-
+    
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getPopulationFailure();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
     public void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();
@@ -272,25 +275,8 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    public void flip()
-    {
-        try
-        {
-            flip( NO_OP );
-        }
-        catch ( FlipFailedKernelException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias",
-                                                "Flipping without a particular action should not fail this way" );
-        }
-    }
-
-    public void flip( Callable<Void> actionDuringFlip ) throws FlipFailedKernelException
-    {
-        flip( actionDuringFlip, delegate );
-    }
-
-    public void flip( Callable<Void> actionDuringFlip, IndexProxy failureDelegate ) throws FlipFailedKernelException
+    public void flip( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
+            throws FlipFailedKernelException
     {
         lock.writeLock().lock();
         try
@@ -303,7 +289,7 @@ public class FlippableIndexProxy implements IndexProxy
             }
             catch ( Exception e )
             {
-                this.delegate = failureDelegate;
+                this.delegate = failureDelegate.create( e );
                 throw new FlipFailedKernelException( e );
             }
         }

@@ -30,6 +30,6 @@ public class EntityNotFoundException extends KernelException
 
     public EntityNotFoundException( EntityType entityType, long entityId )
     {
-        super( null, "Unable to load %s with id %s.", entityType.name(), entityId );
+        super( "Unable to load %s with id %s.", entityType.name(), entityId );
     }
 }

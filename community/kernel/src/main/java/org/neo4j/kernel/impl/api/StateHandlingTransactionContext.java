@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.api.operations.WritableStatementState;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -47,18 +49,18 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
 {
     private final SchemaIndexProviderMap providerMap;
     private final PersistenceCache persistenceCache;
-    private final TxState state;
     private final SchemaCache schemaCache;
-    private final PersistenceManager persistenceManager;
     private final SchemaStorage schemaStorage;
+    private final TxState txState;
+    private final PersistenceManager persistenceManager;
     private final UpdateableSchemaState schemaState;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final NodeManager nodeManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
-    public StateHandlingTransactionContext( StoreTransactionContext actual,
+    public StateHandlingTransactionContext( StoreTransactionContext delegate,
                                             SchemaStorage schemaStorage,
-                                            TxState state,
+                                            TxState txState,
                                             SchemaIndexProviderMap providerMap,
                                             PersistenceCache persistenceCache,
                                             SchemaCache schemaCache,
@@ -67,38 +69,56 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                                             PropertyKeyTokenHolder propertyKeyTokenHolder,
                                             NodeManager nodeManager )
     {
-        super( actual );
+        super( delegate );
         this.schemaStorage = schemaStorage;
+        this.txState = txState;
         this.providerMap = providerMap;
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
         this.persistenceManager = persistenceManager;
         this.schemaState = schemaState;
-        this.state = state;
         this.constraintIndexCreator = constraintIndexCreator;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.nodeManager = nodeManager;
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
         // Store stuff
-        StoreStatementContext storeContext = (StoreStatementContext) super.newStatementContext();
-        StatementContext result = storeContext;
+        StatementOperationParts parts = delegate.newStatementOperations();
 
         // + Caching
-        result = new CachingStatementContext( result, persistenceCache, schemaCache );
+        CachingStatementOperations cachingContext = new CachingStatementOperations(
+                parts.entityReadOperations(),
+                parts.schemaReadOperations(),
+                persistenceCache, schemaCache );
+        parts.replace( null, null, cachingContext, null, cachingContext, null, null, null );
 
         // + Transaction-local state awareness
-        AuxiliaryStoreOperations auxStoreOperations = storeContext; // StoreStatementContext implements it too
+        AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
         auxStoreOperations = new LegacyAutoIndexAuxStoreOps( auxStoreOperations, propertyKeyTokenHolder,
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
         
-        result = new StateHandlingStatementContext( result,
-                new SchemaStateConcern( schemaState ), state, constraintIndexCreator, auxStoreOperations );
+        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(
+                parts.entityReadOperations(),
+                parts.schemaReadOperations(),
+                auxStoreOperations,
+                constraintIndexCreator );
+        parts.replace(
+                null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
+                new SchemaStateConcern( schemaState ), null );
+                
         // done
-        return result;
+        return parts;
+    }
+    
+    @Override
+    public StatementState newStatementState()
+    {
+        WritableStatementState statement = (WritableStatementState) super.newStatementState();
+        statement.provide( txState );
+        return statement;
     }
 
     @Override
@@ -122,7 +142,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
 
         // - commit changes from tx state to the cache
         // TODO: This should be done by log application, not by this level of the stack.
-        persistenceCache.apply( state );
+        persistenceCache.apply( txState );
     }
 
     @Override
@@ -141,7 +161,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private void createTransactionCommands()
     {
         final AtomicBoolean clearState = new AtomicBoolean( false );
-        state.accept( new TxState.Visitor()
+        txState.accept( new TxState.Visitor()
         {
             @Override
             public void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed )
@@ -231,10 +251,11 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
 
     private void dropCreatedConstraintIndexes() throws TransactionFailureException
     {
-        for ( IndexDescriptor createdConstraintIndex : state.createdConstraintIndexes() )
+        for ( IndexDescriptor createdConstraintIndex : txState.createdConstraintIndexes() )
         {
             try
             {
+                // TODO logically, which statement should this operation be performed on?
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
             catch ( SchemaKernelException e )

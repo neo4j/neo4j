@@ -19,12 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +27,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TestBatchDatabase
 {
@@ -55,7 +56,7 @@ public class TestBatchDatabase
         gdb = turnIntoRealGraphDatabase( gdb );
 
         // then
-        assertEquals( asSet( luluLabel ), asSet( gdb.getNodeById( nodeId ).getLabels() ) );
+        assertThat( gdb.getNodeById( nodeId ), inTx( gdb, hasLabels( luluLabel ) ) );
 
         gdb.shutdown();
     }
@@ -72,7 +73,7 @@ public class TestBatchDatabase
         long nodeId = gdb.createNode( luluLabel ).getId();
 
         // then
-        assertEquals( asSet( luluLabel ), asSet( gdb.getNodeById( nodeId ).getLabels() ) );
+        assertThat( gdb.getNodeById( nodeId ), hasLabels( luluLabel ) );
     }
 
     @Test
@@ -87,7 +88,7 @@ public class TestBatchDatabase
         long nodeId = gdb.createNode( luluLabel ).getId();
 
         // then
-        assertEquals( asSet( luluLabel ), asSet( gdb.getNodeById( nodeId ).getLabels() ) );
+        assertThat( gdb.getNodeById( nodeId ), hasLabels( luluLabel ) );
     }
 
     @Test
@@ -103,7 +104,7 @@ public class TestBatchDatabase
         node.addLabel( luluLabel );
 
         // then
-        assertEquals( asSet( luluLabel ), asSet( gdb.getNodeById( node.getId() ).getLabels() ) );
+        assertThat( node, hasLabels( luluLabel ) );
     }
 
     @Test
@@ -120,7 +121,7 @@ public class TestBatchDatabase
         node.addLabel( luluLabel );
 
         // then
-        assertEquals( asSet( luluLabel ), asSet( gdb.getNodeById( node.getId() ).getLabels() ) );
+        assertThat( node, hasLabels( luluLabel ) );
     }
 
     @Test
@@ -136,7 +137,6 @@ public class TestBatchDatabase
         node.removeLabel( luluLabel );
 
         // then
-        assertFalse( gdb.getNodeById( node.getId() ).hasLabel( luluLabel ) );
         assertTrue( asSet( gdb.getNodeById( node.getId() ).getLabels() ).isEmpty() );
     }
 
@@ -156,7 +156,7 @@ public class TestBatchDatabase
         node.removeLabel( luluLabel );
 
         // then
-        assertEquals( asSet( lalaLabel ), asSet( gdb.getNodeById( node.getId() ).getLabels() ) );
+        assertThat( node, hasLabels( lalaLabel ) );
     }
 
     private GraphDatabaseService turnIntoRealGraphDatabase( GraphDatabaseService gdb )

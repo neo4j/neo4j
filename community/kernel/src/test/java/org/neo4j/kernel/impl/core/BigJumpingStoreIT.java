@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +43,16 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
 
 public class BigJumpingStoreIT
 {
@@ -150,6 +150,7 @@ public class BigJumpingStoreIT
         tx.finish();
 
         // Verify
+        tx = db.beginTx();
         int relCount = 0;
         for ( int t = 0; t < 2; t++ )
         {
@@ -164,6 +165,7 @@ public class BigJumpingStoreIT
             db.getNodeManager().clearCache();
         }
         assertEquals( numberOfRels, relCount );
+        tx.finish();
 
         // Remove stuff
         tx = db.beginTx();
@@ -223,6 +225,7 @@ public class BigJumpingStoreIT
         tx.finish();
 
         // Verify again
+        tx = db.beginTx();
         for ( int t = 0; t < 2; t++ )
         {
             int nodeCount = 0;
@@ -273,6 +276,7 @@ public class BigJumpingStoreIT
             }
             db.getNodeManager().clearCache();
         }
+        tx.finish();
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

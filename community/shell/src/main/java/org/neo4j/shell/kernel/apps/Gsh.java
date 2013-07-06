@@ -28,10 +28,10 @@ import org.neo4j.shell.Session;
 
 /**
  * Wraps a {@link org.neo4j.shell.apps.extra.Gsh} in a
- * {@link GraphDatabaseApp} to be wrapped in a transaction among other things.
+ * {@link TransactionProvidingApp} to be wrapped in a transaction among other things.
  */
 @Service.Implementation( App.class )
-public class Gsh extends GraphDatabaseApp
+public class Gsh extends TransactionProvidingApp
 {
     private App sh = new org.neo4j.shell.apps.extra.Gsh();
 

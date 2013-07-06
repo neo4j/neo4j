@@ -90,7 +90,7 @@ trait ExpanderStep {
   }
 }
 
-abstract class MiniMapProperty(originalName: String, prop: String) extends Expression {
+abstract class MiniMapProperty(originalName: String, propertyKeyName: String) extends Expression {
   protected def calculateType(symbols: SymbolTable) = fail()
 
   def children = Nil
@@ -100,17 +100,18 @@ abstract class MiniMapProperty(originalName: String, prop: String) extends Expre
   def symbolTableDependencies = fail()
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
+    val qtx = state.query
     ctx match {
       case m: MiniMap => {
         val pc = extract(m)
         try {
           pc match {
-            case n: Node         => state.query.nodeOps.getProperty(n, prop)
-            case r: Relationship => state.query.relationshipOps.getProperty(r, prop)
+            case n: Node         => qtx.nodeOps.getProperty(n, qtx.getPropertyKeyId(propertyKeyName))
+            case r: Relationship => qtx.relationshipOps.getProperty(r, qtx.getPropertyKeyId(propertyKeyName))
           }
         } catch {
           case x: NotFoundException =>
-            throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the identifier: %s".format(prop, pc, originalName), x)
+            throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the identifier: %s".format(propertyKeyName, pc, originalName), x)
         }
       }
       case _          => fail()

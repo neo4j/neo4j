@@ -30,7 +30,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -183,24 +182,32 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private void verifyData( GraphDatabaseService graphdb )
     {
-        int nodecount = 0;
-        for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
+        Transaction tx = graphdb.beginTx();
+        try
         {
-            int propcount = readProperties( node );
-            int relcount = 0;
-            for ( Relationship rel : node.getRelationships() )
+            int nodecount = 0;
+            for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
             {
-                assertEquals( "all relationships should have 3 properties.", 3, readProperties( rel ) );
-                relcount++;
+                int propcount = readProperties( node );
+                int relcount = 0;
+                for ( Relationship rel : node.getRelationships() )
+                {
+                    assertEquals( "all relationships should have 3 properties.", 3, readProperties( rel ) );
+                    relcount++;
+                }
+                if ( !graphdb.getReferenceNode().equals( node ) )
+                {
+                    assertEquals( "all created nodes should have 3 properties.", 3, propcount );
+                    assertEquals( "all created nodes should have 2 relationships.", 2, relcount );
+                }
+                nodecount++;
             }
-            if ( !graphdb.getReferenceNode().equals( node ) )
-            {
-                assertEquals( "all created nodes should have 3 properties.", 3, propcount );
-                assertEquals( "all created nodes should have 2 relationships.", 2, relcount );
-            }
-            nodecount++;
+            assertEquals( "The database should have 3 nodes.", 3, nodecount );
         }
-        assertEquals( "The database should have 3 nodes.", 3, nodecount );
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private void createInitialData( GraphDatabaseService graphdb )

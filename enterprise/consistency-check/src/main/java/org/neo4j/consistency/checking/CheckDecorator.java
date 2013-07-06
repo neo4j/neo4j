@@ -42,14 +42,14 @@ public interface CheckDecorator
     RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
             RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
 
-    RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyTokenChecker(
-            RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker );
+    RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+            RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker );
 
     RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
             RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
 
-    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelTokenChecker(
-            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker );
+    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
 
     static CheckDecorator NONE = new CheckDecorator()
     {
@@ -82,8 +82,8 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
             return checker;
         }
@@ -96,8 +96,8 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelNameConsistencyReport> checker )
+        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
         {
             return checker;
         }

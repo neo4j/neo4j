@@ -68,7 +68,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   private def mapExpression(pf: PartialFunction[Expression, UpdateAction]): Parser[UpdateAction] = expression ^^ pf
 
   private def propertyRemover: PartialFunction[Expression, UpdateAction] = {
-    case Property(entity, property) => DeletePropertyAction(entity, property)
+    case Property(entity, propertyKey) => DeletePropertyAction(entity, propertyKey)
   }
 
   private def entityRemover: PartialFunction[Expression, UpdateAction] = {

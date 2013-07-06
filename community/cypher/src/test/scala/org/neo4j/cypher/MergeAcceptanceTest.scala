@@ -66,8 +66,10 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     assert(createdNodes.size === 1)
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
 
-    createdNodes.foreach {
-      n => assert(n.labels === List("Label"))
+    graph.inTx {
+      createdNodes.foreach {
+        n => assert(n.labels === List("Label"))
+      }
     }
   }
 
@@ -81,10 +83,12 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
 
     assert(createdNodes.size === 1)
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
-    createdNodes.foreach {
-      n => assert(n.labels.toSet === Set("Label", "Foo"))
-    }
 
+    graph.inTx {
+      createdNodes.foreach {
+        n => assert(n.labels.toSet === Set("Label", "Foo"))
+      }
+    }
   }
 
   @Test
@@ -97,8 +101,11 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
 
     assert(createdNodes.size === 1)
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
-    createdNodes.foreach {
-      n => assert(n.getProperty("prop") === 42)
+
+    graph.inTx {
+      createdNodes.foreach {
+        n => assert(n.getProperty("prop") === 42)
+      }
     }
   }
 
@@ -155,7 +162,7 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     parseAndExecute("merge (a:Label) on match a set a.prop = 42 return a")
 
     // Then
-    assert(existingNode.getProperty("prop") === 42)
+    assertInTx(existingNode.getProperty("prop") === 42)
   }
 
   @Test
@@ -184,8 +191,8 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     val nodes = result.columnAs[Node]("a").toList
     assert(nodes.size === 1)
     val a = nodes.head
-    assert(a.getProperty("prop") === 42)
-    assert(other.getProperty("prop") === 666)
+    assertInTx(a.getProperty("prop") === 42)
+    assertInTx(other.getProperty("prop") === 666)
   }
 
   @Test

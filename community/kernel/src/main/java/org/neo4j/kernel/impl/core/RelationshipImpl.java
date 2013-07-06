@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -119,5 +120,11 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     PropertyContainer asProxy( NodeManager nm )
     {
         return nm.newRelationshipProxyById( getId() );
+    }
+    
+    @Override
+    protected Property noProperty( long key )
+    {
+        return Property.noRelationshipProperty( getId(), key );
     }
 }

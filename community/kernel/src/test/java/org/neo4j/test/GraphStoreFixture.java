@@ -28,6 +28,7 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -98,6 +99,11 @@ public abstract class GraphStoreFixture implements TestRule
             return nodeId++;
         }
 
+        public long nodeLabels()
+        {
+            return nodeLabelsId++;
+        }
+
         public long relationship()
         {
             return relId++;
@@ -150,11 +156,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void relationshipType( int id, String label )
+        public void relationshipType( int id, String relationshipType )
         {
             try
             {
-                writer.propertyKey( id, label, id );
+                writer.relationshipType( id, relationshipType, id );
             }
             catch ( IOException e )
             {
@@ -342,6 +348,7 @@ public abstract class GraphStoreFixture implements TestRule
     private String directory;
     private int localIdGenerator = 0;
     private long nodeId;
+    private long nodeLabelsId;
     private long relId;
     private long propId;
     private long stringPropId;
@@ -357,6 +364,7 @@ public abstract class GraphStoreFixture implements TestRule
             generateInitialData( graphDb );
             StoreAccess stores = new StoreAccess( graphDb );
             nodeId = stores.getNodeStore().getHighId();
+            nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
             relId = stores.getRelationshipStore().getHighId();
             propId = stores.getPropertyStore().getHighId();
             stringPropId = stores.getStringStore().getHighId();

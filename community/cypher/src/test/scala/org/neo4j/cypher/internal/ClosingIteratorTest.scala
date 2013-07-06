@@ -32,8 +32,8 @@ class ClosingIteratorTest extends Assertions {
   @Test
   def should_call_close_when_we_reach_the_end() {
     //Given
-    val ctx   = mock(classOf[QueryContext])
-    val wrapee   = Iterator(42)
+    val ctx      = mock(classOf[QueryContext])
+    val wrapee   = Iterator(Map("k" -> 42))
     val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
@@ -41,13 +41,13 @@ class ClosingIteratorTest extends Assertions {
 
     //Then
     verify(ctx).close(success = true)
-    assertThat(result, is(42))
+    assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 
   @Test
   def should_close_querycontext_even_for_empty_iterator() {
     //Given
-    val ctx   = mock(classOf[QueryContext])
+    val ctx      = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
     val iterator = new ClosingIterator(wrapee, ctx)
 
@@ -62,7 +62,7 @@ class ClosingIteratorTest extends Assertions {
   @Test
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
-    val ctx   = mock(classOf[QueryContext])
+    val ctx      = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
     val iterator = new ClosingIterator(wrapee, ctx)
 
@@ -81,8 +81,8 @@ class ClosingIteratorTest extends Assertions {
   @Test
   def exception_in_hasNext_should_fail_transaction() {
     //Given
-    val ctx   = mock(classOf[QueryContext])
-    val wrapee   = mock(classOf[Iterator[Int]])
+    val ctx    = mock(classOf[QueryContext])
+    val wrapee = mock(classOf[Iterator[Map[String, Any]]])
     when(wrapee.hasNext).thenThrow(new RuntimeException)
     val iterator = new ClosingIterator(wrapee, ctx)
 
@@ -96,8 +96,8 @@ class ClosingIteratorTest extends Assertions {
   @Test
   def exception_in_next_should_fail_transaction() {
     //Given
-    val ctx   = mock(classOf[QueryContext])
-    val wrapee   = mock(classOf[Iterator[Int]])
+    val ctx    = mock(classOf[QueryContext])
+    val wrapee = mock(classOf[Iterator[Map[String, Any]]])
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 

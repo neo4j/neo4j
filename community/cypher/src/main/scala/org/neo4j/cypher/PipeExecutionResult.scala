@@ -29,8 +29,9 @@ import collection.immutable.{Map => ImmutableMap}
 import collection.Map
 import org.neo4j.graphdb.ResourceIterator
 import java.util
+import org.neo4j.cypher.internal.spi.{QueryContext, TokenContext}
 
-class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
+class PipeExecutionResult(result: ClosingIterator,
                           val columns: List[String], state: QueryState,
                           executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
@@ -83,12 +84,12 @@ class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
       }
     }
 
-  private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
+  private def calculateColumnSizes(result: Seq[Map[String, Any]], qtx: QueryContext): Map[String, Int] = {
     val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.size)
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2, state.query).size
+        val length = text(kv._2, qtx).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -100,12 +101,20 @@ class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
   def eagerResult = result.toList
 
   def dumpToString(writer: PrintWriter) {
+    // TODO Fix so that output is generated in same transactions or formatted independent from database access
+
+    // this closes the current query context
     val result = eagerResult
-    val columnSizes = calculateColumnSizes(result)
+    // this wraps a fresh query context around output generation
+    state.query.withAnyOpenQueryContext(dumpToString(result, writer, _))
+  }
+
+  protected def dumpToString(result: List[Map[String, Any]], writer: PrintWriter, qtx: QueryContext) {
+    val columnSizes = calculateColumnSizes(result, qtx)
 
     if (columns.nonEmpty) {
       val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
-      val headerLine: String = createString(columns, columnSizes, headers)
+      val headerLine: String = createString(columns, columnSizes, headers, qtx)
       val lineWidth: Int = headerLine.length - 2
       val --- = "+" + repeat("-", lineWidth) + "+"
 
@@ -116,19 +125,19 @@ class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
       writer.println(headerLine)
       writer.println(---)
 
-      result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
+      result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine, qtx)))
 
       writer.println(---)
       writer.println(footer)
-      if (queryStatistics.containsUpdates) {
-        writer.print(queryStatistics.toString)
+      if (queryStatistics().containsUpdates) {
+        writer.print(queryStatistics().toString)
       }
     } else {
-      if (queryStatistics.containsUpdates) {
+      if (queryStatistics().containsUpdates) {
         writer.println("+-------------------+")
         writer.println("| No data returned. |")
         writer.println("+-------------------+")
-        writer.print(queryStatistics.toString)
+        writer.print(queryStatistics().toString)
       } else {
         writer.println("+--------------------------------------------+")
         writer.println("| No data returned, and nothing was changed. |")
@@ -145,10 +154,10 @@ class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
     stringWriter.getBuffer.toString
   }
 
-  private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
+  private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any], qtx: QueryContext): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, state.query)
+      val txt = text(m.get(c).get, qtx)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")
@@ -158,7 +167,7 @@ class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],
 
   def next(): ImmutableMap[String, Any] = result.next().toMap
 
-  def queryStatistics = QueryStatistics()
+  def queryStatistics() = QueryStatistics()
 
   def close() {
     result.close()

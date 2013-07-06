@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.mutation.{UpdateAction, MergeNodeAction}
+import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.parser.v2_0.DefaultFalse
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.spi.PlanContext
@@ -36,6 +36,20 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.commands.expressions.IdFunction
+import org.neo4j.cypher.internal.mutation.MergeNodeAction
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import scala.Some
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.SingleNode
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.NodeByLabel
+import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.expressions.Nullable
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -46,7 +60,9 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   val otherIdentifier = "p"
   val label = "Person"
   val property = "prop"
+  val propertyKey = PropertyKey(property)
   val otherProperty = "prop2"
+  val otherPropertyKey = PropertyKey(otherProperty)
   val expression = Literal(42)
 
   @Test
@@ -88,7 +104,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
       where = Seq(HasLabel(Identifier(identifier), KeyToken.Unresolved("Person", TokenType.Label)),
-        Equals(Property(Identifier(identifier), "prop1"), Literal("banana")))
+        Equals(Property(Identifier(identifier), PropertyKey("prop1")), Literal("banana")))
     )
 
     when(context.getIndexRule("Person", "prop1")).thenReturn(Some(new IndexDescriptor(123,456)))
@@ -119,7 +135,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -139,7 +155,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -160,7 +176,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, Property(Identifier(identifier), property))
+      Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -180,7 +196,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, Property(Identifier(identifier), property))
+      Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -200,7 +216,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(new Nullable(Property(Identifier(identifier), property)) with DefaultFalse, expression)
+      Equals(new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse, expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -220,7 +236,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, new Nullable(Property(Identifier(identifier), property)) with DefaultFalse)
+      Equals(expression, new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -240,7 +256,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(new Nullable(Property(Identifier(identifier), property)) with DefaultFalse, expression)
+      Equals(new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse, expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -260,8 +276,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression),
-      Equals(Property(Identifier(identifier), otherProperty), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression),
+      Equals(Property(Identifier(identifier), otherPropertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -282,8 +298,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression),
-      Equals(Property(Identifier(identifier), otherProperty), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression),
+      Equals(Property(Identifier(identifier), otherPropertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -305,8 +321,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression),
-      Equals(Property(Identifier(identifier), otherProperty), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression),
+      Equals(Property(Identifier(identifier), otherPropertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -359,7 +375,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), property), expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -397,8 +413,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       where = Seq(
         HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-        Equals(Property(Identifier(identifier), property), expression1),
-        Equals(Property(Identifier(otherIdentifier), property), expression2)),
+        Equals(Property(Identifier(identifier), propertyKey), expression1),
+        Equals(Property(Identifier(otherIdentifier), propertyKey), expression2)),
 
       patterns = Seq(
         ShortestPath("p", identifier, otherIdentifier, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
@@ -459,7 +475,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       updates = Seq(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None))
     )
-    when(context.getLabelId("Label")).thenReturn(Some(42L))
+    when(context.getOptLabelId("Label")).thenReturn(Some(42L))
 
     // When
     val plan = assertAccepts(pipe, query)

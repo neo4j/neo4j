@@ -38,10 +38,10 @@ import org.neo4j.shell.OutputAsWriter;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
-import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
+import org.neo4j.shell.kernel.apps.NonTransactionProvidingApp;
 
 @Service.Implementation(App.class)
-public class Start extends ReadOnlyGraphDatabaseApp
+public class Start extends NonTransactionProvidingApp
 {
     private ExecutionEngine engine;
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, Predicate}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 object Expression {
   sealed trait SemanticContext
@@ -132,7 +133,7 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
 
   override def semanticCheck(ctx: SemanticContext) = map.semanticCheck(ctx) then super.semanticCheck(ctx)
 
-  def toCommand = commands.expressions.Property(map.toCommand, identifier.name)
+  def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }
 
 case class Nullable(expression: Expression, token: InputToken) extends Expression {

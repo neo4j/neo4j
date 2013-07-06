@@ -24,8 +24,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static java.lang.System.lineSeparator;
+
 public class ColumnPrinter
 {
+    private final Column rawColumn;
     private final List<Column> columns = new ArrayList<Column>();
 
     public ColumnPrinter( String... columnPrefixes )
@@ -34,11 +37,13 @@ public class ColumnPrinter
         {
             this.columns.add( new Column( prefix ) );
         }
+        rawColumn = new RawColumn( columnPrefixes[0].length() );
     }
 
     public void add( Object... columns )
     {
         Iterator<Column> columnIterator = this.columns.iterator();
+        rawColumn.add( "" );
         for ( Object column : columns )
         {
             columnIterator.next().add( column.toString() );
@@ -49,16 +54,28 @@ public class ColumnPrinter
                     this.columns.size() );
         }
     }
+    
+    public void addRaw( String string )
+    {
+        rawColumn.add( string );
+        for ( Column col : columns )
+        {
+            col.add( "" );
+        }
+    }
 
     public void print( Output out ) throws RemoteException
     {
         Column firstColumn = columns.get( 0 );
         for ( int line = 0; line < firstColumn.size(); line++ )
         {
-            firstColumn.print( out, line );
-            for ( int col = 1; col < columns.size(); col++ )
+            if ( !rawColumn.print( out, line ) )
             {
-                columns.get( col ).print( out, line );
+                firstColumn.print( out, line );
+                for ( int col = 1; col < columns.size(); col++ )
+                {
+                    columns.get( col ).print( out, line );
+                }
             }
             out.println();
         }
@@ -67,8 +84,8 @@ public class ColumnPrinter
     private static class Column
     {
         private int widest = 0;
-        private final List<String> cells = new ArrayList<String>();
-        private final String prefix;
+        protected final List<String> cells = new ArrayList<String>();
+        protected final String prefix;
 
         public Column( String prefix )
         {
@@ -86,14 +103,38 @@ public class ColumnPrinter
             return cells.size();
         }
 
-        void print( Output out, int i ) throws RemoteException
+        boolean print( Output out, int i ) throws RemoteException
         {
             String value = cells.get( i );
             out.print( prefix + value + multiply( " ", widest - value.length() + 1 ) );
+            return value.length() > 0;
+        }
+    }
+    
+    private static class RawColumn extends Column
+    {
+        public RawColumn( int indentation )
+        {
+            super( multiply( " ", indentation ) );
+        }
+
+        @Override
+        boolean print( Output out, int i ) throws RemoteException
+        {
+            String value = cells.get( i );
+            if ( value.length() > 0 )
+            {
+                for ( String line : value.split( lineSeparator() ) )
+                {
+                    out.print( prefix + "|" + line + lineSeparator() );
+                }
+                return true;
+            }
+            return false;
         }
     }
 
-    private static String multiply( String string, int count ) throws RemoteException
+    private static String multiply( String string, int count )
     {
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < count; i++ )

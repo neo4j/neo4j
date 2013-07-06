@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.Iterables.sort;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 
-public class Schema extends GraphDatabaseApp
+public class Schema extends TransactionProvidingApp
 {
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()
@@ -60,6 +60,8 @@ public class Schema extends GraphDatabaseApp
                 "Specifies which label selected operation is about" ) );
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which property selected operation is about" ) );
+        addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
+                "Verbose output of failure descriptions etc." ) );
     }
 
     @Override
@@ -80,6 +82,7 @@ public class Schema extends GraphDatabaseApp
         org.neo4j.graphdb.schema.Schema schema = getServer().getDb().schema();
         Label[] labels = parseLabels( parser );
         String property = parser.option( "p", null );
+        boolean verbose = parser.options().containsKey( "v" );
 
         if ( action.equals( "await" ) )
         {
@@ -87,7 +90,7 @@ public class Schema extends GraphDatabaseApp
         }
         else if ( action.equals( "ls" ) )
         {
-            listIndexesAndConstraints( out, schema, labels, property );
+            listIndexesAndConstraints( out, schema, labels, property, verbose );
         }
         else
         {
@@ -112,9 +115,9 @@ public class Schema extends GraphDatabaseApp
     }
 
     private void listIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
-                                            final String property ) throws RemoteException
+                                            final String property, boolean verbose ) throws RemoteException
     {
-        reportIndexes( out, schema, labels, property );
+        reportIndexes( out, schema, labels, property, verbose );
         reportConstraints( out, schema, labels, property );
     }
 
@@ -144,12 +147,12 @@ public class Schema extends GraphDatabaseApp
         }
     }
 
-    private void reportIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property )
-            throws RemoteException
+    private void reportIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property,
+            boolean verbose ) throws RemoteException
     {
         ColumnPrinter printer = new ColumnPrinter( "  ON ", "", "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
-
+        
         int i = 0;
         for ( IndexDefinition index : sort( indexes, LABEL_COMPARE_FUNCTION ) )
         {
@@ -161,10 +164,13 @@ public class Schema extends GraphDatabaseApp
                     .getPropertyKeys() ) );
 
             IndexState state = schema.getIndexState( index );
-
             String uniqueOrNot = index.isConstraintIndex() ? "(for uniqueness constraint)" : "";
 
             printer.add( labelAndProperties, state, uniqueOrNot );
+            if ( verbose && state == IndexState.FAILED )
+            {
+                printer.addRaw( schema.getIndexFailure( index ) );
+            }
             i++;
         }
         if ( i == 0 )

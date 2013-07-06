@@ -47,7 +47,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
     planContext = mock[PlanContext]
     factory = new EntityProducerFactory
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(planContext.getLabelId(label)).thenReturn(Some(1L))
+    when(planContext.getOptLabelId(label)).thenReturn(Some(1L))
   }
 
   @Test

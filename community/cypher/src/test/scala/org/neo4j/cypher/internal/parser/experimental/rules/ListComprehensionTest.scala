@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 import org.neo4j.cypher.internal.parser.experimental.ast
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 
 class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension, commandexpressions.Expression] with Expressions {
@@ -35,15 +36,15 @@ class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension
     val filterCommand = commandexpressions.FilterFunction(
       commandexpressions.Identifier("p"),
       "a",
-      commands.GreaterThan(commandexpressions.Property(commandexpressions.Identifier("a"), "foo"), commandexpressions.Literal(123)))
+      commands.GreaterThan(commandexpressions.Property(commandexpressions.Identifier("a"), PropertyKey("foo")), commandexpressions.Literal(123)))
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
 
     parsing("[ a in p | a.foo ]") shouldGive
-      commandexpressions.ExtractFunction(commandexpressions.Identifier("p"), "a", commandexpressions.Property(commandexpressions.Identifier("a"), "foo"))
+      commandexpressions.ExtractFunction(commandexpressions.Identifier("p"), "a", commandexpressions.Property(commandexpressions.Identifier("a"), PropertyKey("foo")))
 
     parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      commandexpressions.ExtractFunction(filterCommand, "a", commandexpressions.Property(commandexpressions.Identifier("a"), "foo"))
+      commandexpressions.ExtractFunction(filterCommand, "a", commandexpressions.Property(commandexpressions.Identifier("a"), PropertyKey("foo")))
   }
 
   def convert(astNode: ast.ListComprehension): commandexpressions.Expression = astNode.toCommand

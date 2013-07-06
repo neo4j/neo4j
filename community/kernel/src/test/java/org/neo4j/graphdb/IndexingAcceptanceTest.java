@@ -20,26 +20,26 @@
 package org.neo4j.graphdb;
 
 import java.util.Map;
-import java.util.Set;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
+import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -51,29 +51,28 @@ public class IndexingAcceptanceTest
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = null;
-        Labels label = Labels.MY_LABEL;
         String key = "key";
         {
             Transaction tx = beansAPI.beginTx();
             try
             {
-                Node node = beansAPI.createNode( label );
+                Node node = beansAPI.createNode( MY_LABEL );
                 node.setProperty( key, "value" );
-                index = beansAPI.schema().indexFor( label ).on( key ).create();
+                index = beansAPI.schema().indexFor( MY_LABEL ).on( key ).create();
                 tx.success();
             }
             finally
             {
                 tx.finish();
             }
-            beansAPI.schema().awaitIndexOnline( index, 10, SECONDS );
+            waitForIndex( beansAPI, index );
         }
 
         // WHEN
         Transaction tx = beansAPI.beginTx();
         try
         {
-            Node node = beansAPI.createNode( label );
+            Node node = beansAPI.createNode( MY_LABEL );
             node.setProperty( key, "other value" );
             index.drop();
             tx.success();
@@ -84,15 +83,20 @@ public class IndexingAcceptanceTest
         }
 
         // THEN
-        assertEquals( emptySetOf( IndexDefinition.class ), asSet( beansAPI.schema().getIndexes( label ) ) );
+        tx = beansAPI.beginTx();
         try
         {
+            assertEquals( emptySetOf( IndexDefinition.class ), asSet( beansAPI.schema().getIndexes( MY_LABEL ) ) );
             beansAPI.schema().getIndexState( index );
             fail( "Should not succeed" );
         }
         catch ( NotFoundException e )
         {
-            assertThat( e.getMessage(), CoreMatchers.containsString( label.name() ) );
+            assertThat( e.getMessage(), containsString( MY_LABEL.name() ) );
+        }
+        finally
+        {
+            tx.finish();
         }
     }
     
@@ -119,21 +123,21 @@ public class IndexingAcceptanceTest
             IndexDefinition indexDefinition;
             try
             {
-                myNode = beansAPI.createNode( Labels.MY_LABEL );
+                myNode = beansAPI.createNode( MY_LABEL );
                 myNode.setProperty( "pad0", true );
                 myNode.setProperty( "pad1", true );
                 myNode.setProperty( "pad2", true );
                 // Use a small long here which will only occupy one property block
                 myNode.setProperty( "key", smallValue );
 
-                indexDefinition = beansAPI.schema().indexFor( Labels.MY_LABEL ).on( "key" ).create();
+                indexDefinition = beansAPI.schema().indexFor( MY_LABEL ).on( "key" ).create();
                 tx.success();
             }
             finally
             {
                 tx.finish();
             }
-            beansAPI.schema().awaitIndexOnline( indexDefinition, 10, SECONDS );
+            waitForIndex( beansAPI, indexDefinition );
         }
 
         // WHEN
@@ -150,10 +154,8 @@ public class IndexingAcceptanceTest
         }
 
         // THEN
-        assertEquals( asSet( myNode ),
-                      asUniqueSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key", bigValue ) ) );
-        assertEquals( emptySetOf( Node.class ),
-                      asUniqueSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key", smallValue ) ) );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "key", bigValue, beansAPI ), containsOnly( myNode ) );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "key", smallValue, beansAPI ), isEmpty() );
     }
     
     @Test
@@ -174,21 +176,21 @@ public class IndexingAcceptanceTest
                 myNode.setProperty( "key0", true );
                 myNode.setProperty( "key1", true );
 
-                indexDefinition = beansAPI.schema().indexFor( Labels.MY_LABEL ).on( "key2" ).create();
+                indexDefinition = beansAPI.schema().indexFor( MY_LABEL ).on( "key2" ).create();
                 tx.success();
             }
             finally
             {
                 tx.finish();
             }
-            beansAPI.schema().awaitIndexOnline( indexDefinition, 10, SECONDS );
+            waitForIndex( beansAPI, indexDefinition );
         }
+        Node myNode = beansAPI.getNodeById( id );
         {
             Transaction tx = beansAPI.beginTx();
             try
             {
-                Node myNode = beansAPI.getNodeById( id );
-                myNode.addLabel( Labels.MY_LABEL );
+                myNode.addLabel( MY_LABEL );
                 myNode.setProperty( "key2", LONG_STRING );
                 myNode.setProperty( "key3", LONG_STRING );
 
@@ -201,11 +203,9 @@ public class IndexingAcceptanceTest
         }
 
         // Then
-        assertEquals( LONG_STRING, beansAPI.getNodeById( id ).getProperty( "key2" ) );
-        assertEquals( LONG_STRING, beansAPI.getNodeById( id ).getProperty( "key3" ) );
-
-        Node foundNode = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key2", LONG_STRING ) );
-        assertEquals( id, foundNode.getId() );
+        assertThat( myNode, inTx( beansAPI, hasProperty( "key2" ).withValue( LONG_STRING ) ) );
+        assertThat( myNode, inTx( beansAPI, hasProperty( "key3" ).withValue( LONG_STRING ) ) );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "key2", LONG_STRING, beansAPI ), containsOnly( myNode ) );
     }
 
     @Test
@@ -213,13 +213,10 @@ public class IndexingAcceptanceTest
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), Labels.MY_LABEL );
+        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), MY_LABEL );
 
         // When
-        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
-
-        // Then
-        assertEquals( result, myNode );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
     }
 
     @Test
@@ -227,14 +224,11 @@ public class IndexingAcceptanceTest
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), Labels.MY_LABEL );
-        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), MY_LABEL );
+        createIndex( beansAPI, MY_LABEL, "name" );
 
         // When
-        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
-
-        // Then
-        assertEquals( result, myNode );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
     }
 
     @Test
@@ -244,26 +238,21 @@ public class IndexingAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
 
         // When/Then
-        Iterable<Node> result = beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" );
-        assertEquals( emptySetOf( Node.class ), asSet( result ) );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "name", "Hawking", beansAPI ), isEmpty() );
     }
-    
+
     @Test
     public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction() throws Exception
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        createIndex( beansAPI, Labels.MY_LABEL, "name" );
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+        createIndex( beansAPI, MY_LABEL, "name" );
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
 
-        // WHEN
-        Set<Node> firstResult = asSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
-        Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), Labels.MY_LABEL );
-        Set<Node> secondResult = asSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Taylor" ) );
-
-        // THEN
-        assertEquals( asSet( firstNode ), firstResult );
-        assertEquals( asSet( secondNode ), secondResult );
+        // WHEN THEN
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias", beansAPI ), containsOnly( firstNode ) );
+        Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), MY_LABEL );
+        assertThat( findNodesByLabelAndProperty( MY_LABEL, "name", "Taylor", beansAPI ), containsOnly( secondNode ) );
     }
 
     @Test
@@ -271,15 +260,15 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+        createIndex( beansAPI, MY_LABEL, "name" );
 
         // WHEN
         Transaction tx = beansAPI.beginTx();
 
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
         firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
         tx.finish();
 
@@ -293,15 +282,15 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        createIndex( beansAPI, Labels.MY_LABEL, "name" );
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+        createIndex( beansAPI, MY_LABEL, "name" );
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
 
         // WHEN
         Transaction tx = beansAPI.beginTx();
 
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
         firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
         tx.finish();
 
@@ -315,15 +304,15 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        createIndex( beansAPI, Labels.MY_LABEL, "name" );
-        createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+        createIndex( beansAPI, MY_LABEL, "name" );
+        createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
 
         // WHEN
         Transaction tx = beansAPI.beginTx();
 
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
-        createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
+        createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
         tx.finish();
 
@@ -336,11 +325,8 @@ public class IndexingAcceptanceTest
     
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    
-    private enum Labels implements Label
-    {
-        MY_LABEL, MY_OTHER_LABEL
-    }
+
+    private Label MY_LABEL = DynamicLabel.label( "MY_LABEL" );
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
     {
@@ -357,22 +343,5 @@ public class IndexingAcceptanceTest
         {
             tx.finish();
         }
-    }
-
-    private IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
-    {
-        Transaction tx = beansAPI.beginTx();
-        IndexDefinition indexDef;
-        try
-        {
-            indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-        beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
-        return indexDef;
     }
 }

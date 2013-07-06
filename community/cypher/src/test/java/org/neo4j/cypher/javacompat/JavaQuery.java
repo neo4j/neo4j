@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -33,6 +31,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
+
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class JavaQuery
 {
@@ -69,6 +69,7 @@ public class JavaQuery
 
         // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
+        tx = db.beginTx();
         ExecutionResult result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // END SNIPPET: execute
         // START SNIPPET: columns
@@ -83,6 +84,7 @@ public class JavaQuery
             nodeResult = node + ": " + node.getProperty( "name" );
         }
         // END SNIPPET: items
+        tx.finish();
         // the result is now empty, get a new one
         result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // START SNIPPET: rows

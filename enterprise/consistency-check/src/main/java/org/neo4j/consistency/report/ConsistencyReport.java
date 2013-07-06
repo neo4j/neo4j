@@ -30,7 +30,6 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 
 public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
 {
@@ -76,23 +76,23 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
                                 RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
-        void forRelationshipTypeName( RelationshipTypeTokenRecord label,
+        void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
                                       RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
         void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
                                             RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
         void forLabelName( LabelTokenRecord label,
-                           RecordCheck<LabelTokenRecord, LabelNameConsistencyReport> checker );
+                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
         void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel,
-                           RecordCheck<LabelTokenRecord, LabelNameConsistencyReport> checker );
+                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
         void forPropertyKey( PropertyKeyTokenRecord key,
-                             RecordCheck<PropertyKeyTokenRecord, PropertyKeyConsistencyReport> checker );
+                             RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
 
         void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
-                                   RecordCheck<PropertyKeyTokenRecord, PropertyKeyConsistencyReport> checker );
+                                   RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
 
         void forDynamicBlock( RecordType type, DynamicRecord record,
                               RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
@@ -159,18 +159,34 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         @Documented
         @IncrementalOnly
         void relationshipNotUpdated();
+
+        /** The label token record is not in use. */
+        @Documented
+        void labelNotInUse( LabelTokenRecord label );
+
+        /** The label token record is referenced twice from the same node. */
+        @Documented
+        void labelDuplicate( long labelId );
+
+        /** The label token record next block is referencing a record that was already visited as part of this chain. */
+        @Documented
+        void cyclicDynamicLabelRecords( DynamicRecord record );
+
+        /** The label token record is not in use. */
+        @Documented
+        void dynamicLabelRecordNotInUse( DynamicRecord record );
     }
 
     interface RelationshipConsistencyReport
             extends PrimitiveConsistencyReport<RelationshipRecord, RelationshipConsistencyReport>
     {
-        /** The label field has an illegal value. */
+        /** The relationship type field has an illegal value. */
         @Documented
-        void illegalLabel();
+        void illegalRelationshipType();
 
-        /** The label record is not in use. */
+        /** The relationship type record is not in use. */
         @Documented
-        void labelNotInUse( RelationshipTypeTokenRecord label );
+        void relationshipTypeNotInUse( RelationshipTypeTokenRecord relationshipType );
 
         /** The source node field has an illegal value. */
         @Documented
@@ -404,14 +420,14 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         void nameMultipleOwners( RelationshipTypeTokenRecord otherOwner );
     }
 
-    interface LabelNameConsistencyReport extends NameConsistencyReport<LabelTokenRecord, LabelNameConsistencyReport>
+    interface LabelTokenConsistencyReport extends NameConsistencyReport<LabelTokenRecord, LabelTokenConsistencyReport>
     {
         /** The string record referred from this label name is also referred from a another label name. */
         @Documented
         void nameMultipleOwners( LabelTokenRecord otherOwner );
     }
 
-    interface PropertyKeyConsistencyReport extends NameConsistencyReport<PropertyKeyTokenRecord, PropertyKeyConsistencyReport>
+    interface PropertyKeyTokenConsistencyReport extends NameConsistencyReport<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport>
     {
         /** The string record referred from this key is also referred from a another key. */
         @Documented
@@ -460,7 +476,7 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         @Documented
         void nextMultipleOwners( PropertyRecord otherOwner );
 
-        /** The next block of this record is also referenced by a relationship label. */
+        /** The next block of this record is also referenced by a relationship type. */
         @Documented
         void nextMultipleOwners( RelationshipTypeTokenRecord otherOwner );
 

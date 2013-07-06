@@ -23,7 +23,7 @@ import expressions.{Literal, Expression}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import values.KeyToken
@@ -229,19 +229,19 @@ case class True() extends Predicate {
   def symbolTableDependencies = Set()
 }
 
-case class Has(identifier: Expression, propertyName: String) extends Predicate {
+case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = identifier(m) match {
-    case pc: Node         => state.query.nodeOps.hasProperty(pc, propertyName)
-    case pc: Relationship => state.query.relationshipOps.hasProperty(pc, propertyName)
+    case pc: Node         => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
+    case pc: Relationship => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
     case null             => false
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
-  override def toString(): String = "hasProp(" + propertyName + ")"
+  override def toString: String = "hasProp(" + propertyKey.name + ")"
 
   def containsIsNull = false
 
-  def rewrite(f: (Expression) => Expression) = Has(identifier.rewrite(f), propertyName)
+  def rewrite(f: (Expression) => Expression) = Has(identifier.rewrite(f), propertyKey.rewrite(f))
 
   def children = Seq(identifier)
 
@@ -330,7 +330,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
     val queryCtx       = state.query
 
     val labelId = try {
-      label.getId(state)
+      label.getOrCreateId(state.query)
     } catch {
       // If we are running in a query were we can't write changes,
       // just return false for this predicate.

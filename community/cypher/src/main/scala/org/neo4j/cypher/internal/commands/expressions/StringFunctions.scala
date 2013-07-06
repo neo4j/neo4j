@@ -45,20 +45,20 @@ trait StringHelper {
     case _         => throw new CypherTypeException("Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString))
   }
 
-  protected def props(x: PropertyContainer, q: QueryContext): String = {
+  protected def props(x: PropertyContainer, qtx: QueryContext): String = {
 
     val keyValStrings = x match {
-      case n: Node         => q.nodeOps.propertyKeys(n).map(key => key + ":" + text(q.nodeOps.getProperty(n, key), q))
-      case r: Relationship => q.relationshipOps.propertyKeys(r).map(key => key + ":" + text(q.relationshipOps.getProperty(r, key), q))
+      case n: Node         => qtx.nodeOps.propertyKeyIds(n).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.nodeOps.getProperty(n, pkId), qtx))
+      case r: Relationship => qtx.relationshipOps.propertyKeyIds(r).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.relationshipOps.getProperty(r, pkId), qtx))
     }
 
     keyValStrings.mkString("{", ",", "}")
   }
 
-  protected def text(a: Any, ctx: QueryContext): String = a match {
-    case x: Node            => x.toString + props(x, ctx)
-    case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, ctx)
-    case IsCollection(coll) => coll.map(elem => text(elem, ctx)).mkString("[", ",", "]")
+  protected def text(a: Any, qtx: QueryContext): String = a match {
+    case x: Node            => x.toString + props(x, qtx)
+    case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, qtx)
+    case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
     case v: KeyToken        => v.name
     case Some(x)            => x.toString

@@ -24,47 +24,49 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class StoreTransactionContext implements TransactionContext
+public class StoreTransactionContext implements KernelTransaction
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final AbstractTransactionManager transactionManager;
     private final NeoStore neoStore;
     private final IndexingService indexingService;
     private final LabelTokenHolder labelTokenHolder;
-    private final NodeManager nodeManager;
     private final PersistenceManager persistenceManager;
 
     public StoreTransactionContext( AbstractTransactionManager transactionManager,
                                     PersistenceManager persistenceManager,
                                     PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                    NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
+                                    NeoStore neoStore, IndexingService indexingService )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;
-        this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        return new StoreStatementContext( propertyKeyTokenHolder, labelTokenHolder, nodeManager,
-                                          new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
-                                          indexingService, new IndexReaderFactory.Caching( indexingService ) );
+        StoreStatementOperations context = new StoreStatementOperations( propertyKeyTokenHolder, labelTokenHolder,
+                new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
+                indexingService );
+        return new StatementOperationParts( context, context, context, context, context, null, null, context )
+            .additionalPart( AuxiliaryStoreOperations.class, context );
     }
 
     @Override
@@ -123,5 +125,13 @@ public class StoreTransactionContext implements TransactionContext
         {
             throw new TransactionFailureException( e );
         }
+    }
+
+    @Override
+    public StatementState newStatementState()
+    {
+        WritableStatementState result = new WritableStatementState();
+        result.provide( new IndexReaderFactory.Caching( indexingService ) );
+        return result;
     }
 }

@@ -27,66 +27,71 @@ import org.neo4j.cypher.internal.helpers.{MapSupport, IsMap}
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.{QueryContext, Operations}
 
 case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    implicit val s = state
+    val qtx = state.query
 
-    /*Find the property container we'll be working on*/
-    val pc = element(context) match {
-      case x: PropertyContainer => x
-      case x                    =>
-        throw new CypherTypeException("Expected %s to be a node or a relationship, but it was :`%s`".format(element, x))
-    }
-
-    def setProperties(map:Map[String, Any]) {
-      /*Set all map values on the property container*/
-      map.foreach(kv => {
-        kv match {
-          case (k, v) =>
-            (v, pc) match {
-              case (null, r: Relationship) => state.query.relationshipOps.removeProperty(r, k)
-              case (null, n: Node)         => state.query.nodeOps.removeProperty(n, k)
-              case (_, n: Node)            => state.query.nodeOps.setProperty(n, k, makeValueNeoSafe(v))
-              case (_, r: Relationship)    => state.query.relationshipOps.setProperty(r, k, makeValueNeoSafe(v))
-            }
-        }
-      })
-
-      /*Remove all other properties from the property container*/
-      pc match {
-        case n:Node=> state.query.nodeOps.propertyKeys(n).foreach {
-          case k if map.contains(k) => //Do nothing
-          case k                    =>
-            state.query.nodeOps.removeProperty(n, k)
-        }
-
-        case r:Relationship=> state.query.relationshipOps.propertyKeys(r).foreach {
-          case k if map.contains(k) => //Do nothing
-          case k                    =>
-            state.query.relationshipOps.removeProperty(r, k)
-        }
-      }
-    }
-
-    /*Make the map expression look like a map*/
-    mapExpression(context) match {
-      case IsMap(createMapFrom) => setProperties(createMapFrom(state.query))
+    /* Make the map expression look like a map */
+    val map = mapExpression(context)(state) match {
+      case IsMap(createMapFrom) => propertyKeyMap(qtx, createMapFrom(state.query))
       case x                    =>
         throw new CypherTypeException("Expected %s to be a map, but it was :`%s`".format(element, x))
+    }
+
+    /*Find the property container we'll be working on*/
+    element(context)(state) match {
+      case n: Node         => setProperties(qtx, qtx.nodeOps, n, map)
+      case r: Relationship => setProperties(qtx, qtx.relationshipOps, r, map)
+      case x               =>
+        throw new CypherTypeException("Expected %s to be a node or a relationship, but it was :`%s`".format(element, x))
     }
 
     Iterator(context)
   }
 
+  def propertyKeyMap(qtx: QueryContext, map: Map[String, Any]): Map[Long, Any] = {
+    var builder = Map.newBuilder[Long, Any]
+
+    for ( (k,v) <- map ) {
+      if ( null == v ) {
+        val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
+        if ( optPropertyKeyId.isDefined ) {
+          builder += optPropertyKeyId.get -> v
+        }
+      }
+      else {
+        builder += qtx.getOrCreatePropertyKeyId(k) -> v
+      }
+    }
+
+    builder.result()
+  }
+
+
+  def setProperties[T <: PropertyContainer](qtx: QueryContext, ops: Operations[T], target: T, map: Map[Long, Any]) {
+    /*Set all map values on the property container*/
+    for ( (k, v) <- map) {
+      if (null == v)
+        ops.removeProperty(target, k)
+      else
+        ops.setProperty(target, k, makeValueNeoSafe(v))
+    }
+
+    /*Remove all other properties from the property container*/
+    for ( propertyKeyId <- ops.propertyKeyIds(target) if !map.contains(propertyKeyId) ) {
+      ops.removeProperty(target, propertyKeyId)
+    }
+  }
 
   def identifiers = Nil
 
   def children = Seq(element, mapExpression)
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     element.evaluateType(MapType(), symbols)

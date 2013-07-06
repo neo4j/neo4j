@@ -31,6 +31,11 @@ import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.mutation.CreateRelationship
+import org.neo4j.cypher.internal.parser.OnAction
+import org.neo4j.cypher.internal.commands.expressions.Nullable
+import org.neo4j.cypher.internal.commands.expressions.Property
+import scala.collection.mutable
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {

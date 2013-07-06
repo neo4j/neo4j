@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -32,15 +32,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.TargetDirectory.forTest;
 
+@Ignore("2013-07-02 AT Should probably throw away. Check with Mattias")
 public class SchemaIndexAcceptanceRealFsTest
 {
     @Test
@@ -48,18 +47,18 @@ public class SchemaIndexAcceptanceRealFsTest
     {
         // GIVEN
         String propertyKey = "key";
-        IndexDefinition index = createIndex( label, propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
         createSomeData( label, propertyKey );
-        
+
         ResourceIterable<Node> result = db.findNodesByLabelAndProperty( label, propertyKey, "yeah" );
         ResourceIterator<Node> iterator = result.iterator();
         iterator.close();
 
         // WHEN
         dropIndex( index );
-        
+
         // THEN
-        assertEquals( emptySetOf( IndexDefinition.class ), asSet( db.schema().getIndexes() ) );
+        assertThat( getIndexes( db, label ), isEmpty() );
     }
  
     private GraphDatabaseService db;
@@ -89,16 +88,6 @@ public class SchemaIndexAcceptanceRealFsTest
         indexDefinition.drop();
         tx.success();
         tx.finish();
-    }
-
-    private IndexDefinition createIndex( Label label, String propertyKey )
-    {
-        Transaction tx = db.beginTx();
-        IndexDefinition indexDefinition = db.schema().indexFor( label ).on( propertyKey ).create();
-        tx.success();
-        tx.finish();
-        db.schema().awaitIndexOnline( indexDefinition, 1, MINUTES );
-        return indexDefinition;
     }
 
     private void createSomeData( Label label, String propertyKey )
