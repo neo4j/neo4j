@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.operations.EntityOperations;
 import org.neo4j.kernel.api.operations.KeyOperations;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.ReadOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.api.operations.WriteOperations;

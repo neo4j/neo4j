@@ -63,9 +63,8 @@ public class LockingTransactionContext extends DelegatingTransactionContext
                 parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
         
-        parts.replace(
+        return parts.override(
                 null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, null );
-        return parts;
     }
     
     @Override

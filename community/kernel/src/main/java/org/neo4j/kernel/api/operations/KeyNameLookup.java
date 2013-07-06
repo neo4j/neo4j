@@ -27,10 +27,10 @@ public class KeyNameLookup
     private final KeyReadOperations keyReadOperations;
     private final StatementState state;
 
-    public KeyNameLookup( StatementState state, KeyReadOperations keyReadOperations )
+    public KeyNameLookup( StatementState state, KeyReadOperations context )
     {
         this.state = state;
-        this.keyReadOperations = keyReadOperations;
+        this.keyReadOperations = context;
     }
 
     /**

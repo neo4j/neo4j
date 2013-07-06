@@ -57,7 +57,7 @@ public interface KernelAPI
      * @return a new {@link StatementOperations} used for read operations not associated
      * with any transaction.
      */
-    StatementOperations statementOperations();
+    StatementOperationParts statementOperations();
 
-    StatementOperations readOnlyStatementOperations();
+    StatementOperationParts readOnlyStatementOperations();
 }

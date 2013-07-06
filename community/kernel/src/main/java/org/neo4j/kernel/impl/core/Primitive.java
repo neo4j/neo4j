@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.api.CacheUpdateListener;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -57,11 +58,18 @@ public abstract class Primitive implements SizeOfObject
         return ensurePropertiesLoaded( state, loader, updateListener );
     }
 
-    public Property getProperty( StatementState state, CacheLoader<Iterator<Property>> loader, CacheUpdateListener updateListener,
-            int key )
+    public Property getProperty( StatementState state, CacheLoader<Iterator<Property>> loader,
+            CacheUpdateListener updateListener, int key )
     {
         ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
+    }
+    
+    public PrimitiveLongIterator getPropertyKeys( StatementState state, CacheLoader<Iterator<Property>> cacheLoader,
+            CacheUpdateListener updateListener )
+    {
+        ensurePropertiesLoaded( state, cacheLoader, updateListener );
+        return getCachedPropertyKeys();
     }
     
     private Iterator<Property> ensurePropertiesLoaded( StatementState state, CacheLoader<Iterator<Property>> loader,
@@ -97,6 +105,8 @@ public abstract class Primitive implements SizeOfObject
     protected abstract Iterator<Property> getCachedProperties();
     
     protected abstract Property getCachedProperty( int key );
+    
+    protected abstract PrimitiveLongIterator getCachedPropertyKeys();
 
     protected abstract boolean hasLoadedProperties();
 

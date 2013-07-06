@@ -34,7 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -159,10 +159,10 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            StatementOperations ctx = bridge.getCtxForWriting();
+            StatementOperationParts ctx = bridge.getCtxForWriting();
             StatementState state = bridge.statementForWriting();
-            labelId = ctx.labelGetOrCreateForName( state, "Person" );
-            propertyKeyId = ctx.propertyKeyGetOrCreateForName( state, "name" );
+            labelId = ctx.keyWriteOperations().labelGetOrCreateForName( state, "Person" );
+            propertyKeyId = ctx.keyWriteOperations().propertyKeyGetOrCreateForName( state, "name" );
             ctx.close( state );
             tx.success();
         }

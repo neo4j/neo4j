@@ -50,7 +50,7 @@ public abstract class KernelIntegrationTest
     protected StatementState newTransaction()
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
+        statement = statementContextProvider.getCtxForWriting().asStatementOperations();
         return (state = statementContextProvider.statementForWriting());
     }
     
@@ -61,7 +61,7 @@ public abstract class KernelIntegrationTest
 
     protected StatementOperations readOnlyContext()
     {
-        StatementOperations context = statementContextProvider.getCtxForReading();
+        StatementOperations context = statementContextProvider.getCtxForReading().asStatementOperations();
         state = statementContextProvider.statementForReading();
         return context;
     }

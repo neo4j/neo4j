@@ -19,10 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import static java.util.Arrays.asList;
-import static java.util.EnumSet.allOf;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +36,12 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+
+import static java.util.Arrays.asList;
+import static java.util.EnumSet.allOf;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -531,6 +533,16 @@ public abstract class IteratorUtil
     public static <T> Set<T> asSet( Iterator<T> iterator )
     {
         return addToCollection( iterator, new HashSet<T>() );
+    }
+    
+    public static Set<Long> asSet( PrimitiveLongIterator iterator )
+    {
+        Set<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
+        }
+        return set;
     }
 
     /**

@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperationParts
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
@@ -82,7 +83,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .resolveDependency(classOf[ThreadToStatementContextBridge])
     .statementForWriting()
     
-  private def createQueryContext(tx: Transaction, ctx: StatementOperations, state: StatementState) = {
+  private def createQueryContext(tx: Transaction, ctx: StatementOperationParts, state: StatementState) = {
     new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx, state)
   }
 
@@ -102,7 +103,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
       var touched = false
-      var statementContext: StatementOperations = null
+      var statementContext: StatementOperationParts = null
       var state: StatementState = null
       var queryContext: QueryContext = null
       val tx = graph.beginTx()
@@ -118,7 +119,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // get plan or build it
         planCache.getOrElseUpdate(query, () => {
           touched = true
-          val planContext = new TransactionBoundPlanContext(statementContext, state, graph)
+          val planContext = new TransactionBoundPlanContext(statementContext.keyReadOperations, statementContext.schemaReadOperations, state, graph)
           planBuilder.build(planContext, cachedQuery)
         })
       }
@@ -156,7 +157,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       verify(query)
       val statementContext = getStatementContext
       val queryContext = createQueryContext(tx, statementContext, getCakeState)
-      val planContext = new TransactionBoundPlanContext(statementContext, getCakeState, graph)
+      val planContext = new TransactionBoundPlanContext(statementContext.keyReadOperations, statementContext.schemaReadOperations, getCakeState, graph)
       planBuilder.build(planContext, query).execute(queryContext, params)
     }
     catch {
