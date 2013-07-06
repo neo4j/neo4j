@@ -21,16 +21,19 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Expression, Collection, Property, Identifier}
-import org.neo4j.cypher.SyntaxException
+import expressions.{Expression, Property, Identifier}
 
 trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[Seq[UpdateAction]]=
     rep(foreach | set | remove | delete) ^^ { x => x.flatten }
 
   private def foreach: Parser[Seq[UpdateAction]] = FOREACH ~> parens( identity ~ IN ~ expression ~ (":" | "|") ~ opt(createStart) ~ opt(updates) ) ^^ {
-    case id ~ _ ~ collection ~ _ ~ creates ~ innerUpdates =>
-      val createCmds: Seq[UpdateAction] = creates.toSeq.map(_._1.map(_.asInstanceOf[UpdatingStartItem].updateAction)).flatten
+    case id ~ in ~ collection ~ _ ~ creates ~ innerUpdates =>
+
+      val createCmds: Seq[UpdateAction] = creates.getOrElse(StartAst()).startItems.collect {
+        case x: UpdatingStartItem => x.updateAction
+      }
+
       val updateCmds = innerUpdates.toSeq.flatten.toSeq
 
       Seq(ForeachAction(collection, id, createCmds ++ updateCmds))
