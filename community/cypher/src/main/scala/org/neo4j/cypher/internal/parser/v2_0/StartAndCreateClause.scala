@@ -23,24 +23,33 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.mutation.{MergeNodeAction, RelationshipEndpoint, CreateNode, CreateRelationship}
 import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation, ParsedNamedPath, AbstractPattern}
 
+case class StartAst(startItems: Seq[StartItem]=Seq.empty,
+                    namedPaths: Seq[NamedPath]=Seq.empty,
+                    merge: Seq[MergeAst]=Seq.empty) {
+  def isEmpty: Boolean = startItems.isEmpty && namedPaths.isEmpty && merge.isEmpty
+  def nonEmpty: Boolean = !isEmpty
+
+  def updateActions: Seq[MergeNodeAction] = merge.flatMap(_.nextStep())
+}
+
 trait StartAndCreateClause extends Base with Expressions with CreateUnique with Merge {
-  def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart
+  def start: Parser[StartAst] = createStart | readStart
 
-  def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = START ~> commaList(startBit) ^^ (x => (x, Seq()))
+  def readStart: Parser[StartAst] = START ~> commaList(startBit) ^^ (x => StartAst(startItems = x))
 
-  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = merge | createUnique | create
+  def createStart: Parser[StartAst] = merge | createUnique | create
 
-  def create = CREATE ~> commaList(usePattern(translate)) ^^ {
+  def create : Parser[StartAst] = CREATE ~> commaList(usePattern(translate)) ^^ {
     case matching =>
       val pathsAndItems = matching.flatten.filter(_.isInstanceOf[NamedPathWStartItems]).map(_.asInstanceOf[NamedPathWStartItems])
       val startItems = matching.flatten.filter(_.isInstanceOf[StartItem]).map(_.asInstanceOf[StartItem])
       val namedPaths = pathsAndItems.map(_.path)
       val pathItems = pathsAndItems.flatMap(_.items)
 
-      ((startItems ++ pathItems), namedPaths)
+      StartAst(startItems = (startItems ++ pathItems), namedPaths = namedPaths)
   }
 
   case class NamedPathWStartItems(path:NamedPath, items:Seq[StartItem])

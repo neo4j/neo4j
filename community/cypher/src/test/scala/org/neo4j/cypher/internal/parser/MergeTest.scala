@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import org.neo4j.cypher.internal.parser.v2_0.{Updates, StartAndCreateClause, MatchClause}
+import org.neo4j.cypher.internal.parser.v2_0.{StartAst, Updates, StartAndCreateClause, MatchClause}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
@@ -39,38 +39,33 @@ class MergeTest extends StartAndCreateClause with MatchClause with Updates with 
     def setProperty(id: String) = PropertySetAction(Property(Identifier(id), PropertyKey("property")), TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGive
-      (Seq(
-        MergeAst(Seq(
-          ParsedEntity(node, Identifier(node), Map.empty, Seq.empty, bare = true)),
-          Seq.empty)), NO_PATHS)
+      StartAst(merge = Seq(MergeAst(Seq(
+        ParsedEntity(node, Identifier(node), Map.empty, Seq.empty, bare = true)),
+        Seq.empty)))
 
 
     parsing("MERGE (nodeName {prop:42})") shouldGive
-      (Seq(
-        MergeAst(Seq(
+      StartAst(merge = Seq(MergeAst(Seq(
           ParsedEntity(node, Identifier(node), Map("prop" -> Literal(42)), Seq.empty, bare = false)),
-          Seq.empty)), NO_PATHS)
+          Seq.empty)))
 
 
     parsing("MERGE (nodeName:Label)") shouldGive
-      (Seq(
-        MergeAst(Seq(
+      StartAst(merge = Seq(MergeAst(Seq(
           ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq.empty)), NO_PATHS)
+          Seq.empty)))
 
 
     parsing("MERGE (nodeName:Label) ON CREATE nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(
-        MergeAst(Seq(
+      StartAst(merge = Seq(MergeAst(Seq(
           ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq(OnAction(On.Create, node, Seq(setProperty(node)))))), NO_PATHS)
+          Seq(OnAction(On.Create, node, Seq(setProperty(node)))))))
 
 
     parsing("MERGE (nodeName:Label) ON MATCH nodeName SET nodeName.property = timestamp()") shouldGive
-      (Seq(
-        MergeAst(Seq(
+      StartAst(merge = Seq(MergeAst(Seq(
           ParsedEntity(node, Identifier(node), Map.empty, Seq(labelName), bare = false)),
-          Seq(OnAction(On.Match, node, Seq(setProperty(node)))))), NO_PATHS)
+          Seq(OnAction(On.Match, node, Seq(setProperty(node)))))))
 
 
     parsing(
@@ -81,8 +76,7 @@ ON CREATE a SET a.property = timestamp()
 ON CREATE b SET b.property = timestamp()
 ON MATCH b SET b.property = timestamp()
       """) shouldGive
-      (Seq(
-        MergeAst(Seq(
+      StartAst(merge = Seq(MergeAst(Seq(
           ParsedEntity(A, Identifier(A), Map.empty, Seq(labelName), bare = false),
           ParsedEntity(B, Identifier(B), Map.empty, Seq(labelName), bare = false)),
           Seq(
@@ -90,7 +84,7 @@ ON MATCH b SET b.property = timestamp()
             OnAction(On.Create, A, Seq(setProperty(A))),
             OnAction(On.Create, B, Seq(setProperty(B))),
             OnAction(On.Match, B, Seq(setProperty(B)))
-          ))), NO_PATHS)
+          ))))
   }
 
   def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), PropertyKey(propName))
