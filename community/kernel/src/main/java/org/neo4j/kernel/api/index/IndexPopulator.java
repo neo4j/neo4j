@@ -62,6 +62,16 @@ public interface IndexPopulator
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
     
+    /**
+     * Called then a population failed. The failure string should be stored for future retrieval by
+     * {@link SchemaIndexProvider#getPopulationFailure(long)}. Called before {@link #close(boolean)}
+     * if there was a failure during population.
+     * 
+     * @param failure the description of the failure.
+     * @throws IOException if marking failed.
+     */
+    void markAsFailed( String failure ) throws IOException;
+    
     class Adapter implements IndexPopulator
     {
         @Override
@@ -86,6 +96,11 @@ public interface IndexPopulator
 
         @Override
         public void close( boolean populationCompletedSuccessfully ) throws IOException
+        {
+        }
+
+        @Override
+        public void markAsFailed( String failure )
         {
         }
     }

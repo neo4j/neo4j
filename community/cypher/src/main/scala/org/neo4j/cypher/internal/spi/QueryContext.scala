@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext {
+trait QueryContext extends TokenContext {
 
   def nodeOps: Operations[Node]
 
@@ -49,10 +49,6 @@ trait QueryContext {
 
   def getOrCreateLabelId(labelName: String): Long
 
-  def getLabelId(labelName: String): Option[Long]
-
-  def getLabelName(id: Long): String
-
   def getLabelsForNode(node: Long): Iterator[Long]
 
   def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
@@ -62,8 +58,6 @@ trait QueryContext {
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
 
   def getOrCreatePropertyKeyId(propertyKey: String): Long
-
-  def getPropertyKeyId(propertyKey: String): Long
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long)
 
@@ -86,6 +80,11 @@ trait QueryContext {
   def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
 
   def dropUniqueConstraint(labelId:Long, propertyKeyId:Long)
+
+  /**
+   * This should not be used. We'll remove sooner (or later). Don't do it.
+   */
+  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 }
 
 trait LockingQueryContext extends QueryContext {
@@ -95,13 +94,15 @@ trait LockingQueryContext extends QueryContext {
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
-  def setProperty(obj: T, propertyKey: String, value: Any)
+  def setProperty(obj: T, propertyKeyId: Long, value: Any)
 
-  def removeProperty(obj: T, propertyKey: String)
+  def removeProperty(obj: T, propertyKeyId: Long)
 
-  def getProperty(obj: T, propertyKey: String): Any
+  def getProperty(obj: T, propertyKeyId: Long): Any
 
-  def hasProperty(obj: T, propertyKey: String): Boolean
+  def hasProperty(obj: T, propertyKeyId: Long): Boolean
+
+  def propertyKeyIds(obj: T): Iterator[Long]
 
   def propertyKeys(obj: T): Iterable[String]
 

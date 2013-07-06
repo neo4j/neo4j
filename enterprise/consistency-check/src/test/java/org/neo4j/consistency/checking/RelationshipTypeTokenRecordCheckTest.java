@@ -19,12 +19,13 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static org.mockito.Mockito.verify;
 
 public class RelationshipTypeTokenRecordCheckTest extends
         RecordCheckTestBase<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
@@ -65,7 +66,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     {
         // given
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        DynamicRecord name = addRelationshipTypeName( notInUse( new DynamicRecord( 6 ) ) );
         label.setNameId( (int) name.getId() );
 
         // when
@@ -81,7 +82,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     {
         // given
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
+        DynamicRecord name = addRelationshipTypeName( inUse( new DynamicRecord( 6 ) ) );
         label.setNameId( (int) name.getId() );
 
         // when
@@ -100,7 +101,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         // given
         RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
         RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
+        DynamicRecord name = addRelationshipTypeName( inUse( new DynamicRecord( 6 ) ) );
         name.setData( new byte[1] );
         newRecord.setNameId( (int) name.getId()  );
 
@@ -117,7 +118,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         // given
         RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
         RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
+        DynamicRecord name = addRelationshipTypeName( notInUse( new DynamicRecord( 6 ) ) );
         newRecord.setNameId( (int) name.getId()  );
 
         // when

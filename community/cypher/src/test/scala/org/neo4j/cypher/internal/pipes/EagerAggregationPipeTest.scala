@@ -30,6 +30,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
 import collection.mutable.{Map => MutableMap}
 import java.lang.{Iterable => JIterable}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
@@ -78,12 +79,12 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val returnItems = createReturnItemsFor()
     val grouping = Map(
       "count(*)" -> CountStar(),
-      "avg(name.age)" -> Avg(Property(Identifier("name"), "age")),
-      "collect(name.age)" -> Collect(Property(Identifier("name"), "age")),
-      "count(name.age)" -> Count(Property(Identifier("name"), "age")),
-      "max(name.age)" -> Max(Property(Identifier("name"), "age")),
-      "min(name.age)" -> Min(Property(Identifier("name"), "age")),
-      "sum(name.age)" -> Sum(Property(Identifier("name"), "age"))
+      "avg(name.age)" -> Avg(Property(Identifier("name"), PropertyKey("age"))),
+      "collect(name.age)" -> Collect(Property(Identifier("name"), PropertyKey("age"))),
+      "count(name.age)" -> Count(Property(Identifier("name"), PropertyKey("age"))),
+      "max(name.age)" -> Max(Property(Identifier("name"), PropertyKey("age"))),
+      "min(name.age)" -> Min(Property(Identifier("name"), PropertyKey("age"))),
+      "sum(name.age)" -> Sum(Property(Identifier("name"), PropertyKey("age")))
     )
 
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)

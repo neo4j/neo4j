@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.Traversal.postorderBreadthFirst;
-import static org.neo4j.kernel.Traversal.postorderDepthFirst;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,10 +27,22 @@ import java.util.Stack;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.Traversal.postorderBreadthFirst;
+import static org.neo4j.kernel.Traversal.postorderDepthFirst;
+import static org.neo4j.kernel.Traversal.traversal;
 
 public class TreeGraphTest extends AbstractTestBase
 {
@@ -112,7 +116,17 @@ public class TreeGraphTest extends AbstractTestBase
                 "9", "A", "B", "C", "D" ) ) );
         levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
         levels.push( new HashSet<String>( asList( "1" ) ) );
-        assertLevels( traverser, levels );
+
+        Transaction tx = beginTx();
+        try
+        {
+            assertLevels( traverser, levels );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @Test
@@ -134,11 +148,14 @@ public class TreeGraphTest extends AbstractTestBase
         Traverser traverser = traversal().order( postorderDepthFirst() ).traverse( node( "1" ) );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
+        Transaction tx = beginTx();
         for ( Path pos : traverser )
         {
             encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
             assertEquals( expectedDepth( ( 12 - i++ ) ), pos.length() );
         }
+        tx.success();
+        tx.finish();
         assertEquals( 13, i );
 
         assertTrue( encounteredNodes.indexOf( "5" ) < encounteredNodes.indexOf( "2" ) );
@@ -164,7 +181,16 @@ public class TreeGraphTest extends AbstractTestBase
         levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
         levels.push( new HashSet<String>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
-        assertLevels( traverser, levels );
+        Transaction tx = beginTx();
+        try
+        {
+            assertLevels( traverser, levels );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private int expectedDepth( int i )

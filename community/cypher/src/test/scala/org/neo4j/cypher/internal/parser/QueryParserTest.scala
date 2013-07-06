@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.QueryParser
+import org.neo4j.cypher.internal.parser.v2_0.{StartAst, QueryParser}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions._
+import org.neo4j.cypher.internal.commands.values.TokenType._
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.expressions.IdFunction
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.expressions.Multiply
 import org.neo4j.cypher.internal.commands.CreateNodeStartItem
@@ -36,10 +38,10 @@ class QueryParserTest extends QueryParser with ParserTest {
     implicit val parserToTest = afterWith
 
     parsing("create (b {age : a.age * 2}) ") shouldGive
-      QueryStart.empty.copy(startItems=Seq(
+      QueryStart.empty.copy(starts=StartAst(startItems = Seq(
         CreateNodeStartItem(
           CreateNode("b",
-            Map("age" -> Multiply(Property(Identifier("a"), "age"), Literal(2.0))), Seq.empty, bare = false))))
+            Map("age" -> Multiply(Property(Identifier("a"), PropertyKey("age")), Literal(2.0))), Seq.empty, bare = false)))))
   }
 
 

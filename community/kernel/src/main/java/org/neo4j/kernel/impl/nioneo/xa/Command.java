@@ -1257,7 +1257,8 @@ public abstract class Command extends XaCommand
                 ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
                 rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
             }
-            return new SchemaRuleCommand( neoStore.getSchemaStore(), indexes, records, rule );
+            return new SchemaRuleCommand( neoStore != null ? neoStore.getSchemaStore() : null,
+                    indexes, records, rule );
         }
     }
     

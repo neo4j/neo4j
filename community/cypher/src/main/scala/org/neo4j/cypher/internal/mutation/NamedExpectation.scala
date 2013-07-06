@@ -90,14 +90,15 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
     val propsOk = expectations.properties.forall {
       case ("*", expression) =>
         getMapFromExpression(expression(ctx)(state)).forall {
-          case (k, value) => ops.getProperty(x, k) == value
+          case (k, value) => state.query.getOptPropertyKeyId(k).exists(ops.getProperty(x, _) == value)
         }
 
-      case (k, _) if !ops.hasProperty(x, k) => false
+      // case (k, _) if !ops.hasProperty(x, state.query.getOrCreatePropertyKeyId(k)) => false
+      case (k, _) if state.query.getOptPropertyKeyId(k).map(!ops.hasProperty(x, _)).getOrElse(true) => false
 
       case (k, exp) =>
         val expectationValue = exp(ctx)(state)
-        val elementValue = ops.getProperty(x, k)
+        val elementValue = ops.getProperty(x, state.query.getPropertyKeyId(k))
 
         (expectationValue, elementValue) match {
           case (IsCollection(l), IsCollection(r)) => l == r
@@ -109,7 +110,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
       case node: Node =>
         val qtx      = state.query
         val nodeId   = node.getId
-        val labelIds = labels.map(_.getId(state))
+        val labelIds = labels.map(_.getOrCreateId(state.query))
         labelIds.forall( qtx.isLabelSetOnNode(_, nodeId) )
       case _ =>
         true

@@ -40,7 +40,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
   @Before def init() {
     builder = new TraversalMatcherBuilder
     tx = graph.beginTx()
-    ctx = new TransactionBoundPlanContext(statementContext, graph)
+    ctx = new TransactionBoundPlanContext(statementContext, cakeState, graph)
   }
 
   @After def cleanup() {

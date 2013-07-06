@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.neo4j.kernel.impl.api.DiffSets;
 
 public final class NodeState extends PropertyContainerState
-
 {
     private DiffSets<Long> labelDiffSets;
 

@@ -21,8 +21,14 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class UnionTest extends DocumentingTestBase with StatisticsChecker {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def graphDescription = List(
     "Lucy:Actor KNOWS Kevin:Actor",
     "Lucy ACTS_IN Cypher:Movie",

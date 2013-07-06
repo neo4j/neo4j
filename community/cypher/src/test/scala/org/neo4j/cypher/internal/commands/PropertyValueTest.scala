@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Identifier, Property}
+import expressions.Identifier
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 class PropertyValueTest extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {
-    val p = Property(Identifier("identifier"), "property")
+    val p = Property(Identifier("identifier"), PropertyKey("property"))
     val ctx = ExecutionContext.from("identifier" -> null)
     val state = QueryStateHelper.empty
 

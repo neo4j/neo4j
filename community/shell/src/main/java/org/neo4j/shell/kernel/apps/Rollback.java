@@ -34,7 +34,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.Variables;
 
 @Service.Implementation(App.class)
-public class Rollback extends ReadOnlyGraphDatabaseApp
+public class Rollback extends NonTransactionProvidingApp
 {
     @Override
     public String getDescription()

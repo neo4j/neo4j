@@ -43,7 +43,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
  */
-public abstract class CommonAbstractStore
+public abstract class CommonAbstractStore implements IdSequence
 {
     public static abstract class Configuration
     {
@@ -337,7 +337,7 @@ public abstract class CommonAbstractStore
      *
      * @return The next free id
      */
-    public long nextId()
+    @Override public long nextId()
     {
         return idGenerator.nextId();
     }

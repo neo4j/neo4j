@@ -24,15 +24,16 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.helpers.IsMap
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
-case class Property(mapExpr: Expression, property: String) extends Expression {
+case class Property(mapExpr: Expression, propertyKey: KeyToken) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null           => null
-    case IsMap(mapFunc) => mapFunc(state.query).apply(property)
+    case IsMap(mapFunc) => mapFunc(state.query).apply(propertyKey.name)
     case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), property))
+  def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
   def children = Seq(mapExpr)
 

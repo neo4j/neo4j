@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
+class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val commands: Seq[UpdateAction])
   extends PipeWithSource(source) with CollectionSupport {
 
   assertNothingIsCreatedWhenItShouldNot()

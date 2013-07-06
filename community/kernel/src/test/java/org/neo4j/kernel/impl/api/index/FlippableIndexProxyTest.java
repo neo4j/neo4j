@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 
@@ -34,7 +33,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
@@ -48,10 +46,10 @@ public class FlippableIndexProxyTest
         IndexProxy actual = mockIndexProxy();
         IndexProxy other = mockIndexProxy();
         FlippableIndexProxy delegate = new FlippableIndexProxy(actual);
-        delegate.setFlipTarget( IndexingService.singleProxy( other ) );
+        delegate.setFlipTarget( singleProxy( other ) );
 
         // WHEN
-        delegate.flip();
+        delegate.flip( noOp(), null );
         delegate.drop().get();
 
         // THEN
@@ -63,7 +61,6 @@ public class FlippableIndexProxyTest
     {
         //GIVEN
         IndexProxy actual = mockIndexProxy();
-        IndexProxy failed = mockIndexProxy();
         IndexProxyFactory indexContextFactory = mock( IndexProxyFactory.class );
 
         FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
@@ -72,7 +69,7 @@ public class FlippableIndexProxyTest
         delegate.close().get();
 
         delegate.setFlipTarget( indexContextFactory );
-        delegate.flip( noOp(), failed);
+        delegate.flip( noOp(), null );
 
         //THEN throws exception
     }
@@ -91,7 +88,7 @@ public class FlippableIndexProxyTest
         //WHEN
         delegate.drop().get();
 
-        delegate.flip( noOp(), failed );
+        delegate.flip( noOp(), singleFailedDelegate( failed ) );
 
         //THEN throws exception
     }
@@ -103,7 +100,7 @@ public class FlippableIndexProxyTest
         final IndexProxy contextBeforeFlip = mockIndexProxy();
         final IndexProxy contextAfterFlip = mockIndexProxy();
         final FlippableIndexProxy flippable = new FlippableIndexProxy( contextBeforeFlip );
-        flippable.setFlipTarget( IndexingService.singleProxy( contextAfterFlip ) );
+        flippable.setFlipTarget( singleProxy( contextAfterFlip ) );
 
         // And given complicated thread race condition tools
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
@@ -172,7 +169,7 @@ public class FlippableIndexProxyTest
                         awaitLatch( triggerFinishFlip );
                         return null;
                     }
-                } );
+                }, null );
                 return null;
             }
         };
@@ -186,6 +183,30 @@ public class FlippableIndexProxyTest
             public Void call() throws Exception
             {
                 return null;
+            }
+        };
+    }
+
+    public static IndexProxyFactory singleProxy( final IndexProxy proxy )
+    {
+        return new IndexProxyFactory()
+        {
+            @Override
+            public IndexProxy create()
+            {
+                return proxy;
+            }
+        };
+    }
+
+    private FailedIndexProxyFactory singleFailedDelegate( final IndexProxy failed )
+    {
+        return new FailedIndexProxyFactory()
+        {
+            @Override
+            public IndexProxy create( Throwable failure )
+            {
+                return failed;
             }
         };
     }

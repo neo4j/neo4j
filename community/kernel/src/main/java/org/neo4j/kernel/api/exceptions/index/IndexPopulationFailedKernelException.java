@@ -24,9 +24,15 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class IndexPopulationFailedKernelException extends KernelException
 {
+    private static final String FORMAT_MESSAGE = "Failed to populate index for labelId %d on propertyKeyId %d";
+
     public IndexPopulationFailedKernelException( IndexDescriptor descriptor, Throwable cause )
     {
-        super( cause, "Failed to populate index for labelId %d on propertyKeyId %d",
-               descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        super( cause, FORMAT_MESSAGE, descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public IndexPopulationFailedKernelException( IndexDescriptor descriptor, String message )
+    {
+        super( FORMAT_MESSAGE + ", due to " + message, descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 }

@@ -47,7 +47,7 @@ import org.neo4j.shell.TextUtil;
  * common apps exist. All classes in those packages which implements the
  * {@link App} interface will be available to execute.
  */
-public abstract class AbstractAppServer extends AbstractServer
+public abstract class AbstractAppServer extends SimpleAppServer
 	implements AppShellServer
 {
     private final Map<String, App> apps = new TreeMap<String, App>();

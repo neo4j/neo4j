@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -37,50 +39,63 @@ public class RemoveOrphanConstraintIndexesOnStartup
 {
     private final AbstractTransactionManager txManager;
     private final StringLogger log;
+    private final ThreadToStatementContextBridge ctxProvider;
 
-    public RemoveOrphanConstraintIndexesOnStartup( AbstractTransactionManager txManager, Logging logging )
+    public RemoveOrphanConstraintIndexesOnStartup( AbstractTransactionManager txManager,
+            ThreadToStatementContextBridge ctxProvider, Logging logging )
     {
         this.txManager = txManager;
+        this.ctxProvider = ctxProvider;
         this.log = logging.getMessagesLog( getClass() );
     }
 
+    @SuppressWarnings( "deprecation" )
     public void perform()
     {
         try
         {
             txManager.begin( ForceMode.unforced );
-            @SuppressWarnings("deprecation")
-            TransactionContext tx = txManager.getTransactionContext();
             boolean success = false;
+            KernelTransaction tx = null;
             try
             {
-                StatementContext context = tx.newStatementContext();
+                tx = txManager.getKernelTransaction();
+                StatementOperations context = ctxProvider.getCtxForWriting();
+                StatementState state = tx.newStatementState();
                 try
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.uniqueIndexesGetAll(); indexes.hasNext(); )
+                    for ( Iterator<IndexDescriptor> indexes = context.uniqueIndexesGetAll( state );
+                            indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.indexGetOwningUniquenessConstraintId( index ) == null )
+                        if ( context.indexGetOwningUniquenessConstraintId( state, index ) == null )
                         {
-                            context.uniqueIndexDrop( index );
+                            context.uniqueIndexDrop( state, index );
                         }
                     }
                 }
                 finally
                 {
-                    context.close();
+                    context.close( state );
                 }
                 success = true;
             }
             finally
             {
-                if ( success )
+                if ( tx != null )
                 {
-                    tx.commit();
+                    if ( success )
+                    {
+                        tx.commit();
+                    }
+                    else
+                    {
+                        tx.rollback();
+                    }
                 }
                 else
                 {
-                    tx.rollback();
+                    txManager.rollback();
                 }
             }
         }

@@ -34,7 +34,7 @@ import org.neo4j.shell.ShellException;
  * could also (regarding POSIX) move nodes, but it doesn't).
  */
 @Service.Implementation( App.class )
-public class Mv extends GraphDatabaseApp
+public class Mv extends TransactionProvidingApp
 {
     /**
      * Constructs a new "mv" application.

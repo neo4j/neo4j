@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.kernel;
 
+import static org.neo4j.shell.Variables.PROMPT_KEY;
+
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -35,16 +37,17 @@ import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.SimpleAppServer;
 import org.neo4j.shell.Variables;
+import org.neo4j.shell.Welcome;
+import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
-import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
  * graph database service.
  */
-public class GraphDatabaseShellServer extends SimpleAppServer
+public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
     private boolean graphDbCreatedHere;
@@ -76,10 +79,10 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     }
 
     /*
-     * Since we don't know which thread we might happen to run on, we can't trust transactions
-     * to be stored in threads. Instead, we keep them around here, and suspend/resume in
-     * transactions before apps get to run.
-     */
+    * Since we don't know which thread we might happen to run on, we can't trust transactions
+    * to be stored in threads. Instead, we keep them around here, and suspend/resume in
+    * transactions before apps get to run.
+    */
     @Override
     public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException
     {
@@ -87,7 +90,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         try
         {
             return super.interpretLine( clientId, line, out );
-        } finally
+        }
+        finally
         {
             saveTransaction( clientId );
         }
@@ -101,11 +105,13 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             if ( tx == null )
             {
                 transactions.remove( clientId );
-            } else {
+            }
+            else
+            {
                 transactions.put( clientId, tx );
             }
-
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             throw wrapException( e );
         }
@@ -134,8 +140,27 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         session.set( Variables.TITLE_MAX_LENGTH, "40" );
     }
 
+    @Override
+    protected String getPrompt( Session session ) throws ShellException
+    {
+        org.neo4j.graphdb.Transaction transaction = this.getDb().beginTx();
+
+        try
+        {
+            Object rawCustomPrompt = session.get( PROMPT_KEY );
+            String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
+            String output = bashInterpreter.interpret( customPrompt, this, session );
+            transaction.success();
+            return output;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
     private static GraphDatabaseAPI instantiateGraphDb( String path, boolean readOnly,
-                                                            String configFileOrNull )
+                                                        String configFileOrNull )
     {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path ).
@@ -186,14 +211,15 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         {
             try
             {
-                return GraphDatabaseApp.getDisplayName(
+                return TransactionProvidingApp.getDisplayName(
                         (GraphDatabaseShellServer) server, session,
-                        GraphDatabaseApp.getCurrent(
+                        TransactionProvidingApp.getCurrent(
                                 (GraphDatabaseShellServer) server, session ),
                         false );
-            } catch ( ShellException e )
+            }
+            catch ( ShellException e )
             {
-                return GraphDatabaseApp.getDisplayNameForNonExistent();
+                return TransactionProvidingApp.getDisplayNameForNonExistent();
             }
         }
     }
@@ -206,5 +232,22 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             this.graphDb.shutdown();
         }
         super.shutdown();
+    }
+
+    @Override
+    public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
+    {
+        org.neo4j.graphdb.Transaction transaction = graphDb.beginTx();
+
+        try
+        {
+            Welcome welcome = super.welcome( initialSession );
+            transaction.success();
+            return welcome;
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

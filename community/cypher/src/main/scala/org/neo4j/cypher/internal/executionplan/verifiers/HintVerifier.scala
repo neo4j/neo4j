@@ -51,7 +51,7 @@ object HintVerifier extends Verifier {
         case SchemaIndex(id, label, prop, _) =>
 
           val valid = predicateAtoms.exists {
-            case Equals(Property(Identifier(identifier), property), _) => id == identifier && property == prop
+            case Equals(Property(Identifier(identifier), property), _) => id == identifier && property.name == prop
             case _                                                     => false
           }
 

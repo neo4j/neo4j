@@ -180,7 +180,7 @@ public class PropertySettingStrategy
        return Array.newInstance( cls, 0);
     }
 
-    private Object convertToNativeArray( Collection<?> collection )
+    public static Object convertToNativeArray( Collection<?> collection )
     {
         Object[] array = null;
         Iterator<?> objects = collection.iterator();

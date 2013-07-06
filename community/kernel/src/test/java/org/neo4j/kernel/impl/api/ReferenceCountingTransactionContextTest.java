@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.LifecycleOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.operations.RefCounting;
+import org.neo4j.kernel.api.operations.StatementState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -36,192 +38,205 @@ import static org.mockito.Mockito.when;
 
 public class ReferenceCountingTransactionContextTest
 {
-    private TransactionContext inner;
-    private StatementContext actualContext;
-    private StatementContext otherActualContext;
-    private ReferenceCountingTransactionContext singleContext;
+    private KernelTransaction inner;
+    private StatementState actualState;
+    private StatementState otherActualState;
+    private ReferenceCountingTransactionContext refCountingContext;
+    private LifecycleOperations refCountingOperations;
 
     @Before
     public void given() throws Exception
     {
-        inner = mock( TransactionContext.class );
-        actualContext = mock( StatementContext.class );
-        otherActualContext = mock( StatementContext.class );
-        when( inner.newStatementContext() )
-                .thenReturn( actualContext )
-                .thenReturn( otherActualContext );
-        singleContext = new ReferenceCountingTransactionContext( inner );
+        inner = mock( KernelTransaction.class );
+        actualState = mock( StatementState.class );
+        when( actualState.refCounting() ).thenReturn( mock( RefCounting.class ) );
+        otherActualState = mock( StatementState.class );
+        when( otherActualState.refCounting() ).thenReturn( mock( RefCounting.class ) );
+        when( inner.newStatementState() )
+                .thenReturn( actualState )
+                .thenReturn( otherActualState );
+        when( inner.newStatementOperations() )
+                .thenReturn( new StatementOperationParts( null, null, null, null, null, null, null, null ) );
+        refCountingOperations = new ReferenceCountingStatementOperations();
+        refCountingContext = new ReferenceCountingTransactionContext( inner, refCountingOperations );
     }
 
     @Test
     public void shouldOnlyCreateOneUnderlingStatementContext() throws Exception
     {
         // WHEN
-        singleContext.newStatementContext();
-        singleContext.newStatementContext();
+        refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
 
         // THEN
-        verify( inner, times( 1 ) ).newStatementContext();
+        verify( inner, times( 1 ) ).newStatementState();
     }
 
     @Test
     public void shouldNotCloseUnderlyingContextIfAnyoneIsStillUsingIt() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
-        singleContext.newStatementContext();
+        StatementState first = refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
 
         // WHEN
-        first.close();
+        refCountingOperations.close( first );
 
         // THEN
-        verify( actualContext, never() ).close();
+        verify( actualState.refCounting(), never() ).close();
     }
 
     @Test
     public void closingAllStatementContextClosesUnderlyingContext() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
-        StatementContext other = singleContext.newStatementContext();
+        StatementState first = refCountingContext.newStatementState();
+        StatementState other = refCountingContext.newStatementState();
 
         // WHEN
-        first.close();
-        other.close();
+        refCountingOperations.close( first );
+        refCountingOperations.close( other );
 
         // THEN
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualState.refCounting(), times( 1 ) ).close();
     }
 
     @Test
     public void shouldOpenAndCloseTwoUnderlyingContextsWhenOpeningAndClosingTwoContextsInSequence() throws Exception
     {
         // WHEN
-        singleContext.newStatementContext().close();
-        singleContext.newStatementContext().close();
+        refCountingOperations.close( refCountingContext.newStatementState() );
+        refCountingOperations.close( refCountingContext.newStatementState() );
 
         // THEN
-        verify( inner, times( 2 ) ).newStatementContext();
-        verify( actualContext ).close();
-        verify( otherActualContext ).close();
+        verify( inner, times( 2 ) ).newStatementState();
+        verify( actualState.refCounting() ).close();
+        verify( otherActualState.refCounting() ).close();
     }
 
-    @Test
-    public void shouldNotBeAbleToInteractWithAClosedStatementContext() throws Exception
-    {
-        // GIVEN
-        StatementContext first = singleContext.newStatementContext();
-        singleContext.newStatementContext();
-        first.close();
-
-        // WHEN
-        try
-        {
-            first.labelGetName( 0 );
-
-            fail( "expected exception" );
-        }
-        // THEN
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
-        }
-    }
+//    @Ignore( "Not valid I(MP)'d say" )
+//    @Test
+//    public void shouldNotBeAbleToInteractWithAClosedStatementContext() throws Exception
+//    {
+//        // GIVEN
+//        StatementState first = refCountingContext.newStatementState();
+//        refCountingContext.newStatementState();
+//        statementLogic.close( first );
+//
+//        // WHEN
+//        try
+//        {
+//            statementLogic.keyReadOperations().labelGetName( first, 0 );
+//
+//            fail( "expected exception" );
+//        }
+//        // THEN
+//        catch ( IllegalStateException e )
+//        {
+//            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+//        }
+//    }
 
     @Test
     public void shouldNotBeAbleToCloseTheSameStatementContextTwice() throws Exception
     {
         // GIVEN
-        StatementContext first = singleContext.newStatementContext();
-        singleContext.newStatementContext();
-        first.close();
+        StatementState first = refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
+        refCountingOperations.close( first );
 
         // WHEN
         try
         {
-            first.close();
+            refCountingOperations.close( first );
 
             fail( "expected exception" );
         }
         // THEN
         catch ( IllegalStateException e )
         {
-            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+            assertEqualsStatementClosed( e );
         }
-        verify( actualContext, never() ).close();
+        verify( actualState.refCounting(), never() ).close();
+    }
+
+    private void assertEqualsStatementClosed( IllegalStateException e )
+    {
+        assertEquals( "This " + StatementState.class.getSimpleName() +
+                " has been closed. No more interaction allowed", e.getMessage() );
     }
 
     @Test
     public void shouldCloseAllStatementContextsOnCommit() throws Exception
     {
         // given
-        StatementContext context = singleContext.newStatementContext();
+        StatementState context = refCountingContext.newStatementState();
 
         // when
-        singleContext.commit();
+        refCountingContext.commit();
 
         // then
         try
         {
-            context.close();
+            refCountingOperations.close( context );
 
             fail( "expected exception" );
         }
         catch ( IllegalStateException e )
         {
-            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+            assertEqualsStatementClosed( e );
         }
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualState.refCounting(), times( 1 ) ).close();
     }
 
     @Test
     public void shouldCloseAllStatementContextsOnRollback() throws Exception
     {
         // given
-        StatementContext context = singleContext.newStatementContext();
+        StatementState context = refCountingContext.newStatementState();
 
         // when
-        singleContext.rollback();
+        refCountingContext.rollback();
 
         // then
         try
         {
-            context.close();
+            refCountingOperations.close( context );
 
             fail( "expected exception" );
         }
         catch ( IllegalStateException e )
         {
-            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+            assertEqualsStatementClosed( e );
         }
-        verify( actualContext, times( 1 ) ).close();
+        verify( actualState.refCounting(), times( 1 ) ).close();
     }
 
     @Test
     public void shouldBeAbleToOpenNewStatementContextsAfterCommit() throws Exception
     {
         // given
-        StatementContext before = singleContext.newStatementContext();
+        StatementState before = refCountingContext.newStatementState();
 
         // when
-        singleContext.commit();
+        refCountingContext.commit();
 
         // then
-        StatementContext after = singleContext.newStatementContext();
+        StatementState after = refCountingContext.newStatementState();
 
         try
         {
-            before.close();
+            refCountingOperations.close( before );
 
             fail( "expected exception" );
         }
         catch ( IllegalStateException e )
         {
-            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
+            assertEqualsStatementClosed( e );
         }
-        verify( actualContext, times( 1 ) ).close();
-        verifyZeroInteractions( otherActualContext );
-        after.close();
-        verify( otherActualContext, times( 1 ) ).close();
+        verify( actualState.refCounting(), times( 1 ) ).close();
+        verifyZeroInteractions( otherActualState );
+        refCountingOperations.close( after );
+        verify( otherActualState.refCounting(), times( 1 ) ).close();
     }
 }

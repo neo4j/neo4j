@@ -23,9 +23,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.util.FailureStorage;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
@@ -34,34 +36,62 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     private final IndexWriterStatus writerStatus;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
+    private final FailureStorage failureStorage;
+    private final long indexId;
 
     protected IndexWriter writer;
     private Directory directory;
 
     LuceneIndexPopulator(
             LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
-            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
+            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+            FailureStorage failureStorage, long indexId )
     {
         this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
         this.writerStatus = writerStatus;
         this.dirFactory = dirFactory;
         this.dirFile = dirFile;
+        this.failureStorage = failureStorage;
+        this.indexId = indexId;
     }
 
+    @Override
     public void create() throws IOException
     {
         this.directory = dirFactory.open( dirFile );
         DirectorySupport.deleteDirectoryContents( directory );
+        failureStorage.reserveForIndex( indexId );
         writer = indexWriterFactory.create( directory );
     }
 
+    @Override
     public void drop() throws IOException
     {
-        writerStatus.close( writer );
-        DirectorySupport.deleteDirectoryContents( directory );
+        if ( writer != null )
+        {
+            writerStatus.close( writer );
+        }
+        
+        try
+        {
+            DirectorySupport.deleteDirectoryContents( directory = directory == null ? dirFactory.open( dirFile ) : directory );
+        }
+        catch ( AlreadyClosedException e )
+        {   // It was closed, open again just to be able to delete the files
+            DirectorySupport.deleteDirectoryContents( directory = dirFactory.open( dirFile ) );
+        }
+        finally
+        {
+            if ( directory != null )
+            {
+                directory.close();
+            }
+        }
+        failureStorage.clearForIndex( indexId );
     }
 
+    @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         try
@@ -74,9 +104,21 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         }
         finally
         {
-            writerStatus.close( writer );
-            directory.close();
+            if ( writer != null )
+            {
+                writerStatus.close( writer );
+            }
+            if ( directory != null )
+            {
+                directory.close();
+            }
         }
+    }
+    
+    @Override
+    public void markAsFailed( String failure ) throws IOException
+    {
+        failureStorage.storeIndexFailure( indexId, failure );
     }
 
     protected abstract void flush() throws IOException;

@@ -27,9 +27,9 @@ public interface EntityWriteOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
-    void nodeDelete( long nodeId );
+    void nodeDelete( StatementState state, long nodeId );
 
-    void relationshipDelete( long relationshipId );
+    void relationshipDelete( StatementState state, long relationshipId );
 
     /**
      * Labels a node with the label corresponding to the given label id.
@@ -37,7 +37,7 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or {@link
      * KeyReadOperations#labelGetForName(String)}.
      */
-    boolean nodeAddLabel( long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
     /**
      * Removes a label with the corresponding id from a node.
@@ -45,27 +45,27 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or {@link
      * KeyReadOperations#labelGetForName(String)}.
      */
-    boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( long nodeId, Property property )
+    Property nodeSetProperty( StatementState state, long nodeId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
-    Property relationshipSetProperty( long relationshipId, Property property )
+    Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
     
-    Property graphSetProperty( Property property )
+    Property graphSetProperty( StatementState state, Property property )
             throws PropertyKeyIdNotFoundException;
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( long nodeId, long propertyKeyId )
+    Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
 
-    Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
+    Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
     
-    Property graphRemoveProperty( long propertyKeyId )
+    Property graphRemoveProperty( StatementState state, long propertyKeyId )
             throws PropertyKeyIdNotFoundException;
 }

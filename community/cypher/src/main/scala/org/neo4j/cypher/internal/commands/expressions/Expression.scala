@@ -25,6 +25,8 @@ import internal.ExecutionContext
 import internal.helpers.TypeSafeMathSupport
 import internal.pipes.QueryState
 import internal.symbols._
+import org.neo4j.cypher.internal.spi.TokenContext
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
@@ -57,11 +59,18 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
     evaluateType(AnyType(), symbols)
   }
 
-  override def toString() = getClass.getSimpleName
+  override def toString = getClass.getSimpleName
 
   def isDeterministic = ! exists {
     case RandFunction() => true
     case _              => false
+  }
+}
+
+case class ExpressionResolver(tokenContext: TokenContext) extends (Expression => Expression) {
+  def apply(expr: Expression) = expr match {
+    case (keyToken: KeyToken) => keyToken.resolve(tokenContext)
+    case _                    => expr
   }
 }
 
@@ -76,7 +85,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 
   def symbolTableDependencies = Set(key)
 
-  override def toString() = "Cached(%s of type %s)".format(key, typ)
+  override def toString = "Cached(%s of type %s)".format(key, typ)
 }
 
 abstract class Arithmetics(left: Expression, right: Expression)

@@ -35,10 +35,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -126,7 +126,7 @@ public abstract class SchemaProviderApprovalTest
         }
 
         noIndexRun = runFindByLabelAndProperty( db );
-        createIndex( db );
+        createIndex( db, label( LABEL ), PROPERTY_KEY );
         indexRun = runFindByLabelAndProperty( db );
         db.shutdown();
     }
@@ -142,15 +142,6 @@ public abstract class SchemaProviderApprovalTest
         }
     };
 
-    protected static void createIndex( GraphDatabaseService db )
-    {
-        Transaction tx = db.beginTx();
-        db.schema().indexFor( label( LABEL ) ).on( PROPERTY_KEY ).create();
-        tx.success();
-        tx.finish();
-        db.schema().awaitIndexesOnline( 10, SECONDS );
-    }
-
     @Test
     public void test()
     {
@@ -165,9 +156,17 @@ public abstract class SchemaProviderApprovalTest
     private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )
     {
         HashMap<TestValue, Set<Object>> results = new HashMap<>();
-        for ( TestValue value : TestValue.values() )
+        Transaction tx = db.beginTx();
+        try
         {
-            addToResults( db, results, value );
+            for ( TestValue value : TestValue.values() )
+            {
+                addToResults( db, results, value );
+            }
+        }
+        finally
+        {
+            tx.finish();
         }
         return results;
     }

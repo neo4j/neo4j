@@ -22,28 +22,35 @@ package org.neo4j.server.rest.transactional;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
-class TransitionalTxManagementTransactionContext implements TransactionContext
+class TransitionalTxManagementTransactionContext implements KernelTransaction
 {
-    private final TransactionContext ctx;
+    private final KernelTransaction ctx;
     private final TxManager txManager;
 
     private Transaction suspendedTransaction;
 
-    public TransitionalTxManagementTransactionContext( TransactionContext ctx, TxManager txManager )
+    public TransitionalTxManagementTransactionContext( KernelTransaction ctx, TxManager txManager )
     {
         this.ctx = ctx;
         this.txManager = txManager;
     }
 
     @Override
-    public StatementContext newStatementContext()
+    public StatementOperationParts newStatementOperations()
     {
-        return ctx.newStatementContext();
+        return ctx.newStatementOperations();
+    }
+    
+    @Override
+    public StatementState newStatementState()
+    {
+        return ctx.newStatementState();
     }
 
     @Override

@@ -31,7 +31,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 
 @Service.Implementation( App.class )
-public class Mknode extends GraphDatabaseApp
+public class Mknode extends TransactionProvidingApp
 {
     {
         addOptionDefinition( "np", new OptionDefinition( OptionValueType.MUST,

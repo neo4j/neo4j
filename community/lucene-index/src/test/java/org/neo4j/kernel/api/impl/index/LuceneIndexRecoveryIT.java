@@ -30,7 +30,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -38,13 +37,13 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -57,7 +56,7 @@ public class LuceneIndexRecoveryIT
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, true );
+        createIndex( myLabel );
 
         createNode( myLabel, 12 );
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
@@ -78,7 +77,7 @@ public class LuceneIndexRecoveryIT
         // Given
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
-        createIndex( myLabel, true );
+        createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
         
@@ -101,7 +100,7 @@ public class LuceneIndexRecoveryIT
         // Given
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
-        createIndex( myLabel, true );
+        createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
         
@@ -135,10 +134,10 @@ public class LuceneIndexRecoveryIT
     public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
     {
         // Given
-        startDb(createPopulationBlockingIndexFactory());
+        startDb( createForEverPopulatingLuceneIndexFactory() );
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, false );
+        createIndex( myLabel );
         long nodeId = createNode( myLabel, 12 );
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
 
@@ -146,7 +145,7 @@ public class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb( createForEverPopulatingLuceneIndexFactory() );
 
         IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
         db.schema().awaitIndexOnline( indexDefinition, 2l, TimeUnit.SECONDS );
@@ -163,7 +162,7 @@ public class LuceneIndexRecoveryIT
         startDb(createLuceneIndexFactory());
         Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel, true );
+        createIndex( myLabel );
 
         long nodeId = createNode( myLabel, 12 );
         updateNode(nodeId, 14);
@@ -201,7 +200,7 @@ public class LuceneIndexRecoveryIT
     private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
 
 
-    private void startDb(KernelExtensionFactory<?> indexProviderFactory)
+    private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {
        if ( db != null )
            db.shutdown();
@@ -248,14 +247,13 @@ public class LuceneIndexRecoveryIT
        db.getXaDataSourceManager().rotateLogicalLogs();
     }
 
-    private void createIndex( Label label, boolean wait )
+    private void createIndex( Label label )
     {
        Transaction tx = db.beginTx();
        IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
        tx.success();
        tx.finish();
-       if (wait)
-         db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+       db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
     }
 
     private Set<Node> doIndexLookup( Label myLabel, Object value )
@@ -301,7 +299,7 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createLuceneIndexFactory()
+    private KernelExtensionFactory<?> createForEverPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
@@ -310,13 +308,21 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                {
+                    @Override
+                    public InternalIndexState getInitialState( long indexId )
+                    {
+                        return InternalIndexState.POPULATING;
+                    }
+                };
             }
         };
     }
 
-    // Creates a lucene index factory with the shared in-memory directory, which waits for a latch on population
-    private KernelExtensionFactory<?> createPopulationBlockingIndexFactory()
+
+    // Creates a lucene index factory with the shared in-memory directory
+    private KernelExtensionFactory<?> createLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )

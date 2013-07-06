@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -134,7 +134,7 @@ public abstract class ShellLobby
     public static ShellClient newClient( String host, int port )
         throws ShellException
     {
-        return newClient( host, port, AbstractServer.DEFAULT_NAME );
+        return newClient( host, port, SimpleAppServer.DEFAULT_NAME );
     }
     
 	/**
@@ -175,7 +175,7 @@ public abstract class ShellLobby
      */
 	public static ShellClient newClient( String host ) throws ShellException
 	{
-	    return newClient( host, AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+	    return newClient( host, SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
 	}
 	
     /**
@@ -187,17 +187,17 @@ public abstract class ShellLobby
      */
 	public static ShellClient newClient() throws ShellException
 	{
-        return newClient( "localhost", AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+        return newClient( "localhost", SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
 	}
 	
     public static RmiLocation remoteLocation()
     {
-        return remoteLocation( AbstractServer.DEFAULT_PORT );
+        return remoteLocation( SimpleAppServer.DEFAULT_PORT );
     }
     
 	public static RmiLocation remoteLocation( int port )
 	{
-	    return remoteLocation( port, AbstractServer.DEFAULT_NAME );
+	    return remoteLocation( port, SimpleAppServer.DEFAULT_NAME );
 	}
 
     public static RmiLocation remoteLocation( int port, String rmiName )

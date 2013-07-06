@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -40,7 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -58,8 +56,8 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         node = db.createNode( label( "Foo" ) );
         long node2 = node.getId();
         node.setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( "Foo" );
-        long name = statement.propertyKeyGetForName( "name" );
+        long foo = statement.labelGetForName( getState(), "Foo" );
+        long name = statement.propertyKeyGetForName( getState(), "name" );
         commit();
 
         newTransaction();
@@ -67,7 +65,7 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         // when
         try
         {
-            statement.uniquenessConstraintCreate( foo, name );
+            statement.uniquenessConstraintCreate( getState(), foo, name );
 
             fail( "expected exception" );
         }
@@ -92,12 +90,12 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         Node node = db.createNode( label( "Foo" ) );
         long node1 = node.getId();
         node.setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( "Foo" );
-        long name = statement.propertyKeyGetForName( "name" );
+        long foo = statement.labelGetForName( getState(), "Foo" );
+        long name = statement.propertyKeyGetForName( getState(), "name" );
         commit();
 
         newTransaction();
-        statement.uniquenessConstraintCreate( foo, name );
+        statement.uniquenessConstraintCreate( getState(), foo, name );
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long node2 = executor.submit( new Callable<Long>()
         {
@@ -150,11 +148,11 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
         // given
         newTransaction();
         db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( "Foo" );
-        long name = statement.propertyKeyGetForName( "name" );
+        long foo = statement.labelGetForName( getState(), "Foo" );
+        long name = statement.propertyKeyGetForName( getState(), "name" );
         commit();
         newTransaction();
-        statement.uniquenessConstraintCreate( foo, name );
+        statement.uniquenessConstraintCreate( getState(), foo, name );
         commit();
 
         newTransaction();

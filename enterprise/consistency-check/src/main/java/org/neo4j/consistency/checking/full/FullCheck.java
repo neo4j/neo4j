@@ -19,12 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
-import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
-import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
-import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
-import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +37,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -51,6 +46,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 
 public class FullCheck
 {
@@ -133,7 +134,8 @@ public class FullCheck
         return new CacheSmallStoresRecordAccess(
                 new DirectRecordAccess( store ),
                 readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
-                readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ) );
+                readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
+                readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

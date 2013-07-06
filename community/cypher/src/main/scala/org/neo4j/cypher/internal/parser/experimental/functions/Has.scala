@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 case object Has extends Function {
   def name = "HAS"
@@ -39,6 +40,6 @@ case object Has extends Function {
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    commands.Has(property.map.toCommand, property.identifier.name)
+    commands.Has(property.map.toCommand, PropertyKey(property.identifier.name))
   }
 }

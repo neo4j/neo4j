@@ -23,6 +23,8 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class FunctionsTest extends DocumentingTestBase {
   def graphDescription = List(
@@ -40,6 +42,9 @@ class FunctionsTest extends DocumentingTestBase {
     "E" -> Map("name" -> "Eskil", "age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
   )
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def section = "functions"
 
   val common_arguments = List(

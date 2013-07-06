@@ -37,8 +37,8 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
     val n = graph.createdNodes.dequeue()
 
-    assert(n.getProperty("name") === "Andres")
-    assert(n.getProperty("age") === 37)
+    assertInTx(n.getProperty("name") === "Andres")
+    assertInTx(n.getProperty("age") === 37)
   }
 }
 

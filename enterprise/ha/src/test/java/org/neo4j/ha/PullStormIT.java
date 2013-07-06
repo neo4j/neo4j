@@ -19,25 +19,25 @@
  */
 package org.neo4j.ha;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.neo4j.cluster.ClusterSettings;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * This is a test for the Neo4j HA self-inflicted DDOS "pull storm" phenomenon. In a 2 instance setup, whereby
@@ -49,7 +49,7 @@ import org.neo4j.test.ha.ClusterManager;
 public class PullStormIT
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder(  );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
     public LoggerRule logger = new LoggerRule();
@@ -57,8 +57,10 @@ public class PullStormIT
     @Test
     public void testPullStorm() throws Throwable
     {
+        // given
+
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
-                folder.getRoot(),
+                testDirectory.directory(),
                 stringMap( HaSettings.pull_interval.name(), "0",
                            HaSettings.tx_push_factor.name(), "1") );
 
@@ -110,13 +112,14 @@ public class PullStormIT
 
             cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
 
+            // when
+
             // Create 20 concurrent transactions
             System.out.println( "Pull storm" );
             ExecutorService executor = Executors.newFixedThreadPool( 20 );
-            List<Future<?>> result = new ArrayList<Future<?>>(  );
             for ( int i = 0; i < 20; i++ )
             {
-                result.add( executor.submit( new Runnable()
+                executor.submit( new Runnable()
                 {
                     @Override
                     public void run()
@@ -126,22 +129,20 @@ public class PullStormIT
                         tx.success();
                         tx.finish(); // This should cause lots of concurrent calls to pullUpdate()
                     }
-                } ) );
-            }
-
-            for ( Future<?> future : result )
-            {
-                future.get();
+                } );
             }
 
             executor.shutdown();
+            executor.awaitTermination( 1, TimeUnit.MINUTES );
 
             System.out.println( "Pull storm done" );
 
-            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster.getAllMembers() )
+            // then
+
+            long masterLastCommittedTxId = lastCommittedTxId( master );
+            for ( HighlyAvailableGraphDatabase member : cluster.getAllMembers() )
             {
-                long txId = ((NeoStoreXaDataSource)highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore().getLastCommittedTx();
-                System.out.println(highlyAvailableGraphDatabase.getConfig().get( ClusterSettings.server_id )+"="+txId);
+                assertEquals( masterLastCommittedTxId, lastCommittedTxId( member ) );
             }
         }
         finally
@@ -150,5 +151,12 @@ public class PullStormIT
             clusterManager.shutdown();
             System.err.println( "Shut down" );
         }
+    }
+
+    private long lastCommittedTxId( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase )
+    {
+        return ((NeoStoreXaDataSource)highlyAvailableGraphDatabase.getDependencyResolver()
+                .resolveDependency( XaDataSourceManager.class )
+                .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore().getLastCommittedTx();
     }
 }

@@ -147,9 +147,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   private def consoleSnippet(query: String, empty: Boolean): String = {
     if (generateConsole) {
       val create = if (!empty) {
-        val out = new StringWriter()
-        new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
-        out.toString
+        db.inTx {
+          val out = new StringWriter()
+          new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+          out.toString
+        }
       } else "start n=node(*) match n-[r?]->() delete n, r;"
       """[console]
 ----

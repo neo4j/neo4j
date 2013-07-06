@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
@@ -36,6 +35,9 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.LABEL;
 import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
+
+import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -48,7 +50,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.test.GraphDescription.PROP;
+import static org.neo4j.test.GraphDescription.PropType.ARRAY;
+import static org.neo4j.test.GraphDescription.PropType.STRING;
 
 public class LabelsDocIT extends AbstractRestFunctionalTestBase
 {
@@ -221,17 +224,19 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .entity();
         
         List<?> parsed = (List<?>) readJson( body );
-        assertEquals( asSet( "a", "b" ), asSet( map( getNameProperty, parsed ) ) );
+        assertEquals( asSet( "a", "b" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
     /**
      * Get nodes by label and property.
      *
      * You can retrieve all nodes with a given label and property by passing one property as a query parameter.
-     * Currently, it is not possible to specify multiple properties to search by.
+     * Notice that the property value is JSON-encoded and then URL-encoded.
      *
      * If there is an index available on the label/property combination you send, that index will be used. If no
      * index is available, all nodes with the given label will be filtered through to find matching nodes.
+     *
+     * Currently, it is not possible to search using multiple properties.
      */
     @Test
     @Documented
@@ -251,7 +256,38 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .entity();
 
         List<?> parsed = (List<?>) readJson( result );
-        assertEquals( asSet( "bob ross" ), asSet( map( getNameProperty, parsed ) ) );
+        assertEquals( asSet( "bob ross" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
+    }
+
+    /**
+     * Get nodes by label and array property.
+     */
+    @Test
+    @GraphDescription.Graph( nodes = {
+            @NODE(name = "I", labels = {@LABEL("Person")}),
+            @NODE(name = "you", labels = {@LABEL("Person")}, properties =
+                    {@PROP(key = "names", value = "bob,ross", type = ARRAY, componentType = STRING)}),
+            @NODE(name = "him", labels = {@LABEL("Person")}, properties =
+                    {@PROP(key = "names", value = "cat,stevens", type = ARRAY, componentType = STRING)})})
+    public void get_nodes_with_label_and_array_property() throws PropertyValueException, UnsupportedEncodingException
+    {
+        data.get();
+
+        String labelName = "Person";
+
+        String uri = getNodesWithLabelAndPropertyUri( labelName, "names", new String[] { "bob", "ross" } );
+
+        String result = gen.get()
+                .expectedStatus( 200 )
+                .get( uri )
+                .entity();
+
+        List<?> parsed = (List<?>) readJson( result );
+        assertEquals( 1, parsed.size() );
+
+        //noinspection AssertEqualsBetweenInconvertibleTypes
+        assertEquals( asSet( asList( asList( "bob", "ross" ) ) ),
+                asSet( map( getProperty( "names", List.class ), parsed ) ) );
     }
 
     /**
@@ -278,14 +314,17 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertTrue( parsed.contains( "second" ) );
     }
 
-    private Function<Object,String> getNameProperty = new Function<Object, String>()
+    private <T> Function<Object, T> getProperty( final String propertyKey, final Class<T> propertyType )
     {
-        @Override
-        public String apply( Object from )
+        return new Function<Object, T>()
         {
-            Map<?, ?> node = (Map<?, ?>) from;
-            Map<?, ?> data = (Map<?, ?>) node.get( "data" );
-            return (String) data.get( "name" );
-        }
-    };
+            @Override
+            public T apply( Object from )
+            {
+                Map<?, ?> node = (Map<?, ?>) from;
+                Map<?, ?> data = (Map<?, ?>) node.get( "data" );
+                return propertyType.cast( data.get( propertyKey ) );
+            }
+        };
+    }
 }

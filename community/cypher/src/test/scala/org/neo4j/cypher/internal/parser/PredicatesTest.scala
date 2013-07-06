@@ -27,6 +27,7 @@ import v2_0.{Predicates, MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class PredicatesTest extends Predicates with MatchClause with ParserTest with Expressions {
 
@@ -62,10 +63,10 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
       True()
 
     parsing("node.prop = true") shouldGive
-      Equals(Property(Identifier("node"), "prop"), True())
+      Equals(Property(Identifier("node"), PropertyKey("prop")), True())
 
     parsing("true = node.prop") shouldGive
-      Equals(True(), Property(Identifier("node"), "prop"))
+      Equals(True(), Property(Identifier("node"), PropertyKey("prop")))
 
     parsing("true = true") shouldGive
       Equals(True(), True())

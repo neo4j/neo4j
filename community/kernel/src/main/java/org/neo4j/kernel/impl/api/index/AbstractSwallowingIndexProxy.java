@@ -32,26 +32,27 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final Throwable cause;
+    private final IndexPopulationFailure populationFailure;
 
     public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                                         Throwable cause )
+            IndexPopulationFailure populationFailure )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
-        this.cause = cause;
+        this.populationFailure = populationFailure;
     }
 
-    protected Throwable getCause()
+    @Override
+    public IndexPopulationFailure getPopulationFailure()
     {
-        return cause;
+        return populationFailure;
     }
 
     @Override
     public void start()
     {
         String message = "Unable to start index, it is in a " + getState().name() + " state.";
-        throw new UnsupportedOperationException( message, cause );
+        throw new UnsupportedOperationException( message + ", caused by: " + getPopulationFailure() );
     }
 
     @Override
@@ -65,7 +66,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     {
         // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
     }
-
+    
     @Override
     public void force()
     {

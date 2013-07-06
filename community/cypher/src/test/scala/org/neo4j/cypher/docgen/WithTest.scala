@@ -22,9 +22,14 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.graphdb.Node
 import org.junit.Assert._
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class WithTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   override val properties = Map(
     "A" -> Map("name" -> "Anders"),

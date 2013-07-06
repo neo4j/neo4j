@@ -27,11 +27,11 @@ public interface KeyWriteOperations
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    long labelGetOrCreateForName( String labelName ) throws SchemaKernelException;
+    long labelGetOrCreateForName( StatementState state, String labelName ) throws SchemaKernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long propertyKeyGetOrCreateForName( String propertyKeyName ) throws SchemaKernelException;
+    long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException;
 }

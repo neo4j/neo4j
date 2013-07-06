@@ -19,22 +19,30 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.hamcrest.Description;
 import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
 
 public class Neo4jMatchers
 {
-    public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final TypeSafeDiagnosingMatcher<T> inner )
+    public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner )
     {
         return new DiagnosingMatcher<T>()
         {
@@ -97,6 +105,16 @@ public class Neo4jMatchers
         return hasLabels( asSet( expectedLabels ) );
     }
 
+    public static TypeSafeDiagnosingMatcher<Node> hasLabels( Label... expectedLabels )
+    {
+        Set<String> labelNames = new HashSet<String>( expectedLabels.length );
+        for ( Label l : expectedLabels )
+        {
+            labelNames.add( l.name() );
+        }
+        return hasLabels( labelNames );
+    }
+
     public static TypeSafeDiagnosingMatcher<Node> hasNoLabels()
     {
         return hasLabels( emptySetOf( String.class ) );
@@ -118,14 +136,14 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Node item, Description mismatchDescription )
             {
                 foundLabels = asLabelNameSet( item.getLabels() );
-                if ( !expectedLabels.containsAll( foundLabels ) )
+
+                if ( foundLabels.size() == expectedLabels.size() && foundLabels.containsAll( expectedLabels ) )
                 {
-                    mismatchDescription.appendText( "was " + foundLabels.toString() );
-                    return false;
+                    return true;
                 }
 
-                return true;
-
+                mismatchDescription.appendText( "was " + foundLabels.toString() );
+                return false;
             }
         };
     }
@@ -191,7 +209,7 @@ public class Neo4jMatchers
         }, enums ) );
     }
 
-    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<Node>
+    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>
     {
         private final PropertyMatcher propertyMatcher;
         private final String propertyName;
@@ -205,17 +223,17 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( Node node, Description mismatchDescription )
+        protected boolean matchesSafely( PropertyContainer propertyContainer, Description mismatchDescription )
         {
-            if ( !propertyMatcher.matchesSafely( node, mismatchDescription ) )
+            if ( !propertyMatcher.matchesSafely( propertyContainer, mismatchDescription ) )
             {
                 return false;
             }
 
-            Object foundValue = node.getProperty( propertyName );
-            if ( !foundValue.equals( expectedValue ) )
+            Object foundValue = propertyContainer.getProperty( propertyName );
+            if ( !propertyValuesEqual( expectedValue, foundValue ) )
             {
-                mismatchDescription.appendText( "found value " + foundValue );
+                mismatchDescription.appendText( "found value " + formatValue( foundValue ) );
                 return false;
             }
             return true;
@@ -225,11 +243,32 @@ public class Neo4jMatchers
         public void describeTo( Description description )
         {
             propertyMatcher.describeTo( description );
-            description.appendText( String.format( "having value %s", expectedValue.toString() ) );
+            description.appendText( String.format( "having value %s", formatValue( expectedValue ) ) );
         }
+
+        private boolean propertyValuesEqual( Object expected, Object readValue )
+        {
+            if ( expected.getClass().isArray() )
+            {
+                return arrayAsCollection( expected ).equals( arrayAsCollection( readValue ) );
+            } else
+            {
+                return expected.equals( readValue );
+            }
+        }
+
+        private String formatValue(Object v)
+        {
+            if (v instanceof String)
+            {
+                return String.format("'%s'", v.toString());
+            }
+            return v.toString();
+        }
+
     }
 
-    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<Node>
+    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>
     {
 
         public final String propertyName;
@@ -240,12 +279,12 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( Node node, Description mismatchDescription )
+        protected boolean matchesSafely( PropertyContainer propertyContainer, Description mismatchDescription )
         {
-            if ( !node.hasProperty( propertyName ) )
+            if ( !propertyContainer.hasProperty( propertyName ) )
             {
-                mismatchDescription.appendText( String.format( "found node without property named '%s'",
-                        propertyName ) );
+                mismatchDescription.appendText( String.format( "found property container with property keys: %s",
+                        asSet( propertyContainer.getPropertyKeys() ) ) );
                 return false;
             }
             return true;
@@ -254,7 +293,7 @@ public class Neo4jMatchers
         @Override
         public void describeTo( Description description )
         {
-            description.appendText( String.format( "node with property name '%s' ", propertyName ) );
+            description.appendText( String.format( "property container with property name '%s' ", propertyName ) );
         }
 
         public PropertyValueMatcher withValue( Object value )
@@ -267,4 +306,277 @@ public class Neo4jMatchers
     {
         return new PropertyMatcher( propertyName );
     }
+
+
+    public static Deferred<Node> findNodesByLabelAndProperty( final Label label, final String propertyName,
+                                                              final Object propertyValue,
+                                                              final GraphDatabaseService db )
+    {
+        return new Deferred<Node>(db)
+        {
+            @Override
+            protected Iterable<Node> manifest()
+            {
+                return db.findNodesByLabelAndProperty( label, propertyName, propertyValue );
+            }
+        };
+    }
+
+    public static Deferred<IndexDefinition> getIndexes( final GraphDatabaseService db, final Label label )
+    {
+        return new Deferred<IndexDefinition>( db )
+        {
+            @Override
+            protected Iterable<IndexDefinition> manifest()
+            {
+                return db.schema().getIndexes( label );
+            }
+        };
+    }
+
+    public static Deferred<String> getPropertyKeys( final GraphDatabaseService db,
+                                                    final PropertyContainer propertyContainer )
+    {
+        return new Deferred<String>( db )
+        {
+            @Override
+            protected Iterable<String> manifest()
+            {
+                return propertyContainer.getPropertyKeys();
+            }
+        };
+    }
+
+    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db, final Label label )
+    {
+        return new Deferred<ConstraintDefinition>( db )
+        {
+            @Override
+            protected Iterable<ConstraintDefinition> manifest()
+            {
+                return db.schema().getConstraints( label );
+            }
+        };
+    }
+
+    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db )
+    {
+        return new Deferred<ConstraintDefinition>( db )
+        {
+            @Override
+            protected Iterable<ConstraintDefinition> manifest()
+            {
+                return db.schema().getConstraints( );
+            }
+        };
+    }
+
+    /**
+     * Represents test data that can at assertion time produce a collection
+     *
+     * Useful to defer actually doing operations until context has been prepared (such as a transaction created)
+     *
+     * @param <T> The type of objects the collection will contain
+     */
+    public static abstract class Deferred<T>
+    {
+
+        private final GraphDatabaseService db;
+
+        public Deferred( GraphDatabaseService db )
+        {
+            this.db = db;
+        }
+
+        protected abstract Iterable<T> manifest();
+
+        public Collection<T> collection()
+        {
+            Transaction tx = db.beginTx();
+            try
+            {
+                return asCollection( manifest() );
+            }
+            finally
+            {
+                tx.finish();
+            }
+        }
+
+    }
+
+    public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> containsOnly( final T... expectedObjects )
+    {
+        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()
+        {
+            @Override
+            protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
+            {
+                Set<T> expected = asSet( expectedObjects );
+                Set<T> found = asSet( nodes.collection() );
+                if ( !expected.equals( found ) )
+                {
+                    description.appendText( "found " + found.toString() );
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "exactly " + asSet( expectedObjects ) );
+            }
+        };
+    }
+
+    public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>> hasSize( final int expectedSize )
+    {
+        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>>()
+        {
+            @Override
+            protected boolean matchesSafely( Neo4jMatchers.Deferred<?> nodes, Description description )
+            {
+                int foundSize = nodes.collection().size();
+
+                if ( foundSize != expectedSize )
+                {
+                    description.appendText( "found " + nodes.collection().toString() );
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "collection of size " + expectedSize );
+            }
+        };
+    }
+
+    public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<IndexDefinition>> haveState(
+            final GraphDatabaseService db, final Schema.IndexState expectedState )
+    {
+        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<IndexDefinition>>()
+        {
+            @Override
+            protected boolean matchesSafely( Neo4jMatchers.Deferred<IndexDefinition> indexes, Description description )
+            {
+                for ( IndexDefinition current : indexes.collection() )
+                {
+                    Schema.IndexState currentState = db.schema().getIndexState( current );
+                    if ( !currentState.equals( expectedState ) )
+                    {
+                        description.appendText( current.toString() );
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "all indexes have state " + expectedState );
+            }
+        };
+    }
+
+    public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> contains( final T... expectedObjects )
+    {
+        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()
+        {
+            @Override
+            protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
+            {
+                Set<T> expected = asSet( expectedObjects );
+                Set<T> found = asSet( nodes.collection() );
+                if ( !found.containsAll( expected ) )
+                {
+                    description.appendText( "found " + found.toString() );
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "contains " + asSet( expectedObjects ) );
+            }
+        };
+    }
+
+    public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>> isEmpty( )
+    {
+        return new TypeSafeDiagnosingMatcher<Deferred<?>>()
+        {
+            @Override
+            protected boolean matchesSafely( Deferred<?> deferred, Description description )
+            {
+                Collection<?> collection = deferred.collection();
+                if(!collection.isEmpty())
+                {
+                    description.appendText( "was " + collection.toString() );
+                    return false;
+                }
+
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "empty collection" );
+            }
+        };
+    }
+
+    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
+    {
+        Transaction tx = beansAPI.beginTx();
+        IndexDefinition indexDef;
+        try
+        {
+            indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        waitForIndex( beansAPI, indexDef );
+        return indexDef;
+    }
+
+    public static void waitForIndex( GraphDatabaseService beansAPI, IndexDefinition indexDef )
+    {
+        Transaction tx;
+        tx = beansAPI.beginTx();
+        try
+        {
+            beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public static Object getIndexState( GraphDatabaseService beansAPI, IndexDefinition indexDef )
+    {
+        Transaction tx;
+        tx = beansAPI.beginTx();
+        try
+        {
+            return beansAPI.schema().getIndexState( indexDef );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
 }

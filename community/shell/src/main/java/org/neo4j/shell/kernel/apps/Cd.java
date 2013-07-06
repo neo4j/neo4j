@@ -45,7 +45,7 @@ import org.neo4j.shell.impl.RelationshipToNodeIterable;
  * Mimics the POSIX application with the same name, i.e. traverses to a node.
  */
 @Service.Implementation( App.class )
-public class Cd extends ReadOnlyGraphDatabaseApp
+public class Cd extends TransactionProvidingApp
 {
     private static final String START_ALIAS = "start";
     private static final String END_ALIAS = "end";

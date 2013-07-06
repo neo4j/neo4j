@@ -67,4 +67,15 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
         return index.getOnlineAccessor();
     }
+
+    @Override
+    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    {
+        String failure = indexes.get( indexId ).failure;
+        if ( failure == null )
+        {
+            throw new IllegalStateException();
+        }
+        return failure;
+    }
 }

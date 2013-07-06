@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.assertEquals;
@@ -261,6 +262,16 @@ public class TestProperties extends AbstractNeo4jTestCase
         node.setProperty( "name", "yo" );
         node.getProperty( "name" );
         commit();
-        node.getProperty( "name" );
+
+        Transaction tx = getGraphDb().beginTx();
+        try
+        {
+            node.getProperty( "name" );
+           tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

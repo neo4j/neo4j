@@ -22,10 +22,15 @@ package org.neo4j.cypher.docgen
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class OrderByTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "B KNOWS C")
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   override val properties = Map(
     "A" -> Map("age" -> 34, "length"->170),
     "B" -> Map("age" -> 34),

@@ -23,16 +23,15 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, RelationshipFunction, Literal, Property}
+import expressions.{Identifier, Literal, Property}
 import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.AllInCollection
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null
@@ -458,9 +457,9 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r = relate(a, b, "rel", Map("age" -> 15))
     val r2 = relate(a, b, "rel", Map("age" -> 5))
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, optional = false))
 
-    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("r"), "age"), Literal(5))))
+    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("r"), PropertyKey("age")), Literal(5))))
 
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r2))
   }
@@ -469,8 +468,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val a = createNode(Map("prop" -> "value"))
     relate(a, b, "rel")
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("a"), "prop"), Literal("not value"))))
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, optional = false))
+    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("a"), PropertyKey("prop")), Literal("not value"))))
 
     assert(getMatches("a" -> a).size === 0)
   }
@@ -484,8 +483,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(d, e)
 
     val patterns = Seq(
-      RelatedTo("a", "x", "r1", Seq(), Direction.OUTGOING, true),
-      RelatedTo("x", "b", "r2", Seq(), Direction.INCOMING, true)
+      RelatedTo("a", "x", "r1", Seq(), Direction.OUTGOING, optional = true),
+      RelatedTo("x", "b", "r2", Seq(), Direction.INCOMING, optional = true)
     )
 
     createMatchingContextWithNodes(patterns, Seq("a", "b"))

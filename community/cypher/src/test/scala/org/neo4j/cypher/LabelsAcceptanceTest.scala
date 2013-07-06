@@ -81,7 +81,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
       val node = createLabeledNode(labels:_*)
       val result = executeScalar[Node](query, "node"->node)
 
-      assert(result.labels === expected.toList)
+      assertInTx(result.labels === expected.toList)
       this
     }
   }
@@ -154,25 +154,28 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
   private def assertThat(q: String, expectedLabels: List[String]) {
     val result = parseAndExecute(q)
 
-    if (result.isEmpty) {
-      val n = graph.getNodeById(1)
-      assert(n.labels === expectedLabels)
-    } else {
-      result.foreach {
-        map => map.get("node") match {
-                  case None =>
-                    assert(makeTraversable(map.head._2).toList === expectedLabels)
+    graph.inTx {
 
-                  case Some(n:Node) =>
-                    assert(n.labels === expectedLabels)
+      if (result.isEmpty) {
+        val n = graph.getNodeById(1)
+        assert(n.labels === expectedLabels)
+      } else {
+        result.foreach {
+          map => map.get("node") match {
+            case None =>
+              assert(makeTraversable(map.head._2).toList === expectedLabels)
 
-                  case _ =>
-                    throw new AssertionError("assertThat used with result that is not a node")
-                }
+            case Some(n: Node) =>
+              assert(n.labels === expectedLabels)
+
+            case _ =>
+              throw new AssertionError("assertThat used with result that is not a node")
+          }
+        }
       }
-    }
 
-    insertNewCleanDatabase()
+      insertNewCleanDatabase()
+    }
   }
 
 

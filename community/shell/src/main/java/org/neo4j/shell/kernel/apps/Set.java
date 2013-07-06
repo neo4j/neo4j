@@ -39,7 +39,7 @@ import org.neo4j.shell.ShellException;
  * Sets a property for the current node or relationship.
  */
 @Service.Implementation( App.class )
-public class Set extends GraphDatabaseApp
+public class Set extends TransactionProvidingApp
 {
     private static class ValueTypeContext
     {

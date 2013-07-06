@@ -19,32 +19,36 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
-import collection.Seq
+import scala.collection.Seq
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{ReturnItem, NodeById, Query}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.commands.{HasLabel, NodeById, Query, ReturnItem}
+import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
 import org.scalatest.Assertions
 import org.neo4j.cypher.{PlanDescription, GraphDatabaseTestBase, InternalException}
 import java.util.concurrent._
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.pipes.{QueryState, Pipe}
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.{FilterPipe, ExecuteUpdateCommandsPipe, Pipe, QueryState}
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.commands.values.TokenType.{Label, PropertyKey}
+import org.neo4j.cypher.internal.mutation.DeletePropertyAction
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed {
+class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with MockitoSugar {
   @Test def should_not_accept_returning_the_input_execution_plan() {
     val q = Query.empty
+    val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val epi = new FakeExecPlanBuilder(graph, Seq(new BadBuilder))
       epi.build(planContext, q)
     })
 
-    assertTrue("Execution plan builder didn't throw expected exception", exception.getCause.isInstanceOf[InternalException])
+    assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
+      exception.getCause.isInstanceOf[InternalException])
   }
 
   @Test def should_close_transactions_if_pipe_throws_when_creating_iterator() {
@@ -53,7 +57,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
-    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext, cakeState)
 
     // when
     intercept[ExplodingException] {
@@ -64,6 +68,49 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     // then
     assertNull("Expected no transactions left open", graph.getTxManager.getTransaction)
 
+  }
+
+  @Test def should_resolve_property_keys() {
+    // given
+    val tx = graph.beginTx()
+    val node = graph.createNode()
+    node.setProperty("foo", 12l)
+
+    val identifier = Identifier("x")
+    val q = Query
+      .start(NodeById("x", node.getId))
+      .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
+      .returns(ReturnItem(Identifier("x"), "x"))
+
+    val execPlanBuilder = new ExecutionPlanBuilder(graph)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext, cakeState)
+    val pkId = queryContext.getPropertyKeyId("foo")
+
+    // when
+    val commands = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+
+    assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
+  }
+
+  @Test def should_resolve_label_ids() {
+    // given
+    val tx = graph.beginTx()
+    val node = graph.createNode(DynamicLabel.label("Person"))
+
+    val identifier = Identifier("x")
+    val q = Query
+      .start(NodeById("x", node.getId))
+      .where(HasLabel(Identifier("x"), Label("Person")))
+      .returns(ReturnItem(Identifier("x"), "x"))
+
+    val execPlanBuilder = new ExecutionPlanBuilder(graph)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statementContext, cakeState)
+    val labelId = queryContext.getLabelId("Person")
+
+    // when
+    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[FilterPipe].predicate
+
+    assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
   }
 }
 
@@ -102,8 +149,6 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
     def executionPlanDescription: PlanDescription = null
   }
-
-
 }
 
 class ExplodingException extends Exception

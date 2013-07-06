@@ -46,6 +46,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
@@ -276,7 +277,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             if ( node.inUse() )
             {
-                long[] labelsForNode = nodeStore.getLabelsForNode( node );
+                long[] labelsForNode = parseLabelsField( node ).get( nodeStore );
                 labelsReference.set( labelsForNode ); // Make these available for the processor for this node
                 for ( long nodeLabelId : labelsForNode )
                 {

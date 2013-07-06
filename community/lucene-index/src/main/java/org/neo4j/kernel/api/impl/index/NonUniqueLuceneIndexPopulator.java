@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.util.FailureStorage;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -34,9 +35,10 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
-                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
+                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                   FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
     }
 

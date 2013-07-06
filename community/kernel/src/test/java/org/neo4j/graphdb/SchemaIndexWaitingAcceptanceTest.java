@@ -69,6 +69,7 @@ public class SchemaIndexWaitingAcceptanceTest
         tx.finish();
 
         latch.awaitStart();
+        tx = db.beginTx();
 
         // when
         try
@@ -85,6 +86,7 @@ public class SchemaIndexWaitingAcceptanceTest
         }
         finally
         {
+            tx.finish();
             latch.finish();
         }
     }
@@ -103,6 +105,7 @@ public class SchemaIndexWaitingAcceptanceTest
 
         latch.awaitStart();
 
+        tx = db.beginTx();
         // when
         try
         {
@@ -119,6 +122,7 @@ public class SchemaIndexWaitingAcceptanceTest
         finally
         {
             latch.finish();
+            tx.finish();
         }
     }
 }
