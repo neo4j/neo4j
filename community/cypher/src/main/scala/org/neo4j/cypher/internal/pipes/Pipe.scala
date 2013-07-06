@@ -42,6 +42,11 @@ trait Pipe {
   def symbols: SymbolTable
 
   def executionPlanDescription: PlanDescription
+
+  /**
+   * Please make sure to add a test for this implementation @ PipeLazynessTest
+   */
+  def isLazy:Boolean = true
 }
 
 object NullPipe extends Pipe {

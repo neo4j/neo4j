@@ -1,3 +1,7 @@
+1.9.2
+-----
+o Fixes problem where Cypher would see changes while the query was running
+
 1.9.1 (2013-06-24)
 ------------------
 o Cypher execution results are now closeable

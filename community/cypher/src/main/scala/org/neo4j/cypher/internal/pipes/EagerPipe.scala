@@ -19,28 +19,20 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.PlanDescription
 
-class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
+case class EagerPipe(src: Pipe) extends PipeWithSource(src) {
+  def symbols: SymbolTable = src.symbols
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
-      input.next()
-    }
+  def executionPlanDescription: PlanDescription = src.executionPlanDescription.andThen(this, "Eager")
 
-    Iterator.empty
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
-
-  def dependencies = Seq()
-
-  def deps = Map()
-
-  def symbols = SymbolTable()
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.toList.toIterator
 
   override def isLazy = false
 }
