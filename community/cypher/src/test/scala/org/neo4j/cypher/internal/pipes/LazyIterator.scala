@@ -19,28 +19,28 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.graphdb.GraphDatabaseService
+import org.scalatest.Assertions
 
-class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
-      input.next()
-    }
+class LazyIterator[T](count: Int, f: (Int, GraphDatabaseService) => T) extends Iterator[T]() with Assertions {
+  var db: Option[GraphDatabaseService] = None
 
-    Iterator.empty
+  def this(count: Int, f: Int => T) = {
+    this(count, (count: Int, _) => f(count))
+    db = Some(null)
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
+  var counter = 0
 
-  def dependencies = Seq()
+  def hasNext: Boolean = counter < count
 
-  def deps = Map()
+  def next(): T = {
+    val graph = db.getOrElse(fail("Iterator needs that database set before it can be used"))
 
-  def symbols = SymbolTable()
+    counter += 1
+    f(counter, graph)
+  }
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
-
-  override def isLazy = false
+  override def toString(): String = counter.toString
 }

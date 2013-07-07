@@ -19,28 +19,24 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.scalatest.Assertions
+import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
 
-class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
+class EagerPipeTest extends Assertions {
+  @Test
+  def shouldMakeLazyEager() {
+    // Given a lazy iterator that is not empty
+    val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
+    val src = new FakePipe(lazyIterator)
+    val eager = new EagerPipe(src)
+    assert(lazyIterator.nonEmpty, "Should not be empty")
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
-      input.next()
-    }
+    // When
+    val resultIterator = eager.createResults(QueryStateHelper.empty)
 
-    Iterator.empty
+    // Then the lazy iterator is emptied, and the returned iterator is not
+    assert(lazyIterator.isEmpty, "Should be empty")
+    assert(resultIterator.nonEmpty, "Should not be empty")
   }
-
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
-
-  def dependencies = Seq()
-
-  def deps = Map()
-
-  def symbols = SymbolTable()
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
-
-  override def isLazy = false
 }

@@ -40,9 +40,11 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val patterns = q.matching.map(Unsolved(_))
+    val inputQuery = q.compact
 
-    val items: Seq[StartItem] = q.start ++ q.hints
+    val patterns = inputQuery.matching.map(Unsolved(_))
+
+    val items: Seq[StartItem] = inputQuery.start ++ inputQuery.hints
 
     /*
     TODO: This is an intermediate step. We're storing the MergeAst objects in the Start clause for now.
@@ -60,18 +62,18 @@ object PartiallySolvedQuery {
 
 
     new PartiallySolvedQuery(
-      returns = q.returns.returnItems.map(Unsolved(_)),
+      returns = inputQuery.returns.returnItems.map(Unsolved(_)),
       start = newStart,
-      updates = q.updatedCommands.map(Unsolved(_)) ++ newUpdates,
+      updates = inputQuery.updatedCommands.map(Unsolved(_)) ++ newUpdates,
       patterns = patterns,
-      where = q.where.atoms.map(Unsolved(_)),
-      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
-      sort = q.sort.map(Unsolved(_)),
-      slice = q.slice.map(Unsolved(_)),
-      namedPaths = q.namedPaths.map(Unsolved(_)),
-      aggregateToDo = q.aggregation.isDefined,
+      where = inputQuery.where.atoms.map(Unsolved(_)),
+      aggregation = inputQuery.aggregation.toSeq.flatten.map(Unsolved(_)),
+      sort = inputQuery.sort.map(Unsolved(_)),
+      slice = inputQuery.slice.map(Unsolved(_)),
+      namedPaths = inputQuery.namedPaths.map(Unsolved(_)),
+      aggregateToDo = inputQuery.aggregation.isDefined,
       extracted = false,
-      tail = q.tail.map(q => PartiallySolvedQuery(q))
+      tail = inputQuery.tail.map(q => PartiallySolvedQuery(q))
     )
   }
 
@@ -201,6 +203,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
     returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
+
+  def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
 case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)

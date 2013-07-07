@@ -40,6 +40,8 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
   }
 
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> sortDescription)
+
+  override def isLazy = false
 }
 
 trait ExecutionContextComparer extends Comparer {

@@ -21,7 +21,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/enterprise/tree/master/backup</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/backup</url>
   </scm>
 
   <licenses>

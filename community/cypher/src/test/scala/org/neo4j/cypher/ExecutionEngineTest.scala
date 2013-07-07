@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import internal.commands._
 import expressions._
-import internal.commands._
 import org.junit.Assert._
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
@@ -31,26 +30,9 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import util.Random
 import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
 import org.neo4j.cypher.internal.commands.values.TokenType._
-import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.commands.RegularExpression
-import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
-import org.neo4j.cypher.internal.commands.SortItem
-import scala.Some
-import org.neo4j.cypher.internal.commands.NodeByIndex
-import org.neo4j.cypher.internal.commands.Xor
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.expressions.RelationshipTypeFunction
-import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.commands.expressions.Property
-import org.neo4j.cypher.internal.commands.Or
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.expressions.CountStar
-import org.neo4j.cypher.internal.commands.LessThan
-import org.neo4j.cypher.internal.commands.expressions.Nullable
+import java.util.concurrent.TimeUnit
 
-
-class ExecutionEngineTest extends ExecutionEngineHelper {
+class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
   @Ignore
   @Test def assignToPathInsideForeachShouldWork() {
@@ -2803,5 +2785,29 @@ RETURN x0.name?
     val query = "match (n)-->(x) return n"
 
     assert(engine.prettify(query) === String.format("MATCH (n)-->(x)%nRETURN n"))
+  }
+
+  @Test
+  def should_not_see_updates_created_by_itself() {
+
+    timeOutIn(5, TimeUnit.SECONDS) {
+      val result = parseAndExecute("start n=node(*) create ()")
+      assert(result.toList === List())
+    }
+  }
+
+  @Test
+  def doctest_gone_wild() {
+    // given
+    parseAndExecute("CREATE (n:Actor {name:'Tom Hanks'})")
+
+    // when
+    val result = parseAndExecute("""MATCH (actor:Actor)
+                               WHERE actor.name = "Tom Hanks"
+                               CREATE (movie:Movie {title:'Sleepless in Seattle'})
+                               CREATE (actor)-[:ACTED_IN]->(movie)""")
+
+    // then
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, relationshipsCreated = 1)
   }
 }

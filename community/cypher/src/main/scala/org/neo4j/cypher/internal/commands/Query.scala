@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
 import expressions.{Expression, AggregationExpression}
+import org.neo4j.cypher.internal.commands
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
@@ -61,6 +62,48 @@ case class Query(returns: Return,
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
                  queryString: QueryString = QueryString.empty) extends AbstractQuery {
+
+  def compact: Query = {
+    val compactableStart = start.forall(_.mutating) &&
+        start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+        hints.isEmpty &&
+        returns == Return(List("*"), AllIdentifiers()) &&
+        where == True() &&
+        matching.isEmpty &&
+        sort.isEmpty &&
+        slice.isEmpty
+
+    lazy val tailQ = tail.map(_.compact).get
+
+    val compactableEnd = tail.nonEmpty &&
+      tailQ.matching.isEmpty &&
+      tailQ.where == True() &&
+      tailQ.start.forall(_.mutating) &&
+      tailQ.start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+      tailQ.hints.isEmpty &&
+      tailQ.sort.isEmpty &&
+      tailQ.slice.isEmpty &&
+      tailQ.aggregation.isEmpty
+
+    if (compactableStart && compactableEnd) {
+      val result = commands.Query(
+        hints = hints ++ tailQ.hints,
+        start = start ++ tailQ.start,
+        returns = tailQ.returns,
+        updatedCommands = updatedCommands ++ tailQ.updatedCommands,
+        matching = Seq(),
+        where = True(),
+        aggregation = None,
+        sort = Seq(),
+        slice = None,
+        namedPaths = Seq(),
+        tail = tailQ.tail
+      )
+      result
+    } else this
+
+  }
+
 
   override def toString: String =
     """

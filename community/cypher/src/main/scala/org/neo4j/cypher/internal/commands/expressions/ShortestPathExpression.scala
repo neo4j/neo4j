@@ -36,7 +36,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     if (anyStartpointsContainNull(ctx)) {
-      null
+      Stream(null)
     } else {
       getMatches(ctx)
     }

@@ -32,9 +32,9 @@
   </modules>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/manual.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/manual.git</developerConnection>
-    <url>https://github.com/neo4j/manual</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+	<url>https://github.com/neo4j/neo4j/tree/master/manual</url>
   </scm>
 
   <licenses>
