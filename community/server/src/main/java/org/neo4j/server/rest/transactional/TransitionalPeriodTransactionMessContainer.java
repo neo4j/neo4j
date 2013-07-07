@@ -22,7 +22,7 @@ package org.neo4j.server.rest.transactional;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class TransitionalPeriodTransactionMessContainer implements KernelAPI
@@ -47,13 +47,13 @@ public class TransitionalPeriodTransactionMessContainer implements KernelAPI
     }
 
     @Override
-    public StatementOperations readOnlyStatementOperations()
+    public StatementOperationParts readOnlyStatementOperations()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public StatementOperations statementOperations()
+    public StatementOperationParts statementOperations()
     {
         throw new UnsupportedOperationException();
     }

@@ -30,8 +30,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -95,7 +95,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction beansAPITx = db.beginTx();
 
         // 2: Get a hold of a KernelAPI statement context for the *current* transaction this way:
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // 3: Now you can interact through both the statement context and the kernel API to manipulate the
@@ -145,7 +145,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -157,7 +157,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         try
         {
@@ -175,7 +175,7 @@ public class KernelIT extends KernelIntegrationTest
     public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
     {
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -189,7 +189,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         try
         {
@@ -207,7 +207,7 @@ public class KernelIT extends KernelIntegrationTest
     public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
     {
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -223,7 +223,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
 
         assertEquals( asSet( labelId1 ), asSet( context.nodeGetLabels( statement, node.getId() ) ) );
@@ -235,7 +235,7 @@ public class KernelIT extends KernelIntegrationTest
     public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
     {
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -260,7 +260,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         Node node = db.createNode();
         long labelId1 = context.labelGetOrCreateForName( statement, "labello1" );
@@ -271,7 +271,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.finish();
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -292,7 +292,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         Node node = db.createNode();
         long labelId1 = context.labelGetOrCreateForName( statement, "labello1" );
@@ -303,7 +303,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         context.nodeRemoveLabel( statement, node.getId(), labelId1 );
         context.close( statement );
@@ -312,7 +312,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         Iterator<Long> labels = context.nodeGetLabels( statement, node.getId() );
         context.close( statement );
@@ -328,7 +328,7 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.nodeAddLabel( statement, node.getId(), labelId );
@@ -338,7 +338,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         boolean added = context.nodeAddLabel( statement, node.getId(), labelId );
 
@@ -353,7 +353,7 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.close( statement );
@@ -362,7 +362,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         boolean added = context.nodeAddLabel( statement, node.getId(), labelId );
 
@@ -377,7 +377,7 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.nodeAddLabel( statement, node.getId(), labelId );
@@ -387,7 +387,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         boolean removed = context.nodeRemoveLabel( statement, node.getId(), labelId );
 
@@ -402,7 +402,7 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.close( statement );
@@ -411,7 +411,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        context = statementContextProvider.getCtxForWriting();
+        context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         boolean removed = context.nodeRemoveLabel( statement, node.getId(), labelId );
 
@@ -431,7 +431,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.finish();
 
         tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
 
         // WHEN
@@ -471,7 +471,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        StatementOperations context = statementContextProvider.getCtxForWriting();
+        StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetForName( statement, label.name() );
         Iterator<Long> nodes = context.nodesGetForLabel( statement, labelId );
@@ -536,7 +536,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         Transaction tx;StatementOperations statement;
         tx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
+        statement = statementContextProvider.getCtxForWriting().asStatementOperations();
         String state = statement.schemaStateGetOrCreate( getState(), key, new Function<String, String>()
         {
             @Override
@@ -554,7 +554,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         Transaction tx;StatementOperations statement;
         tx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
+        statement = statementContextProvider.getCtxForWriting().asStatementOperations();
         boolean state = statement.schemaStateContains( getState(), key );
         tx.success();
         tx.finish();

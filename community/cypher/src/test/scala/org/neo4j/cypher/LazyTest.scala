@@ -38,11 +38,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
-import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.operations.{StatementState, KeyReadOperations, KeyWriteOperations, EntityReadOperations, EntityWriteOperations, SchemaReadOperations, SchemaWriteOperations, SchemaStateOperations, LifecycleOperations}
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -179,24 +179,18 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val nodeMgre = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
-    val fakeCtx = mock[StatementOperations]
     val schemaState = new KernelSchemaStateStore()
     val schemaOps = new SchemaStateConcern(schemaState)
     
-    when( fakeCtx.schemaStateContains( Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Boolean]()
-        {
-            override def answer(invocation: InvocationOnMock): Boolean = {
-                schemaOps.schemaStateContains( invocation.getArguments()(0).asInstanceOf[StatementState], invocation.getArguments()(1) )
-            }
-        } )
-    when( fakeCtx.schemaStateGetOrCreate( Matchers.any(), Matchers.any(), Matchers.any() ) ).thenAnswer( new Answer[Any]()
-        {
-            override def answer(invocation: InvocationOnMock): Any = {
-                schemaOps.schemaStateGetOrCreate( invocation.getArguments()(0).asInstanceOf[StatementState],
-                    invocation.getArguments()(1), invocation.getArguments()(2).asInstanceOf[org.neo4j.helpers.Function[Any, Any]] )
-            }
-        } )
-    
+    val fakeCtx = new StatementOperationParts(
+        mock[KeyReadOperations],
+        mock[KeyWriteOperations],
+        mock[EntityReadOperations],
+        mock[EntityWriteOperations],
+        mock[SchemaReadOperations],
+        mock[SchemaWriteOperations],
+        schemaOps,
+        mock[LifecycleOperations] )
     when(nodeMgre.getAllNodes).thenReturn(iter)
     when(bridge.getCtxForWriting).thenReturn(fakeCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)

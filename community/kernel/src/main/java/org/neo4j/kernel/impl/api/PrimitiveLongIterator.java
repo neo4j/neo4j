@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api;
 
-public interface RefCounting
+public interface PrimitiveLongIterator
 {
-    boolean isOpen();
+    boolean hasNext();
     
-    void close();
-    
-    public static class Default implements RefCounting
-    {
-        private boolean open = true;
-
-        @Override
-        public boolean isOpen()
-        {
-            return open;
-        }
-
-        @Override
-        public void close()
-        {
-            open = false;
-        }
-    }
+    long next();
 }

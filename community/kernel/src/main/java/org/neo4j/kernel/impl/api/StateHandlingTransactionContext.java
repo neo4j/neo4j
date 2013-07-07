@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -93,7 +93,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                 parts.entityReadOperations(),
                 parts.schemaReadOperations(),
                 persistenceCache, schemaCache );
-        parts.replace( null, null, cachingContext, null, cachingContext, null, null, null );
+        parts = parts.override( null, null, cachingContext, null, cachingContext, null, null, null );
 
         // + Transaction-local state awareness
         AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
@@ -105,7 +105,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
                 parts.schemaReadOperations(),
                 auxStoreOperations,
                 constraintIndexCreator );
-        parts.replace(
+        parts = parts.override(
                 null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
                 new SchemaStateConcern( schemaState ), null );
                 

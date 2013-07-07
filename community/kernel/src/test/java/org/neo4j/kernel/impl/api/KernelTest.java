@@ -27,9 +27,8 @@ import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -115,7 +114,7 @@ public class KernelTest
             try
             {
                 latch.start();
-                StatementOperations statement = kernel.readOnlyStatementOperations();
+                StatementOperationParts statement = kernel.readOnlyStatementOperations();
 //                statement.close();
             }
             catch ( Throwable e )

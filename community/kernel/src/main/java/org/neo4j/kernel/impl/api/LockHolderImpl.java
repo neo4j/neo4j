@@ -50,10 +50,6 @@ public class LockHolderImpl implements LockHolder
 
     public LockHolderImpl( LockManager lockManager, Transaction tx, NodeManager nodeManager )
     {
-        if ( tx == null )
-        {
-            throw new RuntimeException( "Cannot initialize lock holder without a transaction, got null." );
-        }
         this.lockManager = lockManager;
         this.tx = tx;
 
@@ -185,11 +181,6 @@ public class LockHolderImpl implements LockHolder
             throw unsupportedOperation();
         }
         
-        public GraphDatabaseService getGraphDatabaseService()
-        {
-            throw unsupportedOperation();
-        }
-
         @Override
         public GraphDatabaseService getGraphDatabase()
         {

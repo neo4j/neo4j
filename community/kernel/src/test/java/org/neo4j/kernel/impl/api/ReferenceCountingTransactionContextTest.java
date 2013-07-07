@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.operations.RefCounting;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 
 import static org.junit.Assert.assertEquals;
@@ -49,9 +48,7 @@ public class ReferenceCountingTransactionContextTest
     {
         inner = mock( KernelTransaction.class );
         actualState = mock( StatementState.class );
-        when( actualState.refCounting() ).thenReturn( mock( RefCounting.class ) );
         otherActualState = mock( StatementState.class );
-        when( otherActualState.refCounting() ).thenReturn( mock( RefCounting.class ) );
         when( inner.newStatementState() )
                 .thenReturn( actualState )
                 .thenReturn( otherActualState );
@@ -83,7 +80,7 @@ public class ReferenceCountingTransactionContextTest
         refCountingOperations.close( first );
 
         // THEN
-        verify( actualState.refCounting(), never() ).close();
+        verify( actualState, never() ).markAsClosed();
     }
 
     @Test
@@ -98,7 +95,7 @@ public class ReferenceCountingTransactionContextTest
         refCountingOperations.close( other );
 
         // THEN
-        verify( actualState.refCounting(), times( 1 ) ).close();
+        verify( actualState, times( 1 ) ).markAsClosed();
     }
 
     @Test
@@ -110,8 +107,8 @@ public class ReferenceCountingTransactionContextTest
 
         // THEN
         verify( inner, times( 2 ) ).newStatementState();
-        verify( actualState.refCounting() ).close();
-        verify( otherActualState.refCounting() ).close();
+        verify( actualState ).markAsClosed();
+        verify( otherActualState ).markAsClosed();
     }
 
 //    @Ignore( "Not valid I(MP)'d say" )
@@ -157,7 +154,7 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEqualsStatementClosed( e );
         }
-        verify( actualState.refCounting(), never() ).close();
+        verify( actualState, never() ).markAsClosed();
     }
 
     private void assertEqualsStatementClosed( IllegalStateException e )
@@ -186,7 +183,7 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEqualsStatementClosed( e );
         }
-        verify( actualState.refCounting(), times( 1 ) ).close();
+        verify( actualState, times( 1 ) ).markAsClosed();
     }
 
     @Test
@@ -209,7 +206,7 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEqualsStatementClosed( e );
         }
-        verify( actualState.refCounting(), times( 1 ) ).close();
+        verify( actualState, times( 1 ) ).markAsClosed();
     }
 
     @Test
@@ -234,9 +231,9 @@ public class ReferenceCountingTransactionContextTest
         {
             assertEqualsStatementClosed( e );
         }
-        verify( actualState.refCounting(), times( 1 ) ).close();
+        verify( actualState, times( 1 ) ).markAsClosed();
         verifyZeroInteractions( otherActualState );
         refCountingOperations.close( after );
-        verify( otherActualState.refCounting(), times( 1 ) ).close();
+        verify( otherActualState, times( 1 ) ).markAsClosed();
     }
 }

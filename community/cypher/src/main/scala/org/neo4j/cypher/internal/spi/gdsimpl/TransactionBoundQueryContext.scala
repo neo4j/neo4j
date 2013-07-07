@@ -35,14 +35,16 @@ import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator
+import scala.collection.Iterator
 
-class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementOperations, theState: StatementState)
-  extends TransactionBoundTokenContext(ctx, theState) with QueryContext {
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementOperationParts, theState: StatementState)
+  extends TransactionBoundTokenContext(ctx.keyReadOperations, theState) with QueryContext {
 
   private var open = true
 
   def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (ctx.nodeAddLabel(theState, node, labelId)) count + 1 else count
+    case (count, labelId) => if (ctx.entityWriteOperations.nodeAddLabel(theState, node, labelId)) count + 1 else count
   }
 
   def close(success: Boolean) {
@@ -92,13 +94,13 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelsForNode(node: Long) =
-    ctx.nodeGetLabels(theState, node).asScala.map(_.asInstanceOf[Long])
+    ctx.entityReadOperations.nodeGetLabels(theState, node).asScala.map(_.asInstanceOf[Long])
 
   override def isLabelSetOnNode(label: Long, node: Long) =
-    ctx.nodeHasLabel(theState, node, label)
+    ctx.entityReadOperations.nodeHasLabel(theState, node, label)
 
   def getOrCreateLabelId(labelName: String) =
-    ctx.labelGetOrCreateForName(theState, labelName)
+    ctx.keyWriteOperations.labelGetOrCreateForName(theState, labelName)
 
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = types match {
@@ -109,37 +111,37 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def getTransaction = tx
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
-    ctx.nodesGetFromIndexLookup(theState, index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+    ctx.entityReadOperations.nodesGetFromIndexLookup(theState, index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 
   val relationshipOps = new RelationshipOperations
 
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (ctx.nodeRemoveLabel(theState, node, labelId)) count + 1 else count
+    case (count, labelId) => if (ctx.entityWriteOperations.nodeRemoveLabel(theState, node, labelId)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.nodesGetForLabel(theState, id).asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.entityReadOperations.nodesGetForLabel(theState, id).asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      ctx.nodeDelete(theState, obj.getId)
+      ctx.entityWriteOperations.nodeDelete(theState, obj.getId)
     }
 
-    def propertyKeyIds(obj: Node): Iterator[Long] = ctx.nodeGetPropertyKeys(theState, obj.getId).asScala.map(_.longValue())
+    def propertyKeyIds(obj: Node): Iterator[Long] = primitiveLongIteratorToScalaIterator(ctx.entityReadOperations.nodeGetPropertyKeys(theState, obj.getId)).map(_.longValue())
 
     def getProperty(obj: Node, propertyKeyId: Long): Any = {
-      ctx.nodeGetProperty(theState, obj.getId, propertyKeyId).value(null)
+      ctx.entityReadOperations.nodeGetProperty(theState, obj.getId, propertyKeyId).value(null)
     }
 
-    def hasProperty(obj: Node, propertyKey: Long) = ctx.nodeHasProperty(theState, obj.getId, propertyKey)
+    def hasProperty(obj: Node, propertyKey: Long) = ctx.entityReadOperations.nodeHasProperty(theState, obj.getId, propertyKey)
 
     def removeProperty(obj: Node, propertyKeyId: Long) {
-      ctx.nodeRemoveProperty(theState, obj.getId, propertyKeyId)
+      ctx.entityWriteOperations.nodeRemoveProperty(theState, obj.getId, propertyKeyId)
     }
 
     def setProperty(obj: Node, propertyKeyId: Long, value: Any) {
-      ctx.nodeSetProperty(theState, obj.getId, properties.Property.property(propertyKeyId, value) )
+      ctx.entityWriteOperations.nodeSetProperty(theState, obj.getId, properties.Property.property(propertyKeyId, value) )
     }
 
 
@@ -161,23 +163,23 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     def delete(obj: Relationship) {
-      ctx.relationshipDelete(theState, obj.getId)
+      ctx.entityWriteOperations.relationshipDelete(theState, obj.getId)
     }
 
     def propertyKeyIds(obj: Relationship): Iterator[Long] =
-      ctx.relationshipGetPropertyKeys(theState, obj.getId).asScala.map(_.longValue())
+      primitiveLongIteratorToScalaIterator( ctx.entityReadOperations.relationshipGetPropertyKeys(theState, obj.getId)).map(_.longValue())
 
     def getProperty(obj: Relationship, propertyKeyId: Long): Any =
-      ctx.relationshipGetProperty(theState, obj.getId, propertyKeyId).value(null)
+      ctx.entityReadOperations.relationshipGetProperty(theState, obj.getId, propertyKeyId).value(null)
 
-    def hasProperty(obj: Relationship, propertyKey: Long) = ctx.relationshipHasProperty(theState, obj.getId, propertyKey)
+    def hasProperty(obj: Relationship, propertyKey: Long) = ctx.entityReadOperations.relationshipHasProperty(theState, obj.getId, propertyKey)
 
     def removeProperty(obj: Relationship, propertyKeyId: Long) {
-      ctx.relationshipRemoveProperty(theState, obj.getId, propertyKeyId)
+      ctx.entityWriteOperations.relationshipRemoveProperty(theState, obj.getId, propertyKeyId)
     }
 
     def setProperty(obj: Relationship, propertyKeyId: Long, value: Any) {
-      ctx.relationshipSetProperty(theState, obj.getId, properties.Property.property(propertyKeyId, value) )
+      ctx.entityWriteOperations.relationshipSetProperty(theState, obj.getId, properties.Property.property(propertyKeyId, value) )
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)
@@ -193,25 +195,25 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =
-    ctx.propertyKeyGetOrCreateForName(theState, propertyKey)
+    ctx.keyWriteOperations.propertyKeyGetOrCreateForName(theState, propertyKey)
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long) {
     try {
-      ctx.indexCreate(theState, labelIds, propertyKeyId)
+      ctx.schemaWriteOperations.indexCreate(theState, labelIds, propertyKeyId)
     } catch {
       case e: SchemaKernelException =>
         val labelName = getLabelName(labelIds)
-        val propName = ctx.propertyKeyGetName(theState, propertyKeyId)
+        val propName = ctx.keyReadOperations.propertyKeyGetName(theState, propertyKeyId)
         throw new IndexAlreadyDefinedException(labelName, propName, e)
     }
   }
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.indexDrop(theState, new IndexDescriptor(labelId, propertyKeyId))
+      ctx.schemaWriteOperations.indexDrop(theState, new IndexDescriptor(labelId, propertyKeyId))
     } catch {
       case e: DropIndexFailureException =>
-        throw new CouldNotDropIndexException(e.getUserMessage(new KeyNameLookup(theState, ctx)), e)
+        throw new CouldNotDropIndexException(e.getUserMessage(new KeyNameLookup(theState, ctx.keyReadOperations)), e)
     }
   }
 
@@ -229,33 +231,42 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def propertyKeys(obj: T) = obj.getPropertyKeys.asScala
+    
+    def primitiveLongIteratorToScalaIterator( primitiveIterator: PrimitiveLongIterator ): Iterator[Long] = {
+      new Iterator[Long]
+      {
+        def hasNext(): Boolean = primitiveIterator.hasNext
+        
+        def next(): Long = primitiveIterator.next
+      }
+    }
   }
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
     val javaCreator = new org.neo4j.helpers.Function[K, V]() {
       def apply(key: K) = creator
     }
-    ctx.schemaStateGetOrCreate(theState, key, javaCreator)
+    ctx.schemaStateOperations.schemaStateGetOrCreate(theState, key, javaCreator)
   }
 
-  def schemaStateContains(key: String) = ctx.schemaStateContains(theState, key)
+  def schemaStateContains(key: String) = ctx.schemaStateOperations.schemaStateContains(theState, key)
 
   def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.uniquenessConstraintCreate(theState, labelId, propertyKeyId)
+      ctx.schemaWriteOperations.uniquenessConstraintCreate(theState, labelId, propertyKeyId)
     } catch {
         case e: KernelException =>
-          throw new CouldNotCreateConstraintException(e.getUserMessage(new KeyNameLookup(theState, ctx)), e)
+          throw new CouldNotCreateConstraintException(e.getUserMessage(new KeyNameLookup(theState, ctx.keyReadOperations)), e)
     }
   }
 
   def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    val constraint = IteratorUtil.singleOrNull(ctx.constraintsGetForLabelAndPropertyKey(theState, labelId, propertyKeyId))
+    val constraint = IteratorUtil.singleOrNull(ctx.schemaReadOperations.constraintsGetForLabelAndPropertyKey(theState, labelId, propertyKeyId))
 
     if (constraint == null) {
       throw new MissingConstraintException()
     }
 
-    ctx.constraintDrop(theState, constraint)
+    ctx.schemaWriteOperations.constraintDrop(theState, constraint)
   }
 }

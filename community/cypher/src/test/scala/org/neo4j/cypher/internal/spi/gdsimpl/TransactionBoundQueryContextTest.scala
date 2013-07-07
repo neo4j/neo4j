@@ -28,19 +28,20 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperationParts
 
 class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with MockitoSugar {
 
   var graph: ImpermanentGraphDatabase = null
   var outerTx: Transaction = null
-  var statementContext: StatementOperations = null
+  var statementContext: StatementOperationParts = null
   var state: StatementState = null
 
   @Before
   def init() {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statementContext = mock[StatementOperations]
+    statementContext = mock[StatementOperationParts]
     state = mock[StatementState]
   }
 

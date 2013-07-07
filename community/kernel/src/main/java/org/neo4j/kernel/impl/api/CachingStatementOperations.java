@@ -43,16 +43,15 @@ import java.util.Set;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -215,16 +214,9 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
     {
-        return new IteratorWrapper<Long,Property>( nodeGetAllProperties( state, nodeId ) )
-        {
-            @Override
-            protected Long underlyingObjectToObject( Property property )
-            {
-                return property.propertyKeyId();
-            }
-        };
+        return persistenceCache.nodeGetPropertyKeys( state, nodeId, nodePropertyLoader );
     }
     
     @Override
@@ -246,15 +238,22 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> relationshipGetPropertyKeys( StatementState state, long relationshipId )
+    public PrimitiveLongIterator relationshipGetPropertyKeys( StatementState state, long relationshipId )
             throws EntityNotFoundException
     {
-        return new IteratorWrapper<Long,Property>( relationshipGetAllProperties( state, relationshipId ) )
+        final Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
+        return new PrimitiveLongIterator()
         {
             @Override
-            protected Long underlyingObjectToObject( Property property )
+            public boolean hasNext()
             {
-                return property.propertyKeyId();
+                return properties.hasNext();
+            }
+            
+            @Override
+            public long next()
+            {
+                return properties.next().propertyKeyId();
             }
         };
     }
@@ -280,16 +279,9 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> graphGetPropertyKeys( StatementState state )
+    public PrimitiveLongIterator graphGetPropertyKeys( StatementState state )
     {
-        return new IteratorWrapper<Long,Property>( graphGetAllProperties( state ) )
-        {
-            @Override
-            protected Long underlyingObjectToObject( Property property )
-            {
-                return property.propertyKeyId();
-            }
-        };
+        return persistenceCache.graphGetPropertyKeys( state, graphPropertyLoader );
     }
     
     @Override

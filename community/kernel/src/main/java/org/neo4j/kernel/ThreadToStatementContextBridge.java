@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -69,12 +70,12 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         } ) );
     }
     
-    public StatementOperations getCtxForReading()
+    public StatementOperationParts getCtxForReading()
     {
         return kernelAPI.readOnlyStatementOperations();
     }
 
-    public StatementOperations getCtxForWriting()
+    public StatementOperationParts getCtxForWriting()
     {
         return kernelAPI.statementOperations();
     }
@@ -128,13 +129,13 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         }
         
         @Override
-        public StatementOperations getCtxForWriting()
+        public StatementOperationParts getCtxForWriting()
         {
             return kernelAPI.readOnlyStatementOperations();
         }
 
         @Override
-        public StatementOperations getCtxForReading()
+        public StatementOperationParts getCtxForReading()
         {
             return kernelAPI.readOnlyStatementOperations();
         }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class UniquenessConstraintStoppingTransactionContext extends DelegatingTransactionContext
@@ -43,8 +43,7 @@ public class UniquenessConstraintStoppingTransactionContext extends DelegatingTr
         UniquenessConstraintStoppingStatementOperations stoppingContext =
                 new UniquenessConstraintStoppingStatementOperations( parts.schemaWriteOperations() );
         
-        parts.replace( null, null, null, null, null, stoppingContext, null, null );
-        return parts;
+        return parts.override( null, null, null, null, null, stoppingContext, null, null );
     }
 
     private static class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOperations

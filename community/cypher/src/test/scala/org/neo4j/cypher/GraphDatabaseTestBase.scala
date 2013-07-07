@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.scalatest.Assertions
 import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperationParts
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -97,7 +99,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
-  def execStatement[T](f: (StatementOperations => T)): T = {
+  def execStatement[T](f: (StatementOperationParts => T)): T = {
     val tx = graph.beginTx
     val ctx = graph
       .getDependencyResolver
@@ -176,16 +178,17 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     (a, b, c, d)
   }
 
-  def statementContext:StatementOperations =
+  def statementContext:StatementOperationParts =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
 
   def cakeState:StatementState =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForWriting
     
-  def readOnlyStatementContext:StatementOperations =
+  def readOnlyStatementContext:StatementOperationParts =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForReading
 
-  def planContext:PlanContext= new TransactionBoundPlanContext(statementContext, cakeState, graph)
+  def planContext:PlanContext= new TransactionBoundPlanContext(
+      statementContext.keyReadOperations, statementContext.schemaReadOperations, cakeState, graph)
 
   def readOnlyCakeState:StatementState =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForReading

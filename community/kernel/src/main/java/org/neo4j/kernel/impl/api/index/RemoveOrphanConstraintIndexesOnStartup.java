@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -60,17 +60,17 @@ public class RemoveOrphanConstraintIndexesOnStartup
             try
             {
                 tx = txManager.getKernelTransaction();
-                StatementOperations context = ctxProvider.getCtxForWriting();
+                StatementOperationParts context = ctxProvider.getCtxForWriting();
                 StatementState state = tx.newStatementState();
                 try
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.uniqueIndexesGetAll( state );
+                    for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll( state );
                             indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.indexGetOwningUniquenessConstraintId( state, index ) == null )
+                        if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( state, index ) == null )
                         {
-                            context.uniqueIndexDrop( state, index );
+                            context.schemaWriteOperations().uniqueIndexDrop( state, index );
                         }
                     }
                 }

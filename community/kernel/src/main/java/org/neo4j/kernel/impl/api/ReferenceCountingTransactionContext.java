@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 
 public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
@@ -48,8 +48,7 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     {
         StatementOperationParts parts = delegate.newStatementOperations();
         ReferenceCountingStatementOperations ops = new ReferenceCountingStatementOperations();
-        parts.replace( null, null, null, null, null, null, null, ops );
-        return parts;
+        return parts.override( null, null, null, null, null, null, null, ops );
     }
     
     @Override
