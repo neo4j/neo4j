@@ -173,6 +173,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         }
     }
 
+    private final Map<Long, Delta<DynamicRecord>> schemata = new HashMap<Long, Delta<DynamicRecord>>();
     private final Map<Long, Delta<NodeRecord>> nodes = new HashMap<Long, Delta<NodeRecord>>();
     private final Map<Long, Delta<RelationshipRecord>> relationships = new HashMap<Long, Delta<RelationshipRecord>>();
     private final Map<Long, Delta<PropertyRecord>> properties = new HashMap<Long, Delta<PropertyRecord>>();
@@ -243,6 +244,11 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     private static <R extends AbstractBaseRecord> void add( Map<Long, Delta<R>> records, R oldRecord, R newRecord )
     {
         records.put( newRecord.getLongId(), new Delta<R>( oldRecord, newRecord ) );
+    }
+
+    public DynamicRecord addSchema( DynamicRecord schema )
+    {
+        return add( schemata, schema);
     }
 
     public DynamicRecord addString( DynamicRecord string )
@@ -399,6 +405,12 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     }
 
     @Override
+    public RecordReference<DynamicRecord> schema( long id )
+    {
+        return reference( schemata, id, Version.LATEST );
+    }
+
+    @Override
     public RecordReference<NodeRecord> node( long id )
     {
         return reference( nodes, id, Version.LATEST );
@@ -492,6 +504,12 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     public RecordReference<PropertyRecord> previousProperty( long id )
     {
         return reference( properties, id, Version.PREV );
+    }
+
+    @Override
+    public DynamicRecord changedSchema( long id )
+    {
+        return record( schemata, id, Version.NEW );
     }
 
     @Override

@@ -52,7 +52,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     @Override
     public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        processor.processSchema( this, record );
     }
 
     @Override

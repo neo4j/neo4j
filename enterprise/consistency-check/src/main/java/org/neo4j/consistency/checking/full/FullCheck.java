@@ -113,6 +113,9 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<DynamicRecord>(
                 store.getArrayStore(), progress, order,
                 processEverything, processorFactory.createAll( ARRAYS ) ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getSchemaStore(), progress, order,
+                processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<RelationshipTypeTokenRecord>(
                 store.getRelationshipTypeTokenStore(), progress, order,
                 processEverything, processEverything ) );

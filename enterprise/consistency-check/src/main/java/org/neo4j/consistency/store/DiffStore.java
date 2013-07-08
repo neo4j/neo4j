@@ -58,16 +58,6 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         return new DiffRecordStore<R>( store );
     }
 
-    /**
-     * Overridden to increase visibility to public, it's used from
-     * {@link org.neo4j.backup.log.VerifyingTransactionInterceptor}.
-     */
-    @Override
-    public RecordStore<?>[] allStores()
-    {
-        return super.allStores();
-    }
-
     @Override
     protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store ) throws FAILURE
     {
@@ -200,6 +190,12 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public void visitNeoStore( NeoStoreRecord record )
     {
         this.masterRecord = record;
+    }
+
+    @Override
+    public DiffRecordStore<DynamicRecord> getSchemaStore()
+    {
+        return (DiffRecordStore<DynamicRecord>) super.getSchemaStore();
     }
 
     @Override

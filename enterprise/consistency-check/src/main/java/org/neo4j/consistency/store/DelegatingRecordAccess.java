@@ -57,6 +57,11 @@ public class DelegatingRecordAccess implements DiffRecordAccess
         return delegate.previousGraph();
     }
 
+    @Override public DynamicRecord changedSchema( long id )
+    {
+        return delegate.changedSchema( id );
+    }
+
     @Override public NodeRecord changedNode( long id )
     {
         return delegate.changedNode( id );
@@ -80,6 +85,11 @@ public class DelegatingRecordAccess implements DiffRecordAccess
     @Override public DynamicRecord changedArray( long id )
     {
         return delegate.changedArray( id );
+    }
+
+    @Override public RecordReference<DynamicRecord> schema( long id )
+    {
+        return delegate.schema( id );
     }
 
     @Override public RecordReference<NodeRecord> node( long id )
