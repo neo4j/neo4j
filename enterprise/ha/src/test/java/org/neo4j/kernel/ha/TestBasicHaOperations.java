@@ -60,7 +60,7 @@ public class TestBasicHaOperations
     @Test
     public void testBasicFailover() throws Throwable
     {
-        // given
+        // Given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
@@ -69,10 +69,14 @@ public class TestBasicHaOperations
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
+        // When
         long start = System.nanoTime();
         cluster.shutdown( master );
         logger.getLogger().warn( "Shut down master" );
 
+        // Then
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
@@ -94,12 +98,15 @@ public class TestBasicHaOperations
     @Test
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
-        // given
+        // Given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
+        // When
         long nodeId = 0;
         Transaction tx = null;
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -123,6 +130,7 @@ public class TestBasicHaOperations
             tx.finish();
         }
 
+        // Then
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
@@ -133,12 +141,14 @@ public class TestBasicHaOperations
     @Test
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
-        // given
+        // Given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
+        // When
         long nodeId = 0;
         Transaction tx = null;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -162,6 +172,7 @@ public class TestBasicHaOperations
             tx.finish();
         }
 
+        // Then
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
 
