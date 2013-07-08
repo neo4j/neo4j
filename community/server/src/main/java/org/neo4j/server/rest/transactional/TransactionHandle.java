@@ -63,7 +63,7 @@ public class TransactionHandle
     private final TransactionUriScheme uriScheme;
     private final StringLogger log;
     private final long id;
-    private TransitionalTxManagementTransactionContext context;
+    private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( KernelAPI kernel, ExecutionEngine engine, TransactionRegistry registry,
                               TransactionUriScheme uriScheme, StringLogger log )
@@ -151,7 +151,7 @@ public class TransactionHandle
         {
             try
             {
-                context = (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+                context = (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
             }
             catch ( RuntimeException e )
             {

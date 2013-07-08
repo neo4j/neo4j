@@ -43,7 +43,7 @@ public class TransitionalPeriodTransactionMessContainer implements KernelAPI
         
         // Get and use the TransactionContext created in db.beginTx(). The role of creating
         // TransactionContexts will be reversed soonish.
-        return new TransitionalTxManagementTransactionContext( txManager.getKernelTransaction(), txManager );
+        return new TransitionalTxManagementKernelTransaction( txManager.getKernelTransaction(), txManager );
     }
 
     @Override

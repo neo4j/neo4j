@@ -28,9 +28,9 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public class UniquenessConstraintStoppingTransactionContext extends DelegatingTransactionContext
+public class UniquenessConstraintStoppingKernelTransaction extends DelegatingKernelTransaction
 {
-    public UniquenessConstraintStoppingTransactionContext( KernelTransaction delegate )
+    public UniquenessConstraintStoppingKernelTransaction( KernelTransaction delegate )
     {
         super( delegate );
     }

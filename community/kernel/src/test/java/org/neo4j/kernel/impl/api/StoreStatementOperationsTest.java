@@ -289,7 +289,7 @@ public class StoreStatementOperationsTest
         NeoStoreXaDataSource neoStoreDataSource = resolver
                 .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
 
-        StoreTransactionContext txContext = new StoreTransactionContext(
+        StoreKernelTransaction txContext = new StoreKernelTransaction(
                 resolver.resolveDependency( AbstractTransactionManager.class ),
                 resolver.resolveDependency( PersistenceManager.class ),
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),

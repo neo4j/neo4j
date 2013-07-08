@@ -25,11 +25,11 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 
-public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
+public class ReferenceCountingKernelTransaction extends DelegatingKernelTransaction
 {
     private StatementStateOwner statementContextOwner;
 
-    public ReferenceCountingTransactionContext( KernelTransaction delegate,
+    public ReferenceCountingKernelTransaction( KernelTransaction delegate,
             LifecycleOperations refCountingOperations )
     {
         super( delegate );
@@ -38,7 +38,7 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
             @Override
             protected StatementState createStatementState()
             {
-                return ReferenceCountingTransactionContext.this.createOwnedStatementState();
+                return ReferenceCountingKernelTransaction.this.createOwnedStatementState();
             }
         };
     }

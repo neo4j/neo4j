@@ -30,11 +30,11 @@ import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
-public class LockingTransactionContext extends DelegatingTransactionContext
+public class LockingKernelTransaction extends DelegatingKernelTransaction
 {
     private final LockHolder lockHolder;
 
-    public LockingTransactionContext( KernelTransaction delegate, LockManager lockManager,
+    public LockingKernelTransaction( KernelTransaction delegate, LockManager lockManager,
             TransactionManager transactionManager, NodeManager nodeManager )
     {
         super( delegate );

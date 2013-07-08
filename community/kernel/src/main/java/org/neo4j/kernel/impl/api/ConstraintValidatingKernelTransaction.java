@@ -21,45 +21,31 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.StatementState;
 
-public class DelegatingTransactionContext implements KernelTransaction
+/**
+ * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
+ */
+public class ConstraintValidatingKernelTransaction extends DelegatingKernelTransaction
 {
-    protected final KernelTransaction delegate;
+    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
+    // both user and system level constraints.
 
-    public DelegatingTransactionContext( KernelTransaction delegate )
+    public ConstraintValidatingKernelTransaction( KernelTransaction delegate )
     {
-        this.delegate = delegate;
+        super( delegate );
     }
 
     @Override
     public StatementOperationParts newStatementOperations()
     {
-        return delegate.newStatementOperations();
-    }
+        StatementOperationParts parts = delegate.newStatementOperations();
+        
+        // + Constraints
+        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
+                parts.keyWriteOperations(),
+                parts.schemaReadOperations(),
+                parts.schemaWriteOperations() );
 
-    @Override
-    public void prepare()
-    {
-        delegate.prepare();
-    }
-
-    @Override
-    public void commit() throws TransactionFailureException
-    {
-        delegate.commit();
-    }
-
-    @Override
-    public void rollback() throws TransactionFailureException
-    {
-        delegate.rollback();
-    }
-
-    @Override
-    public StatementState newStatementState()
-    {
-        return delegate.newStatementState();
+        return parts.override( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null, null );
     }
 }

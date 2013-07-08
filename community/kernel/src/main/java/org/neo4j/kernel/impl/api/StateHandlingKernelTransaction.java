@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-public class StateHandlingTransactionContext extends DelegatingTransactionContext
+public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
 {
     private final SchemaIndexProviderMap providerMap;
     private final PersistenceCache persistenceCache;
@@ -58,7 +58,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     private final NodeManager nodeManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
-    public StateHandlingTransactionContext( StoreTransactionContext delegate,
+    public StateHandlingKernelTransaction( StoreKernelTransaction delegate,
                                             SchemaStorage schemaStorage,
                                             TxState txState,
                                             SchemaIndexProviderMap providerMap,

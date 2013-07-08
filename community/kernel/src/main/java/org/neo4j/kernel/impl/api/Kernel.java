@@ -243,11 +243,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
-        StoreTransactionContext storeTransactionContext = new StoreTransactionContext( transactionManager,
+        StoreKernelTransaction storeTransactionContext = new StoreKernelTransaction( transactionManager,
                 persistenceManager, propertyKeyTokenHolder, labelTokenHolder, neoStore, indexService );
 
         // + Transaction state and Caching
-        KernelTransaction result = new StateHandlingTransactionContext(
+        KernelTransaction result = new StateHandlingKernelTransaction(
                 storeTransactionContext,
                 new SchemaStorage( neoStore.getSchemaStore() ),
                 newTxState(), providerMap, persistenceCache, schemaCache,
@@ -256,22 +256,22 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 propertyKeyTokenHolder, nodeManager );
 
         // + Constraint evaluation
-        result = new ConstraintValidatingTransactionContext( result );
+        result = new ConstraintValidatingKernelTransaction( result );
 
         // + Locking
-        result = new LockingTransactionContext( result, lockManager, transactionManager, nodeManager );
+        result = new LockingKernelTransaction( result, lockManager, transactionManager, nodeManager );
 
         if ( highlyAvailableInstance )
         {
             // + Stop HA from creating constraints
-            result = new UniquenessConstraintStoppingTransactionContext( result );
+            result = new UniquenessConstraintStoppingKernelTransaction( result );
         }
 
         // + Single statement at a time
         // TODO statementLogic is null the first call (since we're building the cake), but that's OK.
         // This is an artifact of KernelTransaction having too many responsibilities (i.e. being a transaction,
         // as well as being able to construct the layered StatementOperations cake).
-        result = new ReferenceCountingTransactionContext( result, statementLogic != null ? statementLogic.lifecycleOperations() : null );
+        result = new ReferenceCountingKernelTransaction( result, statementLogic != null ? statementLogic.lifecycleOperations() : null );
         
         // done
         return result;

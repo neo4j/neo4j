@@ -35,12 +35,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class ReferenceCountingTransactionContextTest
+public class ReferenceCountingKernelTransactionTest
 {
     private KernelTransaction inner;
     private StatementState actualState;
     private StatementState otherActualState;
-    private ReferenceCountingTransactionContext refCountingContext;
+    private ReferenceCountingKernelTransaction refCountingContext;
     private LifecycleOperations refCountingOperations;
 
     @Before
@@ -55,7 +55,7 @@ public class ReferenceCountingTransactionContextTest
         when( inner.newStatementOperations() )
                 .thenReturn( new StatementOperationParts( null, null, null, null, null, null, null, null ) );
         refCountingOperations = new ReferenceCountingStatementOperations();
-        refCountingContext = new ReferenceCountingTransactionContext( inner, refCountingOperations );
+        refCountingContext = new ReferenceCountingKernelTransaction( inner, refCountingOperations );
     }
 
     @Test

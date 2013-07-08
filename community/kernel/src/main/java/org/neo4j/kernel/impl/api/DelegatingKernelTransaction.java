@@ -21,31 +21,45 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 
-/**
- * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
- */
-public class ConstraintValidatingTransactionContext extends DelegatingTransactionContext
+public class DelegatingKernelTransaction implements KernelTransaction
 {
-    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
-    // both user and system level constraints.
+    protected final KernelTransaction delegate;
 
-    public ConstraintValidatingTransactionContext( KernelTransaction delegate )
+    public DelegatingKernelTransaction( KernelTransaction delegate )
     {
-        super( delegate );
+        this.delegate = delegate;
     }
 
     @Override
     public StatementOperationParts newStatementOperations()
     {
-        StatementOperationParts parts = delegate.newStatementOperations();
-        
-        // + Constraints
-        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
-                parts.keyWriteOperations(),
-                parts.schemaReadOperations(),
-                parts.schemaWriteOperations() );
+        return delegate.newStatementOperations();
+    }
 
-        return parts.override( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null, null );
+    @Override
+    public void prepare()
+    {
+        delegate.prepare();
+    }
+
+    @Override
+    public void commit() throws TransactionFailureException
+    {
+        delegate.commit();
+    }
+
+    @Override
+    public void rollback() throws TransactionFailureException
+    {
+        delegate.rollback();
+    }
+
+    @Override
+    public StatementState newStatementState()
+    {
+        return delegate.newStatementState();
     }
 }
