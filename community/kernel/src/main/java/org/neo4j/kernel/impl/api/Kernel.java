@@ -181,7 +181,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 persistenceCache = neoDataSource.getPersistenceCache();
                 schemaCache = neoDataSource.getSchemaCache();
 
-                for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
+                for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
                 {
                     schemaCache.addSchemaRule( schemaRule );
                 }

@@ -42,6 +42,13 @@ class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
+    protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema, RecordCheck
+            <DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        report.forSchemaChange( store.forceGetRaw( schema ), schema, checker );
+    }
+
+    @Override
     protected void checkNode( RecordStore<NodeRecord> store, NodeRecord node,
                               RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
     {

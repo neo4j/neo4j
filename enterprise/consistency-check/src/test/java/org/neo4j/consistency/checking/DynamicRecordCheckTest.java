@@ -31,9 +31,16 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+
+import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({DynamicRecordCheckTest.StringStore.class, DynamicRecordCheckTest.ArrayStore.class})
+@Suite.SuiteClasses( {
+        DynamicRecordCheckTest.StringRecordCheckTest.class,
+        DynamicRecordCheckTest.ArrayRecordCheckTest.class,
+        DynamicRecordCheckTest.SchemaRecordCheckTest.class
+} )
 public abstract class DynamicRecordCheckTest
     extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
 {
@@ -249,9 +256,9 @@ public abstract class DynamicRecordCheckTest
     abstract DynamicRecord record( long id );
 
     @RunWith(JUnit4.class)
-    public static class StringStore extends DynamicRecordCheckTest
+    public static class StringRecordCheckTest extends DynamicRecordCheckTest
     {
-        public StringStore()
+        public StringRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.STRING ), 66 );
         }
@@ -271,9 +278,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith(JUnit4.class)
-    public static class ArrayStore extends DynamicRecordCheckTest
+    public static class ArrayRecordCheckTest extends DynamicRecordCheckTest
     {
-        public ArrayStore()
+        public ArrayRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ), 66 );
         }
@@ -292,6 +299,30 @@ public abstract class DynamicRecordCheckTest
         }
     }
 
+    @RunWith(JUnit4.class)
+    public static class SchemaRecordCheckTest extends DynamicRecordCheckTest
+    {
+        public SchemaRecordCheckTest()
+        {
+            super( new DynamicRecordCheck( configureDynamicStore( SchemaStore.BLOCK_SIZE ), DynamicStore.SCHEMA ),
+                   SchemaStore.BLOCK_SIZE );
+        }
+
+        @Override
+        DynamicRecord record( long id )
+        {
+            DynamicRecord result = new DynamicRecord( id );
+            result.setType( SCHEMA_RECORD_TYPE );
+            return result;
+        }
+
+        @Override
+        DynamicRecord fill( DynamicRecord record, int size )
+        {
+            record.setLength( size );
+            return record;
+        }
+    }
     public static RecordStore<DynamicRecord> configureDynamicStore( int blockSize )
     {
         @SuppressWarnings( "unchecked" )

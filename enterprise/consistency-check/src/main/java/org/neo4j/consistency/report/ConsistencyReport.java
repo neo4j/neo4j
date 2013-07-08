@@ -58,6 +58,12 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
     public interface Reporter
     {
+        void forSchema( DynamicRecord schema,
+                        RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
+
+        void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema,
+                              RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
+
         void forNode( NodeRecord node,
                       RecordCheck<NodeRecord, NodeConsistencyReport> checker );
 
@@ -135,6 +141,13 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport<NeoStoreRecord, NeoStoreConsistencyReport>
     {
+    }
+
+    interface SchemaConsistencyReport extends ConsistencyReport<DynamicRecord, SchemaConsistencyReport>
+    {
+        /** The label token record is not in use. */
+        @Documented
+        void labelNotInUse( LabelTokenRecord label );
     }
 
     interface NodeConsistencyReport extends PrimitiveConsistencyReport<NodeRecord, NodeConsistencyReport>

@@ -34,7 +34,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -75,7 +77,7 @@ public class SchemaStoreTest
             storeRule( rule );
 
         // WHEN
-        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
+        Collection<SchemaRule> readRules = asCollection( store.loadAllSchemaRules() );
 
         // THEN
         assertEquals( rules, readRules );

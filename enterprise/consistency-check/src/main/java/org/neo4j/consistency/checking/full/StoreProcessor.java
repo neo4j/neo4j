@@ -42,6 +42,14 @@ class StoreProcessor extends AbstractStoreProcessor
         super( decorator );
         this.report = report;
     }
+
+    @Override
+    protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema, RecordCheck
+            <DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        report.forSchema( schema, checker );
+    }
+
     @Override
     protected void checkNode( RecordStore<NodeRecord> store, NodeRecord node,
                               RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )

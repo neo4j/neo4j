@@ -69,7 +69,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
                 recordAllocator );
     }
     
-    public Iterator<SchemaRule> loadAll()
+    public Iterator<SchemaRule> loadAllSchemaRules()
     {
         return new PrefetchingIterator<SchemaRule>()
         {
@@ -97,13 +97,19 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     @Override
     public Iterator<SchemaRule> iterator()
     {
-        return loadAll();
+        return loadAllSchemaRules();
     }
 
     private byte[] newRecordBuffer()
     {
         return new byte[getRecordSize()*4];
     }
+
+    public SchemaRule loadSingleSchemaRule( long id )
+    {
+        return getSchemaRule( id, newRecordBuffer() );
+    }
+
 
     private SchemaRule getSchemaRule( long id, byte[] buffer )
     {
