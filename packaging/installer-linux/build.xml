@@ -29,6 +29,7 @@
     <macrodef name="package">
 
         <attribute name="name"/>
+
         <sequential>
             <!-- Unzip the standalone distributions -->
             <local name="source.distribution" />
@@ -38,7 +39,7 @@
                    dest="${project.build.outputDirectory}"
                    compression="gzip"/>
 
-            <!-- Handle the case of the co-ordinator -->
+            <!-- Handle the case of the arbiter -->
             <copy toDir="${project.build.outputDirectory}/neo4j-arbiter-${neo4j.version}" failonerror="false">
                 <fileset dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"/>
             </copy>
@@ -48,6 +49,13 @@
                 <fileset dir="${project.build.outputDirectory}/neo4j-@{name}-${neo4j.version}"
                          includes="**"/>
             </move>
+
+            <!-- Make the init scripts available to debuild -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.sourceDirectory}/../resources/@{name}/debian/">
+                    <include name="*-service"/>
+                </fileset>
+            </copy>
 
             <udc_source name="@{name}"/>
             <chmod perm="700">
@@ -70,7 +78,7 @@
             <!-- Run installer projects -->
             <exec executable="debuild"
                   dir="${project.build.outputDirectory}/@{name}"
-                  failonerror="true">
+                  failonerror="true" >
                 <arg line="-us"/>
                 <arg line="-uc"/>
                 <arg line="-B"/>
