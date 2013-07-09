@@ -12,7 +12,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-testing-utils</artifactId>
-  <version>1.9.1-SNAPSHOT</version>
+  <version>1.9.2-SNAPSHOT</version>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>

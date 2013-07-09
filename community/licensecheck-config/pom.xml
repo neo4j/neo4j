@@ -6,6 +6,7 @@
     <version>39</version>
     <relativePath />
   </parent>
+
   <groupId>org.neo4j.build</groupId>
   <artifactId>licensecheck-config</artifactId>
   <version>1.9.1-SNAPSHOT</version>
