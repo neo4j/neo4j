@@ -191,7 +191,7 @@
     <dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-gremlin-plugin</artifactId>
-      <version>1.9.1</version>
+      <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
