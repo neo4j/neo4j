@@ -31,16 +31,16 @@ public interface TransactionManager
     @Description( "The number of currently open transactions" )
     int getNumberOfOpenTransactions();
 
-    @Description( "The highest number of transactions ever opened concurrently" )
+    @Description( "The highest number of transactions ever opened concurrently on this instance since the database started" )
     int getPeakNumberOfConcurrentTransactions();
 
-    @Description( "The total number started transactions" )
+    @Description( "The total number started transactions on this instance since the database started" )
     int getNumberOfOpenedTransactions();
 
-    @Description( "The total number of committed transactions" )
+    @Description( "The total number of committed transactions on this instance since the database started" )
     long getNumberOfCommittedTransactions();
 
-    @Description( "The total number of rolled back transactions" )
+    @Description( "The total number of rolled back transactions on this instance since the database started" )
     long getNumberOfRolledBackTransactions();
 
     @Description( "The id of the latest committed transaction" )
