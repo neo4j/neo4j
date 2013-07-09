@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,12 +44,12 @@ import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-public class JumpingFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
+public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final int sizePerJump;
     private final EphemeralFileSystemAbstraction actualFileSystem = new EphemeralFileSystemAbstraction();
 
-    public JumpingFileSystemAbstraction( int sizePerJump )
+    public IdJumpingFileSystemAbstraction( int sizePerJump )
     {
         this.sizePerJump = sizePerJump;
     }
@@ -66,7 +66,7 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.arrays" ) )
         {        
-            return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
+            return new IdJumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
         return channel;
     }
@@ -201,12 +201,12 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
         throw new IllegalArgumentException( fileName.getPath() );
     }
     
-    public class JumpingFileChannel extends FileChannel
+    public class IdJumpingFileChannel extends FileChannel
     {
         private final FileChannel actual;
         private final int recordSize;
         
-        public JumpingFileChannel( FileChannel actual, int recordSize )
+        public IdJumpingFileChannel( FileChannel actual, int recordSize )
         {
             this.actual = actual;
             this.recordSize = recordSize;
