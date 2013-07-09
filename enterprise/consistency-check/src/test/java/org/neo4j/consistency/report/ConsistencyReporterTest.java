@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
@@ -312,6 +313,10 @@ public class ConsistencyReporterTest
             if ( type == long.class )
             {
                 return 12L;
+            }
+            if ( type == SchemaRule.Kind.class )
+            {
+                return SchemaRule.Kind.INDEX_RULE;
             }
             throw new IllegalArgumentException( type.getName() );
         }

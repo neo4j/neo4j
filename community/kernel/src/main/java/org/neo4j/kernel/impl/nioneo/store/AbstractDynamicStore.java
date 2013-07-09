@@ -221,7 +221,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 recordAllocator );
     }
 
-    protected static Collection<DynamicRecord> allocateRecordsFromBytes(
+    public static Collection<DynamicRecord> allocateRecordsFromBytes(
             byte src[], Iterator<DynamicRecord> recordsToUseFirst,
             DynamicRecordAllocator dynamicRecordAllocator )
     {

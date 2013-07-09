@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 
 import static java.lang.String.format;
 
@@ -65,10 +64,6 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
         this.labelTokenChecker = decorator.decorateLabelTokenChecker( new LabelTokenRecordCheck() );
     }
 
-    protected abstract void checkSchema(
-            RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema,
-            RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker );
-
     protected abstract void checkNode(
             RecordStore<NodeRecord> store, NodeRecord node,
             RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker );
@@ -100,11 +95,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
 
-    @Override
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
     {
+        // cf. StoreProcessor
         checkDynamic( RecordType.SCHEMA, store, schema, new DynamicRecordCheck( store, SCHEMA ) );
-        checkSchema( RecordType.SCHEMA, store, schema, new SchemaRecordCheck( (SchemaStore) store ) );
     }
 
     @Override

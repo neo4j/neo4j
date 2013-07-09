@@ -106,7 +106,7 @@ public abstract class GraphStoreFixture implements TestRule
             return nodeId++;
         }
 
-        public long nodeLabels()
+        public long nodeLabel()
         {
             return nodeLabelsId++;
         }
@@ -168,6 +168,18 @@ public abstract class GraphStoreFixture implements TestRule
             try
             {
                 writer.propertyKey( id, key, id );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
+        public void nodeLabel( int id, String name )
+        {
+            try
+            {
+                writer.label( id, name, id );
             }
             catch ( IOException e )
             {

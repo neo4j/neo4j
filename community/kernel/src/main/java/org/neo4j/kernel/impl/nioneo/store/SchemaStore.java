@@ -27,12 +27,14 @@ import java.util.Iterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
@@ -86,7 +88,15 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
                     DynamicRecord record = forceGetRecord( id );
                     if ( record.inUse() && record.isStartRecord() )
                     {
-                        return getSchemaRule( id, scratchData );
+                        try
+                        {
+                            return getSchemaRule( id, scratchData );
+                        }
+                        catch ( MalformedSchemaRuleException e )
+                        {
+                            // TODO remove this and throw this further up
+                            throw launderedException( e );
+                        }
                     }
                 }
                 return null;
@@ -105,13 +115,13 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         return new byte[getRecordSize()*4];
     }
 
-    public SchemaRule loadSingleSchemaRule( long id )
+    public SchemaRule loadSingleSchemaRule( long id ) throws MalformedSchemaRuleException
     {
         return getSchemaRule( id, newRecordBuffer() );
     }
 
 
-    private SchemaRule getSchemaRule( long id, byte[] buffer )
+    private SchemaRule getSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
     {
         Collection<DynamicRecord> records = getRecords( id );
         ByteBuffer scratchBuffer = concatData( records, buffer );
