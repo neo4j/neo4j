@@ -156,6 +156,7 @@ public class ShellDocTest
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
+        db.beginTx();
         Documenter doc = new Documenter( "simple cypher result dump", server );
         doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
         doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
@@ -172,6 +173,7 @@ public class ShellDocTest
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
+        db.beginTx();
         Documenter doc = new Documenter( "database dump", server );
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
@@ -251,6 +253,7 @@ public class ShellDocTest
         doc.run();
         server.shutdown();
         PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
+        db.beginTx();
         writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db,
                 "graph" ) );
         writer.flush();

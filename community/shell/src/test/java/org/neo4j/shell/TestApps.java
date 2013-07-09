@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
+
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -34,8 +35,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -46,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -546,6 +546,7 @@ public class TestApps extends AbstractShellTest
     {
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
         createRelationshipChain( db.getReferenceNode(), type, 1 );
+        db.beginTx();
         executeCommand( "dump start n=node(0) match n-[r]->m return n,r,m;",
                 "begin",
                 "start _0 = node\\(0\\) with _0 ",
@@ -814,17 +815,5 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
-    }
-
-    private Iterable<String> names( Iterable<Label> labels )
-    {
-        return Iterables.map( new Function<Label, String>()
-        {
-            @Override
-            public String apply( Label label )
-            {
-                return label.name();
-            }
-        }, labels );
     }
 }

@@ -149,12 +149,21 @@ public class StoreMigratorIT
 
     private Node getNodeWithName( GraphDatabaseService db, String name )
     {
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        Transaction tx = db.beginTx();
+        try
         {
-            if ( name.equals( node.getProperty( "name", null ) ) )
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
-                return node;
+                if ( name.equals( node.getProperty( "name", null ) ) )
+                {
+                    tx.success();
+                    return node;
+                }
             }
+        }
+        finally
+        {
+            tx.finish();
         }
         throw new IllegalArgumentException( name + " not found" );
     }
@@ -199,6 +208,7 @@ public class StoreMigratorIT
         {
             Node currentNode = database.getReferenceNode();
             int traversalCount = 0;
+            Transaction tx = database.beginTx();
             while ( currentNode.hasRelationship( Direction.OUTGOING ) )
             {
                 traversalCount++;
@@ -206,6 +216,8 @@ public class StoreMigratorIT
                 verifyProperties( relationship );
                 currentNode = relationship.getEndNode();
             }
+            tx.success();
+            tx.finish();
             assertEquals( 500, traversalCount );
         }
 
