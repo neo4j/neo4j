@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -34,7 +31,16 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.web.BatchOperationService;
+import org.neo4j.server.rest.web.CypherService;
+import org.neo4j.server.rest.web.DatabaseMetadataService;
+import org.neo4j.server.rest.web.ExtensionService;
+import org.neo4j.server.rest.web.ResourcesService;
+import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.web.WebServer;
+
+import static org.neo4j.server.JAXRSHelper.listFrom;
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
 
 public class RESTApiModule implements ServerModule
 {
@@ -59,7 +65,7 @@ public class RESTApiModule implements ServerModule
         {
             URI restApiUri = restApiUri( );
 
-            webServer.addJAXRSPackages( getPackageNames(), restApiUri.toString(), null );
+            webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
             loadPlugins( logger );
 
             setupRequestTimeLimit();
@@ -73,9 +79,15 @@ public class RESTApiModule implements ServerModule
         }
     }
 
-    private List<String> getPackageNames()
+    private List<String> getClassNames()
     {
-        return listFrom( new String[] { Configurator.REST_API_PACKAGE } );
+        return listFrom(
+                RestfulGraphDatabase.class.getName(),
+                CypherService.class.getName(),
+                DatabaseMetadataService.class.getName(),
+                ExtensionService.class.getName(),
+                ResourcesService.class.getName(),
+                BatchOperationService.class.getName() );
     }
 
     @Override
@@ -83,7 +95,7 @@ public class RESTApiModule implements ServerModule
     {
         try
         {
-			webServer.removeJAXRSPackages( getPackageNames(), restApiUri().toString() );
+			webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
 
 			tearDownRequestTimeLimit();
 			unloadPlugins();
