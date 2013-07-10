@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import static java.lang.String.format;
 
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
+import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
@@ -93,6 +94,12 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     protected abstract void checkDynamic(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
+
+    @Override
+    public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
+    {
+        checkDynamic( RecordType.SCHEMA, store, schema, new DynamicRecordCheck( store, SCHEMA ) );
+    }
 
     @Override
     public final void processNode( RecordStore<NodeRecord> store, NodeRecord node )

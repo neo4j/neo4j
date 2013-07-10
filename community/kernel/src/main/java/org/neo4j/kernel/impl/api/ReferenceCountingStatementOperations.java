@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.LifecycleOperations;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 
 public class ReferenceCountingStatementOperations implements LifecycleOperations
@@ -27,6 +27,8 @@ public class ReferenceCountingStatementOperations implements LifecycleOperations
     @Override
     public void close( StatementState state )
     {
-        state.refCounting().close();
+        state.markAsClosed();
+        
+        // Delegation of close method happens via StatementStateOwner
     }
 }

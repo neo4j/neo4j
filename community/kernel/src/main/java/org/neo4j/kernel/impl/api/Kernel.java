@@ -21,16 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
-
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
+import java.util.Collections;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -52,8 +49,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.Collections.synchronizedList;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
@@ -146,8 +141,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private NodeManager nodeManager;
     private PersistenceCache persistenceCache;
     private boolean isShutdown = false;
-    private StatementOperations statementLogic;
-    private StatementOperations readOnlyStatementLogic;
+    private StatementOperationParts statementLogic;
+    private StatementOperationParts readOnlyStatementLogic;
 
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -203,14 +198,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void bootstrapAfterRecovery()
     {
-        try
-        {
-            // Requiring to start a transaction here is an artefact of having KernelTransaction used
-            // for both creating the StatementOperations cake and being a transaction.
-            transactionManager.begin();
-            
             StatementOperationParts parts = newTransaction().newStatementOperations();
-            this.statementLogic = parts.asStatementOperations();
+            this.statementLogic = parts;
             
             ReadOnlyStatementOperations readOnlyParts = new ReadOnlyStatementOperations( parts.schemaStateOperations() );
             this.readOnlyStatementLogic = parts.override(
@@ -221,25 +210,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     parts.schemaReadOperations(),
                     readOnlyParts,
                     readOnlyParts,
-                    parts.lifecycleOperations() ).asStatementOperations();
-        }
-        catch ( SystemException | NotSupportedException e )
-        {
-            throw new IllegalStateException(
-                    "Unable to start transaction for creating a statement operations cake", e );
-        }
-        finally
-        {
-            try
-            {
-                transactionManager.rollback();
-            }
-            catch ( IllegalStateException | SecurityException | SystemException e )
-            {
-                throw new IllegalStateException(
-                        "Unable to close transaction after creating a statement operations cake", e );
-            }
-        }
+                    parts.lifecycleOperations() );
     }
 
     @Override
@@ -272,11 +243,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
         // old code base
-        StoreTransactionContext storeTransactionContext = new StoreTransactionContext( transactionManager,
+        StoreKernelTransaction storeTransactionContext = new StoreKernelTransaction( transactionManager,
                 persistenceManager, propertyKeyTokenHolder, labelTokenHolder, neoStore, indexService );
 
         // + Transaction state and Caching
-        KernelTransaction result = new StateHandlingTransactionContext(
+        KernelTransaction result = new StateHandlingKernelTransaction(
                 storeTransactionContext,
                 new SchemaStorage( neoStore.getSchemaStore() ),
                 newTxState(), providerMap, persistenceCache, schemaCache,
@@ -285,22 +256,22 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 propertyKeyTokenHolder, nodeManager );
 
         // + Constraint evaluation
-        result = new ConstraintValidatingTransactionContext( result );
+        result = new ConstraintValidatingKernelTransaction( result );
 
         // + Locking
-        result = new LockingTransactionContext( result, lockManager, transactionManager, nodeManager );
+        result = new LockingKernelTransaction( result, lockManager, transactionManager, nodeManager );
 
         if ( highlyAvailableInstance )
         {
             // + Stop HA from creating constraints
-            result = new UniquenessConstraintStoppingTransactionContext( result );
+            result = new UniquenessConstraintStoppingKernelTransaction( result );
         }
 
         // + Single statement at a time
         // TODO statementLogic is null the first call (since we're building the cake), but that's OK.
         // This is an artifact of KernelTransaction having too many responsibilities (i.e. being a transaction,
         // as well as being able to construct the layered StatementOperations cake).
-        result = new ReferenceCountingTransactionContext( result, statementLogic );
+        result = new ReferenceCountingKernelTransaction( result, statementLogic != null ? statementLogic.lifecycleOperations() : null );
         
         // done
         return result;
@@ -315,13 +286,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public StatementOperations statementOperations()
+    public StatementOperationParts statementOperations()
     {
         return statementLogic;
     }
     
     @Override
-    public StatementOperations readOnlyStatementOperations()
+    public StatementOperationParts readOnlyStatementOperations()
     {
         return readOnlyStatementLogic;
     }
@@ -335,12 +306,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private class StatementStateOwners extends ThreadLocal<StatementStateOwner>
     {
         private final Collection<StatementStateOwner> all =
-                synchronizedList( new ArrayList<StatementStateOwner>() );
+                Collections.synchronizedList( new ArrayList<StatementStateOwner>() );
 
         @Override
         protected StatementStateOwner initialValue()
         {
-            StatementStateOwner owner = new StatementStateOwner( statementLogic )
+            StatementStateOwner owner = new StatementStateOwner( statementLogic.lifecycleOperations() )
             {
                 @Override
                 protected StatementState createStatementState()

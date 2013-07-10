@@ -26,6 +26,7 @@ import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperationParts
 
 trait GraphIcing {
 
@@ -60,7 +61,7 @@ trait GraphIcing {
       }
     }
 
-    def statementContextForReading: StatementOperations = graph.
+    def statementContextForReading: StatementOperationParts = graph.
       getDependencyResolver.
       resolveDependency(classOf[ThreadToStatementContextBridge]).
       getCtxForReading
@@ -74,7 +75,7 @@ trait GraphIcing {
       resolveDependency(classOf[ThreadToStatementContextBridge]).
       statementForWriting
 
-    def inTx[T](f: StatementOperations => T): T = {
+    def inTx[T](f: StatementOperationParts => T): T = {
       val tx = graph.beginTx()
       try {
         val context = graph.

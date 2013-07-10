@@ -20,60 +20,46 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.LifecycleOperations;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.StatementState;
 
-public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
+public class DelegatingKernelTransaction implements KernelTransaction
 {
-    private StatementStateOwner statementContextOwner;
+    protected final KernelTransaction delegate;
 
-    public ReferenceCountingTransactionContext( KernelTransaction delegate,
-            LifecycleOperations refCountingOperations )
+    public DelegatingKernelTransaction( KernelTransaction delegate )
     {
-        super( delegate );
-        statementContextOwner = new StatementStateOwner( refCountingOperations )
-        {
-            @Override
-            protected StatementState createStatementState()
-            {
-                return ReferenceCountingTransactionContext.this.createOwnedStatementState();
-            }
-        };
+        this.delegate = delegate;
     }
-    
+
     @Override
     public StatementOperationParts newStatementOperations()
     {
-        StatementOperationParts parts = delegate.newStatementOperations();
-        ReferenceCountingStatementOperations ops = new ReferenceCountingStatementOperations();
-        parts.replace( null, null, null, null, null, null, null, ops );
-        return parts;
+        return delegate.newStatementOperations();
     }
-    
+
     @Override
-    public StatementState newStatementState()
+    public void prepare()
     {
-        return statementContextOwner.getStatementState();
+        delegate.prepare();
     }
-    
-    private StatementState createOwnedStatementState()
-    {
-        return delegate.newStatementState();
-    }
-    
+
     @Override
     public void commit() throws TransactionFailureException
     {
-        statementContextOwner.closeAllStatements();
         delegate.commit();
     }
 
     @Override
     public void rollback() throws TransactionFailureException
     {
-        statementContextOwner.closeAllStatements();
         delegate.rollback();
+    }
+
+    @Override
+    public StatementState newStatementState()
+    {
+        return delegate.newStatementState();
     }
 }

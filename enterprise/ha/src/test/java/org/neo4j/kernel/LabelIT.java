@@ -74,7 +74,7 @@ public class LabelIT
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            return bridge.getCtxForReading().labelGetForName( bridge.statementForReading(), label.name() );
+            return bridge.getCtxForReading().keyReadOperations().labelGetForName( bridge.statementForReading(), label.name() );
         }
         finally
         {

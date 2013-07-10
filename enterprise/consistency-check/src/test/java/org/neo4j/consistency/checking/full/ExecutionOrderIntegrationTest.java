@@ -387,6 +387,12 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
+        public DynamicRecord changedSchema( long id )
+        {
+            return access.changedSchema( id );
+        }
+
+        @Override
         public NodeRecord changedNode( long id )
         {
             return access.changedNode( id );
@@ -414,6 +420,12 @@ public class ExecutionOrderIntegrationTest
         public DynamicRecord changedArray( long id )
         {
             return access.changedArray( id );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> schema( long id )
+        {
+            return logging( access.schema( id ) );
         }
 
         @Override

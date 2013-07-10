@@ -56,9 +56,11 @@ trait QueryParser
 
   def implicitWith: Parser[Body] = atLeastOneUpdateCommand ~ body ^^ {
     case updateCmds ~ nextQ => {
+
+      val (updates, startAst) = updateCmds
       val returns = Return(List("*"), AllIdentifiers())
 
-      val start = QueryStart(updateCmds._2, updateCmds._3, Seq.empty, Seq.empty, updateCmds._1, True())
+      val start = QueryStart(startAst, Seq.empty, Seq.empty, updates, True())
 
       BodyWith("implicit_with", None, Seq.empty, returns, None, start, nextQ)
     }
@@ -98,28 +100,27 @@ trait QueryParser
   private def explicitStart(mandatory: Boolean) = optMan(mandatory, readStart) ~ opt(matching) ~ hints ~ opt(where) ^^  {
     case start ~ matching ~ hints ~ where =>
       val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
-      val (startItems, startPaths) = extractItemsAndPaths(start)
+      val startAst = start.getOrElse(StartAst())
       val predicate = where.getOrElse(True()).andWith(matchPredicate)
 
-      QueryStart(startItems, startPaths ++ matchPaths, pattern, hints, Seq.empty, predicate)
+      QueryStart(startAst.copy(namedPaths = startAst.namedPaths ++ matchPaths), pattern, hints, Seq.empty, predicate)
   }
 
   def isNonMutatingQueryWithoutReturn(q: Query) = q.returns == Return(List()) && !q.start.forall(_.mutating)
-
-  def extractItemsAndPaths(starts: Option[(Seq[StartItem], Seq[NamedPath])]) = starts.getOrElse((Seq.empty, Seq.empty))
 
   private def matchStart(mandatory: Boolean) = optMan(mandatory, matching) ~ hints ~ opt(where) ^^ {
     case matching ~ hints ~ where =>
       val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
       val predicate = where.getOrElse(True()).andWith(matchPredicate)
 
-      QueryStart(Seq.empty, matchPaths, pattern, hints, Seq.empty, predicate)
+      QueryStart(StartAst(namedPaths = matchPaths), pattern, hints, Seq.empty, predicate)
   }
 
   def updatingStart(mandatory: Boolean) = optMan(mandatory, createStart) ~ opt(updates) ^^ {
     case starts ~ updates =>
-      val (startItems, namedPaths) = extractItemsAndPaths(starts)
-      QueryStart(startItems, namedPaths, Seq.empty, Seq.empty, updates.toSeq.flatten, True())
+      val startAst = starts.getOrElse(StartAst())
+
+      QueryStart(startAst, Seq.empty, Seq.empty, updates.toSeq.flatten, True())
   }
 
   private def slice = opt(skip) ~ opt(limit) ^^ {
@@ -137,14 +138,14 @@ trait QueryParser
       case b: BodyWith =>
         checkForAggregates(start.predicate)
         val next = expandQuery(b.nextStart, b.next)
-        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.namedPaths, Some(next))
+        Query(b.returns, start.starts.startItems, start.updates ++ start.starts.updateActions, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.starts.namedPaths, Some(next))
 
       case b: BodyReturn =>
         checkForAggregates(start.predicate)
-        Query(b.returns, start.startItems, start.updates, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.namedPaths, None)
+        Query( b.returns, start.starts.startItems, start.updates ++ start.starts.updateActions, start.patterns, start.hints, start.predicate, b.aggregate, b.order, b.slice, start.starts.namedPaths, None)
 
       case NoBody() =>
-        Query(Return(List()), start.startItems, start.updates, Seq(), start.hints, True(), None, Seq(), None, start.namedPaths, None)
+        Query( Return(List()), start.starts.startItems, start.updates ++ start.starts.updateActions, Seq(), start.hints, True(), None, Seq(), None, start.starts.namedPaths, None)
     }
 
   private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern], Seq[NamedPath], Predicate) = matching match {
@@ -152,18 +153,17 @@ trait QueryParser
     case None            => (Seq(), Seq(), True())
   }
 
-  private def updateCommands: Parser[(Seq[UpdateAction], Seq[StartItem], Seq[NamedPath])] = opt(createStart) ~ updates ^^ {
+  private def updateCommands: Parser[(Seq[UpdateAction], StartAst)] = opt(createStart) ~ updates ^^ {
     case starts ~ updates =>
-      val createCommands: Seq[StartItem] = starts.toSeq.flatMap(_._1)
-      val paths: Seq[NamedPath] = starts.toSeq.flatMap(_._2)
+      val startAst = starts.getOrElse(StartAst())
 
-      (updates, createCommands, paths)
+      (updates, startAst)
   }
 
-  private def atLeastOneUpdateCommand: Parser[(Seq[UpdateAction], Seq[StartItem], Seq[NamedPath])] = Parser {
+  private def atLeastOneUpdateCommand: Parser[(Seq[UpdateAction], StartAst)] = Parser {
     case in => updateCommands(in) match {
-      case Success((changes, starts, paths), rest) if (starts.size + changes.size) == 0 => Failure("", rest)
-      case x                                                                            => x
+      case Success((changes, startAst), rest) if startAst.isEmpty && changes.isEmpty => Failure("expected at least one update", rest)
+      case x                                                                           => x
     }
   }
 
@@ -188,8 +188,8 @@ START clause or a CREATE clause, and the body can be one of three: BodyReturn, B
 
   This structure has three parts
    */
-  case class BodyWith( name:String,
-                       slice: Option[Slice],
+  case class BodyWith(name:String,
+                      slice: Option[Slice],
                       order: Seq[SortItem],
                       returns: Return,
                       aggregate: Option[Seq[AggregationExpression]],
@@ -200,11 +200,10 @@ START clause or a CREATE clause, and the body can be one of three: BodyReturn, B
   case class NoBody() extends Body
 
   object QueryStart {
-    def empty = QueryStart(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, True())
+    def empty = QueryStart(StartAst(), Seq.empty, Seq.empty, Seq.empty, True())
   }
 
-  case class QueryStart(startItems: Seq[StartItem],
-                        namedPaths: Seq[NamedPath],
+  case class QueryStart(starts: StartAst,
                         patterns: Seq[Pattern],
                         hints: Seq[StartItem with Hint],
                         updates: Seq[UpdateAction],

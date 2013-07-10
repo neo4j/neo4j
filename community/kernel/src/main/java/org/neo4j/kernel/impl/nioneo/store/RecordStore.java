@@ -75,6 +75,11 @@ public interface RecordStore<R extends AbstractBaseRecord>
             continueScanning = false;
         }
 
+        public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE
+        {
+            processRecord( DynamicRecord.class, store, schema );
+        }
+
         public void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE
         {
             processRecord( NodeRecord.class, store, node );

@@ -38,6 +38,11 @@ public class DirectRecordAccess implements DiffRecordAccess
         this.access = access;
     }
 
+    @Override public RecordReference<DynamicRecord> schema( long id )
+    {
+        return new DirectRecordReference<DynamicRecord>( access.getSchemaStore().forceGetRecord( id ), this );
+    }
+
     @Override
     public RecordReference<NodeRecord> node( long id )
     {
@@ -142,6 +147,12 @@ public class DirectRecordAccess implements DiffRecordAccess
     public RecordReference<PropertyRecord> previousProperty( long id )
     {
         return new DirectRecordReference<PropertyRecord>( access.getPropertyStore().forceGetRaw( id ), this );
+    }
+
+    @Override
+    public DynamicRecord changedSchema( long id )
+    {
+        return access instanceof DiffStore ? ((DiffStore) access).getSchemaStore().getChangedRecord( id ) : null;
     }
 
     @Override

@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.parser.{On, OnAction}
 
 
 trait Merge extends Base with Labels with ParserPattern {
 
-  def merge: Parser[(Seq[StartItem], Seq[NamedPath])] = rep1(MERGE ~> patterns) ~ rep(onCreate | onMatch) ^^ {
-    case nodes ~ actions => (Seq(MergeAst(nodes.flatten.toSeq, actions)), Seq.empty)
+  def merge: Parser[StartAst] = rep1(MERGE ~> patterns) ~ rep(onCreate | onMatch) ^^ {
+    case nodes ~ actions => StartAst(merge = Seq(MergeAst(nodes.flatten.toSeq, actions)))
   }
 
   private def onCreate: Parser[OnAction] = ON ~> CREATE ~> identity ~ set ^^ {

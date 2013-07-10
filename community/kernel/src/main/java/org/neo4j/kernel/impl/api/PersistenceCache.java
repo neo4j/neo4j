@@ -136,10 +136,18 @@ public class PersistenceCache
         nodeCache.remove( nodeId );
     }
 
-    public Iterator<Property> nodeGetProperties( StatementState state, long nodeId, CacheLoader<Iterator<Property>> cacheLoader )
+    public Iterator<Property> nodeGetProperties( StatementState state, long nodeId,
+            CacheLoader<Iterator<Property>> cacheLoader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getProperties( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
+    }
+    
+    public PrimitiveLongIterator nodeGetPropertyKeys( StatementState state, long nodeId,
+            CacheLoader<Iterator<Property>> cacheLoader )
+            throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getPropertyKeys( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
     
     public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId,
@@ -152,9 +160,17 @@ public class PersistenceCache
     public Iterator<Property> relationshipGetProperties( StatementState state, long relationshipId,
             CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
     {
-        return getRelationship( relationshipId ).getProperties( state, cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER );
+        return getRelationship( relationshipId ).getProperties( state, cacheLoader,
+                RELATIONSHIP_CACHE_SIZE_LISTENER );
     }
 
+    public PrimitiveLongIterator relationshipGetPropertyKeys( StatementState state, long relationshipId,
+            CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
+    {
+        return getRelationship( relationshipId ).getPropertyKeys( state, cacheLoader,
+                RELATIONSHIP_CACHE_SIZE_LISTENER );
+    }
+    
     public Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId,
             CacheLoader<Iterator<Property>> cacheLoader ) throws EntityNotFoundException
     {
@@ -165,6 +181,12 @@ public class PersistenceCache
     public Iterator<Property> graphGetProperties( StatementState state, CacheLoader<Iterator<Property>> cacheLoader )
     {
         return graphProperties.evaluate().getProperties( state, cacheLoader, NO_UPDATES );
+    }
+    
+    public PrimitiveLongIterator graphGetPropertyKeys( StatementState state,
+            CacheLoader<Iterator<Property>> cacheLoader )
+    {
+        return graphProperties.evaluate().getPropertyKeys( state, cacheLoader, NO_UPDATES );
     }
 
     public Property graphGetProperty( StatementState state, CacheLoader<Iterator<Property>> cacheLoader,

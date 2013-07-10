@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
@@ -42,29 +41,20 @@ public class WritableStatementState implements StatementState
     private LockHolder lockHolder = NO_LOCKS;
     private TxState txState = NO_STATE;
     private IndexReaderFactory indexReaderFactory = NO_INDEX_READER_FACTORY;
-    private RefCounting refCounting = NO_REF_COUNTING;
 
     public void provide( LockHolder lockHolder )
     {
-        checkAlreadyProvided( this.lockHolder, NO_LOCKS );
         this.lockHolder = lockHolder;
     }
     
     public void provide( TxState txState )
     {
-        checkAlreadyProvided( this.txState, NO_STATE );
         this.txState = txState;
     }
     
     public void provide( IndexReaderFactory indexReaderFactory )
     {
-        checkAlreadyProvided( this.indexReaderFactory, NO_INDEX_READER_FACTORY );
         this.indexReaderFactory = indexReaderFactory;
-    }
-    
-    public void provide( RefCounting refCounting )
-    {
-        this.refCounting = refCounting;
     }
     
     @Override
@@ -86,13 +76,12 @@ public class WritableStatementState implements StatementState
     }
     
     @Override
-    public RefCounting refCounting()
+    public void markAsClosed()
     {
-        return refCounting;
     }
     
     @Override
-    public Closeable closeable( final StatementOperations logic )
+    public Closeable closeable( final LifecycleOperations logic )
     {
         return new Closeable()
         {
@@ -102,14 +91,6 @@ public class WritableStatementState implements StatementState
                 logic.close( WritableStatementState.this );
             }
         };
-    }
-    
-    private <T> void checkAlreadyProvided( T object, T empty )
-    {
-        if ( object != empty )
-        {
-            throw new IllegalStateException( "Already provided " + object );
-        }
     }
     
     private static final LockHolder NO_LOCKS = new LockHolder()
@@ -435,20 +416,6 @@ public class WritableStatementState implements StatementState
             throw placeHolderException();
         }
     };
-    static final RefCounting NO_REF_COUNTING = new RefCounting()
-    {
-        @Override
-        public boolean isOpen()
-        {
-            return true;
-        }
-        
-        @Override
-        public void close()
-        {
-        }
-    };
-
 
     protected static UnsupportedOperationException placeHolderException()
     {

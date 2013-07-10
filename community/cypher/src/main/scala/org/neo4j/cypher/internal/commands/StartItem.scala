@@ -22,12 +22,8 @@ package org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.PatternException
-import org.neo4j.cypher.internal.parser.ParsedEntity
-import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.commands.expressions.Literal
@@ -35,7 +31,7 @@ import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.parser.OnAction
+import org.neo4j.cypher.internal.parser.{AbstractPattern, OnAction}
 import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.commands.expressions.Property
 import scala.collection.mutable
@@ -118,44 +114,6 @@ case class CreateUniqueStartItem(inner: CreateUniqueAction) extends UpdatingStar
 
 case class MergeNodeStartItem(inner: MergeNodeAction) extends UpdatingStartItem(inner, inner.identifier) {
   override def rewrite(f: (Expression) => Expression) = MergeNodeStartItem(inner.rewrite(f))
-}
-
-case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) extends UpdatingStartItem(PlaceHolder, "") {
-  override def rewrite(f: (Expression) => Expression) = MergeAst(patterns.map(_.rewrite(f)), onActions)
-
-  def nextStep(): Seq[MergeNodeAction] = {
-    val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
-
-    for (
-      actions <- onActions;
-      action <- actions.set) {
-       actionsMap.addBinding((actions.identifier, actions.verb), action)
-    }
-
-    patterns.map {
-      case ParsedEntity(name, _, props, labelsNames, _) =>
-        val labelPredicates = labelsNames.map(labelName => HasLabel(Identifier(name), labelName))
-        val propertyPredicates = props.map {
-          case (propertyKeyName, expression) => Equals(Nullable(Property(Identifier(name), PropertyKey(propertyKeyName))), expression)
-        }
-        val predicates = labelPredicates ++ propertyPredicates
-
-        val labelActions = labelsNames.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
-        val propertyActions = props.map {
-          case (propertyKeyName, expression) => PropertySetAction(Property(Identifier(name), PropertyKey(propertyKeyName)), expression)
-        }
-
-        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)
-        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
-
-        val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
-
-        MergeNodeAction(name, predicates, onCreate, actionsFromOnMatchClause.toSeq, None)
-
-      case _                                            =>
-        throw new PatternException("MERGE only supports single node patterns")
-    }
-  }
 }
 
 object NodeById {

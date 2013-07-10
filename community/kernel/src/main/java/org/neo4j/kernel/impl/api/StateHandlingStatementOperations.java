@@ -25,7 +25,6 @@ import java.util.Set;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -41,9 +40,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -530,21 +529,38 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
     {
-        return new IteratorWrapper<Long,Property>( nodeGetAllProperties( state, nodeId ) )
+        if ( !state.txState().hasChanges() )
+        {
+            return entityReadDelegate.nodeGetPropertyKeys( state, nodeId );
+        }
+        
+        final Iterator<Property> properties = nodeGetAllProperties( state, nodeId );
+        return new PrimitiveLongIterator()
         {
             @Override
-            protected Long underlyingObjectToObject( Property property )
+            public long next()
             {
-                return property.propertyKeyId();
+                return properties.next().propertyKeyId();
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return properties.hasNext();
             }
         };
     }
     
     @Override
-    public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId ) throws EntityNotFoundException, PropertyKeyIdNotFoundException
     {
+        if ( !state.txState().hasChanges() )
+        {
+            return entityReadDelegate.nodeGetProperty( state, nodeId, propertyKeyId );
+        }
+        
         Iterator<Property> properties = nodeGetAllProperties( state, nodeId );
         while ( properties.hasNext() )
         {
@@ -582,23 +598,40 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> relationshipGetPropertyKeys( StatementState state, long relationshipId )
+    public PrimitiveLongIterator relationshipGetPropertyKeys( StatementState state, long relationshipId )
             throws EntityNotFoundException
     {
-        return new IteratorWrapper<Long,Property>( relationshipGetAllProperties( state, relationshipId ) )
+        if ( !state.txState().hasChanges() )
+        {
+            return entityReadDelegate.relationshipGetPropertyKeys( state, relationshipId );
+        }
+        
+        final Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
+        return new PrimitiveLongIterator()
         {
             @Override
-            protected Long underlyingObjectToObject( Property property )
+            public long next()
             {
-                return property.propertyKeyId();
+                return properties.next().propertyKeyId();
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return properties.hasNext();
             }
         };
     }
     
     @Override
     public Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, PropertyKeyIdNotFoundException
     {
+        if ( !state.txState().hasChanges() )
+        {
+            return entityReadDelegate.relationshipGetProperty( state, relationshipId, propertyKeyId );
+        }
+        
         Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
         while ( properties.hasNext() )
         {
@@ -636,14 +669,26 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public Iterator<Long> graphGetPropertyKeys( StatementState state )
+    public PrimitiveLongIterator graphGetPropertyKeys( StatementState state )
     {
-        return new IteratorWrapper<Long,Property>( graphGetAllProperties( state ) )
+        if ( !state.txState().hasChanges() )
+        {
+            return entityReadDelegate.graphGetPropertyKeys( state );
+        }
+        
+        final Iterator<Property> properties = graphGetAllProperties( state );
+        return new PrimitiveLongIterator()
         {
             @Override
-            protected Long underlyingObjectToObject( Property property )
+            public long next()
             {
-                return property.propertyKeyId();
+                return properties.next().propertyKeyId();
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return properties.hasNext();
             }
         };
     }
@@ -704,7 +749,7 @@ public class StateHandlingStatementOperations implements
                 }
                 return property.valueEquals( value );
             }
-            catch ( EntityNotFoundException e )
+            catch ( EntityNotFoundException | PropertyKeyIdNotFoundException e )
             {
                 return false;
             }

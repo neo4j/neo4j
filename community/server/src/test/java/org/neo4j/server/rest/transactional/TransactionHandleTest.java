@@ -92,8 +92,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -124,8 +124,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -163,8 +163,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -193,8 +193,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -253,8 +253,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -283,8 +283,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -315,8 +315,8 @@ public class TransactionHandleTest
     {
         // given
         KernelAPI kernel = mockKernel();
-        TransitionalTxManagementTransactionContext transactionContext =
-                (TransitionalTxManagementTransactionContext) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext =
+                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
         doThrow( new NullPointerException() ).when( transactionContext ).commit();
 
         StringLogger log = mock( StringLogger.class );
@@ -388,7 +388,7 @@ public class TransactionHandleTest
 
     private KernelAPI mockKernel()
     {
-        TransitionalTxManagementTransactionContext context = mock( TransitionalTxManagementTransactionContext.class );
+        TransitionalTxManagementKernelTransaction context = mock( TransitionalTxManagementKernelTransaction.class );
         KernelAPI kernel = mock( KernelAPI.class );
         when( kernel.newTransaction() ).thenReturn( context );
         return kernel;

@@ -27,7 +27,6 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import scala._
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.commands.SortItem
@@ -40,40 +39,21 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val inputQuery = q.compact
-
-    val patterns = inputQuery.matching.map(Unsolved(_))
-
-    val items: Seq[StartItem] = inputQuery.start ++ inputQuery.hints
-
-    /*
-    TODO: This is an intermediate step. We're storing the MergeAst objects in the Start clause for now.
-    There is probably a better place to store those items than there.
-     */
-    val newStart: Seq[QueryToken[StartItem]] = items.collect {
-      case startItem: StartItem if !startItem.isInstanceOf[MergeAst] => Unsolved(startItem)
-    }
-
-    val newUpdates: Seq[QueryToken[UpdateAction]] = items.collect {
-      case startItem : MergeAst =>
-        val updateActions: Seq[UpdateAction] = startItem.nextStep()
-        updateActions.map(Unsolved(_))
-    }.flatten
-
+    val patterns = q.matching.map(Unsolved(_))
 
     new PartiallySolvedQuery(
-      returns = inputQuery.returns.returnItems.map(Unsolved(_)),
-      start = newStart,
-      updates = inputQuery.updatedCommands.map(Unsolved(_)) ++ newUpdates,
+      returns = q.returns.returnItems.map(Unsolved(_)),
+      start = (q.start ++ q.hints).map(Unsolved(_)),
+      updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
-      where = inputQuery.where.atoms.map(Unsolved(_)),
-      aggregation = inputQuery.aggregation.toSeq.flatten.map(Unsolved(_)),
-      sort = inputQuery.sort.map(Unsolved(_)),
-      slice = inputQuery.slice.map(Unsolved(_)),
-      namedPaths = inputQuery.namedPaths.map(Unsolved(_)),
-      aggregateToDo = inputQuery.aggregation.isDefined,
+      where = q.where.atoms.map(Unsolved(_)),
+      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
+      sort = q.sort.map(Unsolved(_)),
+      slice = q.slice.map(Unsolved(_)),
+      namedPaths = q.namedPaths.map(Unsolved(_)),
+      aggregateToDo = q.aggregation.isDefined,
       extracted = false,
-      tail = inputQuery.tail.map(q => PartiallySolvedQuery(q))
+      tail = q.tail.map(q => PartiallySolvedQuery(q))
     )
   }
 

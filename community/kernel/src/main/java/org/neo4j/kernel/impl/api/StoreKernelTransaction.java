@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class StoreTransactionContext implements KernelTransaction
+public class StoreKernelTransaction implements KernelTransaction
 {
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final AbstractTransactionManager transactionManager;
@@ -46,7 +46,7 @@ public class StoreTransactionContext implements KernelTransaction
     private final LabelTokenHolder labelTokenHolder;
     private final PersistenceManager persistenceManager;
 
-    public StoreTransactionContext( AbstractTransactionManager transactionManager,
+    public StoreKernelTransaction( AbstractTransactionManager transactionManager,
                                     PersistenceManager persistenceManager,
                                     PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                     NeoStore neoStore, IndexingService indexingService )

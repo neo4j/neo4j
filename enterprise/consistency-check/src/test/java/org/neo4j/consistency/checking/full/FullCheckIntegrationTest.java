@@ -32,12 +32,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -287,6 +290,34 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.STRING_PROPERTY, stats );
+    }
+
+    @Test
+    public void shouldReportBrokenSchemaRecordChain() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                DynamicRecord schema = new DynamicRecord( next.schema() );
+                schema.setNextBlock( next.schema() );
+                IndexRule rule = IndexRule.indexRule( 1, 1, 1, new SchemaIndexProvider.Descriptor( "in-memory",
+                        "1.0" ) );
+                new RecordSerializer().append( rule ).serialize();
+                schema.setData( new RecordSerializer().append( rule ).serialize() );
+
+                tx.createSchema( asList( schema ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
     }
 
     @Test

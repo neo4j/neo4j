@@ -42,6 +42,7 @@ import static org.neo4j.helpers.Settings.osIsWindows;
 public class StoreAccess
 {
     // Top level stores
+    private final RecordStore<DynamicRecord> schemaStore;
     private final RecordStore<NodeRecord> nodeStore;
     private final RecordStore<RelationshipRecord> relStore;
     private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
@@ -71,14 +72,15 @@ public class StoreAccess
 
     public StoreAccess( NeoStore store )
     {
-        this( store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
+        this( store.getSchemaStore(), store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
                 store.getRelationshipTypeStore(), store.getLabelTokenStore() );
         this.neoStore = store;
     }
 
-    public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
+    public StoreAccess( SchemaStore schemaStore, NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
                         RelationshipTypeTokenStore typeStore, LabelTokenStore labelTokenStore )
     {
+        this.schemaStore = wrapStore( schemaStore );
         this.nodeStore = wrapStore( nodeStore );
         this.relStore = wrapStore( relStore );
         this.propStore = wrapStore( propStore );
@@ -128,6 +130,11 @@ public class StoreAccess
     public NeoStore getRawNeoStore()
     {
         return neoStore;
+    }
+
+    public RecordStore<DynamicRecord> getSchemaStore()
+    {
+        return schemaStore;
     }
 
     public RecordStore<NodeRecord> getNodeStore()
@@ -208,8 +215,8 @@ public class StoreAccess
             };
         }
         return new RecordStore<?>[]{
-                nodeStore, relStore, propStore, stringStore, arrayStore, // basic
-                relationshipTypeTokenStore, propertyKeyTokenStore, relationshipTypeNameStore, propertyKeyNameStore, // internal
+                schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
+                relationshipTypeTokenStore, propertyKeyTokenStore, relationshipTypeNameStore, propertyKeyNameStore,
         };
     }
 

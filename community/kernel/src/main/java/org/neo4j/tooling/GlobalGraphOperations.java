@@ -32,7 +32,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -139,7 +139,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                StatementOperations ctx = statementCtxProvider.getCtxForReading();
+                StatementOperationParts ctx = statementCtxProvider.getCtxForReading();
                 StatementState state = statementCtxProvider.statementForReading();
                 return cleanupService.resourceIterator( map( new Function<Token, Label>() {
 
@@ -148,7 +148,7 @@ public class GlobalGraphOperations
                     {
                         return label( labelToken.name() );
                     }
-                }, ctx.labelsGetAllTokens( state ) ), state.closeable( ctx ) );
+                }, ctx.keyReadOperations().labelsGetAllTokens( state ) ), state.closeable( ctx.lifecycleOperations() ) );
             }
         };
     }
@@ -177,12 +177,12 @@ public class GlobalGraphOperations
     @SuppressWarnings( "resource" )
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        StatementOperations context = statementCtxProvider.getCtxForReading();
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
         StatementState state = statementCtxProvider.statementForReading();
         try
         {
-            long labelId = context.labelGetForName( state, label );
-            final Iterator<Long> nodeIds = context.nodesGetForLabel( state, labelId );
+            long labelId = context.keyReadOperations().labelGetForName( state, label );
+            final Iterator<Long> nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
             return cleanupService.resourceIterator( map( new Function<Long, Node>()
             {
                 @Override
@@ -190,7 +190,7 @@ public class GlobalGraphOperations
                 {
                     return nodeManager.getNodeById( nodeId );
                 }
-            }, nodeIds ), state.closeable( context ) );
+            }, nodeIds ), state.closeable( context.lifecycleOperations() ) );
         }
         catch ( LabelNotFoundKernelException e )
         {

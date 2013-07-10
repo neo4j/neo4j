@@ -38,24 +38,26 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
 public class StatementOperationParts
 {
-    private KeyReadOperations keyReadOperations;
-    private KeyWriteOperations keyWriteOperations;
-    private EntityReadOperations entityReadOperations;
-    private EntityWriteOperations entityWriteOperations;
-    private SchemaReadOperations schemaReadOperations;
-    private SchemaWriteOperations schemaWriteOperations;
-    private SchemaStateOperations schemaStateOperations;
-    private LifecycleOperations lifecycleOperations;
+    private final KeyReadOperations keyReadOperations;
+    private final KeyWriteOperations keyWriteOperations;
+    private final EntityReadOperations entityReadOperations;
+    private final EntityWriteOperations entityWriteOperations;
+    private final SchemaReadOperations schemaReadOperations;
+    private final SchemaWriteOperations schemaWriteOperations;
+    private final SchemaStateOperations schemaStateOperations;
+    private final LifecycleOperations lifecycleOperations;
     
     @SuppressWarnings( "rawtypes" )
     private Map<Class,Object> additionalParts;
@@ -140,35 +142,12 @@ public class StatementOperationParts
     {
         return checkNotNull( lifecycleOperations, LifecycleOperations.class );
     }
-
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
-    public void replace(
-            KeyReadOperations keyReadOperations,
-            KeyWriteOperations keyWriteOperations,
-            EntityReadOperations entityReadOperations,
-            EntityWriteOperations entityWriteOperations,
-            SchemaReadOperations schemaReadOperations,
-            SchemaWriteOperations schemaWriteOperations,
-            SchemaStateOperations schemaStateOperations,
-            LifecycleOperations lifecycleOperations,
-            Object... alternatingAdditionalClassAndObject )
-    {
-        this.keyReadOperations = eitherOr( keyReadOperations, this.keyReadOperations, KeyReadOperations.class );
-        this.keyWriteOperations = eitherOr( keyWriteOperations, this.keyWriteOperations, KeyWriteOperations.class );
-        this.entityReadOperations = eitherOr( entityReadOperations, this.entityReadOperations, EntityReadOperations.class );
-        this.entityWriteOperations = eitherOr( entityWriteOperations, this.entityWriteOperations, EntityWriteOperations.class );
-        this.schemaReadOperations = eitherOr( schemaReadOperations, this.schemaReadOperations, SchemaReadOperations.class );
-        this.schemaWriteOperations = eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class );
-        this.schemaStateOperations = eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class );
-        this.lifecycleOperations = eitherOr( lifecycleOperations, this.lifecycleOperations, LifecycleOperations.class );
-        
-        for ( int i = 0; i < alternatingAdditionalClassAndObject.length; i++ )
-        {
-            additionalPart( (Class) alternatingAdditionalClassAndObject[i++],
-                    alternatingAdditionalClassAndObject[i] );
-        }
-    }
     
+    public void close( StatementState state )
+    {
+        lifecycleOperations.close( state );
+    }
+
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     public StatementOperationParts override(
             KeyReadOperations keyReadOperations,
@@ -321,7 +300,7 @@ public class StatementOperationParts
                 return entityReadOperations.graphHasProperty( state, propertyKeyId );
             }
             @Override
-            public Iterator<Long> nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
+            public PrimitiveLongIterator nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
             {
                 return entityReadOperations.nodeGetPropertyKeys( state, nodeId );
             }
@@ -331,7 +310,7 @@ public class StatementOperationParts
                 return entityReadOperations.nodeGetAllProperties( state, nodeId );
             }
             @Override
-            public Iterator<Long> relationshipGetPropertyKeys( StatementState state, long relationshipId ) throws EntityNotFoundException
+            public PrimitiveLongIterator relationshipGetPropertyKeys( StatementState state, long relationshipId ) throws EntityNotFoundException
             {
                 return entityReadOperations.relationshipGetPropertyKeys( state, relationshipId );
             }
@@ -342,7 +321,7 @@ public class StatementOperationParts
                 return entityReadOperations.relationshipGetAllProperties( state, relationshipId );
             }
             @Override
-            public Iterator<Long> graphGetPropertyKeys( StatementState state )
+            public PrimitiveLongIterator graphGetPropertyKeys( StatementState state )
             {
                 return entityReadOperations.graphGetPropertyKeys(state);
             }

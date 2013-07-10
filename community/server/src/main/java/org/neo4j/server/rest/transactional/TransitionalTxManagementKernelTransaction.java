@@ -28,14 +28,14 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
-class TransitionalTxManagementTransactionContext implements KernelTransaction
+class TransitionalTxManagementKernelTransaction implements KernelTransaction
 {
     private final KernelTransaction ctx;
     private final TxManager txManager;
 
     private Transaction suspendedTransaction;
 
-    public TransitionalTxManagementTransactionContext( KernelTransaction ctx, TxManager txManager )
+    public TransitionalTxManagementKernelTransaction( KernelTransaction ctx, TxManager txManager )
     {
         this.ctx = ctx;
         this.txManager = txManager;
