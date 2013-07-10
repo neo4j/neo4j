@@ -87,4 +87,6 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
     sortDescription.foreach(_.expression.throwIfSymbolsMissing(symbols))
     countExpression.evaluateType(NumberType(), symbols)
   }
+
+  override def isLazy = false
 }

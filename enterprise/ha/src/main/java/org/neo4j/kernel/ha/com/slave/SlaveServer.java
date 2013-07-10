@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-
 import java.io.IOException;
 
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveClient.SlaveRequestType;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.RealClock;
+
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 
 public class SlaveServer extends Server<Slave, Void>
 {
@@ -38,7 +40,7 @@ public class SlaveServer extends Server<Slave, Void>
     public SlaveServer( Slave requestTarget, Configuration config, Logging logging )
             throws IOException
     {
-        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH );
+        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH, new RealClock() );
     }
 
     @Override

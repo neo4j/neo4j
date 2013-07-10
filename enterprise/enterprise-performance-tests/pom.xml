@@ -18,7 +18,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/enterprise/tree/master/enterprise-performance-tests</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/enterprise-performance-tests</url>
   </scm>
 
   <licenses>

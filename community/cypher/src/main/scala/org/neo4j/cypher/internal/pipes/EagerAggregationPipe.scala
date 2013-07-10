@@ -99,4 +99,6 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))
     aggregations.foreach(_._2.throwIfSymbolsMissing(symbols))
   }
+
+  override def isLazy = false
 }

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;

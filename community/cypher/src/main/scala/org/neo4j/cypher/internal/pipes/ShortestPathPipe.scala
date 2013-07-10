@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.helpers.{CastSupport, CollectionSupport}
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
- *
- * It's also the base class for all shortest paths
  */
 class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) with CollectionSupport {
   private def optional = ast.optional

@@ -24,7 +24,7 @@
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/advanced/tree/master/management</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/advanced/management</url>
   </scm>
 
   <profiles>

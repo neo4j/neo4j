@@ -27,7 +27,6 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import scala._
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.commands.SortItem
@@ -184,6 +183,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
     returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
+
+  def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
 case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)

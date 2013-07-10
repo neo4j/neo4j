@@ -19,7 +19,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/community/tree/master/licensecheck-config</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/licensecheck-config</url>
   </scm>
 
   <licenses>
