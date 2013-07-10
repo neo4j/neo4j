@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 /**
@@ -53,29 +53,29 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         CHECK_OBLIGATIONS
     };
 
-    final SchemaStore store;
+    final SchemaRuleAccess ruleAccess;
     final Map<Long, DynamicRecord> indexObligations;
     final Map<Long, DynamicRecord> constraintObligations;
     final Map<SchemaRuleContent, DynamicRecord> contentMap;
     final Phase phase;
 
     private SchemaRecordCheck(
-            SchemaStore store,
+            SchemaRuleAccess ruleAccess,
             Map<Long, DynamicRecord> indexObligations,
             Map<Long, DynamicRecord> constraintObligations,
             Map<SchemaRuleContent, DynamicRecord> contentMap,
             Phase phase )
     {
-        this.store = store;
+        this.ruleAccess = ruleAccess;
         this.indexObligations = indexObligations;
         this.constraintObligations = constraintObligations;
         this.contentMap = contentMap;
         this.phase = phase;
     }
 
-    public SchemaRecordCheck( SchemaStore store )
+    public SchemaRecordCheck( SchemaRuleAccess ruleAccess )
     {
-        this( store,
+        this( ruleAccess,
               new HashMap<Long, DynamicRecord>(),
               new HashMap<Long, DynamicRecord>(),
               new HashMap<SchemaRuleContent, DynamicRecord>(),
@@ -85,7 +85,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     public SchemaRecordCheck forObligationChecking()
     {
         return new SchemaRecordCheck(
-            store, indexObligations, constraintObligations, contentMap, Phase.CHECK_OBLIGATIONS );
+                ruleAccess, indexObligations, constraintObligations, contentMap, Phase.CHECK_OBLIGATIONS );
     }
 
     @Override
@@ -97,7 +97,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             SchemaRule rule;
             try
             {
-                rule = store.loadSingleSchemaRule( record.getId() );
+                rule = ruleAccess.loadSingleSchemaRule( record.getId() );
             }
             catch ( MalformedSchemaRuleException e )
             {

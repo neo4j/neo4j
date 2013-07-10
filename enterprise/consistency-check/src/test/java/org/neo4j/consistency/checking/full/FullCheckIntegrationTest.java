@@ -408,12 +408,12 @@ public class FullCheckIntegrationTest
         verifyInconsistency( RecordType.SCHEMA, stats );
     }
 
-    private Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
     {
         return serializeRule( rule, asList( records ) );
     }
 
-    private Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer.append( rule );

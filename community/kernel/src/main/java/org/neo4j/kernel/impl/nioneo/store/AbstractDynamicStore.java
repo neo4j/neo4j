@@ -439,6 +439,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return recordList;
     }
 
+    @Override
+    public Long getNextRecordReference( DynamicRecord record )
+    {
+        long nextId = record.getNextBlock();
+        return Record.NO_NEXT_BLOCK.is( nextId ) ? null : nextId;
+    }
+
     /**
      * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
      * if necessary a new larger {@code byte[]} and containing exactly all concatenated data read from records

@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends AbstractStore implements Store, RecordStore<NodeRecord>
+public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -295,7 +295,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        List<WindowPoolStats> list = new ArrayList<>();
         list.add( getWindowPoolStats() );
         return list;
     }

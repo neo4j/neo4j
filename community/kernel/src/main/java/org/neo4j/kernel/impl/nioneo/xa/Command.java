@@ -88,11 +88,9 @@ public abstract class Command extends XaCommand
         {
             if ( !inUse )
                 return DELETE;
-            if ( created && inUse )
+            if ( created )
                 return CREATE;
-            if ( !created && inUse )
-                return UPDATE;
-            throw new IllegalStateException( "A record can't be both created and deleted at the same time." );
+            return UPDATE;
         }
 
         public static Mode fromRecordState( AbstractBaseRecord record )
@@ -450,7 +448,7 @@ public abstract class Command extends XaCommand
                 
                 // labels
                 long labelField = buffer.getLong();
-                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<DynamicRecord>();
+                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
                 readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
                 record.setLabelField( labelField, dynamicLabelRecords );
             }
@@ -1167,7 +1165,7 @@ public abstract class Command extends XaCommand
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
-            throw new UnsupportedOperationException();
+            visitor.visitSchemaRule( records );
         }
 
         @Override
@@ -1238,7 +1236,7 @@ public abstract class Command extends XaCommand
         static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
+            Collection<DynamicRecord> records = new ArrayList<>();
             readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
 
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
