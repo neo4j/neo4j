@@ -19,16 +19,9 @@
  */
 package org.neo4j.server.database;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
@@ -38,12 +31,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class TestCommunityDatabase
 {
@@ -55,9 +54,20 @@ public class TestCommunityDatabase
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
-        theDatabase = new CommunityDatabase( conf );
+        theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+    }
+    
+    private static Configurator configuratorWithServerProperties( final Map<String, String> serverProperties )
+    {
+        return new Configurator.Adapter()
+        {
+            @Override
+            public Configuration configuration()
+            {
+                return new MapConfiguration( serverProperties );
+            }
+        };
     }
 
     @After
@@ -108,9 +118,8 @@ public class TestCommunityDatabase
         deletionFailureOk = true;
         theDatabase.start();
         
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
-        CommunityDatabase db = new CommunityDatabase( conf );
+        CommunityDatabase db = new CommunityDatabase( configuratorWithServerProperties( stringMap(
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
 
         try
         {
@@ -134,21 +143,26 @@ public class TestCommunityDatabase
     @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
     {
-        int customPort = findFreeShellPortToUse( 8881 );
-        File tempDir = createTempDir();
-        File tuningProperties = new File(tempDir, "neo4j.properties");
-        tuningProperties.createNewFile();
+        final int customPort = findFreeShellPortToUse( 8881 );
+        final File tempDir = createTempDir();
         
-        ServerTestUtils.writePropertiesToFile(stringMap(
-            ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
-            ShellSettings.remote_shell_port.name(), ""+customPort ), 
-            tuningProperties);
-        
-        Configuration conf = new MapConfiguration(new HashMap<String,String>());
-        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath());
-        conf.addProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningProperties.getAbsolutePath());
-        
-        Database otherDb = new CommunityDatabase( conf );
+        Database otherDb = new CommunityDatabase( new Configurator.Adapter()
+        {
+            @Override
+            public Configuration configuration()
+            {
+                return new MapConfiguration( stringMap(
+                        Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath() ) );
+            }
+            
+            @Override
+            public Map<String, String> getDatabaseTuningProperties()
+            {
+                return stringMap(
+                      ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
+                      ShellSettings.remote_shell_port.name(), "" + customPort );
+            }
+        } );
         otherDb.start();
 
         // Try to connect with a shell client to that custom port.
@@ -157,7 +171,7 @@ public class TestCommunityDatabase
                 .shutdown();
 
         otherDb.stop();
-        FileUtils.forceDelete( tempDir );
+//        FileUtils.forceDelete( tempDir );
     }
 
     @Test

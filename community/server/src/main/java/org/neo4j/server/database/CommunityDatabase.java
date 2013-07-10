@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,26 +26,23 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellSettings;
 
+import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
+
 public class CommunityDatabase extends/* implements */ Database
 {
-
-    protected final Configuration serverConfig;
-
-    @SuppressWarnings("deprecation")
-    public CommunityDatabase( Configuration serverConfig )
-    {
-        this.serverConfig = serverConfig;
-    }
+    protected final Configurator configurator;
+    protected final Configuration serverConfiguration;
 
     @SuppressWarnings("deprecation")
-    public CommunityDatabase( Configuration serverConfig, Map<String, String> neo4jProperties )
+    public CommunityDatabase( Configurator configurator )
     {
-        this.serverConfig = serverConfig;
+        this.configurator = configurator;
+        this.serverConfiguration = configurator.configuration();
     }
 
     @Override
@@ -57,9 +52,9 @@ public class CommunityDatabase extends/* implements */ Database
         try
         {
             this.graph = (AbstractGraphDatabase) new org.neo4j.graphdb.factory.GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
-                            Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
-                    .setConfig( loadNeo4jProperties() )
+                    .newEmbeddedDatabaseBuilder( serverConfiguration.getString( DATABASE_LOCATION_PROPERTY_KEY,
+                            DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
+                    .setConfig( getDbTuningPropertiesWithServerDefaults() )
                     .newGraphDatabase();
             log.info( "Successfully started database" );
         }
@@ -90,34 +85,22 @@ public class CommunityDatabase extends/* implements */ Database
         }
     }
 
-    protected Map<String, String> loadNeo4jProperties()
+    protected Map<String, String> getDbTuningPropertiesWithServerDefaults()
     {
-        Map<String, String> neo4jProperties;
-        try
-        {
-            String path = serverConfig.getString( Configurator.DB_TUNING_PROPERTY_FILE_KEY, "" );
-            neo4jProperties = MapUtil.load( new File( path ) );
-            log.info( "Loaded neo4j tuning properties from " + path );
-        }
-        catch ( IOException e )
-        {
-            log.warn( "Unable to load database tuning properties, using defaults.", e );
-            neo4jProperties = new HashMap<String, String>();
-        }
-
-        putIfAbsent( neo4jProperties, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-        putIfAbsent( neo4jProperties, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        Map<String, String> result = new HashMap<String, String>( configurator.getDatabaseTuningProperties() );
+        putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        putIfAbsent( result, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
 
         try
         {
-            neo4jProperties.put( UdcSettings.udc_source.name(), "server" );
+            result.put( UdcSettings.udc_source.name(), "server" );
         }
         catch ( NoClassDefFoundError e )
         {
             // UDC is not on classpath, ignore
         }
 
-        return neo4jProperties;
+        return result;
     }
 
     private void putIfAbsent( Map<String, String> databaseProperties, String configKey, String configValue )
