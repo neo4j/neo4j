@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractStore implements Store, RecordStore<RelationshipRecord>
+public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -343,7 +343,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        List<WindowPoolStats> list = new ArrayList<>();
         list.add( getWindowPoolStats() );
         return list;
     }

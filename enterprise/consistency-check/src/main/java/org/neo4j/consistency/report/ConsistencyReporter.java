@@ -65,6 +65,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
     }
 
+    private static final ProxyFactory<ConsistencyReport.SchemaConsistencyReport> SCHEMA_REPORT =
+            ProxyFactory.create( ConsistencyReport.SchemaConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.NodeConsistencyReport> NODE_REPORT =
             ProxyFactory.create( ConsistencyReport.NodeConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipConsistencyReport> RELATIONSHIP_REPORT =
@@ -342,6 +344,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         {
             checker.checkReference( newRecord, newReferenced, report, records );
         }
+    }
+
+    @Override
+    public void forSchema( DynamicRecord schema,
+                           RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        dispatch( RecordType.SCHEMA, SCHEMA_REPORT, schema, checker );
+    }
+
+    @Override
+    public void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema, RecordCheck<DynamicRecord,
+            ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        dispatchChange( RecordType.SCHEMA, SCHEMA_REPORT, oldSchema, newSchema, checker );
     }
 
     @Override

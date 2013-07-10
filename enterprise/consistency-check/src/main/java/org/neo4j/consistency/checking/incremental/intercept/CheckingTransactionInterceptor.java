@@ -19,13 +19,14 @@
  */
 package org.neo4j.consistency.checking.incremental.intercept;
 
-import java.io.File;
+import java.util.Collection;
 
 import org.neo4j.consistency.ConsistencyCheckingError;
 import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.incremental.DiffCheck;
 import org.neo4j.consistency.store.DiffStore;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 class CheckingTransactionInterceptor implements TransactionInterceptor
 {
@@ -45,25 +45,10 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
     private LogEntry.Commit commitEntry;
     private final DiffStore diffs;
     private final DiffCheck checker;
-    private final StringLogger diffLog;
 
-    CheckingTransactionInterceptor( DiffCheck checker, NeoStoreXaDataSource dataSource,
-                                    StringLogger logger, String log )
+    CheckingTransactionInterceptor( DiffCheck checker, NeoStoreXaDataSource dataSource )
     {
-        StringLogger diffLog = null;
-        if ( log != null )
-        {
-            if ( "true".equalsIgnoreCase( log ) )
-            {
-                diffLog = logger;
-            }
-            else
-            {
-                diffLog = StringLogger.logger( new File( log ) );
-            }
-        }
         this.checker = checker;
-        this.diffLog = diffLog;
         this.diffs = new DiffStore( dataSource.getNeoStore() );
     }
 
@@ -159,6 +144,16 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
         if ( next != null )
         {
             next.visitNeoStore( record );
+        }
+    }
+
+    @Override
+    public void visitSchemaRule( Collection<DynamicRecord> records )
+    {
+        diffs.visitSchemaRule( records );
+        if ( next != null )
+        {
+            next.visitSchemaRule( records );
         }
     }
 

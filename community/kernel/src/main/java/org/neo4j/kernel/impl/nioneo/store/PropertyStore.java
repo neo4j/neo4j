@@ -37,12 +37,13 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends AbstractStore implements Store, RecordStore<PropertyRecord>
+public class PropertyStore extends AbstractRecordStore<PropertyRecord> implements Store
 {
     public static abstract class Configuration extends AbstractStore.Configuration
     {
@@ -606,14 +607,13 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return arrayPropertyStore.getRightArray(
-                arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return getRightArray( arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        List<WindowPoolStats> list = new ArrayList<>();
         list.add( stringPropertyStore.getWindowPoolStats() );
         list.add( arrayPropertyStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
@@ -674,7 +674,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
     {
         long nextProp = firstRecordId;
-        List<PropertyRecord> toReturn = new LinkedList<PropertyRecord>();
+        List<PropertyRecord> toReturn = new LinkedList<>();
         if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return null;

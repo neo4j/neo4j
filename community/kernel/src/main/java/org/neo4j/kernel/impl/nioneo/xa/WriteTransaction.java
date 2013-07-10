@@ -42,6 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -88,6 +89,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.binarySearch;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
@@ -2072,7 +2074,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     private SchemaRule deserializeSchemaRule( long ruleId, Collection<DynamicRecord> records )
     {
-        return SchemaRule.Kind.deserialize( ruleId, AbstractDynamicStore.concatData( records, new byte[100] ) );
+        try
+        {
+            return SchemaRule.Kind.deserialize( ruleId, AbstractDynamicStore.concatData( records, new byte[100] ) );
+        }
+        catch ( MalformedSchemaRuleException e )
+        {
+            // TODO This is bad
+            throw launderedException( e );
+        }
     }
 
     private void addSchemaRule( Pair<Collection<DynamicRecord>, SchemaRule> schemaRule )

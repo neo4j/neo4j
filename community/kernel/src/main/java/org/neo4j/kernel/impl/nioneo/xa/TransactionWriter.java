@@ -24,6 +24,7 @@ import java.util.Collection;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -99,6 +100,11 @@ public class TransactionWriter
     public void propertyKey( int id, String key, int... dynamicIds ) throws IOException
     {
         write( new Command.PropertyKeyTokenCommand( null, withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) ) );
+    }
+
+    public void label( int id, String name, int... dynamicIds ) throws IOException
+    {
+        write( new Command.LabelTokenCommand( null, withName( new LabelTokenRecord( id ), dynamicIds, name ) ) );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds ) throws IOException

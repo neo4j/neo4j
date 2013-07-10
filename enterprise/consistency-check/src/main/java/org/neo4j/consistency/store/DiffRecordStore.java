@@ -20,6 +20,8 @@
 package org.neo4j.consistency.store;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -48,7 +50,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public DiffRecordStore( RecordStore<R> actual )
     {
         this.actual = actual;
-        this.diff = new HashMap<Long, R>();
+        this.diff = new HashMap<>();
     }
 
     @Override
@@ -115,11 +117,6 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         return Math.max( highId, actual.getHighId() );
     }
 
-    public long getRawHighId()
-    {
-        return actual.getHighId();
-    }
-
     @Override
     public R getRecord( long id )
     {
@@ -141,6 +138,24 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
+    public Collection<R> getRecords( long id )
+    {
+        Collection<R> result = new ArrayList<>();
+        R record;
+        for ( Long nextId = id; nextId != null; nextId = getNextRecordReference( record ) )
+        {
+            result.add( record = forceGetRecord( nextId ) );
+        }
+        return result;
+    }
+
+    @Override
+    public Long getNextRecordReference( R record )
+    {
+        return actual.getNextRecordReference( record );
+    }
+
+    @Override
     public void updateRecord( R record )
     {
         if ( record.getLongId() > highId ) highId = record.getLongId();
@@ -156,7 +171,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     @Override
     public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, R record ) throws FAILURE
     {
-        actual.accept( new DispatchProcessor<FAILURE>( this, processor ), record );
+        actual.accept( new DispatchProcessor<>( this, processor ), record );
     }
 
     @Override
@@ -217,6 +232,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
         {
             processor.processArray( (RecordStore<DynamicRecord>) diffStore, array );
+        }
+
+        @Override
+        public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE
+        {
+            processor.processSchema( (RecordStore<DynamicRecord>) diffStore, schema );
         }
 
         @Override

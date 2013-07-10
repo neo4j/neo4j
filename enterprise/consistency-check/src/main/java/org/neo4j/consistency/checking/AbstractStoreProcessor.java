@@ -95,9 +95,9 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
 
-    @Override
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
     {
+        // cf. StoreProcessor
         checkDynamic( RecordType.SCHEMA, store, schema, new DynamicRecordCheck( store, SCHEMA ) );
     }
 

@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
 
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -77,6 +79,10 @@ public class TransactionReader
         void visitUpdateNeoStore( int localId, NeoStoreRecord node );
 
         void visitDeleteNeoStore( int localId, long node );
+
+        void visitDeleteSchemaRule( int localId, Collection<DynamicRecord> records, long id );
+
+        void visitUpdateSchemaRule( int localId, Collection<DynamicRecord> records );
     }
 
     private static final XaCommandFactory COMMAND_FACTORY = new XaCommandFactory()
@@ -231,6 +237,23 @@ public class TransactionReader
             else
             {
                 visitor.visitUpdateNeoStore( localId, record );
+            }
+        }
+
+        @Override
+        public void visitSchemaRule( Collection<DynamicRecord> records )
+        {
+            if ( ! records.isEmpty() )
+            {
+                DynamicRecord first = records.iterator().next();
+                if ( !first.inUse() )
+                {
+                    visitor.visitDeleteSchemaRule( localId, records, first.getId() );
+                }
+                else
+                {
+                    visitor.visitUpdateSchemaRule( localId, records );
+                }
             }
         }
     }

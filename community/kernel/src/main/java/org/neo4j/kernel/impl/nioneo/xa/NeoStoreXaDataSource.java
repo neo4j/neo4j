@@ -676,7 +676,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             {
                 return item.getKind().isIndex();
             }
-        }, neoStore.getSchemaStore().loadAll() ) );
+        }, neoStore.getSchemaStore().loadAllSchemaRules() ) );
     }
     
     public PersistenceCache getPersistenceCache()
