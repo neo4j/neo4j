@@ -26,7 +26,7 @@ import java.util.List;
 
 public class JAXRSHelper
 {
-    public static List<String> listFrom( String[] strings )
+    public static List<String> listFrom( String... strings )
     {
         ArrayList<String> al = new ArrayList<String>();
 

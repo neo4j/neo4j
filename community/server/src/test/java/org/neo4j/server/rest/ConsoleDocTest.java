@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
@@ -28,6 +26,8 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.junit.Assert.assertEquals;
 
 public class ConsoleDocTest extends AbstractRestFunctionalTestBase
 {
