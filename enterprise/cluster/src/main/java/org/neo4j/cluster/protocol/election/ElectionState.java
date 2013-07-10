@@ -138,12 +138,9 @@ public enum ElectionState
                             {
                                 break;
                             }
-                            if ( context.getClusterContext().isInCluster() )
+                            if ( context.isInCluster() )
                             {
-                                // Only the first alive server should try elections. Everyone else waits
-                                List<InstanceId> aliveInstances = Iterables.toList(context.getHeartbeatContext().getAlive());
-                                Collections.sort( aliveInstances );
-                                boolean isElector = aliveInstances.indexOf( context.getClusterContext().getMyId() ) == 0;
+                                boolean isElector = context.isElector();
 
                                 if ( isElector )
                                 {
@@ -154,33 +151,46 @@ public enum ElectionState
                                         String roleName = role.getName();
                                         if ( !context.isElectionProcessInProgress( roleName ) )
                                         {
-                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                            context.getLogger().debug(
                                                     "Starting election process for role " + roleName );
 
                                             context.startElectionProcess( roleName );
 
+                                            boolean sentSome = false;
                                             // Allow other live nodes to vote which one should take over
-                                            for ( Map.Entry<InstanceId, URI> server : context.getClusterContext().getConfiguration().getMembers().entrySet() )
+                                            for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
                                             {
                                                 /*
                                                  * Skip dead nodes and the current role holder. Dead nodes are not
                                                  * candidates anyway and the current role holder will be asked last,
                                                  * after everyone else has cast votes.
                                                  */
-                                                if ( !context.getHeartbeatContext().getFailed().contains( server.getKey() ) &&
-                                                        !server.getKey().equals( context.getClusterContext()
-                                                                .getConfiguration().
-                                                                getElected( roleName ) ) )
+                                                if ( !context.isFailed( server.getKey() ) &&
+                                                        !server.getKey().equals( context.getElected( roleName ) ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
                                                     outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), roleName ) );
+                                                    sentSome = true;
                                                 }
                                             }
-                                            context.getClusterContext()
-                                                    .timeouts
-                                                    .setTimeout( "election-" + roleName,
-                                                            Message.timeout( ElectionMessage.electionTimeout, message,
-                                                                    new ElectionTimeoutData( roleName, message ) ) );
+                                            if ( !sentSome )
+                                            {
+                                                /*
+                                                 * If we didn't send any messages, we are the only non-failed cluster
+                                                 * member and probably (not necessarily) hold the role, though that
+                                                 * doesn't matter. So we ask ourselves to vote, if we didn't above.
+                                                 * In this case, no timeout is required, because no messages are
+                                                 * expected. If we are indeed the role holder, then we'll cast our
+                                                 * vote as a response to this message, which will complete the election.
+                                                 */
+                                                outgoing.offer( Message.internal( ElectionMessage.vote, roleName ) );
+                                            }
+                                            else
+                                            {
+                                                context.setTimeout( "election-" + roleName,
+                                                        Message.timeout( ElectionMessage.electionTimeout, message,
+                                                                new ElectionTimeoutData( roleName, message ) ) );
+                                            }
                                         }
                                         else
                                         {
