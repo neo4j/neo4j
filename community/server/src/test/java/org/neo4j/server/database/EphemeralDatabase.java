@@ -19,22 +19,23 @@
  */
 package org.neo4j.server.database;
 
-import java.util.HashMap;
-
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class EphemeralDatabase extends CommunityDatabase {
+import static org.neo4j.server.configuration.Configurator.EMPTY;
 
-	public EphemeralDatabase() {
-		this( new MapConfiguration(new HashMap<String,String>()) );
-	}
+public class EphemeralDatabase extends CommunityDatabase
+{
+    public EphemeralDatabase()
+    {
+        this( EMPTY );
+    }
 	
-	public EphemeralDatabase(Configuration serverConfig) {
-		super(serverConfig);
-	}
+    public EphemeralDatabase( Configurator configurator )
+    {
+        super( configurator );
+    }
 
 	@Override
 	@SuppressWarnings("deprecation")
@@ -42,7 +43,7 @@ public class EphemeralDatabase extends CommunityDatabase {
 	{
 		this.graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory()
 			.newImpermanentDatabaseBuilder()
-			.setConfig( loadNeo4jProperties() )
+			.setConfig( getDbTuningPropertiesWithServerDefaults() )
 			.newGraphDatabase();
 	}
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -35,6 +32,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ConfiguratorTest
 {
@@ -98,7 +98,7 @@ public class ConfiguratorTest
     }
 
     @Test
-    public void shouldFindThirdPartyJaxRsClasses() throws IOException
+    public void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
 
         File file = ServerTestUtils.createTempPropertyFile(folder.getRoot());
@@ -115,8 +115,8 @@ public class ConfiguratorTest
 
         Configurator configurator = new PropertyFileConfigurator( file );
 
-        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
-        assertNotNull( thirdpartyJaxRsClasses );
-        assertEquals( 3, thirdpartyJaxRsClasses.size() );
+        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.getThirdpartyJaxRsPackages();
+        assertNotNull( thirdpartyJaxRsPackages );
+        assertEquals( 3, thirdpartyJaxRsPackages.size() );
     }
 }

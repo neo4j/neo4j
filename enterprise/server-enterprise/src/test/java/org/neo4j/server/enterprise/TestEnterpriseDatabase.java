@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.server.configuration.Configurator;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 
 public class TestEnterpriseDatabase
@@ -34,8 +33,7 @@ public class TestEnterpriseDatabase
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable
     {
-        Configuration config = new MapBasedConfiguration();
-        EnterpriseDatabase db = new EnterpriseDatabase( config );
+        EnterpriseDatabase db = new EnterpriseDatabase( Configurator.EMPTY );
 
         try
         {

@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
+
+import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class DiscoveryModule implements ServerModule
 {
@@ -43,20 +44,20 @@ public class DiscoveryModule implements ServerModule
     @Override
 	public void start( StringLogger logger )
     {
-        webServer.addJAXRSPackages( getPackageNames(), ROOT_PATH, null );
+        webServer.addJAXRSClasses( getClassNames(), ROOT_PATH, null );
         log.info( "Mounted discovery module at [%s]", ROOT_PATH );
         if ( logger != null )
             logger.logMessage( "Mounted discovery module (" + Configurator.DISCOVERY_API_PACKAGE + ") at: " + ROOT_PATH );
     }
 
-    private List<String> getPackageNames()
+    private List<String> getClassNames()
     {
-        return listFrom( new String[] { Configurator.DISCOVERY_API_PACKAGE } );
+        return listFrom( DiscoveryService.class.getName() );
     }
 
     @Override
 	public void stop()
     {
-    	webServer.removeJAXRSPackages( getPackageNames(), ROOT_PATH );
+    	webServer.removeJAXRSClasses( getClassNames(), ROOT_PATH );
     }
 }
