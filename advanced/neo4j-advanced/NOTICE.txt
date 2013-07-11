@@ -29,6 +29,8 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   JTA 1.1
   Lucene Core
+  parboiled-core
+  parboiled-scala
 
 BSD - Scala License
   Scala Library
