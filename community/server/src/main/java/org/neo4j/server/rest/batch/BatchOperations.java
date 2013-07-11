@@ -181,7 +181,6 @@ public abstract class BatchOperations
         URI targetUri = calculateTargetUri(uriInfo, path);
 
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body);
-        req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
