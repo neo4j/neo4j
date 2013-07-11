@@ -24,27 +24,29 @@ import org.parboiled.scala._
 import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 import org.neo4j.cypher.internal.parser.experimental.ast
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 
-class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension, commandexpressions.Expression] with Expressions {
+class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension, legacy.Expression]
+with Expressions {
 
   @Test def tests() {
     implicit val parserToTest = ListComprehension ~ EOI
 
-    val filterCommand = commandexpressions.FilterFunction(
-      commandexpressions.Identifier("p"),
+    val filterCommand = legacy.FilterFunction(
+      legacy.Identifier("p"),
       "a",
-      commands.GreaterThan(commandexpressions.Property(commandexpressions.Identifier("a"), "foo"), commandexpressions.Literal(123)))
+      commands.GreaterThan(legacy.Property(legacy.Identifier("a"), PropertyKey("foo")), legacy.Literal(123)))
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
 
     parsing("[ a in p | a.foo ]") shouldGive
-      commandexpressions.ExtractFunction(commandexpressions.Identifier("p"), "a", commandexpressions.Property(commandexpressions.Identifier("a"), "foo"))
+      legacy.ExtractFunction(legacy.Identifier("p"), "a", legacy.Property(legacy.Identifier("a"), PropertyKey("foo")))
 
     parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      commandexpressions.ExtractFunction(filterCommand, "a", commandexpressions.Property(commandexpressions.Identifier("a"), "foo"))
+      legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Identifier("a"), PropertyKey("foo")))
   }
 
-  def convert(astNode: ast.ListComprehension): commandexpressions.Expression = astNode.toCommand
+  def convert(astNode: ast.ListComprehension): legacy.Expression = astNode.toCommand
 }
