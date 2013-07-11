@@ -137,7 +137,7 @@ public class NetworkInstance
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
                 Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption( "child.tcpNoDelay", true );
+        serverBootstrap.setOption("child.tcpNoDelay", true);
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();
@@ -151,6 +151,7 @@ public class NetworkInstance
                 Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
+        clientBootstrap.setOption("tcpNoDelay", true);
 
         // Try all ports in the given range
         listen( minPort, maxPort );

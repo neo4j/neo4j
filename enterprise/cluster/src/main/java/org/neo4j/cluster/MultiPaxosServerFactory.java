@@ -154,8 +154,9 @@ public class MultiPaxosServerFactory
                 .getOutgoing() ) );
 
         heartbeatContext.addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
-                .class ) ) );
-        clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ) ) );
+                .class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
+        clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ),
+                logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
         electionContext.setElectionCredentialsProvider( electionCredentialsProvider );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )

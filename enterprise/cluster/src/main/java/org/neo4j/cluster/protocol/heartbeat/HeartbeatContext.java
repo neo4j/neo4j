@@ -36,6 +36,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Context used by the {@link HeartbeatState} state machine.
@@ -45,6 +46,7 @@ public class HeartbeatContext
     private ClusterContext clusterContext;
     private LearnerContext learnerContext;
     private Executor executor;
+    private final StringLogger logger;
     Set<InstanceId> failed = new HashSet<InstanceId>();
 
     Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<InstanceId, Set<InstanceId>>();
@@ -56,6 +58,7 @@ public class HeartbeatContext
         this.clusterContext = clusterContext;
         this.learnerContext = learnerContext;
         this.executor = executor;
+        this.logger = clusterContext.getLogger( getClass() );
     }
 
     public void started()
@@ -73,6 +76,7 @@ public class HeartbeatContext
 
         if ( !isFailed( node ) && failed.remove( node ) )
         {
+            logger.info( "Notifying listeners that instance " + node + " is alive" );
             Listeners.notifyListeners( listeners, new Listeners.Notification<HeartbeatListener>()
             {
                 @Override
@@ -88,11 +92,13 @@ public class HeartbeatContext
 
     public void suspect( final InstanceId node )
     {
+        logger.info( "Suspecting " + node );
         Set<InstanceId> serverSuspicions = getSuspicionsFor( clusterContext.getMyId() );
         serverSuspicions.add( node );
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
+            logger.info( "Notifying listeners that node " + node + " is failed" );
             failed.add( node );
             Listeners.notifyListeners( listeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
