@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.lang.reflect.Array;
-import java.util.Random;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.lang.reflect.Array;
+import java.util.Random;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 
 public class PropertyConversionTest
 {
@@ -220,9 +219,12 @@ public class PropertyConversionTest
         assertEquals( "hashCode()", property.hashCode(), PropertyConversion.convertProperty( 17, value ).hashCode() );
         assertFalse( "properties with different keys should not be equal",
                      property.equals( PropertyConversion.convertProperty( 666, value ) ) );
-        // this needs to be last, because another() will mutate arrays in place for extra nastyness
-        assertFalse( "properties with different values should not be equal",
-                     property.equals( PropertyConversion.convertProperty( 17, another( value ) ) ) );
+        if ( !(value.getClass().isArray() && value.getClass().getComponentType().isPrimitive() ))
+        {
+            // this needs to be last, because another() will mutate arrays in place for extra nastiness
+            assertFalse( "properties with different values should not be equal",
+                         property.equals( PropertyConversion.convertProperty( 17, another( value ) ) ) );
+        }
     }
 
     private static void assertDeepEquals( Object expected, Object actual )

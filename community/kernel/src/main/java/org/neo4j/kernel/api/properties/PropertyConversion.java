@@ -67,35 +67,35 @@ class PropertyConversion
         }
         if ( value instanceof byte[] )
         {
-            return Property.byteArrayProperty( propertyKeyId, ((byte[]) value).clone() );
+            return Property.byteArrayProperty( propertyKeyId, ((byte[]) value) );
         }
         if ( value instanceof long[] )
         {
-            return Property.longArrayProperty( propertyKeyId, ((long[]) value).clone() );
+            return Property.longArrayProperty( propertyKeyId, ((long[]) value) );
         }
         if ( value instanceof int[] )
         {
-            return Property.intArrayProperty( propertyKeyId, ((int[]) value).clone() );
+            return Property.intArrayProperty( propertyKeyId, ((int[]) value) );
         }
         if ( value instanceof double[] )
         {
-            return Property.doubleArrayProperty( propertyKeyId, ((double[]) value).clone() );
+            return Property.doubleArrayProperty( propertyKeyId, ((double[]) value) );
         }
         if ( value instanceof float[] )
         {
-            return Property.floatArrayProperty( propertyKeyId, ((float[]) value).clone() );
+            return Property.floatArrayProperty( propertyKeyId, ((float[]) value) );
         }
         if ( value instanceof boolean[] )
         {
-            return Property.booleanArrayProperty( propertyKeyId, ((boolean[]) value).clone() );
+            return Property.booleanArrayProperty( propertyKeyId, ((boolean[]) value) );
         }
         if ( value instanceof char[] )
         {
-            return Property.charArrayProperty( propertyKeyId, ((char[]) value).clone() );
+            return Property.charArrayProperty( propertyKeyId, ((char[]) value) );
         }
         if ( value instanceof short[] )
         {
-            return Property.shortArrayProperty( propertyKeyId, ((short[]) value).clone() );
+            return Property.shortArrayProperty( propertyKeyId, ((short[]) value) );
         }
         // otherwise fail
         if ( value == null )
