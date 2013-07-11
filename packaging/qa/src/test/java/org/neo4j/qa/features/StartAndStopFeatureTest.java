@@ -19,20 +19,21 @@
  */
 package org.neo4j.qa.features;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.junit.Before;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.qa.features.support.FileHelper.copyFile;
 import static org.neo4j.qa.features.support.ProcessHelper.exec;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Before;
-import org.junit.Test;
 
 public class StartAndStopFeatureTest
 {
@@ -76,19 +77,25 @@ public class StartAndStopFeatureTest
 
     private void And_wait_for_Server_started_at( String uri ) throws IOException, InterruptedException
     {
-        DefaultHttpClient httpClient = new DefaultHttpClient();
         HttpGet request = new HttpGet( uri );
         boolean success = false;
         long startTime = System.currentTimeMillis();
         while ( !success && System.currentTimeMillis() - startTime < 60000 )
         {
+            DefaultHttpClient httpClient = new DefaultHttpClient();
             try
             {
-                success = httpClient.execute( request ).getStatusLine().getStatusCode() == 200;
+                HttpResponse response = httpClient.execute( request );
+                success = response.getStatusLine().getStatusCode() == 200;
+                response.getEntity().getContent().close();
             }
             catch ( ConnectException e )
             {
                 System.out.println( "Connection refused, sleeping" );
+            }
+            finally
+            {
+                httpClient.getConnectionManager().shutdown();
             }
             Thread.sleep( 1000 );
         }
