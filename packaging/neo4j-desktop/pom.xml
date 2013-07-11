@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.9.2-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>neo4j-desktop</artifactId>
+    <name>Neo4j Desktop</name>
+    <description>Easy-to-use Neo4j database in an .exe</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j.app</groupId>
+            <artifactId>neo4j-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.app</groupId>
+            <artifactId>neo4j-server</artifactId>
+            <version>${project.version}</version>
+            <classifier>static-web</classifier>
+        </dependency>
+        
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.neo4j.desktop.Neo4jDesktop</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+
+                            </transformers>
+
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>l4j-clui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <headerType>gui</headerType>
+                            <outfile>target/Neo4j.exe</outfile>
+                            <jar>target/${project.artifactId}-${project.version}-shaded.jar</jar>
+                            <errTitle>Bad boy</errTitle>
+                            <!--icon>file</icon-->
+                            <classPath>
+                                <mainClass>org.neo4j.desktop.Neo4jDesktop</mainClass>
+                                <addDependencies>false</addDependencies>
+                                <preCp>anything</preCp>
+                            </classPath>
+                            <jre>
+                                <!-- TODO Figure out a path to point to and it will be bundled up inside the .exe file
+                                <path>some/path</path>
+                                -->
+                                <minVersion>1.6.0</minVersion>
+                            </jre>
+                            
+                            <!-- TODO Supply correct versions -->
+                            <versionInfo>
+                                <fileVersion>1.2.3.4</fileVersion>
+                                <txtFileVersion>${project.version}</txtFileVersion>
+                                <fileDescription>Neo4j Desktop</fileDescription>
+                                <copyright>No</copyright>
+                                <productVersion>5.6.7.8</productVersion>
+                                <txtProductVersion>${project.version}</txtProductVersion>
+                                <productName>Neo4j Desktop</productName>
+                                <internalName>neo4j-desktop</internalName>
+                                <originalFilename>Neo4j.exe</originalFilename>
+                            </versionInfo>
+                            
+                            <!-- TODO Add some useful error messages here
+                            <messages>
+                                <startupErr>text</startupErr>
+                                <bundledJreErr>text</bundledJreErr>
+                                <jreVersionErr>text</jreVersionErr>
+                                <launcherErr>text</launcherErr>
+                            </messages>
+                            -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
