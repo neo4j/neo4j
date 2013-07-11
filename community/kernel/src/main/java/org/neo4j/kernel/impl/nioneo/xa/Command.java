@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static java.util.Collections.unmodifiableCollection;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
@@ -86,11 +88,9 @@ public abstract class Command extends XaCommand
         {
             if ( !inUse )
                 return DELETE;
-            if ( created && inUse )
+            if ( created )
                 return CREATE;
-            if ( !created && inUse )
-                return UPDATE;
-            throw new IllegalStateException( "A record can't be both created and deleted at the same time." );
+            return UPDATE;
         }
 
         public static Mode fromRecordState( AbstractBaseRecord record )
@@ -448,7 +448,7 @@ public abstract class Command extends XaCommand
                 
                 // labels
                 long labelField = buffer.getLong();
-                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<DynamicRecord>();
+                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
                 readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
                 record.setLabelField( labelField, dynamicLabelRecords );
             }
@@ -1165,7 +1165,7 @@ public abstract class Command extends XaCommand
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
-            throw new UnsupportedOperationException();
+            visitor.visitSchemaRule( records );
         }
 
         @Override
@@ -1236,7 +1236,7 @@ public abstract class Command extends XaCommand
         static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
+            Collection<DynamicRecord> records = new ArrayList<>();
             readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
 
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
@@ -1255,7 +1255,15 @@ public abstract class Command extends XaCommand
             if ( first( records ).inUse() )
             {
                 ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
-                rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
+                try
+                {
+                    rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
+                }
+                catch ( MalformedSchemaRuleException e )
+                {
+                    // TODO This is bad. We should probably just shut down if that happens
+                    throw launderedException( e );
+                }
             }
             return new SchemaRuleCommand( neoStore != null ? neoStore.getSchemaStore() : null,
                     indexes, records, rule );

@@ -20,14 +20,12 @@
 package org.neo4j.consistency.checking;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -552,24 +550,4 @@ public class NodeRecordCheckTest
         }
     }
 
-    public static class PreAllocatedRecords implements DynamicRecordAllocator
-    {
-        private final int dataSize;
-
-        public PreAllocatedRecords( int dataSize )
-        {
-            this.dataSize = dataSize;
-        }
-
-        @Override public int dataSize()
-        {
-            return dataSize;
-        }
-
-        @Override
-        public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
-        {
-            return recordsToUseFirst.next();
-        }
-    }
 }

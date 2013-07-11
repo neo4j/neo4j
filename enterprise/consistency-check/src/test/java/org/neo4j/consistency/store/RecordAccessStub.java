@@ -49,6 +49,9 @@ import static org.mockito.Mockito.mock;
 
 public class RecordAccessStub implements RecordAccess, DiffRecordAccess
 {
+
+    public static final int SCHEMA_RECORD_TYPE = 255;
+
     @SuppressWarnings("unchecked")
     public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
     REPORT mockReport( Class<REPORT> reportClass, RECORD record )
@@ -306,6 +309,10 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
             {
                 add( arrays, (DynamicRecord) oldRecord, dyn );
             }
+            else if ( dyn.getType() == SCHEMA_RECORD_TYPE )
+            {
+                add( schemata, (DynamicRecord) oldRecord, dyn );
+            }
             else
             {
                 throw new IllegalArgumentException( "Invalid dynamic record type" );
@@ -354,6 +361,10 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
             else if ( dyn.getType() == PropertyType.ARRAY.intValue() )
             {
                 addArray( dyn );
+            }
+            else if ( dyn.getType() == SCHEMA_RECORD_TYPE )
+            {
+                addSchema( dyn );
             }
             else
             {

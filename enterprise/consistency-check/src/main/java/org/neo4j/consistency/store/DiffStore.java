@@ -55,7 +55,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )
     {
-        return new DiffRecordStore<R>( store );
+        return new DiffRecordStore<>( store );
     }
 
     @Override
@@ -190,6 +190,15 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public void visitNeoStore( NeoStoreRecord record )
     {
         this.masterRecord = record;
+    }
+
+    @Override
+    public void visitSchemaRule( Collection<DynamicRecord> records )
+    {
+        for ( DynamicRecord record : records )
+        {
+            getSchemaStore().forceUpdateRecord( record );
+        }
     }
 
     @Override

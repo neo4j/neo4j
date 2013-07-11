@@ -190,6 +190,11 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return check( reportClass, checker, record, records );
     }
 
+    final REPORT check( CHECKER externalChecker, RECORD record )
+    {
+        return check( reportClass, externalChecker, record, records );
+    }
+
     final REPORT checkChange( RECORD oldRecord, RECORD newRecord )
     {
         return checkChange( reportClass, checker, oldRecord, newRecord, records );
@@ -301,5 +306,10 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         verify( report, atLeast( 0 ) )
                 .forReference( any( RecordReference.class ), any( ComparativeRecordChecker.class ) );
         verifyNoMoreInteractions( report );
+    }
+
+    protected CHECKER checker()
+    {
+        return checker;
     }
 }

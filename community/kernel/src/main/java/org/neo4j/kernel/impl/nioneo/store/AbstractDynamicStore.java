@@ -221,7 +221,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 recordAllocator );
     }
 
-    protected static Collection<DynamicRecord> allocateRecordsFromBytes(
+    public static Collection<DynamicRecord> allocateRecordsFromBytes(
             byte src[], Iterator<DynamicRecord> recordsToUseFirst,
             DynamicRecordAllocator dynamicRecordAllocator )
     {
@@ -437,6 +437,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             }
         }
         return recordList;
+    }
+
+    @Override
+    public Long getNextRecordReference( DynamicRecord record )
+    {
+        long nextId = record.getNextBlock();
+        return Record.NO_NEXT_BLOCK.is( nextId ) ? null : nextId;
     }
 
     /**

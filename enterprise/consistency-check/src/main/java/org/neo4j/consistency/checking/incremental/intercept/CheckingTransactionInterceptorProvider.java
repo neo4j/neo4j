@@ -43,13 +43,13 @@ abstract class CheckingTransactionInterceptorProvider extends TransactionInterce
     public CheckingTransactionInterceptor create( XaDataSource ds, String options,
                                                   DependencyResolver dependencyResolver )
     {
-        if ( !(ds instanceof NeoStoreXaDataSource) || !(options instanceof String) )
+        if ( !(ds instanceof NeoStoreXaDataSource) || !(options != null) )
         {
             return null;
         }
-        String[] config = ((String) options).split( ";" );
+        String[] config = options.split( ";" );
         String mode = config[0];
-        Map<String, String> parameters = new HashMap<String, String>();
+        Map<String, String> parameters = new HashMap<>();
         for ( int i = 1; i < config.length; i++ )
         {
             String[] parts = config[i].split( "=" );
@@ -64,7 +64,7 @@ abstract class CheckingTransactionInterceptorProvider extends TransactionInterce
         else
         {
             String log = parameters.get( "log" );
-            return new CheckingTransactionInterceptor( check, (NeoStoreXaDataSource) ds, logger, log );
+            return new CheckingTransactionInterceptor( check, (NeoStoreXaDataSource) ds );
         }
     }
 

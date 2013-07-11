@@ -33,7 +33,9 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public abstract class TokenStore<T extends TokenRecord> extends AbstractStore implements Store, RecordStore<T>
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.decodeString;
+
+public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -123,7 +125,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
 
     public Token[] getTokens( int maxCount )
     {
-        LinkedList<Token> recordList = new LinkedList<Token>();
+        LinkedList<Token> recordList = new LinkedList<>();
         long maxIdInUse = getHighestPossibleIdInUse();
         int found = 0;
         for ( int i = 0; i <= maxIdInUse && found < maxCount; i++ )
@@ -193,7 +195,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
     @Override
     public T forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -352,7 +354,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
     {
         int recordToFind = nameRecord.getNameId();
         Iterator<DynamicRecord> records = nameRecord.getNameRecords().iterator();
-        Collection<DynamicRecord> relevantRecords = new ArrayList<DynamicRecord>();
+        Collection<DynamicRecord> relevantRecords = new ArrayList<>();
         while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() &&  records.hasNext() )
         {
             DynamicRecord record = records.next();
@@ -364,8 +366,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractStore im
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return (String) PropertyStore.decodeString( nameStore.readFullByteArray(
-                relevantRecords, PropertyType.STRING ).other() );
+        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING ).other() );
     }
 
     @Override

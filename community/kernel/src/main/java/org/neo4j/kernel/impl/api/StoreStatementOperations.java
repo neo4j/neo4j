@@ -361,7 +361,7 @@ public class StoreStatementOperations implements
 
     private Iterator<IndexDescriptor> getIndexDescriptorsFor( Predicate<SchemaRule> filter )
     {
-        Iterator<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
+        Iterator<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAllSchemaRules() );
 
         return map( new Function<SchemaRule, IndexDescriptor>()
         {

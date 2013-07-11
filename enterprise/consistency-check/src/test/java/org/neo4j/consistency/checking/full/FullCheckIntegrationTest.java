@@ -20,12 +20,14 @@
 package org.neo4j.consistency.checking.full;
 
 import java.io.StringWriter;
+import java.util.Collection;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.PreAllocatedRecords;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -43,7 +46,9 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.GraphStoreFixture;
@@ -177,9 +182,6 @@ public class FullCheckIntegrationTest
         // when
         ConsistencySummaryStatistics stats = check();
 
-        System.out.println( "stats = " + stats );
-        System.out.println( "log.toString() = " + log.toString() );
-
         // then
         verifyInconsistency( RecordType.NODE, stats );
     }
@@ -195,16 +197,13 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
-                nodeRecord.setLabelField( dynamicPointer( asList( new DynamicRecord( next.nodeLabels() ))) );
+                nodeRecord.setLabelField( dynamicPointer( asList( new DynamicRecord( next.nodeLabel() ))) );
                 tx.create( nodeRecord );
             }
         } );
 
         // when
         ConsistencySummaryStatistics stats = check();
-
-        System.out.println( "stats = " + stats );
-        System.out.println( "log.toString() = " + log.toString() );
 
         // then
         verifyInconsistency( RecordType.NODE, stats );
@@ -321,6 +320,110 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportDuplicateConstraintReferences() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.nodeLabel();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
+                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
+    }
+
+    @Test
+    public void shouldReportInvalidConstraintBackReferences() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.nodeLabel();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2);
+                UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
+    }
+
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    {
+        return serializeRule( rule, asList( records ) );
+    }
+
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
+    {
+        RecordSerializer serializer = new RecordSerializer();
+        serializer.append( rule );
+
+        byte[] data = serializer.serialize();
+        PreAllocatedRecords dynamicRecordAllocator = new PreAllocatedRecords( data.length );
+        return AbstractDynamicStore.allocateRecordsFromBytes( data, records.iterator(), dynamicRecordAllocator );
+    }
+
+    @Test
     public void shouldReportArrayPropertyInconsistencies() throws Exception
     {
         // given
@@ -359,7 +462,7 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipLabelNameInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentName = new Reference<Integer>();
+        final Reference<Integer> inconsistentName = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -386,7 +489,7 @@ public class FullCheckIntegrationTest
     public void shouldReportPropertyKeyNameInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentName = new Reference<Integer>();
+        final Reference<Integer> inconsistentName = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -430,7 +533,7 @@ public class FullCheckIntegrationTest
     public void shouldReportPropertyKeyInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentKey = new Reference<Integer>();
+        final Reference<Integer> inconsistentKey = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override

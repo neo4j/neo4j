@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 
 public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
@@ -58,6 +59,12 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
     public interface Reporter
     {
+        void forSchema( DynamicRecord schema,
+                        RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
+
+        void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema,
+                              RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
+
         void forNode( NodeRecord node,
                       RecordCheck<NodeRecord, NodeConsistencyReport> checker );
 
@@ -135,6 +142,51 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport<NeoStoreRecord, NeoStoreConsistencyReport>
     {
+    }
+
+    interface SchemaConsistencyReport extends ConsistencyReport<DynamicRecord, SchemaConsistencyReport>
+    {
+        /** The label token record is not in use. */
+        @Documented
+        void labelNotInUse( LabelTokenRecord label );
+
+        /** The property key token record is not in use. */
+        @Documented
+        void propertyKeyNotInUse( PropertyKeyTokenRecord propertyKey );
+
+        /** The uniqueness constraint does not reference back to the given record */
+        @Documented
+        void uniquenessConstraintNotReferencingBack( DynamicRecord ruleRecord );
+
+        /** The constraint index does not reference back to the given record */
+        @Documented
+        void constraintIndexRuleNotReferencingBack( DynamicRecord ruleRecord );
+
+        /** This record is required to reference some other record of the given kind but no such obligation was found */
+        @Documented
+        void missingObligation( SchemaRule.Kind kind );
+
+        /**
+         * This record requires some other record to reference back to it but there already was such a
+         * conflicting obligation created by the record given as a parameter
+         */
+        @Documented
+        void duplicateObligation( DynamicRecord record );
+
+        /**
+         * This record contains an index rule which has the same content as the index rule contained in the
+         * record given as parameter
+         */
+        @Documented
+        void duplicateRuleContent( DynamicRecord record );
+
+        /** The schema rule contained in the DynamicRecord chain is malformed (not deserializable) */
+        @Documented
+        void malformedSchemaRule();
+
+        /** The schema rule contained in the DynamicRecord chain is of an unrecognized Kind */
+        @Documented
+        void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
     }
 
     interface NodeConsistencyReport extends PrimitiveConsistencyReport<NodeRecord, NodeConsistencyReport>

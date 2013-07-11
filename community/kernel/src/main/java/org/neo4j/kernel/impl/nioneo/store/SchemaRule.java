@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 public interface SchemaRule extends RecordSerializable
@@ -89,21 +91,28 @@ public interface SchemaRule extends RecordSerializable
         
         protected abstract SchemaRule newRule( long id, long labelId, ByteBuffer buffer );
         
-        public static SchemaRule deserialize( long id, ByteBuffer buffer )
+        public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
         {
             long labelId = buffer.getInt();
             Kind kind = kindForId( buffer.get() );
             try
             {
-                return kind.newRule( id, labelId, buffer );
+                SchemaRule rule = kind.newRule( id, labelId, buffer );
+                if ( null == rule )
+                {
+                    throw new MalformedSchemaRuleException( null,
+                            "Deserialized null schema rule for id %d with kind %s", id, kind.name() );
+                }
+                return rule;
             }
             catch ( Exception e )
             {
-                throw launderedException( e );
+                throw new MalformedSchemaRuleException( e,
+                        "Could not deserialize schema rule for id %d with kind %s", id, kind.name() );
             }
         }
         
-        public static Kind kindForId( byte id )
+        public static Kind kindForId( byte id ) throws MalformedSchemaRuleException
         {
             switch ( id )
             {
@@ -111,7 +120,7 @@ public interface SchemaRule extends RecordSerializable
             case 2: return CONSTRAINT_INDEX_RULE;
             case 3: return UNIQUENESS_CONSTRAINT;
             default:
-                throw new IllegalArgumentException( "Unknown kind id " + id );
+                throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
             }
         }
 

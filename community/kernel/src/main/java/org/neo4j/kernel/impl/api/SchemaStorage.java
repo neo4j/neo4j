@@ -91,7 +91,7 @@ public class SchemaStorage
                        rule.getKind().getRuleClass() == ruleType &&
                        predicate.accept( (R) rule );
             }
-        }, schemaStore.loadAll() ) );
+        }, schemaStore.loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
@@ -109,7 +109,7 @@ public class SchemaStorage
                 return rule.getKind() == kind &&
                        predicate.accept( (R) rule );
             }
-        }, schemaStore.loadAll() ) );
+        }, schemaStore.loadAllSchemaRules() ) );
     }
 
     public long newRuleId()
