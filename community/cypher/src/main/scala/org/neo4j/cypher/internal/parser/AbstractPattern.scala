@@ -26,6 +26,7 @@ import org.neo4j.cypher.SyntaxException
 import scala.collection.Map
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, CypherType}
 
 
 abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
@@ -40,6 +41,12 @@ abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
         val labelPreds: Seq[HasLabel] = entity.labels.map(HasLabel(ident, _))
         if (labelPreds.isEmpty) None else Some(labelPreds.reduce(And.apply))
     }
+
+  def possibleStartPoints:Seq[(String,CypherType)]
+
+  def name:String
+
+  def start:AbstractPattern
 }
 
 
@@ -52,10 +59,9 @@ object PatternWithEnds {
   }
 }
 
-abstract class PatternWithPathName(val pathName: String) extends AbstractPattern {
-  def rename(newName: String): PatternWithPathName
+object ParsedEntity {
+  def apply(name:String) = new ParsedEntity(name, Identifier(name), Map.empty, Seq.empty, true)
 }
-
 
 case class ParsedEntity(name: String,
                         expression: Expression,
@@ -70,6 +76,21 @@ case class ParsedEntity(name: String,
 
   def rewrite(f: (Expression) => Expression) =
     copy(expression = expression.rewrite(f), props = props.rewrite(f), labels = labels.map(_.rewrite(f)))
+
+  def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> NodeType())
+
+  def start: AbstractPattern = this
+
+  def end: AbstractPattern = this
+}
+
+object ParsedRelation {
+  def apply(name: String, start: String, end: String, typ: Seq[String], dir: Direction): ParsedRelation =
+    new ParsedRelation(name, Map.empty, ParsedEntity(start), ParsedEntity(end), typ, dir, false)
+}
+
+abstract class PatternWithPathName(val pathName: String) extends AbstractPattern {
+  def rename(newName: String): PatternWithPathName
 }
 
 case class ParsedRelation(name: String,
@@ -92,6 +113,9 @@ with GraphElementPropertyFunctions {
 
   def rewrite(f: (Expression) => Expression) =
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
+
+  def possibleStartPoints: Seq[(String, CypherType)] =
+    (start.possibleStartPoints :+  name -> RelationshipType()) ++ end.possibleStartPoints
 }
 
 trait Turnable {
@@ -144,6 +168,9 @@ case class ParsedVarLengthRelation(name: String,
 
   def rewrite(f: (Expression) => Expression) =
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
+
+  def possibleStartPoints: Seq[(String, CypherType)] =
+    (start.possibleStartPoints :+ name -> PathType()) ++ end.possibleStartPoints
 }
 
 case class ParsedShortestPath(name: String,
@@ -168,9 +195,14 @@ case class ParsedShortestPath(name: String,
   def rewrite(f: (Expression) => Expression) =
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
+  def possibleStartPoints: Seq[(String, CypherType)] =
+    (start.possibleStartPoints :+ name -> PathType()) ++ end.possibleStartPoints
 }
 
 case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends PatternWithPathName(name) {
+
+  assert(pieces.nonEmpty)
+
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def makeOutgoing = this
@@ -180,4 +212,10 @@ case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends P
   def children: Seq[AstNode[_]] = pieces
 
   def rewrite(f: (Expression) => Expression): AbstractPattern = copy(pieces = pieces.map(_.rewrite(f)))
+
+  def possibleStartPoints: Seq[(String, CypherType)] = pieces.flatMap(_.possibleStartPoints)
+
+  def start: AbstractPattern = pieces.head
+
+  def end: AbstractPattern = pieces.last
 }

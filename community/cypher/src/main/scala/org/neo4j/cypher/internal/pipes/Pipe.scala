@@ -57,7 +57,7 @@ object NullPipe extends Pipe {
   val executionPlanDescription = NullPlanDescription
 }
 
-abstract class PipeWithSource(val source: Pipe) extends Pipe {
+abstract class PipeWithSource(source: Pipe) extends Pipe {
   def throwIfSymbolsMissing(symbols: SymbolTable)
 
   throwIfSymbolsMissing(source.symbols)

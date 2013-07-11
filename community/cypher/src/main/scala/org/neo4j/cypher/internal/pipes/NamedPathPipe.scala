@@ -19,23 +19,69 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.symbols.{SymbolTable, PathType}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PathImpl
+import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.cypher.internal.parser._
+import collection.JavaConverters._
 
-class NamedPathPipe(source: Pipe, path: NamedPath) extends PipeWithSource(source) {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = input.map(ctx => {
-    ctx += (path.pathName -> path.getPath(ctx))
-  })
+case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern]) extends PipeWithSource(source) {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    input.map {
+      ctx => ctx += (pathName -> getPath(ctx))
+    }
 
-  val symbols = source.symbols.add(path.pathName, PathType())
+  // TODO: This is duplicated with PathExtractor
+  private def getPath(ctx: ExecutionContext): Path = {
+    def get(x: String): PropertyContainer =
+      ctx(x).asInstanceOf[PropertyContainer]
+
+    val p: Seq[PropertyContainer] = entities.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
+      case e: ParsedEntity           => soFar
+      case r: ParsedRelation         => soFar :+ get(r.name) :+ get(r.end.name)
+      case path: PatternWithPathName => getPath(ctx, path.pathName, soFar)
+    })
+
+    buildPath(p)
+  }
+
+  private def firstNode: String =
+    entities.head.start.name
+
+  private def buildPath(pieces: Seq[PropertyContainer]): Path =
+    if (pieces.contains(null))
+      null
+    else
+      new PathImpl(pieces: _*)
+
+  //WARNING: This method can return NULL
+  private def getPath(m: ExecutionContext, key: String, soFar: List[PropertyContainer]): List[PropertyContainer] = {
+    val m1 = m(key)
+
+    if (m1 == null)
+      return List(null)
+
+    val path = m1.asInstanceOf[Path].iterator().asScala.toList
+
+    val pathTail = if (path.head == soFar.last) {
+      path.tail
+    } else {
+      path.reverse.tail
+    }
+
+    soFar ++ pathTail
+  }
+
+  val symbols = source.symbols.add(pathName, PathType())
 
   override def executionPlanDescription = {
-    val name = SimpleVal.fromStr(path.pathName)
-    val pats = SimpleVal.fromIterable(path.pathPattern)
+    val name = SimpleVal.fromStr(pathName)
+    val pats = SimpleVal.fromIterable(entities)
 
     source.executionPlanDescription.andThen(this, "ExtractPath",  "name" -> name, "patterns" -> pats)
   }
+
   def throwIfSymbolsMissing(symbols: SymbolTable) { }
 }

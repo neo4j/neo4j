@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
 import internal.pipes.QueryState
-import org.neo4j.cypher.internal.{ClosingIterator, StringExtras}
+import org.neo4j.cypher.internal.{ClosingIterator}
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
@@ -35,7 +35,6 @@ class PipeExecutionResult(result: ClosingIterator,
                           val columns: List[String], state: QueryState,
                           executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
-  with StringExtras
   with CollectionSupport
   with StringHelper {
 

@@ -32,87 +32,9 @@ import org.junit.Test
 import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.values.TokenType._
-import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.commands.expressions.TailFunction
-import org.neo4j.cypher.internal.commands.RegularExpression
-import org.neo4j.cypher.internal.commands.expressions.AbsFunction
-import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
-import org.neo4j.cypher.internal.commands.expressions.NodesFunction
-import org.neo4j.cypher.internal.commands.CreateIndex
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.NullablePredicate
-import org.neo4j.cypher.internal.commands.GreaterThan
-import org.neo4j.cypher.internal.commands.expressions.RoundFunction
-import org.neo4j.cypher.internal.commands.expressions.Divide
-import org.neo4j.cypher.internal.commands.LabelAction
-import org.neo4j.cypher.internal.mutation.DeleteEntityAction
-import org.neo4j.cypher.internal.commands.CreateUniqueStartItem
-import org.neo4j.cypher.internal.commands.expressions.SqrtFunction
-import org.neo4j.cypher.internal.commands.SortItem
-import org.neo4j.cypher.internal.commands.GreaterThanOrEqual
-import scala.Some
-import org.neo4j.cypher.internal.commands.NodeByIndex
-import org.neo4j.cypher.internal.mutation.CreateNode
-import org.neo4j.cypher.internal.commands.SingleInCollection
-import org.neo4j.cypher.internal.commands.NonEmpty
-import org.neo4j.cypher.internal.commands.PatternPredicate
-import org.neo4j.cypher.internal.commands.Xor
-import org.neo4j.cypher.internal.commands.LessThanOrEqual
-import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.commands.expressions.Pow
-import org.neo4j.cypher.internal.mutation.MapPropertySetAction
-import org.neo4j.cypher.internal.commands.LiteralRegularExpression
-import org.neo4j.cypher.internal.commands.expressions.FilterFunction
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.expressions.Sum
-import org.neo4j.cypher.internal.commands.AllRelationships
-import org.neo4j.cypher.internal.commands.NodeByLabel
-import org.neo4j.cypher.internal.commands.IsNull
-import org.neo4j.cypher.internal.commands.expressions.HeadFunction
-import org.neo4j.cypher.internal.commands.expressions.Count
-import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.expressions.RelationshipTypeFunction
-import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.commands.expressions.Property
-import org.neo4j.cypher.internal.commands.PathExpression
-import org.neo4j.cypher.internal.commands.Or
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.commands.expressions.IdFunction
-import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
-import org.neo4j.cypher.internal.commands.expressions.Max
-import org.neo4j.cypher.internal.mutation.PropertySetAction
-import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
-import org.neo4j.cypher.internal.mutation.CreateUniqueAction
-import org.neo4j.cypher.internal.commands.expressions.Multiply
-import org.neo4j.cypher.internal.commands.Not
-import org.neo4j.cypher.internal.commands.SchemaIndex
-import org.neo4j.cypher.internal.commands.AnyInCollection
-import org.neo4j.cypher.internal.commands.CreateNodeStartItem
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.AllIdentifiers
-import org.neo4j.cypher.internal.commands.expressions.SignFunction
-import org.neo4j.cypher.internal.commands.expressions.CoalesceFunction
-import org.neo4j.cypher.internal.commands.Union
-import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.commands.expressions.Min
-import org.neo4j.cypher.internal.commands.RelationshipByIndex
-import org.neo4j.cypher.internal.commands.expressions.LengthFunction
-import org.neo4j.cypher.internal.commands.DropIndex
-import org.neo4j.cypher.internal.mutation.ForeachAction
-import org.neo4j.cypher.internal.commands.expressions.Modulo
-import org.neo4j.cypher.internal.commands.expressions.Add
-import org.neo4j.cypher.internal.commands.expressions.Subtract
-import org.neo4j.cypher.internal.commands.expressions.LastFunction
-import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.commands.expressions.Distinct
-import org.neo4j.cypher.internal.commands.expressions.CountStar
-import org.neo4j.cypher.internal.commands.expressions.RelationshipFunction
-import org.neo4j.cypher.internal.commands.LessThan
-import org.neo4j.cypher.internal.commands.expressions.Avg
-import org.neo4j.cypher.internal.commands.expressions.Nullable
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -826,7 +748,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "n", "x", Seq.empty, Direction.OUTGOING))).
         where(Equals(LengthFunction(Identifier("p")), Literal(10.0))).
         returns(ReturnItem(Identifier("p"), "p")))
   }
@@ -858,7 +780,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "n", "x", Seq.empty, Direction.OUTGOING))).
         returns(ReturnItem(RelationshipFunction(Identifier("p")), "RELATIONSHIPS(p)")))
   }
 
@@ -869,7 +791,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "n", "x", Seq.empty, Direction.OUTGOING))).
         where(Equals(LengthFunction(RelationshipFunction(Identifier("p"))), Literal(1))).
         returns (ReturnItem(Identifier("p"), "p")))
   }
@@ -915,7 +837,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
       start(NodeById("a", 0)).
       matches(RelatedTo("a", "b", relName, Seq(), Direction.OUTGOING, false)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", relName, Seq(), Direction.OUTGOING, false))).
+      namedPaths(NamedPath("p", ParsedRelation(relName, "a", "b", Seq.empty, Direction.OUTGOING))).
       returns(ReturnItem(Identifier("a"), "a"))
 
     testVariants(string, query,
@@ -932,8 +854,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
           RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false),
           RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, optional = false)).
         namedPaths(NamedPath("p",
-          RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, optional = false),
-          RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, optional = false))).
+          ParsedRelation("r1", "a", "b", Seq.empty, Direction.OUTGOING),
+          ParsedRelation("r2", "b", "c", Seq.empty, Direction.OUTGOING))).
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
@@ -943,7 +865,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0)).
         matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
-        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq.empty, Direction.OUTGOING))).
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1340,7 +1262,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("s", 1)).
         where(Equals(Property(Identifier("s"), PropertyKey("apa")), Literal("//NOT A COMMENT")))
-        returns (ReturnItem(Identifier("s"), "s")))
+        returns(ReturnItem(Identifier("s"), "s")))
   }
 
   @Test def shouldHandleCommentsFollowedByWhiteSpace() {
@@ -1353,12 +1275,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def first_last_and_rest() {
-    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, optional = false)
     test("start x = NODE(1) match p=x-[r]->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", p1)).
+        namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(HeadFunction(NodesFunction(Identifier("p"))), "head(nodes(p))"),
         ReturnItem(LastFunction(NodesFunction(Identifier("p"))), "last(nodes(p))"),
@@ -1371,7 +1292,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "filter(x in p WHERE x.prop = 123)")
       ))
@@ -1382,7 +1303,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "filter(x in p : x.prop = 123)")
       ))
@@ -1393,7 +1314,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), PropertyKey("prop"))), "extract(x in p | x.prop)")
       ))
@@ -1404,7 +1325,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "r", Seq.empty, Direction.OUTGOING, optional = false)).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq.empty[String], Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), PropertyKey("prop"))), "extract(x in p : x.prop)")
       ))
@@ -1834,7 +1755,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
@@ -1849,7 +1770,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
@@ -1864,7 +1785,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
@@ -1879,7 +1800,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
@@ -1987,7 +1908,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0)).
         matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
-        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
         tail(secondQ).
         returns(AllIdentifiers())
     }
@@ -2238,7 +2159,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty, true), "KNOWS", Map()))).
-      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "a", "  UNNAMED1", Seq("KNOWS"), Direction.OUTGOING))).
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
@@ -2249,7 +2170,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("  UNNAMED25"), Map(), Seq.empty, true), "KNOWS", Map()))).
-        namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED25", "r", "KNOWS", Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "a", "  UNNAMED25", Seq("KNOWS"), Direction.OUTGOING))).
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
@@ -2269,7 +2190,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     def query(DIFFERENCE: String) = {
       val q2 = Query.
         start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink("a", DIFFERENCE, "r", "KNOWS", Direction.OUTGOING)))).
-        namedPaths(NamedPath("p", RelatedTo("a", DIFFERENCE, "r", "KNOWS", Direction.OUTGOING, optional = false))).
+        namedPaths(NamedPath("p", ParsedRelation("r", "a", DIFFERENCE, Seq("KNOWS"), Direction.OUTGOING))).
         returns(ReturnItem(Identifier("p"), "p"))
 
       Query.
@@ -2637,7 +2558,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(AllNodes("s")).
         matches(SingleNode("s")).
-        namedPaths(NamedPath("p", SingleNode("s"))).
+        namedPaths(NamedPath("p", ParsedEntity("s"))).
         returns(ReturnItem(Identifier("s"), "s")))
   }
 

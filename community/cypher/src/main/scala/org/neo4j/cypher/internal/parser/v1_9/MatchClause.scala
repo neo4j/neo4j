@@ -30,13 +30,21 @@ import org.neo4j.cypher.internal.commands.SingleNode
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
 import org.neo4j.cypher.internal.parser.ParsedRelation
 import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.SyntaxException
 
 trait MatchClause extends Base with ParserPattern {
 
   def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
     case matches =>
+
       val namedPaths = sift[NamedPath](matches)
-      val patterns = sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPaths.flatMap(_.pathPattern)
+      val patterns = if (namedPaths.nonEmpty) {
+        val namedPathMatches = namedPaths.flatMap(_.pathPattern).map(matchTranslator).reduce(_ ++ _).getValuesOr(throw new SyntaxException("wut"))
+        val namedPathPatterns = sift[List[Pattern]](namedPathMatches).flatten ++ sift[Pattern](namedPathMatches)
+        sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPathPatterns
+
+      } else
+        sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches)
 
       (patterns.distinct, namedPaths)
   }
@@ -116,6 +124,6 @@ trait MatchClause extends Base with ParserPattern {
   private def parsedPath(name: String, patterns: Seq[AbstractPattern], transform: TransformType): Maybe[NamedPath] = {
     val namedPathPatterns = patterns.map(matchTranslator(transform, _))
     val result = namedPathPatterns.reduce(_ ++ _)
-    result.seqMap(p => Seq(NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)))
+    result.seqMap(p => Seq(NamedPath(name, patterns: _*)))
   }
 }

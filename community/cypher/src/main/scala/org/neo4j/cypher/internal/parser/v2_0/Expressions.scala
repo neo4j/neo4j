@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.parser.AbstractPattern
+import org.neo4j.cypher.internal.parser.{No, Maybe, Yes, AbstractPattern}
 import org.neo4j.cypher.internal.HasOptionalDefault
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 

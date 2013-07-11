@@ -516,6 +516,8 @@ public class Traversal
     }
 
     /**
+     * TODO: This method re-binds nodes and relationships. It should not.
+     *
      * Returns the default string representation of a {@link Path}. It uses
      * the {@link DefaultPathDescriptor} to get representations.
      * @param path the {@link Path} to build a string representation of.

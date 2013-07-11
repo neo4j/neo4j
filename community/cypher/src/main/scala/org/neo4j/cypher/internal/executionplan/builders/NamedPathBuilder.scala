@@ -31,7 +31,7 @@ class NamedPathBuilder extends LegacyPlanBuilder {
     val item = q.namedPaths.filter(np => yesOrNo(np, p)).head
     val namedPaths = item.token
 
-    val pipe = new NamedPathPipe(p, namedPaths)
+    val pipe = new NamedPathPipe(p, namedPaths.pathName, namedPaths.pathPattern)
 
     val newQ = q.copy(namedPaths = q.namedPaths.filterNot(_ == item) :+ item.solve)
     plan.copy(query = newQ, pipe = pipe)

@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
-import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
-import org.neo4j.graphdb.{Relationship, Node, Direction}
+import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.graphdb._
 import org.junit.{Before, Test}
-import org.neo4j.cypher.internal.commands.{True, Pattern, NamedPath, VarLengthRelatedTo}
-import collection.mutable.Map
+import org.neo4j.cypher.internal.parser.{ParsedRelation, AbstractPattern, ParsedEntity}
+import org.neo4j.cypher.internal.parser.ParsedVarLengthRelation
+import org.neo4j.cypher.PathImpl
 
 class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -32,35 +33,75 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var c: Node = null
   var r1: Relationship = null
   var r2: Relationship = null
-  var pattern: Pattern = null
+  var p: Path = null
+  var inputPipe: Pipe = null
+  val varLengthPath = ParsedVarLengthRelation(name = "x", props = Map.empty, start = ParsedEntity("a"),
+    end = ParsedEntity("c"), typ = Seq.empty, dir = Direction.OUTGOING, optional = false, minHops = None,
+    maxHops = None, relIterator = None)
+  val singleRelationship = ParsedRelation("r1", "a", "b", Seq.empty, Direction.OUTGOING)
+  var pathElements: Seq[PropertyContainer] = null
 
-  @Before def init() {
-    pattern = VarLengthRelatedTo("x", "a", "b", None, None, Seq(), Direction.BOTH, None, false)
+  @Before
+  def init() {
+    // x = a-->b-->c
+
     a = createNode("a")
     b = createNode("b")
     c = createNode("c")
     r1 = relate(a, b, "R")
     r2 = relate(b, c, "R")
+    pathElements = Seq(a, r1, b, r2, c)
+    p = PathImpl(pathElements: _*)
+    inputPipe = new FakePipe(Seq(Map("a" -> a, "r1" -> r1, "b" -> b, "r2" -> r2, "c" -> c, "x" -> p)))
   }
 
-
-  @Test def pathsAreExtractedCorrectly() {
-    val p = PathImpl(a, r1, b, r2, c)
-
-    val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
-    val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
-
-    val result = pipe.createResults(QueryStateHelper.empty).toList
-    assert(result === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> p)))
+  @Test
+  def singleNodePath() {
+    assert(createNamedPath(ParsedEntity("a")) === Seq(a))
   }
 
-  @Test def pathsAreTurnedRightSideAround() {
+  @Test
+  def testSingleRelationship() {
+    assert(createNamedPath(singleRelationship) === Seq(a, r1, b))
+  }
+
+  @Test
+  def testVarlengthPath() {
+    assert(createNamedPath(varLengthPath) === pathElements)
+  }
+
+  @Test
+  def optionalVarlengthPath() {
+    inputPipe = new FakePipe(Seq(Map("a" -> a, "r1" -> r1, "b" -> b, "r2" -> r2, "c" -> c, "x" -> null)))
+
+    assert(createNamedPath(varLengthPath.copy(optional = true)) === null)
+  }
+
+  @Test
+  def pathsAreTurnedRightSideAround() {
+    // MATCH p = a-[*]->c
     val p = PathImpl(c, r2, b, r1, a)
 
-    val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
-    val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
+    inputPipe = new FakePipe(Seq(Map("a" -> a, "c" -> c, "x" -> p)))
+    assert(createNamedPath(varLengthPath) === pathElements)
+  }
 
-    val result = pipe.createResults(QueryStateHelper.empty).toList
-    assert(result === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> PathImpl(a, r1, b, r2, c))))
+  @Test
+  def pathsAreTurnedRightSideAround2() {
+    // MATCH p = a-[r1]->b-[*]->c
+    val p = PathImpl(c, r2, b)
+
+    inputPipe = new FakePipe(Seq(Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c, "x" -> p)))
+
+    assert(createNamedPath(singleRelationship, varLengthPath.copy(start = ParsedEntity("b"))) === pathElements)
+  }
+
+  private def createNamedPath(patterns: AbstractPattern*): Any = {
+    val pipe = new NamedPathPipe(inputPipe, "p", patterns)
+    val results = pipe.createResults(QueryStateHelper.empty).toList
+
+    Option(results.head("p")).
+      map(_.asInstanceOf[PathImpl].pathEntities).
+      getOrElse(null)
   }
 }

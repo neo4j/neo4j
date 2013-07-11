@@ -27,7 +27,7 @@ import org.junit.Assert._
 import org.neo4j.cypher.internal.spi.PlanContext
 
 trait BuilderTest extends Assertions {
-  def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()) = {
+  def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()): FakePipe = {
     val nodeIdentifiers = nodes.map(x => x -> NodeType())
     val relIdentifiers = relationships.map(x => x -> RelationshipType())
 

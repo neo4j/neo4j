@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import internal.StringExtras
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 import CypherVersion._
+import org.neo4j.cypher.internal.commands.expressions.StringHelper
 
-class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
+class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringHelper {
   @Test def noReturnColumns() {
     expectError("start s = node(0) return",
       v2_0 -> "return column list expected"

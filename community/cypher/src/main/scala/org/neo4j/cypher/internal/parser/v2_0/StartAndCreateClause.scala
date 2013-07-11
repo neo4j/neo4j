@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.mutation.{MergeNodeAction, RelationshipEndpoint, CreateNode, CreateRelationship}
-import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation, ParsedNamedPath, AbstractPattern}
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions._
+import org.neo4j.cypher.internal.mutation._
 
 case class StartAst(startItems: Seq[StartItem]=Seq.empty,
                     namedPaths: Seq[NamedPath]=Seq.empty,
@@ -77,7 +77,7 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique with 
       startItems match {
         case No(msg)    => No(msg)
         case Yes(stuff) => namedPathPatterns.seqMap(p => {
-          val namedPath: NamedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
+          val namedPath: NamedPath = NamedPath(name, patterns: _*)
           Seq(NamedPathWStartItems(namedPath, stuff.map(_.asInstanceOf[StartItem])))
         })
       }

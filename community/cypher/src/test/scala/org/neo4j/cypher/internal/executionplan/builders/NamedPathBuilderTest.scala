@@ -21,43 +21,43 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.graphdb.Direction
 import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{NamedPath, NodeById, RelatedTo, True}
+import org.neo4j.cypher.internal.commands.{NamedPath, NodeById, RelatedTo}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.parser.ParsedRelation
+import org.neo4j.cypher.internal.pipes.NamedPathPipe
 
 
 class NamedPathBuilderTest extends BuilderTest {
   val builder = new NamedPathBuilder
 
-
   @Test
   def should_not_accept_if_pattern_is_not_yet_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))),
-      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, optional = false))),
+      namedPaths = Seq(Unsolved(NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))))
     )
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test
   def should_accept_if_pattern_is_solved() {
+    val namedPath = NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))),
-      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, optional = false))),
+      namedPaths = Seq(Unsolved(namedPath))
     )
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
 
-    assertTrue("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    val result = assertAccepts(p, q)
 
-    val resultPlan = builder(plan(p, q))
-
-    assert(resultPlan.query.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false)))))
+    assert(result.query.namedPaths == Seq(Solved(namedPath)))
+    assert(result.pipe === NamedPathPipe(p, "p", namedPath.pathPattern))
   }
 
   @Test
@@ -65,16 +65,15 @@ class NamedPathBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(
-        Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false)),
-        Unsolved(RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false))
+        Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, optional = false)),
+        Unsolved(RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, optional = false))
       ),
       namedPaths = Seq(Unsolved(NamedPath("p",
-        RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false),
-        RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false))))
+        ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING),
+        ParsedRelation("rel2", "r", "x", Seq(), Direction.OUTGOING))))
     )
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
-
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 }

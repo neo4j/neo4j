@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.commands.AnyInCollection
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.Has
 import org.neo4j.cypher.internal.commands.LessThan
-import org.neo4j.cypher.internal.parser.AbstractPattern
+import org.neo4j.cypher.internal.parser.{No, Yes, Maybe, AbstractPattern}
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
   def predicate: Parser[Predicate] = predicateLvl1 ~ rep(OR ~> predicateLvl1) ^^ {

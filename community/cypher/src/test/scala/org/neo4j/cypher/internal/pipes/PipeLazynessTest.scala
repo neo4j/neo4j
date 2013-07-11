@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.internal.parser.ParsedEntity
 
 /*
 This test fixture tries to assert that Pipe declaring that they are lazy
@@ -135,8 +136,7 @@ object PipeLazynessTest extends MockitoSugar {
     val node = mock[Node]
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("x" -> node))
     val src = new FakePipe(iter, "x" -> NodeType())
-    val x = SingleNode("x")
-    val pipe = new NamedPathPipe(src, new NamedPath("p", x))
+    val pipe = new NamedPathPipe(src, "p", Seq(ParsedEntity("x")))
     Seq(pipe, iter)
   }
 

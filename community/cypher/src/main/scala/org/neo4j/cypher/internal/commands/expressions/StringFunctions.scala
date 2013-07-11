@@ -23,7 +23,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
+import org.neo4j.cypher.internal.{ExecutionContext}
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.pipes.QueryState
@@ -57,7 +57,7 @@ trait StringHelper {
 
   protected def text(a: Any, qtx: QueryContext): String = a match {
     case x: Node            => x.toString + props(x, qtx)
-    case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, qtx)
+    case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
     case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
     case v: KeyToken        => v.name
@@ -65,9 +65,20 @@ trait StringHelper {
     case null               => "<null>"
     case x                  => x.toString
   }
+
+  def makeSize(txt: String, wantedSize: Int): String = {
+    val actualSize = txt.length()
+    if (actualSize > wantedSize) {
+      txt.slice(0, wantedSize)
+    } else if (actualSize < wantedSize) {
+      txt + repeat(" ", wantedSize - actualSize)
+    } else txt
+  }
+
+  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 }
 
-case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper with StringExtras {
+case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper  {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = text(argument(m), state.query)
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
