@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -34,10 +32,12 @@ import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.tooling.Clock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.tooling.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.tooling.Clock;
+import org.neo4j.tooling.RealClock;
+
+import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class EnterpriseServerBuilder extends ServerBuilder
 {
@@ -81,7 +81,7 @@ public class EnterpriseServerBuilder extends ServerBuilder
             {
                 return persistent ?
                         super.createDatabase() :
-                        new EphemeralDatabase( configurator.configuration() );
+                        new EphemeralDatabase( configurator );
             }
 
             @Override

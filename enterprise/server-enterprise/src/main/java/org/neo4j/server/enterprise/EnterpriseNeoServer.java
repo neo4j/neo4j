@@ -58,7 +58,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
     @Override
 	protected Database createDatabase() 
     {
-    	return new EnterpriseDatabase( configurator.configuration() );
+    	return new EnterpriseDatabase( configurator );
     }
     
     @Override
