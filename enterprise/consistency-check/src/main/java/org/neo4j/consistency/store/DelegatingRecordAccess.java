@@ -37,122 +37,146 @@ public class DelegatingRecordAccess implements DiffRecordAccess
         this.delegate = delegate;
     }
 
-    @Override public RecordReference<NodeRecord> previousNode( long id )
+    @Override
+    public RecordReference<NodeRecord> previousNode( long id )
     {
         return delegate.previousNode( id );
     }
 
-    @Override public RecordReference<RelationshipRecord> previousRelationship( long id )
+    @Override
+    public RecordReference<RelationshipRecord> previousRelationship( long id )
     {
         return delegate.previousRelationship( id );
     }
 
-    @Override public RecordReference<PropertyRecord> previousProperty( long id )
+    @Override
+    public RecordReference<PropertyRecord> previousProperty( long id )
     {
         return delegate.previousProperty( id );
     }
 
-    @Override public RecordReference<NeoStoreRecord> previousGraph()
+    @Override
+    public RecordReference<NeoStoreRecord> previousGraph()
     {
         return delegate.previousGraph();
     }
 
-    @Override public DynamicRecord changedSchema( long id )
+    @Override
+    public DynamicRecord changedSchema( long id )
     {
         return delegate.changedSchema( id );
     }
 
-    @Override public NodeRecord changedNode( long id )
+    @Override
+    public NodeRecord changedNode( long id )
     {
         return delegate.changedNode( id );
     }
 
-    @Override public RelationshipRecord changedRelationship( long id )
+    @Override
+    public RelationshipRecord changedRelationship( long id )
     {
         return delegate.changedRelationship( id );
     }
 
-    @Override public PropertyRecord changedProperty( long id )
+    @Override
+    public PropertyRecord changedProperty( long id )
     {
         return delegate.changedProperty( id );
     }
 
-    @Override public DynamicRecord changedString( long id )
+    @Override
+    public DynamicRecord changedString( long id )
     {
         return delegate.changedString( id );
     }
 
-    @Override public DynamicRecord changedArray( long id )
+    @Override
+    public DynamicRecord changedArray( long id )
     {
         return delegate.changedArray( id );
     }
 
-    @Override public RecordReference<DynamicRecord> schema( long id )
+    @Override
+    public RecordReference<DynamicRecord> schema( long id )
     {
         return delegate.schema( id );
     }
 
-    @Override public RecordReference<NodeRecord> node( long id )
+    @Override
+    public RecordReference<NodeRecord> node( long id )
     {
         return delegate.node( id );
     }
 
-    @Override public RecordReference<RelationshipRecord> relationship( long id )
+    @Override
+    public RecordReference<RelationshipRecord> relationship( long id )
     {
         return delegate.relationship( id );
     }
 
-    @Override public RecordReference<PropertyRecord> property( long id )
+    @Override
+    public RecordReference<PropertyRecord> property( long id )
     {
         return delegate.property( id );
     }
 
-    @Override public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
+    @Override
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
         return delegate.relationshipType( id );
     }
 
-    @Override public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    @Override
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
         return delegate.propertyKey( id );
     }
 
-    @Override public RecordReference<DynamicRecord> string( long id )
+    @Override
+    public RecordReference<DynamicRecord> string( long id )
     {
         return delegate.string( id );
     }
 
-    @Override public RecordReference<DynamicRecord> array( long id )
+    @Override
+    public RecordReference<DynamicRecord> array( long id )
     {
         return delegate.array( id );
     }
 
-    @Override public RecordReference<DynamicRecord> relationshipTypeName( int id )
+    @Override
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
     {
         return delegate.relationshipTypeName( id );
     }
 
-    @Override public RecordReference<DynamicRecord> nodeLabels( long id )
+    @Override
+    public RecordReference<DynamicRecord> nodeLabels( long id )
     {
         return delegate.nodeLabels( id );
     }
 
-    @Override public RecordReference<LabelTokenRecord> label( int id )
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
     {
         return delegate.label( id );
     }
 
-    @Override public RecordReference<DynamicRecord> labelName( int id )
+    @Override
+    public RecordReference<DynamicRecord> labelName( int id )
     {
         return delegate.labelName( id );
     }
 
-    @Override public RecordReference<DynamicRecord> propertyKeyName( int id )
+    @Override
+    public RecordReference<DynamicRecord> propertyKeyName( int id )
     {
         return delegate.propertyKeyName( id );
     }
 
-    @Override public RecordReference<NeoStoreRecord> graph()
+    @Override
+    public RecordReference<NeoStoreRecord> graph()
     {
         return delegate.graph();
     }

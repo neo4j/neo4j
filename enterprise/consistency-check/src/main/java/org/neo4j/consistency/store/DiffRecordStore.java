@@ -192,6 +192,11 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         return diff.get( id );
     }
 
+    public boolean hasChanges()
+    {
+        return !diff.isEmpty();
+    }
+
     @SuppressWarnings( "unchecked" )
     private static class DispatchProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
     {

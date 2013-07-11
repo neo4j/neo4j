@@ -91,7 +91,7 @@ public class FullCheck
                 new ConsistencyReporter( recordAccess, report ) );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
-        List<StoreProcessorTask> tasks = new ArrayList<>( 9 );
+        List<StoreProcessorTask> tasks = new ArrayList<>( 12 );
 
 
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(

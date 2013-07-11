@@ -44,14 +44,17 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
  */
 public class SchemaRecordCheck implements RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport>
 {
-    enum Phase {
-        // Verify rules can be de-serialized, have valid forward references, and build up internal state
-        // for checking in back references in later phases (obligations)
+    enum Phase
+    {
+        /**
+         * Verify rules can be de-serialized, have valid forward references, and build up internal state
+         * for checking in back references in later phases (obligations)
+         */
         CHECK_RULES,
 
-        // Verify obligations, that is correct back references
+        /** Verify obligations, that is correct back references */
         CHECK_OBLIGATIONS
-    };
+    }
 
     final SchemaRuleAccess ruleAccess;
     final Map<Long, DynamicRecord> indexObligations;
@@ -137,7 +140,6 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private void checkUniquenessConstraintRule( UniquenessConstraintRule rule,
                                                 DynamicRecord record, RecordAccess records,
                                                 ConsistencyReport.SchemaConsistencyReport report )
-
     {
         if ( phase == Phase.CHECK_RULES )
         {

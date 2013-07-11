@@ -51,9 +51,12 @@ public class IncrementalDiffCheck extends DiffCheck
         StoreProcessor processor = new StoreProcessor( reporter );
         diffs.applyToAll( processor );
 
-        if ( 0 == summary.getInconsistencyCountForRecordType( RecordType.SCHEMA ) )
+        if ( diffs.getSchemaStore().hasChanges() )
         {
-            performFullCheckOfSchemaStore( diffs, reporter, processor );
+            if ( 0 == summary.getInconsistencyCountForRecordType( RecordType.SCHEMA ) )
+            {
+                performFullCheckOfSchemaStore( diffs, reporter, processor );
+            }
         }
 
         return summary;

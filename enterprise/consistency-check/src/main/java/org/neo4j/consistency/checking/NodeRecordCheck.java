@@ -200,7 +200,6 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     if ( !dynamicRecord.inUse() )
                     {
                         report.dynamicLabelRecordNotInUse( dynamicRecord );
-
                     }
 
                     long id = dynamicRecord.getId();
