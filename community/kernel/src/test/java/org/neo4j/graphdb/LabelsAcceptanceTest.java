@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -40,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -50,6 +52,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class LabelsAcceptanceTest
 {
@@ -409,6 +412,37 @@ public class LabelsAcceptanceTest
         assertEquals( 2, labels.size() );
         assertEquals( Labels.MY_LABEL.name(), labels.get( 0 ).name() );
         assertEquals( Labels.MY_OTHER_LABEL.name(), labels.get( 1 ).name() );
+    }
+
+    @Test
+    public void deleteAllNodesAndTheirLabels() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final Label label = DynamicLabel.label("A");
+        {
+            final Transaction tx = db.beginTx();
+            final Node node = db.createNode();
+            node.addLabel( label );
+            node.setProperty( "name", "bla" );
+            tx.success();
+            tx.finish();
+        }
+
+        // WHEN
+        {
+            final Transaction tx = db.beginTx();
+            for ( final Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                node.removeLabel( label ); // remove Label ...
+                node.delete(); // ... and afterwards the node
+            }
+            tx.success();
+            tx.finish(); // here comes the exception
+        }
+
+        // THEN
+        assertEquals( 0, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
     }
 
     @SuppressWarnings("deprecation")

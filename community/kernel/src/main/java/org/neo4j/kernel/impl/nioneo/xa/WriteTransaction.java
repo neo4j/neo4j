@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -799,13 +800,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         final NodeStore nodeStore = getNodeStore();
         for ( NodeCommand nodeCommand : nodeCommands.values() )
         {
-            if ( nodeCommand.getMode() == Mode.CREATE )
+            if ( nodeCommand.getMode() != Mode.UPDATE )
             {
-                // For created nodes rely on the updates from the perspective of properties to cover it all
-                // otherwise we'll get duplicate update during recovery.
+                // For created and deleted nodes rely on the updates from the perspective of properties to cover it all
+                // otherwise we'll get duplicate update during recovery, or cannot load properties if deleted.
                 continue;
             }
-            
+
             long nodeId = nodeCommand.getKey();
             long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
             long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
@@ -1269,21 +1270,21 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NodeRecord node = nodeRecords.getOrLoad( nodeId, null ).forReadingLinkage();
         return loadPropertyValue( node, propertyKey );
     }
-    
+
     @Override
     public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
     {
         RelationshipRecord relationship = relRecords.getOrLoad( relationshipId, null ).forReadingLinkage();
         return loadPropertyValue( relationship, propertyKey );
     }
-    
+
     @Override
     public Object graphLoadPropertyValue( int propertyKey )
     {
         NeoStoreRecord record = getOrLoadNeoStoreRecord().forReadingLinkage();
         return loadPropertyValue( record, propertyKey );
     }
-    
+
     private <P extends PrimitiveRecord> Object loadPropertyValue( P primitive, int propertyKey )
     {
         long propertyRecordId = // propertyData.getId();
@@ -1419,7 +1420,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return primitiveChangeProperty( node, propertyKey, value );
     }
-    
+
     /**
      * TODO MP: itroduces performance regression
      * This method was introduced during moving handling of entity properties from NodeImpl/RelationshipImpl
