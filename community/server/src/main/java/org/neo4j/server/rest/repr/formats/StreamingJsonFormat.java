@@ -51,7 +51,6 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
 {
 
     private final JsonFactory factory;
-    private JsonGenerator g;
 
     public StreamingJsonFormat()
     {
@@ -87,7 +86,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     {
         try
         {
-            g = factory.createJsonGenerator( output );
+            JsonGenerator g = factory.createJsonGenerator( output );
             return new StreamingRepresentationFormat( g, this );
         }
         catch ( IOException e )
