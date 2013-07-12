@@ -2166,13 +2166,13 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def relate_with_initial_values_for_node() {
     val string = "start a = node(1) create unique a-[:X]->(b {name:'Andres'})"
-    def query(DIFFERENCE: (String, Boolean)) = {
+    def query(DIFFERENCE: String) = {
       val secondQ = Query.
         unique(
         UniqueLink(
-          NamedExpectation("a", true),
-          NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres")), DIFFERENCE._2),
-          NamedExpectation(DIFFERENCE._1, true), "X", Direction.OUTGOING)).
+          NamedExpectation("a", bare = true),
+          NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres")), bare = false),
+          NamedExpectation(DIFFERENCE, bare = true), "X", Direction.OUTGOING)).
         returns()
 
       Query.
@@ -2182,8 +2182,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     }
 
     testVariants(string, query,
-      ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED33", false) -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED1" -> vPre2_0,
+      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
   }
 
   @Test def relate_with_initial_values_for_rel() {
@@ -2192,9 +2192,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       val secondQ = Query.
         unique(
         UniqueLink(
-          NamedExpectation("a", true),
-          NamedExpectation("b", true),
-          NamedExpectation(DIFFERENCE, Map[String, Expression]("name" -> Literal("Andres")), true), "X", Direction.OUTGOING)).
+          NamedExpectation("a", bare = true),
+          NamedExpectation("b", bare = true),
+          NamedExpectation(DIFFERENCE, Map[String, Expression]("name" -> Literal("Andres")), bare = false), "X", Direction.OUTGOING)).
         returns()
 
       Query.

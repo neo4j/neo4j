@@ -112,11 +112,10 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   def toLegacyPredicates(pathName: Option[String]) = element.toLegacyPredicates
   def toAbstractPatterns(pathName: Option[String]) = {
     val patterns = element.toAbstractPatterns
-    val patterns1 = pathName match {
+    pathName match {
       case None       => patterns
       case Some(name) => Seq(ParsedNamedPath(name, patterns))
     }
-    patterns1
   }
 }
 
