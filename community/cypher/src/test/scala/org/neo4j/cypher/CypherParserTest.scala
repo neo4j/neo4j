@@ -33,7 +33,7 @@ import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class CypherParserTest extends JUnitSuite with Assertions {
@@ -2118,7 +2118,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED44" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED44" -> vFrom2_0)
   }
 
   @Test def single_create_unique_with_rel() {
@@ -2130,8 +2130,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    test(vAll diff List(vExperimental),
-        "start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
+    test("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
   @Test def single_relate_with_empty_parenthesis() {
@@ -2150,10 +2149,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED58", "  UNNAMED44") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED58", "  UNNAMED44") -> vFrom2_0)
   }
 
-  @Test def two_relates() {
+  @Test def create_unique_with_two_patterns() {
     val string = "start a = node(1) create unique a-[:X]->b<-[:X]-c"
     def query(DIFFERENCE: (String, String)): Query = {
       val secondQ = Query.
@@ -2170,18 +2169,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED33", "  UNNAMED41") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED33", "  UNNAMED41") -> vFrom2_0)
   }
 
   @Test def relate_with_initial_values_for_node() {
     val string = "start a = node(1) create unique a-[:X]->(b {name:'Andres'})"
-    def query(DIFFERENCE: (String, Boolean)) = {
+    def query(DIFFERENCE: String) = {
       val secondQ = Query.
         unique(
         UniqueLink(
-          NamedExpectation("a", true),
-          NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres")), DIFFERENCE._2),
-          NamedExpectation(DIFFERENCE._1, true), "X", Direction.OUTGOING)).
+          NamedExpectation("a", bare = true),
+          NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres")), bare = false),
+          NamedExpectation(DIFFERENCE, bare = true), "X", Direction.OUTGOING)).
         returns()
 
       Query.
@@ -2191,19 +2190,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
     }
 
     testVariants(string, query,
-      ("  UNNAMED1", true) -> vPre2_0,
-      ("  UNNAMED33", false) -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED1" -> vPre2_0,
+      "  UNNAMED33" -> vFrom2_0)
   }
 
-  @Test def relate_with_initial_values_for_rel() {
+  @Test def create_unique_with_initial_values_for_rel() {
     val string = "start a = node(1) create unique a-[:X {name:'Andres'}]->b"
     def query(DIFFERENCE: String) = {
       val secondQ = Query.
         unique(
         UniqueLink(
-          NamedExpectation("a", true),
-          NamedExpectation("b", true),
-          NamedExpectation(DIFFERENCE, Map[String, Expression]("name" -> Literal("Andres")), true), "X", Direction.OUTGOING)).
+          NamedExpectation("a", bare = true),
+          NamedExpectation("b", bare = true),
+          NamedExpectation(DIFFERENCE, Map[String, Expression]("name" -> Literal("Andres")), bare = false), "X", Direction.OUTGOING)).
         returns()
 
       Query.
@@ -2213,7 +2212,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     }
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED33" -> vFrom2_0)
   }
 
   @Test def foreach_with_literal_collectionOld() {
@@ -2378,7 +2377,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
     "  UNNAMED1" -> vPre2_0,
-    "  UNNAMED48"-> (vFrom2_0 diff List(vExperimental)))
+    "  UNNAMED48"-> vFrom2_0)
   }
 
   @Test def use_predicate_as_expression() {
@@ -2400,7 +2399,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    test(vFrom2_0 diff List(vExperimental),
+    test(vFrom2_0,
         "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).
@@ -2754,6 +2753,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(SingleNode("p")).
         where(HasLabel(Identifier("p"), KeyToken.Unresolved("Person", TokenType.Label))).
         using(NodeByLabel("p", "Person")).
+        returns(ReturnItem(Identifier("p"), "p")))
+  }
+
+  @Test def varlength_named_path() {
+    test(vFrom2_0, "start n=node(1) match p=n-[:KNOWS*..2]->x return p",
+      Query.
+        start(NodeById("n", 1)).
+        matches(VarLengthRelatedTo("  UNNAMED25", "n", "x", None, Some(2), "KNOWS", Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", ParsedVarLengthRelation("  UNNAMED25", Map.empty, ParsedEntity("n"), ParsedEntity("x"), Seq("KNOWS"), Direction.OUTGOING, false, None, Some(2), None))).
         returns(ReturnItem(Identifier("p"), "p")))
   }
 

@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
-import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.symbols.TypeSafe
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.cypher.internal.commands.expressions.Identifier._
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.QueryState
 
 object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
@@ -123,5 +126,17 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     properties.throwIfSymbolsMissing(symbols)
+  }
+
+  override def toString: String = {
+    val nameStr = if (notNamed(name)) s"(${name.drop(9)})" else name
+    val props = if (properties.isEmpty)
+      ""
+    else
+      " " + properties.map {
+        case (k, v) => k.toString + ": " + v.toString
+      }.mkString(",")
+
+    "(" + nameStr + props + ")"
   }
 }

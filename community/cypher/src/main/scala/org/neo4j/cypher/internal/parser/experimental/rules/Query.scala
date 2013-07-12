@@ -65,7 +65,8 @@ trait Query extends Parser
   }
 
   private def Updates : Rule1[ast.UpdateClause] = rule("CREATE, DELETE, SET, REMOVE") (
-      CreateClause
+    CreateUniqueClause
+    | CreateClause
     | DeleteClause
     | SetClause
     | RemoveClause
@@ -75,6 +76,10 @@ trait Query extends Parser
 
   private def CreateClause : Rule1[ast.Create] = rule("CREATE") {
     group(keyword("CREATE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Create
+  }
+
+  private def CreateUniqueClause : Rule1[ast.CreateUnique] = rule("CREATE UNIQUE") {
+    group(keyword("CREATE", "UNIQUE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.CreateUnique
   }
 
   private def DeleteClause : Rule1[ast.Delete] = rule("DELETE") {

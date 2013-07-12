@@ -34,7 +34,11 @@ abstract class Base extends Strings  {
 
   def liftToSeq[A](x : Parser[A]):Parser[Seq[A]] = x ^^ (x => Seq(x))
 
-  def reduce[A,B](in:Seq[(Seq[A], Seq[B])]):(Seq[A], Seq[B]) = if (in.isEmpty) (Seq(),Seq()) else in.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
+  def reduce[A, B](in: Seq[(Seq[A], Seq[B])]): (Seq[A], Seq[B]) =
+    if (in.isEmpty)
+      (Seq(), Seq())
+    else
+      in.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
 
   def escapableString: Parser[String] = ident|escapedIdentity
 
