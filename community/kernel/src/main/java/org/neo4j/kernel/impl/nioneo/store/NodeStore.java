@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.File;
+import java.util.*;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -315,27 +312,53 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
     
-    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long[] labels )
+    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels )
     {
-        return allocateRecordsForDynamicLabels( labels, Collections.<DynamicRecord>emptyList().iterator() );
+        return allocateRecordsForDynamicLabels( nodeId, labels, Collections.<DynamicRecord>emptyList().iterator() );
     }
     
-    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long[] labels, Iterator<DynamicRecord> useFirst )
+    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
+                                                                      Iterator<DynamicRecord> useFirst )
     {
-        return dynamicLabelStore.allocateRecords( labels, useFirst );
+        long[] storedLongs = withNodeId( nodeId, labels );
+        return dynamicLabelStore.allocateRecords( storedLongs, useFirst );
     }
 
     public long[] getDynamicLabelsArray( Iterable<DynamicRecord> records )
     {
-        return (long[]) DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray(
-                records, PropertyType.ARRAY ) );
+        long[] storedLongs = (long[])
+            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return withoutNodeId( storedLongs );
     }
-    
+
+
+    public Pair<Long, long[]> getDynamicLabelsArrayAndOwner( Iterable<DynamicRecord> records )
+    {
+        long[] storedLongs = (long[])
+                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return Pair.of(storedLongs[0], withoutNodeId(storedLongs));
+    }
+
+
     public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords )
     {
         for ( DynamicRecord record : dynamicLabelRecords )
             dynamicLabelStore.updateRecord( record );
     }
+
+    private long[] withoutNodeId( long[] storedLongs )
+    {
+        return Arrays.copyOfRange( storedLongs, 1, storedLongs.length );
+    }
+
+    private long[] withNodeId( long nodeId, long[] labelIds )
+    {
+        long[] result = new long[ labelIds.length + 1 ];
+        System.arraycopy( labelIds, 0, result, 1, labelIds.length );
+        result[0] = nodeId;
+        return result;
+    }
+
 
     @Override
     protected void setRecovered()

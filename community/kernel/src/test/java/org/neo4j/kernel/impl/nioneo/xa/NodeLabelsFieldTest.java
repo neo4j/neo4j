@@ -19,46 +19,26 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.*;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import java.io.File;
+import java.util.*;
 
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.cloned;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class NodeLabelsFieldTest
@@ -162,7 +142,7 @@ public class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 57 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 56 ) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -174,13 +154,29 @@ public class NodeLabelsFieldTest
         assertTrue( changedDynamicRecords.containsAll( initialRecords ) );
         assertEquals( initialRecords.size()+1, changedDynamicRecords.size() );
     }
-    
+
+    @Test
+    public void oneDynamicRecordShouldStoreItsOwner() throws Exception
+    {
+        // GIVEN
+        // will occupy 60B of data, i.e. one dynamic record
+        Long nodeId = 24l;
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs(56) );
+        Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
+
+        // WHEN
+        Pair<Long,long[]> pair = nodeStore.getDynamicLabelsArrayAndOwner( initialRecords );
+
+        // THEN
+        assertEquals( nodeId,  pair.first() );
+    }
+
     @Test
     public void twoDynamicRecordsShouldShrinkToOneWhenRemoving() throws Exception
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 58 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 57 ) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -194,7 +190,28 @@ public class NodeLabelsFieldTest
         assertTrue( changedDynamicRecords.get( 0 ).inUse() );
         assertFalse( changedDynamicRecords.get( 1 ).inUse() );
     }
-    
+
+    @Test
+    public void twoDynamicRecordsShouldShrinkToOneWhenRemovingWithoutChangingItsOwner() throws Exception
+    {
+        // GIVEN
+        // will occupy 61B of data, i.e. just two dynamic records
+        Long nodeId = 42l;
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs( 57 ) );
+        Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
+        NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
+
+        List<DynamicRecord> changedDynamicRecords = addToCollection(
+                nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
+                new ArrayList<DynamicRecord>() );
+
+        // WHEN
+        Pair<Long,long[]> changedPair = nodeStore.getDynamicLabelsArrayAndOwner( changedDynamicRecords );
+
+        // THEN
+        assertEquals( nodeId,  changedPair.first() );
+    }
+
     @Test
     public void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving() throws Exception
     {
@@ -387,15 +404,20 @@ public class NodeLabelsFieldTest
     
     private NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, long... labels )
     {
-        Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, labels );
-        NodeRecord node = new NodeRecord( 0, 0, 0 );
+        return nodeRecordWithDynamicLabels( 0, nodeStore, labels );
+    }
+
+    private NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, long... labels )
+    {
+        NodeRecord node = new NodeRecord( nodeId, 0, 0 );
+        Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, node.getId(), labels );
         node.setLabelField( dynamicLabelsLongRepresentation( initialRecords ), initialRecords );
         return node;
     }
-    
-    private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long[] longs )
+
+    private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
-        Collection<DynamicRecord> records = nodeStore.allocateRecordsForDynamicLabels( longs );
+        Collection<DynamicRecord> records = nodeStore.allocateRecordsForDynamicLabels( nodeId, longs );
         nodeStore.updateDynamicLabelRecords( records );
         return records;
     }
@@ -420,7 +442,7 @@ public class NodeLabelsFieldTest
 
     private Set<DynamicRecord> used( Set<DynamicRecord> reallocatedRecords )
     {
-        Set<DynamicRecord> used = new HashSet<DynamicRecord>();
+        Set<DynamicRecord> used = new HashSet<>();
         for ( DynamicRecord record : reallocatedRecords )
             if ( record.inUse() )
                 used.add( record );
