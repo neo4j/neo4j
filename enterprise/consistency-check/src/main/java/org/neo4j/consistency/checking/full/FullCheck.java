@@ -139,10 +139,17 @@ public class FullCheck
                 store.getPropertyKeyTokenStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
+                store.getLabelTokenStore(), progress, order,
+                processEverything, processEverything ) );
+
+        tasks.add( new StoreProcessorTask<>(
                 store.getRelationshipTypeNameStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
                 store.getPropertyKeyNameStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<>(
+                store.getLabelNameStore(), progress, order,
                 processEverything, processEverything ) );
 
         order.execute( tasks, progress.build() );

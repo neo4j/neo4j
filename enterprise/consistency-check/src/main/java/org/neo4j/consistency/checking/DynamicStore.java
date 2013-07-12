@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 public enum DynamicStore
 {
     SCHEMA( RecordType.SCHEMA )
-            {
+    {
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
@@ -42,7 +42,7 @@ public enum DynamicStore
         }
     },
     STRING( RecordType.STRING_PROPERTY )
-            {
+    {
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
@@ -56,7 +56,7 @@ public enum DynamicStore
         }
     },
     ARRAY( RecordType.ARRAY_PROPERTY )
-            {
+    {
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
@@ -70,7 +70,7 @@ public enum DynamicStore
         }
     },
     PROPERTY_KEY( RecordType.PROPERTY_KEY_NAME )
-            {
+    {
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
@@ -83,8 +83,8 @@ public enum DynamicStore
             return null; // never needed
         }
     },
-    RELATIONSHIP_LABEL( RecordType.RELATIONSHIP_LABEL_NAME )
-            {
+    RELATIONSHIP_TYPE( RecordType.RELATIONSHIP_TYPE_NAME )
+    {
         @Override
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
@@ -96,7 +96,22 @@ public enum DynamicStore
         {
             return null; // never needed
         }
+    },
+    LABEL( RecordType.LABEL_NAME )
+    {
+        @Override
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        {
+            return records.labelName( (int) block );
+        }
+
+        @Override
+        DynamicRecord changed( DiffRecordAccess records, long id )
+        {
+            return null; // never needed
+        }
     };
+
     public final RecordType type;
 
     private DynamicStore( RecordType type )

@@ -63,17 +63,18 @@ class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
-    protected void checkRelationshipTypeName( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record,
-                                              RecordCheck<RelationshipTypeTokenRecord,
-                                                      ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+    protected void checkRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                               RelationshipTypeTokenRecord record,
+                                               RecordCheck<RelationshipTypeTokenRecord,
+                                                       ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         report.forRelationshipTypeNameChange( store.forceGetRaw( record ), record, checker );
     }
 
     @Override
-    protected void checkLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record,
-                                              RecordCheck<LabelTokenRecord,
-                                                      ConsistencyReport.LabelTokenConsistencyReport> checker )
+    protected void checkLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record,
+                                    RecordCheck<LabelTokenRecord,
+                                            ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         report.forLabelNameChange( store.forceGetRaw( record ), record, checker );
     }

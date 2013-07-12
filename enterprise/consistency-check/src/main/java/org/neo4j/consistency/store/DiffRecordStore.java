@@ -64,11 +64,6 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         if ( !diff.containsKey( id ) ) diff.put( id, null );
     }
 
-    public boolean isModified( long id )
-    {
-        return diff.get( id ) != null;
-    }
-
     public R forceGetRaw( R record )
     {
         if ( diff.containsKey( record.getLongId() ) )
@@ -246,9 +241,10 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         }
 
         @Override
-        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record ) throws FAILURE
+        public void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                                  RelationshipTypeTokenRecord record ) throws FAILURE
         {
-            processor.processRelationshipType( (RecordStore<RelationshipTypeTokenRecord>) diffStore, record );
+            processor.processRelationshipTypeToken( (RecordStore<RelationshipTypeTokenRecord>) diffStore, record );
         }
 
         @Override

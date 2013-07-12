@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 
 class LabelTokenRecordCheck
-    extends NameRecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport>
+    extends TokenRecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )

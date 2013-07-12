@@ -55,7 +55,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
 import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
-import static org.neo4j.consistency.RecordType.RELATIONSHIP_LABEL_NAME;
+import static org.neo4j.consistency.RecordType.RELATIONSHIP_TYPE_NAME;
 import static org.neo4j.consistency.RecordType.STRING_PROPERTY;
 
 class OwnerCheck implements CheckDecorator
@@ -72,7 +72,7 @@ class OwnerCheck implements CheckDecorator
     private static Map<RecordType, ConcurrentMap<Long, DynamicOwner>> initialize( DynamicStore[] stores )
     {
         EnumMap<RecordType, ConcurrentMap<Long, DynamicOwner>> map =
-                new EnumMap<RecordType, ConcurrentMap<Long, DynamicOwner>>( RecordType.class );
+                new EnumMap<>( RecordType.class );
         for ( DynamicStore store : stores )
         {
             map.put( store.type, new ConcurrentHashMap<Long, DynamicOwner>( 16, 0.75f, 4 ) );
@@ -82,7 +82,7 @@ class OwnerCheck implements CheckDecorator
 
     void scanForOrphanChains( ProgressMonitorFactory progressFactory )
     {
-        List<Runnable> tasks = new ArrayList<Runnable>();
+        List<Runnable> tasks = new ArrayList<>();
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory
                 .multipleParts( "Checking for orphan chains" );
         if ( owners != null )
@@ -278,7 +278,7 @@ class OwnerCheck implements CheckDecorator
     public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
             RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_TYPE_NAME );
         if ( dynamicOwners == null )
         {
             return checker;
@@ -298,7 +298,7 @@ class OwnerCheck implements CheckDecorator
     public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
             RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
-        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_LABEL_NAME );
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_TYPE_NAME );
         if ( dynamicOwners == null )
         {
             return checker;
@@ -415,6 +415,7 @@ class OwnerCheck implements CheckDecorator
             this.owners = owners;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void check( RECORD record, REPORT report, RecordAccess records )
         {

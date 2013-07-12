@@ -127,7 +127,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
                 return records.array( id );
             case PROPERTY_KEY_NAME:
                 return records.propertyKeyName( (int)id );
-            case RELATIONSHIP_LABEL_NAME:
+            case RELATIONSHIP_TYPE_NAME:
                 return records.relationshipTypeName( (int) id );
             default:
                 return skipReference();
@@ -160,6 +160,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
     static abstract class NameOwner<RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport<RECORD, REPORT>> extends DynamicOwner<RECORD>
             implements ComparativeRecordChecker<RECORD, AbstractBaseRecord, REPORT>
     {
+        @SuppressWarnings("ConstantConditions")
         @Override
         public void checkReference( RECORD name, AbstractBaseRecord record, REPORT genericReport, RecordAccess records )
         {
