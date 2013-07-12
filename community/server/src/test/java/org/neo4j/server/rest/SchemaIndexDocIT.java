@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
@@ -34,11 +35,12 @@ import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
 
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -114,15 +116,15 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         data.get();
 
         String labelName = "SomeLabel", propertyKey = "name";
-        createSchemaIndex( labelName, propertyKey );
-        assertTrue( asProperties( graphdb().schema().getIndexes( label( labelName ) ) ).contains( asSet( propertyKey ) ) );
-        
+        IndexDefinition schemaIndex = createSchemaIndex( labelName, propertyKey );
+        assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
+
         gen.get()
             .expectedStatus( 204 )
             .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
             .entity();
-        
-        assertFalse( asProperties( graphdb().schema().getIndexes( label( labelName ) ) ).contains( asSet( propertyKey ) ) );
+
+        assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), not( containsOnly( schemaIndex ) ) );
     }
     
     /**
@@ -167,13 +169,15 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
                 .post( getSchemaIndexLabelUri( "a_label" ) );
     }
     
-    private void createSchemaIndex( String labelName, String propertyKey )
+    private IndexDefinition createSchemaIndex( String labelName, String propertyKey )
     {
         Transaction tx = graphdb().beginTx();
         try
         {
-            graphdb().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
+            IndexDefinition indexDefinition = graphdb().schema().indexFor( label( labelName ) ).on( propertyKey )
+                    .create();
             tx.success();
+            return indexDefinition;
         }
         finally
         {

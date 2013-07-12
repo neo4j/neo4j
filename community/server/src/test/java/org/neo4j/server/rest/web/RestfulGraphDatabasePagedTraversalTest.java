@@ -92,7 +92,8 @@ public class RestfulGraphDatabasePagedTraversalTest
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(), output,
-                new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
+                new DatabaseActions( leaseManager, ForceMode.forced, true, database.getGraph() ) );
+        service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
     @After

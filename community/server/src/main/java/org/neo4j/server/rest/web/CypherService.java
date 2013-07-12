@@ -58,6 +58,11 @@ public class CypherService
         this.output = output;
     }
 
+    public OutputFormat getOutputFormat()
+    {
+        return output;
+    }
+
     @POST
     @SuppressWarnings({ "unchecked" })
     public Response cypher(String body,

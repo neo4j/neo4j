@@ -40,6 +40,7 @@ import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
@@ -404,7 +405,14 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
-        document( data );
+        if (graph == null) {
+            document( data );
+        } else {
+            Transaction transaction = graph.beginTx();
+            document( data );
+            transaction.finish();
+        }
+
         return new ResponseEntity( response, data.entity );
     }
 

@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.Database;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class GraphDbHelper
@@ -499,6 +500,20 @@ public class GraphDbHelper
         finally
         {
             tx.finish();
+        }
+    }
+
+    public long getLabelCount( long nodeId )
+    {
+        Transaction transaction = database.getGraph().beginTx();
+
+        try
+        {
+            return count( database.getGraph().getNodeById( nodeId ).getLabels());
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 }

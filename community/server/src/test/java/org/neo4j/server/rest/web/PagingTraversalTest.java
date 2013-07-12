@@ -71,7 +71,8 @@ public class PagingTraversalTest
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(),
                 output,
-                new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
+                new DatabaseActions( leaseManager, ForceMode.forced, true, database.getGraph() ) );
+        service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
     @After

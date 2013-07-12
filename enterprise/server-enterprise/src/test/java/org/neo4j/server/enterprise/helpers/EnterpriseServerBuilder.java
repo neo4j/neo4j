@@ -89,12 +89,12 @@ public class EnterpriseServerBuilder extends ServerBuilder
             {
                 Clock clockToUse = (clock != null) ? clock : new RealClock();
 
-                return new DatabaseActions( database,
+                return new DatabaseActions(
                         new LeaseManager( clockToUse ),
                         ForceMode.forced,
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
             }
             
             @Override

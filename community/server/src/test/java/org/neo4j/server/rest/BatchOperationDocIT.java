@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 import java.util.List;
 import java.util.Map;
@@ -394,8 +396,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             UniformInterfaceException, JSONException, PropertyValueException {
     	String string = "Jazz";
         Node gnode = getNode( string );
-        assertEquals( gnode.getProperty( "name" ), string );
-        
+        assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
+
         String name = "string\\ and \"test\"";
         
         String jsonString = new PrettyJSON()

@@ -20,13 +20,11 @@
 package org.neo4j.server.rest;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -39,14 +37,15 @@ import org.neo4j.test.GraphDescription.PROP;
 
 import static java.util.Arrays.asList;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
+import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
@@ -90,10 +89,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .post( nodeUri + "/labels"  );
 
         // Then
-        Collection<Label> actual = asCollection(nodes.get( "I" ).getLabels());
-        assertThat( actual.size(), is( 2 ) );
-        assertThat( "Labels should be correct", actual, containsInAnyOrder( label( "MyLabel" ),
-                label( "MyOtherLabel" ) ));
+        assertThat( nodes.get( "I" ), inTx( graphdb(), hasLabels( "MyLabel", "MyOtherLabel" ) ) );
     }
 
     /**
@@ -138,10 +134,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .put( nodeUri + "/labels" );
 
         // Then
-        Collection<Label> actual = asCollection(nodes.get( "I" ).getLabels());
-        assertThat( actual.size(), is( 2 ) );
-        assertThat( "Labels should be correct", actual, containsInAnyOrder( label( "MyOtherLabel" ),
-                label( "MyThirdLabel" ) ));
+        assertThat( nodes.get( "I" ), inTx(graphdb(), hasLabels("MyOtherLabel", "MyThirdLabel")) );
     }
 
     /**
@@ -180,8 +173,8 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         gen.get()
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
-        
-        node.hasLabel( label( labelName ) );
+
+        assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
 
     /**
@@ -200,8 +193,8 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         gen.get()
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
-        
-        node.hasLabel( label( labelName ) );
+
+        assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
     
     /**

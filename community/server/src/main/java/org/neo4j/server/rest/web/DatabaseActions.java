@@ -27,7 +27,6 @@ import java.util.Set;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
-
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -45,15 +44,12 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
-import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -69,10 +65,8 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
@@ -119,7 +113,6 @@ public class DatabaseActions
     public static final String SCORE_ORDER = "score";
     public static final String RELEVANCE_ORDER = "relevance";
     public static final String INDEX_ORDER = "index";
-    private final Database database;
     private final GraphDatabaseAPI graphDb;
     private final LeaseManager leases;
     private final ForceMode defaultForceMode;
@@ -134,7 +127,7 @@ public class DatabaseActions
 
         public Provider( DatabaseActions database )
         {
-            super(DatabaseActions.class);
+            super( DatabaseActions.class );
             this.database = database;
         }
 
@@ -144,37 +137,37 @@ public class DatabaseActions
             return database;
         }
     }
-    
+
     private final Function<ConstraintDefinition, Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
             new Function<ConstraintDefinition, Representation>()
-    {
-        @Override
-        public Representation apply( ConstraintDefinition from )
-        {
-            return new ConstraintDefinitionRepresentation( from );
-        }
-    };
+            {
+                @Override
+                public Representation apply( ConstraintDefinition from )
+                {
+                    return new ConstraintDefinitionRepresentation( from );
+                }
+            };
 
-    public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode,
-                            boolean enableScriptSandboxing )
+    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode,
+                            boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
     {
         this.leases = leaseManager;
         this.defaultForceMode = defaultForceMode;
-        this.database = database;
-        this.graphDb = database.getGraph();
+        this.graphDb = graphDatabaseAPI;
         this.enableScriptSandboxing = enableScriptSandboxing;
-        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder(enableScriptSandboxing);
-        this.propertySetter = new PropertySettingStrategy(graphDb);
+        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
+        this.propertySetter = new PropertySettingStrategy( graphDb );
     }
 
-    public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode )
+    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode, GraphDatabaseAPI graphDatabaseAPI )
     {
-        this(database, leaseManager, defaultForceMode, true);
+        this( leaseManager, defaultForceMode, true, graphDatabaseAPI );
     }
 
     public DatabaseActions forceMode( ForceMode forceMode )
     {
-        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( database, leases, forceMode, enableScriptSandboxing );
+        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( leases, forceMode,
+                enableScriptSandboxing, graphDb );
     }
 
     private Node node( long id ) throws NodeNotFoundException
@@ -215,32 +208,16 @@ public class DatabaseActions
     public NodeRepresentation createNode( Map<String, Object> properties, Label... labels )
             throws PropertyValueException
     {
-        final NodeRepresentation result;
-        Transaction tx = beginTx();
-        try
+        Node node = graphDb.createNode();
+        propertySetter.setProperties( node, properties );
+        if ( labels != null )
         {
-            Node node = graphDb.createNode();
-            propertySetter.setProperties( node, properties );
-            if ( labels != null )
+            for ( Label label : labels )
             {
-                for ( Label label : labels )
-                    node.addLabel( label );
+                node.addLabel( label );
             }
-            result = new NodeRepresentation( node );
-            tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-        return result;
-    }
-
-    private Transaction beginTx()
-    {
-        TransactionBuilder tx = graphDb.tx();
-        if ( defaultForceMode == ForceMode.unforced ) tx = tx.unforced();
-        return tx.begin();
+        return new NodeRepresentation( node );
     }
 
     public NodeRepresentation getNode( long nodeId )
@@ -249,30 +226,19 @@ public class DatabaseActions
         return new NodeRepresentation( node( nodeId ) );
     }
 
-    public void deleteNode( long nodeId ) throws NodeNotFoundException,
-            OperationFailureException
+    public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException
     {
         Node node = node( nodeId );
-        Transaction tx = beginTx();
-        try
+
+        if ( node.hasRelationship() )
         {
-            node.delete();
-            tx.success();
+            throw new OperationFailureException(
+                    String.format(
+                            "The node with id %d cannot be deleted. Check that the node is orphaned before deletion.",
+                            nodeId ) );
         }
-        finally
-        {
-            try
-            {
-                tx.finish();
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new OperationFailureException(
-                        String.format(
-                                "The node with id %d cannot be deleted. Check that the node is orphaned before deletion.",
-                                nodeId ) );
-            }
-        }
+
+        node.delete();
     }
 
     /**
@@ -307,22 +273,12 @@ public class DatabaseActions
         propertySetter.setProperty( node, key, value );
     }
 
-    public void removeNodeProperty( long nodeId, String key )
-            throws NodeNotFoundException, NoSuchPropertyException
+    public void removeNodeProperty( long nodeId, String key ) throws NodeNotFoundException, NoSuchPropertyException
     {
         Node node = node( nodeId );
-        Transaction tx = beginTx();
-        try
+        if ( node.removeProperty( key ) == null )
         {
-            if ( node.removeProperty( key ) == null )
-            {
-                throw new NoSuchPropertyException( node, key );
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            throw new NoSuchPropertyException( node, key );
         }
     }
 
@@ -333,7 +289,7 @@ public class DatabaseActions
     }
 
     public void setAllNodeProperties( long nodeId,
-            Map<String, Object> properties ) throws PropertyValueException,
+                                      Map<String, Object> properties ) throws PropertyValueException,
             NodeNotFoundException
     {
         propertySetter.setAllProperties( node( nodeId ), properties );
@@ -347,34 +303,29 @@ public class DatabaseActions
 
     // Labels
 
-    public void addLabelToNode( long nodeId, Collection<String> labelNames ) throws NodeNotFoundException, BadInputException
+    public void addLabelToNode( long nodeId, Collection<String> labelNames ) throws NodeNotFoundException,
+            BadInputException
     {
-        Node node = node( nodeId );
-        Transaction tx = beginTx();
         try
         {
+            Node node = node( nodeId );
             for ( String labelName : labelNames )
             {
                 node.addLabel( label( labelName ) );
             }
-            tx.success();
         }
-        catch( ConstraintViolationException e )
+        catch ( ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
 
-    public void setLabelsOnNode( long nodeId, Collection<String> labels ) throws NodeNotFoundException, BadInputException
+    public void setLabelsOnNode( long nodeId, Collection<String> labels ) throws NodeNotFoundException,
+            BadInputException
 
     {
         Node node = node( nodeId );
-        Transaction tx = beginTx();
         try
         {
             // Remove current labels
@@ -388,34 +339,18 @@ public class DatabaseActions
             {
                 node.addLabel( label( labelName ) );
             }
-
-            tx.success();
         }
-        catch( ConstraintViolationException e )
+        catch ( ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
         }
-        finally
-        {
-            tx.finish();
-        }
     }
-    
+
     public void removeLabelFromNode( long nodeId, String labelName ) throws NodeNotFoundException
     {
-        Node node = node( nodeId );
-        Transaction tx = beginTx();
-        try
-        {
-            node.removeLabel( label( labelName ) );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        node( nodeId ).removeLabel( label( labelName ) );
     }
-    
+
     public ListRepresentation getNodeLabels( long nodeId ) throws NodeNotFoundException
     {
         Iterable<String> labels = new IterableWrapper<String, Label>( node( nodeId ).getLabels() )
@@ -443,13 +378,13 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
-        
-        assertIsLegalIndexName(indexName);
-        
+
+        assertIsLegalIndexName( indexName );
+
         if ( indexSpecification.containsKey( "config" ) )
         {
 
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             Map<String, String> config = (Map<String, String>) indexSpecification.get( "config" );
             graphDb.index().forNodes( indexName, config );
 
@@ -465,13 +400,13 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
-        
-        assertIsLegalIndexName(indexName);
-        
+
+        assertIsLegalIndexName( indexName );
+
         if ( indexSpecification.containsKey( "config" ) )
         {
 
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             Map<String, String> config = (Map<String, String>) indexSpecification.get( "config" );
             graphDb.index().forRelationships( indexName, config );
 
@@ -485,126 +420,99 @@ public class DatabaseActions
 
     public void removeNodeIndex( String indexName )
     {
-        if(!graphDb.index().existsForNodes(indexName)) {
-            throw new NotFoundException("No node index named '" + indexName + "'.");
-        }
-        
-        Index<Node> index = graphDb.index().forNodes( indexName );
-        Transaction tx = beginTx();
-        try
+        if ( !graphDb.index().existsForNodes( indexName ) )
         {
-            index.delete();
-            tx.success();
+            throw new NotFoundException( "No node index named '" + indexName + "'." );
         }
-        finally
-        {
-            tx.finish();
-        }
+
+        graphDb.index().forNodes( indexName ).delete();
     }
 
     public void removeRelationshipIndex( String indexName )
     {
-        if(!graphDb.index().existsForRelationships(indexName)) {
-            throw new NotFoundException("No relationship index named '" + indexName + "'.");
-        }
-        
-        Index<Relationship> index = graphDb.index().forRelationships( indexName );
-        Transaction tx = beginTx();
-        try
+        if ( !graphDb.index().existsForRelationships( indexName ) )
         {
-            index.delete();
-            tx.success();
+            throw new NotFoundException( "No relationship index named '" + indexName + "'." );
         }
-        finally
-        {
-            tx.finish();
-        }
+
+        graphDb.index().forRelationships( indexName ).delete();
     }
 
-    public boolean nodeIsIndexed( String indexName, String key, Object value,
-            long nodeId )
+    public boolean nodeIsIndexed( String indexName, String key, Object value, long nodeId )
     {
-
         Index<Node> index = graphDb.index().forNodes( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            Node expectedNode = graphDb.getNodeById( nodeId );
-            IndexHits<Node> hits = index.get( key, value );
-            boolean contains = iterableContains( hits, expectedNode );
-            tx.success();
-            return contains;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        Node expectedNode = graphDb.getNodeById( nodeId );
+        IndexHits<Node> hits = index.get( key, value );
+        return iterableContains( hits, expectedNode );
     }
 
-    public boolean relationshipIsIndexed( String indexName, String key,
-            Object value, long relationshipId )
+    public boolean relationshipIsIndexed( String indexName, String key, Object value, long relationshipId )
     {
 
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            Relationship expectedNode = graphDb.getRelationshipById( relationshipId );
-            IndexHits<Relationship> hits = index.get( key, value );
-            boolean contains = iterableContains( hits, expectedNode );
-            tx.success();
-            return contains;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        Relationship expectedNode = graphDb.getRelationshipById( relationshipId );
+        IndexHits<Relationship> hits = index.get( key, value );
+        return iterableContains( hits, expectedNode );
     }
 
     private <T> boolean iterableContains( Iterable<T> iterable,
-            T expectedElement )
+                                          T expectedElement )
     {
         for ( T possibleMatch : iterable )
         {
-            if ( possibleMatch.equals( expectedElement ) ) return true;
+            if ( possibleMatch.equals( expectedElement ) )
+            {
+                return true;
+            }
         }
         return false;
     }
 
-    public Representation isAutoIndexerEnabled(String type) {
-        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType(type);
-        return ValueRepresentation.bool(index.isEnabled());
+    public Representation isAutoIndexerEnabled( String type )
+    {
+        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType( type );
+        return ValueRepresentation.bool( index.isEnabled() );
     }
 
-    public void setAutoIndexerEnabled(String type, boolean enable) {
-        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType(type);
-        index.setEnabled(enable);
+    public void setAutoIndexerEnabled( String type, boolean enable )
+    {
+        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType( type );
+        index.setEnabled( enable );
     }
 
-    private AutoIndexer<? extends PropertyContainer> getAutoIndexerForType(String type) {
+    private AutoIndexer<? extends PropertyContainer> getAutoIndexerForType( String type )
+    {
         final IndexManager indexManager = graphDb.index();
-        if ("node".equals(type)) {
+        if ( "node".equals( type ) )
+        {
             return indexManager.getNodeAutoIndexer();
-        } else if ("relationship".equals(type)) {
+        }
+        else if ( "relationship".equals( type ) )
+        {
             return indexManager.getRelationshipAutoIndexer();
-        } else {
-            throw new IllegalArgumentException("invalid type " + type);
+        }
+        else
+        {
+            throw new IllegalArgumentException( "invalid type " + type );
         }
     }
 
-    public Representation getAutoIndexedProperties(String type) {
-        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
-        return ListRepresentation.string(indexer.getAutoIndexedProperties());
+    public Representation getAutoIndexedProperties( String type )
+    {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType( type );
+        return ListRepresentation.string( indexer.getAutoIndexedProperties() );
     }
 
-    public void startAutoIndexingProperty(String type, String property) {
-        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
-        indexer.startAutoIndexingProperty(property);
+    public void startAutoIndexingProperty( String type, String property )
+    {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType( type );
+        indexer.startAutoIndexingProperty( property );
     }
 
-    public void stopAutoIndexingProperty(String type, String property) {
-        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
-        indexer.stopAutoIndexingProperty(property);
+    public void stopAutoIndexingProperty( String type, String property )
+    {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType( type );
+        indexer.stopAutoIndexingProperty( property );
     }
 
     // Relationships
@@ -623,7 +531,7 @@ public class DatabaseActions
     }
 
     public RelationshipRepresentation createRelationship( long startNodeId,
-            long endNodeId, String type, Map<String, Object> properties )
+                                                          long endNodeId, String type, Map<String, Object> properties )
             throws StartNodeNotFoundException, EndNodeNotFoundException,
             PropertyValueException
     {
@@ -645,23 +553,13 @@ public class DatabaseActions
         {
             throw new EndNodeNotFoundException();
         }
-        final RelationshipRepresentation result;
-        Transaction tx = beginTx();
-        try
-        {
-            Relationship rel = start.createRelationshipTo( end,
-                    DynamicRelationshipType.withName( type ));
 
-            propertySetter.setProperties( rel, properties );
+        Relationship rel = start.createRelationshipTo( end,
+                DynamicRelationshipType.withName( type ) );
 
-            result = new RelationshipRepresentation( rel );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-        return result;
+        propertySetter.setProperties( rel, properties );
+
+        return new RelationshipRepresentation( rel );
     }
 
     public RelationshipRepresentation getRelationship( long relationshipId )
@@ -670,25 +568,14 @@ public class DatabaseActions
         return new RelationshipRepresentation( relationship( relationshipId ) );
     }
 
-    public void deleteRelationship( long relationshipId )
-            throws RelationshipNotFoundException
+    public void deleteRelationship( long relationshipId ) throws RelationshipNotFoundException
     {
-        Relationship relationship = relationship( relationshipId );
-        Transaction tx = beginTx();
-        try
-        {
-            relationship.delete();
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        relationship( relationshipId ).delete();
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public ListRepresentation getNodeRelationships( long nodeId,
-            RelationshipDirection direction, Collection<String> types )
+                                                    RelationshipDirection direction, Collection<String> types )
             throws NodeNotFoundException
     {
         Node node = node( nodeId );
@@ -719,7 +606,7 @@ public class DatabaseActions
     }
 
     public Representation getRelationshipProperty( long relationshipId,
-            String key ) throws NoSuchPropertyException,
+                                                   String key ) throws NoSuchPropertyException,
             RelationshipNotFoundException
     {
         Relationship relationship = relationship( relationshipId );
@@ -734,14 +621,14 @@ public class DatabaseActions
     }
 
     public void setAllRelationshipProperties( long relationshipId,
-            Map<String, Object> properties ) throws PropertyValueException,
+                                              Map<String, Object> properties ) throws PropertyValueException,
             RelationshipNotFoundException
     {
         propertySetter.setAllProperties( relationship( relationshipId ), properties );
     }
 
     public void setRelationshipProperty( long relationshipId, String key,
-            Object value ) throws PropertyValueException,
+                                         Object value ) throws PropertyValueException,
             RelationshipNotFoundException
     {
         Relationship relationship = relationship( relationshipId );
@@ -758,18 +645,10 @@ public class DatabaseActions
             throws RelationshipNotFoundException, NoSuchPropertyException
     {
         Relationship relationship = relationship( relationshipId );
-        Transaction tx = beginTx();
-        try
+
+        if ( relationship.removeProperty( key ) == null )
         {
-            if ( relationship.removeProperty( key ) == null )
-            {
-                throw new NoSuchPropertyException( relationship, key );
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            throw new NoSuchPropertyException( relationship, key );
         }
     }
 
@@ -778,11 +657,11 @@ public class DatabaseActions
     public enum IndexType
     {
         node( "index" )
-        {
-        },
+                {
+                },
         relationship( "index" )
-        {
-        };
+                {
+                };
         private final String pathPrefix;
 
         private IndexType( String pathPrefix )
@@ -790,7 +669,7 @@ public class DatabaseActions
             this.pathPrefix = pathPrefix;
         }
 
-        @SuppressWarnings( "boxing" )
+        @SuppressWarnings("boxing")
         String path( String indexName, String key, String value, long id )
         {
             return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key,
@@ -808,146 +687,64 @@ public class DatabaseActions
         return new RelationshipIndexRootRepresentation( graphDb.index() );
     }
 
-    public IndexedEntityRepresentation addToRelationshipIndex(
-            String indexName, String key, String value, long relationshipId )
+    public IndexedEntityRepresentation addToRelationshipIndex( String indexName, String key, String value,
+                                                               long relationshipId )
     {
-        Transaction tx = beginTx();
-        try
-        {
-            Relationship relationship = graphDb.getRelationshipById( relationshipId );
-            Index<Relationship> index = graphDb.index().forRelationships(
-                    indexName );
-            index.add( relationship, key, value );
-            tx.success();
-            return new IndexedEntityRepresentation( relationship, key, value,
-                    new RelationshipIndexRepresentation( indexName,
-                            Collections.<String, String>emptyMap() ) );
-        }
-        finally
-        {
-            tx.finish();
-        }
+        Relationship relationship = graphDb.getRelationshipById( relationshipId );
+        Index<Relationship> index = graphDb.index().forRelationships( indexName );
+        index.add( relationship, key, value );
+        return new IndexedEntityRepresentation( relationship, key, value,
+                new RelationshipIndexRepresentation( indexName,
+                        Collections.<String, String>emptyMap() ) );
     }
 
-    public IndexedEntityRepresentation addToNodeIndex( String indexName,
-            String key, String value, long nodeId )
+    public IndexedEntityRepresentation addToNodeIndex( String indexName, String key, String value, long nodeId )
     {
-        Transaction tx = beginTx();
-        try
-        {
-            Node node = graphDb.getNodeById( nodeId );
-            Index<Node> index = graphDb.index().forNodes( indexName );
-            index.add( node, key, value );
-            tx.success();
-            return new IndexedEntityRepresentation( node, key, value,
-                    new NodeIndexRepresentation( indexName,
-                            Collections.<String, String>emptyMap() ) );
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    public void removeFromNodeIndex( String indexName, String key,
-            String value, long id )
-    {
+        Node node = graphDb.getNodeById( nodeId );
         Index<Node> index = graphDb.index().forNodes( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getNodeById( id ), key, value );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        index.add( node, key, value );
+        return new IndexedEntityRepresentation( node, key, value,
+                new NodeIndexRepresentation( indexName,
+                        Collections.<String, String>emptyMap() ) );
     }
 
-    public void removeFromNodeIndexNoValue( String indexName, String key,
-            long id )
+    public void removeFromNodeIndex( String indexName, String key, String value, long id )
     {
-        Index<Node> index = graphDb.index().forNodes( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getNodeById( id ), key );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        graphDb.index().forNodes( indexName ).remove( graphDb.getNodeById( id ), key, value );
+    }
+
+    public void removeFromNodeIndexNoValue( String indexName, String key, long id )
+    {
+        graphDb.index().forNodes( indexName ).remove( graphDb.getNodeById( id ), key );
     }
 
     public void removeFromNodeIndexNoKeyValue( String indexName, long id )
     {
-        Index<Node> index = graphDb.index().forNodes( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getNodeById( id ) );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        graphDb.index().forNodes( indexName ).remove( graphDb.getNodeById( id ) );
     }
 
-    public void removeFromRelationshipIndex( String indexName, String key,
-            String value, long id )
+    public void removeFromRelationshipIndex( String indexName, String key, String value, long id )
     {
-        RelationshipIndex index = graphDb.index().forRelationships( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getRelationshipById( id ), key, value );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        graphDb.index().forRelationships( indexName ).remove( graphDb.getRelationshipById( id ), key, value );
     }
 
-    public void removeFromRelationshipIndexNoValue( String indexName,
-            String key, long id )
+    public void removeFromRelationshipIndexNoValue( String indexName, String key, long id )
     {
-        RelationshipIndex index = graphDb.index().forRelationships( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getRelationshipById( id ), key );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        graphDb.index().forRelationships( indexName ).remove( graphDb.getRelationshipById( id ), key );
     }
 
     public void removeFromRelationshipIndexNoKeyValue( String indexName, long id )
     {
-        RelationshipIndex index = graphDb.index().forRelationships( indexName );
-        Transaction tx = beginTx();
-        try
-        {
-            index.remove( graphDb.getRelationshipById( id ) );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        graphDb.index().forRelationships( indexName ).remove( graphDb.getRelationshipById( id ) );
     }
 
     public IndexedEntityRepresentation getIndexedNode( String indexName,
-            String key, String value, long id )
+                                                       String key, String value, long id )
     {
         if ( !nodeIsIndexed( indexName, key, value, id ) )
+        {
             throw new NotFoundException();
+        }
         Node node = graphDb.getNodeById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new NodeIndexRepresentation( indexName,
@@ -958,7 +755,9 @@ public class DatabaseActions
             String indexName, String key, String value, long id )
     {
         if ( !relationshipIsIndexed( indexName, key, value, id ) )
+        {
             throw new NotFoundException();
+        }
         Relationship node = graphDb.getRelationshipById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new RelationshipIndexRepresentation( indexName,
@@ -966,187 +765,193 @@ public class DatabaseActions
     }
 
     public ListRepresentation getIndexedNodes( String indexName, final String key,
-            final String value )
+                                               final String value )
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
+        {
             throw new NotFoundException();
-        
-            Index<Node> index = graphDb.index().forNodes( indexName );
+        }
 
-            final IndexRepresentation indexRepresentation = new NodeIndexRepresentation(indexName);
-            final IndexHits<Node> indexHits = index.get( key, value );
+        Index<Node> index = graphDb.index().forNodes( indexName );
 
-            final IterableWrapper<Representation, Node> results = new IterableWrapper<Representation, Node>(indexHits)
+        final IndexRepresentation indexRepresentation = new NodeIndexRepresentation( indexName );
+        final IndexHits<Node> indexHits = index.get( key, value );
+
+        final IterableWrapper<Representation, Node> results = new IterableWrapper<Representation, Node>( indexHits )
+        {
+            @Override
+            protected Representation underlyingObjectToObject( Node node )
             {
-                @Override
-				protected Representation underlyingObjectToObject(Node node)
-                {
-                    return new IndexedEntityRepresentation( node, key, value, indexRepresentation);
-                }
-            };
-            return new ListRepresentation( RepresentationType.NODE, results);
+                return new IndexedEntityRepresentation( node, key, value, indexRepresentation );
+            }
+        };
+        return new ListRepresentation( RepresentationType.NODE, results );
     }
 
     public ListRepresentation getIndexedNodesByQuery( String indexName,
-            String query, String sort )
+                                                      String query, String sort )
     {
         return getIndexedNodesByQuery( indexName, null, query, sort );
     }
 
     public ListRepresentation getIndexedNodesByQuery( String indexName,
-            String key, String query, String sort )
+                                                      String key, String query, String sort )
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
+        {
             throw new NotFoundException();
-        
-        if (query == null)
+        }
+
+        if ( query == null )
         {
             return toListNodeRepresentation();
         }
         Index<Node> index = graphDb.index().forNodes( indexName );
 
         IndexResultOrder order = getOrdering( sort );
-        QueryContext queryCtx = order.updateQueryContext( new QueryContext(query));
+        QueryContext queryCtx = order.updateQueryContext( new QueryContext( query ) );
         IndexHits<Node> result = index.query( key, queryCtx );
-        return toListNodeRepresentation(result ,order);
+        return toListNodeRepresentation( result, order );
     }
 
     private ListRepresentation toListNodeRepresentation()
     {
-            return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList());
+        return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
     }
 
-    private ListRepresentation toListNodeRepresentation(final IndexHits<Node> result, final IndexResultOrder order) {
-        if (result == null)
+    private ListRepresentation toListNodeRepresentation( final IndexHits<Node> result, final IndexResultOrder order )
+    {
+        if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList());
+            return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
         }
-        final IterableWrapper<Representation, Node> results = new IterableWrapper<Representation, Node>(result)
+        final IterableWrapper<Representation, Node> results = new IterableWrapper<Representation, Node>( result )
         {
             @Override
-            protected Representation underlyingObjectToObject(Node node)
+            protected Representation underlyingObjectToObject( Node node )
             {
-                final NodeRepresentation nodeRepresentation = new NodeRepresentation(node);
-                if (order == null ) {
+                final NodeRepresentation nodeRepresentation = new NodeRepresentation( node );
+                if ( order == null )
+                {
                     return nodeRepresentation;
                 }
-                return order.getRepresentationFor(nodeRepresentation, result.currentScore());
+                return order.getRepresentationFor( nodeRepresentation, result.currentScore() );
             }
         };
-        return new ListRepresentation( RepresentationType.NODE, results);
-    }
-    private ListRepresentation toListRelationshipRepresentation()
-    {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList());
+        return new ListRepresentation( RepresentationType.NODE, results );
     }
 
-    private ListRepresentation toListRelationshipRepresentation(final IndexHits<Relationship> result, final IndexResultOrder order) {
-        if (result == null)
+    private ListRepresentation toListRelationshipRepresentation()
+    {
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
+    }
+
+    private ListRepresentation toListRelationshipRepresentation( final IndexHits<Relationship> result,
+                                                                 final IndexResultOrder order )
+    {
+        if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList());
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
         }
-        final IterableWrapper<Representation, Relationship> results = new IterableWrapper<Representation, Relationship>(result)
+        final IterableWrapper<Representation, Relationship> results = new IterableWrapper<Representation,
+                Relationship>( result )
         {
             @Override
-            protected Representation underlyingObjectToObject(Relationship rel)
+            protected Representation underlyingObjectToObject( Relationship rel )
             {
-                final RelationshipRepresentation relationshipRepresentation = new RelationshipRepresentation(rel);
-                if (order != null )
+                final RelationshipRepresentation relationshipRepresentation = new RelationshipRepresentation( rel );
+                if ( order != null )
                 {
-                    return order.getRepresentationFor(relationshipRepresentation, result.currentScore());
+                    return order.getRepresentationFor( relationshipRepresentation, result.currentScore() );
                 }
                 return relationshipRepresentation;
             }
         };
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, results);
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
     }
 
     public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode( String indexName, String key,
                                                                               String value, Long nodeOrNull,
-                                                                              Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
+                                                                              Map<String,
+                                                                                      Object> properties ) throws
+            BadInputException, NodeNotFoundException
     {
-        assertIsLegalIndexName(indexName);
-        
-        Transaction tx = beginTx();
-        try
+        assertIsLegalIndexName( indexName );
+        Node result;
+        boolean created;
+        if ( nodeOrNull != null )
         {
-            Node result;
-            boolean created;
-            if ( nodeOrNull != null )
+            if ( properties != null )
             {
-                if ( properties != null )
-                {
-                    throw new BadInputException( "Cannot specify properties for a new node, when a node to index is specified." );
-                }
-                Node node = node(nodeOrNull);
-                result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
-                created = result == null;
-                if (created) result = node;
+                throw new BadInputException( "Cannot specify properties for a new node, " +
+                        "when a node to index is specified." );
             }
-            else
+            Node node = node( nodeOrNull );
+            result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
+            created = result == null;
+            if ( created )
             {
-                if ( properties != null )
-                {
-                    for ( Map.Entry<String, Object> entry : properties.entrySet() )
-                    {
-                        entry.setValue( propertySetter.convert( entry.getValue() ));
-                    }
-                }
-                UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
-                result = factory.getOrCreate( key, value );
-                created = factory.created;
+                result = node;
             }
-            tx.success();
-            return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                        new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ), created);
         }
-        finally
+        else
         {
-            tx.finish();
+            if ( properties != null )
+            {
+                for ( Map.Entry<String, Object> entry : properties.entrySet() )
+                {
+                    entry.setValue( propertySetter.convert( entry.getValue() ) );
+                }
+            }
+            UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
+            result = factory.getOrCreate( key, value );
+            created = factory.created;
         }
+        return Pair.of( new IndexedEntityRepresentation( result, key, value,
+                new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ), created );
     }
 
     public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedRelationship( String indexName, String key,
-                                                                                      String value, Long relationshipOrNull,
-                                                                                      Long startNode, String type, Long endNode,
-                                                                                      Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
+                                                                                      String value,
+                                                                                      Long relationshipOrNull,
+                                                                                      Long startNode, String type,
+                                                                                      Long endNode,
+                                                                                      Map<String,
+                                                                                              Object> properties )
+            throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
-        assertIsLegalIndexName(indexName);
-        
-        Transaction tx = beginTx();
-        try
+        assertIsLegalIndexName( indexName );
+        Relationship result;
+        boolean created;
+        if ( relationshipOrNull != null )
         {
-            Relationship result;
-            boolean created;
-            if ( relationshipOrNull != null )
+            if ( startNode != null || type != null || endNode != null || properties != null )
             {
-                if ( startNode != null || type != null || endNode != null || properties != null )
-                {
-                    throw new BadInputException( "Either specify a relationship to index uniquely, or the means for creating it." );
-                }
-                Relationship relationship = relationship(relationshipOrNull);
-                result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
-                if ( created = result == null ) result = relationship;
+                throw new BadInputException( "Either specify a relationship to index uniquely, " +
+                        "or the means for creating it." );
             }
-            else if ( startNode == null || type == null || endNode == null )
+            Relationship relationship = relationship( relationshipOrNull );
+            result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
+            if ( created = result == null )
             {
-                throw new BadInputException( "Either specify a relationship to index uniquely, or the means for creating it." );
+                result = relationship;
             }
-            else
-            {
-                UniqueRelationshipFactory factory = new UniqueRelationshipFactory( indexName, node(startNode), node(endNode), type, properties );
-                result = factory.getOrCreate( key, value );
-                created = factory.created;
-            }
-            tx.success();
-            return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                        new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ),
-                    created);
         }
-        finally
+        else if ( startNode == null || type == null || endNode == null )
         {
-            tx.finish();
+            throw new BadInputException( "Either specify a relationship to index uniquely, " +
+                    "or the means for creating it." );
         }
+        else
+        {
+            UniqueRelationshipFactory factory = new UniqueRelationshipFactory( indexName, node( startNode ),
+                    node( endNode ), type, properties );
+            result = factory.getOrCreate( key, value );
+            created = factory.created;
+        }
+        return Pair.of( new IndexedEntityRepresentation( result, key, value,
+                new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ),
+                created );
     }
 
     private class UniqueRelationshipFactory extends UniqueFactory.UniqueRelationshipFactory
@@ -1164,6 +969,7 @@ public class DatabaseActions
             this.type = DynamicRelationshipType.withName( type );
             this.properties = properties;
         }
+
         @Override
         protected Relationship create( Map<String, Object> ignored )
         {
@@ -1207,7 +1013,7 @@ public class DatabaseActions
     {
         ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
 
-        return toListNodeRepresentation(index.get( key, value ),null);
+        return toListNodeRepresentation( index.get( key, value ), null );
     }
 
     public ListRepresentation getAutoIndexedNodesByQuery( String query )
@@ -1215,43 +1021,49 @@ public class DatabaseActions
         if ( query != null )
         {
             ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
-            return toListNodeRepresentation(index.query( query ),null);
+            return toListNodeRepresentation( index.query( query ), null );
         }
         return toListNodeRepresentation();
     }
 
     public ListRepresentation getIndexedRelationships( String indexName,
-            final String key, final String value )
+                                                       final String key, final String value )
     {
         if ( !graphDb.index().existsForRelationships( indexName ) )
+        {
             throw new NotFoundException();
+        }
 
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
 
-        final IndexRepresentation indexRepresentation = new RelationshipIndexRepresentation(indexName);
+        final IndexRepresentation indexRepresentation = new RelationshipIndexRepresentation( indexName );
 
         IterableWrapper<Representation, Relationship> result =
-                new IterableWrapper<Representation, Relationship>(index.get(key, value)) {
-            @Override
-            protected Representation underlyingObjectToObject(Relationship relationship) {
-                return new IndexedEntityRepresentation(relationship,
-                        key, value, indexRepresentation);
-            }
-        };
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, result);
+                new IterableWrapper<Representation, Relationship>( index.get( key, value ) )
+                {
+                    @Override
+                    protected Representation underlyingObjectToObject( Relationship relationship )
+                    {
+                        return new IndexedEntityRepresentation( relationship,
+                                key, value, indexRepresentation );
+                    }
+                };
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, result );
     }
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName,
-            String query, String sort )
+                                                              String query, String sort )
     {
         return getIndexedRelationshipsByQuery( indexName, null, query, sort );
     }
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName,
-            String key, String query, String sort )
+                                                              String key, String query, String sort )
     {
         if ( !graphDb.index().existsForRelationships( indexName ) )
+        {
             throw new NotFoundException();
+        }
 
         if ( query == null )
         {
@@ -1263,50 +1075,52 @@ public class DatabaseActions
         QueryContext queryCtx = order.updateQueryContext( new QueryContext(
                 query ) );
 
-        return toListRelationshipRepresentation(index.query( key, queryCtx ), order);
+        return toListRelationshipRepresentation( index.query( key, queryCtx ), order );
     }
 
     public Representation getAutoIndexedRelationships( String key, String value )
     {
         ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
 
-        return toListRelationshipRepresentation(index.get( key, value ),null);
+        return toListRelationshipRepresentation( index.get( key, value ), null );
     }
 
     public ListRepresentation getAutoIndexedRelationshipsByQuery( String query )
     {
         ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
 
-        final IndexHits<Relationship> results = query != null ? index.query(query) : null;
-        return toListRelationshipRepresentation(results,null);
+        final IndexHits<Relationship> results = query != null ? index.query( query ) : null;
+        return toListRelationshipRepresentation( results, null );
     }
 
     // Traversal
 
     public ListRepresentation traverse( long startNode,
-            Map<String, Object> description, final TraverserReturnType returnType )
+                                        Map<String, Object> description, final TraverserReturnType returnType )
     {
         Node node = graphDb.getNodeById( startNode );
 
         TraversalDescription traversalDescription = traversalDescriptionBuilder.from( description );
-        final Iterable<Path> paths = traversalDescription.traverse(node);
-        return toListPathRepresentation(paths, returnType);
+        final Iterable<Path> paths = traversalDescription.traverse( node );
+        return toListPathRepresentation( paths, returnType );
     }
 
-    private ListRepresentation toListPathRepresentation(final Iterable<Path> paths, final TraverserReturnType returnType) {
-        final IterableWrapper<Representation, Path> result = new IterableWrapper<Representation, Path>(paths)
+    private ListRepresentation toListPathRepresentation( final Iterable<Path> paths,
+                                                         final TraverserReturnType returnType )
+    {
+        final IterableWrapper<Representation, Path> result = new IterableWrapper<Representation, Path>( paths )
         {
             @Override
-            protected Representation underlyingObjectToObject(Path position)
+            protected Representation underlyingObjectToObject( Path position )
             {
-                return returnType.toRepresentation(position);
+                return returnType.toRepresentation( position );
             }
         };
         return new ListRepresentation( returnType.repType, result );
     }
 
     public ListRepresentation pagedTraverse( String traverserId,
-            TraverserReturnType returnType )
+                                             TraverserReturnType returnType )
     {
         Lease lease = leases.getLeaseById( traverserId );
         if ( lease == null )
@@ -1320,7 +1134,7 @@ public class DatabaseActions
 
         if ( paths != null )
         {
-            return toListPathRepresentation(paths,returnType);
+            return toListPathRepresentation( paths, returnType );
         }
         else
         {
@@ -1334,7 +1148,7 @@ public class DatabaseActions
     }
 
     public String createPagedTraverser( long nodeId,
-            Map<String, Object> description, int pageSize, int leaseTime )
+                                        Map<String, Object> description, int pageSize, int leaseTime )
     {
         Node node = graphDb.getNodeById( nodeId );
 
@@ -1362,9 +1176,9 @@ public class DatabaseActions
 
     // Graph algos
 
-    @SuppressWarnings( "rawtypes" )
+    @SuppressWarnings("rawtypes")
     public PathRepresentation findSinglePath( long startId, long endId,
-            Map<String, Object> map )
+                                              Map<String, Object> map )
     {
         FindParams findParams = new FindParams( startId, endId, map ).invoke();
         PathFinder finder = findParams.getFinder();
@@ -1379,9 +1193,9 @@ public class DatabaseActions
         return findParams.pathRepresentationOf( path );
     }
 
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public ListRepresentation findPaths( long startId, long endId,
-            Map<String, Object> map )
+                                         Map<String, Object> map )
     {
         final FindParams findParams = new FindParams( startId, endId, map ).invoke();
         PathFinder finder = findParams.getFinder();
@@ -1412,11 +1226,11 @@ public class DatabaseActions
         private Node startNode;
         private Node endNode;
         private PathFinder<? extends Path> finder;
-        @SuppressWarnings( "rawtypes" )
+        @SuppressWarnings("rawtypes")
         private PathRepresentationCreator representationCreator = PATH_REPRESENTATION_CREATOR;
 
         public FindParams( final long startId, final long endId,
-                final Map<String, Object> map )
+                           final Map<String, Object> map )
         {
             this.startId = startId;
             this.endId = endId;
@@ -1438,7 +1252,7 @@ public class DatabaseActions
             return finder;
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         public PathRepresentation<? extends Path> pathRepresentationOf(
                 Path path )
         {
@@ -1451,19 +1265,19 @@ public class DatabaseActions
             endNode = graphDb.getNodeById( endId );
 
             Integer maxDepthObj = (Integer) map.get( "max_depth" );
-            int maxDepth = ( maxDepthObj != null ) ? maxDepthObj : 1;
+            int maxDepth = (maxDepthObj != null) ? maxDepthObj : 1;
 
             RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
 
             String algorithm = (String) map.get( "algorithm" );
-            algorithm = ( algorithm != null ) ? algorithm : "shortestPath";
+            algorithm = (algorithm != null) ? algorithm : "shortestPath";
 
             finder = getAlgorithm( algorithm, expander, maxDepth );
             return this;
         }
 
         private PathFinder<? extends Path> getAlgorithm( String algorithm,
-                RelationshipExpander expander, int maxDepth )
+                                                         RelationshipExpander expander, int maxDepth )
         {
             if ( algorithm.equals( "shortestPath" ) )
             {
@@ -1481,9 +1295,10 @@ public class DatabaseActions
             {
                 String costProperty = (String) map.get( "cost_property" );
                 Number defaultCost = (Number) map.get( "default_cost" );
-                CostEvaluator<Double> costEvaluator = defaultCost == null ? CommonEvaluators.doubleCostEvaluator( costProperty )
+                CostEvaluator<Double> costEvaluator = defaultCost == null ? CommonEvaluators.doubleCostEvaluator(
+                        costProperty )
                         : CommonEvaluators.doubleCostEvaluator( costProperty,
-                                defaultCost.doubleValue() );
+                        defaultCost.doubleValue() );
                 representationCreator = WEIGHTED_PATH_REPRESENTATION_CREATOR;
                 return GraphAlgoFactory.dijkstra( expander, costEvaluator );
             }
@@ -1501,47 +1316,46 @@ public class DatabaseActions
     private enum IndexResultOrder
     {
         INDEX_ORDER
-        {
-            @Override
-            QueryContext updateQueryContext( QueryContext original )
+                {
+                    @Override
+                    QueryContext updateQueryContext( QueryContext original )
+                    {
+                        return original.sort( Sort.INDEXORDER );
+                    }
+                }, RELEVANCE_ORDER
             {
-                return original.sort( Sort.INDEXORDER );
-            }
-        }
-        ,RELEVANCE_ORDER
-        {
-            @Override
-            QueryContext updateQueryContext( QueryContext original )
-            {
-                return original.sort( Sort.RELEVANCE );
-            }
-        },
+                @Override
+                QueryContext updateQueryContext( QueryContext original )
+                {
+                    return original.sort( Sort.RELEVANCE );
+                }
+            },
         SCORE_ORDER
-        {
-            @Override
-            QueryContext updateQueryContext( QueryContext original )
-            {
-                return original.sortByScore();
-            }
-        },
+                {
+                    @Override
+                    QueryContext updateQueryContext( QueryContext original )
+                    {
+                        return original.sortByScore();
+                    }
+                },
         NONE
-        {
-            @Override
-            Representation getRepresentationFor( Representation delegate,
-                    float score )
-            {
-                return delegate;
-            }
+                {
+                    @Override
+                    Representation getRepresentationFor( Representation delegate,
+                                                         float score )
+                    {
+                        return delegate;
+                    }
 
-            @Override
-            QueryContext updateQueryContext( QueryContext original )
-            {
-                return original;
-            }
-        };
+                    @Override
+                    QueryContext updateQueryContext( QueryContext original )
+                    {
+                        return original;
+                    }
+                };
 
         Representation getRepresentationFor( Representation delegate,
-                float score )
+                                             float score )
         {
             if ( delegate instanceof NodeRepresentation )
             {
@@ -1584,7 +1398,8 @@ public class DatabaseActions
         PathRepresentation<T> from( T path );
     }
 
-    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR = new PathRepresentationCreator<Path>()
+    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR = new
+            PathRepresentationCreator<Path>()
     {
         @Override
         public PathRepresentation<Path> from( Path path )
@@ -1593,7 +1408,8 @@ public class DatabaseActions
         }
     };
 
-    private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR = new PathRepresentationCreator<WeightedPath>()
+    private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR = new
+            PathRepresentationCreator<WeightedPath>()
     {
         @Override
         public PathRepresentation<WeightedPath> from( WeightedPath path )
@@ -1601,8 +1417,8 @@ public class DatabaseActions
             return new WeightedPathRepresentation( path );
         }
     };
-    
-    private void assertIsLegalIndexName(String indexName)
+
+    private void assertIsLegalIndexName( String indexName )
     {
         if ( indexName == null || indexName.equals( "" ) )
         {
@@ -1610,36 +1426,39 @@ public class DatabaseActions
         }
     }
 
-    public ListRepresentation getNodesWithLabel( String labelName, Map<String, Object> properties)
+    public ListRepresentation getNodesWithLabel( String labelName, Map<String, Object> properties )
     {
         Iterable<Node> nodes;
 
-        if(properties.size() == 0)
+        if ( properties.size() == 0 )
         {
             nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
-        } else if(properties.size() == 1)
+        }
+        else if ( properties.size() == 1 )
         {
-            Map.Entry<String, Object> prop = Iterables.single(properties.entrySet());
+            Map.Entry<String, Object> prop = Iterables.single( properties.entrySet() );
             nodes = graphDb.findNodesByLabelAndProperty( label( labelName ), prop.getKey(), prop.getValue() );
-        } else {
+        }
+        else
+        {
             throw new IllegalArgumentException( "Too many properties specified. Either specify one property to " +
                     "filter by, or none at all." );
         }
 
         IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
                 new IterableWrapper<NodeRepresentation, Node>( nodes )
-        {
-            @Override
-            protected NodeRepresentation underlyingObjectToObject( Node node )
-            {
-                return new NodeRepresentation( node );
-            }
-        };
+                {
+                    @Override
+                    protected NodeRepresentation underlyingObjectToObject( Node node )
+                    {
+                        return new NodeRepresentation( node );
+                    }
+                };
 
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
-    public ListRepresentation getAllLabels( )
+    public ListRepresentation getAllLabels()
     {
         Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label, ValueRepresentation>()
         {
@@ -1653,32 +1472,22 @@ public class DatabaseActions
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );
     }
-    
+
     public IndexDefinitionRepresentation createSchemaIndex( String labelName, Iterable<String> propertyKey )
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        IndexCreator indexCreator = graphDb.schema().indexFor( label( labelName ) );
+        for ( String key : propertyKey )
         {
-            IndexCreator indexCreator = graphDb.schema().indexFor( label( labelName ) );
-            for ( String key : propertyKey )
-            {
-                indexCreator = indexCreator.on( key );
-            }
-
-            IndexDefinitionRepresentation result = new IndexDefinitionRepresentation(indexCreator.create() );
-            tx.success();
-            return result;
+            indexCreator = indexCreator.on( key );
         }
-        finally
-        {
-            tx.finish();
-        }
+        return new IndexDefinitionRepresentation( indexCreator.create() );
     }
 
     public ListRepresentation getSchemaIndexes( String labelName )
     {
         Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes( label( labelName ) );
-        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition, IndexDefinitionRepresentation>()
+        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
+                IndexDefinitionRepresentation>()
         {
             @Override
             public IndexDefinitionRepresentation apply( IndexDefinition definition )
@@ -1691,102 +1500,67 @@ public class DatabaseActions
 
     public boolean dropSchemaIndex( String labelName, String propertyKey )
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        boolean found = false;
+        for ( IndexDefinition index : graphDb.schema().getIndexes( label( labelName ) ) )
         {
-            boolean found = false;
-            for ( IndexDefinition index : graphDb.schema().getIndexes( label( labelName ) ) )
+            // TODO Assumption about single property key
+            if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
             {
-                // TODO Assumption about single property key
-                if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
-                {
-                    index.drop();
-                    found = true;
-                    break;
-                }
+                index.drop();
+                found = true;
+                break;
             }
-            tx.success();
-            return found;
         }
-        finally
-        {
-            tx.finish();
-        }
+        return found;
     }
 
     public ConstraintDefinitionRepresentation createPropertyUniquenessConstraint( String labelName,
-            Iterable<String> propertyKeys )
+                                                                                  Iterable<String> propertyKeys )
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
+        for ( String key : propertyKeys )
         {
-            ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
-            for ( String key : propertyKeys )
-            {
-                constraintCreator = constraintCreator.on( key );
-            }
-
-            ConstraintDefinition constraintDefinition = constraintCreator.create();
-            ConstraintDefinitionRepresentation result = new ConstraintDefinitionRepresentation( constraintDefinition );
-            tx.success();
-            return result;
+            constraintCreator = constraintCreator.on( key );
         }
-        finally
-        {
-            tx.finish();
-        }
+        ConstraintDefinition constraintDefinition = constraintCreator.create();
+        return new ConstraintDefinitionRepresentation( constraintDefinition );
     }
-    
+
     public boolean dropPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
     {
         final Set<String> propertyKeysSet = asSet( propertyKeys );
-        Transaction tx = database.getGraph().beginTx();
-        try
+        ConstraintDefinition constraint =
+                singleOrNull( filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
+        if ( constraint != null )
         {
-            ConstraintDefinition constraint =
-                    singleOrNull( filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
-            if ( constraint != null )
-                constraint.drop();
-            tx.success();
-            return constraint != null;
+            constraint.drop();
         }
-        finally
-        {
-            tx.finish();
-        }
+        return constraint != null;
     }
 
     public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
     {
         Set<String> propertyKeysSet = asSet( propertyKeys );
-        Transaction tx = database.getGraph().beginTx();
-        try
+        Iterable<ConstraintDefinition> constraints =
+                filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
+        if ( constraints.iterator().hasNext() )
         {
-            Iterable<ConstraintDefinition> constraints =
-                    filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
-            if ( constraints.iterator().hasNext() )
-            {
-                Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
-                ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
-	            tx.success();
-	            return result;
-            }
-            else
-            {
-            	throw new IllegalArgumentException( 
-        			String.format( "Constraint with label %s for properties %s already exists", labelName, propertyKeys ) );
-            }
+            Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+            return new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
         }
-        finally
+        else
         {
-            tx.finish();
+            throw new IllegalArgumentException(
+                    String.format( "Constraint with label %s for properties %s already exists", labelName,
+                            propertyKeys ) );
         }
     }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, Predicate<ConstraintDefinition> filter )
+    private Iterable<ConstraintDefinition> filteredConstraints( String labelName,
+                                                                Predicate<ConstraintDefinition> filter )
     {
         Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
-		return filter( filter, constraints );
+        return filter( filter, constraints );
     }
 
     private Iterable<ConstraintDefinition> filteredConstraints( String labelName, ConstraintType type )
@@ -1810,51 +1584,19 @@ public class DatabaseActions
 
     public ListRepresentation getConstraints()
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION, database.getGraph().schema().getConstraints() ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        return new ListRepresentation( CONSTRAINT_DEFINITION,
+                map( CONSTRAINT_DEF_TO_REPRESENTATION, graphDb.schema().getConstraints() ) );
     }
 
     public ListRepresentation getLabelConstraints( String labelName )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                            filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
+                filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
     }
 
     public Representation getLabelUniquenessConstraints( String labelName )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
-        {
-            ListRepresentation result = new ListRepresentation( CONSTRAINT_DEFINITION,
-                    map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                            filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
+                filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
     }
 }

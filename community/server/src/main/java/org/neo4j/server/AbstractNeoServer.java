@@ -53,6 +53,7 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
+import org.neo4j.server.rest.transactional.TransactionFilter;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
@@ -198,12 +199,12 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected DatabaseActions createDatabaseActions()
     {
-        return new DatabaseActions( database,
+        return new DatabaseActions(
                 new LeaseManager( new RealClock() ),
                 ForceMode.forced,
                 configurator.configuration().getBoolean(
                         SCRIPT_SANDBOXING_ENABLED_KEY,
-                        DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                        DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -602,6 +603,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
+
+        singletons.add( new TransactionFilter( database ) );
 
         return singletons;
     }

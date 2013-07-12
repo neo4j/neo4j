@@ -42,6 +42,7 @@ import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.web.WebServer;
 
@@ -51,6 +52,20 @@ public class BatchOperationService {
     private final OutputFormat output;
     private final WebServer webServer;
     private final Database database;
+    private RepresentationWrittenHandler representationWrittenHandler = new RepresentationWrittenHandler()
+    {
+        @Override
+        public void onRepresentationWritten()
+        {
+            // do nothing
+        }
+
+        @Override
+        public void onRepresentationFinal()
+        {
+            // do nothing
+        }
+    };
 
     public BatchOperationService(@Context Database database,
             @Context WebServer webServer, @Context OutputFormat output)
@@ -58,6 +73,11 @@ public class BatchOperationService {
         this.output = output;
         this.webServer = webServer;
         this.database = database;
+    }
+
+    public void setRepresentationWrittenHandler( RepresentationWrittenHandler representationWrittenHandler )
+    {
+        this.representationWrittenHandler = representationWrittenHandler;
     }
 
     @POST
@@ -79,7 +99,6 @@ public class BatchOperationService {
             final StreamingOutput stream = new StreamingOutput() {
                 public void write(final OutputStream output) throws IOException, WebApplicationException
                 {
-                    Transaction tx = database.getGraph().beginTx();
                     try {
                         final ServletOutputStream servletOutputStream = new ServletOutputStream() {
                             public void write(int i) throws IOException {
@@ -87,14 +106,11 @@ public class BatchOperationService {
                             }
                         };
                         new StreamingBatchOperations(webServer).readAndExecuteOperations( uriInfo, httpHeaders, body, servletOutputStream );
-                        tx.success();
+                        representationWrittenHandler.onRepresentationWritten();
                     } catch (Exception e) {
                         Log.warn( "Error executing batch request ", e );
-                        tx.failure();
-//                        if (e instanceof RuntimeException) throw (RuntimeException)e;
-//                        throw new WebApplicationException(e);
                     } finally {
-                        tx.finish();
+                        representationWrittenHandler.onRepresentationFinal();
                     }
                 }
             };
@@ -110,7 +126,6 @@ public class BatchOperationService {
 
     private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body )
     {
-        Transaction tx = database.getGraph().beginTx();
         try
         {
             NonStreamingBatchOperations batchOperations = new NonStreamingBatchOperations( webServer );
@@ -119,16 +134,14 @@ public class BatchOperationService {
             Response res = Response.ok().entity(results.toJSON())
                     .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
                     .type( MediaType.APPLICATION_JSON).build();
-
-            tx.success();
+            representationWrittenHandler.onRepresentationWritten();
             return res;
         } catch (Exception e)
         {
-            tx.failure();
             return output.serverError(e);
         } finally
         {
-            tx.finish();
+            representationWrittenHandler.onRepresentationFinal();
         }
     }
 
@@ -149,5 +162,4 @@ public class BatchOperationService {
         }
         return false;
     }
-
 }

@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -57,6 +58,7 @@ public class StreamingJsonFormatTest
     public void canFormatNode() throws Exception
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Transaction transaction = db.beginTx();
         try
         {
             final Node refNode = db.getReferenceNode();
@@ -64,6 +66,7 @@ public class StreamingJsonFormatTest
         }
         finally
         {
+            transaction.finish();
             db.shutdown();
         }
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );

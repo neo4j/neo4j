@@ -91,7 +91,8 @@ public class RestfulGraphDatabaseTest
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(), output,
-                new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
+                new DatabaseActions( leaseManager, ForceMode.forced, true, database.getGraph() ) );
+        service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
     @Before
@@ -915,13 +916,14 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWithAvailableIndexNodeRoots() throws BadInputException
     {
+        int numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup = helper.getNodeIndexes().length;
         String indexName = "someNodes";
         helper.createNodeIndex( indexName );
         Response response = service.getNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat( resultAsMap.size(), is( 2 ) );
+        assertThat( resultAsMap.size(), is( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1 ) );
         assertThat( resultAsMap, hasKey( indexName ) );
     }
 
@@ -1009,17 +1011,17 @@ public class RestfulGraphDatabaseTest
         Map<String, String> postBody = new HashMap<String, String>();
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
-        for ( int i = 0; i < 2; i++ )
-        {
-            Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "",
-                    JsonHelper.createJsonFrom( postBody ) );
 
-            assertEquals( 201 - i, response.getStatus() );
-            if ( i == 0 )
-            {
-                assertNotNull( response.getMetadata().getFirst( "Location" ) );
-            }
-        }
+        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "",
+                JsonHelper.createJsonFrom( postBody ) );
+
+        assertEquals( 201, response.getStatus() );
+        assertNotNull( response.getMetadata().getFirst( "Location" ) );
+
+        response = service.addToNodeIndex( FORCE, "unique-nodes", "", "",
+                JsonHelper.createJsonFrom( postBody ) );
+
+        assertEquals( 200, response.getStatus() );
     }
 
     @Test
@@ -1269,16 +1271,17 @@ public class RestfulGraphDatabaseTest
     {
         String indexName = "myFancyIndex";
 
-        assertEquals( 1, helper.getNodeIndexes().length );
+        int numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup = helper.getNodeIndexes().length;
 
         helper.createNodeIndex( indexName );
+        helper.createNodeIndex( "another one" );
 
-        assertEquals( 2, helper.getNodeIndexes().length );
+        assertEquals( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 2, helper.getNodeIndexes().length );
 
         Response response = service.deleteNodeIndex( FORCE, indexName );
 
         assertEquals( 204, response.getStatus() );
-        assertEquals( 1, helper.getNodeIndexes().length );
+        assertEquals( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1, helper.getNodeIndexes().length );
     }
 
     @Test

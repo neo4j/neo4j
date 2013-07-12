@@ -72,7 +72,6 @@ import static org.neo4j.helpers.collection.MapUtil.toMap;
 @Path( "/" )
 public class RestfulGraphDatabase
 {
-
     @SuppressWarnings("serial")
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -176,9 +175,14 @@ public class RestfulGraphDatabase
         this.actions = actions;
     }
 
-    private static Response nothing()
+    public OutputFormat getOutputFormat()
     {
-        return Response.noContent().build();
+        return output;
+    }
+
+    private Response nothing()
+    {
+        return output.noContent();
     }
 
     private Long extractNodeIdOrNull( String uri ) throws BadInputException
@@ -252,10 +256,7 @@ public class RestfulGraphDatabase
 
     private Response generateBadRequestDueToMangledJsonResponse( String body )
     {
-        return Response.status( 400 )
-                .type( MediaType.TEXT_PLAIN )
-                .entity( "Invalid JSON array in POST body: " + body )
-                .build();
+        return output.badRequest( MediaType.TEXT_PLAIN_TYPE, "Invalid JSON array in POST body: " + body );
     }
 
     @GET
@@ -370,7 +371,8 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( actions( force ).getNodeProperty( nodeId, key ) );
+            Representation representation = actions( force ).getNodeProperty( nodeId, key );
+            return output.ok( representation );
         }
         catch ( NodeNotFoundException e )
         {
@@ -1520,7 +1522,7 @@ public class RestfulGraphDatabase
     {
         if ( actions.removePagedTraverse( traverserId ) )
         {
-            return Response.ok().build();
+            return output.ok();
         }
         else
         {

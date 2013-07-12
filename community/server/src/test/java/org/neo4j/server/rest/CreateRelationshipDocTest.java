@@ -25,6 +25,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -36,6 +37,7 @@ import org.neo4j.test.TestData.Title;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
 
+@Ignore
 public class CreateRelationshipDocTest extends
         AbstractRestFunctionalTestBase
 {

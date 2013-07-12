@@ -25,8 +25,8 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
@@ -34,10 +34,12 @@ import org.neo4j.test.GraphDescription;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
@@ -206,14 +208,13 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         data.get();
 
         String labelName = "SomeLabel", propertyKey = "name";
-        createLabelUniquenessPropertyConstraint( labelName, propertyKey );
-        UniquenessConstraintDefinition uniquenessConstraint = single(
-                graphdb().schema().getConstraints( label( labelName ) ) ).asUniquenessConstraint();
-        assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
+        ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName,
+                propertyKey );
+        assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
         gen.get().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
-        assertTrue( asSet( graphdb().schema().getConstraints( label( labelName ) ) ).isEmpty() );
+        assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
     }
 
     /**
@@ -248,13 +249,15 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
                 getSchemaIndexLabelUri( "a_label" ) );
     }
 
-    private void createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )
+    private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )
     {
         Transaction tx = graphdb().beginTx();
         try
         {
-            graphdb().schema().constraintFor( label( labelName ) ).unique().on( propertyKey ).create();
+            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) ).unique
+                    ().on( propertyKey ).create();
             tx.success();
+            return constraintDefinition;
         }
         finally
         {
