@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.PreAllocatedRecords;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -75,7 +77,9 @@ public class FullCheckIntegrationTest
             try
             {
                 Node node1 = set( graphDb.createNode() );
+                node1.addLabel( DynamicLabel.label( "label1" ) );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
+                node2.addLabel( DynamicLabel.label( "label2" ) );
                 node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
                 tx.success();
             }
@@ -174,7 +178,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 1, null );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null );
                 tx.create( nodeRecord );
             }
         } );
@@ -482,7 +486,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( access );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_LABEL_NAME, stats );
+        verifyInconsistency( RecordType.RELATIONSHIP_TYPE_NAME, stats );
     }
 
     @Test
@@ -513,7 +517,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    public void shouldReportRelationshipLabelInconsistencies() throws Exception
+    public void shouldReportRelationshipTypeInconsistencies() throws Exception
     {
         // given
         StoreAccess access = fixture.storeAccess();
@@ -526,7 +530,24 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( access );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_LABEL, stats );
+        verifyInconsistency( RecordType.RELATIONSHIP_TYPE, stats );
+    }
+
+    @Test
+    public void shouldReportLabelInconsistencies() throws Exception
+    {
+        // given
+        StoreAccess access = fixture.storeAccess();
+        LabelTokenRecord record = access.getLabelTokenStore().forceGetRecord( 1 );
+        record.setNameId( 20 );
+        record.setInUse( true );
+        access.getLabelTokenStore().updateRecord( record );
+
+        // when
+        ConsistencySummaryStatistics stats = check( access );
+
+        // then
+        verifyInconsistency( RecordType.LABEL, stats );
     }
 
     @Test

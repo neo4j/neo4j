@@ -19,17 +19,11 @@
  */
 package org.neo4j.consistency.repair;
 
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_INVALID;
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_NOT_IN_USE;
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.TARGET_NODE_INVALID;
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.TARGET_NODE_NOT_IN_USE;
-
-import org.neo4j.consistency.checking.old.InconsistencyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public enum RelationshipNodeField
 {
-    FIRST( SOURCE_NODE_INVALID, SOURCE_NODE_NOT_IN_USE )
+    FIRST
     {
         @Override
         public long get( RelationshipRecord rel )
@@ -37,7 +31,7 @@ public enum RelationshipNodeField
             return rel.getFirstNode();
         }
     },
-    SECOND( TARGET_NODE_INVALID, TARGET_NODE_NOT_IN_USE )
+    SECOND
     {
         @Override
         public long get( RelationshipRecord rel )
@@ -45,14 +39,6 @@ public enum RelationshipNodeField
             return rel.getSecondNode();
         }
     };
-    public final InconsistencyType.ReferenceInconsistency invalidReference, notInUse;
 
     public abstract long get( RelationshipRecord rel );
-
-    RelationshipNodeField( InconsistencyType.ReferenceInconsistency invalidReference,
-                           InconsistencyType.ReferenceInconsistency notInUse )
-    {
-        this.invalidReference = invalidReference;
-        this.notInUse = notInUse;
-    }
 }

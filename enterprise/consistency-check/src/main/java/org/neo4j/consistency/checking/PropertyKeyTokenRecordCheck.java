@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 
 class PropertyKeyTokenRecordCheck
-        extends NameRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
+        extends TokenRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )

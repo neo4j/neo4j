@@ -46,6 +46,7 @@ class StoreProcessor extends AbstractStoreProcessor
         this.schemaRecordCheck = null;
     }
 
+    @SuppressWarnings("UnusedParameters")
     protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema, RecordCheck
             <DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
     {
@@ -74,16 +75,18 @@ class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
-    protected void checkRelationshipTypeName( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord relationshipType,
-                                              RecordCheck<RelationshipTypeTokenRecord,
-                                                      ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+    protected void checkRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                               RelationshipTypeTokenRecord relationshipType,
+                                               RecordCheck<RelationshipTypeTokenRecord,
+                                                       ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         report.forRelationshipTypeName( relationshipType, checker );
     }
 
     @Override
-    protected void checkLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord label,
-                                   RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+    protected void checkLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord label,
+                                    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport>
+                                            checker )
     {
         report.forLabelName( label, checker );
     }

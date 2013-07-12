@@ -24,7 +24,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -39,7 +38,6 @@ import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
-    private final RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreChecker;
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker;
     private final RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
@@ -54,7 +52,6 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
 
     public AbstractStoreProcessor( CheckDecorator decorator )
     {
-        this.neoStoreChecker = decorator.decorateNeoStoreChecker( new NeoStoreCheck() );
         this.nodeChecker = decorator.decorateNodeChecker( new NodeRecordCheck() );
         this.relationshipChecker = decorator.decorateRelationshipChecker( new RelationshipRecordCheck() );
         this.propertyChecker = decorator.decoratePropertyChecker( new PropertyRecordCheck() );
@@ -76,12 +73,12 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordStore<PropertyRecord> store, PropertyRecord property,
             RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
 
-    protected abstract void checkRelationshipTypeName(
+    protected abstract void checkRelationshipTypeToken(
             RecordStore<RelationshipTypeTokenRecord> store,
             RelationshipTypeTokenRecord record,
             RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
 
-    protected abstract void checkLabelName(
+    protected abstract void checkLabelToken(
             RecordStore<LabelTokenRecord> store,
             LabelTokenRecord record,
             RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
@@ -131,12 +128,16 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             dereference = DynamicStore.STRING;
             break;
         case RELATIONSHIP_TYPE_TOKEN_NAME:
-            type = RecordType.RELATIONSHIP_LABEL_NAME;
-            dereference = DynamicStore.RELATIONSHIP_LABEL;
+            type = RecordType.RELATIONSHIP_TYPE_NAME;
+            dereference = DynamicStore.RELATIONSHIP_TYPE;
             break;
         case PROPERTY_KEY_TOKEN_NAME:
             type = RecordType.PROPERTY_KEY_NAME;
             dereference = DynamicStore.PROPERTY_KEY;
+            break;
+        case LABEL_TOKEN_NAME:
+            type = RecordType.LABEL_NAME;
+            dereference = DynamicStore.LABEL;
             break;
         default:
             throw new IllegalArgumentException( format( "The id type [%s] is not valid for String records.", idType ) );
@@ -151,10 +152,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     }
 
     @Override
-    public final void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store,
-                                               RelationshipTypeTokenRecord record )
+    public final void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                                    RelationshipTypeTokenRecord record )
     {
-        checkRelationshipTypeName( store, record, relationshipTypeTokenChecker );
+        checkRelationshipTypeToken( store, record, relationshipTypeTokenChecker );
     }
 
     @Override
@@ -165,8 +166,8 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     }
 
     @Override
-    public void processLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
+    public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
     {
-        checkLabelName( store, record, labelTokenChecker );
+        checkLabelToken( store, record, labelTokenChecker );
     }
 }

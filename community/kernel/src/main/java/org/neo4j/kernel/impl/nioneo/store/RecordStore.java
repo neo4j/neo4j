@@ -116,7 +116,8 @@ public interface RecordStore<R extends AbstractBaseRecord>
             processRecord( DynamicRecord.class, store, record );
         }
 
-        public void processRelationshipType( RecordStore<RelationshipTypeTokenRecord> store, RelationshipTypeTokenRecord record ) throws FAILURE
+        public void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                                  RelationshipTypeTokenRecord record ) throws FAILURE
         {
             processRecord( RelationshipTypeTokenRecord.class, store, record );
         }
@@ -126,7 +127,7 @@ public interface RecordStore<R extends AbstractBaseRecord>
             processRecord( PropertyKeyTokenRecord.class, store, record );
         }
 
-        public void processLabelName( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws FAILURE
+        public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws FAILURE
         {
             processRecord( LabelTokenRecord.class, store, record );
         }

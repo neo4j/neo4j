@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 class RelationshipTypeTokenRecordCheck
-    extends NameRecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
+    extends TokenRecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
 {
     @Override
     protected RecordReference<DynamicRecord> name( RecordAccess records, int id )

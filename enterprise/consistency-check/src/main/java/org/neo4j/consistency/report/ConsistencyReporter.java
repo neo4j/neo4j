@@ -407,7 +407,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                          RecordCheck<RelationshipTypeTokenRecord,
                                                  ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatch( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
+        dispatch( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
     }
 
     @Override
@@ -415,20 +415,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                                RecordCheck<RelationshipTypeTokenRecord,
                                                        ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatchChange( RecordType.RELATIONSHIP_LABEL, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
+        dispatchChange( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
     }
 
     @Override
     public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
-        dispatch( RecordType.LABEL_KEY, LABEL_KEY_REPORT, label, checker );
+        dispatch( RecordType.LABEL, LABEL_KEY_REPORT, label, checker );
     }
 
     @Override
     public void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel, RecordCheck<LabelTokenRecord,
             ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
-        dispatchChange( RecordType.LABEL_KEY, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
+        dispatchChange( RecordType.LABEL, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
     }
 
     @Override
@@ -496,7 +496,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         public static <T> ProxyFactory<T> create( Class<T> type )
         {
-            return new ProxyFactory<T>( type );
+            return new ProxyFactory<>( type );
         }
     }
 }
