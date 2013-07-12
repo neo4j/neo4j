@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -32,6 +28,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.neo4j.helpers.Settings.osIsWindows;
 
@@ -122,7 +122,7 @@ public class StoreAccess
 
     private static Map<String, String> requiredParams( Map<String, String> params, String path )
     {
-        params = new HashMap<String, String>( params );
+        params = new HashMap<>( params );
         params.put( "neo_store", new File( path, "neostore" ).getPath() );
         return params;
     }
@@ -210,13 +210,17 @@ public class StoreAccess
     {
         if ( propStore == null )
         {
+            // for when the property store isn't available (e.g. because the contained data in very sensitive)
             return new RecordStore<?>[]{ // no property stores
-                    nodeStore, relStore, relationshipTypeTokenStore, relationshipTypeNameStore
+                    nodeStore, relStore,
+                    relationshipTypeTokenStore, relationshipTypeNameStore,
+                    labelTokenStore, labelNameStore
             };
         }
         return new RecordStore<?>[]{
                 schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
-                relationshipTypeTokenStore, propertyKeyTokenStore, relationshipTypeNameStore, propertyKeyNameStore,
+                relationshipTypeTokenStore, propertyKeyTokenStore, labelTokenStore,
+                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore
         };
     }
 
@@ -226,14 +230,15 @@ public class StoreAccess
     }
 
     @SuppressWarnings("unchecked")
-    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store ) throws FAILURE
+    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store )
+            throws FAILURE
     {
         processor.applyFiltered( store, RecordStore.IN_USE );
     }
 
     private static Map<String, String> defaultParams()
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.nodestore_mapped_memory_size.name(), "20M" );
         params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory_size.name(), "90M" );
         params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory_size.name(), "1M" );

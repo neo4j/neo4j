@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store.labels;
 
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.filter;
@@ -68,9 +68,9 @@ public class DynamicNodeLabels implements NodeLabels
 
         if ( !new InlineNodeLabels( labelField, node ).tryInlineInNodeRecord( labelIds, changedDynamicRecords ) )
         {
-            Set<DynamicRecord> allRecords = new HashSet<DynamicRecord>( changedDynamicRecords );
-            Collection<DynamicRecord> allocatedRecords = nodeStore.allocateRecordsForDynamicLabels( labelIds,
-                    changedDynamicRecords.iterator() );
+            Set<DynamicRecord> allRecords = new HashSet<>( changedDynamicRecords );
+            Collection<DynamicRecord> allocatedRecords =
+                nodeStore.allocateRecordsForDynamicLabels( node.getId(), labelIds, changedDynamicRecords.iterator() );
             allRecords.addAll( allocatedRecords );
             node.setLabelField( dynamicPointer( allocatedRecords ), allocatedRecords );
             changedDynamicRecords = allRecords;
@@ -84,10 +84,10 @@ public class DynamicNodeLabels implements NodeLabels
     {
         nodeStore.ensureHeavy( node, parseLabelsBody( labelField ) );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
-        long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
+        long[] existingLabelIds = nodeStore.getDynamicLabelsArray(existingRecords);
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
-        Collection<DynamicRecord> changedDynamicRecords = nodeStore.allocateRecordsForDynamicLabels( newLabelIds,
-                existingRecords.iterator() );
+        Collection<DynamicRecord> changedDynamicRecords =
+            nodeStore.allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator() );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
         return changedDynamicRecords;
     }
@@ -105,8 +105,8 @@ public class DynamicNodeLabels implements NodeLabels
         }
         else
         {
-            Collection<DynamicRecord> newRecords = nodeStore.allocateRecordsForDynamicLabels( newLabelIds,
-                    existingRecords.iterator() );
+            Collection<DynamicRecord> newRecords =
+                nodeStore.allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator() );
             node.setLabelField( dynamicPointer( newRecords ), existingRecords );
             if ( !newRecords.equals( existingRecords ) )
             {   // One less dynamic record, mark that one as not in use
