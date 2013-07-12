@@ -153,10 +153,17 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   override def toString = {
     val relInfo = {
       val relName = if (notNamed(rel.name)) rel.name.drop(9) else "`" + rel.name + "`"
-      "[%s:`%s`]".format(relName, relType)
+      val props = if (rel.properties.isEmpty)
+        ""
+      else
+        "{" + rel.properties.map {
+          case (k, v) => k.toString + ": " + v.toString
+        }.mkString(",") + "}"
+
+      "[%s:`%s`%s]".format(relName, relType, props)
     }
 
-    node(start.name) + leftArrow(dir) + relInfo + rightArrow(dir) + node(end.name)
+    start.toString + leftArrow(dir) + relInfo + rightArrow(dir) + end.toString
   }
 
   def children = Seq(start.e, end.e, rel.e)

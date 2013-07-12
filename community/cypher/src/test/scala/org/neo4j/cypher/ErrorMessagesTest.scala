@@ -198,7 +198,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def create_with_identifier_already_existing2() {
     expectError("START a=node(0) CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
       v2_0    -> "Can't create `a` with properties here. It already exists in this context",
-      vExperimental -> "Invalid input '(': expected whitespace, comment, '=', node labels, a relationship pattern, ',', CREATE, DELETE, SET, REMOVE, RETURN, WITH, UNION, ';' or end of input (line 1, column 31)"
+      vExperimental -> "Can't create `a` with properties here. It already exists in this context"
     )
   }
 

@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.parser.experimental.ast
 
 import org.neo4j.cypher.internal.parser.experimental._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.mutation
-import org.neo4j.cypher.internal.parser.{Action, On, OnAction}
-import org.neo4j.cypher.internal.commands.{NamedPath, MergeAst}
+import org.neo4j.cypher.internal.{commands, mutation}
+import org.neo4j.cypher.internal.parser.{AbstractPattern, Action, On, OnAction}
+import org.neo4j.cypher.internal.commands.{CreateUniqueAst, MergeAst}
 import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
 
 sealed trait Clause extends AstNode with SemanticCheckable
@@ -48,16 +47,33 @@ trait UpdateClause extends Clause {
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 
-  def toLegacyStartItems : Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map {
-    case createNode: mutation.CreateNode => commands.CreateNodeStartItem(createNode)
+  def toLegacyStartItems: Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map {
+    case createNode: mutation.CreateNode                 => commands.CreateNodeStartItem(createNode)
     case createRelationship: mutation.CreateRelationship => commands.CreateRelationshipStartItem(createRelationship)
   }
+
   def toLegacyUpdateActions = patterns.flatMap(_.toLegacyCreates)
 
   def toLegacyNamedPaths: Seq[commands.NamedPath] = patterns.flatMap {
     case n: NamedPattern => n.toLegacyNamedPath
     case _               => None
   }
+}
+
+case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
+  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
+
+
+  private def toCommand = {
+    val abstractPatterns: Seq[AbstractPattern] = patterns.flatMap(_.toAbstractPatterns).map(_.makeOutgoing)
+    CreateUniqueAst(abstractPatterns)
+  }
+
+  def toLegacyStartItems: Seq[commands.StartItem] = toCommand.nextStep()._1
+
+  def toLegacyUpdateActions:Seq[mutation.UpdateAction] = toCommand.nextStep()._1.map(_.inner)
+
+  def toLegacyNamedPaths: Seq[commands.NamedPath] = toCommand.nextStep()._2
 }
 
 

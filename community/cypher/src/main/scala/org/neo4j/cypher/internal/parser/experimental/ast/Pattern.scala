@@ -25,11 +25,13 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, PathType}
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.commands.{expressions => legacy, values => commandvalues}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.mutation
-import org.neo4j.cypher.internal.parser.{ParsedRelation, ParsedEntity, ParsedNamedPath, AbstractPattern}
+import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.commands.values.TokenType.Label
+import org.neo4j.cypher.internal.commands.values.KeyToken.Unresolved
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
 
 object Pattern {
   sealed trait SemanticContext
@@ -112,11 +114,10 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   def toLegacyPredicates(pathName: Option[String]) = element.toLegacyPredicates
   def toAbstractPatterns(pathName: Option[String]) = {
     val patterns = element.toAbstractPatterns
-    val patterns1 = pathName match {
+    pathName match {
       case None       => patterns
       case Some(name) => Seq(ParsedNamedPath(name, patterns))
     }
-    patterns1
   }
 }
 
@@ -190,11 +191,6 @@ sealed abstract class PatternElement extends AstNode {
   def toAbstractPatterns : Seq[AbstractPattern]
 }
 
-// MATCH a-->b-->c => ParsedRelationship(a->b), ParsedRelationship(b->c)
-// MATCH a-->b-->c => RelationshipChain(RelationshipChain(ParsedNode(a), ParsedNode(b)), ParsedNode(c))
-
-
-
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern, token: InputToken) extends PatternElement {
   def semanticCheck(context: SemanticContext) = {
     element.semanticCheck(context) then
@@ -226,12 +222,27 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
 
-    def createParsedRelationship(node: NodePattern): ParsedRelation = {
+    def createParsedRelationship(node: NodePattern): AbstractPattern = {
       val relName: String = relationship.legacyName
-      val props: Map[String, CommandExpression] = Map.empty
+      val props: Map[String, CommandExpression] = relationship.toLegacyProperties
       val startNode: ParsedEntity = node.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
       val endNode: ParsedEntity = rightNode.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
-      ParsedRelation(relName, props, startNode, endNode, relationship.types.map(_.name), relationship.direction, relationship.optional)
+
+      val maxDepth = relationship.length match {
+        case Some(Some(Range(_, Some(i), _))) => Some(i.value.toInt)
+        case _                                => None
+      }
+      val minDepth = relationship.length match {
+        case Some(Some(Range(Some(i), _, _))) => Some(i.value.toInt)
+        case _                                => None
+      }
+
+      relationship.length match {
+        case None    => ParsedRelation(relName, props, startNode, endNode, relationship.types.map(_.name),
+          relationship.direction, relationship.optional)
+        case Some(x) => ParsedVarLengthRelation(relationship.legacyName, Map.empty, startNode, endNode, relationship.types.map(_.name),
+          relationship.direction, relationship.optional, minDepth, maxDepth, None)
+      }
     }
 
     element match {
@@ -259,34 +270,46 @@ sealed abstract class NodePattern extends PatternElement {
   def toLegacyPatterns(makeOutgoing: Boolean) = Seq(commands.SingleNode(legacyName))
 
   def toLegacyCreates = {
-    val (props, labels, bare) = legacyDetails
-    Seq(mutation.CreateNode(legacyName, props, labels, bare))
+    val (_, _, labels, bare) = legacyDetails
+    Seq(mutation.CreateNode(legacyName, legacyProps, labels, bare))
   }
 
   def toLegacyEndpoint: mutation.RelationshipEndpoint = {
-    val (props, labels, bare) = legacyDetails
-    mutation.RelationshipEndpoint(commandexpressions.Identifier(legacyName), props, labels, bare)
+    val (nodeExpression, props, labels, bare) = legacyDetails
+    mutation.RelationshipEndpoint(nodeExpression, props, labels, bare)
   }
 
-  protected lazy val legacyDetails = {
-    val props = properties match {
-      case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
-      case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
-      case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
-      case None                   => Map[String, CommandExpression]()
-    }
-    val bare = labels.isEmpty && (props.isEmpty || !commandexpressions.Identifier.isNamed(legacyName))
-    (props, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)), bare)
+  protected lazy val legacyProps: Map[String, CommandExpression] = properties match {
+    case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
+    case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
+    case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+    case None                   => Map[String, CommandExpression]()
+  }
+
+
+  protected def nodeExpression:legacy.Expression = legacy.Identifier(legacyName)
+
+  protected lazy val legacyDetails: (legacy.Expression, Map[String, legacy.Expression], Seq[Unresolved], Boolean) = {
+    val props = legacyProps
+    val bare = labels.isEmpty && (props.isEmpty || !legacy.Identifier.isNamed(legacyName))
+    (nodeExpression, legacyProps, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)), bare)
   }
 
   def toLegacyPredicates = labels.map(t => {
-    val id = commandexpressions.Identifier(legacyName)
+    val id = legacy.Identifier(legacyName)
     commands.HasLabel(id, commandvalues.KeyToken.Unresolved(t.name, Label))
   })
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
-    val (props, labels, bare) = legacyDetails
-    Seq(ParsedEntity(legacyName, commandexpressions.Identifier(legacyName), props, labels, bare))
+    val (nodeExpression, props, labels, bare) = legacyDetails
+
+    val propertiesToUse: Map[String, CommandExpression] =
+      if(nodeExpression.isInstanceOf[legacy.Identifier])
+        props
+      else
+        Map.empty
+
+    Seq(ParsedEntity(legacyName, nodeExpression, propertiesToUse, labels, bare))
   }
 
 }
@@ -301,6 +324,11 @@ case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], pro
 
 case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
   val legacyName = "  UNNAMED" + (token.startPosition.offset + 1)
+
+  override protected def nodeExpression: legacy.Expression = properties match {
+    case Some(p: Parameter) => p.toCommand
+    case _                  => super.nodeExpression
+  }
 }
 
 
@@ -349,12 +377,20 @@ sealed abstract class RelationshipPattern extends AstNode {
     }
   }
 
+  def toLegacyProperties: Map[String, CommandExpression] = properties match {
+    case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
+    case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
+    case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+    case None                   => Map[String, CommandExpression]()
+  }
+
+
   def toLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint) : mutation.CreateRelationship = {
     val (from, to) = direction match {
       case Direction.OUTGOING => (fromEnd, toEnd)
       case Direction.INCOMING => (toEnd, fromEnd)
       case Direction.BOTH => (fromEnd.node, toEnd.node) match {
-        case (commandexpressions.Identifier(a), commandexpressions.Identifier(b)) if a >= b => (toEnd, fromEnd)
+        case (legacy.Identifier(a), legacy.Identifier(b)) if a >= b => (toEnd, fromEnd)
         case _ => (fromEnd, toEnd)
       }
     }
@@ -362,13 +398,7 @@ sealed abstract class RelationshipPattern extends AstNode {
       case Seq(i) => i.name
       case _ => throw new SyntaxException(s"A single relationship type must be specified for CREATE (${token.startPosition})")
     }
-    val props = properties match {
-      case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
-      case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
-      case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
-      case None                   => Map[String, CommandExpression]()
-    }
-    mutation.CreateRelationship(legacyName, from, to, typeName, props)
+    mutation.CreateRelationship(legacyName, from, to, typeName, toLegacyProperties)
   }
 }
 

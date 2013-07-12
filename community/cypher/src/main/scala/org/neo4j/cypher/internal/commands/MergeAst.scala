@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.mutation.UpdateAction
 import scala.collection.mutable
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.parser.ParsedEntity
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
@@ -32,9 +32,7 @@ import org.neo4j.cypher.internal.commands.expressions.Property
 import org.neo4j.cypher.PatternException
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
-case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) extends AstNode[MergeAst] {
-  override def rewrite(f: (Expression) => Expression) = MergeAst(patterns.map(_.rewrite(f)), onActions)
-
+case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
   def nextStep(): Seq[MergeNodeAction] = {
     val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
 
@@ -68,6 +66,4 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) ex
         throw new PatternException("MERGE only supports single node patterns")
     }
   }
-
-  def children: Seq[AstNode[_]] = patterns ++ onActions.flatMap(_.set)
 }
