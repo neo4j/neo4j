@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl;
 
 import java.util.concurrent.CountDownLatch;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,6 +44,7 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
                       @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.NodeManager",
                               method = "getNodeIfCached" ) } )
 @RunWith( SubProcessTestRunner.class )
+@Ignore
 public class TestPropertyDataRace
 {
     @ClassRule
