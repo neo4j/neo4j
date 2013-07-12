@@ -23,8 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 public interface SchemaRule extends RecordSerializable
 {
     /**
