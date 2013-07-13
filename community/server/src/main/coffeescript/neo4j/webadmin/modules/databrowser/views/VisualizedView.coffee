@@ -124,8 +124,7 @@ define(
           when State.RELATIONSHIP_LIST
             @visualizeFromRelationships @dataModel.getData().getRawRelationships()
           when State.CYPHER_RESULT
-            # TODO
-            return this
+            @visualizeFromNodes @dataModel.getData().getNodes()
           when State.EMPTY
             return this
           when State.NOT_EXECUTED
