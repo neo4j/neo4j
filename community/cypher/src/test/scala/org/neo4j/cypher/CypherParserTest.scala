@@ -2109,7 +2109,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED44" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED44" -> vFrom2_0)
   }
 
   @Test def single_create_unique_with_rel() {
@@ -2121,8 +2121,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    test(vAll diff List(vExperimental),
-        "start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
+    test("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
   @Test def single_relate_with_empty_parenthesis() {
@@ -2141,10 +2140,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED58", "  UNNAMED44") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED58", "  UNNAMED44") -> vFrom2_0)
   }
 
-  @Test def two_relates() {
+  @Test def create_unique_with_two_patterns() {
     val string = "start a = node(1) create unique a-[:X]->b<-[:X]-c"
     def query(DIFFERENCE: (String, String)): Query = {
       val secondQ = Query.
@@ -2161,7 +2160,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> vPre2_0,
-      ("  UNNAMED33", "  UNNAMED41") -> (vFrom2_0 diff List(vExperimental)))
+      ("  UNNAMED33", "  UNNAMED41") -> vFrom2_0)
   }
 
   @Test def relate_with_initial_values_for_node() {
@@ -2183,10 +2182,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED33" -> vFrom2_0)
   }
 
-  @Test def relate_with_initial_values_for_rel() {
+  @Test def create_unique_with_initial_values_for_rel() {
     val string = "start a = node(1) create unique a-[:X {name:'Andres'}]->b"
     def query(DIFFERENCE: String) = {
       val secondQ = Query.
@@ -2204,7 +2203,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     }
     testVariants(string, query,
       "  UNNAMED1" -> vPre2_0,
-      "  UNNAMED33" -> (vFrom2_0 diff List(vExperimental)))
+      "  UNNAMED33" -> vFrom2_0)
   }
 
   @Test def foreach_with_literal_collectionOld() {
@@ -2369,7 +2368,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testVariants(string, query,
     "  UNNAMED1" -> vPre2_0,
-    "  UNNAMED48"-> (vFrom2_0 diff List(vExperimental)))
+    "  UNNAMED48"-> vFrom2_0)
   }
 
   @Test def use_predicate_as_expression() {
@@ -2391,7 +2390,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    test(vFrom2_0 diff List(vExperimental),
+    test(vFrom2_0,
         "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).

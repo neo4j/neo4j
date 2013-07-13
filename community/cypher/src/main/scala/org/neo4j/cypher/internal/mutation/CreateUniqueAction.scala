@@ -175,6 +175,8 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
   def throwIfSymbolsMissing(symbols: SymbolTable) {links.foreach(l=>l.throwIfSymbolsMissing(symbols))}
 
   override def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
+
+  override def toString: String = links.mkString(",")
 }
 
 sealed abstract class CreateUniqueResult

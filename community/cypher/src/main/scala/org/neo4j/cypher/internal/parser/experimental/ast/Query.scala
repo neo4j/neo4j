@@ -145,11 +145,12 @@ case class SingleQuery(
   }
 
   private def addUpdateGroupToBuilder(builder: commands.QueryBuilder, updates: Seq[UpdateClause]) = {
-    val (createItems, namedCreatePaths, updateItems) = updates.head match {
-      case c: Create => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
-      case _         => (Seq(), Seq(), updates.flatMap(_.toLegacyUpdateActions))
+    val (startItems, namedCreatePaths, updateItems) = updates.head match {
+      case c: Create       => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
+      case c: CreateUnique => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
+      case _               => (Seq(), Seq(), updates.flatMap(_.toLegacyUpdateActions))
     }
-    builder.startItems(createItems:_*).namedPaths(namedCreatePaths:_*).updates(updateItems:_*)
+    builder.startItems(startItems:_*).namedPaths(namedCreatePaths:_*).updates(updateItems:_*)
   }
 }
 
