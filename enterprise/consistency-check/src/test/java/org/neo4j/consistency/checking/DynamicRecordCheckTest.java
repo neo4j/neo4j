@@ -19,27 +19,28 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses( {
-        DynamicRecordCheckTest.StringRecordCheckTest.class,
-        DynamicRecordCheckTest.ArrayRecordCheckTest.class,
-        DynamicRecordCheckTest.SchemaRecordCheckTest.class
+        DynamicRecordCheckTest.StringDynamicRecordCheckTest.class,
+        DynamicRecordCheckTest.ArrayDynamicRecordCheckTest.class,
+        DynamicRecordCheckTest.SchemaDynamicRecordCheckTest.class
 } )
 public abstract class DynamicRecordCheckTest
     extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
@@ -256,9 +257,9 @@ public abstract class DynamicRecordCheckTest
     abstract DynamicRecord record( long id );
 
     @RunWith(JUnit4.class)
-    public static class StringRecordCheckTest extends DynamicRecordCheckTest
+    public static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public StringRecordCheckTest()
+        public StringDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.STRING ), 66 );
         }
@@ -278,9 +279,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith(JUnit4.class)
-    public static class ArrayRecordCheckTest extends DynamicRecordCheckTest
+    public static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public ArrayRecordCheckTest()
+        public ArrayDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ), 66 );
         }
@@ -300,9 +301,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith(JUnit4.class)
-    public static class SchemaRecordCheckTest extends DynamicRecordCheckTest
+    public static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public SchemaRecordCheckTest()
+        public SchemaDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( SchemaStore.BLOCK_SIZE ), DynamicStore.SCHEMA ),
                    SchemaStore.BLOCK_SIZE );
@@ -323,6 +324,7 @@ public abstract class DynamicRecordCheckTest
             return record;
         }
     }
+
     public static RecordStore<DynamicRecord> configureDynamicStore( int blockSize )
     {
         @SuppressWarnings( "unchecked" )

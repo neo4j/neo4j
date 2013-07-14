@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
+import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+
 class StoreProcessor extends AbstractStoreProcessor
 {
     private final ConsistencyReport.Reporter report;
@@ -92,5 +94,13 @@ class StoreProcessor extends AbstractStoreProcessor
                                  RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
     {
         report.forDynamicBlockChange( type, store.forceGetRaw( string ), string, checker );
+    }
+
+
+    @Override
+    protected void checkDynamicLabel( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
+                                      RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+    {
+        report.forDynamicLabelBlockChange( type, store.forceGetRaw( string ), string, checker );
     }
 }

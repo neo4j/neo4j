@@ -63,8 +63,8 @@ public class IncrementalDiffCheck extends DiffCheck
     }
 
     @SuppressWarnings("unchecked")
-    private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter, StoreProcessor
-            processor )
+    private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter,
+                                                StoreProcessor processor )
     {
         SchemaRecordCheck schemaChecker = new SchemaRecordCheck( new RuleReader( diffs.getSchemaStore() ) );
         for ( DynamicRecord record : processor.scan( diffs.getSchemaStore() ) )

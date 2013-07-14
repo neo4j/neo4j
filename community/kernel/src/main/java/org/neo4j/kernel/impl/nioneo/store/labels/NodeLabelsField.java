@@ -61,4 +61,22 @@ public class NodeLabelsField
     {
         return (labelField & 0x8000000000L) != 0;
     }
+
+    /**
+     * @see NodeRecord
+     *
+     * @param labelField label field value from a node record
+     * @return the id of the dynamic record this label field points to or null if it is an inline label field
+     */
+    public static Long fieldDynamicLabelRecordId( long labelField )
+    {
+        if ( fieldPointsToDynamicRecordOfLabels( labelField ) )
+        {
+            return parseLabelsBody( labelField );
+        }
+        else
+        {
+            return null;
+        }
+    }
 }

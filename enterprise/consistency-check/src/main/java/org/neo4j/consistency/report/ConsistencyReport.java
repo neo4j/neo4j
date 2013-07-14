@@ -106,6 +106,13 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
         void forDynamicBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
                                     RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
+
+
+        void forDynamicLabelBlock( RecordType type, DynamicRecord record,
+                                   RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
+
+        void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
+                                         RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
     }
 
     <REFERRED extends AbstractBaseRecord> void forReference( RecordReference<REFERRED> other,
@@ -146,7 +153,7 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
 
     interface SchemaConsistencyReport extends ConsistencyReport<DynamicRecord, SchemaConsistencyReport>
     {
-        /** The label token record is not in use. */
+        /** The label token record referenced from the schema is not in use. */
         @Documented
         void labelNotInUse( LabelTokenRecord label );
 
@@ -212,7 +219,7 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         @IncrementalOnly
         void relationshipNotUpdated();
 
-        /** The label token record is not in use. */
+        /** The label token record referenced from a node record is not in use. */
         @Documented
         void labelNotInUse( LabelTokenRecord label );
 
@@ -220,11 +227,7 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         @Documented
         void labelDuplicate( long labelId );
 
-        /** The label token record next block is referencing a record that was already visited as part of this chain. */
-        @Documented
-        void cyclicDynamicLabelRecords( DynamicRecord record );
-
-        /** The label token record is not in use. */
+        /** The dynamic label record is not in use. */
         @Documented
         void dynamicLabelRecordNotInUse( DynamicRecord record );
     }
@@ -539,5 +542,16 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         /** This record not referenced from any other dynamic block, or from any property or name record. */
         @Documented
         void orphanDynamicRecord();
+    }
+
+    interface DynamicLabelConsistencyReport extends ConsistencyReport<DynamicRecord, DynamicLabelConsistencyReport>
+    {
+        /** This label record is not referenced by its owning node record or that record is not in use. */
+        @Documented
+        void orphanDynamicLabelRecordDueToInvalidOwner( NodeRecord owningNodeRecord );
+
+        /** This label record does not have an owning node record. */
+        @Documented
+        void orphanDynamicLabelRecord();
     }
 }

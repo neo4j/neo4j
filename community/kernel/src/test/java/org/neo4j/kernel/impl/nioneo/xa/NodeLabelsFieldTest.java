@@ -19,26 +19,48 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import java.io.File;
-import java.util.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.*;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.cloned;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class NodeLabelsFieldTest
@@ -228,7 +250,34 @@ public class NodeLabelsFieldTest
         assertFalse( single( changedDynamicRecords ).inUse() );
         assertEquals( inlinedLabelsLongRepresentation( 251, 252, 253, 254 ), node.getLabelField() );
     }
-    
+
+    @Test
+    public void shouldReadIdOfDynamicRecordFromDynamicLabelsField() throws Exception
+    {
+        // GIVEN
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
+        DynamicRecord dynamicRecord = node.getDynamicLabelRecords().iterator().next();
+
+        // WHEN
+        Long dynRecordId = NodeLabelsField.fieldDynamicLabelRecordId( node.getLabelField() );
+
+        // THEN
+        assertEquals( (Long) dynamicRecord.getLongId(), dynRecordId );
+    }
+
+    @Test
+    public void shouldReadNullDynamicRecordFromInlineLabelsField() throws Exception
+    {
+        // GIVEN
+        NodeRecord node = nodeRecordWithInlinedLabels( 23l );
+
+        // WHEN
+        Long dynRecordId = NodeLabelsField.fieldDynamicLabelRecordId( node.getLabelField() );
+
+        // THEN
+        assertNull( dynRecordId );
+    }
+
     @Test
     public void maximumOfSevenInlinedLabels() throws Exception
     {

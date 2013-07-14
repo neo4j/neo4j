@@ -88,7 +88,7 @@ public class StoreAccess
         this.arrayStore = wrapStore( propStore.getArrayStore() );
         this.relationshipTypeTokenStore = wrapStore( typeStore );
         this.labelTokenStore = wrapStore( labelTokenStore );
-        this.nodeDynamicLabelStore = wrapStore( nodeStore.getDynamicLabelStore() );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( nodeStore.getDynamicLabelStore() ) );
         this.propertyKeyTokenStore = wrapStore( propStore.getPropertyKeyTokenStore() );
         this.relationshipTypeNameStore = wrapStore( typeStore.getNameStore() );
         this.labelNameStore = wrapStore( labelTokenStore.getNameStore() );
@@ -214,13 +214,25 @@ public class StoreAccess
             return new RecordStore<?>[]{ // no property stores
                     nodeStore, relStore,
                     relationshipTypeTokenStore, relationshipTypeNameStore,
-                    labelTokenStore, labelNameStore
+                    labelTokenStore, labelNameStore, nodeDynamicLabelStore
             };
         }
         return new RecordStore<?>[]{
                 schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
                 relationshipTypeTokenStore, propertyKeyTokenStore, labelTokenStore,
-                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore
+                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore,
+                nodeDynamicLabelStore
+        };
+    }
+
+    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store ) {
+        return new DelegatingRecordStore<DynamicRecord>( store ) {
+            @Override
+            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record)
+                    throws FAILURE
+            {
+                processor.processLabelArrayWithOwner( this, record );
+            }
         };
     }
 

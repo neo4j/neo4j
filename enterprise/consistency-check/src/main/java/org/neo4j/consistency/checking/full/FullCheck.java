@@ -91,7 +91,7 @@ public class FullCheck
                 new ConsistencyReporter( recordAccess, report ) );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
-        List<StoreProcessorTask> tasks = new ArrayList<>( 12 );
+        List<StoreProcessorTask> tasks = new ArrayList<>( 16 );
 
 
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
@@ -100,6 +100,7 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>(
                 store.getNodeStore(), progress, order,
                 processEverything, processorFactory.createAll( PROPERTIES, RELATIONSHIPS ) ) );
+
         tasks.add( new StoreProcessorTask<>(
                 store.getRelationshipStore(), progress, order,
                 processEverything, processorFactory.createAll( NODES, PROPERTIES, RELATIONSHIPS ) ) );
@@ -150,6 +151,9 @@ public class FullCheck
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
                 store.getLabelNameStore(), progress, order,
+                processEverything, processEverything ) );
+
+        tasks.add( new StoreProcessorTask<>( store.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
         order.execute( tasks, progress.build() );

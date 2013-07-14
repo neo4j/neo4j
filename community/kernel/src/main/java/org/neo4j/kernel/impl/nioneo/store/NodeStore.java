@@ -19,15 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.io.File;
-import java.util.*;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -36,6 +42,21 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
  */
 public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 {
+    public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
+    {
+        byte[] data = record.getData();
+        byte[] header = PropertyType.ARRAY.readDynamicRecordHeader( data );
+        byte[] array = Arrays.copyOfRange( data, header.length, data.length );
+
+        int requiredBits = header[2];
+        if ( requiredBits == 0 )
+        {
+            return null;
+        }
+        Bits bits = Bits.bitsFromBytes( array );
+        return bits.getLong( requiredBits );
+    }
+
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {

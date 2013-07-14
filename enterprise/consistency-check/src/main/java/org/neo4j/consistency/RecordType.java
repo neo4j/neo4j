@@ -35,5 +35,7 @@ public enum RecordType
     RELATIONSHIP_TYPE_NAME,
 
     LABEL,
-    LABEL_NAME
+    LABEL_NAME,
+
+    NODE_DYNAMIC_LABEL
 }

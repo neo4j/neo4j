@@ -19,11 +19,25 @@
  */
 package org.neo4j.consistency.store;
 
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.*;
-
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 
 /**
  * Not thread safe, intended for single threaded use.
@@ -219,6 +233,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
         {
             processor.processArray( (RecordStore<DynamicRecord>) diffStore, array );
+        }
+
+        @Override
+        public void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
+        {
+            processor.processLabelArrayWithOwner( (RecordStore<DynamicRecord>) diffStore, array );
         }
 
         @Override

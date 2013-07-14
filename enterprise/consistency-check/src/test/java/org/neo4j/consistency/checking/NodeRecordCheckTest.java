@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -317,8 +318,6 @@ public class NodeRecordCheckTest
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
-        labelsRecord2.setNextBlock( 1l );
-
         addNodeDynamicLabels( labelsRecord1 );
         addNodeDynamicLabels( labelsRecord2 );
 
@@ -329,36 +328,6 @@ public class NodeRecordCheckTest
         verify( report ).dynamicLabelRecordNotInUse( labelsRecord1 );
         verify( report ).dynamicLabelRecordNotInUse( labelsRecord2 );
     }
-
-    @Test
-    public void shouldReportCyclicDynamicLabelRecords() throws Exception
-    {
-        // given
-        long[] labelIds = createLabels( 100 );
-
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
-        add( node );
-
-        DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
-        DynamicRecord labelsRecord2 = inUse( array( new DynamicRecord( 2 ) ) );
-        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
-
-        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
-        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
-        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
-
-        labelsRecord2.setNextBlock( 1l );
-
-        addNodeDynamicLabels( labelsRecord1 );
-        addNodeDynamicLabels( labelsRecord2 );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = check( node );
-
-        // then
-        verify( report ).cyclicDynamicLabelRecords( labelsRecord2 );
-    }
-    // change checking
 
     @Test
     public void shouldNotReportAnythingForConsistentlyChangedNode() throws Exception

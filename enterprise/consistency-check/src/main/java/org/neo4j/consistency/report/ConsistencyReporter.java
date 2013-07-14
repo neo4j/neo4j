@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static java.lang.reflect.Proxy.getInvocationHandler;
 
+import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -81,6 +82,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
             ProxyFactory.create( ConsistencyReport.DynamicConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.DynamicLabelConsistencyReport> DYNAMIC_LABEL_REPORT =
+            ProxyFactory.create( ConsistencyReport.DynamicLabelConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -457,6 +460,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                        RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
     {
         dispatchChange( type, DYNAMIC_REPORT, oldRecord, newRecord, checker );
+    }
+
+    @Override
+    public void forDynamicLabelBlock( RecordType type, DynamicRecord record,
+                                      RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+    {
+        dispatch( type, DYNAMIC_LABEL_REPORT, record, checker );
+    }
+
+    @Override
+    public void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
+                                            RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+    {
+        dispatchChange( type, DYNAMIC_LABEL_REPORT, oldRecord, newRecord, checker );
     }
 
     private static class ProxyFactory<T>
