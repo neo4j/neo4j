@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.operations.LifecycleOperations;
@@ -111,29 +113,8 @@ public class ReferenceCountingKernelTransactionTest
         verify( otherActualState ).markAsClosed();
     }
 
-//    @Ignore( "Not valid I(MP)'d say" )
-//    @Test
-//    public void shouldNotBeAbleToInteractWithAClosedStatementContext() throws Exception
-//    {
-//        // GIVEN
-//        StatementState first = refCountingContext.newStatementState();
-//        refCountingContext.newStatementState();
-//        statementLogic.close( first );
-//
-//        // WHEN
-//        try
-//        {
-//            statementLogic.keyReadOperations().labelGetName( first, 0 );
-//
-//            fail( "expected exception" );
-//        }
-//        // THEN
-//        catch ( IllegalStateException e )
-//        {
-//            assertEquals( "This StatementContext has been closed. No more interaction allowed", e.getMessage() );
-//        }
-//    }
-
+    @Ignore( "Not valid I(MP)'d say, we don't check that anymore. Such checks are costly and " +
+          "should only be used for debugging" )
     @Test
     public void shouldNotBeAbleToCloseTheSameStatementContextTwice() throws Exception
     {
@@ -167,22 +148,12 @@ public class ReferenceCountingKernelTransactionTest
     public void shouldCloseAllStatementContextsOnCommit() throws Exception
     {
         // given
-        StatementState context = refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
 
         // when
         refCountingContext.commit();
 
         // then
-        try
-        {
-            refCountingOperations.close( context );
-
-            fail( "expected exception" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertEqualsStatementClosed( e );
-        }
         verify( actualState, times( 1 ) ).markAsClosed();
     }
 
@@ -190,22 +161,12 @@ public class ReferenceCountingKernelTransactionTest
     public void shouldCloseAllStatementContextsOnRollback() throws Exception
     {
         // given
-        StatementState context = refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
 
         // when
         refCountingContext.rollback();
 
         // then
-        try
-        {
-            refCountingOperations.close( context );
-
-            fail( "expected exception" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertEqualsStatementClosed( e );
-        }
         verify( actualState, times( 1 ) ).markAsClosed();
     }
 
@@ -213,24 +174,13 @@ public class ReferenceCountingKernelTransactionTest
     public void shouldBeAbleToOpenNewStatementContextsAfterCommit() throws Exception
     {
         // given
-        StatementState before = refCountingContext.newStatementState();
+        refCountingContext.newStatementState();
 
         // when
         refCountingContext.commit();
 
         // then
         StatementState after = refCountingContext.newStatementState();
-
-        try
-        {
-            refCountingOperations.close( before );
-
-            fail( "expected exception" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertEqualsStatementClosed( e );
-        }
         verify( actualState, times( 1 ) ).markAsClosed();
         verifyZeroInteractions( otherActualState );
         refCountingOperations.close( after );
