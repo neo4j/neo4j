@@ -32,11 +32,13 @@ class DynamicRecordCheck
 {
     private final int blockSize;
     private final DynamicStore dereference;
+    private final RecordStore<DynamicRecord> store;
 
     DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
         this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
         this.dereference = dereference;
+        this.store = store;
     }
 
     @Override

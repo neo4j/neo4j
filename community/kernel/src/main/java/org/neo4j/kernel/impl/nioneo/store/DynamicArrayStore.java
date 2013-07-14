@@ -115,7 +115,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     private static Collection<DynamicRecord> allocateFromString( String[] array, Iterator<DynamicRecord> recordsToUseFirst,
                                                                  DynamicRecordAllocator recordAllocator )
     {
-        List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
+        List<byte[]> stringsAsBytes = new ArrayList<>();
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
         for ( String string : array )
         {

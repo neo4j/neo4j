@@ -92,6 +92,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
 
+    protected abstract void checkDynamicLabel(
+            RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
+            RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker );
+
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
     {
         // cf. StoreProcessor
@@ -149,6 +153,13 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     public final void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
         checkDynamic( RecordType.ARRAY_PROPERTY, store, array, new DynamicRecordCheck( store, ARRAY ) );
+    }
+
+    @Override
+    public final void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array )
+    {
+        checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, ARRAY ) );
+        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanCheck( store, ARRAY ) );
     }
 
     @Override

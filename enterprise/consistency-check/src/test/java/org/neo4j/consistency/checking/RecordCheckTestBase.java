@@ -49,7 +49,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     public static final int NONE = -1;
     private final CHECKER checker;
     private final Class<REPORT> reportClass;
-    private final RecordAccessStub records = new RecordAccessStub();
+    protected final RecordAccessStub records = new RecordAccessStub();
 
     RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass )
     {

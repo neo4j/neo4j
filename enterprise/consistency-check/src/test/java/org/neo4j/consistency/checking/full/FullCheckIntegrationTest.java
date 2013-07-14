@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.PreAllocatedRecords;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
@@ -60,7 +60,10 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -191,7 +194,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    public void shouldReportDynamicNodeLabelInconsistencies() throws Exception
+    public void shouldReportNodeDynamicLabelContainingUnknownLabelAsNodeInconsistency() throws Exception
     {
         // given
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -200,8 +203,13 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
+
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
-                nodeRecord.setLabelField( dynamicPointer( asList( new DynamicRecord( next.nodeLabel() ))) );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
                 tx.create( nodeRecord );
             }
         } );
@@ -211,6 +219,64 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportNodeDynamicLabelContainingDuplicateLabelAsNodeInconsistency() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.nodeLabel( 42, "Label" );
+
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l, 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.nodeLabel( 42, "Label" );
+
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { next.node(), 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
     }
 
     @Test
@@ -343,8 +409,9 @@ public class FullCheckIntegrationTest
 
                 SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
-                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
-                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor,
+                        (long) ruleId1 );
+                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -387,7 +454,7 @@ public class FullCheckIntegrationTest
 
                 SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
-                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2);
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
                 UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
 
