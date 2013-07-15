@@ -184,6 +184,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
 
         JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
+
         assertThat( response.getType().toString(), containsString(MediaType.APPLICATION_JSON) );
 
         createResponse.close();

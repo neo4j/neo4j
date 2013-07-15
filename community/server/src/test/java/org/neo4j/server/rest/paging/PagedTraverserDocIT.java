@@ -136,7 +136,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         ResponseEntity entity = gen.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedType( MediaType.valueOf( "application/json; charset=UTF-8" ) )
                 .expectedHeader( "Location" )
                 .expectedStatus( 201 )
                 .payload( traverserDescription() )
@@ -147,10 +147,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertThat( entity.response()
                 .getLocation()
                 .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
-        assertEquals( "application/json", entity.response()
+        assertEquals( "application/json; charset=UTF-8", entity.response()
                 .getType()
-                .toString()
-                .toLowerCase() );
+                .toString());
     }
 
     /**
@@ -393,7 +392,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.TEXT_HTML, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.TEXT_HTML ) );
     }
 
     @Test
