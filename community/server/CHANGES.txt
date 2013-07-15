@@ -11,6 +11,12 @@ o REST transaction support
 o Added support for labels
 o Added support for the new label-based indexes
 
+1.9.2 (2013-07-16)
+------------------
+o The Content-Type is now correctly used to set the text encoding, not Content-Encoding
+o Fixes concurrency issue with generation of JSON responses
+o HTTPS scheme is now properly propagated on batch requests
+
 1.9.1 (2013-06-24)
 ------------------
 o Fixes bug where the last security rule would be the only one respected, if multiple would

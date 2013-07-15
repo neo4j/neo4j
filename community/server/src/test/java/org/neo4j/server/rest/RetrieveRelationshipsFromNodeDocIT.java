@@ -19,16 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.io.IOUtils;
@@ -40,6 +33,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -47,6 +41,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTestBase
 {
@@ -226,7 +226,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
     {
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/in/LIKES" );
         assertEquals( 200, response.getStatus() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         verifyRelReps( 1, response.getEntity() );
         response.close();
     }
@@ -237,7 +237,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
     {
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/out/HATES" );
         assertEquals( 200, response.getStatus() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         verifyRelReps( 1, response.getEntity() );
         response.close();
     }
@@ -263,7 +263,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
     {
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/in" );
         assertEquals( 200, response.getStatus() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         verifyRelReps( 0, response.getEntity() );
         response.close();
     }
@@ -274,7 +274,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
     {
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/out" );
         assertEquals( 200, response.getStatus() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         verifyRelReps( 0, response.getEntity() );
         response.close();
     }

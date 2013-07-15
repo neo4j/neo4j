@@ -57,7 +57,7 @@ import static org.junit.Assert.fail;
  * 
  * The filename of the resulting ASCIIDOC test file is derived from the title.
  * 
- * The title is determined by either a JavaDoc perioed terminated first title line,
+ * The title is determined by either a JavaDoc period terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
 public class RESTDocsGenerator extends AsciiDocGenerator
@@ -88,7 +88,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     };
 
     private int expectedResponseStatus = -1;
-    private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
+    private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;

@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -33,6 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -152,7 +152,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         ResponseEntity entity = gen.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedType( MediaType.valueOf( "application/json; charset=UTF-8" ) )
                 .expectedHeader( "Location" )
                 .expectedStatus( 201 )
                 .payload( traverserDescription() )
@@ -163,10 +163,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertThat( entity.response()
                 .getLocation()
                 .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
-        assertEquals( "application/json", entity.response()
+        assertEquals( "application/json; charset=UTF-8", entity.response()
                 .getType()
-                .toString()
-                .toLowerCase() );
+                .toString());
     }
 
     /**
@@ -356,9 +355,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // when
         JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
 
+
+        System.out.println(pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ));
+
         // then
         assertNotNull( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( "application/json; stream=true", pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ),
+                containsString( "application/json; charset=UTF-8; stream=true" ) );
     }
 
     private JaxRsResponse createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTimeInSeconds,
@@ -385,7 +388,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.APPLICATION_JSON, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
     }
 
     @Test
@@ -402,7 +405,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.TEXT_HTML, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.TEXT_HTML ) );
     }
 
     @Test
@@ -416,7 +419,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         // then
         assertEquals( 201, response.getStatus() );
-        assertEquals( "application/json; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( "application/json; charset=UTF-8; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
         assertThat( response.getHeaders().getFirst( "Transfer-Encoding" ), containsString( "chunked" ) );
     }
 
