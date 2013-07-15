@@ -311,7 +311,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         return entityReadDelegate.nodesGetFromIndexLookup( state, index, value );

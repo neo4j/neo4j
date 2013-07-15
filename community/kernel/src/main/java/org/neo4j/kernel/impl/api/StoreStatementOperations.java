@@ -529,7 +529,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         return state.indexReaderFactory().newReader( indexId( index ) ).lookup( value );

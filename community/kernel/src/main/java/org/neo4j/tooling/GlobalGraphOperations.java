@@ -128,16 +128,15 @@ public class GlobalGraphOperations
      * they are used. This method guarantees that it will return all labels currently in use. However,
      * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
      *
-     * If you call this operation outside of a transaction, please take care that the returned 
+     * If you call this operation outside of a transaction, please take care that the returned
      * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
-     *   
+     * 
      * @return all labels in the underlying store.
      */
     public ResourceIterable<Label> getAllLabels()
     {
         return new ResourceIterable<Label>()
         {
-            @SuppressWarnings( "resource" )
             @Override
             public ResourceIterator<Label> iterator()
             {
@@ -158,9 +157,9 @@ public class GlobalGraphOperations
     /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
      * 
-     * If you call this operation outside of a transaction, please take care that the returned 
+     * If you call this operation outside of a transaction, please take care that the returned
      * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
-     *   
+     * 
      * @param label the {@link Label} to return nodes for.
      * @return {@link Iterable} containing nodes with a specific label.
      */
@@ -176,7 +175,6 @@ public class GlobalGraphOperations
         };
     }
 
-    @SuppressWarnings( "resource" )
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
         StatementOperationParts context = statementCtxProvider.getCtxForReading();

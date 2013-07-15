@@ -49,6 +49,21 @@ import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
  */
 public final class Iterables
 {
+    public static final FunctionToPrimitiveLong<Long> MAP_LONG_TO_PRIMITIVE_LONG = new FunctionToPrimitiveLong<Long>()
+    {
+        @Override
+        public long apply( Long value )
+        {
+            if ( null == value )
+            {
+                throw new IllegalArgumentException( "null Long not convertible to primitive long" );
+            }
+            else
+            {
+                return value.longValue();
+            }
+        }
+    };
     private static Iterable EMPTY = new Iterable()
     {
         Iterator iterator = new Iterator()

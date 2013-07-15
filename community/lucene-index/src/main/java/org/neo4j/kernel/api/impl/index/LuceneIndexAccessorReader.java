@@ -20,18 +20,14 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
-import java.util.Iterator;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 
-import org.neo4j.helpers.Function;
 import org.neo4j.index.impl.lucene.Hits;
-import org.neo4j.index.impl.lucene.HitsIterator;
 import org.neo4j.kernel.api.index.IndexReader;
-
-import static org.neo4j.helpers.collection.Iterables.map;
+import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -47,20 +43,40 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public Iterator<Long> lookup( final Object value )
+    public PrimitiveLongIterator lookup( final Object value )
     {
         try
         {
-            Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
-            Iterator<Document> docs = new HitsIterator( hits );
-            return map( new Function<Document, Long>()
+            final Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
+            return new AbstractPrimitiveLongIterator()
             {
-                @Override
-                public Long apply( Document from )
+                int size = hits.length(), index;
+                
                 {
-                    return documentLogic.getNodeId( from );
+                    computeNext();
                 }
-            }, docs );
+                
+                @Override
+                protected void computeNext()
+                {
+                    if ( index < size )
+                    {
+                        try
+                        {
+                            nextValue = documentLogic.getNodeId( hits.doc( index++ ) );
+                            hasNext = true;
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+                    else
+                    {
+                        hasNext = false;
+                    }
+                }
+            };
         }
         catch ( IOException e )
         {

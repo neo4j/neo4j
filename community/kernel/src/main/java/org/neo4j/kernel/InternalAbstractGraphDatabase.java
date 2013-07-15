@@ -22,16 +22,14 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-
-import ch.qos.logback.classic.LoggerContext;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -151,13 +149,15 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.lang.String.format;
+import ch.qos.logback.classic.LoggerContext;
 
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+import static java.lang.String.format;
 
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.filter;
+
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1005,7 +1005,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format("Relationship %d not found", id));
+            throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         return nodeManager.getRelationshipById( id );
     }
@@ -1505,11 +1505,13 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = ctx.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyId );
+            IndexDescriptor indexRule = ctx.schemaReadOperations().indexesGetForLabelAndPropertyKey(
+                    state, labelId, propertyId );
             if ( ctx.schemaReadOperations().indexGetState( state, indexRule ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.entityReadOperations().nodesGetFromIndexLookup( state, indexRule, value ), state );
+                return map2nodes( ctx.entityReadOperations().nodesGetFromIndexLookup( state, indexRule, value ),
+                        state );
             }
         }
         catch ( SchemaRuleNotFoundException e )
@@ -1547,19 +1549,6 @@ public abstract class InternalAbstractGraphDatabase
 
         return map2nodes( matches, state );
     }
-
-    private ResourceIterator<Node> map2nodes( Iterator<Long> input, StatementState state )
-    {
-        return cleanupService.resourceIterator( map( new Function<Long, Node>()
-        {
-            @Override
-            public Node apply( Long id )
-            {
-                return getNodeById( id );
-            }
-        }, input ), state.closeable( kernelAPI.statementOperations().lifecycleOperations() ) );
-    }
-
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, StatementState state )
     {

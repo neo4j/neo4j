@@ -44,13 +44,13 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value ) throws IndexNotFoundKernelException;
+    PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value ) throws IndexNotFoundKernelException;
 
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
-     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or
-     * {@link KeyReadOperations#labelGetForName(String)}.
+     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(StatementState, String)} or
+     * {@link KeyReadOperations#labelGetForName(StatementState, String)}.
      */
     boolean nodeHasLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 

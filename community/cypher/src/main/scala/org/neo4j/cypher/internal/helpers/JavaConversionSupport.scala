@@ -17,37 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.cypher.internal.helpers
 
-import java.io.Closeable;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-
-/**
- * Reader for an {@link IndexAccessor}.
- * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
- * must be returned.
- */
-public interface IndexReader extends Closeable
+object JavaConversionSupport
 {
-    PrimitiveLongIterator lookup( Object value );
+  def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
+    def hasNext = iterator.hasNext
+    def next() = iterator.next()
+  }
 
-    @Override
-    void close();
-    
-    class Empty implements IndexReader
-    {
-        @Override
-        public PrimitiveLongIterator lookup( Object value )
-        {
-            return emptyPrimitiveLongIterator();
-        }
-        
-        @Override
-        public void close()
-        {
-        }
-    }
+  def mapToScala[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
+    def hasNext = iterator.hasNext
+    def next() = f(iterator.next())
+  }
 }

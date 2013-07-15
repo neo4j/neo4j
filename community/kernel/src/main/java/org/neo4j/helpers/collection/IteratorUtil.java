@@ -766,6 +766,24 @@ public abstract class IteratorUtil
         return asIterator(item);
     }
 
+    @SuppressWarnings("unchecked")
+    public static PrimitiveLongIterator singletonPrimitiveLongIterator( final long item )
+    {
+        return new AbstractPrimitiveLongIterator()
+        {
+            {
+                hasNext = true;
+                nextValue = item;
+            }
+
+            @Override
+            protected void computeNext()
+            {
+                hasNext = false;
+            }
+        };
+    }
+
     @SuppressWarnings( "rawtypes" )
     private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
     {
@@ -793,11 +811,32 @@ public abstract class IteratorUtil
             // do nothing
         }
     };
-    
+
+    private static final PrimitiveLongIterator EMPTY_PRIMITIVE_LONG_ITERATOR = new PrimitiveLongIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public long next()
+        {
+            throw new NoSuchElementException();
+        }
+    };
+
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyIterator()
     {
         return EMPTY_ITERATOR;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static PrimitiveLongIterator emptyPrimitiveLongIterator()
+    {
+        return EMPTY_PRIMITIVE_LONG_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -947,6 +986,22 @@ public abstract class IteratorUtil
         while ( iterator.hasNext() )
         {
             set.add( iterator.next() );
+        }
+        return set;
+    }
+
+    /**
+     * Creates a {@link Set} from an array of iterator.
+     *
+     * @param iterator the iterator to add to the set.
+     * @return the {@link Set} containing the iterator.
+     */
+    public static Set<Long> asUniqueSet( PrimitiveLongIterator iterator )
+    {
+        HashSet<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            addUnique( set, iterator.next() );
         }
         return set;
     }

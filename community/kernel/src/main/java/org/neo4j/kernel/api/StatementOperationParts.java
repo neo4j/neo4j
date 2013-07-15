@@ -250,7 +250,7 @@ public class StatementOperationParts
                 return entityReadOperations.nodesGetForLabel( state, labelId );
             }
             @Override
-            public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
+            public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
                     throws IndexNotFoundKernelException
             {
                 return entityReadOperations.nodesGetFromIndexLookup( state, index, value );

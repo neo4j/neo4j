@@ -21,15 +21,18 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+
+import static org.neo4j.helpers.collection.Iterables.MAP_LONG_TO_PRIMITIVE_LONG;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 class NonUniqueInMemoryIndex extends InMemoryIndex
 {
@@ -151,10 +154,10 @@ class NonUniqueInMemoryIndex extends InMemoryIndex
         }
 
         @Override
-        public Iterator<Long> lookup( Object value )
+        public PrimitiveLongIterator lookup( Object value )
         {
             Set<Long> result = indexData.get( encode( value ) );
-            return result != null ? result.iterator() : IteratorUtil.<Long>emptyIterator();
+            return result != null ? map( MAP_LONG_TO_PRIMITIVE_LONG, result.iterator() ) : emptyPrimitiveLongIterator();
         }
 
         @Override
