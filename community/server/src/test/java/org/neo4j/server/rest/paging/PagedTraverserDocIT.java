@@ -376,7 +376,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.APPLICATION_JSON, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
     }
 
     @Test
@@ -407,7 +407,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         // then
         assertEquals( 201, response.getStatus() );
-        assertEquals( "application/json; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( "application/json; charset=UTF-8; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
         assertThat( response.getHeaders().getFirst( "Transfer-Encoding" ), containsString( "chunked" ) );
     }
 
