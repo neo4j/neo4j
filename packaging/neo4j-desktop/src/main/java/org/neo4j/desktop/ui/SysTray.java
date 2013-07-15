@@ -60,7 +60,7 @@ public abstract class SysTray
         }
         
         // Fall back to still being able to function, but without the systray support.
-        return new SysTray.Disabled();
+        return new SysTray.Disabled( actions, mainWindow );
     }
     
     public abstract void changeStatus( DatabaseStatus status );
@@ -70,7 +70,7 @@ public abstract class SysTray
         private final TrayIcon trayIcon;
         private final String iconResourceBaseName;
         
-        public Enabled( String iconResourceBaseName, Actions actions, JFrame mainWindow ) throws AWTException
+        Enabled( String iconResourceBaseName, Actions actions, JFrame mainWindow ) throws AWTException
         {
             this.iconResourceBaseName = iconResourceBaseName;
             this.trayIcon = init( actions, mainWindow );
@@ -130,6 +130,19 @@ public abstract class SysTray
     
     private static class Disabled extends SysTray
     {
+        Disabled( final Actions actions, JFrame mainWindow )
+        {
+            mainWindow.setDefaultCloseOperation( DO_NOTHING_ON_CLOSE );
+            mainWindow.addWindowListener( new WindowAdapter()
+            {
+                @Override
+                public void windowClosing( WindowEvent e )
+                {
+                    actions.closeForReal();
+                }
+            } );
+        }
+        
         @Override
         public void changeStatus( DatabaseStatus status )
         {

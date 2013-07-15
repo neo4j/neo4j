@@ -173,21 +173,6 @@ public class MainWindow
         frame.add( root );
         frame.pack();
         frame.setResizable( false );
-//        frame.addWindowListener( new WindowAdapter()
-//        {
-//            @Override
-//            public void windowClosing( WindowEvent e )
-//            {
-//                if ( databaseActions.isRunning() )
-//                {
-//                    sysTray.closeAction();
-//                }
-//                else
-//                {
-//                    shutdown();
-//                }
-//            }
-//        } );
         
         return frame;
     }
