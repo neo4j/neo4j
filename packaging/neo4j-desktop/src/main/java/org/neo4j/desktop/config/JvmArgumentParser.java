@@ -39,7 +39,7 @@ public class JvmArgumentParser
         return line.substring( MAX_HEAP_SIZE_PREFIX.length() );
     }
 
-    public Integer parseMaxHeap( String fullXmxArgument )
+    public int parseMaxHeap( String fullXmxArgument )
     {
         // Split in value and suffix
         String rawValue = parseHeapArgumentValue( fullXmxArgument );

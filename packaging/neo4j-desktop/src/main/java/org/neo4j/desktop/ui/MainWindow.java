@@ -24,21 +24,16 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -72,6 +67,7 @@ import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingUtilities.invokeLater;
 
 import static org.neo4j.desktop.config.OsSpecificHeapSizeConfig.getAvailableTotalPhysicalMemoryMb;
+import static org.neo4j.desktop.ui.UIHelper.loadImage;
 
 /**
  * The main window of the Neo4j Desktop. Able to start/stop a database as well as providing access to some
@@ -102,10 +98,10 @@ public class MainWindow
     private DatabaseStatus databaseStatus; // Not used a.t.m. but may be used for something?
     private final Environment environment;
     private final Value<List<String>> extensionPackagesConfig;
+    private final SysTray sysTray;
 
-    public MainWindow( DatabaseActions databaseActions, Environment environment,
-            Value<Integer> heapSizeConfig,
-            Value<List<String>> extensionPackagesConfig )
+    public MainWindow( final DatabaseActions databaseActions, Environment environment,
+            Value<Integer> heapSizeConfig, Value<List<String>> extensionPackagesConfig )
     {
         // TODO (keep the below line in for easier getting going with debugging)
         //      Only for debugging, comment out the line below for real usage
@@ -115,7 +111,37 @@ public class MainWindow
         this.heapSizeConfig = heapSizeConfig;
         this.databaseActions = databaseActions;
         this.extensionPackagesConfig = extensionPackagesConfig;
+
         frame = init();
+        
+        this.sysTray = SysTray.install( "/neo4j-db-16.png", new SysTray.Actions()
+        {
+            @Override
+            public void closeForReal()
+            {
+                shutdown();
+            }
+            
+            @Override
+            public void clickSysTray()
+            {
+                frame.setVisible( true );
+            }
+            
+            @Override
+            public void clickCloseButton()
+            {
+                if ( databaseStatus == DatabaseStatus.stopped )
+                {
+                    shutdown();
+                }
+                else
+                {
+                    frame.setVisible( false );
+                }
+            }
+        }, frame );
+
         goToStoppedStatus();
     }
 
@@ -147,27 +173,39 @@ public class MainWindow
         frame.add( root );
         frame.pack();
         frame.setResizable( false );
-        frame.addWindowListener( new WindowAdapter()
-        {
-            @Override
-            public void windowClosing( WindowEvent e )
-            {
-                databaseActions.shutdown();
-                if ( debugWindow != null )
-                {
-                    debugWindow.dispose();
-                }
-                frame.dispose();
-                
-                // TODO Wouldn't want to have exit here really, but there's an issue where the JVM
-                // is kept alive by something (possibly the "fallback" shell server in ConsoleService)
-                // preventing it from shutting down properly. When that issue is fixed this should
-                // preferably be removed.
-                System.exit( 0 );
-            }
-        } );
+//        frame.addWindowListener( new WindowAdapter()
+//        {
+//            @Override
+//            public void windowClosing( WindowEvent e )
+//            {
+//                if ( databaseActions.isRunning() )
+//                {
+//                    sysTray.closeAction();
+//                }
+//                else
+//                {
+//                    shutdown();
+//                }
+//            }
+//        } );
         
         return frame;
+    }
+
+    protected void shutdown()
+    {
+        databaseActions.shutdown();
+        if ( debugWindow != null )
+        {
+            debugWindow.dispose();
+        }
+        frame.dispose();
+        
+        // TODO Wouldn't want to have exit here really, but there's an issue where the JVM
+        // is kept alive by something (possibly the "fallback" shell server in ConsoleService)
+        // preventing it from shutting down properly. When that issue is fixed this should
+        // preferably be removed.
+        System.exit( 0 );
     }
 
     private JPanel initAdvancedPanel()
@@ -349,7 +387,7 @@ public class MainWindow
     
     private JButton initDatabaseConfigurationButton()
     {
-        JButton button = buttonWithImage( "/gear2.png", "-", new ActionListener()
+        JButton button = buttonWithImage( "/gear.png", "-", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent event )
@@ -383,11 +421,6 @@ public class MainWindow
         button.setFocusable( false );
         button.setPreferredSize( new Dimension( 27, 27 ) );
         return button;
-    }
-
-    private File databaseConfigurationFile( String currentPath )
-    {
-        return databaseActions.getDatabaseConfigurationFile( currentPath );
     }
 
     private JButton initStartButton()
@@ -438,10 +471,11 @@ public class MainWindow
         } );
     }
     
-    private void displayStatus( DatabaseStatus state )
+    private void displayStatus( DatabaseStatus status )
     {
-        statusPanelLayout.show( statusPanel, state.name() );
-        databaseStatus = state;
+        statusPanelLayout.show( statusPanel, status.name() );
+        databaseStatus = status;
+        sysTray.changeStatus( status );
     }
 
     private void goToStartingStatus()
@@ -518,19 +552,14 @@ public class MainWindow
     private JButton buttonWithImage( String imageLocation, String textIfImageNotFound,
             ActionListener actionListener )
     {
-        JButton button = new JButton( textIfImageNotFound );
+        JButton button = new JButton();
         try
         {
-            URL resource = getClass().getResource( imageLocation );
-            if ( resource != null )
-            {
-                Image img = ImageIO.read( resource );
-                button = new JButton( new ImageIcon( img ) );
-            }
+            button.setIcon( new ImageIcon( loadImage( imageLocation ) ) );
         }
-        catch ( IOException e )
-        {   // Failed to open icon. hmm
-            e.printStackTrace();
+        catch ( Exception e1 )
+        {
+            button.setText( textIfImageNotFound );
         }
         
         button.addActionListener( actionListener );

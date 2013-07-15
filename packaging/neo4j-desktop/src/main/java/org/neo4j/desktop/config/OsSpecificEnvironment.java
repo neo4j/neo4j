@@ -73,14 +73,9 @@ public class OsSpecificEnvironment extends OsSpecific<Environment>
         
         private File getBaseDirectory()
         {
-            if ( appFile != null )
-            {
-                return appFile.getParentFile();
-            }
-            else
-            {
-                return new File( "." ).getAbsoluteFile().getParentFile();
-            }
+            return appFile != null ?
+                appFile.getParentFile() :
+                new File( "." ).getAbsoluteFile().getParentFile();
         }
         
         @Override

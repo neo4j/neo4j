@@ -76,7 +76,7 @@ public class DatabaseActions
         }
     }
 
-    private boolean isRunning()
+    public boolean isRunning()
     {
         return server != null;
     }

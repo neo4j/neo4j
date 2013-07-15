@@ -42,7 +42,8 @@ public class Neo4jDesktop
                 new OsSpecificExtensionPackagesConfig( environment ).get();
         DatabaseActions databaseActions = new DatabaseActions( extensionPackagesConfig );
         Value<Integer> heapSizeConfig = new OsSpecificHeapSizeConfig( environment ).get();
-        MainWindow window = new MainWindow( databaseActions, environment, heapSizeConfig, extensionPackagesConfig );
+        MainWindow window = new MainWindow( databaseActions, environment, heapSizeConfig,
+                extensionPackagesConfig );
 
         window.display();
     }
