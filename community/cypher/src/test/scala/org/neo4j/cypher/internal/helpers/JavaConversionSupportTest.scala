@@ -17,37 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.cypher.internal.helpers
 
-import java.io.Closeable;
+import org.scalatest.Assertions
+import org.junit.Test
+import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+class JavaConversionSupportTest extends Assertions {
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+  @Test
+  def shouldConvertPrimitiveLongIterators() {
+    // given
+    val iterator = new PrimitiveLongIteratorForArray( 12l, 14l )
 
-/**
- * Reader for an {@link IndexAccessor}.
- * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
- * must be returned.
- */
-public interface IndexReader extends Closeable
-{
-    PrimitiveLongIterator lookup( Object value );
+    // when
+    val result = JavaConversionSupport.asScala(iterator)
 
-    @Override
-    void close();
-    
-    class Empty implements IndexReader
-    {
-        @Override
-        public PrimitiveLongIterator lookup( Object value )
-        {
-            return emptyPrimitiveLongIterator();
-        }
-        
-        @Override
-        public void close()
-        {
-        }
-    }
+    // then
+    assert( List( 12l, 14l ) === result.toList )
+  }
+
+
+  @Test
+  def shouldConvertAndMapPrimitiveLongIterators() {
+    // given
+    val iterator = new PrimitiveLongIteratorForArray( 12l, 14l )
+
+    // when
+    val result = JavaConversionSupport.mapToScala(iterator){ _ + 1l }
+
+    // then
+    assert( List( 13l, 15l ) === result.toList )
+  }
 }

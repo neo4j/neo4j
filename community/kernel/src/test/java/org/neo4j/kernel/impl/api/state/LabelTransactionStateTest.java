@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.Before;
@@ -32,12 +31,11 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.helpers.FunctionToPrimitiveLong;
+import org.neo4j.graphdb.Neo4jMockitoHelpers;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -52,12 +50,10 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LabelTransactionStateTest
 {
-
     @Test
     public void addOnlyLabelShouldBeVisibleInTx() throws Exception
     {
@@ -279,9 +275,11 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementOperations.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( Neo4jMockitoHelpers.asAnswer( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( Neo4jMockitoHelpers.asAnswer( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( Neo4jMockitoHelpers.asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
@@ -300,45 +298,6 @@ public class LabelTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, store, mock( AuxiliaryStoreOperations.class ),
                 mock( ConstraintIndexCreator.class ) );
-    }
-
-    private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
-    {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return values.iterator();
-            }
-        };
-    }
-
-    private static Answer<PrimitiveLongIterator> asPrimitiveAnswer( final Iterable<Long> values )
-    {
-
-        return new Answer<PrimitiveLongIterator>()
-        {
-            @Override
-            public PrimitiveLongIterator answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return map( new FunctionToPrimitiveLong<Long>()
-                {
-                    @Override
-                    public long apply( Long value )
-                    {
-                        if ( null == value )
-                        {
-                            throw new IllegalArgumentException( "null Long not convertible to primitive long" );
-                        }
-                        else
-                        {
-                            return value.longValue();
-                        }
-                    }
-                }, values.iterator() );
-            }
-        };
     }
 
     private static class Labels
@@ -363,8 +322,10 @@ public class LabelTransactionStateTest
         Map<Long, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then( asAnswer( Arrays.<Long>asList( nodeLabels
-                    .labelIds ) ) );
+            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then( Neo4jMockitoHelpers.asAnswer( Arrays
+                    .<Long>asList
+                            ( nodeLabels
+                                    .labelIds ) ) );
             for ( long label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
@@ -383,7 +344,7 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asPrimitiveAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( Neo4jMockitoHelpers.asPrimitiveAnswer( entry.getValue() ) );
         }
     }
 

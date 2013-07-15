@@ -25,6 +25,7 @@ import java.util.Set;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -139,11 +140,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             this.labels = labels;
         }
-    }
-
-    private interface PrimitiveLongPredicate
-    {
-        boolean accept( long value );
     }
 
     private static PrimitiveLongPredicate singleLongPredicate( final long acceptedValue )

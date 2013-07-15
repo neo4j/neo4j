@@ -378,9 +378,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, final Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, final Object value )
             throws IndexNotFoundKernelException
     {
+        PrimitiveLongIterator committed = entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
+        if ( !state.txState().hasChanges() )
+        {
+            return committed;
+        }
+        
         // Start with nodes where the given property has changed
         DiffSets<Long> diff = state.txState().getNodesWithChangedProperty( index.getPropertyKeyId(), value );
 
@@ -397,8 +403,8 @@ public class StateHandlingStatementOperations implements
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return state.txState().getDeletedNodes().apply( diff.apply(
-                entityReadDelegate.nodesGetFromIndexLookup( state, index, value ) ) );
+        return state.txState().getDeletedNodes().applyPrimitiveLongIterator(
+                diff.applyPrimitiveLongIterator( committed ) );
     }
 
     @Override

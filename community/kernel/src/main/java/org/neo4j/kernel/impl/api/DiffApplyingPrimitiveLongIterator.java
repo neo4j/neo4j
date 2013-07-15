@@ -24,7 +24,8 @@ import java.util.Set;
 
 public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongIterator
 {
-    private enum Phase {
+    private enum Phase
+    {
 
         FILTERED_SOURCE
         {
@@ -54,7 +55,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
         };
 
         abstract void computeNext( DiffApplyingPrimitiveLongIterator self );
-    };
+    }
 
     private final PrimitiveLongIterator source;
     private final Iterator<?> addedElementsIterator;
@@ -75,6 +76,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
         computeNext();
     }
 
+    @Override
     protected void computeNext()
     {
         phase.computeNext( this );
