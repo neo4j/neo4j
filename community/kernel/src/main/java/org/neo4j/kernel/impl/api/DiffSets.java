@@ -164,7 +164,8 @@ public class DiffSets<T>
     public Iterator<T> apply( Iterator<T> source )
     {
         Iterator<T> result = source;
-        if ( removedElements != null && !removedElements.isEmpty() )
+        if ( ( removedElements != null && !removedElements.isEmpty() ) ||
+             ( addedElements != null && !addedElements.isEmpty() ) )
         {
             ensureFilterHasBeenCreated();
             result = filter( filter, result );
@@ -209,7 +210,8 @@ public class DiffSets<T>
                 @Override
                 public boolean accept( T item )
                 {
-                    return !removedElements.contains( item );
+                    return ( removedElements == null || !removedElements.contains( item ) ) &&
+                           ( addedElements == null || !addedElements.contains( item ) );
                 }
             };
         }

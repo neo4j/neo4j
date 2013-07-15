@@ -111,9 +111,6 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   def toLegacyCreates(pathName: Option[String]) = element.toLegacyCreates
   def toLegacyPredicates(pathName: Option[String]) = element.toLegacyPredicates
   def toAbstractPatterns(pathName: Option[String]) = {
-
-    println("oh noes")
-
     val patterns = element.toAbstractPatterns
     val patterns1 = pathName match {
       case None       => patterns
