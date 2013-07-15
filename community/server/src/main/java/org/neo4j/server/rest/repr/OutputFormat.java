@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.server.web.HttpHeaderUtils;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -116,9 +118,8 @@ public class OutputFormat
 
     protected Response response( ResponseBuilder response, Representation representation )
     {
-        return formatRepresentation( response, representation )
-                .header( HttpHeaders.CONTENT_ENCODING, UTF8 )
-                .type( getMediaType() )
+        return formatRepresentation(response, representation)
+                .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(getMediaType()))
                 .build();
     }
 

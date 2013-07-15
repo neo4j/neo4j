@@ -20,8 +20,8 @@
 package org.neo4j.cluster.protocol.election;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * When an instance leaves a cluster, demote it from all its current roles.
@@ -30,22 +30,18 @@ public class ClusterLeaveReelectionListener
         extends ClusterListener.Adapter
 {
     private final Election election;
-    private ClusterConfiguration clusterConfiguration;
+    private final StringLogger logger;
 
-    public ClusterLeaveReelectionListener( Election election )
+    public ClusterLeaveReelectionListener( Election election, StringLogger logger )
     {
         this.election = election;
-    }
-
-    @Override
-    public void enteredCluster( ClusterConfiguration clusterConfiguration )
-    {
-        this.clusterConfiguration = clusterConfiguration;
+        this.logger = logger;
     }
 
     @Override
     public void leftCluster( InstanceId member )
     {
+        logger.warn( "Demoting member " + member + " because it left the cluster" );
         // Suggest reelection for all roles of this node
         election.demote( member );
     }

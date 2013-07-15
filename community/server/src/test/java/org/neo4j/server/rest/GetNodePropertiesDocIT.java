@@ -137,7 +137,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         JaxRsResponse createResource = req.post(functionalTestHelper.dataUri() + "node/", entity);
         JaxRsResponse response = req.get(createResource.getLocation().toString() + "/properties");
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertEquals( MediaType.APPLICATION_JSON, response.getType().getType() );
     }
 
     @Test
@@ -181,7 +181,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
 
         JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+        assertEquals(MediaType.APPLICATION_JSON, response.getType().getType());
 
         createResponse.close();
         response.close();

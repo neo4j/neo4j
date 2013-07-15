@@ -22,6 +22,7 @@ package org.neo4j.cluster.protocol.election;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,11 +30,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Context used by {@link ElectionState}.
@@ -302,6 +305,54 @@ public class ElectionContext
     public boolean electionOk()
     {
         return heartbeatContext.getFailed().size() <= clusterContext.getConfiguration().getMembers().size() /2;
+    }
+
+    public boolean isInCluster()
+    {
+        return getClusterContext().isInCluster();
+    }
+
+    public Iterable<InstanceId> getAlive()
+    {
+        return getHeartbeatContext().getAlive();
+    }
+
+    public InstanceId getMyId()
+    {
+        return getClusterContext().getMyId();
+    }
+
+    public boolean isElector()
+    {
+        // Only the first alive server should try elections. Everyone else waits
+        List<InstanceId> aliveInstances = Iterables.toList( getAlive() );
+        Collections.sort( aliveInstances );
+        return aliveInstances.indexOf( getMyId() ) == 0;
+    }
+
+    public Map<InstanceId, URI> getMembers()
+    {
+        return getClusterContext().getConfiguration().getMembers();
+    }
+
+    public boolean isFailed( InstanceId key )
+    {
+        return getHeartbeatContext().getFailed().contains( key );
+    }
+
+    public InstanceId getElected( String roleName )
+    {
+        return getClusterContext().getConfiguration().getElected( roleName );
+    }
+
+    public void setTimeout( String key, Message<ElectionMessage> timeout )
+    {
+        getClusterContext().timeouts.setTimeout( key, timeout );
+    }
+
+    public StringLogger getLogger()
+    {
+        return clusterContext.getLogger( ElectionState.class );
     }
 
     private static class Vote

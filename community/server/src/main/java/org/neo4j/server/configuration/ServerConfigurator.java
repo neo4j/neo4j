@@ -71,7 +71,7 @@ public class ServerConfigurator implements Configurator
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         return jaxRsPackages;
     }
