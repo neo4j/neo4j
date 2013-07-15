@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -30,7 +31,6 @@ import org.neo4j.index.impl.lucene.LuceneUtil;
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
-import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
 import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
@@ -43,8 +43,8 @@ class LuceneDocumentStructure
 
     Document newDocument( long nodeId, Object value )
     {
-        Document document = newBaseDocument( nodeId );
-        document.add( new Field( NODE_ID_KEY, "" + nodeId, YES, NOT_ANALYZED ) );
+        Document document = new Document();
+        document.add( field( NODE_ID_KEY, "" + nodeId, YES ) );
 
         if ( value instanceof Number )
         {
@@ -70,7 +70,15 @@ class LuceneDocumentStructure
 
     private Field field( String fieldIdentifier, String value )
     {
-        return new Field( fieldIdentifier, value, NO, NOT_ANALYZED );
+        return field( fieldIdentifier, value, NO );
+    }
+    
+    private Field field( String fieldIdentifier, String value, Field.Store store )
+    {
+        Field result = new Field( fieldIdentifier, value, store, NOT_ANALYZED );
+        result.setOmitNorms( true );
+        result.setIndexOptions( IndexOptions.DOCS_ONLY );
+        return result;
     }
 
     public Query newQuery( Object value )
