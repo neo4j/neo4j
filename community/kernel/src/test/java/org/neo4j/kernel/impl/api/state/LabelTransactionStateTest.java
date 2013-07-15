@@ -31,10 +31,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import org.neo4j.helpers.FunctionToPrimitiveLong;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -48,6 +51,8 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LabelTransactionStateTest
@@ -309,6 +314,33 @@ public class LabelTransactionStateTest
         };
     }
 
+    private static Answer<PrimitiveLongIterator> asPrimitiveAnswer( final Iterable<Long> values )
+    {
+
+        return new Answer<PrimitiveLongIterator>()
+        {
+            @Override
+            public PrimitiveLongIterator answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return map( new FunctionToPrimitiveLong<Long>()
+                {
+                    @Override
+                    public long apply( Long value )
+                    {
+                        if ( null == value )
+                        {
+                            throw new IllegalArgumentException( "null Long not convertible to primitive long" );
+                        }
+                        else
+                        {
+                            return value.longValue();
+                        }
+                    }
+                }, values.iterator() );
+            }
+        };
+    }
+
     private static class Labels
     {
         private final long nodeId;
@@ -328,7 +360,7 @@ public class LabelTransactionStateTest
 
     private void commitLabels( Labels... labels ) throws EntityNotFoundException
     {
-        Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
+        Map<Long, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
             when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then( asAnswer( Arrays.<Long>asList( nodeLabels
@@ -342,7 +374,7 @@ public class LabelTransactionStateTest
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
                 {
-                    nodes = new ArrayList<Long>();
+                    nodes = new ArrayList<>();
                     allLabels.put( label, nodes );
                 }
                 nodes.add( nodeLabels.nodeId );
@@ -351,7 +383,7 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asPrimitiveAnswer( entry.getValue() ) );
         }
     }
 

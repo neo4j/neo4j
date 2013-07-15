@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PropertyIT extends KernelIntegrationTest
@@ -263,7 +265,8 @@ public class PropertyIT extends KernelIntegrationTest
         rel.setProperty( "prop", "value" );
 
         // THEN
-        Set<Long> actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(), rel.getId() ) );
+        Set<Long> actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(),
+                rel.getId() ) );
         assertThat( actualKeys, equalTo( asSet( statement.propertyKeyGetForName( getState(), "prop" ) ) ) );
 
         // WHEN

@@ -33,10 +33,11 @@ public interface EntityReadOperations
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
     /**
+     *
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    Iterator<Long> nodesGetForLabel( StatementState state, long labelId );
+    PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId );
 
     /**
      * Returns an iterable with the matched nodes.

@@ -30,11 +30,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Token;
@@ -182,11 +184,11 @@ public class GlobalGraphOperations
         try
         {
             long labelId = context.keyReadOperations().labelGetForName( state, label );
-            final Iterator<Long> nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
-            return cleanupService.resourceIterator( map( new Function<Long, Node>()
+            final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
+            return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
             {
                 @Override
-                public Node apply( Long nodeId )
+                public Node apply( long nodeId )
                 {
                     return nodeManager.getNodeById( nodeId );
                 }

@@ -245,7 +245,7 @@ public class StatementOperationParts
                 return keyWriteOperations.propertyKeyGetOrCreateForName( state, propertyKeyName );
             }
             @Override
-            public Iterator<Long> nodesGetForLabel( StatementState state, long labelId )
+            public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
             {
                 return entityReadOperations.nodesGetForLabel( state, labelId );
             }

@@ -305,7 +305,7 @@ public class CachingStatementOperations implements
     // === TODO Below is unnecessary delegation methods
 
     @Override
-    public Iterator<Long> nodesGetForLabel( StatementState state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
     {
         return entityReadDelegate.nodesGetForLabel( state, labelId );
     }

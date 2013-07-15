@@ -36,6 +36,8 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.PrimitiveLongPredicate;
+import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
@@ -169,7 +171,7 @@ public abstract class IteratorUtil
      */
     public static <T> T fromEndOrNull( Iterator<T> iterator, int n )
     {
-        Deque<T> trail = new ArrayDeque<T>( n );
+        Deque<T> trail = new ArrayDeque<>( n );
         while ( iterator.hasNext() )
         {
             if ( trail.size() > n )
@@ -534,16 +536,6 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterator, new HashSet<T>() );
     }
-    
-    public static Set<Long> asSet( PrimitiveLongIterator iterator )
-    {
-        Set<Long> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            set.add( iterator.next() );
-        }
-        return set;
-    }
 
     /**
      * Creates a {@link Set} from an {@link Iterable}.
@@ -565,7 +557,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asSet( T... items )
     {
-        return new HashSet<T>( asList( items ) );
+        return new HashSet<>( asList( items ) );
     }
 
     public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
@@ -594,7 +586,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asUniqueSet( T... items )
     {
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         for ( T item : items )
             addUnique( set, item );
         return set;
@@ -608,7 +600,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asUniqueSet( Iterator<T> items )
     {
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         while( items.hasNext() )
             addUnique( set, items.next() );
         return set;
@@ -898,5 +890,64 @@ public abstract class IteratorUtil
                     throw new IllegalArgumentException( "Iterator already closed" );
             }
         };
+    }
+
+    // Useful when debugging in tests
+    @SuppressWarnings("UnusedDeclaration")
+    public static Iterator<Long> toJavaIterator( final PrimitiveLongIterator primIterator )
+    {
+        return new Iterator<Long>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return primIterator.hasNext();
+            }
+
+            @Override
+            public Long next()
+            {
+                return primIterator.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException(  );
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
+                                                final PrimitiveLongIterator source )
+    {
+        return new AbstractPrimitiveLongIterator()
+        {
+            {
+                computeNext();
+            }
+
+            protected void computeNext()
+            {
+                for ( hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
+                {
+                    nextValue = source.next();
+                    if ( predicate.accept( nextValue ) )
+                    {
+                        return;
+                    }
+                }
+            }
+        };
+    }
+
+    public static Set<Long> asSet( PrimitiveLongIterator iterator )
+    {
+        Set<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
+        }
+        return set;
     }
 }
