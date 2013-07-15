@@ -21,19 +21,18 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.junit.Test;
+
+import org.neo4j.helpers.Predicate;
+
+import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-
-import org.junit.Test;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.IteratorUtil;
-
-import static java.util.Arrays.asList;
 
 public class DiffSetsTest
 {

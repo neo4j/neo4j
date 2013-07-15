@@ -27,7 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -97,7 +96,6 @@ public class NodeManager implements Lifecycle, EntityFactory
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
     private static final int LOCK_STRIPE_COUNT = 32;
-    private final ReentrantLock loadLocks[] = new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphPropertiesImpl graphProperties;
 
     private final LockStripedCache.Loader<NodeImpl> nodeLoader = new LockStripedCache.Loader<NodeImpl>()
@@ -156,10 +154,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         this.nodeCache = new LockStripedCache<NodeImpl>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
         this.relCache = new LockStripedCache<RelationshipImpl>( relCache, LOCK_STRIPE_COUNT, relLoader );
         this.xaDsm = xaDsm;
-        for ( int i = 0; i < loadLocks.length; i++ )
-        {
-            loadLocks[i] = new ReentrantLock();
-        }
         nodePropertyTrackers = new LinkedList<PropertyTracker<Node>>();
         relationshipPropertyTrackers = new LinkedList<PropertyTracker<Relationship>>();
         this.graphProperties = instantiateGraphProperties();
@@ -312,19 +306,6 @@ public class NodeManager implements Lifecycle, EntityFactory
     private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId, int typeId, boolean newRel)
     {
         return new RelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
-    }
-
-    private ReentrantLock lockId( long id )
-    {
-        // TODO: Change stripe mod for new 4B+
-        int stripe = (int) (id / 32768) % LOCK_STRIPE_COUNT;
-        if ( stripe < 0 )
-        {
-            stripe *= -1;
-        }
-        ReentrantLock lock = loadLocks[stripe];
-        lock.lock();
-        return lock;
     }
 
     public Node getNodeByIdOrNull( long nodeId )
@@ -487,7 +468,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         return relationship;
     }
 
-    @SuppressWarnings("unchecked")
     public Iterator<Relationship> getAllRelationships()
     {
         Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
@@ -590,34 +570,12 @@ public class NodeManager implements Lifecycle, EntityFactory
             lock.acquire( getTransactionState(),
                     new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) );
         }
-        RelationshipImpl relationship = relCache.get( relId );
-        if ( relationship != null )
+        RelationshipImpl rel = relCache.get( relId );
+        if ( rel == null )
         {
-            return relationship;
+            throw new NotFoundException( format( "Relationship %d not found", relId ) );
         }
-        ReentrantLock loadLock = lockId( relId );
-        try
-        {
-            relationship = relCache.get( relId );
-            if ( relationship != null )
-            {
-                return relationship;
-            }
-            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
-            if ( data == null )
-            {
-                throw new NotFoundException( format( "Relationship %d not found", relId ) );
-            }
-            int typeId = data.getType();
-            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(), typeId, false );
-            // relCache.put( relId, relationship );
-            relCache.put( relationship );
-            return relationship;
-        }
-        finally
-        {
-            loadLock.unlock();
-        }
+        return rel;
     }
 
     public void removeNodeFromCache( long nodeId )
