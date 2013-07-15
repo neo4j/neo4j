@@ -167,7 +167,7 @@ public class RestfulGraphDatabaseTest
                 .get( "Location" )
                 .get( 0 ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -188,7 +188,7 @@ public class RestfulGraphDatabaseTest
                 .get( "Location" )
                 .get( 0 ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -301,7 +301,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getAllNodeProperties( nodeId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -423,7 +423,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -477,7 +477,7 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map );
         assertTrue( map.containsKey( "self" ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
 
         @SuppressWarnings("unchecked") Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
@@ -606,7 +606,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationship( relationshipId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -626,7 +626,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getAllRelationshipProperties( relationshipId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         Map<String, Object> readProperties = JsonHelper.jsonToMap( entityAsString( response ) );
         assertEquals( properties, readProperties );
     }
@@ -654,7 +654,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
         assertEquals( "some-value", JsonHelper.jsonToSingleValue( entityAsString( response ) ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -696,7 +696,7 @@ public class RestfulGraphDatabaseTest
                 new AmpersandSeparatedCollection( "" ) );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         verifyRelReps( 3, entityAsString( response ) );
 
         response = service.getNodeRelationships( nodeId, RelationshipDirection.in,
@@ -753,7 +753,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 0, entityAsString( response ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -957,7 +957,7 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "batch" ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -978,7 +978,7 @@ public class RestfulGraphDatabaseTest
         assertNull( map.get( "reference_node" ) );
 
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test
@@ -1305,7 +1305,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeFromIndexUri( indexName, key, value, nodeId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         assertNull( response.getMetadata()
                 .get( "Location" ) );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
@@ -1328,7 +1328,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationshipFromIndexUri( indexName, key, value, relationshipId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         assertNull( response.getMetadata()
                 .get( "Location" ) );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
@@ -1554,7 +1554,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedNodes( indexName, "fooo", "baaar" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
         String entity = entityAsString( response );
         Object parsedJson = JsonHelper.jsonToSingleValue( entity );
         assertTrue( parsedJson instanceof Collection<?> );
@@ -1644,7 +1644,7 @@ public class RestfulGraphDatabaseTest
         assertTrue( entity.contains( "/node/" + child2_l1 ) );
         assertFalse( entity.contains( "/node/" + child1_l2 ) );
         assertEquals( response.getMetadata()
-                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+                .getFirst( HttpHeaders.CONTENT_TYPE ).toString(), "application/json" );
     }
 
     @Test

@@ -115,7 +115,6 @@ public class OutputFormat
     protected Response response( ResponseBuilder response, Representation representation )
     {
         return formatRepresentation( response, representation )
-                .header( HttpHeaders.CONTENT_ENCODING, UTF8 )
                 .type( getMediaType() )
                 .build();
     }
