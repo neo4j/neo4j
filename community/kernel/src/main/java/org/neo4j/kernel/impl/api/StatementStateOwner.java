@@ -51,17 +51,17 @@ import org.neo4j.kernel.impl.api.state.TxState;
  *                     /              \------------
  *                    v                            \
  *   StatementState (+boolean open)   StatementState (+boolean open)
- *           ^                                     
- *           |                                    
- *           |                                    
- *      action: close()                      
+ *           ^
+ *           |
+ *           |
+ *      action: close()
  */
 public abstract class StatementStateOwner
 {
     private ReferencedStatementState reference;
     private final LifecycleOperations operations;
     
-    StatementStateOwner( LifecycleOperations operations )
+    public StatementStateOwner( LifecycleOperations operations )
     {
         this.operations = operations;
     }
@@ -86,75 +86,64 @@ public abstract class StatementStateOwner
         }
     }
     
-    private class ReferencedStatementState
+    private class ReferencedStatementState implements StatementState
     {
-        private int count;
-        private final StatementState parentState;
+        private final StatementState actual;
+        private int refCount;
 
-        ReferencedStatementState( StatementState statement )
+        ReferencedStatementState( StatementState actual )
         {
-            this.parentState = statement;
+            this.actual = actual;
+        }
+
+        public void close()
+        {
+            if ( refCount > 0 )
+            {
+                refCount = 0;
+                operations.close( actual );
+                reference = null;
+            }
         }
 
         public StatementState newReference()
         {
-            count++;
-            return new StatementState()
-            {
-                private boolean open = true;
-                
-                @Override
-                public void markAsClosed()
-                {
-                    boolean isOpen = open && count > 0;
-                    if ( !isOpen )
-                    {
-                        throw new IllegalStateException( "This " + StatementState.class.getSimpleName() +
-                                " has been closed. No more interaction allowed" );
-                    }
-
-                    open = false;
-                    if ( --count == 0 )
-                    {
-                        operations.close( parentState );
-                        reference = null;
-                    }
-                }
-                
-                @Override
-                public TxState txState()
-                {
-                    return parentState.txState();
-                }
-                
-                @Override
-                public LockHolder locks()
-                {
-                    return parentState.locks();
-                }
-                
-                @Override
-                public IndexReaderFactory indexReaderFactory()
-                {
-                    return parentState.indexReaderFactory();
-                }
-                
-                @Override
-                public Closeable closeable( LifecycleOperations logic )
-                {
-                    return parentState.closeable( logic );
-                }
-            };
+            refCount++;
+            return this;
         }
 
-        void close()
+        @Override
+        public LockHolder locks()
         {
-            if ( count > 0 )
+            return actual.locks();
+        }
+
+        @Override
+        public TxState txState()
+        {
+            return actual.txState();
+        }
+
+        @Override
+        public IndexReaderFactory indexReaderFactory()
+        {
+            return actual.indexReaderFactory();
+        }
+
+        @Override
+        public void markAsClosed()
+        {
+            if ( --refCount == 0 )
             {
-                operations.close( parentState );
+                operations.close( actual );
                 reference = null;
             }
-            count = 0;
+        }
+
+        @Override
+        public Closeable closeable( LifecycleOperations logic )
+        {
+            return actual.closeable( logic );
         }
     }
 }

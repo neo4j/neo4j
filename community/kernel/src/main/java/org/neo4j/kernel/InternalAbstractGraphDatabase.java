@@ -155,6 +155,7 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
@@ -346,6 +347,7 @@ public abstract class InternalAbstractGraphDatabase
         }
         
         kernelAPI.bootstrapAfterRecovery();
+        statementContextProvider.bootstrapAfterRecovery();
         if ( txManager instanceof TxManager )
         {
             NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
@@ -1362,7 +1364,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( DependencyResolverImpl.this );
             }
-            return null;                                      
+            return null;
         }
         
         @Override
@@ -1371,7 +1373,9 @@ public abstract class InternalAbstractGraphDatabase
             // Try known single dependencies
             T result = resolveKnownSingleDependency( type );
             if ( result != null )
+            {
                 return selector.select( type, Iterables.option( result ) );
+            }
             
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );

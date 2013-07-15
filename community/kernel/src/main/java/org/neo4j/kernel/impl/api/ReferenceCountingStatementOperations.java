@@ -30,5 +30,8 @@ public class ReferenceCountingStatementOperations implements LifecycleOperations
         state.markAsClosed();
         
         // Delegation of close method happens via StatementStateOwner
+        // ReferenceCountingStatementOperations.close() -->
+        //         ReferencedStatementState.markAsClosed() -->
+        //                 if no refs left then: delegate StatementOperations.close()
     }
 }
