@@ -19,16 +19,10 @@
  */
 package org.neo4j.server.rest.paging;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -38,6 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -56,6 +51,11 @@ import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.tooling.FakeClock;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -343,9 +343,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // when
         JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
 
+
+        System.out.println(pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ));
+
         // then
         assertNotNull( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( "application/json; stream=true", pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ),
+                containsString( "application/json; charset=UTF-8; stream=true" ) );
     }
 
     private JaxRsResponse createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTimeInSeconds,
