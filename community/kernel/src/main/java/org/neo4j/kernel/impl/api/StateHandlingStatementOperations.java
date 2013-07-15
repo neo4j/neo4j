@@ -159,15 +159,19 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetForLabel( StatementState state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
     {
-        Iterator<Long> committed = entityReadDelegate.nodesGetForLabel( state, labelId );
+        PrimitiveLongIterator committed = entityReadDelegate.nodesGetForLabel( state, labelId );
         if ( !state.txState().hasChanges() )
         {
             return committed;
         }
 
-        return state.txState().getDeletedNodes().apply( state.txState().getNodesWithLabelChanged( labelId ).apply( committed ) );
+        PrimitiveLongIterator wLabelChanges =
+                state.txState().getNodesWithLabelChanged( labelId ).applyPrimitiveLongIterator( committed );
+        PrimitiveLongIterator wDeletions =
+                state.txState().getDeletedNodes().applyPrimitiveLongIterator( wLabelChanges );
+        return wDeletions;
     }
 
     @Override

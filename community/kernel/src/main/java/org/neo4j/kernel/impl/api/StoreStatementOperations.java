@@ -29,7 +29,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -247,16 +246,21 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetForLabel( StatementState state, final long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StatementState state, final long labelId )
     {
         final NodeStore nodeStore = neoStore.getNodeStore();
         final long highestId = nodeStore.getHighestPossibleIdInUse();
-        return new PrefetchingIterator<Long>()
+
+        return new AbstractPrimitiveLongIterator()
         {
             private long id = 0;
 
+            {
+                computeNext();
+            }
+
             @Override
-            protected Long fetchNextOrNull()
+            protected void computeNext()
             {
                 while ( id <= highestId )
                 {
@@ -267,12 +271,14 @@ public class StoreStatementOperations implements
                         {
                             if ( label == labelId )
                             {
-                                return node.getId();
+                                nextValue = node.getId();
+                                hasNext = true;
+                                return;
                             }
                         }
                     }
                 }
-                return null;
+                hasNext = false;
             }
         };
     }
@@ -511,7 +517,7 @@ public class StoreStatementOperations implements
         {
             return IteratorUtil.emptyIterator();
         }
-        List<Property> properties = new ArrayList<Property>();
+        List<Property> properties = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
