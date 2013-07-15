@@ -22,81 +22,97 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.util.Collection;
 
-public class DelegatingRecordStore<R extends AbstractBaseRecord> implements RecordStore<R> {
-
+public class DelegatingRecordStore<R extends AbstractBaseRecord> implements RecordStore<R>
+{
     private final RecordStore<R> delegate;
 
-    public DelegatingRecordStore( RecordStore<R> delegate ) {
+    public DelegatingRecordStore( RecordStore<R> delegate )
+    {
         this.delegate = delegate;
     }
 
     @Override
-    public File getStorageFileName() {
+    public File getStorageFileName()
+    {
         return delegate.getStorageFileName();
     }
 
     @Override
-    public WindowPoolStats getWindowPoolStats() {
+    public WindowPoolStats getWindowPoolStats()
+    {
         return delegate.getWindowPoolStats();
     }
 
     @Override
-    public long getHighId() {
+    public long getHighId()
+    {
         return delegate.getHighId();
     }
 
     @Override
-    public R getRecord(long id) {
-        return delegate.getRecord(id);
+    public R getRecord( long id )
+    {
+        return delegate.getRecord( id );
     }
 
-    public Long getNextRecordReference(R record) {
-        return delegate.getNextRecordReference(record);
-    }
-
-    @Override
-    public Collection<R> getRecords(long id) {
-        return delegate.getRecords(id);
-    }
-
-    public void updateRecord(R record) {
-        delegate.updateRecord(record);
+    public Long getNextRecordReference( R record )
+    {
+        return delegate.getNextRecordReference( record );
     }
 
     @Override
-    public R forceGetRecord(long id) {
-        return delegate.forceGetRecord(id);
+    public Collection<R> getRecords( long id )
+    {
+        return delegate.getRecords( id );
     }
 
-    public R forceGetRaw(R record) {
-        return delegate.forceGetRaw(record);
-    }
-
-    @Override
-    public R forceGetRaw(long id) {
-        return delegate.forceGetRaw(id);
-    }
-
-    public void forceUpdateRecord(R record) {
-        delegate.forceUpdateRecord(record);
-    }
-
-    public <FAILURE extends Exception> void accept(Processor<FAILURE> processor, R record) throws FAILURE {
-        delegate.accept(processor, record);
+    public void updateRecord( R record )
+    {
+        delegate.updateRecord( record );
     }
 
     @Override
-    public int getRecordSize() {
+    public R forceGetRecord( long id )
+    {
+        return delegate.forceGetRecord( id );
+    }
+
+    public R forceGetRaw( R record )
+    {
+        return delegate.forceGetRaw( record );
+    }
+
+    @Override
+    public R forceGetRaw( long id )
+    {
+        return delegate.forceGetRaw( id );
+    }
+
+    public void forceUpdateRecord( R record )
+    {
+        delegate.forceUpdateRecord( record );
+    }
+
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE
+    {
+        delegate.accept( processor, record );
+    }
+
+    @Override
+    public int getRecordSize()
+    {
         return delegate.getRecordSize();
     }
 
     @Override
-    public int getRecordHeaderSize() {
+    public int getRecordHeaderSize()
+    {
         return delegate.getRecordHeaderSize();
     }
 
     @Override
-    public void close() {
+    public void close()
+    {
         delegate.close();
     }
 }

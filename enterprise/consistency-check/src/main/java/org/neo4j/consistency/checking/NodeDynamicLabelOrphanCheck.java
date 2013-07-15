@@ -23,7 +23,6 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import static org.neo4j.kernel.impl.nioneo.store.NodeStore.readOwnerFromDynamicLabelsRecord;
@@ -38,18 +37,6 @@ public class NodeDynamicLabelOrphanCheck
         implements RecordCheck<DynamicRecord,DynamicLabelConsistencyReport>,
         ComparativeRecordChecker<DynamicRecord, DynamicRecord, DynamicLabelConsistencyReport>
 {
-
-    private final int blockSize;
-    private final DynamicStore dereference;
-    private final RecordStore<DynamicRecord> store;
-
-    NodeDynamicLabelOrphanCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
-    {
-        this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
-        this.dereference = dereference;
-        this.store = store;
-    }
-
 
     private static final
     ComparativeRecordChecker<DynamicRecord, NodeRecord, DynamicLabelConsistencyReport> VALID_NODE_RECORD =

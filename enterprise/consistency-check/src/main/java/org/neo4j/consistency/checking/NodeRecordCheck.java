@@ -216,7 +216,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     {
                         if ( allInUse )
                         {
-                            // only validate label ids if all dynamic records seen where in use
+                            // only validate label ids if all dynamic records seen were in use
                             validateLabelIds( labelIds( recordList ), report, records );
                         }
                     }
