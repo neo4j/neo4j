@@ -1,5 +1,5 @@
-1.9.2
------
+1.9.2 (2013-07-16)
+-----------------
 o Fixes problem where Cypher would see changes while the query was running
 
 1.9.1 (2013-06-24)
