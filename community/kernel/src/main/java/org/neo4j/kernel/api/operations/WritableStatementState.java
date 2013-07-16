@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 public class WritableStatementState implements StatementState
 {
     private LockHolder lockHolder = NO_LOCKS;
-    private TxState txState = NO_STATE;
+    private TxState.Holder txStateHolder = NO_STATE_HOLDER;
     private IndexReaderFactory indexReaderFactory = NO_INDEX_READER_FACTORY;
 
     public void provide( LockHolder lockHolder )
@@ -47,9 +47,9 @@ public class WritableStatementState implements StatementState
         this.lockHolder = lockHolder;
     }
     
-    public void provide( TxState txState )
+    public void provide( TxState.Holder txStateHolder )
     {
-        this.txState = txState;
+        this.txStateHolder = txStateHolder;
     }
     
     public void provide( IndexReaderFactory indexReaderFactory )
@@ -66,9 +66,21 @@ public class WritableStatementState implements StatementState
     @Override
     public TxState txState()
     {
-        return txState;
+        return txStateHolder.txState();
     }
-    
+
+    @Override
+    public boolean hasTxState()
+    {
+        return txStateHolder.hasTxState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return txStateHolder.hasTxStateWithChanges();
+    }
+
     @Override
     public IndexReaderFactory indexReaderFactory()
     {
@@ -143,6 +155,27 @@ public class WritableStatementState implements StatementState
             throw placeHolderException();
         }
     };
+
+    private static final TxState.Holder NO_STATE_HOLDER = new TxState.Holder() {
+        @Override
+        public TxState txState()
+        {
+            return NO_STATE;
+        }
+
+        @Override
+        public boolean hasTxState()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return false;
+        }
+    };
+
     private static final TxState NO_STATE = new TxState()
     {
         @Override

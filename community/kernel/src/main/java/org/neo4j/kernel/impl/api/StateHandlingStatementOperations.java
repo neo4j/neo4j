@@ -92,7 +92,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public boolean nodeHasLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
-        if ( state.txState().hasChanges() )
+        if ( state.hasTxStateWithChanges() )
         {
             if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
             {
@@ -118,15 +118,18 @@ public class StateHandlingStatementOperations implements
     @Override
     public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
     {
-        if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
+        if ( state.hasTxStateWithChanges() )
         {
-            return IteratorUtil.emptyPrimitiveLongIterator();
-        }
+            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
+            {
+                return IteratorUtil.emptyPrimitiveLongIterator();
+            }
 
-        if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
-        {
-            // TODO make DiffSets.getAdded() return primitive long iterators directly
-            return toPrimitiveLongIterator( state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
+            if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
+            {
+                return
+                    toPrimitiveLongIterator( state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
+            }
         }
 
         PrimitiveLongIterator committed = entityReadDelegate.nodeGetLabels( state, nodeId );
@@ -260,34 +263,46 @@ public class StateHandlingStatementOperations implements
     private Iterator<UniquenessConstraint> applyConstraintsDiff( StatementState state,
             Iterator<UniquenessConstraint> constraints, long labelId, long propertyKeyId )
     {
-        DiffSets<UniquenessConstraint> diff =
-                state.txState().constraintsChangesForLabelAndProperty( labelId, propertyKeyId );
-        if ( diff != null )
+        if ( state.hasTxStateWithChanges() )
         {
-            return diff.apply( constraints );
+            DiffSets<UniquenessConstraint> diff =
+                    state.txState().constraintsChangesForLabelAndProperty( labelId, propertyKeyId );
+            if ( diff != null )
+            {
+                return diff.apply( constraints );
+            }
         }
+
         return constraints;
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( StatementState state,
             Iterator<UniquenessConstraint> constraints, long labelId )
     {
-        DiffSets<UniquenessConstraint> diff = state.txState().constraintsChangesForLabel( labelId );
-        if ( diff != null )
+        if ( state.hasTxStateWithChanges() )
         {
-            return diff.apply( constraints );
+            DiffSets<UniquenessConstraint> diff = state.txState().constraintsChangesForLabel( labelId );
+            if ( diff != null )
+            {
+                return diff.apply( constraints );
+            }
         }
+
         return constraints;
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( StatementState state,
             Iterator<UniquenessConstraint> constraints )
     {
-        DiffSets<UniquenessConstraint> diff = state.txState().constraintsChanges();
-        if ( diff != null )
+        if ( state.hasTxStateWithChanges() )
         {
-            return diff.apply( constraints );
+            DiffSets<UniquenessConstraint> diff = state.txState().constraintsChanges();
+            if ( diff != null )
+            {
+                return diff.apply( constraints );
+            }
         }
+
         return constraints;
     }
 

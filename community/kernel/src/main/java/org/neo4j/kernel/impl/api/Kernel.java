@@ -27,9 +27,7 @@ import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -242,7 +240,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         KernelTransaction result = new StateHandlingKernelTransaction(
                 storeTransactionContext,
                 new SchemaStorage( neoStore.getSchemaStore() ),
-                newTxState(), providerMap, persistenceCache, schemaCache,
+                transactionManager.getTransactionState(), providerMap, persistenceCache, schemaCache,
                 persistenceManager, schemaState,
                 new ConstraintIndexCreator( new Transactor( transactionManager ), indexService ),
                 propertyKeyTokenHolder, nodeManager );
@@ -287,11 +285,5 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementOperationParts readOnlyStatementOperations()
     {
         return readOnlyStatementOperations;
-    }
-    
-    private TxState newTxState()
-    {
-        return new TxStateImpl( new OldTxStateBridgeImpl( nodeManager, transactionManager.getTransactionState() ),
-                persistenceManager, NO_ID_GENERATION );
     }
 }

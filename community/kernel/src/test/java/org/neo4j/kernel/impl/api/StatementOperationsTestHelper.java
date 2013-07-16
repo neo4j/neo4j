@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.api;
 import org.mockito.Matchers;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -69,7 +72,7 @@ public abstract class StatementOperationsTestHelper
         return mockedState( mock( TxState.class ) );
     }
     
-    public static StatementState mockedState( TxState txState )
+    public static StatementState mockedState( final TxState txState )
     {
         StatementState state = mock( StatementState.class );
         LockHolder lockHolder = mock( LockHolder.class );
@@ -85,6 +88,14 @@ public abstract class StatementOperationsTestHelper
             throw new Error( e );
         }
         when( state.txState() ).thenReturn( txState );
+        when( state.hasTxState() ).thenReturn( true );
+        when( state.hasTxStateWithChanges() ).thenAnswer( new Answer<Boolean>() {
+            @Override
+            public Boolean answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return txState.hasChanges();
+            }
+        } );
         when( state.locks() ).thenReturn( lockHolder );
         when( state.indexReaderFactory() ).thenReturn( indexReaderFactory );
         return state;

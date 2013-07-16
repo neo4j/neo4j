@@ -30,6 +30,15 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public interface TxState
 {
+    public interface Holder
+    {
+        TxState txState();
+
+        boolean hasTxState();
+
+        boolean hasTxStateWithChanges();
+    }
+
     /**
      * Ability to generate the leaking id types (node ids and relationship ids).
      */
