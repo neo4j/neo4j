@@ -36,6 +36,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 public class DiscoveryModuleTest
 {
     @Rule
@@ -55,6 +62,6 @@ public class DiscoveryModuleTest
 
         module.start(StringLogger.DEV_NULL);
 
-        verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
+        verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );
     }
 }
