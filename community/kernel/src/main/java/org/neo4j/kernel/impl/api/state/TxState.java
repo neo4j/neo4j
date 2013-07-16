@@ -57,17 +57,17 @@ public interface TxState
 
     public abstract boolean hasChanges();
 
-    public abstract Iterable<NodeState> getNodeStates();
+    public abstract Iterable<NodeState> nodeStates();
 
-    public abstract DiffSets<Long> getLabelStateNodeDiffSets( long labelId );
+    public abstract DiffSets<Long> labelStateNodeDiffSets( long labelId );
 
-    public abstract DiffSets<Long> getNodeStateLabelDiffSets( long nodeId );
+    public abstract DiffSets<Long> nodeStateLabelDiffSets( long nodeId );
 
-    public abstract DiffSets<Property> getNodePropertyDiffSets( long nodeId );
+    public abstract DiffSets<Property> nodePropertyDiffSets( long nodeId );
 
-    public abstract DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId );
+    public abstract DiffSets<Property> relationshipPropertyDiffSets( long relationshipId );
 
-    public abstract DiffSets<Property> getGraphPropertyDiffSets();
+    public abstract DiffSets<Property> graphPropertyDiffSets();
 
     public abstract boolean nodeIsAddedInThisTx( long nodeId );
 
@@ -107,17 +107,17 @@ public interface TxState
      *         {@code false} if it has been removed in this transaction.
      *         {@code null} if it has not been touched in this transaction.
      */
-    public abstract Boolean getLabelState( long nodeId, long labelId );
+    public abstract Boolean labelState( long nodeId, long labelId );
 
     /**
      * Returns all nodes that, in this tx, has got labelId added.
      */
-    public abstract Set<Long> getNodesWithLabelAdded( long labelId );
+    public abstract Set<Long> nodesWithLabelAdded( long labelId );
 
     /**
      * Returns all nodes that, in this tx, has got labelId removed.
      */
-    public abstract DiffSets<Long> getNodesWithLabelChanged( long labelId );
+    public abstract DiffSets<Long> nodesWithLabelChanged( long labelId );
 
     public abstract void addIndexRule( IndexDescriptor descriptor );
 
@@ -127,17 +127,18 @@ public interface TxState
 
     public abstract void dropConstraintIndex( IndexDescriptor descriptor );
 
-    public abstract DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId );
+    public abstract DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId );
 
-    public abstract DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId );
+    public abstract DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId );
 
-    public abstract DiffSets<IndexDescriptor> getIndexDiffSets();
+    public abstract DiffSets<IndexDescriptor> indexChanges();
 
-    public abstract DiffSets<IndexDescriptor> getConstraintIndexDiffSets();
+    public abstract DiffSets<IndexDescriptor> constraintIndexChanges();
 
-    public abstract DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value );
+    public abstract DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value );
 
-    public abstract DiffSets<Long> getDeletedNodes();
+    // Temporary: Should become DiffSets<Long> of all node changes, not just deletions
+    public abstract DiffSets<Long> deletedNodes();
 
     public abstract void addConstraint( UniquenessConstraint constraint, long indexId );
 

@@ -247,91 +247,91 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
+        public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithLabelChanged( long labelId )
+        public DiffSets<Long> nodesWithLabelChanged( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Set<Long> getNodesWithLabelAdded( long labelId )
+        public Set<Long> nodesWithLabelAdded( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
+        public DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Iterable<NodeState> getNodeStates()
+        public Iterable<NodeState> nodeStates()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
+        public DiffSets<Long> nodeStateLabelDiffSets( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
+        public DiffSets<Property> nodePropertyDiffSets( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
+        public DiffSets<Long> labelStateNodeDiffSets( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Boolean getLabelState( long nodeId, long labelId )
+        public Boolean labelState( long nodeId, long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSets()
+        public DiffSets<IndexDescriptor> indexChanges()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Property> getGraphPropertyDiffSets()
+        public DiffSets<Property> graphPropertyDiffSets()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getDeletedNodes()
+        public DiffSets<Long> deletedNodes()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
+        public DiffSets<IndexDescriptor> constraintIndexChanges()
         {
             throw placeHolderException();
         }

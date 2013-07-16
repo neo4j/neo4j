@@ -237,92 +237,92 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
+        public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithLabelChanged( long labelId )
+        public DiffSets<Long> nodesWithLabelChanged( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Set<Long> getNodesWithLabelAdded( long labelId )
+        public Set<Long> nodesWithLabelAdded( long labelId )
         {
             return Collections.emptySet();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
+        public DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Iterable<NodeState> getNodeStates()
+        public Iterable<NodeState> nodeStates()
         {
             return Collections.emptyList();
         }
         
         @Override
-        public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
+        public DiffSets<Long> nodeStateLabelDiffSets( long nodeId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
+        public DiffSets<Property> nodePropertyDiffSets( long nodeId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
+        public DiffSets<Long> labelStateNodeDiffSets( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Boolean getLabelState( long nodeId, long labelId )
+        public Boolean labelState( long nodeId, long labelId )
         {
             // TODO Auto-generated method stub
             return null;
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSets()
+        public DiffSets<IndexDescriptor> indexChanges()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Property> getGraphPropertyDiffSets()
+        public DiffSets<Property> graphPropertyDiffSets()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getDeletedNodes()
+        public DiffSets<Long> deletedNodes()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
+        public DiffSets<IndexDescriptor> constraintIndexChanges()
         {
             return DiffSets.emptyDiffSets();
         }

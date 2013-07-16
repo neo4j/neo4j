@@ -117,7 +117,7 @@ public class PersistenceCache
     
     public void apply( TxState state )
     {
-        for ( NodeState stateEntity : state.getNodeStates() )
+        for ( NodeState stateEntity : state.nodeStates() )
         {
             NodeImpl node = nodeCache.getIfCached( stateEntity.getId() );
             if ( node == null )
@@ -126,8 +126,8 @@ public class PersistenceCache
             }
 
             node.commitLabels(
-                    stateEntity.getLabelDiffSets().getAdded(),
-                    stateEntity.getLabelDiffSets().getRemoved() );
+                    stateEntity.labelDiffSets().getAdded(),
+                    stateEntity.labelDiffSets().getRemoved() );
         }
     }
 
