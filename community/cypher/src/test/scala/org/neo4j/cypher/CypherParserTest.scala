@@ -33,7 +33,7 @@ import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
 class CypherParserTest extends JUnitSuite with Assertions {
@@ -2744,6 +2744,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(SingleNode("p")).
         where(HasLabel(Identifier("p"), KeyToken.Unresolved("Person", TokenType.Label))).
         using(NodeByLabel("p", "Person")).
+        returns(ReturnItem(Identifier("p"), "p")))
+  }
+
+  @Test def varlength_named_path() {
+    test(vFrom2_0, "start n=node(1) match p=n-[:KNOWS*..2]->x return p",
+      Query.
+        start(NodeById("n", 1)).
+        matches(VarLengthRelatedTo("  UNNAMED25", "n", "x", None, Some(2), "KNOWS", Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", ParsedVarLengthRelation("  UNNAMED25", Map.empty, ParsedEntity("n"), ParsedEntity("x"), Seq("KNOWS"), Direction.OUTGOING, false, None, Some(2), None))).
         returns(ReturnItem(Identifier("p"), "p")))
   }
 

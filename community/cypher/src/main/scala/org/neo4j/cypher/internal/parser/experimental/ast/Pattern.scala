@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy, values => commandvalues}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.mutation
-import org.neo4j.cypher.internal.parser.{ParsedRelation, ParsedEntity, ParsedNamedPath, AbstractPattern}
+import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.commands.values.TokenType.Label
 import org.neo4j.cypher.internal.commands.values.KeyToken.Unresolved
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
 
 object Pattern {
   sealed trait SemanticContext
@@ -208,12 +209,27 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
 
-    def createParsedRelationship(node: NodePattern): ParsedRelation = {
+    def createParsedRelationship(node: NodePattern): AbstractPattern = {
       val relName: String = relationship.legacyName
       val props: Map[String, CommandExpression] = relationship.toLegacyProperties
       val startNode: ParsedEntity = node.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
       val endNode: ParsedEntity = rightNode.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
-      ParsedRelation(relName, props, startNode, endNode, relationship.types.map(_.name), relationship.direction, relationship.optional)
+
+      val maxDepth = relationship.length match {
+        case Some(Some(Range(_, Some(i), _))) => Some(i.value.toInt)
+        case _                                => None
+      }
+      val minDepth = relationship.length match {
+        case Some(Some(Range(Some(i), _, _))) => Some(i.value.toInt)
+        case _                                => None
+      }
+
+      relationship.length match {
+        case None    => ParsedRelation(relName, props, startNode, endNode, relationship.types.map(_.name),
+          relationship.direction, relationship.optional)
+        case Some(x) => ParsedVarLengthRelation(relationship.legacyName, Map.empty, startNode, endNode, relationship.types.map(_.name),
+          relationship.direction, relationship.optional, minDepth, maxDepth, None)
+      }
     }
 
     element match {
