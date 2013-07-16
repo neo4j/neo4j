@@ -73,8 +73,9 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.contains;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 /**
@@ -219,16 +220,16 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( StatementState state, long nodeId )
+    public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId )
     {
         try
         {
-            return asIterator( parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore ) );
+            return asPrimitiveIterator( parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore ) );
         }
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
             // might get called with a nodeId that doesn't exist.
-            return IteratorUtil.emptyIterator();
+            return emptyPrimitiveLongIterator();
         }
     }
 

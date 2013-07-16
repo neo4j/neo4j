@@ -94,7 +94,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelsForNode(node: Long) =
-    ctx.entityReadOperations.nodeGetLabels(theState, node).asScala.map(_.asInstanceOf[Long])
+    JavaConversionSupport.asScala( ctx.entityReadOperations.nodeGetLabels(theState, node) )
 
   override def isLabelSetOnNode(label: Long, node: Long) =
     ctx.entityReadOperations.nodeHasLabel(theState, node, label)

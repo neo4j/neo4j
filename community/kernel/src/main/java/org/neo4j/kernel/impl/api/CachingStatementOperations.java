@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 public class CachingStatementOperations implements
     EntityReadOperations,
@@ -131,9 +132,11 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( StatementState state, final long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetLabels( StatementState state, final long nodeId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ).iterator();
+        // TODO Make PersistenceCache use primitive longs
+        Iterator<Long> iterator = persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ).iterator();
+        return toPrimitiveLongIterator( iterator );
     }
 
     @Override
