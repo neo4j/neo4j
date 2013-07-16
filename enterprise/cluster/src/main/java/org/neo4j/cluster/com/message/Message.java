@@ -57,7 +57,9 @@ public class Message<MESSAGETYPE extends MessageType>
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> respond( MESSAGETYPE messageType,
                                                                                   Message<?> message, Object payload )
     {
-        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) );
+        return message.hasHeader( Message.FROM ) ?
+                new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) ) :
+                internal( messageType, payload );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message )

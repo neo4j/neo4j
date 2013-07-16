@@ -27,11 +27,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.server.webadmin.console.ShellSessionCreator;
+
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
 
 public interface Configurator
 {
@@ -109,7 +113,7 @@ public interface Configurator
 
     Map<String, String> getDatabaseTuningProperties();
 
-    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
+    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
 
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
     {
@@ -142,5 +146,30 @@ public interface Configurator
         {
             return Configurator.class.getName();
         }
+    };
+    
+    public static abstract class Adapter implements Configurator
+    {
+        @Override
+        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+        {
+            return emptySet();
+        }
+        
+        @Override
+        public Map<String, String> getDatabaseTuningProperties()
+        {
+            return emptyMap();
+        }
+        
+        @Override
+        public Configuration configuration()
+        {
+            return new MapConfiguration( emptyMap() );
+        }
+    }
+    
+    public static final Configurator EMPTY = new Configurator.Adapter()
+    {
     };
 }

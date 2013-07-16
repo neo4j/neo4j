@@ -55,7 +55,7 @@ public class ThirdPartyJAXRSModuleTest
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
         jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
-        when( configurator.getThirdpartyJaxRsClasses() ).thenReturn( jaxRsPackages );
+        when( configurator.getThirdpartyJaxRsPackages() ).thenReturn( jaxRsPackages );
 
         when( neoServer.getConfigurator() ).thenReturn( configurator );
 

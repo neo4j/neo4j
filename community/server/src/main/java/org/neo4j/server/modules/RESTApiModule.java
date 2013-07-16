@@ -27,6 +27,12 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.web.BatchOperationService;
+import org.neo4j.server.rest.web.CypherService;
+import org.neo4j.server.rest.web.DatabaseMetadataService;
+import org.neo4j.server.rest.web.ExtensionService;
+import org.neo4j.server.rest.web.ResourcesService;
+import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.web.WebServer;
 
 import java.net.URI;
@@ -41,27 +47,27 @@ public class RESTApiModule implements ServerModule
     private static final Logger log = Logger.getLogger( RESTApiModule.class );
 
     private PluginManager plugins;
-	private final Configuration config;
-	private final WebServer webServer;
-	private final Database database;
-	private GuardingRequestFilter requestTimeLimitFilter;
+    private final Configuration config;
+    private final WebServer webServer;
+    private final Database database;
+    private GuardingRequestFilter requestTimeLimitFilter;
 
     public RESTApiModule(WebServer webServer, Database database, Configuration config)
     {
-    	this.webServer = webServer;
-    	this.config = config;
-    	this.database = database;
+        this.webServer = webServer;
+        this.config = config;
+        this.database = database;
     }
 
     @Override
-	public void start( StringLogger logger )
+    public void start( StringLogger logger )
     {
         try
         {
             URI restApiUri = restApiUri( );
 
             webServer.addJAXRSPackages( getPackageNames(), restApiUri.toString(), null );
-            loadPlugins(logger);
+            loadPlugins( logger );
 
             setupRequestTimeLimit();
 
@@ -80,43 +86,43 @@ public class RESTApiModule implements ServerModule
     }
 
     @Override
-	public void stop()
+    public void stop()
     {
         try
         {
-			webServer.removeJAXRSPackages( getPackageNames(), restApiUri().toString() );
+            webServer.removeJAXRSPackages( getPackageNames(), restApiUri().toString() );
 
-			tearDownRequestTimeLimit();
-			unloadPlugins();
-	    }
-	    catch ( URISyntaxException e )
-	    {
-	        log.warn( e );
-	    }
+            tearDownRequestTimeLimit();
+            unloadPlugins();
+        }
+        catch ( URISyntaxException e )
+        {
+            log.warn( e );
+        }
     }
 
-	private void tearDownRequestTimeLimit() {
-		if(requestTimeLimitFilter != null)
-		{
-			webServer.removeFilter(requestTimeLimitFilter, "/*");
-		}
-	}
+    private void tearDownRequestTimeLimit() {
+        if(requestTimeLimitFilter != null)
+        {
+            webServer.removeFilter(requestTimeLimitFilter, "/*");
+        }
+    }
 
-	private void setupRequestTimeLimit() {
-    	Integer limit = config.getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+    private void setupRequestTimeLimit() {
+        Integer limit = config.getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
         if ( limit != null )
         {
-        	Guard guard = database.getGraph().getGuard();
-        	if ( guard == null )
+            Guard guard = database.getGraph().getGuard();
+            if ( guard == null )
             {
                 //TODO enable guard and restart EmbeddedGraphdb
                 throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties" );
             }
-        	
-        	this.requestTimeLimitFilter = new GuardingRequestFilter( guard, limit );
+
+            this.requestTimeLimitFilter = new GuardingRequestFilter( guard, limit );
             webServer.addFilter(requestTimeLimitFilter , "/*" );
         }
-	}
+    }
 
     private URI restApiUri() throws URISyntaxException
     {
@@ -129,8 +135,8 @@ public class RESTApiModule implements ServerModule
     }
 
     private void unloadPlugins() {
-		// TODO
-	}
+        // TODO
+    }
 
     public PluginManager getPlugins()
     {

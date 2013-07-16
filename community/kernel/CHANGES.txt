@@ -18,6 +18,13 @@ o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary c
 o Adds support for adding, listing, removing, and testing of labels
 o Adds support for creating, querying, and dropping label-based indexes
 
+1.9.2 (2013-07-16)
+------------------
+o When flushing persistent windows, do so only if dirty. This is a performance improvement
+  for certain scenarios.
+o Fixes bug where loading relationship chains with high ids would cause them to be
+  ignored when iterating over them.
+
 1.9.1 (2013-06-24)
 ------------------
 o Fixes bug where creating an Index with an invalid configuration would not properly clean up
