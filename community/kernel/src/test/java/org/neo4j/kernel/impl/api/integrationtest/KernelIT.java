@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
@@ -281,7 +280,7 @@ public class KernelIT extends KernelIntegrationTest
         context.nodeRemoveLabel( statement, node.getId(), labelId2 );
 
         // THEN
-        Iterator<Long> labelsIterator = context.nodeGetLabels( statement, node.getId() );
+        PrimitiveLongIterator labelsIterator = context.nodeGetLabels( statement, node.getId() );
         Set<Long> labels = asSet( labelsIterator );
         assertFalse( context.nodeHasLabel( statement, node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
@@ -317,7 +316,7 @@ public class KernelIT extends KernelIntegrationTest
         tx = db.beginTx();
         context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
-        Iterator<Long> labels = context.nodeGetLabels( statement, node.getId() );
+        PrimitiveLongIterator labels = context.nodeGetLabels( statement, node.getId() );
         context.close( statement );
         tx.success();
         tx.finish();

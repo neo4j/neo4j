@@ -51,6 +51,7 @@ import static java.util.Collections.emptyList;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 public class StateHandlingStatementOperations implements
     EntityReadOperations,
@@ -115,20 +116,21 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
         {
-            return IteratorUtil.emptyIterator();
+            return IteratorUtil.emptyPrimitiveLongIterator();
         }
 
         if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
-            return state.txState().getNodeStateLabelDiffSets( nodeId ).getAdded().iterator();
+            // TODO make DiffSets.getAdded() return primitive long iterators directly
+            return toPrimitiveLongIterator( state.txState().getNodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
         }
 
-        Iterator<Long> committed = entityReadDelegate.nodeGetLabels( state, nodeId );
-        return state.txState().getNodeStateLabelDiffSets( nodeId ).apply( committed );
+        PrimitiveLongIterator committed = entityReadDelegate.nodeGetLabels( state, nodeId );
+        return state.txState().getNodeStateLabelDiffSets( nodeId ).applyPrimitiveLongIterator( committed );
     }
 
     @Override

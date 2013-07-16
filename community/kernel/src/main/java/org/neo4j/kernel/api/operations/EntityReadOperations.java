@@ -58,7 +58,7 @@ public interface EntityReadOperations
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
-    Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;

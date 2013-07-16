@@ -261,7 +261,7 @@ public class StatementOperationParts
                 return entityReadOperations.nodeHasLabel( state, nodeId, labelId );
             }
             @Override
-            public Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
+            public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
             {
                 return entityReadOperations.nodeGetLabels( state, nodeId );
             }

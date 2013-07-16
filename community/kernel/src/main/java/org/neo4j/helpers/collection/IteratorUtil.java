@@ -39,6 +39,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
 import static java.util.Arrays.asList;
 import static java.util.EnumSet.allOf;
@@ -366,6 +367,23 @@ public abstract class IteratorUtil
      */
     public static <C extends Collection<T>,T> C addToCollection( Iterator<T> iterator,
             C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
     {
         while ( iterator.hasNext() )
         {
@@ -734,6 +752,11 @@ public abstract class IteratorUtil
         };
     }
 
+    public static PrimitiveLongIterator asPrimitiveIterator( final long... array )
+    {
+        return new PrimitiveLongIteratorForArray( array );
+    }
+
     public static <T> Iterator<T> asIterator( final T... array )
     {
         return new PrefetchingIterator<T>()
@@ -860,7 +883,29 @@ public abstract class IteratorUtil
             }
         }
     }
-    
+
+    public static boolean contains( PrimitiveLongIterator iterator, long item )
+    {
+        try
+        {
+            while ( iterator.hasNext() )
+            {
+                if ( item == iterator.next() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
+        }
+    }
+
     public static final Closeable EMPTY_CLOSEABLE = new Closeable()
     {
         @Override
@@ -1004,5 +1049,28 @@ public abstract class IteratorUtil
             addUnique( set, iterator.next() );
         }
         return set;
+    }
+
+    public static PrimitiveLongIterator toPrimitiveLongIterator( final Iterator<Long> iterator )
+    {
+        return new PrimitiveLongIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public long next()
+            {
+                Long nextValue = iterator.next();
+                if ( null == nextValue )
+                {
+                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                }
+                return nextValue;
+            }
+        };
     }
 }

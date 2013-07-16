@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.graphdb.Neo4jMockitoHelpers;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -50,6 +49,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.asAnswer;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.asPrimitiveAnswer;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LabelTransactionStateTest
@@ -275,11 +276,11 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementOperations.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( Neo4jMockitoHelpers.asAnswer( Collections
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( Neo4jMockitoHelpers.asAnswer( Collections
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( Neo4jMockitoHelpers.asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
@@ -322,10 +323,8 @@ public class LabelTransactionStateTest
         Map<Long, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then( Neo4jMockitoHelpers.asAnswer( Arrays
-                    .<Long>asList
-                            ( nodeLabels
-                                    .labelIds ) ) );
+            when( store.nodeGetLabels( state, nodeLabels.nodeId ) )
+                    .then( asPrimitiveAnswer( Arrays.<Long>asList( nodeLabels.labelIds ) ) );
             for ( long label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
@@ -344,7 +343,7 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( Neo4jMockitoHelpers.asPrimitiveAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asPrimitiveAnswer( entry.getValue() ) );
         }
     }
 

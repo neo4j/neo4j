@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.lang.reflect.Array;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -99,7 +98,7 @@ public class StoreStatementOperationsTest
         tx.finish();
 
         // THEN
-        Iterator<Long> readLabels = statement.nodeGetLabels( state, nodeId );
+        PrimitiveLongIterator readLabels = statement.nodeGetLabels( state, nodeId );
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
