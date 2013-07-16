@@ -66,6 +66,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
+    public static final byte[] NO_DATA = new byte[0];
+
     private final Config conf;
     private int blockSize;
     protected final DynamicRecordAllocator recordAllocator;
@@ -285,6 +287,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         if ( !record.isLight() )
             return;
+        if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
+        {
+            record.setData( NO_DATA );
+        }
 
         long blockId = record.getId();
         PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
@@ -582,7 +588,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     public String toString()
     {
-        return super.toString() + "[blockSize:" + (getRecordSize()-getRecordHeaderSize()) + "]";
+        return super.toString() + "[fileName:" + storageFileName.getName() +
+               ", blockSize:" + (getRecordSize() - getRecordHeaderSize()) + "]";
     }
 
     public Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(

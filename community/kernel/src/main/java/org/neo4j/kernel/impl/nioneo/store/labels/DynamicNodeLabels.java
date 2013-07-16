@@ -115,6 +115,7 @@ public class DynamicNodeLabels implements NodeLabels
                     if ( !newRecords.contains( record ) )
                     {
                         record.setInUse( false );
+                        record.setLength( 0 ); // so that it will not be made heavy again...
                     }
                 }
             }
