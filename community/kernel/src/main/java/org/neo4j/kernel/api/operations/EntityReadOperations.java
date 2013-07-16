@@ -33,23 +33,24 @@ public interface EntityReadOperations
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
     /**
+     *
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    Iterator<Long> nodesGetForLabel( StatementState state, long labelId );
+    PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId );
 
     /**
      * Returns an iterable with the matched nodes.
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value ) throws IndexNotFoundKernelException;
+    PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value ) throws IndexNotFoundKernelException;
 
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
-     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or
-     * {@link KeyReadOperations#labelGetForName(String)}.
+     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(StatementState, String)} or
+     * {@link KeyReadOperations#labelGetForName(StatementState, String)}.
      */
     boolean nodeHasLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
@@ -57,7 +58,7 @@ public interface EntityReadOperations
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
-    Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;

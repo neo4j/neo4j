@@ -29,7 +29,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -74,8 +73,9 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.contains;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 /**
@@ -220,16 +220,16 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( StatementState state, long nodeId )
+    public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId )
     {
         try
         {
-            return asIterator( parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore ) );
+            return asPrimitiveIterator( parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore ) );
         }
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
             // might get called with a nodeId that doesn't exist.
-            return IteratorUtil.emptyIterator();
+            return emptyPrimitiveLongIterator();
         }
     }
 
@@ -247,16 +247,21 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetForLabel( StatementState state, final long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StatementState state, final long labelId )
     {
         final NodeStore nodeStore = neoStore.getNodeStore();
         final long highestId = nodeStore.getHighestPossibleIdInUse();
-        return new PrefetchingIterator<Long>()
+
+        return new AbstractPrimitiveLongIterator()
         {
             private long id = 0;
 
+            {
+                computeNext();
+            }
+
             @Override
-            protected Long fetchNextOrNull()
+            protected void computeNext()
             {
                 while ( id <= highestId )
                 {
@@ -267,12 +272,14 @@ public class StoreStatementOperations implements
                         {
                             if ( label == labelId )
                             {
-                                return node.getId();
+                                nextValue = node.getId();
+                                hasNext = true;
+                                return;
                             }
                         }
                     }
                 }
-                return null;
+                hasNext = false;
             }
         };
     }
@@ -511,7 +518,7 @@ public class StoreStatementOperations implements
         {
             return IteratorUtil.emptyIterator();
         }
-        List<Property> properties = new ArrayList<Property>();
+        List<Property> properties = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
@@ -523,7 +530,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         return state.indexReaderFactory().newReader( indexId( index ) ).lookup( value );

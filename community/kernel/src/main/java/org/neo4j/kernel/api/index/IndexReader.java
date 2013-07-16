@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-
 import java.io.Closeable;
-import java.util.Iterator;
+
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 /**
  * Reader for an {@link IndexAccessor}.
@@ -31,7 +32,7 @@ import java.util.Iterator;
  */
 public interface IndexReader extends Closeable
 {
-    Iterator<Long> lookup( Object value );
+    PrimitiveLongIterator lookup( Object value );
 
     @Override
     void close();
@@ -39,9 +40,9 @@ public interface IndexReader extends Closeable
     class Empty implements IndexReader
     {
         @Override
-        public Iterator<Long> lookup( Object value )
+        public PrimitiveLongIterator lookup( Object value )
         {
-            return emptyIterator();
+            return emptyPrimitiveLongIterator();
         }
         
         @Override

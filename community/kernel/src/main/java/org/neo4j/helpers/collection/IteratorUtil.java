@@ -36,7 +36,10 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.PrimitiveLongPredicate;
+import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
 import static java.util.Arrays.asList;
 import static java.util.EnumSet.allOf;
@@ -169,7 +172,7 @@ public abstract class IteratorUtil
      */
     public static <T> T fromEndOrNull( Iterator<T> iterator, int n )
     {
-        Deque<T> trail = new ArrayDeque<T>( n );
+        Deque<T> trail = new ArrayDeque<>( n );
         while ( iterator.hasNext() )
         {
             if ( trail.size() > n )
@@ -375,6 +378,23 @@ public abstract class IteratorUtil
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterator the {@link Iterator} to grab the items from.
      * @param collection the {@link Collection} to add the items to.
@@ -534,16 +554,6 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterator, new HashSet<T>() );
     }
-    
-    public static Set<Long> asSet( PrimitiveLongIterator iterator )
-    {
-        Set<Long> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            set.add( iterator.next() );
-        }
-        return set;
-    }
 
     /**
      * Creates a {@link Set} from an {@link Iterable}.
@@ -565,7 +575,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asSet( T... items )
     {
-        return new HashSet<T>( asList( items ) );
+        return new HashSet<>( asList( items ) );
     }
 
     public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
@@ -594,7 +604,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asUniqueSet( T... items )
     {
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         for ( T item : items )
             addUnique( set, item );
         return set;
@@ -608,7 +618,7 @@ public abstract class IteratorUtil
      */
     public static <T> Set<T> asUniqueSet( Iterator<T> items )
     {
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         while( items.hasNext() )
             addUnique( set, items.next() );
         return set;
@@ -742,6 +752,11 @@ public abstract class IteratorUtil
         };
     }
 
+    public static PrimitiveLongIterator asPrimitiveIterator( final long... array )
+    {
+        return new PrimitiveLongIteratorForArray( array );
+    }
+
     public static <T> Iterator<T> asIterator( final T... array )
     {
         return new PrefetchingIterator<T>()
@@ -774,6 +789,24 @@ public abstract class IteratorUtil
         return asIterator(item);
     }
 
+    @SuppressWarnings("unchecked")
+    public static PrimitiveLongIterator singletonPrimitiveLongIterator( final long item )
+    {
+        return new AbstractPrimitiveLongIterator()
+        {
+            {
+                hasNext = true;
+                nextValue = item;
+            }
+
+            @Override
+            protected void computeNext()
+            {
+                hasNext = false;
+            }
+        };
+    }
+
     @SuppressWarnings( "rawtypes" )
     private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
     {
@@ -801,11 +834,32 @@ public abstract class IteratorUtil
             // do nothing
         }
     };
-    
+
+    private static final PrimitiveLongIterator EMPTY_PRIMITIVE_LONG_ITERATOR = new PrimitiveLongIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public long next()
+        {
+            throw new NoSuchElementException();
+        }
+    };
+
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyIterator()
     {
         return EMPTY_ITERATOR;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static PrimitiveLongIterator emptyPrimitiveLongIterator()
+    {
+        return EMPTY_PRIMITIVE_LONG_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -829,7 +883,29 @@ public abstract class IteratorUtil
             }
         }
     }
-    
+
+    public static boolean contains( PrimitiveLongIterator iterator, long item )
+    {
+        try
+        {
+            while ( iterator.hasNext() )
+            {
+                if ( item == iterator.next() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
+        }
+    }
+
     public static final Closeable EMPTY_CLOSEABLE = new Closeable()
     {
         @Override
@@ -896,6 +972,104 @@ public abstract class IteratorUtil
             {
                 if ( ! hasNext )
                     throw new IllegalArgumentException( "Iterator already closed" );
+            }
+        };
+    }
+
+    // Useful when debugging in tests
+    @SuppressWarnings("UnusedDeclaration")
+    public static Iterator<Long> toJavaIterator( final PrimitiveLongIterator primIterator )
+    {
+        return new Iterator<Long>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return primIterator.hasNext();
+            }
+
+            @Override
+            public Long next()
+            {
+                return primIterator.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException(  );
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
+                                                final PrimitiveLongIterator source )
+    {
+        return new AbstractPrimitiveLongIterator()
+        {
+            {
+                computeNext();
+            }
+
+            protected void computeNext()
+            {
+                for ( hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
+                {
+                    nextValue = source.next();
+                    if ( predicate.accept( nextValue ) )
+                    {
+                        return;
+                    }
+                }
+            }
+        };
+    }
+
+    public static Set<Long> asSet( PrimitiveLongIterator iterator )
+    {
+        Set<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
+        }
+        return set;
+    }
+
+    /**
+     * Creates a {@link Set} from an array of iterator.
+     *
+     * @param iterator the iterator to add to the set.
+     * @return the {@link Set} containing the iterator.
+     */
+    public static Set<Long> asUniqueSet( PrimitiveLongIterator iterator )
+    {
+        HashSet<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            addUnique( set, iterator.next() );
+        }
+        return set;
+    }
+
+    public static PrimitiveLongIterator toPrimitiveLongIterator( final Iterator<Long> iterator )
+    {
+        return new PrimitiveLongIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public long next()
+            {
+                Long nextValue = iterator.next();
+                if ( null == nextValue )
+                {
+                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                }
+                return nextValue;
             }
         };
     }
