@@ -37,7 +37,6 @@ import org.neo4j.test.TestData.Title;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
 
-@Ignore
 public class CreateRelationshipDocTest extends
         AbstractRestFunctionalTestBase
 {
