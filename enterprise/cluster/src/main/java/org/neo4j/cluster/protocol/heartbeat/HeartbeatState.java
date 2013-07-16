@@ -170,8 +170,6 @@ public enum HeartbeatState
                         {
                             InstanceId to = message.getPayload();
 
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received send heartbeat to " + to );
-
                             // Check if this node is no longer a part of the cluster
                             if ( context.getClusterContext().getConfiguration().getMembers().containsKey( to ) )
                             {
@@ -193,7 +191,6 @@ public enum HeartbeatState
                         {
 
                             InstanceId to = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received reset send heartbeat " + to );
 
                             String timeoutName = HeartbeatMessage.sendHeartbeat + "-" + to;
                             context.getClusterContext().timeouts.cancelTimeout( timeoutName );
