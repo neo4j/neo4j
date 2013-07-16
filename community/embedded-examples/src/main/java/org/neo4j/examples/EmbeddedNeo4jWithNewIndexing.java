@@ -47,17 +47,21 @@ public class EmbeddedNeo4jWithNewIndexing
             Schema schema = graphDb.schema();
             IndexDefinition indexDefinition;
             Transaction tx = graphDb.beginTx();
-            try {
+            try
+            {
                 indexDefinition = schema.indexFor( DynamicLabel.label( "User" ) )
-                                        .on( "username" )
-                                        .create();
+                        .on( "username" )
+                        .create();
                 tx.success();
-            } finally {
+            }
+            finally
+            {
                 tx.finish();
             }
-            // Await asynchronous index population
+            // END SNIPPET: createIndex
+            // START SNIPPET: wait
             schema.awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
-            // STOP SNIPPET: createIndex
+            // END SNIPPET: wait
         }
 
         {
@@ -67,7 +71,8 @@ public class EmbeddedNeo4jWithNewIndexing
             {
                 Label label = DynamicLabel.label( "User" );
 
-                // Create some users and index their names with the new IndexingService
+                // Create some users and index their names with the new
+                // IndexingService
                 for ( int id = 0; id < 100; id++ )
                 {
                     Node userNode = graphDb.createNode( label );
@@ -88,7 +93,8 @@ public class EmbeddedNeo4jWithNewIndexing
             Label label = DynamicLabel.label( "User" );
             int idToFind = 45;
             String nameToFind = "user" + idToFind + "@neo4j.org";
-            ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ).iterator();
+            ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind )
+                    .iterator();
             try
             {
                 while ( users.hasNext() )
@@ -114,9 +120,9 @@ public class EmbeddedNeo4jWithNewIndexing
                 int idToFind = 45;
                 String nameToFind = "user" + idToFind + "@neo4j.org";
 
-                for (Node node : graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ) )
+                for ( Node node : graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ) )
                 {
-                    node.setProperty( "username", "user" + (idToFind+1) + "@neo4j.org" );
+                    node.setProperty( "username", "user" + ( idToFind + 1 ) + "@neo4j.org" );
                 }
                 tx.success();
             }
@@ -136,7 +142,7 @@ public class EmbeddedNeo4jWithNewIndexing
                 int idToFind = 46;
                 String nameToFind = "user" + idToFind + "@neo4j.org";
 
-                for (Node node : graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ) )
+                for ( Node node : graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ) )
                 {
                     node.delete();
                 }
@@ -155,7 +161,8 @@ public class EmbeddedNeo4jWithNewIndexing
             try
             {
                 Label label = DynamicLabel.label( "User" );
-                for ( IndexDefinition indexDefinition : graphDb.schema().getIndexes(label) )
+                for ( IndexDefinition indexDefinition : graphDb.schema()
+                        .getIndexes( label ) )
                 {
                     // There is only one index
                     indexDefinition.drop();

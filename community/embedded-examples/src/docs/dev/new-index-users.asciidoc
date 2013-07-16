@@ -8,7 +8,7 @@ You have a user database, and want to retrieve users by name using schema based 
 The source code used in this example is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithNewIndexing.java[EmbeddedNeo4jWithNewIndexing.java]
 
-To begin with, we start the database server
+To begin with, we start the database server:
 
 [snippet,java]
 ----
@@ -18,16 +18,26 @@ classifier=sources
 tag=startDb
 ----
 
-Then we have to configure the database to index users by name. This only needs to be done once.
-
-New indexes are populated asynchronously. It is possible to use the core API to wait for index population to complete.
+Then we have to configure the database to index users by name.
+This only needs to be done once.
 
 [snippet,java]
 ----
 component=neo4j-examples
 source=org/neo4j/examples/EmbeddedNeo4jWithNewIndexing.java
 classifier=sources
-tag=startDb
+tag=createIndex
+----
+
+New indexes are populated asynchronously.
+It is possible to use the core API to wait for index population to complete:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4jWithNewIndexing.java
+classifier=sources
+tag=wait
 ----
 
 It's time to add the users:
@@ -81,3 +91,4 @@ source=org/neo4j/examples/EmbeddedNeo4jWithNewIndexing.java
 classifier=sources
 tag=dropIndex
 ----
+
