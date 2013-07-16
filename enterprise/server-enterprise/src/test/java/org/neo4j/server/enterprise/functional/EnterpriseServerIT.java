@@ -36,8 +36,16 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.EnterpriseDatabase;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
 
 public class EnterpriseServerIT
 {
@@ -66,6 +74,12 @@ public class EnterpriseServerIT
 
             assertThat( server.getDatabase(), is( EnterpriseDatabase.class ) );
             assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
+
+            Client client = Client.create();
+            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+                    "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            assertEquals( 200, r.getStatus() );
+            assertThat( r.getEntity( String.class ), containsString( "master" ) );
         }
         finally
         {

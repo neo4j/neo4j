@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.OK;
-import static javax.ws.rs.core.Response.status;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -34,6 +28,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
+
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.Response.status;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
 
 @Path(MasterInfoService.BASE_PATH)
 public class MasterInfoService implements AdvertisableService
@@ -47,6 +47,7 @@ public class MasterInfoService implements AdvertisableService
 
     public MasterInfoService( @Context OutputFormat output, @Context GraphDatabaseService db )
     {
+        System.out.println( "masterinfo" );
         this.output = output;
         if ( db instanceof HighlyAvailableGraphDatabase )
         {

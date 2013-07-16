@@ -54,7 +54,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
     @Override
 	public void start(StringLogger logger)
     {
-        this.packages = configurator.getThirdpartyJaxRsClasses();
+        this.packages = configurator.getThirdpartyJaxRsPackages();
         for ( ThirdPartyJaxRsPackage tpp : packages )
         {
             List<String> packageNames = packagesFor( tpp );

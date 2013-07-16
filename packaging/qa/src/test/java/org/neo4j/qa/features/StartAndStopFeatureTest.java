@@ -78,11 +78,11 @@ public class StartAndStopFeatureTest
 
     private void And_wait_for_Server_started_at( String uri ) throws IOException, InterruptedException
     {
-        DefaultHttpClient httpClient = new DefaultHttpClient();
         boolean success = false;
         long startTime = System.currentTimeMillis();
         while ( !success && System.currentTimeMillis() - startTime < 60000 )
         {
+            DefaultHttpClient httpClient = new DefaultHttpClient();
             try
             {
                 success = statusCode( uri, httpClient ) == 200;
@@ -90,6 +90,10 @@ public class StartAndStopFeatureTest
             catch ( ConnectException e )
             {
                 System.out.println( "Connection refused, sleeping" );
+            }
+            finally
+            {
+                httpClient.getConnectionManager().shutdown();
             }
             Thread.sleep( 1000 );
         }
@@ -134,7 +138,7 @@ public class StartAndStopFeatureTest
             // expected
         }
     }
-    
+
     private int statusCode( String uri, DefaultHttpClient httpClient ) throws IOException
     {
         HttpResponse response = httpClient.execute( new HttpGet( uri ) );

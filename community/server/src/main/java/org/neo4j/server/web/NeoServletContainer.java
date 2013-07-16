@@ -20,10 +20,14 @@
 package org.neo4j.server.web;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
+
+import javax.servlet.ServletException;
 
 import org.neo4j.server.database.InjectableProvider;
 
+import com.sun.jersey.api.core.ClassNamesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
@@ -51,4 +55,16 @@ public class NeoServletContainer extends ServletContainer
         }
     }
 
+    @Override
+    protected ResourceConfig getDefaultResourceConfig( Map<String, Object> props, WebConfig wc )
+            throws ServletException
+    {
+        Object classNames = props.get( ClassNamesResourceConfig.PROPERTY_CLASSNAMES );
+        if ( classNames != null )
+        {
+            return new ClassNamesResourceConfig( props );
+        }
+
+        return super.getDefaultResourceConfig( props, wc );
+    }
 }
