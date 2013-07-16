@@ -97,7 +97,7 @@ public class ConfiguratorTest
     }
 
     @Test
-    public void shouldFindThirdPartyJaxRsClasses() throws IOException
+    public void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         File file = ServerTestUtils.createTempPropertyFile( folder.getRoot() );
 
@@ -113,8 +113,8 @@ public class ConfiguratorTest
 
         Configurator configurator = new PropertyFileConfigurator( file );
 
-        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
-        assertNotNull( thirdpartyJaxRsClasses );
-        assertEquals( 3, thirdpartyJaxRsClasses.size() );
+        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.getThirdpartyJaxRsPackages();
+        assertNotNull( thirdpartyJaxRsPackages );
+        assertEquals( 3, thirdpartyJaxRsPackages.size() );
     }
 }

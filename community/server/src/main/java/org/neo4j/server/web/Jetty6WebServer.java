@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -32,6 +30,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -40,9 +39,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -54,7 +50,6 @@ import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionManager;
-import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
@@ -64,42 +59,43 @@ import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.web.AllowAjaxFilter;
-import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+
+import static java.lang.String.format;
+
 public class Jetty6WebServer implements WebServer
 {
-
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
 
     private static class FilterDefinition
-	{
-		private final Filter filter;
-		private final String pathSpec;
+    {
+        private final Filter filter;
+        private final String pathSpec;
 
-		public FilterDefinition(Filter filter, String pathSpec)
-		{
-			this.filter = filter;
-			this.pathSpec = pathSpec;
-		}
-		
-		public boolean matches(Filter filter, String pathSpec)
-		{
-			return filter == this.filter && pathSpec.equals(this.pathSpec);
-		}
+        public FilterDefinition(Filter filter, String pathSpec)
+        {
+            this.filter = filter;
+            this.pathSpec = pathSpec;
+        }
 
-		public Filter getFilter() {
-			return filter;
-		}
+        public boolean matches(Filter filter, String pathSpec)
+        {
+            return filter == this.filter && pathSpec.equals(this.pathSpec);
+        }
 
-		public String getPathSpec() {
-			return pathSpec;
-		}
-	}
-	
+        public Filter getFilter() {
+            return filter;
+        }
+
+        public String getPathSpec() {
+            return pathSpec;
+        }
+    }
+
     private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
@@ -111,20 +107,23 @@ public class Jetty6WebServer implements WebServer
     private String jettyAddr = DEFAULT_ADDRESS;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
-    private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
+    private final Map<String,JaxRsServletHolderFactory> jaxRSPackages =
+            new HashMap<String, JaxRsServletHolderFactory>();
+    private final Map<String,JaxRsServletHolderFactory> jaxRSClasses =
+            new HashMap<String, JaxRsServletHolderFactory>();
     private final List<FilterDefinition> filters = new ArrayList<FilterDefinition>();
-    
+
     private int jettyMaxThreads = tenThreadsPerProcessor();
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
-	private File requestLoggingConfiguration;
+    private File requestLoggingConfiguration;
 
     @Override
     public void init()
     {
     }
-    
+
     @Override
     public void start()
     {
@@ -153,7 +152,7 @@ public class Jetty6WebServer implements WebServer
 
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
-        
+
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
@@ -201,22 +200,38 @@ public class Jetty6WebServer implements WebServer
     {
         // We don't want absolute URIs at this point
         mountPoint = ensureRelativeUri( mountPoint );
-
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        Collection<InjectableProvider<?>> injectableProviders = mergeInjectables( defaultInjectables, injectables );
-        ServletContainer container = new NeoServletContainer( injectableProviders );
-        ServletHolder servletHolder = new ServletHolder( container );
-        servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
-        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, CollectUserAgentFilter.class.getName() );
+        JaxRsServletHolderFactory factory = jaxRSPackages.get( mountPoint );
+        if ( factory == null )
+        {
+            factory = new JaxRsServletHolderFactory.Packages();
+            jaxRSPackages.put( mountPoint, factory );
+        }
+        factory.add( packageNames, injectables );
 
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
-
-        jaxRSPackages.put( mountPoint, servletHolder );
     }
 
+    @Override
+    public void addJAXRSClasses( List<String> classNames, String mountPoint, Collection<Injectable<?>> injectables )
+    {
+        // We don't want absolute URIs at this point
+        mountPoint = ensureRelativeUri( mountPoint );
+        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
+
+        JaxRsServletHolderFactory factory = jaxRSClasses.get( mountPoint );
+        if ( factory == null )
+        {
+            factory = new JaxRsServletHolderFactory.Classes();
+            jaxRSClasses.put( mountPoint, factory );
+        }
+        factory.add( classNames, injectables );
+
+        log.debug( "Adding JAXRS classes %s at [%s]", classNames, mountPoint );
+    }
+
+    @Override
     public void setWadlEnabled( boolean wadlEnabled )
     {
         this.wadlEnabled = wadlEnabled;
@@ -228,60 +243,56 @@ public class Jetty6WebServer implements WebServer
         this.defaultInjectables = defaultInjectables;
     }
 
-    private Collection<InjectableProvider<?>> mergeInjectables( Collection<InjectableProvider<?>> defaultInjectables,
-                                                                Collection<Injectable<?>> injectables )
+    @Override
+    public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
     {
-        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<InjectableProvider<?>>(  );
-        if ( defaultInjectables != null )
+        JaxRsServletHolderFactory factory = jaxRSPackages.get( serverMountPoint );
+        if ( factory != null )
         {
-            injectableProviders.addAll( defaultInjectables );
+            factory.remove( packageNames );
         }
-        if ( injectables != null )
-        {
-            for ( Injectable<?> injectable : injectables )
-            {
-                injectableProviders.add( new InjectableWrapper( injectable ) );
-            }
-        }
-        return injectableProviders;
     }
 
     @Override
-	public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
+    public void removeJAXRSClasses( List<String> classNames, String serverMountPoint )
     {
-    	jaxRSPackages.remove(serverMountPoint);
+        JaxRsServletHolderFactory factory = jaxRSClasses.get( serverMountPoint );
+        if ( factory != null )
+        {
+            factory.remove( classNames );
+        }
     }
 
     @Override
     public void addFilter(Filter filter, String pathSpec)
     {
-    	filters.add( new FilterDefinition( filter, pathSpec ) );
+        filters.add( new FilterDefinition( filter, pathSpec ) );
     }
-    
+
     @Override
     public void removeFilter(Filter filter, String pathSpec)
     {
-    	Iterator<FilterDefinition> iter = filters.iterator();
-    	while(iter.hasNext())
-    	{
-    		FilterDefinition current = iter.next();
-    		if(current.matches(filter, pathSpec))
-    		{
-    			iter.remove();
-    		}
-    	}
+        Iterator<FilterDefinition> iter = filters.iterator();
+        while(iter.hasNext())
+        {
+            FilterDefinition current = iter.next();
+            if(current.matches(filter, pathSpec))
+            {
+                iter.remove();
+            }
+        }
     }
 
-	@Override
+    @Override
     public void addStaticContent( String contentLocation, String serverMountPoint )
     {
         staticContent.put( serverMountPoint, contentLocation );
     }
-    
+
     @Override
-	public void removeStaticContent( String contentLocation, String serverMountPoint )
+    public void removeStaticContent( String contentLocation, String serverMountPoint )
     {
-    	staticContent.remove(serverMountPoint);
+        staticContent.remove(serverMountPoint);
     }
 
     @Override
@@ -294,7 +305,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void setHttpLoggingConfiguration( File logbackConfigFile )
     {
-    	this.requestLoggingConfiguration = logbackConfigFile;
+        this.requestLoggingConfiguration = logbackConfigFile;
     }
 
     @Override
@@ -353,24 +364,30 @@ public class Jetty6WebServer implements WebServer
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
+        mountpoints.addAll( jaxRSClasses.keySet() );
 
         for ( String contentKey : mountpoints )
         {
             final boolean isStatic = staticContent.containsKey( contentKey );
-            final boolean isJaxrs = jaxRSPackages.containsKey( contentKey );
+            final boolean isJaxrsPackage = jaxRSPackages.containsKey( contentKey );
+            final boolean isJaxrsClass = jaxRSClasses.containsKey( contentKey );
 
-            if ( isStatic && isJaxrs )
+            if ( countSet( isStatic, isJaxrsPackage, isJaxrsClass ) > 1 )
             {
                 throw new RuntimeException(
-                    format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
+                    format( "content-key '%s' is mapped more than once", contentKey ) );
             }
             else if ( isStatic )
             {
                 loadStaticContent( sm, contentKey );
             }
-            else if ( isJaxrs )
+            else if ( isJaxrsPackage )
             {
                 loadJAXRSPackage( sm, contentKey );
+            }
+            else if ( isJaxrsClass )
+            {
+                loadJAXRSClasses( sm, contentKey );
             }
             else
             {
@@ -384,7 +401,20 @@ public class Jetty6WebServer implements WebServer
         }
 
     }
-    
+
+    private int countSet( boolean... booleans )
+    {
+        int count = 0;
+        for ( boolean bool : booleans )
+        {
+            if ( bool )
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void loadRequestLogging() {
         final RequestLogImpl requestLog = new RequestLogImpl();
         requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
@@ -393,9 +423,9 @@ public class Jetty6WebServer implements WebServer
         requestLogHandler.setRequestLog( requestLog );
 
         jetty.addHandler( requestLogHandler );
-	}
+    }
 
-	private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
+    private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
         if ( mountPoint.equals( "/" ) )
         {
@@ -450,9 +480,9 @@ public class Jetty6WebServer implements WebServer
                 final Resource resource = Resource.newResource( url );
                 staticContext.setBaseResource( resource );
                 log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
-                
+
                 addFiltersTo(staticContext);
-                
+
                 jetty.addHandler( staticContext );
             }
             else
@@ -470,38 +500,34 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
-	private void loadJAXRSPackage( SessionManager sm, String mountPoint )
+    private void loadJAXRSPackage( SessionManager sm, String mountPoint )
     {
-        ServletHolder servletHolder = jaxRSPackages.get( mountPoint );
+        loadJAXRSResource( sm, mountPoint, jaxRSPackages.get( mountPoint ) );
+    }
+
+    private void loadJAXRSClasses( SessionManager sm, String mountPoint )
+    {
+        loadJAXRSResource( sm, mountPoint, jaxRSClasses.get( mountPoint ) );
+    }
+
+    private void loadJAXRSResource( SessionManager sm, String mountPoint,
+            JaxRsServletHolderFactory jaxRsServletHolderFactory )
+    {
         log.debug( "Mounting servlet at [%s]", mountPoint );
         Context jerseyContext = new Context( jetty, mountPoint );
         SessionHandler sh = new SessionHandler( sm );
-        jerseyContext.addServlet( servletHolder, "/*" );
+        jerseyContext.addServlet( jaxRsServletHolderFactory.create( defaultInjectables, wadlEnabled ), "/*" );
         jerseyContext.setSessionHandler( sh );
         addFiltersTo(jerseyContext);
     }
 
     private void addFiltersTo(Context context) {
-    	for(FilterDefinition filterDef : filters)
-    	{
-            context.addFilter( new FilterHolder(
-            		filterDef.getFilter() ), 
-            		filterDef.getPathSpec(), Handler.ALL );
-    	}
-	}
-
-    private String toCommaSeparatedList( List<String> packageNames )
-    {
-        StringBuilder sb = new StringBuilder();
-
-        for ( String str : packageNames )
+        for(FilterDefinition filterDef : filters)
         {
-            sb.append( str );
-            sb.append( ", " );
+            context.addFilter( new FilterHolder(
+                    filterDef.getFilter() ),
+                    filterDef.getPathSpec(), Handler.ALL );
         }
-
-        String result = sb.toString();
-        return result.substring( 0, result.length() - 2 );
     }
 
     @Override

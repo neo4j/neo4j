@@ -223,7 +223,7 @@ public class PropertyFileConfigurator implements Configurator
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         thirdPartyPackages = new HashSet<ThirdPartyJaxRsPackage>();
         Properties properties = this.configuration()

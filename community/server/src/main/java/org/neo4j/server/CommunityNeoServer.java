@@ -86,7 +86,7 @@ public class CommunityNeoServer extends AbstractNeoServer
 	@Override
 	protected Database createDatabase()
     {
-		return new CommunityDatabase(configurator.configuration());
+        return new CommunityDatabase( configurator );
 	}
 
 	@Override

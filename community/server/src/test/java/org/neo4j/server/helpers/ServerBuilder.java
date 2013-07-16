@@ -42,11 +42,16 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.FakeClock;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.tooling.RealClock;
-import org.neo4j.server.rest.web.DatabaseActions;
+
+import static org.neo4j.server.ServerTestUtils.asOneLine;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -118,8 +123,8 @@ public class ServerBuilder
             protected Database createDatabase()
             {
                 return persistent ?
-                        new CommunityDatabase( configurator.configuration() ) :
-                        new EphemeralDatabase( configurator.configuration() );
+                        new CommunityDatabase( configurator ) :
+                        new EphemeralDatabase( configurator );
             }
 
             @Override

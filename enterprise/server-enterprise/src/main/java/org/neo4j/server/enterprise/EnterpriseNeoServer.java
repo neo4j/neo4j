@@ -25,67 +25,82 @@ import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.collection.Iterables.mix;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer {
 
-	public EnterpriseNeoServer( Configurator configurator )
+    public EnterpriseNeoServer( Configurator configurator )
     {
         this.configurator = configurator;
         init();
     }
 
     @Override
-	protected PreFlightTasks createPreflightTasks() 
+    protected PreFlightTasks createPreflightTasks()
     {
-		return new PreFlightTasks(
-				// TODO: This check should be done in the bootrapper,
-				// and verification of config should be done by the new
-				// config system.
-				//new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out),
-				new PerformRecoveryIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out));
-	}
-    
-    @Override
-	protected Database createDatabase() 
-    {
-    	return new EnterpriseDatabase( configurator.configuration() );
+        return new PreFlightTasks(
+                // TODO: This check should be done in the bootrapper,
+                // and verification of config should be done by the new
+                // config system.
+                //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
+                new EnsurePreparedForHttpLogging(configurator.configuration()),
+                new PerformUpgradeIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), System.out),
+                new PerformRecoveryIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), System.out));
     }
-    
+
     @Override
-	protected InterruptThreadTimer createInterruptStartupTimer() 
+    protected Database createDatabase()
     {
-    	// If we are in HA mode, database startup can take a very long time, so
-    	// we default to disabling the startup timeout here, unless explicitly overridden
-    	// by configuration.
-    	if(getConfiguration().getString( Configurator.DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
-    	{
-    		long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
-    		InterruptThreadTimer stopStartupTimer;
-    		if(startupTimeout > 0) 
+        return new EnterpriseDatabase( configurator );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    protected Iterable<ServerModule> createServerModules()
+    {
+        return mix( asList(
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ),
+                super.createServerModules() );
+    }
+
+    @Override
+    protected InterruptThreadTimer createInterruptStartupTimer()
+    {
+        // If we are in HA mode, database startup can take a very long time, so
+        // we default to disabling the startup timeout here, unless explicitly overridden
+        // by configuration.
+        if(getConfiguration().getString( Configurator.DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
+        {
+            long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
+            InterruptThreadTimer stopStartupTimer;
+            if(startupTimeout > 0)
             {
-    			stopStartupTimer = InterruptThreadTimer.createTimer(
-    					startupTimeout,
-    					Thread.currentThread());
+                stopStartupTimer = InterruptThreadTimer.createTimer(
+                        startupTimeout,
+                        Thread.currentThread());
             } else
             {
-            	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
+                stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
             }
-    		return stopStartupTimer;
-    	} else 
-    	{
-    		return super.createInterruptStartupTimer();
-    	}
-	}
+            return stopStartupTimer;
+        } else
+        {
+            return super.createInterruptStartupTimer();
+        }
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()

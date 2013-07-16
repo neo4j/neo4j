@@ -19,30 +19,31 @@
  */
 package org.neo4j.server.database;
 
-import java.util.HashMap;
-
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.server.configuration.Configurator.EMPTY;
 
 public class EphemeralDatabase extends CommunityDatabase
 {
     public EphemeralDatabase()
     {
-        this( new MapConfiguration( new HashMap<String, String>() ) );
+        this( EMPTY );
     }
 
-    public EphemeralDatabase( Configuration serverConfig )
+    public EphemeralDatabase( Configurator configurator )
     {
-        super( serverConfig );
+        super( configurator );
     }
 
     @Override
     protected AbstractGraphDatabase createDb()
     {
-        return (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( loadNeo4jProperties() ).newGraphDatabase();
+        return (AbstractGraphDatabase) new TestGraphDatabaseFactory()
+            .newImpermanentDatabaseBuilder()
+            .setConfig( getDbTuningPropertiesWithServerDefaults() )
+            .newGraphDatabase();
     }
 
     @Override

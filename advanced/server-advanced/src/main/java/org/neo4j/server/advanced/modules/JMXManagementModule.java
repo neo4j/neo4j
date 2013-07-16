@@ -31,42 +31,49 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.modules.ServerModule;
 
-public class JMXManagementModule implements ServerModule {
+public class JMXManagementModule implements ServerModule
+{
+    private final NeoServer server;
 
-	private NeoServer server;
+    public JMXManagementModule( NeoServer server )
+    {
+        this.server = server;
+    }
 
-    public JMXManagementModule(NeoServer server)
-	{
-		this.server = server;
-	}
-	
-	@Override
-	public void start(StringLogger logger) {
-		try {
-            ServerManagement serverManagement = new ServerManagement( server );
-	        MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
-			beanServer.registerMBean( serverManagement, createObjectName());
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to initialize jmx management, see nested exception.", e);
-		}
-	}
-
-	@Override
-	public void stop() {
-		try 
-		{
-            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
-            beanServer.unregisterMBean(createObjectName());
-		} catch (InstanceNotFoundException e)
+    @Override
+    public void start( StringLogger logger )
+    {
+        try
         {
-			// ok
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to shut down jmx management, see nested exception.", e);
-		}
-	}
+            ServerManagement serverManagement = new ServerManagement( server );
+            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+            beanServer.registerMBean( serverManagement, createObjectName() );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Unable to initialize jmx management, see nested exception.", e );
+        }
+    }
 
-	private ObjectName createObjectName() throws MalformedObjectNameException {
-		return new ObjectName( "org.neo4j.ServerManagement" , "restartServer", "lifecycle" );
-	}
+    @Override
+    public void stop() {
+        try
+        {
+            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+            beanServer.unregisterMBean( createObjectName() );
+        }
+        catch ( InstanceNotFoundException e )
+        {
+            // ok
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Unable to shut down jmx management, see nested exception.", e );
+        }
+    }
 
+    private ObjectName createObjectName() throws MalformedObjectNameException
+    {
+        return new ObjectName( "org.neo4j.ServerManagement", "restartServer", "lifecycle" );
+    }
 }
