@@ -71,7 +71,7 @@ case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends Updat
 
   def toLegacyStartItems: Seq[commands.StartItem] = toCommand.nextStep()._1
 
-  def toLegacyUpdateActions = ???
+  def toLegacyUpdateActions:Seq[mutation.UpdateAction] = toCommand.nextStep()._1.map(_.inner)
 
   def toLegacyNamedPaths: Seq[commands.NamedPath] = toCommand.nextStep()._2
 }

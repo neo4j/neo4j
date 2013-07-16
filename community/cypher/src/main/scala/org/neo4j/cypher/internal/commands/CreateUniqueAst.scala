@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, NamedExpectation,
 import org.neo4j.cypher.PatternException
 
 case class CreateUniqueAst(patterns: Seq[AbstractPattern]) {
-  def nextStep(): (Seq[StartItem], Seq[NamedPath]) = {
+  def nextStep(): (Seq[CreateUniqueStartItem], Seq[NamedPath]) = {
     val results = patterns.map(translate)
     val (reducedLinks, reducedPaths) = results.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
 
