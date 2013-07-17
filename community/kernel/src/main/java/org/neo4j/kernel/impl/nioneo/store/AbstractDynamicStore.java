@@ -425,15 +425,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
+        return getRecords( startBlockId, RecordLoad.NORMAL );
+    }
+
+    public Collection<DynamicRecord> getRecords( long startBlockId, RecordLoad loadFlag )
+    {
         List<DynamicRecord> recordList = new LinkedList<>();
         long blockId = startBlockId;
         while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
         {
-            PersistenceWindow window = acquireWindow( blockId,
-                OperationType.READ );
+            PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
             try
             {
-                DynamicRecord record = getRecord( blockId, window, RecordLoad.NORMAL );
+                DynamicRecord record = getRecord( blockId, window, loadFlag );
+                if ( ! record.inUse() )
+                {
+                    return recordList;
+                }
                 recordList.add( record );
                 blockId = record.getNextBlock();
             }

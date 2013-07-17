@@ -26,6 +26,7 @@ public enum Record
 {
     NOT_IN_USE( (byte) 0, 0 ), 
     IN_USE( (byte) 1, 1 ),
+    FIRST_IN_CHAIN( (byte) 2, 2 ),
     RESERVED( (byte) -1, -1 ), 
     NO_NEXT_PROPERTY( (byte) -1, -1 ),
     NO_PREVIOUS_PROPERTY( (byte) -1, -1 ),

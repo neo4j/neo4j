@@ -160,7 +160,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     public final void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
         checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, NODE_LABEL ) );
-        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanCheck() );
+        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanChainStartCheck() );
     }
 
     @Override

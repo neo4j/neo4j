@@ -241,7 +241,7 @@ public class FullCheckIntegrationTest
         assertTrue( "should be consistent", stats.isConsistent() );
     }
 
-    @Test
+    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
     {
         // given
@@ -293,6 +293,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1 = chain.get( 0 ).clone();
                 DynamicRecord record2 = chain.get( 1 ).clone();
                 DynamicRecord record3 = chain.get( 2 ).clone();
+
                 record3.setNextBlock( record2.getId() );
                 before.setLabelField( dynamicPointer( chain ), chain );
                 after.setLabelField( dynamicPointer( chain ), asList( record1, record2, record3 ) );
@@ -304,7 +305,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+        verifyInconsistency( RecordType.NODE, stats );
     }
 
     private List<DynamicRecord> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
@@ -498,10 +499,9 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord schema = new DynamicRecord( next.schema() );
-                schema.setNextBlock( next.schema() );
-                IndexRule rule = IndexRule.indexRule( 1, 1, 1, new SchemaIndexProvider.Descriptor( "in-memory",
-                        "1.0" ) );
-                new RecordSerializer().append( rule ).serialize();
+                schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
+                IndexRule rule = IndexRule.indexRule( 1, 1, 1,
+                        new SchemaIndexProvider.Descriptor( "in-memory", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
                 tx.createSchema( asList( schema ) );

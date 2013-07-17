@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking;
 
 import java.util.Collection;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -35,18 +36,18 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
 
-public class NodeDynamicLabelOrphanCheckTest
-        extends RecordCheckTestBase<DynamicRecord,DynamicLabelConsistencyReport,NodeDynamicLabelOrphanCheck>
+public class NodeDynamicLabelOrphanChainStartCheckTest
+        extends RecordCheckTestBase<DynamicRecord, DynamicLabelConsistencyReport, NodeDynamicLabelOrphanChainStartCheck>
 {
 
     public static final PreAllocatedRecords RECORD_ALLOCATOR = new PreAllocatedRecords( 66 );
 
-    public NodeDynamicLabelOrphanCheckTest()
+    public NodeDynamicLabelOrphanChainStartCheckTest()
     {
-        super( new NodeDynamicLabelOrphanCheck(),  DynamicLabelConsistencyReport.class );
+        super( new NodeDynamicLabelOrphanChainStartCheck(),  DynamicLabelConsistencyReport.class );
     }
 
-    @Test
+    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanRecordsThatAreNotFirst() throws Exception
     {
         // given

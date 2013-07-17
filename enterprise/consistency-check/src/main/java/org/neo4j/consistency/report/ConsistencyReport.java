@@ -230,6 +230,10 @@ public interface ConsistencyReport<RECORD extends AbstractBaseRecord, REPORT ext
         /** The dynamic label record is not in use. */
         @Documented
         void dynamicLabelRecordNotInUse( DynamicRecord record );
+
+        /** This record points to a next record that was already part of this dynamic record chain. */
+        @Documented
+        void dynamicRecordChainCycle( DynamicRecord nextRecord );
     }
 
     interface RelationshipConsistencyReport
