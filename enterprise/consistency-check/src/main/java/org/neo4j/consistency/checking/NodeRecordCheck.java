@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -191,6 +192,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
             class NodeLabelsComparativeRecordChecker implements
                     ComparativeRecordChecker<NodeRecord, DynamicRecord, ConsistencyReport.NodeConsistencyReport>
             {
+                private HashMap<Long, DynamicRecord> recordIds = new HashMap<>();
                 private List<DynamicRecord> recordList = new ArrayList<>();
                 private boolean allInUse = true;
 
@@ -198,6 +200,8 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                 public void checkReference( NodeRecord record, DynamicRecord dynamicRecord,
                                             ConsistencyReport.NodeConsistencyReport report, RecordAccess records )
                 {
+                    recordIds.put( dynamicRecord.getId(), dynamicRecord );
+
                     if ( dynamicRecord.inUse() )
                     {
                         if ( allInUse )
@@ -222,7 +226,14 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     }
                     else
                     {
-                        report.forReference( records.nodeLabels( nextBlock ), this );
+                        if ( recordIds.containsKey( nextBlock ) )
+                        {
+                            report.dynamicRecordChainCycle( recordIds.get( nextBlock ) );
+                        }
+                        else
+                        {
+                            report.forReference( records.nodeLabels( nextBlock ), this );
+                        }
                     }
                 }
 

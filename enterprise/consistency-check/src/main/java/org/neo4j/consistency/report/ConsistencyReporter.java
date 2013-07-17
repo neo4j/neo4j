@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static java.lang.reflect.Proxy.getInvocationHandler;
+import static java.util.Arrays.asList;
 
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -493,6 +494,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             {
                 throw withCause( new LinkageError( "Cannot access Proxy constructor for " + type.getName() ), e );
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + asList( constructor.getDeclaringClass().getInterfaces() );
         }
 
         public T create( InvocationHandler handler )

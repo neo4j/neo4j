@@ -118,12 +118,22 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     @Override
     public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
     {
-        return getSchemaRule( ruleId, newRecordBuffer() );
+        return forceGetSchemaRule( ruleId, newRecordBuffer() );
     }
 
     private SchemaRule getSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
     {
         return readSchemaRule( id, getRecords( id ), buffer );
+    }
+
+    private SchemaRule forceGetSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
+    {
+        Collection<DynamicRecord> records = getRecords( id, RecordLoad.FORCE );
+        for ( DynamicRecord record : records )
+        {
+            ensureHeavy( record );
+        }
+        return readSchemaRule( id, records, buffer );
     }
 
     public static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records )

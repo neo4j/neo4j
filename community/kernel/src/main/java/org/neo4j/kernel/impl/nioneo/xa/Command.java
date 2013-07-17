@@ -181,6 +181,10 @@ public abstract class Command extends XaCommand
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
+            if ( record.isStartRecord() )
+            {
+                inUse |= Record.FIRST_IN_CHAIN.byteValue();
+            }
             buffer.putLong( record.getId() ).putInt( record.getType() ).put(
                     inUse ).putInt( record.getLength() ).putLong(
                     record.getNextBlock() );
@@ -282,20 +286,13 @@ public abstract class Command extends XaCommand
                                                   + " is not a valid dynamic record id";
         int type = buffer.getInt();
         byte inUseFlag = buffer.get();
-        boolean inUse = false;
-        if ( inUseFlag == Record.IN_USE.byteValue() )
-        {
-            inUse = true;
-        }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
-        }
+        boolean inUse = ( inUseFlag & Record.IN_USE.byteValue() ) != 0;
 
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( inUse, type );
         if ( inUse )
         {
+            record.setStartRecord( ( inUseFlag & Record.FIRST_IN_CHAIN.byteValue() ) != 0 );
             if ( !readAndFlip( byteChannel, buffer, 12 ) )
                 return null;
             int nrOfBytes = buffer.getInt();

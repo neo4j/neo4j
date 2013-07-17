@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.fieldDyn
  *
  * Actual list of labels is verified from {@link NodeRecordCheck}
  */
-public class NodeDynamicLabelOrphanCheck
+public class NodeDynamicLabelOrphanChainStartCheck
         implements RecordCheck<DynamicRecord,DynamicLabelConsistencyReport>,
         ComparativeRecordChecker<DynamicRecord, DynamicRecord, DynamicLabelConsistencyReport>
 {

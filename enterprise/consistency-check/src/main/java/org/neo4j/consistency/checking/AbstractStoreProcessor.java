@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import static java.lang.String.format;
 
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
+import static org.neo4j.consistency.checking.DynamicStore.NODE_LABEL;
 import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
@@ -158,8 +159,8 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     @Override
     public final void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
-        checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, ARRAY ) );
-        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanCheck( store, ARRAY ) );
+        checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, NODE_LABEL ) );
+        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanChainStartCheck() );
     }
 
     @Override

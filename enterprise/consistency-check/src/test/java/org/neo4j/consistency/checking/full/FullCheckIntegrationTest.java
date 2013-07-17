@@ -19,8 +19,12 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -61,9 +65,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -203,7 +211,6 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l },
@@ -219,6 +226,126 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldNotReportAnythingForNodeWithConsistentChainOfDynamicRecordsWithLabels() throws Exception
+    {
+        // given
+        assertEquals( 3, chainOfDynamicRecordsWithLabelsForANode( 130 ).size() );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertTrue( "should be consistent", stats.isConsistent() );
+    }
+
+    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
+    {
+        // given
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 130 );
+        assertEquals( 3, chain.size() );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                DynamicRecord record1 = inUse( new DynamicRecord( chain.get( 0 ).getId() ) );
+                DynamicRecord record2 = notInUse( new DynamicRecord( chain.get( 1 ).getId() ) );
+                long[] data = (long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) );
+                PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
+                allocateFromNumbers( Arrays.copyOf( data, 11 ), asIterator( record1 ), allocator );
+
+                NodeRecord before = inUse( new NodeRecord( data[0], -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( data[0], -1, -1 ) );
+                before.setLabelField( dynamicPointer( asList( record1 ) ), chain );
+                after.setLabelField( dynamicPointer( asList( record1 ) ), asList( record1, record2 ) );
+                tx.update( before, after );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+    }
+
+    @Test
+    public void shouldReportCyclesInDynamicRecordsWithLabels() throws Exception
+    {
+        // given
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 176/*3 full records*/ );
+        assertEquals( "number of records in chain", 3, chain.size() );
+        assertEquals( "all records full", chain.get( 0 ).getLength(),  chain.get( 2 ).getLength() );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ))[0];
+                NodeRecord before = inUse( new NodeRecord( nodeId, -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( nodeId, -1, -1 ) );
+                DynamicRecord record1 = chain.get( 0 ).clone();
+                DynamicRecord record2 = chain.get( 1 ).clone();
+                DynamicRecord record3 = chain.get( 2 ).clone();
+
+                record3.setNextBlock( record2.getId() );
+                before.setLabelField( dynamicPointer( chain ), chain );
+                after.setLabelField( dynamicPointer( chain ), asList( record1, record2, record3 ) );
+                tx.update( before, after );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    private List<DynamicRecord> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
+    {
+        final long[] labels = new long[labelCount+1]; // allocate enough labels to need three records
+        for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
+        {
+            final int offset = i;
+            fixture.apply( new GraphStoreFixture.Transaction()
+            { // Neo4j can create no more than one label per transaction...
+                @Override
+                protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                                GraphStoreFixture.IdGenerator next )
+                {
+                    tx.nodeLabel( (int) (labels[offset] = next.label()), "label:" + offset );
+                }
+            } );
+        }
+        final List<DynamicRecord> chain = new ArrayList<>();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record1 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                DynamicRecord record2 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                labels[0] = nodeRecord.getLongId(); // the first id should not be a label id, but the id of the node
+                PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
+                chain.addAll( allocateFromNumbers(
+                        labels, asIterator( record1, record2, record3 ), allocator ) );
+
+                nodeRecord.setLabelField( dynamicPointer( chain ), chain );
+
+                tx.create( nodeRecord );
+            }
+        } );
+        return chain;
     }
 
     @Test
@@ -372,10 +499,9 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord schema = new DynamicRecord( next.schema() );
-                schema.setNextBlock( next.schema() );
-                IndexRule rule = IndexRule.indexRule( 1, 1, 1, new SchemaIndexProvider.Descriptor( "in-memory",
-                        "1.0" ) );
-                new RecordSerializer().append( rule ).serialize();
+                schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
+                IndexRule rule = IndexRule.indexRule( 1, 1, 1,
+                        new SchemaIndexProvider.Descriptor( "in-memory", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
                 tx.createSchema( asList( schema ) );
@@ -401,7 +527,7 @@ public class FullCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.nodeLabel();
+                int labelId = (int) next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
@@ -446,7 +572,7 @@ public class FullCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.nodeLabel();
+                int labelId = (int) next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
@@ -507,12 +633,12 @@ public class FullCheckIntegrationTest
                 DynamicRecord array = new DynamicRecord( next.arrayProperty() );
                 array.setInUse( true );
                 array.setCreated();
-                array.setType( PropertyType.ARRAY.intValue() );
+                array.setType( ARRAY.intValue() );
                 array.setNextBlock( next.arrayProperty() );
                 array.setData( UTF8.encode( "hello world" ) );
 
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( (((long) PropertyType.ARRAY.intValue()) << 24) | (array.getId() << 28) );
+                block.setSingleBlock( (((long) ARRAY.intValue()) << 24) | (array.getId() << 28) );
                 block.addValueRecord( array );
 
                 PropertyRecord property = new PropertyRecord( next.property() );
