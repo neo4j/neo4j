@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
-import java.util.Iterator;
 import java.util.Map;
-
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
@@ -32,6 +30,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -53,8 +52,7 @@ public class PersistenceManager
     private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
 
-    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
-        new ArrayMap<Transaction,NeoStoreTransaction>( (byte)5, true, true );
+    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = new ArrayMap<>( (byte) 5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
@@ -425,7 +423,7 @@ public class PersistenceManager
         getResource( true ).removeLabelFromNode( labelId, nodeId );
     }
 
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
     {
         return getReadOnlyResourceIfPossible().getLabelsForNode( nodeId );
     }

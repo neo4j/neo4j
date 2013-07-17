@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.transaction.SystemException;
@@ -31,6 +30,7 @@ import javax.transaction.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 class ReadTransaction implements NeoStoreTransaction
@@ -113,11 +113,10 @@ class ReadTransaction implements NeoStoreTransaction
             long nodeId, long position, int grabSize, RelationshipStore relStore )
     {
         // initialCapacity=grabSize saves the lists the trouble of resizing
-        List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
-        List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
+        List<RelationshipRecord> out = new ArrayList<>();
+        List<RelationshipRecord> in = new ArrayList<>();
         List<RelationshipRecord> loop = null;
-        Map<DirectionWrapper, Iterable<RelationshipRecord>> result =
-            new EnumMap<DirectionWrapper, Iterable<RelationshipRecord>>( DirectionWrapper.class );
+        Map<DirectionWrapper, Iterable<RelationshipRecord>> result = new EnumMap<>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
         result.put( DirectionWrapper.INCOMING, in );
         for ( int i = 0; i < grabSize &&
@@ -139,7 +138,7 @@ class ReadTransaction implements NeoStoreTransaction
                     {
                         // This is done lazily because loops are probably quite
                         // rarely encountered
-                        loop = new ArrayList<RelationshipRecord>();
+                        loop = new ArrayList<>();
                         result.put( DirectionWrapper.BOTH, loop );
                     }
                     loop.add( relRecord );
@@ -183,7 +182,7 @@ class ReadTransaction implements NeoStoreTransaction
         {
             return null;
         }
-        ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<Integer, PropertyData>(
+        ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<>(
                 (byte)9, false, true );
         for ( PropertyRecord propRecord : chain )
         {
@@ -418,8 +417,7 @@ class ReadTransaction implements NeoStoreTransaction
         throw readOnlyException();
     }
 
-    public static int getKeyIdForProperty( PropertyData property,
-            PropertyStore store )
+    public static int getKeyIdForProperty( PropertyData property, PropertyStore store )
     {
         // PropertyRecord propRecord = store.getLightRecord( property.getId() );
         // return propRecord.getKeyIndexIds();
@@ -475,10 +473,10 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
     {
         NodeRecord node = getNodeStore().getRecord( nodeId );
-        return asIterator( parseLabelsField( node ).get( getNodeStore() ) );
+        return asPrimitiveIterator( parseLabelsField( node ).get( getNodeStore() ) );
     }
 
     @Override

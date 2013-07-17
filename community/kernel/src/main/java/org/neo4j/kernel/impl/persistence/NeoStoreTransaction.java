@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
-import java.util.Iterator;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -166,7 +165,7 @@ public interface NeoStoreTransaction
      * object.
      *
      * @param nodeId id of node
-     * @param property The property to make heavy
+     * @param propertyKey The property to make heavy
      * @return The property data
      */
     Object nodeLoadPropertyValue( long nodeId, int propertyKey );
@@ -176,7 +175,7 @@ public interface NeoStoreTransaction
      * object.
      *
      * @param relationshipId id of relationship
-     * @param property The property to make heavy
+     * @param propertyKey The property to make heavy
      * @return The property data
      */
     Object relationshipLoadPropertyValue( long relationshipId, int propertyKey );
@@ -185,7 +184,7 @@ public interface NeoStoreTransaction
      * Attempts to load the value off the store for the given PropertyData
      * object.
      *
-     * @param property The property to make heavy
+     * @param propertyKey The property to make heavy
      * @return The property data
      */
     Object graphLoadPropertyValue( int propertyKey);
@@ -323,8 +322,7 @@ public interface NeoStoreTransaction
      */
     int getKeyIdForProperty( PropertyData property );
 
-    boolean delistResource( Transaction tx, int tmsuccess )
-        throws SystemException;
+    boolean delistResource( Transaction tx, int tmsuccess ) throws SystemException;
     
     void createSchemaRule( SchemaRule schemaRule );
     
@@ -334,7 +332,7 @@ public interface NeoStoreTransaction
     
     void removeLabelFromNode( long labelId, long nodeId );
 
-    Iterator<Long> getLabelsForNode( long nodeId );
+    PrimitiveLongIterator getLabelsForNode( long nodeId );
 
     void setConstraintIndexOwner( long constraintIndexId, long constraintId );
 }

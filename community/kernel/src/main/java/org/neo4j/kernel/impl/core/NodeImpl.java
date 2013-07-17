@@ -69,8 +69,9 @@ public class NodeImpl extends ArrayBasedPrimitive
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
-    private volatile Set<Long> labels; // TODO do this more efficiently
 
+    // TODO do this more efficiently, perhaps using a sorted array
+    private volatile Set<Long> labels;
     /*
      * This is the id of the next relationship to load from disk.
      */
@@ -368,7 +369,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                             " concurrently deleted while loading its relationships?", e );
                 }
 
-                ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<Integer, RelIdArray>();
+                ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
                 if ( rels != null )
@@ -735,7 +736,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         if ( labels != null )
         {
-            HashSet<Long> newLabels = new HashSet<Long>( labels );
+            HashSet<Long> newLabels = new HashSet<>( labels );
             if ( added != null )
             {
                 newLabels.addAll( added );

@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
@@ -90,7 +90,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import static java.util.Arrays.binarySearch;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -637,7 +637,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 neoStore.setRecoveredStatus( wasInRecovery );
             }
         }
-        if ( !isRecovered() && getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
+        if ( getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
         {
             throw new RuntimeException( "Tx id: " + getCommitTxId() +
                                         " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
@@ -2104,11 +2104,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public Iterator<Long> getLabelsForNode( long nodeId )
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
     {
         // Don't consider changes in this transaction
         NodeRecord node = getNodeStore().getRecord( nodeId );
-        return asIterator( parseLabelsField( node ).get( getNodeStore() ) );
+        return asPrimitiveIterator( parseLabelsField( node ).get( getNodeStore() ) );
     }
 
     @Override
