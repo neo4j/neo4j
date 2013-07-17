@@ -206,7 +206,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
     public void shouldBeJSONContentTypeOnResponse()
     {
         JaxRsResponse response = sendCreateRequestToServer();
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
     }
 
     @Test

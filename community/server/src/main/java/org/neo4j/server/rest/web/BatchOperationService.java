@@ -44,6 +44,7 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
+import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.server.web.WebServer;
 
 @Path("/batch")
@@ -116,8 +117,7 @@ public class BatchOperationService {
             };
 
             return Response.ok(stream)
-                    .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                    .type( MediaType.APPLICATION_JSON ).build();
+                    .type( HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE) ).build();
         } catch (Exception e)
         {
             return output.serverError(e);
@@ -133,7 +133,7 @@ public class BatchOperationService {
 
             Response res = Response.ok().entity(results.toJSON())
                     .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
-                    .type( MediaType.APPLICATION_JSON).build();
+                    .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
             representationWrittenHandler.onRepresentationWritten();
             return res;
         } catch (Exception e)

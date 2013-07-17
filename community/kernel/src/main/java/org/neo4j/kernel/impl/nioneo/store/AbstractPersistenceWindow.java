@@ -130,7 +130,11 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     @Override
     public void force()
     {
-        writeContents();
+        if ( isDirty() )
+        {
+            writeContents();
+            setClean();
+        }
     }
 
     @Override

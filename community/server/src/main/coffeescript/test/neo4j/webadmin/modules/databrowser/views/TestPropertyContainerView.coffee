@@ -8,14 +8,14 @@ define ['lib/amd/Backbone','neo4j/webadmin/modules/databrowser/views/PropertyCon
     it "recognizes ascii characters as strings", ->
       expect(pcv.shouldBeConvertedToString "a").toBe(true)
       expect(pcv.shouldBeConvertedToString "abcd123 ").toBe(true)
-      
+
     it "recognizes swedish characters as strings", ->
       expect(pcv.shouldBeConvertedToString "åäö").toBe(true)
       expect(pcv.shouldBeConvertedToString "åäö #$ asd  ").toBe(true)
-      
+
     it "recognizes strings containing odd characters as strings", ->
       expect(pcv.shouldBeConvertedToString ";åäö #$ asd  ").toBe(true)
-      
+
     it "recognizes valid JSON values as not being strings", ->
       expect(pcv.shouldBeConvertedToString "1").toBe(false)
       expect(pcv.shouldBeConvertedToString "12").toBe(false)

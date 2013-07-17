@@ -58,7 +58,7 @@ import static org.neo4j.qa.tooling.DumpVmInformation.dumpVmInfo;
                               method = "getNodeIfCached" ) } )
 @RunWith( SubProcessTestRunner.class )
 @Ignore( "Ignored in 2.0 due to half-way refactoring moving properties into kernel API. " +
-		"Unignore and change appropriately when it's done" )
+         "Unignore and change appropriately when it's done" )
 public class TestPropertyDataRace
 {
     @ClassRule
