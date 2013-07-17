@@ -21,19 +21,24 @@ package org.neo4j.graphdb;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.hamcrest.Description;
 import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -107,7 +112,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( Label... expectedLabels )
     {
-        Set<String> labelNames = new HashSet<String>( expectedLabels.length );
+        Set<String> labelNames = new HashSet<>( expectedLabels.length );
         for ( Label l : expectedLabels )
         {
             labelNames.add( l.name() );
@@ -207,6 +212,73 @@ public class Neo4jMatchers
                 return from.name();
             }
         }, enums ) );
+    }
+
+    public static Matcher<? super Iterator<Long>> hasSamePrimitiveItems( final PrimitiveLongIterator actual )
+    {
+        return new TypeSafeDiagnosingMatcher<Iterator<Long>>()
+        {
+            int len = 0;
+
+            String actualText = null;
+            String expectedText = null;
+
+            @Override
+            protected boolean matchesSafely( Iterator<Long> expected, Description actualDescription )
+            {
+
+                if ( actualText != null )
+                {
+                    actualDescription.appendText( actualText );
+
+                }
+                // compare iterators element-wise
+                while ( expected.hasNext() && actual.hasNext() )
+                {
+                    len++;
+
+                    Long expectedNext = expected.next();
+                    long actualNext = actual.next();
+
+                    if ( !(expectedNext.equals( actualNext )) )
+                    {
+                         actualText = format( "Element %d at position %d", actualNext, len );
+                         expectedText = format( "Element %d at position %d", expectedNext, len );
+
+                         return false;
+                    }
+
+                }
+
+                // check that the iterators do not have a different length
+                if ( expected.hasNext() )
+                {
+                    actualText = format("Length %d", len );
+                    expectedText = format( "Length %d", len + 1 );
+
+                    return false;
+                }
+
+                if ( actual.hasNext() )
+                {
+                    actualText = format("Length %d", len + 1 );
+                    expectedText = format( "Length %d", len );
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description expectedDescription )
+            {
+                if ( expectedText != null )
+                {
+                    expectedDescription.appendText( expectedText );
+                }
+            }
+        };
     }
 
     public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>

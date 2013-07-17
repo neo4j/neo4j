@@ -21,19 +21,20 @@ package org.neo4j.kernel.impl.api;
 
 import java.lang.reflect.Array;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
@@ -57,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
@@ -88,16 +90,16 @@ public class StoreStatementOperationsTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        long nodeId = db.createNode(label, label2).getId();
-        String labelName1 = label.name(), labelName2 = label2.name();
+        long nodeId = db.createNode( label1, label2).getId();
+        String labelName1 = label1.name(), labelName2 = label2.name();
         long labelId1 = statement.labelGetForName( state, labelName1 );
         long labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
         tx.success();
         tx.finish();
 
         // THEN
-        Iterator<Long> readLabels = statement.nodeGetLabels( state, nodeId );
-        assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ),
+        PrimitiveLongIterator readLabels = statement.nodeGetLabels( state, nodeId );
+        assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
     
@@ -105,7 +107,7 @@ public class StoreStatementOperationsTest
     public void should_be_able_to_get_label_name_for_label() throws Exception
     {
         // GIVEN
-        String labelName = label.name();
+        String labelName = label1.name();
         long labelId = statement.labelGetOrCreateForName( state, labelName );
 
         // WHEN
@@ -125,7 +127,7 @@ public class StoreStatementOperationsTest
         // GIVEN
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( cache_type, "none" ).newGraphDatabase();
-        Node node = createLabeledNode( db, map( "name", "Node" ), label );
+        Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
 
         // WHEN THEN
         assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
@@ -135,16 +137,18 @@ public class StoreStatementOperationsTest
     public void should_return_all_nodes_with_label() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label );
-        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label, label2 );
+        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
+        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
+        long labelId1 = statement.labelGetForName( state, label1.name() );
+        long labelId2 = statement.labelGetForName( state, label2.name() );
 
         // WHEN
-        Iterator<Long> nodesForLabel1 = statement.nodesGetForLabel( state, statement.labelGetForName( state, label.name() ) );
-        Iterator<Long> nodesForLabel2 = statement.nodesGetForLabel( state, statement.labelGetForName( state, label2.name() ) );
+        PrimitiveLongIterator nodesForLabel1 = statement.nodesGetForLabel( state, labelId1 );
+        PrimitiveLongIterator nodesForLabel2 = statement.nodesGetForLabel( state, labelId2 );
 
         // THEN
-        assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
-        assertEquals( asSet( node2.getId() ), asSet( nodesForLabel2 ) );
+        assertEquals( asSet( node1.getId(), node2.getId() ), IteratorUtil.asSet( nodesForLabel1 ) );
+        assertEquals( asSet( node2.getId() ), IteratorUtil.asSet( nodesForLabel2 ) );
     }
 
     @Test
@@ -196,7 +200,7 @@ public class StoreStatementOperationsTest
         for ( Object value : properties )
         {
             // given
-            long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label ).getId();
+            long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
             Property property = single( statement.nodeGetAllProperties( state, nodeId ) );
@@ -261,9 +265,9 @@ public class StoreStatementOperationsTest
     public void should_find_nodes_with_given_label_and_property_via_index() throws Exception
     {
         // GIVEN
-        IndexDescriptor index = createIndexAndAwaitOnline( label, propertyKey );
+        IndexDescriptor index = createIndexAndAwaitOnline( label1, propertyKey );
         String name = "Mr. Taylor";
-        Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label );
+        Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label1 );
         Transaction tx = db.beginTx();
 
         // WHEN
@@ -275,7 +279,7 @@ public class StoreStatementOperationsTest
     }
     
     private GraphDatabaseAPI db;
-    private final Label label = label( "first-label" ), label2 = label( "second-label" );
+    private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
     private StatementState state;
     private StatementOperations statement;

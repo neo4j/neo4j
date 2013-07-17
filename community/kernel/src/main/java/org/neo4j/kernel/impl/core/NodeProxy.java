@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -38,6 +37,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
@@ -564,7 +564,7 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 final StatementOperationParts context = statementCtxProvider.getCtxForReading();
-                Iterator<Long> labels;
+                PrimitiveLongIterator labels;
 
                 final StatementState state = statementCtxProvider.statementForReading();
                 try
@@ -577,10 +577,10 @@ public class NodeProxy implements Node
                     throw new NotFoundException( "No node with id " + getId() + " found.", e );
                 }
 
-                return nodeLookup.getCleanupService().resourceIterator( map( new Function<Long, Label>()
+                return nodeLookup.getCleanupService().resourceIterator( map( new FunctionFromPrimitiveLong<Label>()
                 {
                     @Override
-                    public Label apply( Long labelId )
+                    public Label apply( long labelId )
                     {
                         try
                         {

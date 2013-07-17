@@ -51,6 +51,7 @@ import static java.util.Collections.emptyList;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 public class StateHandlingStatementOperations implements
     EntityReadOperations,
@@ -115,20 +116,21 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
         {
-            return IteratorUtil.emptyIterator();
+            return IteratorUtil.emptyPrimitiveLongIterator();
         }
 
         if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
-            return state.txState().getNodeStateLabelDiffSets( nodeId ).getAdded().iterator();
+            // TODO make DiffSets.getAdded() return primitive long iterators directly
+            return toPrimitiveLongIterator( state.txState().getNodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
         }
 
-        Iterator<Long> committed = entityReadDelegate.nodeGetLabels( state, nodeId );
-        return state.txState().getNodeStateLabelDiffSets( nodeId ).apply( committed );
+        PrimitiveLongIterator committed = entityReadDelegate.nodeGetLabels( state, nodeId );
+        return state.txState().getNodeStateLabelDiffSets( nodeId ).applyPrimitiveLongIterator( committed );
     }
 
     @Override
@@ -159,15 +161,19 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetForLabel( StatementState state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
     {
-        Iterator<Long> committed = entityReadDelegate.nodesGetForLabel( state, labelId );
+        PrimitiveLongIterator committed = entityReadDelegate.nodesGetForLabel( state, labelId );
         if ( !state.txState().hasChanges() )
         {
             return committed;
         }
 
-        return state.txState().getDeletedNodes().apply( state.txState().getNodesWithLabelChanged( labelId ).apply( committed ) );
+        PrimitiveLongIterator wLabelChanges =
+                state.txState().getNodesWithLabelChanged( labelId ).applyPrimitiveLongIterator( committed );
+        PrimitiveLongIterator wDeletions =
+                state.txState().getDeletedNodes().applyPrimitiveLongIterator( wLabelChanges );
+        return wDeletions;
     }
 
     @Override
@@ -374,9 +380,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, final Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, final Object value )
             throws IndexNotFoundKernelException
     {
+        PrimitiveLongIterator committed = entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
+        if ( !state.txState().hasChanges() )
+        {
+            return committed;
+        }
+        
         // Start with nodes where the given property has changed
         DiffSets<Long> diff = state.txState().getNodesWithChangedProperty( index.getPropertyKeyId(), value );
 
@@ -393,8 +405,8 @@ public class StateHandlingStatementOperations implements
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return state.txState().getDeletedNodes().apply( diff.apply(
-                entityReadDelegate.nodesGetFromIndexLookup( state, index, value ) ) );
+        return state.txState().getDeletedNodes().applyPrimitiveLongIterator(
+                diff.applyPrimitiveLongIterator( committed ) );
     }
 
     @Override

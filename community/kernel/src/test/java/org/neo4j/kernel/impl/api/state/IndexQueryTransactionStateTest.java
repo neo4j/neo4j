@@ -20,18 +20,19 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collections;
-import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -46,6 +47,9 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
@@ -61,13 +65,15 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
+        when( oldTxState.hasChanges() ).thenReturn( true );
 
         txContext.nodeDelete( state, 2l );
 
         // When
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 3l ) ) );
@@ -82,14 +88,15 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<Long>( asSet( 1l ), Collections.<Long>emptySet() ) );
+                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
 
         // When
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -104,17 +111,18 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
         when( store.nodeGetProperty( eq( state ), anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.noNodeProperty( 1, propertyKeyId ) );
         when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( IteratorUtil.<Property>emptyIterator() );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<Long>( asSet( 1l ), Collections.<Long>emptySet() ) );
+                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
 
         // When
         txContext.nodeAddLabel( state, 1l, labelId );
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
@@ -130,7 +138,8 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         Property stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -140,7 +149,7 @@ public class IndexQueryTransactionStateTest
 
         // When
         txContext.nodeAddLabel( state, 1l, labelId );
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
@@ -156,7 +165,8 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 1l, 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
 
         Property stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -166,7 +176,7 @@ public class IndexQueryTransactionStateTest
 
         // When
         txContext.nodeRemoveLabel( state, 1l, labelId );
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -182,15 +192,16 @@ public class IndexQueryTransactionStateTest
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) ).then( asAnswer( asList( 2l, 3l ) ) );
+        when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<Long>( Collections.<Long>emptySet(), asSet( 1l ) ) );
+                new DiffSets<>( Collections.<Long>emptySet(), asSet( 1l ) ) );
 
         // When
         txContext.nodeAddLabel( state, 1l, labelId );
-        Iterator<Long> result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -208,9 +219,10 @@ public class IndexQueryTransactionStateTest
     {
         long labelId1 = 10, labelId2 = 12;
         store = mock( StatementOperations.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
@@ -229,17 +241,5 @@ public class IndexQueryTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, store, mock( AuxiliaryStoreOperations.class ),
                                                        mock( ConstraintIndexCreator.class ) );
-    }
-
-    private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
-    {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return values.iterator();
-            }
-        };
     }
 }

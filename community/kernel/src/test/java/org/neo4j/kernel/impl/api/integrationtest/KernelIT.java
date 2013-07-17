@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -278,7 +280,7 @@ public class KernelIT extends KernelIntegrationTest
         context.nodeRemoveLabel( statement, node.getId(), labelId2 );
 
         // THEN
-        Iterator<Long> labelsIterator = context.nodeGetLabels( statement, node.getId() );
+        PrimitiveLongIterator labelsIterator = context.nodeGetLabels( statement, node.getId() );
         Set<Long> labels = asSet( labelsIterator );
         assertFalse( context.nodeHasLabel( statement, node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
@@ -314,7 +316,7 @@ public class KernelIT extends KernelIntegrationTest
         tx = db.beginTx();
         context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
-        Iterator<Long> labels = context.nodeGetLabels( statement, node.getId() );
+        PrimitiveLongIterator labels = context.nodeGetLabels( statement, node.getId() );
         context.close( statement );
         tx.success();
         tx.finish();
@@ -474,7 +476,7 @@ public class KernelIT extends KernelIntegrationTest
         StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetForName( statement, label.name() );
-        Iterator<Long> nodes = context.nodesGetForLabel( statement, labelId );
+        PrimitiveLongIterator nodes = context.nodesGetForLabel( statement, labelId );
         Set<Long> nodeSet = asSet( nodes );
         tx.success();
         tx.finish();

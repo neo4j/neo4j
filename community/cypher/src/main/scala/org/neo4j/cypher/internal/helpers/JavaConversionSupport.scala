@@ -17,12 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.cypher.internal.helpers
 
-public interface PrimitiveLongIterator
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator
+
+object JavaConversionSupport
 {
-    boolean hasNext();
-    
-    long next();
+  def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
+    def hasNext = iterator.hasNext
+    def next() = iterator.next()
+  }
 
+  def mapToScala[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
+    def hasNext = iterator.hasNext
+    def next() = f(iterator.next())
+  }
 }
