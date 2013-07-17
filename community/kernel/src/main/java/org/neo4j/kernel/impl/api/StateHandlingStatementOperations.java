@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
 
@@ -79,14 +80,14 @@ public class StateHandlingStatementOperations implements
     public void nodeDelete( StatementState state, long nodeId )
     {
         auxStoreOps.nodeDelete( nodeId );
-        state.txState().nodeDelete( nodeId );
+        state.txState().nodeDoDelete( nodeId );
     }
 
     @Override
     public void relationshipDelete( StatementState state, long relationshipId )
     {
         auxStoreOps.relationshipDelete( relationshipId );
-        state.txState().relationshipDelete( relationshipId );
+        state.txState().relationshipDoDelete( relationshipId );
     }
 
     @Override
@@ -101,14 +102,14 @@ public class StateHandlingStatementOperations implements
 
             if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
             {
-                Boolean labelState = state.txState().labelState( nodeId, labelId );
-                return labelState != null && labelState;
+                TxState.UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
+                return labelState.isTouched() && labelState.isAdded();
             }
 
-            Boolean labelState = state.txState().labelState( nodeId, labelId );
-            if ( labelState != null )
+            TxState.UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
+            if ( labelState.isTouched() )
             {
-                return labelState;
+                return labelState.isAdded();
             }
         }
 
@@ -145,7 +146,7 @@ public class StateHandlingStatementOperations implements
             return false;
         }
 
-        state.txState().nodeAddLabel( labelId, nodeId );
+        state.txState().nodeDoAddLabel( labelId, nodeId );
         return true;
     }
 
@@ -158,7 +159,7 @@ public class StateHandlingStatementOperations implements
             return false;
         }
 
-        state.txState().nodeRemoveLabel( labelId, nodeId );
+        state.txState().nodeDoRemoveLabel( labelId, nodeId );
 
         return true;
     }
@@ -175,7 +176,7 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongIterator wLabelChanges =
                 state.txState().nodesWithLabelChanged( labelId ).applyPrimitiveLongIterator( committed );
         PrimitiveLongIterator wDeletions =
-                state.txState().deletedNodes().applyPrimitiveLongIterator( wLabelChanges );
+                state.txState().nodesDeletedInTx().applyPrimitiveLongIterator( wLabelChanges );
         return wDeletions;
     }
 
@@ -183,7 +184,7 @@ public class StateHandlingStatementOperations implements
     public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
-        state.txState().addIndexRule( rule );
+        state.txState().indexRuleDoAdd( rule );
         return rule;
     }
 
@@ -191,20 +192,20 @@ public class StateHandlingStatementOperations implements
     public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
-        state.txState().addConstraintIndexRule( rule );
+        state.txState().constraintIndexRuleDoAdd( rule );
         return rule;
     }
 
     @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().dropIndex( descriptor );
+        state.txState().indexDoDrop( descriptor );
     }
 
     @Override
     public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().dropConstraintIndex( descriptor );
+        state.txState().constraintIndexDoDrop( descriptor );
     }
 
     @Override
@@ -212,7 +213,7 @@ public class StateHandlingStatementOperations implements
             throws SchemaKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-        if ( !state.txState().unRemoveConstraint( constraint ) )
+        if ( !state.txState().constraintDoUnRemove( constraint ) )
         {
             for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                     state, labelId, propertyKeyId ); it.hasNext(); )
@@ -227,7 +228,7 @@ public class StateHandlingStatementOperations implements
             {
                 long indexId = constraintIndexCreator.createUniquenessConstraintIndex(
                         state, this, labelId, propertyKeyId );
-                state.txState().addConstraint( constraint, indexId );
+                state.txState().constraintDoAdd( constraint, indexId );
             }
             catch ( TransactionalException e )
             {
@@ -309,7 +310,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void constraintDrop( StatementState state, UniquenessConstraint constraint )
     {
-        state.txState().dropConstraint( constraint );
+        state.txState().constraintDoDrop( constraint );
     }
 
     @Override
@@ -420,8 +421,8 @@ public class StateHandlingStatementOperations implements
         diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return
-            state.txState().deletedNodes().applyPrimitiveLongIterator( diff.applyPrimitiveLongIterator( committed ) );
+        return state.txState()
+                .nodesDeletedInTx().applyPrimitiveLongIterator( diff.applyPrimitiveLongIterator( committed ) );
     }
 
     @Override
@@ -439,7 +440,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.nodeChangeStoreProperty( nodeId, existingProperty, property );
             }
-            state.txState().nodeReplaceProperty( nodeId, existingProperty, property );
+            state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )
@@ -463,7 +464,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.relationshipChangeStoreProperty( relationshipId, existingProperty, property );
             }
-            state.txState().relationshipReplaceProperty( relationshipId, existingProperty, property );
+            state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )
@@ -486,7 +487,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.graphChangeStoreProperty( existingProperty, property );
             }
-            state.txState().graphReplaceProperty( existingProperty, property );
+            state.txState().graphDoReplaceProperty( existingProperty, property );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )
@@ -506,7 +507,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.nodeRemoveStoreProperty( nodeId, existingProperty );
             }
-            state.txState().nodeRemoveProperty( nodeId, existingProperty );
+            state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )
@@ -526,7 +527,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.relationshipRemoveStoreProperty( relationshipId, existingProperty );
             }
-            state.txState().relationshipRemoveProperty( relationshipId, existingProperty );
+            state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )
@@ -546,7 +547,7 @@ public class StateHandlingStatementOperations implements
             {
                 auxStoreOps.graphRemoveStoreProperty( existingProperty );
             }
-            state.txState().graphRemoveProperty( existingProperty );
+            state.txState().graphDoRemoveProperty( existingProperty );
             return existingProperty;
         }
         catch ( PropertyNotFoundException e )

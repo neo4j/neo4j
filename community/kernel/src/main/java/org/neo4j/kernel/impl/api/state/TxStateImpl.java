@@ -119,6 +119,7 @@ public final class TxStateImpl implements TxState
     private final OldTxStateBridge legacyState;
     private final PersistenceManager persistenceManager; // should go away dammit!
     private final IdGeneration idGeneration; // needed when we move createNode() and createRelationship() to here...
+
     private boolean hasChanges;
 
     public TxStateImpl( OldTxStateBridge legacyState,
@@ -244,21 +245,21 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeDelete( long nodeId )
+    public void nodeDoDelete( long nodeId )
     {
         legacyState.deleteNode( nodeId );
-        deletedNodes().remove( nodeId );
+        nodesDeletedInTx().remove( nodeId );
         hasChanges = true;
     }
 
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return hasDeletedNodesDiffSets() && deletedNodes().isRemoved( nodeId );
+        return hasDeletedNodesDiffSets() && nodesDeletedInTx().isRemoved( nodeId );
     }
 
     @Override
-    public void relationshipDelete( long relationshipId )
+    public void relationshipDoDelete( long relationshipId )
     {
         legacyState.deleteRelationship( relationshipId );
         deletedRelationships().remove( relationshipId );
@@ -272,7 +273,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
+    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! newProperty.isNoProperty() )
@@ -289,7 +290,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
+    public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! newProperty.isNoProperty() )
@@ -306,7 +307,7 @@ public final class TxStateImpl implements TxState
     }
     
     @Override
-    public void graphReplaceProperty( Property replacedProperty, Property newProperty )
+    public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
             throws PropertyNotFoundException
     {
         if ( ! newProperty.isNoProperty() )
@@ -323,7 +324,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeRemoveProperty( long nodeId, Property removedProperty )
+    public void nodeDoRemoveProperty( long nodeId, Property removedProperty )
             throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
@@ -335,7 +336,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
+    public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
             throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
@@ -347,7 +348,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void graphRemoveProperty( Property removedProperty )
+    public void graphDoRemoveProperty( Property removedProperty )
             throws PropertyNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
@@ -359,7 +360,7 @@ public final class TxStateImpl implements TxState
     }
     
     @Override
-    public void nodeAddLabel( long labelId, long nodeId )
+    public void nodeDoAddLabel( long labelId, long nodeId )
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
@@ -368,7 +369,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeRemoveLabel( long labelId, long nodeId )
+    public void nodeDoRemoveLabel( long labelId, long nodeId )
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
@@ -377,7 +378,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public Boolean labelState( long nodeId, long labelId )
+    public UpdateTriState labelState( long nodeId, long labelId )
     {
         NodeState nodeState = getState( nodeStatesMap(), nodeId, null );
         if ( nodeState != null )
@@ -385,14 +386,14 @@ public final class TxStateImpl implements TxState
             DiffSets<Long> labelDiff = nodeState.labelDiffSets();
             if ( labelDiff.isAdded( labelId ) )
             {
-                return Boolean.TRUE;
+                return UpdateTriState.ADDED;
             }
             if ( labelDiff.isRemoved( labelId ) )
             {
-                return Boolean.FALSE;
+                return UpdateTriState.REMOVED;
             }
         }
-        return null;
+        return UpdateTriState.UNTOUCHED;
     }
     
     @Override
@@ -407,7 +408,7 @@ public final class TxStateImpl implements TxState
             }
         }
 
-        return Collections.<Long>emptySet();
+        return Collections.emptySet();
     }
 
     @Override
@@ -421,11 +422,11 @@ public final class TxStateImpl implements TxState
                 return state.getNodeDiffSets();
             }
         }
-        return DiffSets.<Long>emptyDiffSets();
+        return DiffSets.emptyDiffSets();
     }
 
     @Override
-    public void addIndexRule( IndexDescriptor descriptor )
+    public void indexRuleDoAdd( IndexDescriptor descriptor )
     {
         indexChanges().add( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().add( descriptor );
@@ -433,7 +434,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void addConstraintIndexRule( IndexDescriptor descriptor )
+    public void constraintIndexRuleDoAdd( IndexDescriptor descriptor )
     {
         constraintIndexChanges().add( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().add( descriptor );
@@ -441,7 +442,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void dropIndex( IndexDescriptor descriptor )
+    public void indexDoDrop( IndexDescriptor descriptor )
     {
         indexChanges().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().remove( descriptor );
@@ -449,7 +450,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void dropConstraintIndex( IndexDescriptor descriptor )
+    public void constraintIndexDoDrop( IndexDescriptor descriptor )
     {
         constraintIndexChanges().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).constraintIndexChanges().remove( descriptor );
@@ -467,7 +468,7 @@ public final class TxStateImpl implements TxState
                 return labelState.indexChanges();
             }
         }
-        return DiffSets.<IndexDescriptor>emptyDiffSets();
+        return DiffSets.emptyDiffSets();
     }
 
     @Override
@@ -481,7 +482,7 @@ public final class TxStateImpl implements TxState
                 return labelState.constraintIndexChanges();
             }
         }
-        return DiffSets.<IndexDescriptor>emptyDiffSets();
+        return DiffSets.emptyDiffSets();
     }
 
     @Override
@@ -521,7 +522,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<Long> deletedNodes()
+    public DiffSets<Long> nodesDeletedInTx()
     {
         if ( !hasDeletedNodesDiffSets() )
         {
@@ -596,7 +597,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void addConstraint( UniquenessConstraint constraint, long indexId )
+    public void constraintDoAdd( UniquenessConstraint constraint, long indexId )
     {
         constraintsChanges().add( constraint );
         createdConstraintIndexesByConstraint().put( constraint, indexId );
@@ -640,7 +641,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void dropConstraint( UniquenessConstraint constraint )
+    public void constraintDoDrop( UniquenessConstraint constraint )
     {
         if ( constraintsChanges().remove( constraint ) )
         {
@@ -653,13 +654,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public boolean unRemoveConstraint( UniquenessConstraint constraint )
+    public boolean constraintDoUnRemove( UniquenessConstraint constraint )
     {
+        // hasChanges should already be set correctly when this is called
         return constraintsChanges().unRemove( constraint );
     }
 
     @Override
-    public Iterable<IndexDescriptor> createdConstraintIndexes()
+    public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
     {
        if ( hasCreatedConstraintIndexesMap() )
        {
@@ -677,7 +679,7 @@ public final class TxStateImpl implements TxState
            }
        }
 
-       return Iterables.<IndexDescriptor>empty();
+       return Iterables.empty();
     }
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint()

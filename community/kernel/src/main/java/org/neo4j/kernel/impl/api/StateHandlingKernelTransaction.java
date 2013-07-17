@@ -66,15 +66,15 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
     private TxState txState;
 
     public StateHandlingKernelTransaction( StoreKernelTransaction delegate,
-                                            SchemaStorage schemaStorage,
-                                            TransactionState legacyState,
-                                            SchemaIndexProviderMap providerMap,
-                                            PersistenceCache persistenceCache,
-                                            SchemaCache schemaCache,
-                                            PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            PropertyKeyTokenHolder propertyKeyTokenHolder,
-                                            NodeManager nodeManager )
+                                           SchemaStorage schemaStorage,
+                                           TransactionState legacyState,
+                                           SchemaIndexProviderMap providerMap,
+                                           PersistenceCache persistenceCache,
+                                           SchemaCache schemaCache,
+                                           PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
+                                           ConstraintIndexCreator constraintIndexCreator,
+                                           PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                           NodeManager nodeManager )
     {
         super( delegate );
         this.schemaStorage = schemaStorage;
@@ -266,7 +266,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().createdConstraintIndexes() )
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 try
                 {

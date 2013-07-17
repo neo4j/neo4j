@@ -179,20 +179,21 @@ public class WritableStatementState implements StatementState
     private static final TxState NO_STATE = new TxState()
     {
         @Override
-        public boolean unRemoveConstraint( UniquenessConstraint constraint )
+        public boolean constraintDoUnRemove( UniquenessConstraint constraint )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
+        public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty,
+                                                   Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
+        public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
@@ -211,27 +212,27 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void relationshipDelete( long relationshipId )
+        public void relationshipDoDelete( long relationshipId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
+        public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
+        public void nodeDoRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
                 EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeRemoveLabel( long labelId, long nodeId )
+        public void nodeDoRemoveLabel( long labelId, long nodeId )
         {
             throw placeHolderException();
         }
@@ -249,13 +250,13 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void nodeDelete( long nodeId )
+        public void nodeDoDelete( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeAddLabel( long labelId, long nodeId )
+        public void nodeDoAddLabel( long labelId, long nodeId )
         {
             throw placeHolderException();
         }
@@ -267,14 +268,14 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void graphReplaceProperty( Property replacedProperty, Property newProperty )
+        public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void graphRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
+        public void graphDoRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
         {
             throw placeHolderException();
         }
@@ -328,7 +329,7 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public Boolean labelState( long nodeId, long labelId )
+        public UpdateTriState labelState( long nodeId, long labelId )
         {
             throw placeHolderException();
         }
@@ -352,7 +353,7 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public DiffSets<Long> deletedNodes()
+        public DiffSets<Long> nodesDeletedInTx()
         {
             throw placeHolderException();
         }
@@ -370,25 +371,25 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void dropIndex( IndexDescriptor descriptor )
+        public void indexDoDrop( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void dropConstraintIndex( IndexDescriptor descriptor )
+        public void constraintIndexDoDrop( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void dropConstraint( UniquenessConstraint constraint )
+        public void constraintDoDrop( UniquenessConstraint constraint )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Iterable<IndexDescriptor> createdConstraintIndexes()
+        public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
         {
             throw placeHolderException();
         }
@@ -412,19 +413,19 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void addIndexRule( IndexDescriptor descriptor )
+        public void indexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void addConstraintIndexRule( IndexDescriptor descriptor )
+        public void constraintIndexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void addConstraint( UniquenessConstraint constraint, long indexId )
+        public void constraintDoAdd( UniquenessConstraint constraint, long indexId )
         {
             throw placeHolderException();
         }
