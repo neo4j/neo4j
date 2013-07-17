@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class Neo4jMockitoHelpers
 {
-    public static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
+    public static <T> Answer<Iterator<T>> answerAsIteratorFrom( final Iterable<T> values )
     {
         return new Answer<Iterator<T>>()
         {
@@ -43,7 +43,7 @@ public class Neo4jMockitoHelpers
         };
     }
 
-    public static Answer<PrimitiveLongIterator> asPrimitiveAnswer( final Iterable<Long> values )
+    public static Answer<PrimitiveLongIterator> answerAsPrimitiveLongIteratorFrom( final Iterable<Long> values )
     {
 
         return new Answer<PrimitiveLongIterator>()

@@ -49,8 +49,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.asAnswer;
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.asPrimitiveAnswer;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LabelTransactionStateTest
@@ -276,11 +276,11 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StatementOperations.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
@@ -324,7 +324,7 @@ public class LabelTransactionStateTest
         for ( Labels nodeLabels : labels )
         {
             when( store.nodeGetLabels( state, nodeLabels.nodeId ) )
-                    .then( asPrimitiveAnswer( Arrays.<Long>asList( nodeLabels.labelIds ) ) );
+                    .then( answerAsPrimitiveLongIteratorFrom( Arrays.<Long>asList( nodeLabels.labelIds ) ) );
             for ( long label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
@@ -343,7 +343,8 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asPrimitiveAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( answerAsPrimitiveLongIteratorFrom( entry
+                    .getValue() ) );
         }
     }
 

@@ -48,8 +48,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.asAnswer;
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.asPrimitiveAnswer;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
@@ -66,7 +66,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 1l, 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
         when( oldTxState.hasChanges() ).thenReturn( true );
 
@@ -89,7 +89,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -112,7 +112,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
         when( store.nodeGetProperty( eq( state ), anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.noNodeProperty( 1, propertyKeyId ) );
         when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( IteratorUtil.<Property>emptyIterator() );
 
@@ -139,7 +139,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         Property stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -166,7 +166,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 1l, 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
 
         Property stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -193,7 +193,7 @@ public class IndexQueryTransactionStateTest
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
-                .then( asPrimitiveAnswer( asList( 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -219,9 +219,10 @@ public class IndexQueryTransactionStateTest
     {
         long labelId1 = 10, labelId2 = 12;
         store = mock( StatementOperations.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
