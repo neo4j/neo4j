@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TxStateTest
@@ -47,12 +49,12 @@ public class TxStateTest
     public void shouldGetAddedLabels() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 2, 1 );
+        state.nodeDoAddLabel( 1, 0 );
+        state.nodeDoAddLabel( 1, 1 );
+        state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        Set<Long> addedLabels = state.getNodeStateLabelDiffSets( 1 ).getAdded();
+        Set<Long> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
 
         // THEN
         assertEquals( asSet( 1L, 2L ), addedLabels );
@@ -62,12 +64,12 @@ public class TxStateTest
     public void shouldGetRemovedLabels() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 2, 1 );
+        state.nodeDoRemoveLabel( 1, 0 );
+        state.nodeDoRemoveLabel( 1, 1 );
+        state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        Set<Long> removedLabels = state.getNodeStateLabelDiffSets( 1 ).getRemoved();
+        Set<Long> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
 
         // THEN
         assertEquals( asSet( 1L, 2L ), removedLabels );
@@ -77,44 +79,44 @@ public class TxStateTest
     public void removeAddedLabelShouldRemoveFromAdded() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 2, 1 );
+        state.nodeDoAddLabel( 1, 0 );
+        state.nodeDoAddLabel( 1, 1 );
+        state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        state.nodeRemoveLabel( 1, 1 );
+        state.nodeDoRemoveLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getAdded() );
+        assertEquals( asSet( 2L ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
     }
 
     @Test
     public void addRemovedLabelShouldRemoveFromRemoved() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 2, 1 );
+        state.nodeDoRemoveLabel( 1, 0 );
+        state.nodeDoRemoveLabel( 1, 1 );
+        state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        state.nodeAddLabel( 1, 1 );
+        state.nodeDoAddLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getRemoved() );
+        assertEquals( asSet( 2L ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
     }
 
     @Test
     public void shouldMapFromAddedLabelToNodes() throws Exception
     {
         // GIVEN
-        state.nodeAddLabel( 1, 0 );
-        state.nodeAddLabel( 2, 0 );
-        state.nodeAddLabel( 1, 1 );
-        state.nodeAddLabel( 3, 1 );
-        state.nodeAddLabel( 2, 2 );
+        state.nodeDoAddLabel( 1, 0 );
+        state.nodeDoAddLabel( 2, 0 );
+        state.nodeDoAddLabel( 1, 1 );
+        state.nodeDoAddLabel( 3, 1 );
+        state.nodeDoAddLabel( 2, 2 );
 
         // WHEN
-        Set<Long> nodes = state.getNodesWithLabelAdded( 2 );
+        Set<Long> nodes = state.nodesWithLabelAdded( 2 );
 
         // THEN
         assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
@@ -124,14 +126,14 @@ public class TxStateTest
     public void shouldMapFromRemovedLabelToNodes() throws Exception
     {
         // GIVEN
-        state.nodeRemoveLabel( 1, 0 );
-        state.nodeRemoveLabel( 2, 0 );
-        state.nodeRemoveLabel( 1, 1 );
-        state.nodeRemoveLabel( 3, 1 );
-        state.nodeRemoveLabel( 2, 2 );
+        state.nodeDoRemoveLabel( 1, 0 );
+        state.nodeDoRemoveLabel( 2, 0 );
+        state.nodeDoRemoveLabel( 1, 1 );
+        state.nodeDoRemoveLabel( 3, 1 );
+        state.nodeDoRemoveLabel( 2, 2 );
 
         // WHEN
-        Set<Long> nodes = state.getNodesWithLabelChanged( 2 ).getRemoved();
+        Set<Long> nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
 
         // THEN
         assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
@@ -145,11 +147,11 @@ public class TxStateTest
 
         // WHEN
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
-        state.addIndexRule( rule );
-        state.addIndexRule( new IndexDescriptor( labelId2, propertyKey ) );
+        state.indexRuleDoAdd( rule );
+        state.indexRuleDoAdd( new IndexDescriptor( labelId2, propertyKey ) );
 
         // THEN
-        assertEquals( asSet( rule ), state.getIndexDiffSetsByLabel( labelId ).getAdded() );
+        assertEquals( asSet( rule ), state.indexDiffSetsByLabel( labelId ).getAdded() );
     }
 
     @Test
@@ -160,10 +162,10 @@ public class TxStateTest
 
         // WHEN
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
-        state.addIndexRule( rule );
+        state.indexRuleDoAdd( rule );
 
         // THEN
-        assertEquals( asSet( rule ), state.getIndexDiffSets().getAdded() );
+        assertEquals( asSet( rule ), state.indexChanges().getAdded() );
     }
 
     @Test
@@ -174,11 +176,11 @@ public class TxStateTest
         int propertyKey = 2;
         int propValue = 42;
 
-        DiffSets<Long> nodesWithChangedProp = new DiffSets<Long>( asSet( nodeId ), emptySet );
+        DiffSets<Long> nodesWithChangedProp = new DiffSets<>( asSet( nodeId ), emptySet );
         when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
 
         // When
-        DiffSets<Long> diff = state.getNodesWithChangedProperty( propertyKey, propValue );
+        DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
 
         // Then
         assertThat( diff.getAdded(), equalTo( asSet( nodeId ) ) );
@@ -193,11 +195,11 @@ public class TxStateTest
         int propertyKey = 2;
         int propValue = 42;
 
-        DiffSets<Long> nodesWithChangedProp = new DiffSets<Long>( emptySet, asSet( nodeId ) );
+        DiffSets<Long> nodesWithChangedProp = new DiffSets<>( emptySet, asSet( nodeId ) );
         when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
 
         // When
-        DiffSets<Long> diff = state.getNodesWithChangedProperty( propertyKey, propValue );
+        DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
 
         // Then
         assertThat( diff.getAdded(), equalTo( emptySet ) );
@@ -211,13 +213,13 @@ public class TxStateTest
 
         // When
         long nodeId = 1337l;
-        state.nodeDelete( nodeId );
+        state.nodeDoDelete( nodeId );
 
         // Then
         verify( legacyState ).deleteNode( nodeId );
         verifyNoMoreInteractions( legacyState, persistenceManager );
 
-        assertThat( asSet( state.getDeletedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( asSet( state.nodesDeletedInTx().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
     @Test
@@ -225,7 +227,7 @@ public class TxStateTest
     {
         // when
         UniquenessConstraint constraint = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint, 7 );
+        state.constraintDoAdd( constraint, 7 );
 
         // then
         DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( 1 );
@@ -238,11 +240,11 @@ public class TxStateTest
     {
         // given
         UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint1, 7 );
+        state.constraintDoAdd( constraint1, 7 );
 
         // when
         UniquenessConstraint constraint2 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint2, 19 );
+        state.constraintDoAdd( constraint2, 19 );
 
         // then
         assertEquals( constraint1, constraint2 );
@@ -254,9 +256,9 @@ public class TxStateTest
     {
         // when
         UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
-        state.addConstraint( constraint1, 7 );
+        state.constraintDoAdd( constraint1, 7 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 2, 17 );
-        state.addConstraint( constraint2, 19 );
+        state.constraintDoAdd( constraint2, 19 );
 
         // then
         assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );

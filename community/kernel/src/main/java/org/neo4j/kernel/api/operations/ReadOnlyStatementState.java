@@ -58,6 +58,18 @@ public class ReadOnlyStatementState implements StatementState
     }
 
     @Override
+    public boolean hasTxState()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return false;
+    }
+
+    @Override
     public IndexReaderFactory indexReaderFactory()
     {
         return indexReaderFactory;
@@ -136,20 +148,21 @@ public class ReadOnlyStatementState implements StatementState
     private static final TxState NO_STATE = new TxState()
     {
         @Override
-        public boolean unRemoveConstraint( UniquenessConstraint constraint )
+        public boolean constraintDoUnRemove( UniquenessConstraint constraint )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
+        public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty,
+                                                   Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
+        public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw readOnlyTransaction();
@@ -168,27 +181,27 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void relationshipDelete( long relationshipId )
+        public void relationshipDoDelete( long relationshipId )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
+        public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void nodeRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
+        public void nodeDoRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
                 EntityNotFoundException
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void nodeRemoveLabel( long labelId, long nodeId )
+        public void nodeDoRemoveLabel( long labelId, long nodeId )
         {
             throw readOnlyTransaction();
         }
@@ -206,13 +219,13 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void nodeDelete( long nodeId )
+        public void nodeDoDelete( long nodeId )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void nodeAddLabel( long labelId, long nodeId )
+        public void nodeDoAddLabel( long labelId, long nodeId )
         {
             throw readOnlyTransaction();
         }
@@ -224,129 +237,128 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void graphReplaceProperty( Property replacedProperty, Property newProperty )
+        public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void graphRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
+        public void graphDoRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
+        public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithLabelChanged( long labelId )
+        public DiffSets<Long> nodesWithLabelChanged( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Set<Long> getNodesWithLabelAdded( long labelId )
+        public Set<Long> nodesWithLabelAdded( long labelId )
         {
             return Collections.emptySet();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
+        public DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Iterable<NodeState> getNodeStates()
+        public Iterable<NodeState> nodeStates()
         {
             return Collections.emptyList();
         }
         
         @Override
-        public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
+        public DiffSets<Long> nodeStateLabelDiffSets( long nodeId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
+        public DiffSets<Property> nodePropertyDiffSets( long nodeId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
+        public DiffSets<Long> labelStateNodeDiffSets( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public Boolean getLabelState( long nodeId, long labelId )
+        public UpdateTriState labelState( long nodeId, long labelId )
         {
-            // TODO Auto-generated method stub
-            return null;
+            return UpdateTriState.UNTOUCHED;
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
-        {
-            return DiffSets.emptyDiffSets();
-        }
-        
-        @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSets()
+        public DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Property> getGraphPropertyDiffSets()
+        public DiffSets<IndexDescriptor> indexChanges()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<Long> getDeletedNodes()
+        public DiffSets<Property> graphPropertyDiffSets()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
+        public DiffSets<Long> nodesDeletedInTx()
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
+        public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId )
         {
             return DiffSets.emptyDiffSets();
         }
         
         @Override
-        public void dropIndex( IndexDescriptor descriptor )
+        public DiffSets<IndexDescriptor> constraintIndexChanges()
+        {
+            return DiffSets.emptyDiffSets();
+        }
+        
+        @Override
+        public void indexDoDrop( IndexDescriptor descriptor )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void dropConstraintIndex( IndexDescriptor descriptor )
+        public void constraintIndexDoDrop( IndexDescriptor descriptor )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void dropConstraint( UniquenessConstraint constraint )
+        public void constraintDoDrop( UniquenessConstraint constraint )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public Iterable<IndexDescriptor> createdConstraintIndexes()
+        public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
         {
             return Collections.emptyList();
         }
@@ -370,19 +382,19 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void addIndexRule( IndexDescriptor descriptor )
+        public void indexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void addConstraintIndexRule( IndexDescriptor descriptor )
+        public void constraintIndexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void addConstraint( UniquenessConstraint constraint, long indexId )
+        public void constraintDoAdd( UniquenessConstraint constraint, long indexId )
         {
             throw readOnlyTransaction();
         }

@@ -31,11 +31,11 @@ public class PropertyContainerState extends EntityState
         super( id );
     }
 
-    public DiffSets<Property> getPropertyDiffSets()
+    public DiffSets<Property> propertyDiffSets()
     {
         if ( null == propertyDiffSets )
         {
-            propertyDiffSets = new DiffSets<Property>();
+            propertyDiffSets = new DiffSets<>();
         }
         return propertyDiffSets;
     }

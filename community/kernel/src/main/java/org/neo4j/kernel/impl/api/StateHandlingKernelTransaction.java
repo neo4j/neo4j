@@ -38,40 +38,46 @@ import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
+public class StateHandlingKernelTransaction extends DelegatingKernelTransaction implements TxState.Holder
 {
     private final SchemaIndexProviderMap providerMap;
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final SchemaStorage schemaStorage;
-    private final TxState txState;
     private final PersistenceManager persistenceManager;
     private final UpdateableSchemaState schemaState;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final NodeManager nodeManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
+    private final OldTxStateBridge legacyStateBridge;
+
+    private TxState txState;
+
     public StateHandlingKernelTransaction( StoreKernelTransaction delegate,
-                                            SchemaStorage schemaStorage,
-                                            TxState txState,
-                                            SchemaIndexProviderMap providerMap,
-                                            PersistenceCache persistenceCache,
-                                            SchemaCache schemaCache,
-                                            PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            PropertyKeyTokenHolder propertyKeyTokenHolder,
-                                            NodeManager nodeManager )
+                                           SchemaStorage schemaStorage,
+                                           TransactionState legacyState,
+                                           SchemaIndexProviderMap providerMap,
+                                           PersistenceCache persistenceCache,
+                                           SchemaCache schemaCache,
+                                           PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
+                                           ConstraintIndexCreator constraintIndexCreator,
+                                           PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                           NodeManager nodeManager )
     {
         super( delegate );
         this.schemaStorage = schemaStorage;
-        this.txState = txState;
         this.providerMap = providerMap;
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
@@ -80,6 +86,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
         this.constraintIndexCreator = constraintIndexCreator;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.nodeManager = nodeManager;
+        this.legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyState );
     }
 
     @Override
@@ -117,7 +124,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
     public StatementState newStatementState()
     {
         WritableStatementState statement = (WritableStatementState) super.newStatementState();
-        statement.provide( txState );
+        statement.provide( this );
         return statement;
     }
 
@@ -142,7 +149,10 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
 
         // - commit changes from tx state to the cache
         // TODO: This should be done by log application, not by this level of the stack.
-        persistenceCache.apply( txState );
+        if ( hasTxStateWithChanges() )
+        {
+            persistenceCache.apply( this.txState() );
+        }
     }
 
     @Override
@@ -160,118 +170,146 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction
 
     private void createTransactionCommands()
     {
-        final AtomicBoolean clearState = new AtomicBoolean( false );
-        txState.accept( new TxState.Visitor()
+        if ( hasTxStateWithChanges() )
         {
-            @Override
-            public void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed )
+            final AtomicBoolean clearState = new AtomicBoolean( false );
+            txState().accept( new TxState.Visitor()
             {
-                // TODO: move store level changes here.
-            }
+                @Override
+                public void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed )
+                {
+                    // TODO: move store level changes here.
+                }
 
-            @Override
-            public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
-            {
-                SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                                                                               .getProviderDescriptor();
-                IndexRule rule;
-                if ( isConstraintIndex )
+                @Override
+                public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
                 {
-                    rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                          element.getPropertyKeyId(), providerDescriptor, null );
+                    SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
+                            .getProviderDescriptor();
+                    IndexRule rule;
+                    if ( isConstraintIndex )
+                    {
+                        rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                element.getPropertyKeyId(), providerDescriptor, null );
+                    }
+                    else
+                    {
+                        rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                element.getPropertyKeyId(), providerDescriptor );
+                    }
+                    persistenceManager.createSchemaRule( rule );
                 }
-                else
-                {
-                    rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                element.getPropertyKeyId(), providerDescriptor );
-                }
-                persistenceManager.createSchemaRule( rule );
-            }
 
-            @Override
-            public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
-            {
-                try
+                @Override
+                public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
                 {
-                    IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId() );
-                    persistenceManager.dropSchemaRule( rule.getId() );
+                    try
+                    {
+                        IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId() );
+                        persistenceManager.dropSchemaRule( rule.getId() );
+                    }
+                    catch ( SchemaRuleNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError(
+                                "Tobias Lindaaker", "Index to be removed should exist, since its existence should have " +
+                                "been validated earlier and the schema should have been locked." );
+                    }
                 }
-                catch ( SchemaRuleNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError(
-                            "Tobias Lindaaker", "Index to be removed should exist, since its existence should have " +
-                                                "been validated earlier and the schema should have been locked." );
-                }
-            }
 
-            @Override
-            public void visitAddedConstraint( UniquenessConstraint element, long indexId )
-            {
-                try
+                @Override
+                public void visitAddedConstraint( UniquenessConstraint element, long indexId )
                 {
-                    constraintIndexCreator.validateConstraintIndex( element, indexId );
-                }
-                catch ( ConstraintCreationKernelException e )
-                {
-                    // TODO: Revisit decision to rethrow as RuntimeException.
-                    throw new ConstraintCreationException(e);
-                }
-                clearState.set( true );
-                long constraintId = schemaStorage.newRuleId();
-                persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
-                        constraintId, element.label(), element.property(), indexId ) );
-                persistenceManager.setConstraintIndexOwner( indexId, constraintId );
-            }
-
-            @Override
-            public void visitRemovedConstraint( UniquenessConstraint element )
-            {
-                try
-                {
+                    try
+                    {
+                        constraintIndexCreator.validateConstraintIndex( element, indexId );
+                    }
+                    catch ( ConstraintCreationKernelException e )
+                    {
+                        // TODO: Revisit decision to rethrow as RuntimeException.
+                        throw new ConstraintCreationException( e );
+                    }
                     clearState.set( true );
-                    UniquenessConstraintRule rule = schemaStorage
-                            .uniquenessConstraint( element.label(), element.property() );
-                    persistenceManager.dropSchemaRule( rule.getId() );
+                    long constraintId = schemaStorage.newRuleId();
+                    persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+                            constraintId, element.label(), element.property(), indexId ) );
+                    persistenceManager.setConstraintIndexOwner( indexId, constraintId );
                 }
-                catch ( SchemaRuleNotFoundException e )
+
+                @Override
+                public void visitRemovedConstraint( UniquenessConstraint element )
                 {
-                    throw new ThisShouldNotHappenError(
-                            "Tobias Lindaaker", "Constraint to be removed should exist, since its existence should " +
-                                                "have been validated earlier and the schema should have been locked." );
+                    try
+                    {
+                        clearState.set( true );
+                        UniquenessConstraintRule rule = schemaStorage
+                                .uniquenessConstraint( element.label(), element.property() );
+                        persistenceManager.dropSchemaRule( rule.getId() );
+                    }
+                    catch ( SchemaRuleNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError(
+                                "Tobias Lindaaker", "Constraint to be removed should exist, since its existence should " +
+                                "have been validated earlier and the schema should have been locked." );
+                    }
+                    // Remove the index for the constraint as well
+                    visitRemovedIndex( new IndexDescriptor( element.label(), element.property() ), true );
                 }
-                // Remove the index for the constraint as well
-                visitRemovedIndex( new IndexDescriptor( element.label(), element.property() ), true );
+            } );
+            if ( clearState.get() )
+            {
+                schemaState.clear();
             }
-        } );
-        if ( clearState.get() )
-        {
-            schemaState.clear();
         }
     }
 
     private void dropCreatedConstraintIndexes() throws TransactionFailureException
     {
-        for ( IndexDescriptor createdConstraintIndex : txState.createdConstraintIndexes() )
+        if ( hasTxStateWithChanges() )
         {
-            try
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
-                // TODO logically, which statement should this operation be performed on?
-                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
-            }
-            catch ( SchemaKernelException e )
-            {
-                throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                                                 "possible to drop during rollback of that transaction.", e );
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw e;
-            }
-            catch ( TransactionalException e )
-            {
-                throw new IllegalStateException( "The transaction manager could not fulfill the transaction for " +
-                                                 "dropping the constraint.", e );
+                try
+                {
+                    // TODO logically, which statement should this operation be performed on?
+                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
+                }
+                catch ( SchemaKernelException e )
+                {
+                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
+                                                     "possible to drop during rollback of that transaction.", e );
+                }
+                catch ( TransactionFailureException e )
+                {
+                    throw e;
+                }
+                catch ( TransactionalException e )
+                {
+                    throw new IllegalStateException( "The transaction manager could not fulfill the transaction for " +
+                                                     "dropping the constraint.", e );
+                }
             }
         }
+    }
+
+    @Override
+    public TxState txState()
+    {
+        if ( !hasTxState() )
+        {
+            txState = new TxStateImpl( legacyStateBridge, persistenceManager, null );
+        }
+        return txState;
+    }
+
+    @Override
+    public boolean hasTxState()
+    {
+        return null != txState;
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return legacyStateBridge.hasChanges() || ( hasTxState() && txState.hasChanges() );
     }
 }

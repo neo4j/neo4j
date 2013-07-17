@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 public class WritableStatementState implements StatementState
 {
     private LockHolder lockHolder = NO_LOCKS;
-    private TxState txState = NO_STATE;
+    private TxState.Holder txStateHolder = NO_STATE_HOLDER;
     private IndexReaderFactory indexReaderFactory = NO_INDEX_READER_FACTORY;
 
     public void provide( LockHolder lockHolder )
@@ -47,9 +47,9 @@ public class WritableStatementState implements StatementState
         this.lockHolder = lockHolder;
     }
     
-    public void provide( TxState txState )
+    public void provide( TxState.Holder txStateHolder )
     {
-        this.txState = txState;
+        this.txStateHolder = txStateHolder;
     }
     
     public void provide( IndexReaderFactory indexReaderFactory )
@@ -66,9 +66,21 @@ public class WritableStatementState implements StatementState
     @Override
     public TxState txState()
     {
-        return txState;
+        return txStateHolder.txState();
     }
-    
+
+    @Override
+    public boolean hasTxState()
+    {
+        return txStateHolder.hasTxState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return txStateHolder.hasTxStateWithChanges();
+    }
+
     @Override
     public IndexReaderFactory indexReaderFactory()
     {
@@ -143,23 +155,45 @@ public class WritableStatementState implements StatementState
             throw placeHolderException();
         }
     };
+
+    private static final TxState.Holder NO_STATE_HOLDER = new TxState.Holder() {
+        @Override
+        public TxState txState()
+        {
+            return NO_STATE;
+        }
+
+        @Override
+        public boolean hasTxState()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return false;
+        }
+    };
+
     private static final TxState NO_STATE = new TxState()
     {
         @Override
-        public boolean unRemoveConstraint( UniquenessConstraint constraint )
+        public boolean constraintDoUnRemove( UniquenessConstraint constraint )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void relationshipReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
+        public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty,
+                                                   Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void relationshipRemoveProperty( long relationshipId, Property removedProperty )
+        public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
@@ -178,27 +212,27 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void relationshipDelete( long relationshipId )
+        public void relationshipDoDelete( long relationshipId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
+        public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException, EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
+        public void nodeDoRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
                 EntityNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeRemoveLabel( long labelId, long nodeId )
+        public void nodeDoRemoveLabel( long labelId, long nodeId )
         {
             throw placeHolderException();
         }
@@ -216,13 +250,13 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void nodeDelete( long nodeId )
+        public void nodeDoDelete( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void nodeAddLabel( long labelId, long nodeId )
+        public void nodeDoAddLabel( long labelId, long nodeId )
         {
             throw placeHolderException();
         }
@@ -234,128 +268,128 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void graphReplaceProperty( Property replacedProperty, Property newProperty )
+        public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
                 throws PropertyNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public void graphRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
+        public void graphDoRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Property> getRelationshipPropertyDiffSets( long relationshipId )
+        public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithLabelChanged( long labelId )
+        public DiffSets<Long> nodesWithLabelChanged( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Set<Long> getNodesWithLabelAdded( long labelId )
+        public Set<Long> nodesWithLabelAdded( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
+        public DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Iterable<NodeState> getNodeStates()
+        public Iterable<NodeState> nodeStates()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
+        public DiffSets<Long> nodeStateLabelDiffSets( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Property> getNodePropertyDiffSets( long nodeId )
+        public DiffSets<Property> nodePropertyDiffSets( long nodeId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
+        public DiffSets<Long> labelStateNodeDiffSets( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Boolean getLabelState( long nodeId, long labelId )
+        public UpdateTriState labelState( long nodeId, long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getIndexDiffSets()
+        public DiffSets<IndexDescriptor> indexChanges()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Property> getGraphPropertyDiffSets()
+        public DiffSets<Property> graphPropertyDiffSets()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<Long> getDeletedNodes()
+        public DiffSets<Long> nodesDeletedInTx()
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSetsByLabel( long labelId )
+        public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId )
         {
             throw placeHolderException();
         }
         
         @Override
-        public DiffSets<IndexDescriptor> getConstraintIndexDiffSets()
+        public DiffSets<IndexDescriptor> constraintIndexChanges()
         {
             throw placeHolderException();
         }
         
         @Override
-        public void dropIndex( IndexDescriptor descriptor )
+        public void indexDoDrop( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void dropConstraintIndex( IndexDescriptor descriptor )
+        public void constraintIndexDoDrop( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void dropConstraint( UniquenessConstraint constraint )
+        public void constraintDoDrop( UniquenessConstraint constraint )
         {
             throw placeHolderException();
         }
         
         @Override
-        public Iterable<IndexDescriptor> createdConstraintIndexes()
+        public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
         {
             throw placeHolderException();
         }
@@ -379,19 +413,19 @@ public class WritableStatementState implements StatementState
         }
         
         @Override
-        public void addIndexRule( IndexDescriptor descriptor )
+        public void indexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void addConstraintIndexRule( IndexDescriptor descriptor )
+        public void constraintIndexRuleDoAdd( IndexDescriptor descriptor )
         {
             throw placeHolderException();
         }
         
         @Override
-        public void addConstraint( UniquenessConstraint constraint, long indexId )
+        public void constraintDoAdd( UniquenessConstraint constraint, long indexId )
         {
             throw placeHolderException();
         }

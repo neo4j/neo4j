@@ -37,12 +37,10 @@ import org.neo4j.kernel.impl.api.state.TxState;
  * 
  * @author Mattias Persson
  */
-public interface StatementState
+public interface StatementState extends TxState.Holder
 {
     LockHolder locks();
 
-    TxState txState();
-    
     IndexReaderFactory indexReaderFactory();
     
     /**
