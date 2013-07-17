@@ -30,11 +30,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Token;
@@ -126,16 +128,15 @@ public class GlobalGraphOperations
      * they are used. This method guarantees that it will return all labels currently in use. However,
      * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
      *
-     * If you call this operation outside of a transaction, please take care that the returned 
+     * If you call this operation outside of a transaction, please take care that the returned
      * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
-     *   
+     * 
      * @return all labels in the underlying store.
      */
     public ResourceIterable<Label> getAllLabels()
     {
         return new ResourceIterable<Label>()
         {
-            @SuppressWarnings( "resource" )
             @Override
             public ResourceIterator<Label> iterator()
             {
@@ -156,9 +157,9 @@ public class GlobalGraphOperations
     /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
      * 
-     * If you call this operation outside of a transaction, please take care that the returned 
+     * If you call this operation outside of a transaction, please take care that the returned
      * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
-     *   
+     * 
      * @param label the {@link Label} to return nodes for.
      * @return {@link Iterable} containing nodes with a specific label.
      */
@@ -174,7 +175,6 @@ public class GlobalGraphOperations
         };
     }
 
-    @SuppressWarnings( "resource" )
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
         StatementOperationParts context = statementCtxProvider.getCtxForReading();
@@ -182,11 +182,11 @@ public class GlobalGraphOperations
         try
         {
             long labelId = context.keyReadOperations().labelGetForName( state, label );
-            final Iterator<Long> nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
-            return cleanupService.resourceIterator( map( new Function<Long, Node>()
+            final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
+            return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
             {
                 @Override
-                public Node apply( Long nodeId )
+                public Node apply( long nodeId )
                 {
                     return nodeManager.getNodeById( nodeId );
                 }

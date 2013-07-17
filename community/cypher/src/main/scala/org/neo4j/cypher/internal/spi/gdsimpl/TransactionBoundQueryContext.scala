@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.operations.KeyNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
 import org.neo4j.kernel.api.operations.StatementState
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 import scala.collection.Iterator
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementOperationParts, theState: StatementState)
   extends TransactionBoundTokenContext(ctx.keyReadOperations, theState) with QueryContext {
@@ -94,7 +94,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelsForNode(node: Long) =
-    ctx.entityReadOperations.nodeGetLabels(theState, node).asScala.map(_.asInstanceOf[Long])
+    JavaConversionSupport.asScala( ctx.entityReadOperations.nodeGetLabels(theState, node) )
 
   override def isLabelSetOnNode(label: Long, node: Long) =
     ctx.entityReadOperations.nodeHasLabel(theState, node, label)
@@ -111,7 +111,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def getTransaction = tx
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
-    ctx.entityReadOperations.nodesGetFromIndexLookup(theState, index, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+    JavaConversionSupport.mapToScala( ctx.entityReadOperations.nodesGetFromIndexLookup(theState, index, value) )(nodeOps.getById(_))
 
   val nodeOps = new NodeOperations
 
@@ -121,7 +121,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     case (count, labelId) => if (ctx.entityWriteOperations.nodeRemoveLabel(theState, node, labelId)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.entityReadOperations.nodesGetForLabel(theState, id).asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] =
+    JavaConversionSupport.mapToScala( ctx.entityReadOperations.nodesGetForLabel(theState, id) )(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {

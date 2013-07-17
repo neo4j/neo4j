@@ -40,7 +40,7 @@ public class DiffSetsTest
     public void testAdd()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.add( 1L );
@@ -55,7 +55,7 @@ public class DiffSetsTest
     public void testRemove()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.add( 1L );
@@ -70,7 +70,7 @@ public class DiffSetsTest
     public void testAddRemove()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.add( 1L );
@@ -85,7 +85,7 @@ public class DiffSetsTest
     public void testRemoveAdd()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.remove( 1L );
@@ -100,7 +100,7 @@ public class DiffSetsTest
     public void testIsAddedOrRemoved()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.add( 1L );
@@ -117,7 +117,7 @@ public class DiffSetsTest
     public void testAddRemoveAll()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
 
         // WHEN
         actual.addAll( iterator( 1L, 2L ) );
@@ -132,7 +132,7 @@ public class DiffSetsTest
     public void testFilterAdded()
     {
         // GIVEN
-        DiffSets<Long> actual = new DiffSets<Long>();
+        DiffSets<Long> actual = new DiffSets<>();
         actual.addAll( iterator( 1L, 2L ) );
         actual.removeAll( iterator( 3L, 4L ) );
 
@@ -162,7 +162,7 @@ public class DiffSetsTest
     public void testAppendAddedToSourceInApply() throws Exception
     {
         // GIVEN
-        DiffSets<Long> diffSets = new DiffSets<Long>();
+        DiffSets<Long> diffSets = new DiffSets<>();
         diffSets.add( 52l );
         diffSets.remove( 43l );
 
@@ -178,7 +178,7 @@ public class DiffSetsTest
     public void testFilterRemovedFromSourceInApply() throws Exception
     {
         // GIVEN
-        DiffSets<Long> diffSets = new DiffSets<Long>();
+        DiffSets<Long> diffSets = new DiffSets<>();
         diffSets.remove( 43l );
 
         // WHEN
@@ -193,7 +193,7 @@ public class DiffSetsTest
     public void testFilterAddedFromSourceInApply() throws Exception
     {
         // GIVEN
-        DiffSets<Long> diffSets = new DiffSets<Long>();
+        DiffSets<Long> diffSets = new DiffSets<>();
         diffSets.add( 42l );
         diffSets.add( 44l );
 

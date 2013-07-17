@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
-
 import org.mockito.Matchers;
+
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static org.mockito.Matchers.anyLong;
@@ -77,7 +77,7 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.lookup( Matchers.any() ) ).thenReturn( Collections.<Long>emptyList().iterator() );
+            when( indexReader.lookup( Matchers.any() ) ).thenReturn( IteratorUtil.emptyPrimitiveLongIterator() );
             when( indexReaderFactory.newReader( anyLong() ) ).thenReturn( indexReader );
         }
         catch ( IndexNotFoundKernelException e )

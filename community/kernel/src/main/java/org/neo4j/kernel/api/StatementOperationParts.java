@@ -245,12 +245,12 @@ public class StatementOperationParts
                 return keyWriteOperations.propertyKeyGetOrCreateForName( state, propertyKeyName );
             }
             @Override
-            public Iterator<Long> nodesGetForLabel( StatementState state, long labelId )
+            public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
             {
                 return entityReadOperations.nodesGetForLabel( state, labelId );
             }
             @Override
-            public Iterator<Long> nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
+            public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
                     throws IndexNotFoundKernelException
             {
                 return entityReadOperations.nodesGetFromIndexLookup( state, index, value );
@@ -261,7 +261,7 @@ public class StatementOperationParts
                 return entityReadOperations.nodeHasLabel( state, nodeId, labelId );
             }
             @Override
-            public Iterator<Long> nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
+            public PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException
             {
                 return entityReadOperations.nodeGetLabels( state, nodeId );
             }

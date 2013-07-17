@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Iterator;
-
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 
@@ -47,7 +48,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // then
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ) );
         IndexReader reader = accessor.newReader();
-        Iterator<Long> nodes = reader.lookup( "value1" );
+        PrimitiveLongIterator nodes = reader.lookup( "value1" );
         assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
         reader.close();
         accessor.close();

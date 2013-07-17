@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.helpers;
 
-public interface PrimitiveLongIterator
+public interface FunctionToPrimitiveLong<T>
 {
-    boolean hasNext();
-    
-    long next();
-
+    long apply( T value );
 }
