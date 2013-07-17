@@ -86,7 +86,6 @@ public class RepresentationFormatRepositoryTest
         Mockito.verify(responseBuilder,never()).entity(isA(StreamingOutput.class));
 
         when(responseBuilder.type(Mockito.<MediaType>any())).thenReturn(responseBuilder);
-        when(responseBuilder.header(HttpHeaders.CONTENT_ENCODING, "UTF-8")).thenReturn(responseBuilder);
         when(responseBuilder.build()).thenReturn(null);
         OutputFormat format = repository.outputFormat(asList(MediaType.TEXT_HTML_TYPE), new URI("http://some.host"), streamingHeader());
         assertNotNull(format);
@@ -119,7 +118,6 @@ public class RepresentationFormatRepositoryTest
             }
         });
         when(responseBuilder.type(Mockito.<MediaType>any())).thenReturn(responseBuilder);
-        when(responseBuilder.header(HttpHeaders.CONTENT_ENCODING, "UTF-8")).thenReturn(responseBuilder);
         when(responseBuilder.build()).thenReturn(response);
         return responseBuilder;
     }

@@ -79,6 +79,7 @@ public class DeletionTest
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 

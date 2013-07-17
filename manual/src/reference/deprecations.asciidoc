@@ -11,8 +11,9 @@ Using parameters for index keys in Cypher::
 Use the keys in verbatim instead.
 This also makes the execution plan caching more efficient.
 
-The `!` property operator in Cypher::
-Expressions like `node.property! = "value"` have been deprecated, please use `has(node.property) AND node.property = "value"` instead.
+The `!` and `?` property operators in Cypher::
+In future releases, expressions like `node.property = "value"` will not fail when a node is encountered without the property, and will instead return null. This is the same behaviour as `node.property! = "value"`, and thus the `!` property operator is deprecated and will be removed.
+Expressions using the `?` property operator, such as `node.property? = "value"`, are also deprecated. Please use `not(has(node.property)) OR node.property = "value"` instead.
 
 Cypher CREATE syntax::
 The `CREATE a={foo:’bar’}` syntax has been deprecated.
