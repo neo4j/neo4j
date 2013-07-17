@@ -21,6 +21,7 @@ package org.neo4j.helpers.progress;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,9 +30,10 @@ import org.neo4j.helpers.ProcessFailureException;
 
 public final class Completion
 {
-    private volatile Collection<Runnable> callbacks = new ArrayList<Runnable>();
-    private Throwable processFailureCause;
+    private volatile Collection<Runnable> callbacks = new ArrayList<>();
+    private final List<ProcessFailureException.Entry> processFailureCauses = new ArrayList<>();
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     void complete()
     {
         Collection<Runnable> callbacks = this.callbacks;
@@ -57,12 +59,13 @@ public final class Completion
         }
     }
 
-    void signalFailure( Throwable e )
+    void signalFailure( String part, Throwable e )
     {
-        this.processFailureCause = e;
+        processFailureCauses.add( new ProcessFailureException.Entry( part, e ) );
         complete();
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     void notify( Runnable callback )
     {
         if ( callback == null )
@@ -87,6 +90,7 @@ public final class Completion
         }
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void await( long timeout, TimeUnit unit )
             throws InterruptedException, TimeoutException, ProcessFailureException
     {
@@ -110,9 +114,9 @@ public final class Completion
                         String.format( "Process did not complete within %d %s.", timeout, unit.name() ) );
             }
         }
-        if (processFailureCause != null)
+        if ( !processFailureCauses.isEmpty() )
         {
-            throw new ProcessFailureException( processFailureCause );
+            throw new ProcessFailureException( processFailureCauses );
         }
     }
 

@@ -23,15 +23,11 @@ import java.util.Collection;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
@@ -47,10 +43,29 @@ public class NodeDynamicLabelOrphanCheckTest
 
     public NodeDynamicLabelOrphanCheckTest()
     {
-        super(
-            new NodeDynamicLabelOrphanCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ),
-            DynamicLabelConsistencyReport.class
-        );
+        super( new NodeDynamicLabelOrphanCheck(),  DynamicLabelConsistencyReport.class );
+    }
+
+    @Test
+    public void shouldReportOrphanRecordsThatAreNotFirst() throws Exception
+    {
+        // given
+        DynamicRecord record0 = addNodeDynamicLabels( inUse( new DynamicRecord( 0 ) ) );
+        DynamicRecord record1 = addNodeDynamicLabels( inUse( new DynamicRecord( 1 ) ) );
+        DynamicRecord record2 = addNodeDynamicLabels( inUse( new DynamicRecord( 2 ) ) );
+        long[] longs = new long[130];
+        for ( int i = 0; i < longs.length; i++ )
+        {
+            longs[i] = i;
+        }
+        allocateFromNumbers( longs, asIterator( record0, record1, record2 ), RECORD_ALLOCATOR );
+        record0.setInUse( false );
+
+        // when
+        DynamicLabelConsistencyReport report = check( record1 );
+
+        // then
+        verify( report ).orphanDynamicLabelRecord();
     }
 
     @Test
@@ -75,7 +90,7 @@ public class NodeDynamicLabelOrphanCheckTest
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( new long[] { 12l }, asIterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
+        allocateFromNumbers( new long[]{12l}, asIterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
 
         // when
         DynamicLabelConsistencyReport report = check( nodeDynamicLabelRecord );
@@ -105,14 +120,5 @@ public class NodeDynamicLabelOrphanCheckTest
 
         // then
         verify( report ).orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
-    }
-
-    public static RecordStore<DynamicRecord> configureDynamicStore( int blockSize )
-    {
-        @SuppressWarnings( "unchecked" )
-        RecordStore<DynamicRecord> mock = mock( RecordStore.class );
-        when( mock.getRecordSize() ).thenReturn( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
-        when( mock.getRecordHeaderSize() ).thenReturn( AbstractDynamicStore.BLOCK_HEADER_SIZE );
-        return mock;
     }
 }

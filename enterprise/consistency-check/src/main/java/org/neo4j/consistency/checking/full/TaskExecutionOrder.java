@@ -75,6 +75,7 @@ public enum TaskExecutionOrder
                 {
                     task.run();
                 }
+                completion.await( 0, TimeUnit.SECONDS );
             }
             catch ( Exception e )
             {
@@ -94,6 +95,7 @@ public enum TaskExecutionOrder
                 {
                     task.run();
                 }
+                completion.await( 0, TimeUnit.SECONDS );
             }
             catch ( Exception e )
             {

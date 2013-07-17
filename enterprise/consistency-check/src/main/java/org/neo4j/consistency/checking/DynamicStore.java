@@ -110,6 +110,20 @@ public enum DynamicStore
         {
             return null; // never needed
         }
+    },
+    NODE_LABEL( RecordType.NODE_DYNAMIC_LABEL )
+    {
+        @Override
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        {
+            return records.nodeLabels( block );
+        }
+
+        @Override
+        DynamicRecord changed( DiffRecordAccess records, long id )
+        {
+            return null; // never needed (?)
+        }
     };
 
     public final RecordType type;

@@ -30,6 +30,10 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     {
         this.delegate = delegate;
     }
+    public String toString()
+    {
+        return delegate.toString();
+    }
 
     @Override
     public File getStorageFileName()

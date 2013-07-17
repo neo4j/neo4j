@@ -139,15 +139,15 @@ public class ExecutionOrderIntegrationTest
 
     static Config config( TaskExecutionOrder executionOrder )
     {
-        return new Config( stringMap( ConsistencyCheckSettings.consistency_check_execution_order.name(),
-                executionOrder.name() ),
+        return new Config( stringMap(
+                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name() ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static class InvocationLog
     {
-        private final Map<String, Throwable> data = new HashMap<String, Throwable>();
-        private final Map<String, Integer> duplicates = new HashMap<String, Integer>();
+        private final Map<String, Throwable> data = new HashMap<>();
+        private final Map<String, Integer> duplicates = new HashMap<>();
 
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void log( PendingReferenceCheck check, InvocationOnMock invocation )
@@ -181,8 +181,8 @@ public class ExecutionOrderIntegrationTest
     {
         if ( !singlePassChecks.keySet().equals( multiPassChecks.keySet() ) )
         {
-            Map<String, Throwable> missing = new HashMap<String, Throwable>( singlePassChecks );
-            Map<String, Throwable> extras = new HashMap<String, Throwable>( multiPassChecks );
+            Map<String, Throwable> missing = new HashMap<>( singlePassChecks );
+            Map<String, Throwable> extras = new HashMap<>( multiPassChecks );
             missing.keySet().removeAll( multiPassChecks.keySet() );
             extras.keySet().removeAll( singlePassChecks.keySet() );
             StringWriter diff = new StringWriter();
@@ -221,7 +221,7 @@ public class ExecutionOrderIntegrationTest
         <REC extends AbstractBaseRecord, REP extends ConsistencyReport<REC, REP>> RecordCheck<REC, REP> logging(
                 RecordCheck<REC, REP> checker )
         {
-            return new LoggingChecker<REC, REP>( checker, log );
+            return new LoggingChecker<>( checker, log );
         }
 
         @Override
@@ -318,7 +318,7 @@ public class ExecutionOrderIntegrationTest
         {
             reference.dispatch( mock( (Class<PendingReferenceCheck<T>>) reporter.getClass(),
                     withSettings().spiedInstance( reporter )
-                            .defaultAnswer( new ReporterSpy<T>( reference, reporter, log ) ) ) );
+                            .defaultAnswer( new ReporterSpy<>( reference, reporter, log ) ) ) );
         }
     }
 
@@ -359,7 +359,7 @@ public class ExecutionOrderIntegrationTest
 
         private <T extends AbstractBaseRecord> LoggingReference<T> logging( RecordReference<T> actual )
         {
-            return new LoggingReference<T>( actual, log );
+            return new LoggingReference<>( actual, log );
         }
 
         @Override

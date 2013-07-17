@@ -106,6 +106,11 @@ public abstract class GraphStoreFixture implements TestRule
             return nodeId++;
         }
 
+        public long label()
+        {
+            return labelId++;
+        }
+
         public long nodeLabel()
         {
             return nodeLabelsId++;
@@ -327,7 +332,7 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( String storeDir )
+    protected void start( @SuppressWarnings("UnusedParameters") String storeDir )
     {
         // allow for override
     }
@@ -356,6 +361,7 @@ public abstract class GraphStoreFixture implements TestRule
         return transaction.write( new IdGenerator(), localIdGenerator++, masterId(), myId(), txId );
     }
 
+    @SuppressWarnings("deprecation")
     protected void applyTransaction( ReadableByteChannel transaction ) throws IOException
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
@@ -373,13 +379,14 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected Map<String, String> configuration( boolean initialData )
     {
-        return new HashMap<String, String>();
+        return new HashMap<>();
     }
 
     private String directory;
     private int localIdGenerator = 0;
     private long schemaId;
     private long nodeId;
+    private long labelId;
     private long nodeLabelsId;
     private long relId;
     private long propId;
@@ -397,6 +404,7 @@ public abstract class GraphStoreFixture implements TestRule
             StoreAccess stores = new StoreAccess( graphDb );
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
+            labelId = stores.getLabelTokenStore().getHighId();
             nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
             relId = stores.getRelationshipStore().getHighId();
             propId = stores.getPropertyStore().getHighId();

@@ -208,7 +208,7 @@ public abstract class ProgressListener
         @Override
         public void failed( Throwable e )
         {
-            aggregator.signalFailure( e );
+            aggregator.signalFailure( part, e );
         }
 
         private void update( long progress )
