@@ -26,7 +26,6 @@ case "$1" in
     ;;
     
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
-        update-rc.d -f neo4j-arbiter-service remove
     ;;
 
     *)
