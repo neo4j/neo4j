@@ -26,6 +26,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
@@ -100,7 +102,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquenessConstraintCreate( state, 10, 66 );
 
         // then
-        verify( txState ).unRemoveConstraint( any( UniquenessConstraint.class ) );
+        verify( txState ).constraintDoUnRemove( any( UniquenessConstraint.class ) );
         verifyNoMoreInteractions( txState );
     }
 

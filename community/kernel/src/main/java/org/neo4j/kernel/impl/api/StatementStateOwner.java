@@ -125,6 +125,18 @@ public abstract class StatementStateOwner
         }
 
         @Override
+        public boolean hasTxState()
+        {
+            return actual.hasTxState();
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return actual.hasTxStateWithChanges();
+        }
+
+        @Override
         public IndexReaderFactory indexReaderFactory()
         {
             return actual.indexReaderFactory();
