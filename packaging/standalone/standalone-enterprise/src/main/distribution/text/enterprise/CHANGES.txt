@@ -19,9 +19,6 @@ o The Content-Type is now correctly used to set the text encoding, not Content-E
 o Fixes concurrency issue with generation of JSON responses
 o HTTPS scheme is now properly propagated on batch requests
 
-Packaging:
-o Now provides LSB compliant scripts
-
 1.9.1 (2013-06-24)
 ------------------
 HA:
