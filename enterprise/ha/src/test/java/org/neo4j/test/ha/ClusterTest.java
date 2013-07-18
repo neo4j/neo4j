@@ -52,22 +52,27 @@ public class ClusterTest
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
                 MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
                                   HaSettings.tx_push_factor.name(), "2"));
-        clusterManager.start();
+        try
+        {
+            clusterManager.start();
 
-        clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
-        
-        GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-        Transaction tx = master.beginTx();
-        Node node = master.createNode();
-        long nodeId = node.getId();
-        node.setProperty( "foo", "bar" );
-        tx.success();
-        tx.finish();
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
-        node = clusterManager.getDefaultCluster().getAnySlave(  ).getNodeById( nodeId );
-        Assert.assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
+            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
+            Transaction tx = master.beginTx();
+            Node node = master.createNode();
+            long nodeId = node.getId();
+            node.setProperty( "foo", "bar" );
+            tx.success();
+            tx.finish();
 
-        clusterManager.stop();
+            node = clusterManager.getDefaultCluster().getAnySlave(  ).getNodeById( nodeId );
+            Assert.assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
     }
 
 //    @Test
@@ -75,16 +80,21 @@ public class ClusterTest
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap());
-        clusterManager.start();
-        clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+        try
+        {
+            clusterManager.start();
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
-        GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-        Transaction tx = master.beginTx();
-        master.createNode();
-        tx.success();
-        tx.finish();
-
-        clusterManager.stop();
+            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
+            Transaction tx = master.beginTx();
+            master.createNode();
+            tx.success();
+            tx.finish();
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
     }
 
     @Test
@@ -178,25 +188,31 @@ public class ClusterTest
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+        try
+        {
+            clusterManager.start();
+            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        logging.getLogger().info( "STOPPING MASTER" );
-        cluster.shutdown( cluster.getMaster() );
-        logging.getLogger().info( "STOPPED MASTER" );
+            logging.getLogger().info( "STOPPING MASTER" );
+            cluster.shutdown( cluster.getMaster() );
+            logging.getLogger().info( "STOPPED MASTER" );
 
-        cluster.await( ClusterManager.masterAvailable() );
+            cluster.await( ClusterManager.masterAvailable() );
 
-        GraphDatabaseService master = cluster.getMaster();
-        logging.getLogger().info( "CREATE NODE" );
-        Transaction tx = master.beginTx();
-        master.createNode();
-        logging.getLogger().info( "CREATED NODE" );
-        tx.success();
-        tx.finish();
+            GraphDatabaseService master = cluster.getMaster();
+            logging.getLogger().info( "CREATE NODE" );
+            Transaction tx = master.beginTx();
+            master.createNode();
+            logging.getLogger().info( "CREATED NODE" );
+            tx.success();
+            tx.finish();
 
-        logging.getLogger().info( "STOPPING CLUSTER" );
-        clusterManager.stop();
+            logging.getLogger().info( "STOPPING CLUSTER" );
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
     }
 }

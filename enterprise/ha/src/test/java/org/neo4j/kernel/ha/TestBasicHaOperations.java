@@ -65,11 +65,11 @@ public class TestBasicHaOperations
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
         // When
         long start = System.nanoTime();
