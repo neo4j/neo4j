@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
+import com.sun.jersey.api.client.Client;
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.server.rest.domain.JsonHelper;
-
-import com.sun.jersey.api.client.Client;
 
 public class DiscoveryServiceDocIT extends AbstractRestFunctionalTestBase
 {
@@ -62,7 +63,7 @@ public class DiscoveryServiceDocIT extends AbstractRestFunctionalTestBase
     public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
     {
         JaxRsResponse response = getDiscoveryDocument();
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString(MediaType.APPLICATION_JSON) );
         response.close();
     }
 
