@@ -19,13 +19,12 @@
  */
 package org.neo4j.test.ha;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
@@ -34,6 +33,10 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
 {
@@ -44,14 +47,22 @@ public class ClusterTest
     public void testCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap());
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005"));
         clusterManager.start();
+
+        clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
         
         GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
         Transaction tx = master.beginTx();
-        master.createNode();
+        Node node = master.createNode();
+        long nodeId = node.getId();
+        node.setProperty( "foo", "bar" );
         tx.success();
         tx.finish();
+
+        node = clusterManager.getDefaultCluster().getAnySlave(  ).getNodeById( nodeId );
+        System.out.println(node.getProperty( "foo" ));
 
         clusterManager.stop();
     }
@@ -62,6 +73,7 @@ public class ClusterTest
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap());
         clusterManager.start();
+        clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
         GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
         Transaction tx = master.beginTx();
@@ -165,6 +177,7 @@ public class ClusterTest
                 TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
         logging.getLogger().info( "STOPPING MASTER" );
         cluster.shutdown( cluster.getMaster() );
