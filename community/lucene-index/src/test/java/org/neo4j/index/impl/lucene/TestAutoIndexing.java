@@ -21,9 +21,13 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,7 +40,12 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestAutoIndexing
 {
@@ -651,5 +660,32 @@ public class TestAutoIndexing
         node1.removeProperty( "nodeProp" );
         newTransaction();
         assertFalse( node1.hasProperty( "nodeProp" ) );
+    }
+
+    @Test
+    public void testRemoveRelationshipRemovesDocument()
+    {
+        AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( "foo" );
+        autoIndexer.setEnabled( true );
+
+        newTransaction();
+
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Relationship rel = node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "foo" ) );
+        rel.setProperty( "foo", "bar" );
+
+        newTransaction();
+
+        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(), equalTo( 1 ) );
+
+        newTransaction();
+
+        rel.delete();
+
+        newTransaction();
+
+        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(), equalTo( 0 ) );
     }
 }

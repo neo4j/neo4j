@@ -748,7 +748,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         List<Fieldable> fields = document.getFields();
         for ( Fieldable field : fields )
         {
-            if ( !LuceneIndex.KEY_DOC_ID.equals( field.name() ) )
+            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_START_NODE_ID.equals( field.name() )))
             {
                 return false;
             }

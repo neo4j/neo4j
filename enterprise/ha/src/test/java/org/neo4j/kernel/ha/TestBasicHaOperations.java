@@ -71,6 +71,7 @@ public class TestBasicHaOperations
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
 
+        // When
         long start = System.nanoTime();
         cluster.shutdown( master );
         logger.getLogger().warn( "Shut down master" );
@@ -80,6 +81,7 @@ public class TestBasicHaOperations
 
         logger.getLogger().warn( "Failover took:"+(end-start)/1000000+"ms" );
 
+        // Then
         boolean slave1Master = slave1.isMaster();
         boolean slave2Master = slave2.isMaster();
 

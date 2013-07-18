@@ -159,7 +159,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
 
         for ( ExecutorService pullUpdateWorker : pullUpdateWorkers )
         {
-            pullUpdateWorker.shutdown();
+            pullUpdateWorker.shutdownNow();
             pullUpdateWorker.awaitTermination( 30, TimeUnit.SECONDS );
         }
     }
