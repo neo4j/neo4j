@@ -39,8 +39,6 @@ import org.neo4j.tooling.RealClock;
 
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-
 public class EnterpriseServerBuilder extends ServerBuilder
 {
     public static EnterpriseServerBuilder server()

@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,12 +29,21 @@ import java.util.Set;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 public class TraverserDocIT extends AbstractRestFunctionalTestBase
 {
@@ -116,7 +118,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
     private void expectNodes( String entity, Node... nodes )
             throws PropertyValueException
     {
-        Set<String> expected = new HashSet<String>();
+        Set<String> expected = new HashSet<>();
         for ( Node node : nodes )
         {
             expected.add( getNodeUri( node ) );
@@ -135,7 +137,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
      * Traversal using a return filter.
      * 
      * In this example, the +none+ prune evaluator is used and a return filter
-     * is supplied in order to return all names containing "t". 
+     * is supplied in order to return all names containing "t".
      * The result is to be returned as nodes and the max depth is
      * set to 3.
      */
@@ -146,7 +148,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
             throws PropertyValueException
     {
         Node start = getNode( "Root" );
-        List<Map<String, Object>> rels = new ArrayList<Map<String, Object>>();
+        List<Map<String, Object>> rels = new ArrayList<>();
         rels.add( map( "type", "knows", "direction", "all" ) );
         rels.add( map( "type", "loves", "direction", "all" ) );
         String description = createJsonFrom( map(
@@ -221,6 +223,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
                     map( "language", "javascript",
                          "body", "position.length()<2;" )
         ) );
+        @SuppressWarnings( "unchecked" )
         List<Map<String,Object>> nodes = (List<Map<String, Object>>) readJson( gen().expectedStatus( 200 ).payload(
                 description ).post(
                 getTraverseUriNodes( start ) ).entity() );
@@ -233,6 +236,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertThat( getName( nodes.get( 4 ) ), is( "Banana" ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private String getName( Map<String, Object> propContainer )
     {
         return (String) ((Map<String,Object>)propContainer.get( "data" )).get( "name" );

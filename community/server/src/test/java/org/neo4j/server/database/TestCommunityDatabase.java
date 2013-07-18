@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.server.configuration.Configurator;
@@ -43,17 +44,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.test.Mute.muteAll;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class TestCommunityDatabase
 {
@@ -188,7 +182,7 @@ public class TestCommunityDatabase
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
@@ -202,12 +196,10 @@ public class TestCommunityDatabase
         {
             try
             {
-                ShellLobby.newClient( startingPort )
-                        .shutdown();
-                startingPort++;
+                ShellLobby.newClient( startingPort++ ).shutdown();
             }
             catch ( ShellException e )
-            { // Good
+            {   // Good
                 return startingPort;
             }
         }

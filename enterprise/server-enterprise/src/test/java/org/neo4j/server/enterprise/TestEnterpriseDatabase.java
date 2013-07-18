@@ -20,9 +20,9 @@
 package org.neo4j.server.enterprise;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

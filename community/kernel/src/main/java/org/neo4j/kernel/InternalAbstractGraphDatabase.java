@@ -319,7 +319,8 @@ public abstract class InternalAbstractGraphDatabase
 
             shutdown();
 
-            throw new RuntimeException( throwable );
+            throw new RuntimeException( "Error starting " + getClass().getName() + ", " + storeDir.getAbsolutePath(),
+                    throwable );
         }
     }
 

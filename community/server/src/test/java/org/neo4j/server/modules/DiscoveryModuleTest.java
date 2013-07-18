@@ -24,17 +24,11 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.Mute;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;

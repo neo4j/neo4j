@@ -22,9 +22,7 @@ package org.neo4j.index.impl.lucene;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,7 +65,7 @@ public class TestAutoIndexing
     {
         if ( config == null )
         {
-            config = new HashMap<String, String>();
+            config = new HashMap<>();
         }
         return config;
     }
@@ -205,7 +203,7 @@ public class TestAutoIndexing
     public void testConfigAndAPICompatibility()
     {
         stopDb();
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
         config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
         config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
@@ -232,7 +230,7 @@ public class TestAutoIndexing
     public void testSmallGraphWithNonIndexableProps() throws Exception
     {
         stopDb();
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
         config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
         config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
@@ -368,7 +366,7 @@ public class TestAutoIndexing
     public void testDefaultIsOffIfExplicit() throws Exception
     {
         stopDb();
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
         config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
         config.put( GraphDatabaseSettings.node_auto_indexing.name(), "false" );
@@ -396,7 +394,7 @@ public class TestAutoIndexing
             throws Exception
     {
         stopDb();
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
         config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
@@ -427,7 +425,7 @@ public class TestAutoIndexing
     public void testStartStopAutoIndexing() throws Exception
     {
         stopDb();
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
         config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
@@ -518,10 +516,6 @@ public class TestAutoIndexing
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
         finally
         {
             tx.finish();
@@ -529,7 +523,7 @@ public class TestAutoIndexing
 
         /*
          *  Here both nodes are indexed. To demonstrate removal, we stop
-         *  autoindexing nodeProp1.
+         *  auto-indexing nodeProp1.
          */
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
@@ -585,7 +579,7 @@ public class TestAutoIndexing
     @Test
     public void testGettingAutoIndexByNameReturnsSomethingReadOnly()
     {
-        // Create the node and relationship autoindexes
+        // Create the node and relationship auto-indexes
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
                 "nodeProp" );
@@ -678,7 +672,8 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(), equalTo( 1 ) );
+        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(),
+                equalTo( 1 ) );
 
         newTransaction();
 
@@ -686,6 +681,7 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(), equalTo( 0 ) );
+        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(),
+                equalTo( 0 ) );
     }
 }
