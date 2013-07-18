@@ -42,7 +42,6 @@ foreach(x in [1,2,3] |
   create p = ({foo:x})-[:X]->()
   foreach( i in p |
     set i.touched = true))""")
-    println(result.dumpToString())
   }
 
   @Test def shouldGetReferenceNode() {
@@ -2184,8 +2183,6 @@ RETURN x0.name?
     relate(c, x7, "X", "r10")
 
     val result = parseAndExecute("START a=node(1), b=node(2),c=node(3) MATCH a-[r1?]->X<-[r2?]-b, c-[r3?]->X return r1.name?,r2.name?,r3.name? order by id(r1),id(r2),id(r3)")
-
-    println(result.dumpToString())
   }
 
   @Test
@@ -2674,7 +2671,6 @@ RETURN x0.name?
 
     //WHEN
     val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
-    println(result.executionPlanDescription())
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))

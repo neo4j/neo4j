@@ -66,9 +66,9 @@ trait CreateUnique extends Base with ParserPattern {
       ParsedEntity(startName, startExp, startProps, _, _),
       ParsedEntity(endName, endExp, endProps, _, _), typ, dir, map) if typ.size == 1 =>
         val link = UniqueLink(
-          start = NamedExpectation(startName, startExp, startProps, true),
-          end = NamedExpectation(endName, endExp, endProps, true),
-          rel = NamedExpectation(name, props, true),
+          start = NamedExpectation(startName, startExp, startProps, bare = startProps.isEmpty),
+          end = NamedExpectation(endName, endExp, endProps, bare = endProps.isEmpty),
+          rel = NamedExpectation(name, props, bare = props.isEmpty),
           relType = typ.head,
           dir = dir
         )
