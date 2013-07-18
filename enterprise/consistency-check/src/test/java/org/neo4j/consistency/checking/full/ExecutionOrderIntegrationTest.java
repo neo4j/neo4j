@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -152,7 +153,14 @@ public class ExecutionOrderIntegrationTest
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void log( PendingReferenceCheck check, InvocationOnMock invocation )
         {
-            StringBuilder entry = new StringBuilder( invocation.getMethod().getName() ).append( '(' );
+            Method method = invocation.getMethod();
+            if ( Object.class == method.getDeclaringClass() && "finalize".equals( method.getName() ) )
+            {
+                /* skip invocations to finalize - they are not of interest to us,
+                 * and GC is not predictable enough to reliably trace this. */
+                return;
+            }
+            StringBuilder entry = new StringBuilder( method.getName() ).append( '(' );
             entry.append( check );
             for ( Object arg : invocation.getArguments() )
             {
