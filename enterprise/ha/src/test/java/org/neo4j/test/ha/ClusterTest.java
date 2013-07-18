@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.ha;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,7 +50,8 @@ public class ClusterTest
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
-                MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005"));
+                MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
+                                  HaSettings.tx_push_factor.name(), "2"));
         clusterManager.start();
 
         clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
@@ -62,7 +65,7 @@ public class ClusterTest
         tx.finish();
 
         node = clusterManager.getDefaultCluster().getAnySlave(  ).getNodeById( nodeId );
-        System.out.println(node.getProperty( "foo" ));
+        Assert.assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
 
         clusterManager.stop();
     }
