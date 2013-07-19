@@ -56,6 +56,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
+import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -297,7 +298,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        } );
+        }, new HANewSnapshotFunction() );
 
         // Force a reelection after we enter the cluster
         // and when that election is finished refresh the snapshot
