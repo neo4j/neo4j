@@ -207,6 +207,17 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         }
     }
 
+    private static class UniqueInstanceFilter implements Predicate<MemberIsAvailable>
+    {
+        private final Set<InstanceId> roles = new HashSet<InstanceId>();
+
+        @Override
+        public boolean accept( MemberIsAvailable item )
+        {
+            return roles.add( item.getInstanceId() );
+        }
+    }
+
     public static class ClusterMembersSnapshot
         implements Serializable
     {
@@ -214,7 +225,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public void availableMember( MemberIsAvailable memberIsAvailable )
         {
-            availableMembers = toList( filter( new UniqueRoleFilter(),
+            availableMembers = toList( filter( new UniqueInstanceFilter(),
                     reverse( append( memberIsAvailable, availableMembers ) ) ) );
         }
 
@@ -325,6 +336,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
                     // Update snapshot
                     clusterMembersSnapshot.availableMember( memberIsAvailable );
+
+                    logger.info("Snapshot:"+clusterMembersSnapshot.getCurrentAvailableMembers());
 
                     Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
                     {

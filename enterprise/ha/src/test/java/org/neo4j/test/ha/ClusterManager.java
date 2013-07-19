@@ -19,14 +19,11 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,11 +35,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -65,6 +66,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -73,10 +76,12 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.Neo4jManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -499,8 +504,9 @@ public class ClusterManager
                 {
                     // Ignore
                 }
-            }      
-            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds + " for " + predicate );
+            }
+            String state = printState( this );
+            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds + " for " + predicate+":"+state );
         }
 
         /**
@@ -785,12 +791,14 @@ public class ClusterManager
 
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
-                    Neo4jManager jmx = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Kernel.class ) );
+                    ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
-                    for ( ClusterMemberInfo clusterMemberInfo : jmx.getHighAvailabilityBean().getInstancesInCluster() )
+                    for ( ClusterMember clusterMember : members.getMembers() )
                     {
-                        if (!clusterMemberInfo.isAvailable())
+                        if (clusterMember.getHARole().equals( "UNKNOWN" ))
+                        {
                             return false;
+                        }
                     }
                 }
 
@@ -804,6 +812,24 @@ public class ClusterManager
                 return "All instances should see all others as available";
             }
         };
+    }
+
+    private static String printState(ManagedCluster cluster)
+    {
+        StringBuilder buf = new StringBuilder();
+        for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+        {
+            ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
+
+            for ( ClusterMember clusterMember : members.getMembers() )
+            {
+                buf.append( clusterMember.getInstanceId()+":"+clusterMember.getHARole() ).append( "\n" );
+            }
+
+            buf.append( "\n" );
+        }
+
+        return buf.toString();
     }
 
     private <T> T instance( Class<T> classToFind, Iterable<?> from )

@@ -49,21 +49,18 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
         if (!message.isInternal() && !message.isBroadcast() &&
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
         {
-            try
+            String from = message.getHeader( Message.FROM );
+            if ( !from.equals( message.getHeader( Message.TO ) ) )
             {
-                String from = message.getHeader( Message.FROM );
-                if ( !from.equals( message.getHeader( Message.TO ) ) )
+                InstanceId id = clusterContext.getConfiguration().getServerId( URI.create( from ) );
+
+                if (id != null)
                 {
-                    InstanceId id = clusterContext.getConfiguration().getServerId( new URI( from ) );
                     output.offer( message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
                                     new HeartbeatMessage.IAmAliveState( id ) ),
                             Message.FROM ) );
                 }
-            }
-            catch( URISyntaxException e )
-            {
-                e.printStackTrace();
             }
         }
         return true;

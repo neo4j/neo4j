@@ -303,16 +303,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // and when that election is finished refresh the snapshot
         clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
+            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our request or thereafter
+
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
+                hasRequestedElection = true;
                 clusterClient.performRoleElections();
             }
 
             @Override
             public void elected( String role, InstanceId instanceId, URI electedMember )
             {
-                if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
                     clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );

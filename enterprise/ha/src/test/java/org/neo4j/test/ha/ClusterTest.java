@@ -51,6 +51,7 @@ public class ClusterTest
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
                 MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
+                                  ClusterSettings.cluster_server.name(), ":5001-5005",
                                   HaSettings.tx_push_factor.name(), "2"));
         try
         {
@@ -213,6 +214,16 @@ public class ClusterTest
         finally
         {
             clusterManager.stop();
+        }
+    }
+
+    @Test
+    public void testLoop() throws Throwable
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            System.out.println(i);
+            given4instanceClusterWhenMasterGoesDownThenElectNewMaster();
         }
     }
 }

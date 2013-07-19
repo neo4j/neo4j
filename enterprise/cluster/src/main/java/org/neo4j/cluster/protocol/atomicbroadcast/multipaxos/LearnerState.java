@@ -73,6 +73,8 @@ public enum LearnerState
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
 
+                            StringLogger logger = context.clusterContext.getLogger( getClass() );
+
                             // Skip if we already know about this
                             if ( instanceId.getId() <= context.learnerContext
                                     .getLastDeliveredInstanceId() )
@@ -84,7 +86,6 @@ public enum LearnerState
 
                             instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
 
-                            StringLogger logger = context.clusterContext.getLogger( getClass() );
                             /*
                              * The conditional below is simply so that no expensive deserialization will happen if we
                              * are not to print anything anyway if debug is not enabled.
@@ -257,8 +258,7 @@ public enum LearnerState
                                 {
                                     org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( instanceId );
                                     PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( id );
-                                    if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState(
-                                            PaxosInstance.State.delivered ) )
+                                    if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState( PaxosInstance.State.delivered ) )
                                     {
                                         for ( org.neo4j.cluster.InstanceId node : context.heartbeatContext.getAlive() )
                                         {
