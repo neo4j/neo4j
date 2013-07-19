@@ -26,7 +26,7 @@ import org.neo4j.graphdb.index.Index;
 
 public class EmbeddedNeo4jWithIndexing
 {
-    private static final String DB_PATH = "neo4j-store";
+    private static final String DB_PATH = "target/neo4j-store";
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
     private static Index<Node> nodeIndex;
