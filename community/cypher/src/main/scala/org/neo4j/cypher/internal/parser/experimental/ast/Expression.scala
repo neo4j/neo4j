@@ -65,14 +65,14 @@ abstract class Expression extends AstNode with SemanticChecking {
       limitType((possibleType +: possibleTypes).toSet)
   final def limitType(typeGen: TypeGenerator) : SemanticState => Either[SemanticError, SemanticState] =
       s => s.limitExpressionType(this, token, typeGen(s))
-  final def limitType(possibleTypes: => Set[CypherType]) : SemanticState => Either[SemanticError, SemanticState] =
+  final def limitType(possibleTypes: => TypeSet) : SemanticState => Either[SemanticError, SemanticState] =
       _.limitExpressionType(this, token, possibleTypes)
 
   def toCommand: CommandExpression
 }
 
 trait SimpleTypedExpression { self: Expression =>
-  protected def possibleTypes : Set[CypherType]
+  protected def possibleTypes : TypeSet
   def semanticCheck(ctx: SemanticContext) : SemanticCheck = limitType(possibleTypes)
 }
 
@@ -84,11 +84,11 @@ case class Identifier(name: String, token: InputToken) extends Expression {
   }
 
   // double-dispatch helpers
-  final def declare(possibleTypes: Set[CypherType]) =
+  final def declare(possibleTypes: TypeSet) =
       (_: SemanticState).declareIdentifier(this, possibleTypes)
   final def declare(possibleType: CypherType, possibleTypes: CypherType*) =
       (_: SemanticState).declareIdentifier(this, possibleType, possibleTypes:_*)
-  final def declare(typeGen: SemanticState => Set[CypherType]) =
+  final def declare(typeGen: SemanticState => TypeSet) =
       (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
   final def implicitDeclaration(possibleType: CypherType, possibleTypes: CypherType*) =
       (_: SemanticState).implicitIdentifier(this, possibleType, possibleTypes:_*)
@@ -159,7 +159,7 @@ case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: Inp
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then limitType(possibleTypes)
 
-  private def possibleTypes: SemanticState => Set[CypherType] = state => expressions match {
+  private def possibleTypes: SemanticState => TypeSet = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))
     case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
   }

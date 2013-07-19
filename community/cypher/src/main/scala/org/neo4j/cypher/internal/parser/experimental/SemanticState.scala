@@ -25,7 +25,7 @@ import scala.collection.immutable.SortedSet
 import scala.collection.breakOut
 import org.neo4j.cypher.internal.symbols._
 
-case class Symbol(identifiers: Set[ast.Identifier], types: Set[CypherType]) {
+case class Symbol(identifiers: Set[ast.Identifier], types: TypeSet) {
   def tokens = identifiers.map(_.token)(breakOut[Set[ast.Identifier], InputToken, SortedSet[InputToken]])
 }
 
@@ -35,7 +35,7 @@ object SemanticState {
 
 case class SemanticState(
     symbolTable: Map[String, Symbol],
-    typeTable: Map[ast.Expression, Set[CypherType]],
+    typeTable: Map[ast.Expression, TypeSet],
     parent: Option[SemanticState])
     (val pass: Int)
 {
@@ -55,7 +55,7 @@ case class SemanticState(
   def limitExpressionType(expression: ast.Expression, token: InputToken, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
       limitExpressionType(expression, token, (possibleType +: possibleTypes).toSet)
 
-  def limitExpressionType(expression: ast.Expression, token: InputToken, possibleTypes: Set[CypherType]) : Either[SemanticError, SemanticState] = expression match {
+  def limitExpressionType(expression: ast.Expression, token: InputToken, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = expression match {
     case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
     case _ => typeTable.get(expression) match {
       case None => {
@@ -77,7 +77,7 @@ case class SemanticState(
   def declareIdentifier(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
       declareIdentifier(identifier, (possibleType +: possibleTypes).toSet)
 
-  def declareIdentifier(identifier: ast.Identifier, possibleTypes: Set[CypherType]) : Either[SemanticError, SemanticState] = {
+  def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = {
     symbolTable.get(identifier.name) match {
       case None => {
         Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
@@ -94,7 +94,7 @@ case class SemanticState(
   def implicitIdentifier(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
       implicitIdentifier(identifier, (possibleType +: possibleTypes).toSet)
 
-  def implicitIdentifier(identifier: ast.Identifier, possibleTypes: Set[CypherType]) : Either[SemanticError, SemanticState] = {
+  def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = {
     this.symbol(identifier.name) match {
       case None => {
         Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
@@ -117,7 +117,7 @@ case class SemanticState(
   def ensureIdentifierDefined(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
       ensureIdentifierDefined(identifier, (possibleType +: possibleTypes).toSet)
 
-  def ensureIdentifierDefined(identifier: ast.Identifier, possibleTypes: Set[CypherType]) : Either[SemanticError, SemanticState] = {
+  def ensureIdentifierDefined(identifier: ast.Identifier, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = {
     this.symbol(identifier.name) match {
       case None => Left(SemanticError(s"${identifier.name} not defined", identifier.token))
       case Some(_) => implicitIdentifier(identifier, possibleTypes)
@@ -127,9 +127,9 @@ case class SemanticState(
   def importSymbols(symbols: Map[String, Symbol]) =
       SemanticState(symbolTable ++ symbols, typeTable, parent)(pass)
 
-  private def updateIdentifier(identifier: ast.Identifier, types: Set[CypherType], identifiers: Set[ast.Identifier]) =
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSet, identifiers: Set[ast.Identifier]) =
       SemanticState(symbolTable + ((identifier.name, Symbol(identifiers, types))), typeTable, parent)(pass)
 
-  private def updateType(expression: ast.Expression, types: Set[CypherType]) =
+  private def updateType(expression: ast.Expression, types: TypeSet) =
       SemanticState(symbolTable, typeTable + ((expression, types)), parent)(pass)
 }

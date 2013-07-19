@@ -29,7 +29,7 @@ class FilterFunctionTest extends Assertions {
 
   val dummyExpression = new Expression with SimpleTypedExpression {
     def token: InputToken = DummyToken(2,3)
-    protected def possibleTypes: Set[CypherType] = Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType()))
+    protected def possibleTypes: TypeSet = Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType()))
 
     def toCommand = ???
   }
