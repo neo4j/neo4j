@@ -35,7 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;

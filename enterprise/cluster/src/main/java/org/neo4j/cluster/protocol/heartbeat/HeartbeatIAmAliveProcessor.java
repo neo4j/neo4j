@@ -20,7 +20,6 @@
 package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
