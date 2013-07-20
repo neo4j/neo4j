@@ -38,9 +38,10 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
             XaCommandFactory cf, XaTransactionFactory xaTf,
             TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
             FileSystemAbstraction fileSystem, Logging logging,
-            LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
+            LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory, long rotateAtSize )
     {
-        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, logging, pruneStrategy, stateFactory );
+        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, logging, pruneStrategy,
+                stateFactory, rotateAtSize );
         this.providers = providers;
         this.ds = xaRm.getDataSource();
     }
