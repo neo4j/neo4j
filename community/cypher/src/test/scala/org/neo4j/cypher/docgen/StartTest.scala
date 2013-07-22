@@ -26,7 +26,6 @@ import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
 import org.neo4j.graphdb.{ Relationship, Node }
 import org.neo4j.graphdb.index.Index
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -87,14 +86,14 @@ class StartTest extends DocumentingTestBase {
 
   @Test def relationships_by_index() {
     generateConsole = false
-    db.inTx(() => {
+    db.inTx {
       val r = db.getRelationshipById(0)
       val property = "name"
       val value = "Andrés"
       r.setProperty(property, value)
       val relIndex: Index[Relationship] = db.index().forRelationships("rels")
       relIndex.add(r, property, value)
-    })
+    }
 
     // TODO this should be changed to use the standard graph for this section somehow.
     testQuery(

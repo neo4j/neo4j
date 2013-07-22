@@ -1,0 +1,286 @@
+2013-05-15 12:12:37.238+0000 INFO  [org.neo4j]: --- INITIALIZED diagnostics START ---
+2013-05-15 12:12:37.248+0000 INFO  [org.neo4j]: Neo4j Kernel properties:
+    neostore.propertystore.db.mapped_memory=222M
+    neostore.nodestore.db.mapped_memory=61M
+    neostore.relationshipstore.db.mapped_memory=272M
+    neostore.propertystore.db.strings.mapped_memory=189M
+    store_dir=C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb
+    neostore.propertystore.db.arrays.mapped_memory=214M
+2013-05-15 12:12:37.253+0000 INFO  [org.neo4j]: Diagnostics providers:
+    org.neo4j.kernel.configuration.Config
+    org.neo4j.kernel.info.DiagnosticsManager
+    SYSTEM_MEMORY
+    JAVA_MEMORY
+    OPERATING_SYSTEM
+    JAVA_VIRTUAL_MACHINE
+    CLASSPATH
+    LIBRARY_PATH
+    SYSTEM_PROPERTIES
+    NETWORK
+2013-05-15 12:12:37.253+0000 INFO  [org.neo4j]: System memory information:
+    Total Physical memory: 15,98 GB
+    Free Physical memory: 10,35 GB
+    Committed virtual memory: 307,96 MB
+    Total swap space: 16,95 GB
+    Free swap space: 11,04 GB
+2013-05-15 12:12:37.258+0000 INFO  [org.neo4j]: JVM memory information:
+    Free  memory: 236,09 MB
+    Total memory: 245,06 MB
+    Max   memory: 3,55 GB
+    Garbage Collector: PS Scavenge: [PS Eden Space, PS Survivor Space]
+    Garbage Collector: PS MarkSweep: [PS Eden Space, PS Survivor Space, PS Old Gen, PS Perm Gen]
+    Memory Pool: Code Cache (Non-heap memory): committed=2,44 MB, used=458,31 kB, max=48,00 MB, threshold=0,00 B
+    Memory Pool: PS Eden Space (Heap memory): committed=63,94 MB, used=8,97 MB, max=1,31 GB, threshold=?
+    Memory Pool: PS Survivor Space (Heap memory): committed=10,63 MB, used=0,00 B, max=10,63 MB, threshold=?
+    Memory Pool: PS Old Gen (Heap memory): committed=170,50 MB, used=0,00 B, max=2,66 GB, threshold=0,00 B
+    Memory Pool: PS Perm Gen (Non-heap memory): committed=20,75 MB, used=5,81 MB, max=82,00 MB, threshold=0,00 B
+2013-05-15 12:12:37.263+0000 INFO  [org.neo4j]: Operating system information:
+    Operating System: Windows 7; version: 6.1; arch: amd64; cpus: 8
+    Process id: 3996@Mattias-PC
+    Byte order: LITTLE_ENDIAN
+    Local timezone: Europe/Berlin
+2013-05-15 12:12:37.268+0000 INFO  [org.neo4j]: JVM information:
+    VM Name: Java HotSpot(TM) 64-Bit Server VM
+    VM Vendor: Oracle Corporation
+    VM Version: 21.0-b17
+    JIT compiler: HotSpot 64-Bit Tiered Compilers
+    VM Arguments: [-Dfile.encoding=UTF-8]
+2013-05-15 12:12:37.268+0000 INFO  [org.neo4j]: Java classpath:
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-kernel/1.9-SNAPSHOT/neo4j-kernel-1.9-SNAPSHOT.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-shell/1.9-SNAPSHOT/neo4j-shell-1.9-SNAPSHOT.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\jce.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/apache/geronimo/specs/geronimo-jta_1.1_spec/1.1.1/geronimo-jta_1.1_spec-1.1.1.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunjce_provider.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\sunrsasign.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/dnsns.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-lucene-index/1.9-SNAPSHOT/neo4j-lucene-index-1.9-SNAPSHOT.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.3.1/concurrentlinkedhashmap-lru-1.3.1.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\resources.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-graph-algo/1.9-SNAPSHOT/neo4j-graph-algo-1.9-SNAPSHOT.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/scala-lang/scala-library/2.10.0/scala-library-2.10.0.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/apache/servicemix/bundles/org.apache.servicemix.bundles.jline/0.9.94_1/org.apache.servicemix.bundles.jline-0.9.94_1.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunmscapi.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/eclipse-workspace/tests/target/classes/
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-graph-matching/1.9-SNAPSHOT/neo4j-graph-matching-1.9-SNAPSHOT.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-jmx/1.9-SNAPSHOT/neo4j-jmx-1.9-SNAPSHOT.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j/1.9-SNAPSHOT/neo4j-1.9-SNAPSHOT.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/zipfs.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\charsets.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/apache/lucene/lucene-core/3.6.2/lucene-core-3.6.2.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/localedata.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-udc/1.9-SNAPSHOT/neo4j-udc-1.9-SNAPSHOT.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\jsse.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\classes
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\rt.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-cypher/1.9-SNAPSHOT/neo4j-cypher-1.9-SNAPSHOT.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunec.jar
+2013-05-15 12:12:37.273+0000 INFO  [org.neo4j]: Library path:
+    C:\Java\jdk1.7.0\bin
+    C:\Windows\Sun\Java\bin
+    C:\Windows\System32
+    C:\Windows
+    C:\Program Files\wbin
+    C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common
+    C:\Windows\System32
+    C:\Windows
+    C:\Windows\System32\wbem
+    C:\Windows\System32\WindowsPowerShell\v1.0
+    C:\Java\jdk1.7.0\bin
+    C:\Program Files (x86)\Git\cmd
+    C:\Program Files\apache-maven-3.0.4\bin
+    C:\Program Files\Java\jdk1.6.0_25\bin
+    C:\Users\Mattias\bin
+    C:\Program Files\SlikSvn\bin
+    C:\Program Files (x86)\Launch4j
+    C:\Program Files (x86)\GtkSharp\2.12\bin
+    C:\Python27
+    C:\Users\Mattias\eclipse-workspace\tests
+2013-05-15 12:12:37.278+0000 INFO  [org.neo4j]: System.properties:
+    sun.boot.library.path = C:\Java\jdk1.7.0\jre\bin
+    user.country.format = SE
+    path.separator = ;
+    file.encoding.pkg = sun.io
+    user.country = US
+    user.script = 
+    sun.java.launcher = SUN_STANDARD
+    sun.os.patch.level = Service Pack 1
+    user.dir = C:\Users\Mattias\eclipse-workspace\tests
+    user.variant = 
+    sun.jnu.encoding = Cp1252
+    sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+    user.home = C:\Users\Mattias
+    user.timezone = Europe/Berlin
+    file.encoding = UTF-8
+    user.name = Mattias
+    sun.java.command = org.neo4j.tests.Bla
+    sun.arch.data.model = 64
+    user.language = en
+    user.language.format = sv
+    awt.toolkit = sun.awt.windows.WToolkit
+    file.separator = \
+    sun.io.unicode.encoding = UnicodeLittle
+    sun.cpu.endian = little
+    sun.desktop = windows
+    sun.cpu.isalist = amd64
+2013-05-15 12:12:37.278+0000 INFO  [org.neo4j]: Network information:
+    Interface Software Loopback Interface 1:
+        address: 127.0.0.1
+        address: 0:0:0:0:0:0:0:1
+    Interface WAN Miniport (SSTP):
+    Interface WAN Miniport (L2TP):
+    Interface WAN Miniport (PPTP):
+    Interface WAN Miniport (PPPOE):
+    Interface WAN Miniport (IPv6):
+    Interface WAN Miniport (Network Monitor):
+    Interface WAN Miniport (IP):
+    Interface RAS Async Adapter:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC:
+        address: 172.16.13.110
+        address: fe80:0:0:0:a935:ae85:ac2a:1d8a%10
+    Interface Teredo Tunneling Pseudo-Interface:
+        address: 2001:0:5ef5:79fb:202c:334e:53ef:f291
+        address: fe80:0:0:0:202c:334e:53ef:f291%11
+    Interface JMicron PCI Express Gigabit Ethernet Adapter:
+        address: fe80:0:0:0:aca0:cac4:a325:69ce%12
+    Interface WAN Miniport (IKEv2):
+    Interface Microsoft 6to4 Adapter:
+    Interface Microsoft ISATAP Adapter:
+        address: fe80:0:0:0:0:5efe:ac10:d6e%15
+    Interface Microsoft ISATAP Adapter #2:
+    Interface JMicron PCI Express Gigabit Ethernet Adapter-QoS Packet Scheduler-0000:
+    Interface JMicron PCI Express Gigabit Ethernet Adapter-WFP LightWeight Filter-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-Virtual WiFi Filter Driver-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (Network Monitor)-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (IP)-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (IPv6)-QoS Packet Scheduler-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-Native WiFi Filter Driver-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-WFP LightWeight Filter-0000:
+2013-05-15 12:12:37.313+0000 INFO  [org.neo4j]: --- INITIALIZED diagnostics END ---
+2013-05-15 12:12:37.393+0000 INFO  [org.neo4j]: Creating new db @ C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore
+2013-05-15 12:12:37.868+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db] brickCount=0 brickSize=639630b mappedMem=63963136b (storeSize=0b)
+2013-05-15 12:12:37.908+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db hit=1 miss=0 switches=0 ooe=0
+2013-05-15 12:12:38.908+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38b)
+2013-05-15 12:12:38.913+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:38.948+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.053+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.148+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38b)
+2013-05-15 12:12:39.148+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:39.148+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.strings] brickCount=0 brickSize=198144b mappedMem=198180864b (storeSize=128b)
+2013-05-15 12:12:39.148+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index.keys] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38b)
+2013-05-15 12:12:39.153+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:39.153+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.arrays] brickCount=0 brickSize=224384b mappedMem=224395264b (storeSize=128b)
+2013-05-15 12:12:39.158+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db] brickCount=0 brickSize=2327816b mappedMem=232783872b (storeSize=0b)
+2013-05-15 12:12:39.158+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshipstore.db] brickCount=0 brickSize=2852124b mappedMem=285212672b (storeSize=0b)
+2013-05-15 12:12:39.158+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db] brickCount=0 brickSize=63963b mappedMem=63963136b (storeSize=9b)
+2013-05-15 12:12:39.158+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:39.203+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.318+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.433+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.strings hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.538+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index.keys hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.653+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.763+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.arrays hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:39.878+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:40.043+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshipstore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:40.208+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:40.338+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore hit=0 miss=8 switches=0 ooe=0
+2013-05-15 12:12:40.428+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38b)
+2013-05-15 12:12:40.428+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:40.428+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.strings] brickCount=0 brickSize=198144b mappedMem=198180864b (storeSize=128b)
+2013-05-15 12:12:40.428+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index.keys] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index] brickCount=0 brickSize=0b mappedMem=0b (storeSize=0b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.arrays] brickCount=0 brickSize=224384b mappedMem=224395264b (storeSize=128b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db] brickCount=0 brickSize=2327816b mappedMem=232783872b (storeSize=0b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshipstore.db] brickCount=0 brickSize=2852124b mappedMem=285212672b (storeSize=0b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db] brickCount=0 brickSize=63963b mappedMem=63963136b (storeSize=9b)
+2013-05-15 12:12:40.433+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore] brickCount=0 brickSize=0b mappedMem=0b (storeSize=54b)
+2013-05-15 12:12:40.443+0000 INFO  [org.neo4j]: Opened logical log [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\nioneo_logical.log.1] version=0, lastTxId=1 (clean)
+2013-05-15 12:12:40.493+0000 INFO  [org.neo4j]: TM new log: tm_tx_log.1
+2013-05-15 12:12:40.553+0000 INFO  [org.neo4j]: Opened logical log [C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\index\lucene.log.1] version=0, lastTxId=1 (clean)
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:Versions START ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: Graph Database: org.neo4j.kernel.EmbeddedGraphDatabase StoreId[time:1368619957398, id:-2990707183712950140, store version: 13561656364791302]
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: Kernel version: Neo4j - Graph Database Kernel 1.9-SNAPSHOT (revision: 1.9.M02-648-g7afa939)
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: Neo4j component versions:
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]:   Neo4j - Graph Database Kernel 1.9-SNAPSHOT (revision: 1.9.M02-648-g7afa939)
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:Versions END ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_VERSIONS START ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: Store versions:
+    Store versions:
+      NeoStore v0.A.0
+      NodeStore v0.A.0
+      RelationshipStore v0.A.0
+      RelationshipTypeStore v0.A.0
+      PropertyStore v0.A.0
+      PropertyIndexStore v0.A.0
+      StringPropertyStore v0.A.0
+      ArrayPropertyStore v0.A.0
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_VERSIONS END ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_ID_USAGE START ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: Id usage:
+    Id usage:
+      NodeStore: used=1 high=0
+      RelationshipStore: used=0 high=-1
+      RelationshipTypeStore: used=0 high=-1
+      PropertyStore: used=0 high=-1
+      PropertyIndexStore: used=0 high=-1
+      StringPropertyStore: used=1 high=0
+      ArrayPropertyStore: used=1 high=0
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_ID_USAGE END ---
+2013-05-15 12:12:40.613+0000 INFO  [org.neo4j]: --- STARTED diagnostics for PERSISTENCE_WINDOW_POOL_STATS START ---
+2013-05-15 12:12:40.618+0000 INFO  [org.neo4j]: --- STARTED diagnostics for PERSISTENCE_WINDOW_POOL_STATS END ---
+2013-05-15 12:12:40.618+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:StoreFiles START ---
+2013-05-15 12:12:40.618+0000 INFO  [org.neo4j]: Disk space on partition (Total / Free / Free %): 100176752640 / 16737468416 / 16
+Storage files: (filename : modification date - size)
+      active_tx_log: 2013-05-15T14:12:40+0200 - 11,00 B
+      index:
+        lucene-store.db: 2013-05-15T14:12:40+0200 - 40,00 B
+        lucene.log.1: 2013-05-15T14:12:40+0200 - 16,00 B
+        lucene.log.active: 2013-05-15T14:12:40+0200 - 4,00 B
+      - Total: 2013-05-15T14:12:40+0200 - 60,00 B
+      lock: 2013-05-15T14:12:37+0200 - 0,00 B
+      messages.log: 2013-05-15T14:12:37+0200 - 20,32 kB
+      neostore: 2013-05-15T14:12:40+0200 - 54,00 B
+      neostore.id: 2013-05-15T14:12:40+0200 - 9,00 B
+      neostore.nodestore.db: 2013-05-15T14:12:40+0200 - 9,00 B
+      neostore.nodestore.db.id: 2013-05-15T14:12:40+0200 - 9,00 B
+      neostore.propertystore.db: 2013-05-15T14:12:40+0200 - 0,00 B
+      neostore.propertystore.db.arrays: 2013-05-15T14:12:40+0200 - 128,00 B
+      neostore.propertystore.db.arrays.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.propertystore.db.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.propertystore.db.index: 2013-05-15T14:12:40+0200 - 0,00 B
+      neostore.propertystore.db.index.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.propertystore.db.index.keys: 2013-05-15T14:12:40+0200 - 38,00 B
+      neostore.propertystore.db.index.keys.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.propertystore.db.strings: 2013-05-15T14:12:40+0200 - 128,00 B
+      neostore.propertystore.db.strings.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.relationshipstore.db: 2013-05-15T14:12:40+0200 - 0,00 B
+      neostore.relationshipstore.db.id: 2013-05-15T14:12:40+0200 - 9,00 B
+      neostore.relationshiptypestore.db: 2013-05-15T14:12:40+0200 - 0,00 B
+      neostore.relationshiptypestore.db.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      neostore.relationshiptypestore.db.names: 2013-05-15T14:12:40+0200 - 38,00 B
+      neostore.relationshiptypestore.db.names.id: 2013-05-15T14:12:39+0200 - 9,00 B
+      nioneo_logical.log.1: 2013-05-15T14:12:40+0200 - 16,00 B
+      nioneo_logical.log.active: 2013-05-15T14:12:40+0200 - 4,00 B
+      store_lock: 2013-05-15T14:12:37+0200 - 0,00 B
+      tm_tx_log.1: 2013-05-15T14:12:40+0200 - 0,00 B
+2013-05-15 12:12:40.628+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:StoreFiles END ---
+2013-05-15 12:12:40.628+0000 INFO  [org.neo4j]: Started - database is now available
+2013-05-15 12:12:40.628+0000 INFO  [org.neo4j]: GC Monitor started. 
+2013-05-15 12:12:40.829+0000 INFO  [org.neo4j]: Stopping - database is now unavailable
+2013-05-15 12:12:40.829+0000 INFO  [org.neo4j]: GC Monitor stopped. 
+2013-05-15 12:12:40.954+0000 INFO  [org.neo4j]: Closed log C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\index\lucene.log
+2013-05-15 12:12:40.984+0000 INFO  [org.neo4j]: TM shutting down
+2013-05-15 12:12:41.264+0000 INFO  [org.neo4j]: Closed log C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\nioneo_logical.log
+2013-05-15 12:12:41.424+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db.names hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:41.539+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshiptypestore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:41.644+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.strings hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:41.789+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index.keys hit=0 miss=4 switches=0 ooe=0
+2013-05-15 12:12:41.944+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.index hit=0 miss=4 switches=0 ooe=0
+2013-05-15 12:12:42.049+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db.arrays hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:42.229+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.propertystore.db hit=4 miss=0 switches=0 ooe=0
+2013-05-15 12:12:42.429+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.relationshipstore.db hit=0 miss=0 switches=0 ooe=0
+2013-05-15 12:12:42.554+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore.nodestore.db hit=3 miss=0 switches=0 ooe=0
+2013-05-15 12:12:42.679+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\kernel\src\test\resources\org\neo4j\kernel\impl\storemigration\legacystore\propkeydupdb\neostore hit=0 miss=19 switches=0 ooe=0
+2013-05-15 12:12:42.754+0000 INFO  [org.neo4j]: NeoStore closed
+2013-05-15 12:12:42.754+0000 INFO  [org.neo4j]: --- STOPPING diagnostics START ---
+2013-05-15 12:12:42.754+0000 INFO  [org.neo4j]: --- STOPPING diagnostics END ---

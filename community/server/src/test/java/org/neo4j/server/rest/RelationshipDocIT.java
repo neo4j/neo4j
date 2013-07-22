@@ -19,8 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 import java.io.IOException;
 
@@ -194,10 +197,10 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     public void set_single_property_on_a_relationship() throws Exception {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        assertTrue(loves.getProperty( "cost" ).equals( "high" ));
+        assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
         gen().description( startGraph( "Set relationship property1" ) );
         gen().expectedStatus( ClientResponse.Status.NO_CONTENT ).payload("\"deadly\"").put(getRelPropURI(loves, "cost")).entity();
-        assertTrue(loves.getProperty( "cost" ).equals( "deadly" ));
+        assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "deadly" ) ) );
     }
     
     @Test
@@ -205,12 +208,13 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),@PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING ) } ) } )
     public void set_all_properties_on_a_relationship() throws Exception {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        assertTrue(loves.getProperty( "cost" ).equals( "high" ));
+        assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
         gen().description( startGraph( "Set relationship property1" ) );
         gen().expectedStatus( ClientResponse.Status.NO_CONTENT ).payload(JsonHelper.createJsonFrom( MapUtil.map( "happy",false ) )).put(getRelPropsURI(loves)).entity();
-        assertTrue(((Boolean)loves.getProperty( "happy")) ==false);
-        assertFalse(loves.hasProperty( "cost" ));
+        assertThat( loves, inTx(graphdb(), hasProperty("happy").withValue( false )) );
+        assertThat( loves, inTx( graphdb(), not( hasProperty( "cost" ) ) ) );
     }
+
     @Test
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),@PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING ) } ) } )

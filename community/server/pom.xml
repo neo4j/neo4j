@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -963,20 +963,12 @@
                 <enabled>false</enabled>
             </releases>
         </repository>
-        <repository>
-            <id>cukes</id>
-            <url>http://cukes.info/maven</url>
-        </repository>
     </repositories>
 
     <pluginRepositories>
         <pluginRepository>
             <id>jsdoctk2</id>
             <url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>cukes</id>
-            <url>http://cukes.info/maven</url>
         </pluginRepository>
     </pluginRepositories>
 

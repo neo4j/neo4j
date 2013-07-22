@@ -26,31 +26,72 @@ import java.util.{Map => JavaMap}
 import collection.JavaConverters._
 
 object IsCollection extends CollectionSupport {
-  def unapply(x: Any):Option[Traversable[Any]] = if (isCollection(x)) {
-    Some(castToTraversable(x))
-  } else {
-    None
+  def unapply(x: Any):Option[Iterable[Any]] = {
+    val collection = isCollection(x)
+    if (collection) {
+      Some(makeTraversable(x))
+    } else {
+      None
+    }
   }
 }
 
 trait CollectionSupport {
-  def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
 
-  def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {
-    castToTraversable(z)
-  } else {
-    Stream(z)
+  def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
+    var used = false
+    def hasNext: Boolean = in.hasNext
+
+    def next(): T = {
+      if(used) {
+        throw or
+      }
+
+      used = true
+
+      in.next()
+    }
   }
 
-  def castToTraversable: PartialFunction[Any, Traversable[Any]] = {
-    case x: Seq[_] => x
-    case x: Array[_] => x
-    case x: Map[_, _] => Stream(x)
-    case x: JavaMap[_, _] => Stream(x.asScala)
-    case x: Iterable[_] => x
+  class NoValidValuesExceptions extends Exception
+
+  def isCollection(x: Any) = castToIterable.isDefinedAt(x)
+
+  def liftAsCollection[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
+    input match {
+      case single if test.isDefinedAt(single) => Some(Seq(test(single)))
+
+      case IsCollection(coll) =>
+        val mappedCollection = coll map {
+          case elem if test.isDefinedAt(elem) => test(elem)
+          case _                              => throw new NoValidValuesExceptions
+        }
+
+        Some(mappedCollection)
+
+      case _ => None
+    }
+  } catch {
+    case _: NoValidValuesExceptions => None
+  }
+
+  def asCollectionOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
+    Some(input map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
+
+  def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
+    castToIterable(z)
+  } else {
+    Iterable(z)
+  }
+
+  protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
+    case x: Array[_]        => x
+    case x: Map[_, _]       => Iterable(x)
+    case x: JavaMap[_, _]   => Iterable(x.asScala)
+    case x: Traversable[_]  => x.toIterable
     case x: JavaIterable[_] => x.asScala.map {
       case y: JavaMap[_, _] => y.asScala
-      case y => y
+      case y                => y
     }
   }
 }

@@ -22,20 +22,21 @@ package org.neo4j.consistency.store;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
 /**
@@ -54,21 +55,11 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )
     {
-        return new DiffRecordStore<R>( store );
-    }
-
-    /**
-     * Overridden to increase visibility to public, it's used from
-     * {@link org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider}.
-     */
-    @Override
-    public RecordStore<?>[] allStores()
-    {
-        return super.allStores();
+        return new DiffRecordStore<>( store );
     }
 
     @Override
-    protected void apply( RecordStore.Processor processor, RecordStore<?> store )
+    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store ) throws FAILURE
     {
         processor.applyById( store, (DiffRecordStore<?>) store );
     }
@@ -171,18 +162,24 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
-    public void visitPropertyIndex( PropertyIndexRecord record )
+    public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
     {
-        visitNameStore( getPropertyIndexStore(), getPropertyKeyStore(), record );
+        visitNameStore( getPropertyKeyTokenStore(), getPropertyKeyNameStore(), record );
     }
 
     @Override
-    public void visitRelationshipType( RelationshipTypeRecord record )
+    public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
     {
-        visitNameStore( getRelationshipTypeStore(), getTypeNameStore(), record );
+        visitNameStore( getRelationshipTypeTokenStore(), getRelationshipTypeNameStore(), record );
     }
-    
-    private <R extends AbstractNameRecord> void visitNameStore( RecordStore<R> store, RecordStore<DynamicRecord> nameStore, R record )
+
+    @Override
+    public void visitLabelToken( LabelTokenRecord record )
+    {
+        visitNameStore( getLabelTokenStore(), getLabelNameStore(), record );
+    }
+
+    private <R extends TokenRecord> void visitNameStore( RecordStore<R> store, RecordStore<DynamicRecord> nameStore, R record )
     {
         store.forceUpdateRecord( record );
         for ( DynamicRecord key : record.getNameRecords() )
@@ -193,6 +190,21 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public void visitNeoStore( NeoStoreRecord record )
     {
         this.masterRecord = record;
+    }
+
+    @Override
+    public void visitSchemaRule( Collection<DynamicRecord> records )
+    {
+        for ( DynamicRecord record : records )
+        {
+            getSchemaStore().forceUpdateRecord( record );
+        }
+    }
+
+    @Override
+    public DiffRecordStore<DynamicRecord> getSchemaStore()
+    {
+        return (DiffRecordStore<DynamicRecord>) super.getSchemaStore();
     }
 
     @Override
@@ -226,27 +238,27 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
-    public DiffRecordStore<RelationshipTypeRecord> getRelationshipTypeStore()
+    public DiffRecordStore<RelationshipTypeTokenRecord> getRelationshipTypeTokenStore()
     {
-        return (DiffRecordStore<RelationshipTypeRecord>) super.getRelationshipTypeStore();
+        return (DiffRecordStore<RelationshipTypeTokenRecord>) super.getRelationshipTypeTokenStore();
     }
 
     @Override
-    public DiffRecordStore<DynamicRecord> getTypeNameStore()
+    public DiffRecordStore<DynamicRecord> getRelationshipTypeNameStore()
     {
-        return (DiffRecordStore<DynamicRecord>) super.getTypeNameStore();
+        return (DiffRecordStore<DynamicRecord>) super.getRelationshipTypeNameStore();
     }
 
     @Override
-    public DiffRecordStore<PropertyIndexRecord> getPropertyIndexStore()
+    public DiffRecordStore<PropertyKeyTokenRecord> getPropertyKeyTokenStore()
     {
-        return (DiffRecordStore<PropertyIndexRecord>) super.getPropertyIndexStore();
+        return (DiffRecordStore<PropertyKeyTokenRecord>) super.getPropertyKeyTokenStore();
     }
 
     @Override
-    public DiffRecordStore<DynamicRecord> getPropertyKeyStore()
+    public DiffRecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
-        return (DiffRecordStore<DynamicRecord>) super.getPropertyKeyStore();
+        return (DiffRecordStore<DynamicRecord>) super.getPropertyKeyNameStore();
     }
 
     public NeoStoreRecord getMasterRecord()

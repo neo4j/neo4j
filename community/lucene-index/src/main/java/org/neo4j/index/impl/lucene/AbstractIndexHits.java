@@ -29,7 +29,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 //TODO this is generic and should move out of the Lucene - component
 public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
 {
-    public Iterator<T> iterator()
+    public IndexHits<T> iterator()
     {
         return this;
     }

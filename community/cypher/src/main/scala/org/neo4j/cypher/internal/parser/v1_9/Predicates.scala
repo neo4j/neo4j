@@ -48,7 +48,7 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
   def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
     case x =>
       val prop = x.asInstanceOf[Property]
-      Has(prop.mapExpr, prop.property)
+      Has(prop.mapExpr, prop.propertyKey)
   }
 
 

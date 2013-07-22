@@ -39,7 +39,7 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
     {
         return null;
     }
-
+    
     /**
      * Create a new instance of this kernel extension.
      *
@@ -48,4 +48,10 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
      */
     public abstract Lifecycle newKernelExtension( DEPENDENCIES dependencies )
             throws Throwable;
+    
+    @Override
+    public String toString()
+    {
+        return "KernelExtension:" + getClass().getSimpleName() + getKeys();
+    }
 }

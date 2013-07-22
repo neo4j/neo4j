@@ -22,34 +22,38 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 class ReadTransaction implements NeoStoreTransaction
 {
@@ -109,11 +113,10 @@ class ReadTransaction implements NeoStoreTransaction
             long nodeId, long position, int grabSize, RelationshipStore relStore )
     {
         // initialCapacity=grabSize saves the lists the trouble of resizing
-        List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
-        List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
+        List<RelationshipRecord> out = new ArrayList<>();
+        List<RelationshipRecord> in = new ArrayList<>();
         List<RelationshipRecord> loop = null;
-        Map<DirectionWrapper, Iterable<RelationshipRecord>> result =
-            new EnumMap<DirectionWrapper, Iterable<RelationshipRecord>>( DirectionWrapper.class );
+        Map<DirectionWrapper, Iterable<RelationshipRecord>> result = new EnumMap<>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
         result.put( DirectionWrapper.INCOMING, in );
         for ( int i = 0; i < grabSize &&
@@ -135,7 +138,7 @@ class ReadTransaction implements NeoStoreTransaction
                     {
                         // This is done lazily because loops are probably quite
                         // rarely encountered
-                        loop = new ArrayList<RelationshipRecord>();
+                        loop = new ArrayList<>();
                         result.put( DirectionWrapper.BOTH, loop );
                     }
                     loop.add( relRecord );
@@ -172,23 +175,6 @@ class ReadTransaction implements NeoStoreTransaction
         return Pair.of( result, position );
     }
 
-    static List<PropertyRecord> getPropertyRecordChain(
-            PropertyStore propertyStore, long nextProp )
-    {
-        List<PropertyRecord> toReturn = new LinkedList<PropertyRecord>();
-        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return null;
-        }
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = propertyStore.getLightRecord( nextProp );
-            toReturn.add(propRecord);
-            nextProp = propRecord.getNextProp();
-        }
-        return toReturn;
-    }
-
     static ArrayMap<Integer, PropertyData> propertyChainToMap(
             Collection<PropertyRecord> chain )
     {
@@ -196,7 +182,7 @@ class ReadTransaction implements NeoStoreTransaction
         {
             return null;
         }
-        ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<Integer, PropertyData>(
+        ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<>(
                 (byte)9, false, true );
         for ( PropertyRecord propRecord : chain )
         {
@@ -212,11 +198,10 @@ class ReadTransaction implements NeoStoreTransaction
     static ArrayMap<Integer, PropertyData> loadProperties(
             PropertyStore propertyStore, long nextProp )
     {
-        Collection<PropertyRecord> chain = getPropertyRecordChain(
-                propertyStore, nextProp );
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
         if ( chain == null )
         {
-            return null;
+            return ArrayMap.empty();
         }
         return propertyChainToMap( chain );
     }
@@ -244,55 +229,79 @@ class ReadTransaction implements NeoStoreTransaction
     {
         return loadProperties( getPropertyStore(), neoStore.getGraphNextProp() );
     }
-
-    // Duplicated code
-    public Object propertyGetValueOrNull( PropertyBlock propertyBlock )
+    
+    /**
+     * TODO MP: itroduces performance regression
+     * This method was introduced during moving handling of entity properties from NodeImpl/RelationshipImpl
+     * to the {@link KernelAPI}. Reason was that the {@link Property} object at the time didn't have a notion
+     * of property record id, and didn't want to have it.
+     */
+    private long findPropertyRecordContaining( PrimitiveRecord primitive, int propertyKey )
     {
-        return propertyBlock.getType().getValue( propertyBlock, null );
+        long propertyRecordId = primitive.getNextProp();
+        while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
+        {
+            PropertyRecord propertyRecord = getPropertyStore().getRecord( propertyRecordId );
+            if ( propertyRecord.getPropertyBlock( propertyKey ) != null )
+            {
+                return propertyRecordId;
+            }
+            propertyRecordId = propertyRecord.getNextProp();
+        }
+        throw new IllegalStateException( "No property record in property chain for " + primitive +
+                " contained property with key " + propertyKey );
     }
 
     @Override
-    public Object loadPropertyValue( PropertyData property )
+    public Object nodeLoadPropertyValue( long nodeId, int propertyKey )
     {
-        PropertyRecord propertyRecord = getPropertyStore().getRecord(
-                property.getId() );
-        PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( property.getIndex() );
-        if ( propertyBlock.isLight() )
-        {
-            getPropertyStore().makeHeavy( propertyBlock );
-        }
-        return propertyBlock.getType().getValue( propertyBlock,
-                getPropertyStore() );
+        return loadPropertyValue( getNodeStore().getRecord( nodeId ), propertyKey );
+    }
+    
+    @Override
+    public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
+    {
+        return loadPropertyValue( getRelationshipStore().getRecord( relationshipId ), propertyKey );
+    }
+    
+    @Override
+    public Object graphLoadPropertyValue( int propertyKey )
+    {
+        return loadPropertyValue( neoStore.asRecord(), propertyKey );
+    }
+
+    private Object loadPropertyValue( PrimitiveRecord primitive, int propertyKey )
+    {
+        long propertyRecordId = // property.getId();
+                findPropertyRecordContaining( primitive, propertyKey );
+        PropertyRecord propertyRecord = getPropertyStore().getRecord( propertyRecordId );
+        PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKey );
+        getPropertyStore().ensureHeavy( propertyBlock );
+        return propertyBlock.getType().getValue( propertyBlock, getPropertyStore() );
     }
 
     @Override
     public String loadIndex( int id )
     {
-        PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
-        PropertyIndexRecord index = indexStore.getRecord( id );
-        if ( index.isLight() )
-        {
-            indexStore.makeHeavy( index );
-        }
+        PropertyKeyTokenStore indexStore = getPropertyStore().getPropertyKeyTokenStore();
+        PropertyKeyTokenRecord index = indexStore.getRecord( id );
+        indexStore.ensureHeavy( index );
         return indexStore.getStringFor( index );
     }
 
     @Override
-    public NameData[] loadPropertyIndexes( int count )
+    public Token[] loadAllPropertyKeyTokens()
     {
-        PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
-        return indexStore.getNames( count );
+        PropertyKeyTokenStore indexStore = getPropertyStore().getPropertyKeyTokenStore();
+        return indexStore.getTokens( Integer.MAX_VALUE );
     }
 
-    /*
-        @Override
-        public int getKeyIdForProperty( long propertyId )
-        {
-            PropertyRecord propRecord =
-                getPropertyStore().getLightRecord( propertyId );
-            return propRecord.getKeyIndexId();
-        }
-    */
+    @Override
+    public Token[] loadAllLabelTokens()
+    {
+        return neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE );
+    }
+
     @Override
     public void setXaConnection( XaConnection connection )
     {
@@ -325,20 +334,19 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
-            Object value )
+    public PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void nodeRemoveProperty( long nodeId, PropertyData data )
+    public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
         throw readOnlyException();
     }
@@ -362,74 +370,54 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
+    public PropertyData relAddProperty( long relId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData relChangeProperty( long relId, PropertyData data,
-            Object value )
+    public PropertyData relChangeProperty( long relId, int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void relRemoveProperty( long relId, PropertyData data )
+    public void relRemoveProperty( long relId, int propertyKey )
     {
         throw readOnlyException();
     }
 
     @Override
-    public NameData[] loadRelationshipTypes()
+    public Token[] loadRelationshipTypes()
     {
-        NameData relTypeData[] = neoStore.getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
-        NameData rawRelTypeData[] = new NameData[relTypeData.length];
+        Token relTypeData[] = neoStore.getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
+        Token rawRelTypeData[] = new Token[relTypeData.length];
         for ( int i = 0; i < relTypeData.length; i++ )
         {
-            rawRelTypeData[i] = new NameData( relTypeData[i].getId(), relTypeData[i].getName() );
+            rawRelTypeData[i] = new Token( relTypeData[i].name(), relTypeData[i].id() );
         }
         return rawRelTypeData;
     }
 
     @Override
-    public void createPropertyIndex( String key, int id )
+    public void createPropertyKeyToken( String key, int id )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void createRelationshipType( int id, String name )
+    public void createLabelToken( String name, int id )
     {
         throw readOnlyException();
     }
 
     @Override
-    public RelIdArray getCreatedNodes()
+    public void createRelationshipTypeToken( int id, String name )
     {
-        return RelIdArray.EMPTY;
+        throw readOnlyException();
     }
 
-    @Override
-    public RelIdArray getCreatedRelationships()
-    {
-        return RelIdArray.EMPTY;
-    }
-    
-    @Override
-    public boolean isNodeCreated( long nodeId )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isRelationshipCreated( long relId )
-    {
-        return false;
-    }
-
-    public static int getKeyIdForProperty( PropertyData property,
-            PropertyStore store )
+    public static int getKeyIdForProperty( PropertyData property, PropertyStore store )
     {
         // PropertyRecord propRecord = store.getLightRecord( property.getId() );
         // return propRecord.getKeyIndexIds();
@@ -443,19 +431,56 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData graphAddProperty( PropertyIndex index, Object value )
+    public PropertyData graphAddProperty( int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public PropertyData graphChangeProperty( PropertyData index, Object value )
+    public PropertyData graphChangeProperty( int propertyKey, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void graphRemoveProperty( PropertyData index )
+    public void graphRemoveProperty( int propertyKey )
+    {
+        throw readOnlyException();
+    }
+    
+    @Override
+    public void createSchemaRule( SchemaRule schemaRule )
+    {
+        throw readOnlyException();
+    }
+    
+    @Override
+    public void dropSchemaRule( long id )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void addLabelToNode( long labelId, long nodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
+    {
+        NodeRecord node = getNodeStore().getRecord( nodeId );
+        return asPrimitiveIterator( parseLabelsField( node ).get( getNodeStore() ) );
+    }
+
+    @Override
+    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
     {
         throw readOnlyException();
     }

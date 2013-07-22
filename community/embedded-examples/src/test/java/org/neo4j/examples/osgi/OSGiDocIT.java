@@ -31,6 +31,7 @@ import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.Index;
@@ -45,6 +46,7 @@ import org.ops4j.pax.exam.testforge.WaitForService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
+@Ignore("ignore, prior to possible deletion")
 public class OSGiDocIT
 {
 

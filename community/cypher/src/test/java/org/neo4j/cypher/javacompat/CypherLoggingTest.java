@@ -23,8 +23,9 @@ import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -76,6 +77,6 @@ public class CypherLoggingTest
     @Before
     public void setup() throws IOException
     {
-        engine = new ExecutionEngine( new ImpermanentGraphDatabase(), logger );
+        engine = new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(), logger );
     }
 }

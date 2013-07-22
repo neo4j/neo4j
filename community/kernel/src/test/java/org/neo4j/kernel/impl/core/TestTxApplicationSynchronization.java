@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
 
@@ -33,6 +34,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -79,9 +81,20 @@ public class TestTxApplicationSynchronization
         tx.finish();
 
         targetDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir.directory( "target", true ).getAbsolutePath() );
-        Pair<Long, ReadableByteChannel> lastTx = getLatestCommitedTx( baseDb );
-        NeoStoreXaDataSource targetNeoDatasource = targetDb.getXaDataSourceManager().getNeoStoreDataSource();
-        targetNeoDatasource.applyCommittedTransaction( lastTx.first(), lastTx.other() );
+        applyTransactions( baseDb, targetDb );
+    }
+
+    private void applyTransactions( GraphDatabaseAPI from, GraphDatabaseAPI to ) throws IOException
+    {
+        LogExtractor source = from.getXaDataSourceManager().getNeoStoreDataSource().getLogExtractor( 2, from.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
+        while ( true )
+        {
+            InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+            long txId = source.extractNext( buffer );
+            if ( txId == -1 )
+                break;
+            to.getXaDataSourceManager().getNeoStoreDataSource().applyCommittedTransaction( txId, buffer );
+        }
     }
 
     @Test
@@ -123,7 +136,16 @@ public class TestTxApplicationSynchronization
         Thread.sleep( 100 ); // I don't know why this is necessary
         localLatch.await(); // Wait for tx apply to start
         waitForSuspend(); // Wait for tx apply breakpoint to trigger
-        targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
+        Transaction tx2 = targetDb.beginTx();
+        try
+        {
+            targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
+            tx2.success();
+        }
+        finally
+        {
+            tx2.finish();
+        }
         resumeAll(); // Restart all threads
         updatePuller.join(); // Join so we don't leave stuff hanging
     }
@@ -163,7 +185,7 @@ public class TestTxApplicationSynchronization
         Boolean isRecovered = (Boolean) di.getLocalVariable( "isRecovered" );
         if ( isRecovered )
         {
-            if ( self.invocationCount() > 1 )
+            if ( self.invocationCount() > 2 )
             {
                 commandExecute.enable();
             }

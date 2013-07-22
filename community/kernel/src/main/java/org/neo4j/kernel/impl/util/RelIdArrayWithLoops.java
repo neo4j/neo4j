@@ -71,15 +71,21 @@ public class RelIdArrayWithLoops extends RelIdArray
     }
     
     @Override
+    public RelIdArray addAll( RelIdArray source )
+    {
+        if ( source == null )
+        {
+            return this;
+        }
+        append( source, DirectionWrapper.OUTGOING );
+        append( source, DirectionWrapper.INCOMING );
+        append( source, DirectionWrapper.BOTH );
+        return this;
+    }
+
     public RelIdArray newSimilarInstance()
     {
         return new RelIdArrayWithLoops( getType() );
-    }
-    
-    @Override
-    protected boolean accepts( RelIdArray source )
-    {
-        return true;
     }
     
     @Override
@@ -91,8 +97,8 @@ public class RelIdArrayWithLoops extends RelIdArray
     @Override
     public RelIdArray shrink()
     {
-        IdBlock lastOutBlock = DirectionWrapper.OUTGOING.getBlock( this );
-        IdBlock lastInBlock = DirectionWrapper.INCOMING.getBlock( this );
+        IdBlock lastOutBlock = DirectionWrapper.OUTGOING.getLastBlock( this );
+        IdBlock lastInBlock = DirectionWrapper.INCOMING.getLastBlock( this );
         IdBlock shrunkOut = lastOutBlock != null ? lastOutBlock.shrink() : null;
         IdBlock shrunkIn = lastInBlock != null ? lastInBlock.shrink() : null;
         IdBlock shrunkLoop = lastLoopBlock != null ? lastLoopBlock.shrink() : null;

@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.cypher.internal.pipes.{NullDecorator, MutableMaps, QueryState}
-import org.neo4j.graphdb.DynamicRelationshipType.withName
+import org.neo4j.cypher.internal.pipes._
 import org.neo4j.graphdb.Direction.OUTGOING
-import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.True
 
 
 class TraversalMatcherTest extends GraphDatabaseTestBase {
@@ -51,7 +50,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val queryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator)
+    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 
@@ -61,7 +60,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert(result.head.lastRelationship() === r2)
   }
 
-  private def produce(x: Node*) = (_: ExecutionContext, _: QueryState) => x.iterator
+  private def produce(x: Node*) = EntityProducer[Node]("Produce") { (_: ExecutionContext, _: QueryState) => x.iterator }
 
   @Test def tree() {
     /*Data nodes and rels
@@ -92,7 +91,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val queryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator)
+    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 

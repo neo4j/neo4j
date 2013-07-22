@@ -20,40 +20,39 @@
 package org.neo4j.cypher
 
 import internal.commands._
-import internal.executionplan.ExecutionPlanImpl
+import internal.executionplan.ExecutionPlanBuilder
+import internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier, Verifier}
 import internal.LRUCache
+import internal.spi.gdsimpl.{TransactionBoundPlanContext, TransactionBoundQueryContext}
+import internal.spi.QueryContext
 import scala.collection.JavaConverters._
-import java.lang.Error
 import java.util.{Map => JavaMap}
-import scala.{Int, deprecated}
-import org.neo4j.kernel.InternalAbstractGraphDatabase
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-
+import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.cypher.internal.parser.prettifier.Prettifier
+import org.neo4j.kernel.api.operations.StatementState
+import org.neo4j.kernel.api.StatementOperationParts
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
-
-  checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
 
   val parser = createCorrectParser()
+  val planBuilder = new ExecutionPlanBuilder(graph)
+  val verifiers:Seq[Verifier] = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
 
-  private def createCorrectParser() = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
-    val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
-    database.getConfig.get(GraphDatabaseSettings.cypher_parser_version) match {
-      case v:String => new CypherParser(v)
-      case _ => new CypherParser()
-    }
-  } else {
-    new CypherParser()
-  }
+  private val queryCache = new LRUCache[String, AbstractQuery](getQueryCacheSize)
+
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).profile(params)
+    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+      plan.profile(queryContext, params)
+    })
   }
 
   @throws(classOf[SyntaxException])
@@ -69,49 +68,136 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).execute(params)
+    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+      plan.execute(queryContext, params)
+    })
+  }
+
+  private def getStatementContext = graph.asInstanceOf[GraphDatabaseAPI]
+    .getDependencyResolver
+    .resolveDependency(classOf[ThreadToStatementContextBridge])
+    .getCtxForWriting
+
+  private def getCakeState = graph.asInstanceOf[GraphDatabaseAPI]
+    .getDependencyResolver
+    .resolveDependency(classOf[ThreadToStatementContextBridge])
+    .statementForWriting()
+    
+  private def createQueryContext(tx: Transaction, ctx: StatementOperationParts, state: StatementState) = {
+    new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx, state)
   }
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String): ExecutionPlan =
-    executionPlanCache.getOrElseUpdate(query, new ExecutionPlanImpl(parser.parse(query), graph))
+  def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
+    // parse query
+    val cachedQuery = queryCache.getOrElseUpdate(query, () => {
+      val parsedQuery = parser.parse(query)
+      verify(parsedQuery)
+      parsedQuery
+    })
 
-  def isPrepared(query : String) : Boolean =
-    executionPlanCache.containsKey(query)
+    var n = 0
+    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+      // create transaction and query context
+      var touched = false
+      var statementContext: StatementOperationParts = null
+      var state: StatementState = null
+      var queryContext: QueryContext = null
+      val tx = graph.beginTx()
+      val plan = try {
+        statementContext = getStatementContext
+        state = getCakeState
+        queryContext = createQueryContext(tx, statementContext, state)
 
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
+        // fetch plan cache
+        val planCache =
+          queryContext.getOrCreateFromSchemaState(this, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
 
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
+        // get plan or build it
+        planCache.getOrElseUpdate(query, () => {
+          touched = true
+          val planContext = new TransactionBoundPlanContext(statementContext.keyReadOperations, statementContext.schemaReadOperations, state, graph)
+          planBuilder.build(planContext, cachedQuery)
+        })
+      }
+      catch {
+        case (t: Throwable) =>
+          statementContext.close( state )
+          tx.failure()
+          tx.finish()
+          throw t
+      }
 
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
+      if (touched) {
+        statementContext.close( state )
+        tx.success()
+        tx.finish()
+      }
+      else {
+          return run(plan, queryContext)
+      }
 
-  private def checkScalaVersion() {
-    if (util.Properties.versionString.matches("^version 2.9.0")) {
-      throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
-        util.Properties.versionString)
+      n += 1
+    }
+
+    throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
+  }
+
+  def verify(query: AbstractQuery) {
+    for (verifier <- verifiers)
+      verifier.verify(query)
+  }
+
+  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
+    val tx = graph.beginTx()
+    try {
+      verify(query)
+      val statementContext = getStatementContext
+      val queryContext = createQueryContext(tx, statementContext, getCakeState)
+      val planContext = new TransactionBoundPlanContext(statementContext.keyReadOperations, statementContext.schemaReadOperations, getCakeState, graph)
+      planBuilder.build(planContext, query).execute(queryContext, params)
+    }
+    catch {
+      case (t: Throwable) =>
+        tx.failure()
+        tx.finish()
+        throw t
     }
   }
 
-  private val executionPlanCache = new LRUCache[String, ExecutionPlan]( getQueryCacheSize() ) {}
+  def prettify(query:String): String = Prettifier(query)
 
-  private def getQueryCacheSize() : Int = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
-    val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
-    database.getConfig.get(GraphDatabaseSettings.query_cache_size) match {
-      case v:java.lang.Integer => v
-      case _ => 100
-    }
-  } else {
-    100
+  private def createCorrectParser() =
+    optGraphAs[InternalAbstractGraphDatabase]
+      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
+      .andThen({
+      case v:String => new CypherParser(v)
+      case _        => new CypherParser()
+    })
+      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherParser() )
+
+
+  private def getQueryCacheSize : Int =
+    optGraphAs[InternalAbstractGraphDatabase]
+      .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size))
+      .andThen({
+      case v: java.lang.Integer => v.intValue()
+      case _                    => ExecutionEngine.DEFAULT_QUERY_CACHE_SIZE
+    })
+      .applyOrElse(graph, (_: GraphDatabaseService) => ExecutionEngine.DEFAULT_QUERY_CACHE_SIZE)
+
+  private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
+    case (db: T) => db
   }
 }
+
+object ExecutionEngine {
+  val DEFAULT_QUERY_CACHE_SIZE: Int = 100
+  val PLAN_BUILDING_TRIES: Int = 20
+}
+
 
 

@@ -33,7 +33,10 @@ import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -165,5 +168,20 @@ public class DefaultFileSystemAbstraction
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         FileUtils.copyRecursively( fromDirectory, toDirectory );
+    }
+
+    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
+            new HashMap<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem>();
+
+    @Override
+    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
+        if (fileSystem == null)
+        {
+            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
+        }
+        return clazz.cast( fileSystem );
     }
 }

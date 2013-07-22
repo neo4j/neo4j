@@ -24,23 +24,23 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 class RelationshipRecordCheck
         extends PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
 {
     RelationshipRecordCheck()
     {
-        super( Label.LABEL,
-               RelationshipNodeField.SOURCE, RelationshipField.SOURCE_PREV, RelationshipField.SOURCE_NEXT,
-               RelationshipNodeField.TARGET, RelationshipField.TARGET_PREV, RelationshipField.TARGET_NEXT );
+        super( RelationshipTypeField.RELATIONSHIP_TYPE,
+               NodeField.SOURCE, RelationshipField.SOURCE_PREV, RelationshipField.SOURCE_NEXT,
+               NodeField.TARGET, RelationshipField.TARGET_PREV, RelationshipField.TARGET_NEXT );
     }
 
-    private enum Label implements
+    private enum RelationshipTypeField implements
             RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
-            ComparativeRecordChecker<RelationshipRecord, RelationshipTypeRecord, ConsistencyReport.RelationshipConsistencyReport>
+            ComparativeRecordChecker<RelationshipRecord, RelationshipTypeTokenRecord, ConsistencyReport.RelationshipConsistencyReport>
     {
-        LABEL;
+        RELATIONSHIP_TYPE;
 
         @Override
         public void checkConsistency( RelationshipRecord record, ConsistencyReport.RelationshipConsistencyReport report,
@@ -48,11 +48,11 @@ class RelationshipRecordCheck
         {
             if ( record.getType() < 0 )
             {
-                report.illegalLabel();
+                report.illegalRelationshipType();
             }
             else
             {
-                report.forReference( records.relationshipLabel( record.getType() ), this );
+                report.forReference( records.relationshipType( record.getType() ), this );
             }
         }
 
@@ -70,12 +70,12 @@ class RelationshipRecordCheck
         }
 
         @Override
-        public void checkReference( RelationshipRecord record, RelationshipTypeRecord referred,
+        public void checkReference( RelationshipRecord record, RelationshipTypeTokenRecord referred,
                                     ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
         {
             if ( !referred.inUse() )
             {
-                report.labelNotInUse( referred );
+                report.relationshipTypeNotInUse( referred );
             }
         }
     }
@@ -84,7 +84,7 @@ class RelationshipRecordCheck
             RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
             ComparativeRecordChecker<RelationshipRecord, RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
     {
-        SOURCE_PREV( RelationshipNodeField.SOURCE, Record.NO_PREV_RELATIONSHIP )
+        SOURCE_PREV( NodeField.SOURCE, Record.NO_PREV_RELATIONSHIP )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -93,7 +93,7 @@ class RelationshipRecordCheck
             }
 
             @Override
-            long other( RelationshipNodeField field, RelationshipRecord relationship )
+            long other( NodeField field, RelationshipRecord relationship )
             {
                 return field.next( relationship );
             }
@@ -117,7 +117,7 @@ class RelationshipRecordCheck
                 report.sourcePrevNotUpdated();
             }
         },
-        SOURCE_NEXT( RelationshipNodeField.SOURCE, Record.NO_NEXT_RELATIONSHIP )
+        SOURCE_NEXT( NodeField.SOURCE, Record.NO_NEXT_RELATIONSHIP )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -126,7 +126,7 @@ class RelationshipRecordCheck
             }
 
             @Override
-            long other( RelationshipNodeField field, RelationshipRecord relationship )
+            long other( NodeField field, RelationshipRecord relationship )
             {
                 return field.prev( relationship );
             }
@@ -150,7 +150,7 @@ class RelationshipRecordCheck
                 report.sourceNextNotUpdated();
             }
         },
-        TARGET_PREV( RelationshipNodeField.TARGET, Record.NO_PREV_RELATIONSHIP )
+        TARGET_PREV( NodeField.TARGET, Record.NO_PREV_RELATIONSHIP )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -159,7 +159,7 @@ class RelationshipRecordCheck
             }
 
             @Override
-            long other( RelationshipNodeField field, RelationshipRecord relationship )
+            long other( NodeField field, RelationshipRecord relationship )
             {
                 return field.next( relationship );
             }
@@ -183,7 +183,7 @@ class RelationshipRecordCheck
                 report.targetPrevNotUpdated();
             }
         },
-        TARGET_NEXT( RelationshipNodeField.TARGET, Record.NO_NEXT_RELATIONSHIP )
+        TARGET_NEXT( NodeField.TARGET, Record.NO_NEXT_RELATIONSHIP )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -192,7 +192,7 @@ class RelationshipRecordCheck
             }
 
             @Override
-            long other( RelationshipNodeField field, RelationshipRecord relationship )
+            long other( NodeField field, RelationshipRecord relationship )
             {
                 return field.prev( relationship );
             }
@@ -216,10 +216,10 @@ class RelationshipRecordCheck
                 report.targetNextNotUpdated();
             }
         };
-        private final RelationshipNodeField NODE;
+        private final NodeField NODE;
         private final Record NONE;
 
-        private RelationshipField( RelationshipNodeField node, Record none )
+        private RelationshipField( NodeField node, Record none )
         {
             this.NODE = node;
             this.NONE = none;
@@ -239,7 +239,7 @@ class RelationshipRecordCheck
         public void checkReference( RelationshipRecord record, RelationshipRecord referred,
                                     ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
         {
-            RelationshipNodeField field = RelationshipNodeField.select( referred, node( record ) );
+            NodeField field = NodeField.select( referred, node( record ) );
             if ( field == null )
             {
                 otherNode( report, referred );
@@ -269,7 +269,7 @@ class RelationshipRecordCheck
 
         abstract void notUpdated( ConsistencyReport.RelationshipConsistencyReport report );
 
-        abstract long other( RelationshipNodeField field, RelationshipRecord relationship );
+        abstract long other( NodeField field, RelationshipRecord relationship );
 
         abstract void otherNode( ConsistencyReport.RelationshipConsistencyReport report,
                                  RelationshipRecord relationship );

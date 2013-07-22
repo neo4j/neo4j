@@ -22,12 +22,14 @@ package org.neo4j.graphdb.factory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class SetCacheProvidersTest
@@ -58,4 +60,6 @@ public class SetCacheProvidersTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
         assertEquals( SoftCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
     }
+    
+    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
 }

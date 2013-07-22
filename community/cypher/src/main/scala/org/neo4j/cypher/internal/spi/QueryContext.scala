@@ -21,8 +21,22 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
-trait QueryContext {
+/*
+ * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
+ * two layers, the query engine layer and, for lack of a better name, the core database layer.
+ *
+ * Building the query engine layer on top of an internal layer means we can move much faster, not
+ * having to worry about deprecations and so on. It is also acceptable if this layer is a bit clunkier, in this
+ * case we are, for instance, not exposing any node or relationship objects, but provide direct methods for manipulating
+ * them by ids instead.
+ *
+ * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
+ * the core layer, we can move that responsibility outside of the scope of cypher.
+ */
+trait QueryContext extends TokenContext {
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]
@@ -33,19 +47,62 @@ trait QueryContext {
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship]
 
-  def close()
+  def getOrCreateLabelId(labelName: String): Long
+
+  def getLabelsForNode(node: Long): Iterator[Long]
+
+  def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
+
+  def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int
+
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
+
+  def getOrCreatePropertyKeyId(propertyKey: String): Long
+
+  def addIndexRule(labelIds: Long, propertyKeyId: Long)
+
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long)
+
+  def close(success: Boolean)
+
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
+
+  def getNodesByLabel(id: Long): Iterator[Node]
+
+  def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
+
+  def upgrade(context: QueryContext): LockingQueryContext
+
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
+
+  def schemaStateContains(key: String): Boolean
+
+  def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
+
+  def dropUniqueConstraint(labelId:Long, propertyKeyId:Long)
+
+  /**
+   * This should not be used. We'll remove sooner (or later). Don't do it.
+   */
+  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
+}
+
+trait LockingQueryContext extends QueryContext {
+  def releaseLocks()
 }
 
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
-  def setProperty(obj: T, propertyKey: String, value: Any)
+  def setProperty(obj: T, propertyKeyId: Long, value: Any)
 
-  def removeProperty(obj: T, propertyKey: String)
+  def removeProperty(obj: T, propertyKeyId: Long)
 
-  def getProperty(obj: T, propertyKey: String): Any
+  def getProperty(obj: T, propertyKeyId: Long): Any
 
-  def hasProperty(obj: T, propertyKey: String): Boolean
+  def hasProperty(obj: T, propertyKeyId: Long): Boolean
+
+  def propertyKeyIds(obj: T): Iterator[Long]
 
   def propertyKeys(obj: T): Iterable[String]
 

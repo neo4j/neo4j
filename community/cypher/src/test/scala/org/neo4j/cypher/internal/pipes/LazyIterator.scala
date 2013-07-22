@@ -19,16 +19,27 @@
  */
 package org.neo4j.cypher.internal.pipes
 
+import org.neo4j.graphdb.GraphDatabaseService
+import org.scalatest.Assertions
 
-class LazyIterator[T](count: Int, f: Int => T) extends Iterator[T]() {
+
+class LazyIterator[T](count: Int, f: (Int, GraphDatabaseService) => T) extends Iterator[T]() with Assertions {
+  var db: Option[GraphDatabaseService] = None
+
+  def this(count: Int, f: Int => T) = {
+    this(count, (count: Int, _) => f(count))
+    db = Some(null)
+  }
 
   var counter = 0
 
   def hasNext: Boolean = counter < count
 
   def next(): T = {
+    val graph = db.getOrElse(fail("Iterator needs that database set before it can be used"))
+
     counter += 1
-    f(counter)
+    f(counter, graph)
   }
 
   override def toString(): String = counter.toString

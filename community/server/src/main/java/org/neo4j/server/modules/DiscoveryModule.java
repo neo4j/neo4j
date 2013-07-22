@@ -34,15 +34,15 @@ public class DiscoveryModule implements ServerModule
     private static final Logger log = Logger.getLogger( DiscoveryModule.class );
     private static final String ROOT_PATH = "/";
 
-	private final WebServer webServer;
+    private final WebServer webServer;
 
     public DiscoveryModule(WebServer webServer)
     {
-    	this.webServer = webServer;
+        this.webServer = webServer;
     }
 
     @Override
-	public void start( StringLogger logger )
+    public void start( StringLogger logger )
     {
         webServer.addJAXRSClasses( getClassNames(), ROOT_PATH, null );
         log.info( "Mounted discovery module at [%s]", ROOT_PATH );
@@ -56,8 +56,8 @@ public class DiscoveryModule implements ServerModule
     }
 
     @Override
-	public void stop()
+    public void stop()
     {
-    	webServer.removeJAXRSClasses( getClassNames(), ROOT_PATH );
+        webServer.removeJAXRSClasses( getClassNames(), ROOT_PATH );
     }
 }

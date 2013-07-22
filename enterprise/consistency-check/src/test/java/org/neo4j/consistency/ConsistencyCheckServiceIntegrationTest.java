@@ -54,7 +54,8 @@ public class ConsistencyCheckServiceIntegrationTest
                 new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertFalse( new File( fixture.directory(), service.defaultLogFileName() ).exists() );
+        File reportFile = new File( fixture.directory(), service.defaultLogFileName() );
+        assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
     @Test
@@ -69,7 +70,8 @@ public class ConsistencyCheckServiceIntegrationTest
                 new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertTrue( new File(fixture.directory(), service.defaultLogFileName()).exists() );
+        File reportFile = new File(fixture.directory(), service.defaultLogFileName());
+        assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
     @Test
@@ -87,7 +89,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertTrue( specificLogFile.exists() );
+        assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
     }
 
     private void breakNodeStore() throws IOException

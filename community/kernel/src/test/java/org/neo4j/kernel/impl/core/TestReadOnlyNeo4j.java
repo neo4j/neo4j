@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,12 +29,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
@@ -50,7 +54,7 @@ public class TestReadOnlyNeo4j
         DbRepresentation someData = createSomeData();
         GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( PATH )
-                .setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE )
+                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
@@ -72,6 +76,7 @@ public class TestReadOnlyNeo4j
         DynamicRelationshipType type = withName( "KNOWS" );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         Transaction tx = db.beginTx();
+        @SuppressWarnings("deprecation")
         Node prevNode = db.getReferenceNode();
         for ( int i = 0; i < 100; i++ )
         {
@@ -144,12 +149,12 @@ public class TestReadOnlyNeo4j
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
         ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         
-        assertEquals( "value1", node1.getProperty( "key1" ) );
-        Relationship loadedRel = node1.getSingleRelationship( 
+        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" )  ) );
+        Relationship loadedRel = node1.getSingleRelationship(
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
-        assertEquals( "value1", loadedRel.getProperty( "key1" ) );
-        
+        assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
+
         db.shutdown();
     }
 }

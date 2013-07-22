@@ -19,26 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 // TODO Add some tests for loops, i.e. add with direction BOTH.
 public class TestRelIdArray
@@ -143,33 +141,6 @@ public class TestRelIdArray
         
         assertEquals( new HashSet<Long>( Arrays.asList(
                 0L, 1L, justOverIntMax, justOverIntMax+1 ) ), new HashSet<Long>( asList( all ) ) );
-    }
-    
-    @Test
-    public void iterateThroughMultipleHighBitsSignaturesWhereIdsAreAdded() throws Exception
-    {
-        // GIVEN
-        RelIdArray ids = new RelIdArray( 0 );
-        ids.add( 0, OUTGOING );
-        ids.add( 0x1FFFFFFFFL, OUTGOING );
-        RelIdIterator iterator = ids.iterator( OUTGOING );
-
-        // WHEN -- depleting the current iterator
-        assertEquals( asSet( 0L, 0x1FFFFFFFFL ), deplete( iterator ) );
-
-        // and adding one more id of the first "high bits" kind
-        ids.add( 1, OUTGOING );
-
-        // THEN
-        assertEquals( "Should see the added id after depleting two IdBlocks", asSet( 1L ), deplete( iterator ) );
-    }
-
-    private Set<Long> deplete( RelIdIterator iterator )
-    {
-        HashSet<Long> set = new HashSet<Long>();
-        while ( iterator.hasNext() )
-            set.add( iterator.next() );
-        return set;
     }
     
     private List<Long> asList( RelIdArray ids )

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.scalatest.Assertions
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.Test
@@ -33,6 +32,10 @@ import org.mockito.Matchers._
 import org.neo4j.graphdb._
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.data.SimpleVal
+import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.internal.parser.ParsedEntity
 
 /*
 This test fixture tries to assert that Pipe declaring that they are lazy
@@ -40,9 +43,10 @@ in fact are lazy. Every Pipe should be represented here
  */
 
 @RunWith(value = classOf[Parameterized])
-class PipeLazynessTest(pipe: Pipe, iter: Iterator[_]) extends Assertions {
+class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseTestBase {
   @Test def test() {
-    val resultIterator = pipe.createResults(QueryState.empty)
+    iter.db = Some(graph)
+    val resultIterator = pipe.createResults(QueryStateHelper.queryStateFrom(graph))
 
     if (resultIterator.hasNext)
       resultIterator.next()
@@ -62,8 +66,8 @@ object PipeLazynessTest extends MockitoSugar {
       list.add(Array(objects: _*))
     }
 
-    add(eagerPipe)
     add(columnFilterPipe)
+    add(eagerPipe)
     add(distinctPipe)
     add(eagerAggregationPipe)
     add(emptyResultPipe)
@@ -76,8 +80,10 @@ object PipeLazynessTest extends MockitoSugar {
     add(sortPipe)
     add(startPipe)
     add(topPipe)
-    add(txStartPipe)
     add(traversalMatcherPipe)
+    add(unionPipe)
+
+    // constrainOperationPipe and indexOperationPipe do not take a source pipe, and so aren't covered by these tests
 
     list
   }
@@ -130,8 +136,7 @@ object PipeLazynessTest extends MockitoSugar {
     val node = mock[Node]
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("x" -> node))
     val src = new FakePipe(iter, "x" -> NodeType())
-    val x = SingleNode("x")
-    val pipe = new NamedPathPipe(src, new NamedPath("p", x))
+    val pipe = new NamedPathPipe(src, "p", Seq(ParsedEntity("x")))
     Seq(pipe, iter)
   }
 
@@ -141,11 +146,11 @@ object PipeLazynessTest extends MockitoSugar {
     val node = mock[Node]
     when(node.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship]().asJava)
 
-    val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("x" -> node))
+    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> db.getNodeById(0)))
     val src = new FakePipe(iter, "x" -> NodeType())
     val x = new PatternNode("x")
     val y = new PatternNode("y")
-    val rel = x.relateTo("r", y, Seq.empty, Direction.OUTGOING, optional = true, True())
+    val rel = x.relateTo("r", y, Seq.empty, Direction.OUTGOING, optional = true)
 
     val patternNodes = Map("x" -> x, "y" -> y)
     val patternRels = Map("r" -> rel)
@@ -180,20 +185,28 @@ object PipeLazynessTest extends MockitoSugar {
   private def startPipe = {
     val node = mock[Node]
     val (iter, src) = emptyFakes
-    val pipe = new NodeStartPipe(src, "y", (_, _) => Iterator(node))
+    val pipe = new NodeStartPipe(src, "y", new EntityProducer[Node]() {
+      def description: Seq[(String, SimpleVal)] = Seq.empty
+
+      def name: String = ""
+
+      def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
+    })
+    Seq(pipe, iter)
+  }
+
+  private def unionPipe = {
+    val (iter, src) = emptyFakes
+    val (_, src2) = emptyFakes
+
+    val pipe = new UnionPipe(Seq(src, src2), List("x"))
+
     Seq(pipe, iter)
   }
 
   private def topPipe = {
     val (iter, src) = emptyFakes
     val pipe = new TopPipe(src, sortByX, Literal(5))
-    Seq(pipe, iter)
-  }
-
-  private def txStartPipe = {
-    val graph = mock[GraphDatabaseService]
-    val (iter, src) = emptyFakes
-    val pipe = new TransactionStartPipe(src, graph)
     Seq(pipe, iter)
   }
 

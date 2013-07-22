@@ -104,8 +104,7 @@ public abstract class XaConnectionHelpImpl implements XaConnection
     }
 
     @Override
-    public boolean delistResource( Transaction tx, int tmsuccess )
-        throws java.lang.IllegalStateException, javax.transaction.SystemException
+    public boolean delistResource( Transaction tx, int tmsuccess ) throws IllegalStateException, SystemException
     {
         return tx.delistResource( getXaResource(), tmsuccess );
     }

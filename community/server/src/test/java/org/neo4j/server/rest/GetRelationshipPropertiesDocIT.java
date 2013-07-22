@@ -19,23 +19,25 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBase
 {
@@ -64,40 +66,45 @@ public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
     }
 
     @Test
-    public void shouldGet204ForNoProperties() {
-        long relId = helper.createRelationship("LIKES");
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId
-                + "/properties");
-        assertEquals(204, response.getStatus());
+    public void shouldGet204ForNoProperties()
+    {
+        long relId = helper.createRelationship( "LIKES" );
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
+                + "/properties" );
+        assertEquals( 204, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGet200AndContentLengthForProperties() {
-        long relId = helper.createRelationship("LIKES");
-        helper.setRelationshipProperties(relId, Collections.<String, Object>singletonMap("foo", "bar"));
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId
-                + "/properties");
-        assertEquals(200, response.getStatus());
-        assertNotNull(response.getHeaders()
-                .get("Content-Length"));
+    public void shouldGet200AndContentLengthForProperties()
+    {
+        long relId = helper.createRelationship( "LIKES" );
+        helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
+                + "/properties" );
+        assertEquals( 200, response.getStatus() );
+        assertNotNull( response.getHeaders()
+                .get( "Content-Length" ) );
         response.close();
     }
 
     @Test
-    public void shouldGet404ForPropertiesOnNonExistentRelationship() {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/999999/properties");
-        assertEquals(404, response.getStatus());
+    public void shouldGet404ForPropertiesOnNonExistentRelationship()
+    {
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() +
+                "relationship/999999/properties" );
+        assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertiesResponse() {
-        long relId = helper.createRelationship("LIKES");
-        helper.setRelationshipProperties(relId, Collections.<String, Object>singletonMap("foo", "bar"));
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId
-                + "/properties");
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+    public void shouldBeJSONContentTypeOnPropertiesResponse()
+    {
+        long relId = helper.createRelationship( "LIKES" );
+        helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
+                + "/properties" );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         response.close();
     }
 
@@ -107,25 +114,27 @@ public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
     }
 
     @Test
-    public void shouldGet404ForNoProperty() {
-        JaxRsResponse response = RestRequest.req().get(getPropertyUri("baz"));
-        assertEquals(404, response.getStatus());
+    public void shouldGet404ForNoProperty()
+    {
+        JaxRsResponse response = RestRequest.req().get( getPropertyUri( "baz" ) );
+        assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGet404ForNonExistingRelationship() {
+    public void shouldGet404ForNonExistingRelationship()
+    {
         String uri = functionalTestHelper.dataUri() + "relationship/999999/properties/foo";
-        JaxRsResponse response = RestRequest.req().get(uri);
-        assertEquals(404, response.getStatus());
+        JaxRsResponse response = RestRequest.req().get( uri );
+        assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     @Test
     public void shouldBeValidJSONOnResponse() throws JsonParseException
     {
-        JaxRsResponse response = RestRequest.req().get(getPropertyUri("foo"));
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        JaxRsResponse response = RestRequest.req().get( getPropertyUri( "foo" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         assertNotNull( JsonHelper.createJsonFrom( response.getEntity() ) );
         response.close();
     }

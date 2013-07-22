@@ -49,7 +49,7 @@ public class ThirdPartyJAXRSModuleTest
         CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
-        when( neoServer.getDatabase() ).thenReturn( new Database(  ) );
+        when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
 
         Configurator configurator = mock( PropertyFileConfigurator.class );
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();

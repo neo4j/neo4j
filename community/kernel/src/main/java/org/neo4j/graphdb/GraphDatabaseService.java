@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -53,7 +54,15 @@ public interface GraphDatabaseService
      * 
      * @return the created node.
      */
-    public Node createNode();
+    Node createNode();
+
+    /**
+     * Creates a new node and adds the provided labels to it.
+     *
+     * @param labels {@link Label labels} to add to the created node.
+     * @return the created node.
+     */
+    Node createNode( Label... labels );
 
     /**
      * Looks up a node by id. Please note: Neo4j reuses its internal ids when
@@ -64,7 +73,7 @@ public interface GraphDatabaseService
      * @return the node with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    public Node getNodeById( long id );
+    Node getNodeById( long id );
 
     /**
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
@@ -75,12 +84,12 @@ public interface GraphDatabaseService
      * @return the relationship with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    public Relationship getRelationshipById( long id );
+    Relationship getRelationshipById( long id );
 
     /**
      * Returns the reference node, which is a "starting point" in the node
      * space. Usually, a client attaches relationships to this node that leads
-     * into various parts of the node space.
+     * into various parts of the graph.
      *
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node
@@ -88,7 +97,7 @@ public interface GraphDatabaseService
      *              canonical way of getting hold of entry points in the graph.
      */
     @Deprecated
-    public Node getReferenceNode();
+    Node getReferenceNode();
     
     /**
      * Returns all nodes in the graph.
@@ -96,7 +105,33 @@ public interface GraphDatabaseService
      * @return all nodes in the graph.
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
-    public Iterable<Node> getAllNodes();
+    @Deprecated
+    Iterable<Node> getAllNodes();
+
+    /**
+     * Returns all nodes having the label, and the wanted property value.
+     * If an online index is found, it will be used to look up the requested
+     * nodes.
+     * <p>
+     * If no indexes exist for the label/property combination, the database will
+     * scan all labelled nodes looking for the property value.
+     *
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     *
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     *
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     *
+     * If you call this operation outside of a transaction, please take care that the returned 
+     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+     *   
+     * @param label consider nodes with this label
+     * @param key required property key
+     * @param value required property value
+     * @return an iterable containing all matching nodes. See { @link ResourceIterable } for responsibilities.
+     */
+    ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
     
     /**
      * Returns all relationship types currently in the underlying store.
@@ -111,21 +146,35 @@ public interface GraphDatabaseService
      * @return all relationship types in the underlying store
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
-    public Iterable<RelationshipType> getRelationshipTypes();
+    @Deprecated
+    Iterable<RelationshipType> getRelationshipTypes();
 
     /**
      * Shuts down Neo4j. After this method has been invoked, it's invalid to
      * invoke any methods in the Neo4j API and all references to this instance
      * of GraphDatabaseService should be discarded.
      */
-    public void shutdown();
+    void shutdown();
 
     /**
-     * Starts a new transaction and associates it with the current thread.
+     * Starts a new {@link Transaction transaction} and associates it with the current thread.
+     * <p>
+     * <em>All database operations that modify the graph must be wrapped in a transaction.</em> 
+     * <p>
+     * If you attempt to modify the graph outside of a transaction, those operations will throw 
+     * {@link NotInTransactionException}.
+     * <p>
+     * Transactions are not required for read-only operations, however it is recommended to 
+     * enclose read only operations in a transaction, because the database can be more intelligent about managing 
+     * resources. In particular, returned {@link ResourceIterable ResourceIterables} will be automatically released 
+     * at the end of a transaction.
+     * <p>
+     * If you execute read-only operations outside of a transaction, please take care that any returned 
+     * {@link ResourceIterable ResourceIterables} are closed correctly to avoid potential blocking of write operations.  
      * 
      * @return a new transaction instance
      */
-    public Transaction beginTx();
+    Transaction beginTx();
     
     /**
      * Registers {@code handler} as a handler for transaction events which
@@ -141,8 +190,7 @@ public interface GraphDatabaseService
      * in transaction lifecycles.
      * @return the handler passed in as the argument.
      */
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> handler );
+    <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler );
     
     /**
      * Unregisters {@code handler} from the list of transaction event handlers.
@@ -160,8 +208,7 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      * to calling this method.
      */
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> handler );
+    <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
     
     /**
      * Registers {@code handler} as a handler for kernel events which
@@ -174,8 +221,7 @@ public interface GraphDatabaseService
      * in the kernel lifecycle.
      * @return the handler passed in as the argument.
      */
-    public KernelEventHandler registerKernelEventHandler(
-            KernelEventHandler handler );
+    KernelEventHandler registerKernelEventHandler( KernelEventHandler handler );
 
     /**
      * Unregisters {@code handler} from the list of kernel event handlers.
@@ -191,13 +237,21 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      * to calling this method.
      */
-    public KernelEventHandler unregisterKernelEventHandler(
-            KernelEventHandler handler );
-    
+    KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler );
+
+    /**
+     * Returns the {@link Schema schema manager} where all things related to schema,
+     * for example constraints and indexing on {@link Label labels}.
+     * 
+     * @return the {@link Schema schema manager} for this database.
+     */
+    Schema schema();
+
     /**
      * Returns the {@link IndexManager} paired with this graph database service
      * and is the entry point for managing indexes coupled with this database.
+     * 
      * @return the {@link IndexManager} for this database.
      */
-    public IndexManager index();
+    IndexManager index();
 }

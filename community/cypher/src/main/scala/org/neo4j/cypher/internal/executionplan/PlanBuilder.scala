@@ -19,24 +19,47 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
+import org.neo4j.cypher.internal.spi.PlanContext
+
 /*
-PlanBuilders take a unsolved query, and solves another piece of it.
+PlanBuilders are basically partial functions that can execute for some input, and can answer if an
+input is something it can work on.
+
+The idea is that they take an ExecutionPlanInProgress, and moves it a little bit towards a more solved plan, which is
+represented by the stack of Pipes.
+
+A PlanBuilder should only concern itself with the first PartiallySolvedQuery part - the tail query parts will be seen
+later.
+
+It's important that PlanBuilders never return the input unchanged.
 */
+
 trait PlanBuilder {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean
+
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress
+
+  def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = Seq()
+
+  def priority: Int
+}
+
+trait LegacyPlanBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress
+
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = apply(plan)
 
   def canWorkWith(plan: ExecutionPlanInProgress): Boolean
 
-  def missingDependencies(plan: ExecutionPlanInProgress):Seq[String] = Seq()
-
-  // Lower priority wins
-  def priority: Int
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = canWorkWith(plan)
 }
+
 
 // The priorities are all here, to make it easy to change and compare
 // Lower priority wins
 object PlanBuilder extends Enumeration {
   val CachedExpressions = -100
+  val IndexLookup = -100
   val TraversalMatcher = -11
   val Filter = -10
   val NamedPath = -9

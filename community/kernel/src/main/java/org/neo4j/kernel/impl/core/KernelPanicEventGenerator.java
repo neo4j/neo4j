@@ -27,7 +27,7 @@ import org.neo4j.kernel.KernelEventHandlers;
 
 public class KernelPanicEventGenerator
 {
-    private KernelEventHandlers kernelEventHandlers;
+    private final KernelEventHandlers kernelEventHandlers;
 
     public KernelPanicEventGenerator( KernelEventHandlers kernelEventHandlers )
     {

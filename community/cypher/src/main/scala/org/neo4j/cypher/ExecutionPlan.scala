@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher
 
+import internal.spi.QueryContext
+
 trait ExecutionPlan {
-  def execute(params: Map[String,Any]): ExecutionResult
-  def profile(params: Map[String,Any]): ExecutionResult
+  def execute(context: QueryContext, params: Map[String, Any]): ExecutionResult
+  def profile(context: QueryContext, params: Map[String,Any]): ExecutionResult
 }

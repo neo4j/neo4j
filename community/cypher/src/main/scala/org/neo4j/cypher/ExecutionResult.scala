@@ -36,21 +36,37 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def close()
 }
 
+// Whenever you add a field here, please update the following classes:
+//
+// org.neo4j.cypher.javacompat.QueryStatistics
+// org.neo4j.server.rest.repr.CypherResultRepresentation
+// org.neo4j.server.rest.CypherFunctionalTest
+//
+case class QueryStatistics(nodesCreated: Int = 0,
+                           relationshipsCreated: Int = 0,
+                           propertiesSet: Int = 0,
+                           deletedNodes: Int = 0,
+                           deletedRelationships: Int = 0,
+                           labelsAdded: Int = 0,
+                           labelsRemoved: Int = 0,
+                           indexesAdded: Int = 0,
+                           indexesRemoved: Int = 0,
+                           constraintsAdded: Int = 0,
+                           constraintsRemoved: Int = 0)
+{
+  def containsUpdates =
+    nodesCreated > 0 ||
+      relationshipsCreated > 0 ||
+      propertiesSet > 0 ||
+      deletedNodes > 0 ||
+      deletedRelationships > 0 ||
+      labelsAdded > 0 ||
+      labelsRemoved > 0 ||
+      indexesAdded > 0 ||
+      indexesRemoved > 0 ||
+      constraintsAdded > 0 ||
+      constraintsRemoved > 0
 
-object QueryStatistics {
-  def empty = new QueryStatistics(0,0,0,0,0)
-}
-
-case class QueryStatistics(nodesCreated: Int,
-                           relationshipsCreated: Int,
-                           propertiesSet: Int,
-                           deletedNodes: Int,
-                           deletedRelationships: Int) {
-  def containsUpdates = nodesCreated > 0 ||
-  relationshipsCreated > 0 ||
-  propertiesSet > 0 ||
-  deletedNodes > 0 ||
-  deletedRelationships > 0
 
   override def toString = {
     val builder = new StringBuilder
@@ -60,8 +76,16 @@ case class QueryStatistics(nodesCreated: Int,
     includeIfNonZero(builder, "Properties set: ", propertiesSet)
     includeIfNonZero(builder, "Nodes deleted: ", deletedNodes)
     includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
+    includeIfNonZero(builder, "Labels added: ", labelsAdded)
+    includeIfNonZero(builder, "Labels removed: ", labelsRemoved)
+    includeIfNonZero(builder, "Indexes added: ", indexesAdded)
+    includeIfNonZero(builder, "Indexes removed: ", indexesRemoved)
+    includeIfNonZero(builder, "Constraints added: ", constraintsAdded)
+    includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
 
-    builder.toString()
+    val result = builder.toString()
+
+    if (result.isEmpty) "<Nothing happened>" else result
   }
 
   private def includeIfNonZero(builder:StringBuilder, message: String, count:Long) = if(count>0) {

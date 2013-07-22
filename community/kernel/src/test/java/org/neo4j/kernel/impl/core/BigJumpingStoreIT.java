@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -31,9 +32,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.test.IdJumpingGraphDatabase;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -42,11 +51,43 @@ import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
 
 public class BigJumpingStoreIT
 {
+    private static class TestDatabase extends InternalAbstractGraphDatabase
+    {
+        protected TestDatabase( String storeDir, Map<String, String> params )
+        {
+            super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
+                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+            run();
+        }
+
+        @Override
+        protected IdGeneratorFactory createIdGeneratorFactory()
+        {
+            return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
+        }
+
+        @Override
+        protected boolean isHighlyAvailable()
+        {
+            return false;
+        }
+
+        @Override
+        protected FileSystemAbstraction createFileSystemAbstraction()
+        {
+            return life.add( new JumpingFileSystemAbstraction( SIZE_PER_JUMP ) );
+        }
+    }
+
     private static final int SIZE_PER_JUMP = 1000;
+    private static final String PATH = "target/var/bigjump";
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
     private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
     private InternalAbstractGraphDatabase db;
@@ -54,8 +95,19 @@ public class BigJumpingStoreIT
     @Before
     public void doBefore()
     {
-        db = new IdJumpingGraphDatabase( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(),
-                stringMap(), SIZE_PER_JUMP );
+        deleteFileOrDirectory( PATH );
+        db = new TestDatabase( PATH, configForNoMemoryMapping() );
+    }
+
+    private Map<String, String> configForNoMemoryMapping()
+    {
+        return stringMap(
+                Config.USE_MEMORY_MAPPED_BUFFERS, "false",
+                "neostore.nodestore.db.mapped_memory", "0M",
+                "neostore.relationshipstore.db.mapped_memory", "0M",
+                "neostore.propertystore.db.mapped_memory", "0M",
+                "neostore.propertystore.db.strings.mapped_memory", "0M",
+                "neostore.propertystore.db.arrays.mapped_memory", "0M" );
     }
 
     @After
@@ -98,6 +150,7 @@ public class BigJumpingStoreIT
         tx.finish();
 
         // Verify
+        tx = db.beginTx();
         int relCount = 0;
         for ( int t = 0; t < 2; t++ )
         {
@@ -112,6 +165,7 @@ public class BigJumpingStoreIT
             db.getNodeManager().clearCache();
         }
         assertEquals( numberOfRels, relCount );
+        tx.finish();
 
         // Remove stuff
         tx = db.beginTx();
@@ -171,6 +225,7 @@ public class BigJumpingStoreIT
         tx.finish();
 
         // Verify again
+        tx = db.beginTx();
         for ( int t = 0; t < 2; t++ )
         {
             int nodeCount = 0;
@@ -221,6 +276,7 @@ public class BigJumpingStoreIT
             }
             db.getNodeManager().clearCache();
         }
+        tx.finish();
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

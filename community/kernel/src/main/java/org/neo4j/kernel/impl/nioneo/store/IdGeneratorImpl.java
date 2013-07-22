@@ -145,6 +145,7 @@ public class IdGeneratorImpl implements IdGenerator
      *             If the capacity is exceeded
      * @throws IllegalStateException if this id generator has been closed
      */
+    @Override
     public synchronized long nextId()
     {
         assertStillOpen();
@@ -209,6 +210,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
 
+    @Override
     public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
@@ -246,6 +248,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @param id
      *            The next free id
      */
+    @Override
     public void setHighId( long id )
     {
         assertIdWithinCapacity( id );
@@ -258,6 +261,7 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @return The next free "high" id
      */
+    @Override
     public long getHighId()
     {
         return highId.get();
@@ -278,6 +282,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If id is negative or greater than the highest returned id
      */
+    @Override
     public synchronized void freeId( long id )
     {
         if ( id == INTEGER_MINUS_ONE )
@@ -313,6 +318,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to close this id generator
      */
+    @Override
     public synchronized void close()
     {
         if ( highId.get() == -1 )
@@ -598,11 +604,13 @@ public class IdGeneratorImpl implements IdGenerator
         close();
     }
 
+    @Override
     public synchronized long getNumberOfIdsInUse()
     {
         return highId.get() - defraggedIdCount;
     }
 
+    @Override
     public long getDefragCount()
     {
         return defraggedIdCount;

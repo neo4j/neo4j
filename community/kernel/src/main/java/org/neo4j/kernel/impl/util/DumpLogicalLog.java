@@ -81,12 +81,8 @@ public class DumpLogicalLog
             }
             System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
-            long logEntriesFound = 0;
             XaCommandFactory cf = instantiateCommandFactory();
-            while ( readAndPrintEntry( fileChannel, buffer, cf, timeZone ) )
-            {
-                logEntriesFound++;
-            }
+            while ( readAndPrintEntry( fileChannel, buffer, cf, timeZone ) );
             fileChannel.close();
         }
         return logsFound;
@@ -189,7 +185,7 @@ public class DumpLogicalLog
         public XaCommand readCommand( ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            return Command.readCommand( null, byteChannel, buffer );
+            return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
 }

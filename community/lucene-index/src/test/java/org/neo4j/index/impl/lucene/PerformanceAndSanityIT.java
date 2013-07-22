@@ -19,11 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.System.out;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -39,6 +34,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -47,8 +43,13 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.out;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 
 public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 {
@@ -153,7 +154,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                         {
                             if ( i%100 == 0 )
                             {
-                                int size = 0;
                                 int type = (int)(System.currentTimeMillis()%3);
                                 if ( type == 0 )
                                 {
@@ -165,12 +165,11 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                     catch ( NoSuchElementException e )
                                     { // For when there are multiple hits
                                     }
-                                    size = 99;
                                 }
                                 else if ( type == 1 )
                                 {
                                     IndexHits<Node> itr = index.get( "key", "value5" );
-                                    for ( ;itr.hasNext() && size < 5; size++ )
+                                    for ( int size = 0; itr.hasNext() && size < 5; size++ )
                                     {
                                         itr.next();
                                     }
@@ -180,7 +179,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                 {
                                     IndexHits<Node> itr = index.get( "key", "crap value" ); /* Will return 0 hits */
                                     // Iterate over the hits sometimes (it's always gonna be 0 sized)
-                                    if ( System.currentTimeMillis()%10 > 5 )
+                                    if ( System.currentTimeMillis() % 10 > 5 )
                                     {
                                         IteratorUtil.count( (Iterator<Node>) itr );
                                     }
@@ -215,7 +214,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         pool.shutdown();
         pool.awaitTermination( 10, TimeUnit.DAYS );
         graphDb.shutdown();
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @Ignore

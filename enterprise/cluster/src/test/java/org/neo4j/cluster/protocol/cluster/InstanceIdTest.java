@@ -32,13 +32,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterAssertion;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
-
-/**
- * TODO
- */
 
 public class InstanceIdTest
         extends ClusterMockTest

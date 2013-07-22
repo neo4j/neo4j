@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
 
 public class HexMatcher extends TypeSafeMatcher<String>
 {
@@ -33,7 +33,6 @@ public class HexMatcher extends TypeSafeMatcher<String>
 
     private HexMatcher()
     {
-
     }
 
     @Override
@@ -51,7 +50,7 @@ public class HexMatcher extends TypeSafeMatcher<String>
     }
 
     @Factory
-    public static <T> Matcher<String> containsOnlyHex()
+    public static Matcher<String> containsOnlyHex()
     {
         return new HexMatcher();
     }

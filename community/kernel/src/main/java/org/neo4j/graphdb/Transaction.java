@@ -21,20 +21,29 @@ package org.neo4j.graphdb;
 
 /**
  * A programmatically handled transaction.
- * <em>All modifying operations that work with the
- * node space must be wrapped in a transaction.</em> Transactions are thread
- * confined. Transactions can either be handled programmatically, through this
- * interface, or by a container through the Java Transaction API (JTA). The
- * Transaction interface makes handling programmatic transactions easier than
- * using JTA programmatically. Here's the idiomatic use of programmatic
- * transactions in Neo4j:
+ * <p>
+ * <em>All database operations that modify the graph must be wrapped in a transaction.</em> 
+ * <p>
+ * If you attempt to modify the graph outside of a transaction, those operations will throw 
+ * {@link NotInTransactionException}.
+ * <p>
+ * Transactions are not required for read-only operations, however it is recommended to 
+ * enclose read only operations in a transaction, because the database can be more intelligent about managing 
+ * resources (see {@link ResourceIterable}).
+ * <p>
+ * Transactions are bound to the thread in which they were created. Transactions can either be handled 
+ * programmatically, through this interface, or by a container through the Java Transaction API (JTA). The
+ * Transaction interface makes handling programmatic transactions easier than using JTA programmatically. 
+ * Here's the idiomatic use of programmatic transactions in Neo4j:
  * 
  * <pre>
  * <code>
  * Transaction tx = graphDb.beginTx();
  * try
  * {
- * 	... // any operation that works with the node space
+ *     // operations on the graph
+ *     // ...
+ *     
  *     tx.success();
  * }
  * finally
@@ -46,12 +55,12 @@ package org.neo4j.graphdb;
  * <p>
  * Let's walk through this example line by line. First we retrieve a Transaction
  * object by invoking the {@link GraphDatabaseService#beginTx()} factory method.
- * This creates a new Transaction instance which has internal state to keep
+ * This creates a new transaction which has internal state to keep
  * track of whether the current transaction is successful. Then we wrap all
- * operations that work with the node space in a try-finally block. At the end
- * of the block, we invoke the {@link #finish() tx.success()} method to indicate
+ * operations that modify the graph in a try-finally block. At the end
+ * of the block, we invoke the {@link #success() tx.success()} method to indicate
  * that the transaction is successful. As we exit the block, the finally clause
- * will kick in and {@link #finish() tx.finish} will commit the transaction if
+ * will kick in and {@link #finish() tx.finish()} will commit the transaction if
  * the internal state indicates success or else mark it for rollback.
  * <p>
  * If an exception is raised in the try-block, {@link #success()} will never be
@@ -63,6 +72,9 @@ package org.neo4j.graphdb;
  * <p>
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
+ * 
+ * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside a transaction 
+ * will be automatically closed when the transaction is committed or rolled back.
  */
 public interface Transaction
 {
@@ -73,20 +85,23 @@ public interface Transaction
      * {@link #success()} is invoked afterwards -- the transaction will still be 
      * rolled back.
      */
-    public void failure();
+    void failure();
 
     /**
      * Marks this transaction as successful, which means that it will be
      * committed upon invocation of {@link #finish()} unless {@link #failure()}
      * has or will be invoked before then.
      */
-    public void success();
+    void success();
 
     /**
      * Commits or marks this transaction for rollback, depending on whether
      * {@link #success()} or {@link #failure()} has been previously invoked.
+     * 
+     * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this 
+     * transaction will be automatically closed by this method.
      */
-    public void finish();
+    void finish();
     
     /**
      * Acquires a write lock for {@code entity} for this transaction.
@@ -101,7 +116,7 @@ public interface Transaction
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    public Lock acquireWriteLock( PropertyContainer entity );
+    Lock acquireWriteLock( PropertyContainer entity );
     
     /**
      * Acquires a read lock for {@code entity} for this transaction.
@@ -116,5 +131,5 @@ public interface Transaction
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    public Lock acquireReadLock( PropertyContainer entity );
+    Lock acquireReadLock( PropertyContainer entity );
 }

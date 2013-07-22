@@ -23,6 +23,10 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
+object Collection {
+  val empty = Literal(Seq())
+}
+
 case class Collection(children: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = children.map(e => e(ctx))
 
@@ -31,11 +35,11 @@ case class Collection(children: Expression*) extends Expression {
   def calculateType(symbols: SymbolTable): CypherType = {
     children.map(_.getType(symbols)) match {
 
-      case Seq() => AnyCollectionType()
+      case Seq() => CollectionType(AnyType())
 
       case types =>
-        val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeWith _)
-        new CollectionType( innerType )
+        val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeDown _)
+        CollectionType( innerType )
     }
 
   }

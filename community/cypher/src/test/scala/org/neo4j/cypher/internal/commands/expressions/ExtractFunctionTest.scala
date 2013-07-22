@@ -31,9 +31,9 @@ class ExtractFunctionTest extends Assertions {
     val symbols = SymbolTable()
 
     //WHEN
-    val typ = func.evaluateType(new CollectionType(StringType()), symbols)
+    val typ = func.evaluateType(CollectionType(StringType()), symbols)
 
     //THEN
-    assert(typ === new CollectionType(StringType()))
+    assert(typ === CollectionType(StringType()))
   }
 }

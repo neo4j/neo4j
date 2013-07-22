@@ -19,145 +19,392 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeProxy implements Node
 {
     public interface NodeLookup
     {
-        NodeImpl lookup(long nodeId);
+        NodeImpl lookup( long nodeId );
+
         GraphDatabaseService getGraphDatabase();
+
         NodeManager getNodeManager();
+
+        CleanupService getCleanupService();
+
         NodeImpl lookup( long nodeId, LockType lock );
     }
-    
-    private final NodeLookup nodeLookup;
 
+    private final NodeLookup nodeLookup;
+    private final ThreadToStatementContextBridge statementCtxProvider;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup )
+    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementCtxProvider )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
+        this.statementCtxProvider = statementCtxProvider;
     }
 
+    @Override
     public long getId()
     {
         return nodeId;
     }
 
+    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         return nodeLookup.getGraphDatabase();
     }
 
+    @Override
     public void delete()
     {
-        nodeLookup.lookup(nodeId, LockType.WRITE).delete( nodeLookup.getNodeManager(), this );
+        StatementOperationParts context = statementCtxProvider.getCtxForWriting();
+        StatementState state = statementCtxProvider.statementForWriting();
+        try
+        {
+            context.entityWriteOperations().nodeDelete( state, getId() );
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public Iterable<Relationship> getRelationships()
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager() );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public boolean hasRelationship()
     {
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), dir );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), dir );
     }
 
+    @Override
     public boolean hasRelationship( Direction dir )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), dir );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), dir );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), types );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), direction, types );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), direction, types );
     }
 
+    @Override
     public boolean hasRelationship( RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), types );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), types );
     }
 
+    @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), direction, types );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), direction, types );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( RelationshipType type,
-        Direction dir )
+                                                    Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public Relationship getSingleRelationship( RelationshipType type,
-        Direction dir )
+                                               Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public void setProperty( String key, Object value )
     {
-        nodeLookup.lookup(nodeId, LockType.WRITE).setProperty( nodeLookup.getNodeManager(), this, key, value );
+        StatementOperationParts context = statementCtxProvider.getCtxForWriting();
+        StatementState state = statementCtxProvider.statementForWriting();
+        boolean success = false;
+        try
+        {
+            long propertyKeyId = context.keyWriteOperations().propertyKeyGetOrCreateForName( state, key );
+            context.entityWriteOperations().nodeSetProperty( state, nodeId, Property.property( propertyKeyId, value ) );
+            success = true;
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            context.close( state );
+            if ( !success )
+            {
+                nodeLookup.getNodeManager().setRollbackOnly();
+            }
+        }
     }
 
+    @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup(nodeId, LockType.WRITE).removeProperty( nodeLookup.getNodeManager(), this, key );
+        StatementOperationParts context = statementCtxProvider.getCtxForWriting();
+        StatementState state = statementCtxProvider.statementForWriting();
+        try
+        {
+            long propertyKeyId = context.keyWriteOperations().propertyKeyGetOrCreateForName( state, key );
+            return context.entityWriteOperations().nodeRemoveProperty( state, nodeId, propertyKeyId ).value( null );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            // TODO: Maybe throw more context-specific error than just IllegalArgument
+            throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public Object getProperty( String key, Object defaultValue )
     {
-        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
+        // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            return context.entityReadOperations().nodeGetProperty( state, nodeId, propertyKeyId ).value(defaultValue);
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return defaultValue;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return defaultValue;
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public Iterable<Object> getPropertyValues()
     {
-        return nodeLookup.lookup(nodeId).getPropertyValues( nodeLookup.getNodeManager() );
+        final StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            return asSet( map( new Function<Property,Object>() {
+                @Override
+                public Object apply( Property prop )
+                {
+                    try
+                    {
+                        return prop.value();
+                    }
+                    catch ( PropertyNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError( "Jake",
+                                "Property key retrieved through kernel API should exist." );
+                    }
+                }
+            }, context.entityReadOperations().nodeGetAllProperties( state, getId() )));
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found", e );
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public Iterable<String> getPropertyKeys()
     {
-        return nodeLookup.lookup(nodeId).getPropertyKeys( nodeLookup.getNodeManager() );
+        final StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        final StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            List<String> keys = new ArrayList<>();
+            PrimitiveLongIterator keyIds = context.entityReadOperations().nodeGetPropertyKeys( state, getId() );
+            while ( keyIds.hasNext() )
+            {
+                keys.add( context.keyReadOperations().propertyKeyGetName( state, keyIds.next() ) );
+            }
+            return keys;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found", e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Jake",
+                    "Property key retrieved through kernel API should exist." );
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public Object getProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key );
+        // TODO: Push this check to getPropertyKeyId
+        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
+        if ( null == key )
+            throw new IllegalArgumentException( "(null) property key is not allowed" );
+
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            return context.entityReadOperations().nodeGetProperty( state, nodeId, propertyKeyId ).value();
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
+    @Override
     public boolean hasProperty( String key )
     {
-        return nodeLookup.lookup(nodeId).hasProperty( nodeLookup.getNodeManager(), key );
+        if ( null == key )
+            return false;
+
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            return context.entityReadOperations().nodeHasProperty( state, nodeId, propertyKeyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+        catch ( PropertyKeyIdNotFoundException e )
+        {
+            return false;
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            return false;
+        }
+        finally
+        {
+            context.close( state );
+        }
     }
 
     public int compareTo( Object node )
@@ -182,17 +429,13 @@ public class NodeProxy implements Node
     @Override
     public boolean equals( Object o )
     {
-        if ( !(o instanceof Node) )
-        {
-            return false;
-        }
-        return this.getId() == ((Node) o).getId();
+        return o instanceof Node && this.getId() == ((Node) o).getId();
     }
 
     @Override
     public int hashCode()
     {
-        return (int) (( nodeId >>> 32 ) ^ nodeId );
+        return (int) ((nodeId >>> 32) ^ nodeId);
     }
 
     @Override
@@ -201,66 +444,156 @@ public class NodeProxy implements Node
         return "Node[" + this.getId() + "]";
     }
 
+    @Override
     public Relationship createRelationshipTo( Node otherNode,
-        RelationshipType type )
+                                              RelationshipType type )
     {
-        return nodeLookup.lookup(nodeId, LockType.WRITE).createRelationshipTo( nodeLookup.getNodeManager(), this, otherNode, type );
+        return nodeLookup.lookup( nodeId, LockType.WRITE ).createRelationshipTo( nodeLookup.getNodeManager(), this,
+                otherNode, type );
     }
 
-    /* Tentative expansion API
-    public Expansion<Relationship> expandAll()
-    {
-        return nodeLookup.lookup(nodeId).expandAll();
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type )
-    {
-        return nodeLookup.lookup(nodeId).expand( type );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type,
-            Direction direction )
-    {
-        return nodeLookup.lookup(nodeId).expand( type, direction );
-    }
-
-    public Expansion<Relationship> expand( Direction direction )
-    {
-        return nodeLookup.lookup(nodeId).expand( direction );
-    }
-
-    public Expansion<Relationship> expand( RelationshipExpander expander )
-    {
-        return nodeLookup.lookup(nodeId).expand( expander );
-    }
-    */
-
+    @Override
     public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType relationshipType, Direction direction )
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               RelationshipType relationshipType, Direction direction )
     {
         return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, relationshipType, direction );
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipType, direction );
     }
 
+    @Override
     public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType firstRelationshipType, Direction firstDirection,
-        RelationshipType secondRelationshipType, Direction secondDirection )
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               RelationshipType firstRelationshipType, Direction firstDirection,
+                               RelationshipType secondRelationshipType, Direction secondDirection )
     {
         return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, firstRelationshipType, firstDirection,
-                                             secondRelationshipType, secondDirection );
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, firstRelationshipType, firstDirection,
+                secondRelationshipType, secondDirection );
     }
 
+    @Override
     public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        Object... relationshipTypesAndDirections )
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               Object... relationshipTypesAndDirections )
     {
         return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, relationshipTypesAndDirections );
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipTypesAndDirections );
+    }
+
+    @Override
+    public void addLabel( Label label )
+    {
+        StatementOperationParts context = statementCtxProvider.getCtxForWriting();
+        StatementState state = statementCtxProvider.statementForWriting();
+        try
+        {
+            context.entityWriteOperations().nodeAddLabel( state, getId(),
+                    context.keyWriteOperations().labelGetOrCreateForName( state, label.name() ) );
+        }
+        catch ( SchemaKernelException e )
+        {
+            throw new ConstraintViolationException( "Unable to add label.", e );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "No node with id " + getId() + " found.", e );
+        }
+        finally
+        {
+            context.close( state );
+        }
+    }
+
+    @Override
+    public void removeLabel( Label label )
+    {
+        StatementOperationParts context = statementCtxProvider.getCtxForWriting();
+        StatementState state = statementCtxProvider.statementForWriting();
+        try
+        {
+            long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
+            context.entityWriteOperations().nodeRemoveLabel( state, getId(), labelId );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            return;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "No node with id " + getId() + " found.", e );
+        }
+        finally
+        {
+            context.close( state );
+        }
+    }
+
+    @Override
+    public boolean hasLabel( Label label )
+    {
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            return context.entityReadOperations().nodeHasLabel( state, getId(), context.keyReadOperations().labelGetForName( state, label.name() ) );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            return false;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            return false;
+        }
+        finally
+        {
+            context.close( state );
+        }
+    }
+
+    @Override
+    public ResourceIterable<Label> getLabels()
+    {
+        return new ResourceIterable<Label>()
+        {
+            @Override
+            public ResourceIterator<Label> iterator()
+            {
+                final StatementOperationParts context = statementCtxProvider.getCtxForReading();
+                PrimitiveLongIterator labels;
+
+                final StatementState state = statementCtxProvider.statementForReading();
+                try
+                {
+                    labels = context.entityReadOperations().nodeGetLabels( state, getId() );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    context.close( state );
+                    throw new NotFoundException( "No node with id " + getId() + " found.", e );
+                }
+
+                return nodeLookup.getCleanupService().resourceIterator( map( new FunctionFromPrimitiveLong<Label>()
+                {
+                    @Override
+                    public Label apply( long labelId )
+                    {
+                        try
+                        {
+                            return label( context.keyReadOperations().labelGetName( state, labelId ) );
+                        }
+                        catch ( LabelNotFoundKernelException e )
+                        {
+                            throw new ThisShouldNotHappenError( "Mattias", "Listed labels for node " + nodeId +
+                                    ", but the returned label " + labelId + " doesn't exist anymore" );
+                        }
+                    }
+                }, labels ), state.closeable( context.lifecycleOperations() ) );
+            }
+        };
     }
 }

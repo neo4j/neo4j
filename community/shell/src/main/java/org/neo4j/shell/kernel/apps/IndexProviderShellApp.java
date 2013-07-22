@@ -45,7 +45,7 @@ import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
 
 @Service.Implementation( App.class )
-public class IndexProviderShellApp extends GraphDatabaseApp
+public class IndexProviderShellApp extends TransactionProvidingApp
 {
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,

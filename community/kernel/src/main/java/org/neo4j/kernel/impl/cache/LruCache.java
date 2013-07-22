@@ -127,7 +127,7 @@ public class LruCache<K,E>
         return cache.values();
     }
 
-    public synchronized Set<java.util.Map.Entry<K,E>> entrySet()
+    public synchronized Set<Map.Entry<K,E>> entrySet()
     {
         return cache.entrySet();
     }

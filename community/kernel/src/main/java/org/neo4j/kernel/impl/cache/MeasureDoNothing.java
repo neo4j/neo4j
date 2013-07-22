@@ -79,7 +79,7 @@ public class MeasureDoNothing extends Thread
             long time = System.currentTimeMillis() - start;
             if ( time > TIME_BEFORE_BLOCK )
             {
-                long blockTime = (time - TIME_TO_WAIT);
+                long blockTime = time - TIME_TO_WAIT;
                 timeBlocked += blockTime;
                 logger.logMessage( "GC Monitor: Application threads blocked for an additional " + blockTime + 
                         "ms [total block time: " + (timeBlocked / 1000.0f) + "s]", true );

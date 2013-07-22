@@ -20,13 +20,13 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public RelationshipCountSampleable( GraphDatabaseAPI db )
+    public RelationshipCountSampleable( NodeManager nodeManager )
     {
-        super( db );
+        super( nodeManager );
     }
 
     @Override public String getName()

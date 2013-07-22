@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.shell.Output;
 import org.neo4j.shell.ShellClient;
+import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 
 /**
@@ -36,16 +37,16 @@ public class SameJvmClient extends AbstractClient
 	private Output out;
 	private ShellServer server;
 	
-	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server )
-	{
+	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server ) throws ShellException
+    {
 	    this( initialSession, server, new SystemOutput() );
 	}
 	
 	/**
 	 * @param server the server to communicate with.
 	 */
-	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server, Output out )
-	{
+	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server, Output out ) throws ShellException
+    {
 	    super( initialSession );
 	    this.out = out;
 		this.server = server;

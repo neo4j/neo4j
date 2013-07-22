@@ -19,12 +19,20 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
+import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.consistency.store.DirectRecordAccess;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class IncrementalDiffCheck extends DiffCheck
@@ -40,7 +48,49 @@ public class IncrementalDiffCheck extends DiffCheck
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         ConsistencyReporter reporter = new ConsistencyReporter( new DirectRecordAccess( diffs ),
                 new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary ) );
-        diffs.applyToAll( new StoreProcessor( reporter ) );
+        StoreProcessor processor = new StoreProcessor( reporter );
+        diffs.applyToAll( processor );
+
+        if ( diffs.getSchemaStore().hasChanges() )
+        {
+            if ( 0 == summary.getInconsistencyCountForRecordType( RecordType.SCHEMA ) )
+            {
+                performFullCheckOfSchemaStore( diffs, reporter, processor );
+            }
+        }
+
         return summary;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter,
+                                                StoreProcessor processor )
+    {
+        SchemaRecordCheck schemaChecker = new SchemaRecordCheck( new RuleReader( diffs.getSchemaStore() ) );
+        for ( DynamicRecord record : processor.scan( diffs.getSchemaStore() ) )
+        {
+            reporter.forSchema( record, schemaChecker );
+        }
+        schemaChecker = schemaChecker.forObligationChecking();
+        for ( DynamicRecord record : processor.scan( diffs.getSchemaStore() ) )
+        {
+            reporter.forSchema( record, schemaChecker );
+        }
+    }
+
+    private static class RuleReader implements SchemaRuleAccess
+    {
+        private final RecordStore<DynamicRecord> schemaStore;
+
+        private RuleReader( RecordStore<DynamicRecord> schemaStore )
+        {
+            this.schemaStore = schemaStore;
+        }
+
+        @Override
+        public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
+        {
+            return SchemaStore.readSchemaRule( ruleId, schemaStore.getRecords( ruleId ) );
+        }
     }
 }

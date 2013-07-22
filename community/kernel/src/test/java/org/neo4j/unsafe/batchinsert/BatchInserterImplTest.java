@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
+import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
@@ -81,7 +82,7 @@ public class BatchInserterImplTest
         File file = TargetDirectory.forTest( getClass() ).graphDbDir( true );
 
         // When
-        BatchInserterImpl inserter = new BatchInserterImpl( file.getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file.getAbsolutePath() );
 
         // Then
         assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
@@ -99,7 +100,7 @@ public class BatchInserterImplTest
         // When
         try
         {
-            BatchInserterImpl inserter = new BatchInserterImpl( parent.getAbsolutePath() );
+            BatchInserters.inserter( parent.getAbsolutePath() );
 
             // Then
             fail();
@@ -113,10 +114,10 @@ public class BatchInserterImplTest
             lock.release();
         }
     }
-
+    
     private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
-        BatchInserterImpl inserter = new BatchInserterImpl(
+        BatchInserter inserter = BatchInserters.inserter(
                 TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );

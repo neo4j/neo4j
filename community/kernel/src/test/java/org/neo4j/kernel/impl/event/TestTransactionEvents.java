@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,6 +34,16 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestTransactionEvents extends AbstractNeo4jTestCase
 {
@@ -123,15 +128,13 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     @Test
     public void shouldGetCorrectTransactionDataUponCommit()
     {
-        makeSureRelationshipTypeIsCreated( RelTypes.TXEVENT );
-        
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler(
                 expectedData );
         getGraphDb().registerTransactionEventHandler( handler );
         newTransaction();
-        Node node1 = null, node2 = null, node3 = null;
+        Node node1 = null, node2, node3 = null;
         Relationship rel1 = null, rel2 = null;
         try
         {
@@ -231,15 +234,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         }
     }
 
-    private void makeSureRelationshipTypeIsCreated( RelationshipType type )
-    {
-        Node dummy1 = getGraphDb().createNode();
-        Node dummy2 = getGraphDb().createNode();
-        dummy1.createRelationshipTo( dummy2, type ).delete();
-        dummy1.delete();
-        dummy2.delete();
-    }
-
     @Test
     public void makeSureBeforeAfterAreCalledCorrectly()
     {
@@ -303,15 +297,9 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         {
         	
         }
-        
-        List<TransactionEventHandler<Object>> handlers =
-                new ArrayList<TransactionEventHandler<Object>>();
-        handlers.add( new ExceptionThrowingEventHandler(new MyFancyException(), null, null) );
-        
-        for ( TransactionEventHandler<Object> handler : handlers )
-        {
-            getGraphDb().registerTransactionEventHandler( handler );
-        }
+
+        ExceptionThrowingEventHandler handler = new ExceptionThrowingEventHandler( new MyFancyException(), null, null );
+        getGraphDb().registerTransactionEventHandler( handler );
 
         try
         {
@@ -325,22 +313,20 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             catch ( TransactionFailureException e )
             {
             	Throwable currentEx = e;
-            	do {
-            		currentEx = currentEx.getCause();
-                	if(currentEx instanceof MyFancyException)
-                	{
-                		return;
-                	}
-                } while(currentEx.getCause() != null);
+                do
+                {
+                    currentEx = currentEx.getCause();
+                    if ( currentEx instanceof MyFancyException )
+                    {
+                        return;
+                    }
+                } while ( currentEx.getCause() != null );
                 fail("Expected to find the exception thrown in the event hook as the cause of transaction failure.");
             }
         }
         finally
         {
-            for ( TransactionEventHandler<Object> handler : handlers )
-            {
-                getGraphDb().unregisterTransactionEventHandler( handler );
-            }
+            getGraphDb().unregisterTransactionEventHandler( handler );
         }
     }
     
@@ -620,7 +606,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         commit();
         
         // Then
-        assertEquals( value2, node.getProperty( key ) );
+        assertThat(node, inTx(getGraphDb(), hasProperty(key).withValue(value2)));
         getGraphDb().unregisterTransactionEventHandler( handler );
     } 
 }

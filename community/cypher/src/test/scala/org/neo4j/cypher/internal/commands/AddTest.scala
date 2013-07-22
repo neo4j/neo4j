@@ -24,12 +24,12 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class AddTest extends Assertions {
   
   val m = ExecutionContext.empty
-  val s = QueryState.empty
+  val s = QueryStateHelper.empty
   
   @Test def numbers() {
     val expr = Add(Literal(1), Literal(1))

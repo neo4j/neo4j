@@ -29,11 +29,11 @@ class QueryTest extends Assertions {
   @Test
   def shouldCompactCreateStatements() {
     val end = Query.
-      start(CreateNodeStartItem(CreateNode("b", Map()))).
+      start(CreateNodeStartItem(CreateNode("b", Map(), Seq.empty, bare = true))).
       returns()
 
     val start = Query.
-      start(CreateNodeStartItem(CreateNode("a", Map()))).
+      start(CreateNodeStartItem(CreateNode("a", Map(), Seq.empty, bare = true))).
       tail(end).
       returns(AllIdentifiers())
 
@@ -41,8 +41,8 @@ class QueryTest extends Assertions {
 
     val expected = Query.
       start(
-      CreateNodeStartItem(CreateNode("a", Map())),
-      CreateNodeStartItem(CreateNode("b", Map()))).
+      CreateNodeStartItem(CreateNode("a", Map(), Seq.empty, bare = true)),
+      CreateNodeStartItem(CreateNode("b", Map(), Seq.empty, bare = true))).
       returns()
 
     assert(expected === compacted)
@@ -51,7 +51,7 @@ class QueryTest extends Assertions {
   @Test
   def integrationTest() {
     val parser = new CypherParser()
-    val q = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)")
+    val q:Query = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[Query]
     assert(q.tail.nonEmpty, "wasn't compacted enough")
     val compacted = q.compact
 
@@ -62,7 +62,7 @@ class QueryTest extends Assertions {
   @Test
   def integrationTest2() {
     val parser = new CypherParser()
-    val q = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4")
+    val q = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[Query]
     val compacted = q.compact
     var lastQ = compacted
 

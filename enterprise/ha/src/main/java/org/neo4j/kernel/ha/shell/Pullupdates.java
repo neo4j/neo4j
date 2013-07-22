@@ -21,16 +21,15 @@ package org.neo4j.kernel.ha.shell;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
+import org.neo4j.shell.kernel.apps.NonTransactionProvidingApp;
 
-public class Pullupdates extends ReadOnlyGraphDatabaseApp
+public class Pullupdates extends NonTransactionProvidingApp
 {
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
@@ -38,7 +37,7 @@ public class Pullupdates extends ReadOnlyGraphDatabaseApp
     {
         try
         {
-            ((GraphDatabaseAPI)getServer().getDb()).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            getServer().getDb().getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
         catch ( IllegalArgumentException e )
         {

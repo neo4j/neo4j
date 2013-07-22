@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -57,36 +57,29 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected PropertyData changeProperty( NodeManager nodeManager,
-            PropertyData property, Object value, TransactionState tx )
+    public int hashCode()
     {
-        return nodeManager.relChangeProperty( this, property, value, tx );
+        int result = super.hashCode();
+        result = 31 * result + (int) (idAndMore ^ (idAndMore >>> 32));
+        return result;
     }
 
-    @Override
-    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
-    {
-        return nodeManager.relAddProperty( this, index, value );
-    }
-    
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
         return super.sizeOfObjectInBytesIncludingOverhead() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
     }
-
+    
     @Override
-    protected void removeProperty( NodeManager nodeManager,
-            PropertyData property, TransactionState tx )
+    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
     {
-        nodeManager.relRemoveProperty( this, property, tx );
+        return nodeManager.loadProperties( this, false );
     }
 
     @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties(
-            NodeManager nodeManager, boolean light )
+    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
     {
-        return nodeManager.loadProperties( this, light );
+        return nodeManager.relationshipLoadPropertyValue( getId(), propertyKey );
     }
 
     @Override
@@ -97,12 +90,12 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     
     long getStartNodeId()
     {
-        return (long)(((long)startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
+        return (startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12);
     }
 
     long getEndNodeId()
     {
-        return (long)(((long)endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
+        return (endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8);
     }
     
     int getTypeId()
@@ -110,62 +103,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
         return (int)((idAndMore&0xFFFF000000000000L)>>>48);
     }
     
-    public void delete( NodeManager nodeManager, Relationship proxy )
-    {
-        NodeImpl startNode = null;
-        NodeImpl endNode = null;
-        boolean success = false;
-        TransactionState tx = null;
-        try
-        {
-            tx = nodeManager.getTransactionState();
-            startNode = nodeManager.getLightNode( getStartNodeId() );
-            if ( startNode != null )
-            {
-                tx.acquireWriteLock( nodeManager.newNodeProxyById( getStartNodeId() ) );
-            }
-            endNode = nodeManager.getLightNode( getEndNodeId() );
-            if ( endNode != null )
-            {
-                tx.acquireWriteLock( nodeManager.newNodeProxyById( getEndNodeId() ) );
-            }
-            tx.acquireWriteLock( proxy );
-            // no need to load full relationship, all properties will be
-            // deleted when relationship is deleted
-
-            ArrayMap<Integer,PropertyData> skipMap =
-                tx.getOrCreateCowPropertyRemoveMap( this );
-            ArrayMap<Integer,PropertyData> removedProps =
-                nodeManager.deleteRelationship( this, tx );
-            if ( removedProps.size() > 0 )
-            {
-                for ( int index : removedProps.keySet() )
-                {
-                    skipMap.put( index, removedProps.get( index ) );
-                }
-            }
-            success = true;
-            int typeId = getTypeId();
-            long id = getId();
-            if ( startNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id );
-            }
-            if ( endNode != null )
-            {
-                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id );
-            }
-            success = true;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                nodeManager.setRollbackOnly();
-            }
-        }
-    }
-
     @Override
     public String toString()
     {
@@ -184,10 +121,10 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return nm.newRelationshipProxyById( getId() );
     }
-
+    
     @Override
-    protected void updateSize( NodeManager nodeManager )
+    protected Property noProperty( long key )
     {
-        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
+        return Property.noRelationshipProperty( getId(), key );
     }
 }

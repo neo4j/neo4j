@@ -34,10 +34,10 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 
 public class CurrentDatabase
 {
@@ -49,11 +49,11 @@ public class CurrentDatabase
         fileNamesToTypeDescriptors.put( "neostore.nodestore.db", NodeStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db", PropertyStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db.arrays", DynamicArrayStore.TYPE_DESCRIPTOR );
-        fileNamesToTypeDescriptors.put( "neostore.propertystore.db.index", PropertyIndexStore.TYPE_DESCRIPTOR );
+        fileNamesToTypeDescriptors.put( "neostore.propertystore.db.index", PropertyKeyTokenStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db.index.keys", DynamicStringStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db.strings", DynamicStringStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.relationshipstore.db", RelationshipStore.TYPE_DESCRIPTOR );
-        fileNamesToTypeDescriptors.put( "neostore.relationshiptypestore.db", RelationshipTypeStore.TYPE_DESCRIPTOR );
+        fileNamesToTypeDescriptors.put( "neostore.relationshiptypestore.db", RelationshipTypeTokenStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.relationshiptypestore.db.names", DynamicStringStore.TYPE_DESCRIPTOR );
     }
 
@@ -94,7 +94,7 @@ public class CurrentDatabase
                     }
                     catch ( IOException e )
                     {
-                        // Ignore exception on close
+                        return true;
                     }
                 }
             }

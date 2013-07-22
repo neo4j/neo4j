@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -49,7 +48,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
-    private final Set<TransactionInfo> recoveredTransactions = new HashSet<TransactionInfo>();
+    private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<Integer, TransactionInfo>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -75,14 +74,7 @@ public class XaResourceManager
     public synchronized void setLogicalLog( XaLogicalLog log )
     {
         this.log = log;
-        if ( log != null )
-        {
-            this.msgLog = log.getStringLogger();
-        }
-        else
-        {
-            this.msgLog = StringLogger.SYSTEM;
-        }
+        this.msgLog = log.getStringLogger();
     }
 
     synchronized XaTransaction getXaTransaction( XAResource xaRes )
@@ -441,18 +433,15 @@ public class XaResourceManager
             if ( onePhase )
             {
                 txStatus.markAsPrepared();
-                if ( !isReadOnly )
+                if ( !isReadOnly && !xaTransaction.isRecovered() )
                 {
-                    if ( !xaTransaction.isRecovered() )
-                    {
-                        xaTransaction.prepare();
+                    xaTransaction.prepare();
 
-                        long txId = txIdGenerator.generate( dataSource,
-                                xaTransaction.getIdentifier() );
-                        xaTransaction.setCommitTxId( txId );
-                        log.commitOnePhase( xaTransaction.getIdentifier(),
-                                xaTransaction.getCommitTxId(), getForceMode() );
-                    }
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitOnePhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId(), getForceMode() );
                 }
             }
             if ( !txStatus.prepared() || txStatus.rollback() )
@@ -462,16 +451,13 @@ public class XaResourceManager
             }
             if ( !isReadOnly )
             {
-                if ( !xaTransaction.isRecovered() )
+                if ( !onePhase && !xaTransaction.isRecovered() )
                 {
-                    if ( !onePhase )
-                    {
-                        long txId = txIdGenerator.generate( dataSource,
-                                xaTransaction.getIdentifier() );
-                        xaTransaction.setCommitTxId( txId );
-                        log.commitTwoPhase( xaTransaction.getIdentifier(),
-                                xaTransaction.getCommitTxId(), getForceMode() );
-                    }
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitTwoPhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId(), getForceMode() );
                 }
                 txStatus.markCommitStarted();
                 if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
@@ -496,7 +482,7 @@ public class XaResourceManager
             {
                 int identifier = xaTransaction.getIdentifier();
                 Start startEntry = log.getStartEntry( identifier );
-                recoveredTransactions.add( new TransactionInfo( identifier, onePhase,
+                recoveredTransactions.put( identifier, new TransactionInfo( identifier, onePhase,
                         xaTransaction.getCommitTxId(), startEntry.getMasterId(), startEntry.getChecksum() ) );
             }
             xidMap.remove( xid );
@@ -604,23 +590,6 @@ public class XaResourceManager
         }
     }
 
-    synchronized void pruneXidIfExist( Xid xid ) throws IOException
-    {
-        XidStatus status = xidMap.get( xid );
-        if ( status == null )
-        {
-            return;
-        }
-        TransactionStatus txStatus = status.getTransactionStatus();
-        XaTransaction xaTransaction = txStatus.getTransaction();
-        xidMap.remove( xid );
-        if ( xaTransaction.isRecovered() )
-        {
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
-        }
-    }
-
     synchronized void checkXids() throws IOException
     {
         msgLog.logMessage( "XaResourceManager[" + name + "] sorting " +
@@ -700,7 +669,7 @@ public class XaResourceManager
             tf.recoveryComplete();
             try
             {
-                for ( TransactionInfo recoveredTx : sortByTxId( recoveredTransactions ) )
+                for ( TransactionInfo recoveredTx : sortByTxId( recoveredTransactions.values() ) )
                 {
                     if ( recoveryVerifier != null && !recoveryVerifier.isValid( recoveredTx ) )
                     {
@@ -729,7 +698,7 @@ public class XaResourceManager
         }
     }
 
-    private Iterable<TransactionInfo> sortByTxId( Set<TransactionInfo> set )
+    private Iterable<TransactionInfo> sortByTxId( Collection<TransactionInfo> set )
     {
         List<TransactionInfo> list = new ArrayList<TransactionInfo>( set );
         Collections.sort( list );

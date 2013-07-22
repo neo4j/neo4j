@@ -363,7 +363,7 @@ public class Traversal
         {
             relationships[i] = iter.next();
         }
-        return new FinalTraversalBranch( tailPath.startNode(), relationships );
+        return new FinalTraversalBranch();
     }
 
     /**
@@ -439,7 +439,7 @@ public class Traversal
      * Provides hooks to help build a string representation of a {@link Path}.
      * @param <T> the type of {@link Path}.
      */
-    public static interface PathDescriptor<T extends Path>
+    public interface PathDescriptor<T extends Path>
     {
         /**
          * Returns a string representation of a {@link Node}.
@@ -516,6 +516,8 @@ public class Traversal
     }
 
     /**
+     * TODO: This method re-binds nodes and relationships. It should not.
+     *
      * Returns the default string representation of a {@link Path}. It uses
      * the {@link DefaultPathDescriptor} to get representations.
      * @param path the {@link Path} to build a string representation of.

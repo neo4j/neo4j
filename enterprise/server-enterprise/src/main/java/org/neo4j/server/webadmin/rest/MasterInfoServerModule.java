@@ -43,7 +43,7 @@ public class MasterInfoServerModule implements ServerModule
         this.server = server;
         this.config = config;
     }
-    
+
     @Override
     public void start( StringLogger logger )
     {
@@ -51,7 +51,7 @@ public class MasterInfoServerModule implements ServerModule
         {
             URI baseUri = managementApiUri();
             server.addJAXRSClasses( getClassNames(), baseUri.toString(), null );
-            
+
             log.info( "Mounted REST API at: " + baseUri.toString() );
             if ( logger != null )
             {
@@ -77,12 +77,12 @@ public class MasterInfoServerModule implements ServerModule
             log.warn( e );
         }
     }
-    
+
     private List<String> getClassNames()
     {
         return listFrom( MasterInfoService.class.getName() );
     }
-    
+
     private URI managementApiUri( ) throws UnknownHostException
     {
         return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,

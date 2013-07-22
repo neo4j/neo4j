@@ -42,7 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.kernel.impl.storemigration.StoreFiles;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
@@ -297,7 +297,7 @@ public class BackupTool
             throw new IOException( "Trouble making target backup directory "
                     + backupDir.getAbsolutePath() );
         }
-        StoreFiles.move( fs, toDir, backupDir );
+        StoreFile.move( fs, toDir, backupDir, StoreFile.legacyStoreFiles() );
         LogFiles.move( fs, toDir, backupDir );
     }
 

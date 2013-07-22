@@ -20,9 +20,13 @@
 package org.neo4j.cypher.internal.parser.v1_9
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.True
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.parser.ParsedEntity
+import scala.Some
+import org.neo4j.cypher.internal.parser.ParsedShortestPath
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
 
 trait ParserPattern extends Base {
 
@@ -84,26 +88,29 @@ trait ParserPattern extends Base {
 
 
   private def singleNodeEqualsMap = identity ~ "=" ~ properties ^^ {
-    case name ~ "=" ~ map => ParsedEntity(name, Identifier(name), map, True())
+    case name ~ "=" ~ map => ParsedEntity(name, Identifier(name), map, Seq.empty, bare = map.isEmpty)
   }
 
   private def nodeInParenthesis = parens(opt(identity) ~ props) ^^ {
     case id ~ props =>
       val name = namer.name(id)
-      ParsedEntity(name, Identifier(name), props, True())
+      ParsedEntity(name, Identifier(name), props, Seq.empty, bare = props.isEmpty)
   }
 
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
-      case Success(exp@Identifier(name), rest) => Success(ParsedEntity(name, exp, Map[String, Expression](), True()), rest)
-      case Success(exp, rest)                  => Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True()), rest)
+      case Success(exp@Identifier(name), rest) =>
+        Success(ParsedEntity(name, exp, Map[String, Expression](), labels = Seq.empty, bare = true), rest)
+      case Success(exp, rest)                  =>
+        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), labels = Seq.empty, bare = true), rest)
+
       case x: Error                            => x
       case Failure(_, rest)                    => failure("expected an expression that is a node", rest)
     }
   }
 
   private def nodeIdentifier = identity ^^ {
-    case name => ParsedEntity(name, Identifier(name), Map[String, Expression](), True())
+    case name => ParsedEntity(name, Identifier(name), Map[String, Expression](), labels = Seq.empty, bare = true)
   }
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath | optParens(nodeIdentifier) ^^ (List(_))
@@ -117,11 +124,11 @@ trait ParserPattern extends Base {
         var start = head
         val links = tails.map {
           case Tail(dir, relName, relProps, end, None, types, optional) =>
-            val t = ParsedRelation(namer.name(relName), relProps, start, end, types, dir, optional, True())
+            val t = ParsedRelation(namer.name(relName), relProps, start, end, types, dir, optional)
             start = end
             t
           case Tail(dir, relName, relProps, end, Some((min, max)), types, optional) =>
-            val t = ParsedVarLengthRelation(namer.name(None), relProps, start, end, types, dir, optional, True(), min, max, relName)
+            val t = ParsedVarLengthRelation(namer.name(None), relProps, start, end, types, dir, optional, min, max, relName)
             start = end
             t
         }
@@ -139,7 +146,7 @@ trait ParserPattern extends Base {
         case "allshortestpaths" => false
       }
 
-      val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator, predicate) = relInfo
+      val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator) = relInfo
 
       List(ParsedShortestPath(name = namer.name(None),
         props = Map(),
@@ -148,7 +155,6 @@ trait ParserPattern extends Base {
         typ = typez,
         dir = dir,
         optional = optional,
-        predicate = predicate,
         maxDepth = maxDepth,
         single = single,
         relIterator = relIterator))
@@ -210,38 +216,4 @@ trait ParserPattern extends Base {
                           types: Seq[String],
                           optional: Boolean)
 
-  abstract sealed class Maybe[+T] {
-    def values: Seq[T]
-    def success: Boolean
-    def ++[B >: T](other: Maybe[B]): Maybe[B]
-    def map[B](f: T => B): Maybe[B]
-    def seqMap[B](f:Seq[T]=>Seq[B]): Maybe[B]
-  }
-
-  case class Yes[T](values: Seq[T]) extends Maybe[T] {
-    def success = true
-
-    def ++[B >: T](other: Maybe[B]): Maybe[B] = other match {
-      case Yes(otherStuff) => Yes(values ++ otherStuff)
-      case No(msg) => No(msg)
-    }
-
-    def map[B](f: T => B): Maybe[B] = Yes(values.map(f))
-
-    def seqMap[B](f: (Seq[T]) => Seq[B]): Maybe[B] = Yes(f(values))
-  }
-
-  case class No(messages: Seq[String]) extends Maybe[Nothing] {
-    def values = throw new Exception("No values exists")
-    def success = false
-
-    def ++[B >: Nothing](other: Maybe[B]): Maybe[B] = other match {
-      case Yes(_) => this
-      case No(otherMessages) => No(messages ++ otherMessages)
-    }
-
-    def map[B](f: Nothing => B): Maybe[B] = this
-
-    def seqMap[B](f: (Seq[Nothing]) => Seq[B]): Maybe[B] = this
-  }
 }

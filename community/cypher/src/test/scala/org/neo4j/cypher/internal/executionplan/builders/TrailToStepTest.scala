@@ -22,22 +22,15 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import expressions.Literal
-import expressions.Property
-import org.neo4j.graphdb.{RelationshipType, Direction}
+import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction._
-import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.pipes.matching._
-import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.values.TokenType._
 import org.neo4j.cypher.internal.pipes.matching.VarLengthStep
-import scala.Some
-import org.neo4j.cypher.internal.pipes.matching.SingleStep
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
-import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.pipes.matching.VarLengthStep
+import org.neo4j.cypher.internal.pipes.matching.NodeIdentifier
+import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.pipes.matching.VariableLengthStepTrail
 import scala.Some
 import org.neo4j.cypher.internal.pipes.matching.SingleStep
@@ -45,8 +38,9 @@ import org.neo4j.cypher.internal.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.expressions.Property
 
-class TrailToStepTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
+class TrailToStepTest extends GraphDatabaseTestBase with Assertions {
   val A = "A"
   val B = "B"
   val C = "C"
@@ -65,11 +59,11 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
             v
            (e)
   */
-  val AtoB = RelatedTo("a", "b", "pr1", Seq("A"), Direction.OUTGOING, optional = false, predicate = True())
-  val BtoC = RelatedTo("b", "c", "pr2", Seq("B"), Direction.OUTGOING, optional = false, predicate = True())
-  val CtoD = RelatedTo("c", "d", "pr3", Seq("C"), Direction.OUTGOING, optional = false, predicate = True())
-  val BtoB2 = RelatedTo("b", "b2", "pr4", Seq("D"), Direction.OUTGOING, optional = false, predicate = True())
-  val BtoE = VarLengthRelatedTo("p", "b", "e", None, None, Seq("A"), Direction.OUTGOING, None, optional = false, predicate = True())
+  val AtoB = RelatedTo("a", "b", "pr1", Seq("A"), Direction.OUTGOING, optional = false)
+  val BtoC = RelatedTo("b", "c", "pr2", Seq("B"), Direction.OUTGOING, optional = false)
+  val CtoD = RelatedTo("c", "d", "pr3", Seq("C"), Direction.OUTGOING, optional = false)
+  val BtoB2 = RelatedTo("b", "b2", "pr4", Seq("D"), Direction.OUTGOING, optional = false)
+  val BtoE = VarLengthRelatedTo("p", "b", "e", None, None, Seq("A"), Direction.OUTGOING, None, optional = false)
 
   @Test def single_step() {
     val expected = step(0, Seq(A), Direction.INCOMING, None)
@@ -95,8 +89,8 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val r1Pred = Equals(Property(Identifier("pr1"), "prop"), Literal(42))
-    val r2Pred = Equals(Property(Identifier("pr2"), "prop"), Literal("FOO"))
+    val r1Pred = Equals(Property(Identifier("pr1"), PropertyKey("prop")), Literal(42))
+    val r2Pred = Equals(Property(Identifier("pr2"), PropertyKey("prop")), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", r2Pred, True(), BtoC, Seq())
@@ -112,7 +106,7 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     //()-[pr1:A]->(a)-[pr2:B]->()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val nodePred = Equals(Property(Identifier("b"), "prop"), Literal(42))
+    val nodePred = Equals(Property(Identifier("b"), PropertyKey("prop")), Literal(42))
 
     val forward2 = step(1, Seq(B), Direction.INCOMING, None, nodePredicate = nodePred)
     val forward1 = step(0, Seq(A), Direction.INCOMING, Some(forward2))
@@ -130,8 +124,8 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
 
-    val predForB = Equals(Property(NodeIdentifier(), "name"), Literal("b"))
-    val predForC = Equals(Property(NodeIdentifier(), "name"), Literal("c"))
+    val predForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
 
     val forward3 = step(2, Seq(), Direction.INCOMING, None)
     val forward2 = step(1, Seq(), Direction.OUTGOING, Some(forward3), nodePredicate = predForC)

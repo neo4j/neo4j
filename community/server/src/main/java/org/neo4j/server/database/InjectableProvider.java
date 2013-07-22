@@ -19,17 +19,28 @@
  */
 package org.neo4j.server.database;
 
-import javax.ws.rs.core.Context;
-
+import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
 import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
 import com.sun.jersey.spi.inject.Injectable;
 
+import javax.ws.rs.core.Context;
+
 public abstract class InjectableProvider<E> extends AbstractHttpContextInjectable<E> implements
         com.sun.jersey.spi.inject.InjectableProvider<Context, Class<E>>
 {
-    private final Class<E> t;
+    public final Class<E> t;
+
+    public static <E> InjectableProvider<? extends E> providerForSingleton(final E component, final Class<E> componentClass)
+    {
+        return new InjectableProvider<E>(componentClass) {
+            @Override
+            public E getValue(HttpContext httpContext) {
+                return component;
+            }
+        };
+    }
 
     public InjectableProvider( Class<E> t )
     {

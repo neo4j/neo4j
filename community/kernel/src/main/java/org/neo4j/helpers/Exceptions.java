@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 
 public class Exceptions
@@ -89,10 +91,10 @@ public class Exceptions
      * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
      * will return MyInnerException. If the predicate peels all exceptions null is returned. 
      * 
-     * @param exception the outer exception to peel to get to an inner cause.
+     * @param exception the outer exception to peel to get to an delegate cause.
      * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
      * to peel (i.e. remove), whereas the first {@code false} means stop and return.
-     * @return the inner cause of an exception, dictated by the predicate.
+     * @return the delegate cause of an exception, dictated by the predicate.
      */
     public static Throwable peel( Throwable exception, Predicate<Throwable> toPeel )
     {
@@ -127,5 +129,30 @@ public class Exceptions
     private Exceptions()
     {
         // no instances
+    }
+
+    public static final Throwable rootCause( Throwable caughtException )
+    {
+        if ( null == caughtException )
+        {
+            throw new IllegalArgumentException( "Cannot obtain rootCause from (null)" );
+        }
+        Throwable root  = caughtException;
+        Throwable cause = root.getCause();
+        while ( null != cause )
+        {
+            root  = cause;
+            cause = cause.getCause();
+        }
+        return root;
+    }
+    
+    public static String stringify( Throwable cause )
+    {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        PrintStream target = new PrintStream( bytes );
+        cause.printStackTrace( target );
+        target.flush();
+        return bytes.toString();
     }
 }

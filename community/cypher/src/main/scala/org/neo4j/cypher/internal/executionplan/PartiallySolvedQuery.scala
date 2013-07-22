@@ -19,43 +19,43 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
-import builders.{QueryToken, Solved, Unsolved}
+import builders.{QueryToken, Unsolved}
 import org.neo4j.cypher.internal.commands._
-import collection.Seq
+import scala.collection.Seq
 import expressions.{Expression, AggregationExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.cypher.internal.commands.Slice
+import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
+import org.neo4j.cypher.SyntaxException
 
 
 object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val inputQuery = q.compact
-
-    val patterns = inputQuery.matching.map(Unsolved(_))
+    val patterns = q.matching.map(Unsolved(_))
 
     new PartiallySolvedQuery(
-      returns = inputQuery.returns.returnItems.map(Unsolved(_)),
-      start = inputQuery.start.map(Unsolved(_)),
-      updates = inputQuery.updatedCommands.map(Unsolved(_)),
+      returns = q.returns.returnItems.map(Unsolved(_)),
+      start = (q.start ++ q.hints).map(Unsolved(_)),
+      updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
-      where = inputQuery.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
-      aggregation = inputQuery.aggregation.toSeq.flatten.map(Unsolved(_)),
-      sort = inputQuery.sort.map(Unsolved(_)),
-      slice = inputQuery.slice.map(Unsolved(_)),
-      namedPaths = inputQuery.namedPaths.map(Unsolved(_)),
-      aggregateQuery = if (inputQuery.aggregation.isDefined)
-        Unsolved(true)
-      else
-        Solved(false),
+      where = q.where.atoms.map(Unsolved(_)),
+      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
+      sort = q.sort.map(Unsolved(_)),
+      slice = q.slice.map(Unsolved(_)),
+      namedPaths = q.namedPaths.map(Unsolved(_)),
+      aggregateToDo = q.aggregation.isDefined,
       extracted = false,
-      tail = inputQuery.tail.map(q => PartiallySolvedQuery(q))
+      tail = q.tail.map(q => PartiallySolvedQuery(q))
     )
   }
-
 
   def apply() = new PartiallySolvedQuery(
     returns = Seq(),
@@ -67,15 +67,19 @@ object PartiallySolvedQuery {
     sort = Seq(),
     slice = None,
     namedPaths = Seq(),
-    aggregateQuery = Solved(false),
+    aggregateToDo = false,
     extracted = false,
     tail = None
   )
 }
 
-/*
-PSQ is used to keep count of which parts of the query that have already been
-solved, and which parts are not yet finished.
+/**
+ * PSQ is used to keep count of which parts of the query that have already been
+ * solved, and which parts are not yet finished. The PSQ has two states - it
+ * is either building up necessary parts to create a projection (RETURN/WITH), or
+ * it has done the projection and is doing post-projection  work (ORDER BY/LIMIT/SKIP)
+ *
+ * @param extracted shows whether the query has created a projection or not
  */
 case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 start: Seq[QueryToken[StartItem]],
@@ -86,9 +90,11 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 sort: Seq[QueryToken[SortItem]],
                                 slice: Option[QueryToken[Slice]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
-                                aggregateQuery: QueryToken[Boolean],
+                                aggregateToDo: Boolean,
                                 extracted: Boolean,
-                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] {
+                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
+
+  val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))
 
   def isSolved = returns.forall(_.solved) &&
     start.forall(_.solved) &&
@@ -138,8 +144,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
       namedPaths = namedPaths.map {
         case Unsolved(namedPath) => Unsolved(namedPath.rewrite(f))
         case x => x
-      }
-    )
+      },
+      start = start.map { (qt: QueryToken[StartItem]) => qt.map( _.rewrite(f) ) } )
   }
 
   def unsolvedExpressions = {
@@ -181,4 +187,32 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
-case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, containsTransaction: Boolean=false)
+case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
+
+trait PatternGraphBuilder {
+  def buildPatternGraph(patterns: Seq[Pattern]): PatternGraph = {
+    val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
+    val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
+
+    patterns.foreach(_ match {
+      case RelatedTo(left, right, rel, relType, dir, optional) => {
+        val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
+        val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
+
+        if (patternRelMap.contains(rel)) {
+          throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
+        }
+
+        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
+      }
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional) => {
+        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
+        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional)
+      }
+      case _ =>
+    })
+
+    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, patternNodeMap.keys.toSeq)
+  }
+}

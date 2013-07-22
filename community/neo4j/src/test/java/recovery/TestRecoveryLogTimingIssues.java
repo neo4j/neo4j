@@ -19,12 +19,6 @@
  */
 package recovery;
 
-import static java.lang.Integer.parseInt;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,15 +27,16 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -49,6 +44,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
+
+import static java.lang.Integer.parseInt;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.SillyUtils.nonNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Tries to trigger log file version errors that could happen if the db was killed
@@ -89,7 +91,8 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         return breakpoints;
     }
     
-    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE ) );
+    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap(
+            GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE ) );
     
     @Override
     protected Bootstrapper bootstrap( int id ) throws IOException
@@ -154,6 +157,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
             try
@@ -189,6 +193,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
             try
@@ -240,6 +245,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
             assertEquals( tx, graphdb.getXaDataSourceManager().getXaDataSource( dataSource ).getLastCommittedTxId() );
@@ -362,7 +368,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
-        run( new VerifyLastTxId( Config.DEFAULT_DATA_SOURCE_NAME, 3 ) );
+        run( new VerifyLastTxId( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME, 3 ) );
     }
     
     private void assertLuceneLogVersionsExists( int... versions ) throws Exception
@@ -371,7 +377,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         for ( int version : versions )
             versionSet.add( version );
         File path = new File( getStoreDir( this, 0, false ), "index" );
-        for ( File file : path.listFiles() )
+        for ( File file : nonNull( path.listFiles() ) )
         {
             if ( file.getName().contains( ".log.v" ) )
             {

@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 import java.util.List;
 import java.util.Map;
@@ -350,7 +352,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
         
         // Ensure nothing was borked.
-        assertThat(returnedValue, is(complicatedString));
+        assertThat("Expected twisted unicode case to work, but response was: " + entity,
+                returnedValue, is(complicatedString));
     }
 
     @Test
@@ -379,7 +382,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .post( batchUri() )
                 .entity();
 
-        System.out.println("entity = " + entity);
         // Pull out the property value from the depths of the response
         Map<String, Object> result = JsonHelper.jsonToMap(entity);
         String exception = (String) result.get("exception");
@@ -394,8 +396,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             UniformInterfaceException, JSONException, PropertyValueException {
     	String string = "Jazz";
         Node gnode = getNode( string );
-        assertEquals( gnode.getProperty( "name" ), string );
-        
+        assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
+
         String name = "string\\ and \"test\"";
         
         String jsonString = new PrettyJSON()
@@ -637,7 +639,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(200, response.getStatus());
 
         final String entity = response.getEntity();
-        System.out.println("entity = " + entity);
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(6, results.size());
         Map<String, Object> andresResult1 = results.get(1);

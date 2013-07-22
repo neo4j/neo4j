@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.rrd.Sampleable;
 import org.rrd4j.DsType;
@@ -28,9 +27,14 @@ public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
     private final NodeManager nodeManager;
 
-    public DatabasePrimitivesSampleableBase( GraphDatabaseAPI db )
+    public DatabasePrimitivesSampleableBase( NodeManager nodeManager )
     {
-        nodeManager = db.getNodeManager();
+        if(nodeManager == null)
+        {
+            throw new RuntimeException( "Database sampler needs a node manager to work, was given null." );
+        }
+        this.nodeManager = nodeManager;
+
     }
 
     protected NodeManager getNodeManager()

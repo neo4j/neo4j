@@ -75,7 +75,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     }
                 }
             }
-            catch (Throwable t)
+            catch ( Throwable t )
             {
                 throw new RuntimeException( "error while handling kernel panic for TX_MANAGER_NOT_OK", t );
             }

@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 
@@ -31,7 +32,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     public static abstract class Configuration
     {
         // TODO This config should be split into a boolean and a string (keep_logical_logs vs kept_logical_logs)
-        public static final GraphDatabaseSetting.StringSetting keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
+        public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
     }
 
     private XaLogicalLog logicalLog;

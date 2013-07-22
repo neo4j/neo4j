@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.AbstractGraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.*;
@@ -44,7 +44,7 @@ public class TestShortString
     public void doBefore()
     {
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( PATH ) );
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+        db = new AbstractGraphDatabaseFactory().newEmbeddedDatabase( PATH );
     }
     
     @After
@@ -220,7 +220,7 @@ public class TestShortString
     {
         db.shutdown();
         long size = new File( PATH, "neostore.propertystore.db.strings" ).length();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+        db = new AbstractGraphDatabaseFactory().newEmbeddedDatabase( PATH );
         return size;
     }
 

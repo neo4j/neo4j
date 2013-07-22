@@ -31,7 +31,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class JavaQuery
 {
@@ -49,15 +50,8 @@ public class JavaQuery
 
     void run()
     {
-        try
-        {
-            FileUtils.deleteRecursively( new File( DB_PATH ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        
+        clearDbPath();
+
         // START SNIPPET: addData
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         Transaction tx = db.beginTx();
@@ -75,6 +69,7 @@ public class JavaQuery
 
         // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
+        tx = db.beginTx();
         ExecutionResult result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // END SNIPPET: execute
         // START SNIPPET: columns
@@ -89,6 +84,7 @@ public class JavaQuery
             nodeResult = node + ": " + node.getProperty( "name" );
         }
         // END SNIPPET: items
+        tx.finish();
         // the result is now empty, get a new one
         result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // START SNIPPET: rows
@@ -104,5 +100,17 @@ public class JavaQuery
         resultString = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" ).dumpToString();
         columnsString = columns.toString();
         db.shutdown();
+    }
+
+    private void clearDbPath()
+    {
+        try
+        {
+            deleteRecursively( new File( DB_PATH ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

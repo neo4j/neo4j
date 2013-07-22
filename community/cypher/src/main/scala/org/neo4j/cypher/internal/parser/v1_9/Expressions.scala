@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.parser.v1_9
 import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.parser.{Yes, No, Maybe, AbstractPattern}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
   def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {
@@ -86,17 +88,17 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
-    case v ~ "." ~ p => createProperty(v, p)
+    case v ~ "." ~ p => Property(Identifier(v), PropertyKey(p))
   }
 
-  def createProperty(entity: String, propName: String): Expression
+  private val message = "Cypher does not support != for inequality comparisons. " +
+    "It's used for nullable properties instead.\n" +
+    "You probably meant <> instead. Read more about this in the operators chapter in the manual."
 
-  def nullableProperty: Parser[Expression] = (
-    property ~> "!=" ^^^ (throw new SyntaxException("Cypher does not support != for inequality comparisons. " +
-                                                    "It's used for nullable properties instead.\n" +
-                                                    "You probably meant <> instead. Read more about this in the operators chapter in the manual.")) |
+  def nullableProperty: Parser[Expression] =
+    property ~> "!=" ^^^ (throw new SyntaxException(message)) |
     property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
-    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
+    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse)
 
   def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ (":" | "|") ~ expression) ^^ {
     case (id ~ _ ~ iter ~ _ ~ expression) => ExtractFunction(iter, id, expression)
@@ -184,7 +186,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect", "stdev", "stdevp")
 
   def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
@@ -196,6 +198,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         case "max" => Max(inner)
         case "avg" => Avg(inner)
         case "collect" => Collect(inner)
+        case "stdev" => Stdev(inner)
+        case "stdevp" => StdevP(inner)
       }
 
       if (distinct.isEmpty) {
@@ -219,7 +223,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 
   def pathExpression: Parser[Expression] = usePath(translate) ^^ {
-    case Seq(x:ShortestPath) => ShortestPathExpression(x)
+    case Seq(x:ShortestPath) => Collection(ShortestPathExpression(x))
     case patterns => PathExpression(patterns)
   }
 

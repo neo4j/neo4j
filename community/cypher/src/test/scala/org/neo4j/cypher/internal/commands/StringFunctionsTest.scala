@@ -24,12 +24,12 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
 
 class StringFunctionsTest extends Assertions {
   @Test def replaceTests() {
     def replace(orig: Any, from: Any, to: Any) =
-      ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)(QueryState.empty)
+      ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(replace("hello", "l", "w") === "hewwo")
     assert(replace("hello", "ell", "ipp") === "hippo")
@@ -42,7 +42,7 @@ class StringFunctionsTest extends Assertions {
 
   @Test def leftTests() {
     def left(from: Any, r: Any) =
-      LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryState.empty)
+      LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(left("hello", 2) === "he")
     assert(left("hello", 4) === "hell")
@@ -54,7 +54,7 @@ class StringFunctionsTest extends Assertions {
 
   @Test def rightTests() {
     def right(from: Any, r: Any) =
-      RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryState.empty)
+      RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(right("hello", 2) === "lo")
     assert(right("hello", 4) === "ello")
@@ -66,9 +66,9 @@ class StringFunctionsTest extends Assertions {
 
   @Test def substringTests() {
     def substring(orig: Any, from: Any, to: Any) =
-      SubstringFunction(Literal(orig), Literal(from), Some(Literal(to))).apply(ExecutionContext.empty)(QueryState.empty)
+      SubstringFunction(Literal(orig), Literal(from), Some(Literal(to))).apply(ExecutionContext.empty)(QueryStateHelper.empty)
     def substringFrom(orig: Any, from: Any) =
-      SubstringFunction(Literal(orig), Literal(from), None).apply(ExecutionContext.empty)(QueryState.empty)
+      SubstringFunction(Literal(orig), Literal(from), None).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(substring("hello", 2, 5) === "llo")
     assert(substring("hello", 4, 5) === "o")
@@ -83,7 +83,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def lowerTests() {
-    def lower(x: Any) = LowerFunction(Literal(x))(ExecutionContext.empty)(QueryState.empty)
+    def lower(x: Any) = LowerFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(lower("HELLO") === "hello")
     assert(lower("Hello") === "hello")
@@ -93,7 +93,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def upperTests() {
-    def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)(QueryState.empty)
+    def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(upper("HELLO") === "HELLO")
     assert(upper("Hello") === "HELLO")
@@ -103,7 +103,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def ltrimTests() {
-    def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty)(QueryState.empty)
+    def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(ltrim("  HELLO") === "HELLO")
     assert(ltrim(" Hello") === "Hello")
@@ -114,7 +114,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def rtrimTests() {
-    def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty)(QueryState.empty)
+    def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(rtrim("HELLO  ") === "HELLO")
     assert(rtrim("Hello   ") === "Hello")
@@ -124,7 +124,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def trimTests() {
-    def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty)(QueryState.empty)
+    def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(trim("  hello  ") === "hello")
     assert(trim("  hello ") === "hello")
@@ -136,7 +136,7 @@ class StringFunctionsTest extends Assertions {
   }
 
   @Test def stringTests() {
-    def str(x: Any) = StrFunction(Literal(x)).apply(ExecutionContext.empty)(QueryState.empty)
+    def str(x: Any) = StrFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
     assert(str(1234) === "1234")
     assert(str(List(1, 2, 3, 4)) === "[1,2,3,4]")

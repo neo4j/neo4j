@@ -43,6 +43,9 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -89,6 +92,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
 
+    private KernelAPI kernel;
+
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
@@ -115,12 +120,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         try
         {
             log.logMessage( msg, exception, true );
+            return exception;
         }
         catch ( Throwable t )
         {
-            // ignore
+            return exception;
         }
-        return exception;
     }
 
     private volatile boolean recovered = false;
@@ -261,7 +266,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
-        assertTmOk( "tx begin" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
         {
@@ -277,9 +282,11 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
+
+        tx.setTransactionContext(kernel.newTransaction() );
     }
 
-    private void assertTmOk( String source ) throws SystemException
+    private void assertTmOk() throws SystemException
     {
         if ( !tmOk )
         {
@@ -325,8 +332,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         boolean successful = false;
         try
         {
-            assertTmOk( "tx commit" );
-            Thread thread = Thread.currentThread();
+            assertTmOk();
             hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
@@ -335,18 +341,17 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         + getTxStatusAsString( tx.getStatus() ) ) );
             }
 
-
             tx.doBeforeCompletion();
             // delist resources?
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
-                commit( thread, tx );
+                commit( tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
             {
                 rolledBackTxCount.incrementAndGet();
-                rollbackCommit( thread, tx );
+                rollbackCommit( tx );
             }
             else
             {
@@ -365,7 +370,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
-    private void commit( Thread thread, TransactionImpl tx )
+    private void commit( TransactionImpl tx )
             throws SystemException, HeuristicMixedException,
             HeuristicRollbackException
     {
@@ -526,7 +531,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
     }
 
-    private void rollbackCommit( Thread thread, TransactionImpl tx )
+    private void rollbackCommit( TransactionImpl tx )
             throws HeuristicMixedException, RollbackException, SystemException
     {
         try
@@ -580,7 +585,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         boolean hasAnyLocks = false;
         try
         {
-            assertTmOk( "tx rollback" );
+            assertTmOk();
             hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
@@ -653,7 +658,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
 	public Transaction getTransaction() throws SystemException
     {
-        assertTmOk( "get transaction" );
+        assertTmOk();
         return txThreadMap.get();
     }
     
@@ -661,7 +666,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public void resume( Transaction tx ) throws IllegalStateException,
             SystemException
     {
-        assertTmOk( "tx resume" );
+        assertTmOk();
         if ( txThreadMap.get() != null )
         {
             throw new IllegalStateException( "Transaction already associated" );
@@ -685,7 +690,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public Transaction suspend() throws SystemException
     {
-        assertTmOk( "tx suspend" );
+        assertTmOk();
         // check for ACTIVE/MARKED_ROLLBACK?
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
@@ -701,7 +706,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        assertTmOk( "tx set rollback only" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
@@ -713,7 +718,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void setTransactionTimeout( int seconds ) throws SystemException
     {
-        assertTmOk( "tx set timeout" );
+        assertTmOk();
         // ...
     }
 
@@ -858,21 +863,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
-    public synchronized void dumpTransactions()
-    {
-//        Iterator<TransactionImpl> itr = txThreadMap.values().iterator();
-//        if ( !itr.hasNext() )
-//        {
-//            System.out.println( "No uncompleted transactions" );
-//            return;
-//        }
-//        System.out.println( "Uncompleted transactions found: " );
-//        while ( itr.hasNext() )
-//        {
-//            System.out.println( itr.next() );
-//        }
-    }
-
     /**
      * @return The current transaction's event identifier or -1 if no
      *         transaction is currently running.
@@ -880,7 +870,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public int getEventIdentifier()
     {
-        TransactionImpl tx = null;
+        TransactionImpl tx;
         try
         {
             tx = (TransactionImpl) getTransaction();
@@ -954,6 +944,42 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw new RuntimeException( e );
         }
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
+    }
+
+    @Override
+    public StatementState newStatement()
+    {
+        Transaction tx;
+        try
+        {
+            tx = getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return tx != null ? ((TransactionImpl)tx).newStatement() : null;
+    }
+
+    @Override
+    public void setKernel(KernelAPI kernel)
+    {
+        this.kernel = kernel;
+    }
+    
+    @Override
+    public KernelTransaction getKernelTransaction()
+    {
+        Transaction tx;
+        try
+        {
+            tx = getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return tx != null ? ((TransactionImpl)tx).getTransactionContext() : null;
     }
     
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener

@@ -162,7 +162,7 @@ public class LogbackService
         }
 
         @Override
-        public void logLongMessage( final String msg, Visitor<LineLogger> source, final boolean flush )
+        public void logLongMessage( final String msg, Visitor<LineLogger, RuntimeException> source, final boolean flush )
         {
             logMessage( msg, flush );
             source.visit( new LineLogger()

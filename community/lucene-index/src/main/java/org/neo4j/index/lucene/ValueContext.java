@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.index.Index;
-
 /**
  * ValueContext allows you to give not just a value, but to give the value
  * some context to live in.
@@ -45,7 +42,8 @@ public class ValueContext
     }
 
     /**
-     * Returns a ValueContext to be used with {@link Index#add(PropertyContainer, String, Object)}
+     * Returns a ValueContext to be used with
+     * {@link org.neo4j.graphdb.index.Index#add(org.neo4j.graphdb.PropertyContainer, String, Object)}
      *
      * @return a numeric ValueContext
      */
@@ -80,7 +78,8 @@ public class ValueContext
     /**
      * Convience method to add a numeric value to an index.
      * @param value The value to add
-     * @return A ValueContext that can be used with {@link Index#add(PropertyContainer, String, Object)}
+     * @return A ValueContext that can be used with
+     * {@link org.neo4j.graphdb.index.Index#add(org.neo4j.graphdb.PropertyContainer, String, Object)}
      */
     public static ValueContext numeric(Number value)
     {

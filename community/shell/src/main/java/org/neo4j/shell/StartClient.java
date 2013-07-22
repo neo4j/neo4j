@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -36,10 +35,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Args;
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
 
 /**
  * Can start clients, either remotely to another JVM running a server
@@ -262,8 +264,8 @@ public class StartClient
 
     private void startServer( String pid, Args args )
     {
-        String port = args.get( "port", Integer.toString( AbstractServer.DEFAULT_PORT ) );
-        String name = args.get( "name", AbstractServer.DEFAULT_NAME );
+        String port = args.get( "port", Integer.toString( SimpleAppServer.DEFAULT_PORT ) );
+        String name = args.get( "name", SimpleAppServer.DEFAULT_NAME );
         try
         {
             String jarfile = new File(
@@ -282,8 +284,8 @@ public class StartClient
         try
         {
             String host = args.get( ARG_HOST, "localhost" );
-            int port = args.getNumber( ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue();
-            String name = args.get( ARG_NAME, AbstractServer.DEFAULT_NAME );
+            int port = args.getNumber( ARG_PORT, SimpleAppServer.DEFAULT_PORT ).intValue();
+            String name = args.get( ARG_NAME, SimpleAppServer.DEFAULT_NAME );
             ShellClient client = ShellLobby.newClient( RmiLocation.location( host, port, name ),
                     getSessionVariablesFromArgs( args ) );
             if ( !isCommandLine( args ) )
@@ -331,11 +333,10 @@ public class StartClient
 
     private static void executeFile( ShellClient client, File file ) throws IOException, ShellException
     {
-        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        BufferedReader reader = newBufferedFileReader( file, UTF_8 );
         try
         {
-            String line;
-            while ( ( line = reader.readLine() ) != null )
+            for ( String line; ( line = reader.readLine() ) != null; )
             {
                 client.evaluate( line );
             }
@@ -436,8 +437,8 @@ public class StartClient
 
     private static void printUsage()
     {
-        int port = AbstractServer.DEFAULT_PORT;
-        String name = AbstractServer.DEFAULT_NAME;
+        int port = SimpleAppServer.DEFAULT_PORT;
+        String name = SimpleAppServer.DEFAULT_NAME;
         int longestArgLength = longestString( ARG_FILE, ARG_COMMAND,
                 ARG_CONFIG,
                 ARG_HOST, ARG_NAME,
@@ -446,9 +447,9 @@ public class StartClient
                 padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)" +
                         "\n" +
                         padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " +
-                        AbstractServer.DEFAULT_PORT + ")\n" +
+                        SimpleAppServer.DEFAULT_PORT + ")\n" +
                         padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: "
-                        + AbstractServer.DEFAULT_NAME + ")\n" +
+                        + SimpleAppServer.DEFAULT_NAME + ")\n" +
                         padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
                         padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
                         "shell exits\n" +

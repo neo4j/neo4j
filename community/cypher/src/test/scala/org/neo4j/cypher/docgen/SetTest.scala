@@ -21,9 +21,19 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class SetTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Peter")
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
+  def graphDescription = List(
+    "Andres:Swedish KNOWS Peter",
+    "Stefan KNOWS Andres",
+    "Emil KNOWS Peter"
+  )
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "awesome" -> true),
@@ -36,7 +46,7 @@ class SetTest extends DocumentingTestBase {
     testQuery(
       title = "Set a property",
       text = "To set a property on a node or relationship, use +SET+.",
-      queryText = "start n = node(%Andres%) set n.surname = 'Taylor' return n",
+      queryText = "match n where n.name='Andres' set n.surname = 'Taylor' return n",
       returns = "The newly changed node is returned by the query.",
       assertions = (p) => assert(node("Andres").getProperty("surname") === "Taylor")
     )
@@ -47,7 +57,7 @@ class SetTest extends DocumentingTestBase {
       title = "Remove a property",
       text = """Normally you remove a property by using delete, but it's sometimes handy to do
 it using the +SET+ command. One example is if the property comes from a parameter.""",
-      queryText = "start n = node(%Andres%) set n.name = null return n",
+      queryText = "match n where n.name='Andres' set n.name = null return n",
       returns = "The node is returned by the query, and the name property is now missing.",
       assertions = (p) => assertFalse(node("Andres").hasProperty("name"))
     )
@@ -59,7 +69,7 @@ it using the +SET+ command. One example is if the property comes from a paramete
       text =
         """You can also use SET to copy all properties from one graph element to another. Remember that doing this
 will remove all other properties on the receiving graph element.""".stripMargin,
-      queryText = "start at = node(%Andres%), pn = node(%Peter%) set at = pn return at, pn",
+      queryText = "match at, pn where at.name='Andres' and pn.name='Peter' set at = pn return at, pn",
       returns = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
       assertions = (p) => {
         assert(node("Andres").getProperty("name") === "Peter")
@@ -67,4 +77,25 @@ will remove all other properties on the receiving graph element.""".stripMargin,
       }
     )
   }
+
+  @Test def set_single_label_on_a_node() {
+    testQuery(
+      title = "Set a label on a node",
+      text = "To set a label on a node, use +SET+.",
+      queryText = "match n where n.name='Stefan' set n :German return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => assert(getLabelsFromNode(p) === List("German"))
+    )
+  }
+
+  @Test def set_multiple_labels_on_a_node() {
+    testQuery(
+      title = "Set multiple labels on a node",
+      text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
+      queryText = "match n where n.name='Emil' set n :Swedish:Bossman return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman"))
+    )
+  }
+
 }

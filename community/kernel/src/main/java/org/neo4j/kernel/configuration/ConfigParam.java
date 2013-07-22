@@ -41,7 +41,7 @@ public interface ConfigParam
      *
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
      */
-    public final class Conversion
+    final class Conversion
     {
         /**
          * Create a new configuration map from a set of {@link ConfigParam} objects.

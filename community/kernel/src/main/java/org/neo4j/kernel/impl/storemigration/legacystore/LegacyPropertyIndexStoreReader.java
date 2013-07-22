@@ -19,57 +19,71 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
-public class LegacyPropertyIndexStoreReader
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.KEYS_PART;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
+
+public class LegacyPropertyIndexStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyIndex v0.9.9";
-    private final File fileName;
-    private final FileSystemAbstraction fs;
-
-    public LegacyPropertyIndexStoreReader( FileSystemAbstraction fs, File fileName )
+    public static final String FROM_VERSION = "PropertyIndexStore " + LegacyStore.LEGACY_VERSION;
+    public static final int RECORD_SIZE = 9;
+    private final FileChannel fileChannel;
+    private final LegacyDynamicStringStoreReader nameStoreReader;
+    private final long maxId;
+    
+    public LegacyPropertyIndexStoreReader( FileSystemAbstraction fs, File file ) throws IOException
     {
-        this.fs = fs;
-        this.fileName = fileName;
-    }
-
-    public Iterable<PropertyIndexRecord> readPropertyIndexStore() throws IOException
-    {
-        FileChannel fileChannel = fs.open( fileName, "r" );
-        int recordLength = 9;
+        fileChannel = fs.open( file, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
-
-        LinkedList<PropertyIndexRecord> records = new LinkedList<PropertyIndexRecord>();
-
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
-
-        for ( int id = 0; id <= recordCount; id++ )
+        maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
+        
+        nameStoreReader = new LegacyDynamicStringStoreReader( fs, new File( file.getPath() + KEYS_PART ),
+                "StringPropertyStore" );
+    }
+    
+    public Token[] readTokens() throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.wrap( new byte[RECORD_SIZE] );
+        Collection<Token> tokens = new ArrayList<Token>();
+        for ( long id = 0; id < maxId; id++ )
         {
-            buffer.position( 0 );
-            fileChannel.read( buffer );
-            buffer.flip();
-            long inUseByte = buffer.get();
-
-            boolean inUse = inUseByte == Record.IN_USE.byteValue();
-            if (inUse) {
-                PropertyIndexRecord record = new PropertyIndexRecord( id );
-                record.setInUse( inUse );
-                record.setPropertyCount( buffer.getInt() );
-                record.setNameId( buffer.getInt() );
-                records.add( record );
+            readIntoBuffer( fileChannel, buffer, RECORD_SIZE );
+            byte inUseByte = buffer.get();
+            boolean inUse = (inUseByte == Record.IN_USE.byteValue());
+            if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
+            {
+                throw new InvalidRecordException( "Record[" + id + "] unknown in use flag[" + inUse + "]" );
             }
+            if ( !inUse )
+            {
+                continue;
+            }
+
+            buffer.getInt(); // unused "property count"
+            int nameId = buffer.getInt();
+            String name = nameStoreReader.readDynamicString( nameId );
+            tokens.add( new Token( name, (int) id ) );
         }
+        return tokens.toArray( new Token[tokens.size()] );
+    }
+    
+    @Override
+    public void close() throws IOException
+    {
+        nameStoreReader.close();
         fileChannel.close();
-        return records;
     }
 }

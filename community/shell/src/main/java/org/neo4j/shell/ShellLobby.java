@@ -20,10 +20,11 @@
 package org.neo4j.shell;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -34,6 +35,9 @@ import org.neo4j.shell.impl.SameJvmClient;
  */
 public abstract class ShellLobby
 {
+    public static final Map<String, Serializable> NO_INITIAL_SESSION = Collections.unmodifiableMap(
+            Collections.<String,Serializable>emptyMap() );
+    
 	/**
 	 * To get rid of the RemoteException, uses a constructor without arguments.
 	 * @param cls the class of the server to instantiate.
@@ -59,8 +63,8 @@ public abstract class ShellLobby
 	 * communicate with.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( ShellServer server )
-	{
+	public static ShellClient newClient( ShellServer server ) throws ShellException
+    {
 	    return newClient( server, new HashMap<String, Serializable>() );
 	}
 	
@@ -72,7 +76,7 @@ public abstract class ShellLobby
      * in addition to those provided by the server initially.
      * @return the new shell client.
      */
-    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession )
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession ) throws ShellException
     {
         return new SameJvmClient( initialSession, server );
     }
@@ -130,7 +134,7 @@ public abstract class ShellLobby
     public static ShellClient newClient( String host, int port )
         throws ShellException
     {
-        return newClient( host, port, AbstractServer.DEFAULT_NAME );
+        return newClient( host, port, SimpleAppServer.DEFAULT_NAME );
     }
     
 	/**
@@ -171,7 +175,7 @@ public abstract class ShellLobby
      */
 	public static ShellClient newClient( String host ) throws ShellException
 	{
-	    return newClient( host, AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+	    return newClient( host, SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
 	}
 	
     /**
@@ -183,6 +187,21 @@ public abstract class ShellLobby
      */
 	public static ShellClient newClient() throws ShellException
 	{
-        return newClient( "localhost", AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+        return newClient( "localhost", SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
 	}
+	
+    public static RmiLocation remoteLocation()
+    {
+        return remoteLocation( SimpleAppServer.DEFAULT_PORT );
+    }
+    
+	public static RmiLocation remoteLocation( int port )
+	{
+	    return remoteLocation( port, SimpleAppServer.DEFAULT_NAME );
+	}
+
+    public static RmiLocation remoteLocation( int port, String rmiName )
+    {
+        return RmiLocation.location( "localhost", port, rmiName );
+    }
 }

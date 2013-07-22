@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -36,18 +31,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.client.*;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import com.sun.jersey.api.client.ClientRequest.Builder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -56,7 +58,7 @@ import com.sun.jersey.api.client.ClientRequest.Builder;
  * 
  * The filename of the resulting ASCIIDOC test file is derived from the title.
  * 
- * The title is determined by either a JavaDoc perioed terminated first title line,
+ * The title is determined by either a JavaDoc period terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
 public class RESTDocsGenerator extends AsciiDocGenerator
@@ -65,9 +67,9 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
-    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] { "Content-Type", "Location" } );
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( "Content-Type", "Location" );
 
-    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] { "Content-Type", "Accept" } );
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( "Content-Type", "Accept" );
 
     public static final Producer<RESTDocsGenerator> PRODUCER = new Producer<RESTDocsGenerator>()
     {
@@ -87,7 +89,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     };
 
     private int expectedResponseStatus = -1;
-    private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
+    private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
@@ -138,7 +140,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
      * 
-     * @param expectedResponseStatus the expected response status
+     * @param expectedStatus the expected response status
      */
     public RESTDocsGenerator expectedStatus( final ClientResponse.Status expectedStatus)
     {
@@ -386,10 +388,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
-        try {
-        } catch (UniformInterfaceException uie) {
-            //ok
-        }
         if ( response.getType() != null )
         {
             assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
@@ -407,7 +405,14 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
-        document( data );
+        if (graph == null) {
+            document( data );
+        } else {
+            Transaction transaction = graph.beginTx();
+            document( data );
+            transaction.finish();
+        }
+
         return new ResponseEntity( response, data.entity );
     }
 

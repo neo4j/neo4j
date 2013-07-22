@@ -21,20 +21,21 @@ package org.neo4j.helpers.collection;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class LinesOfFileIterator extends PrefetchingIterator<String> implements ClosableIterator<String>
 {
     private final BufferedReader reader;
     private boolean closed;
     
-    public LinesOfFileIterator( File file ) throws IOException
+    public LinesOfFileIterator( File file, String encoding ) throws IOException
     {
         try
         {
-            reader = new BufferedReader( new FileReader( file ) );
+            reader = new BufferedReader( new InputStreamReader(new FileInputStream(file), encoding) );
         }
         catch ( FileNotFoundException e )
         {

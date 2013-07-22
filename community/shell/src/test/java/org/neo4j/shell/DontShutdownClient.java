@@ -30,7 +30,7 @@ public class DontShutdownClient
     public static void main( String[] args ) throws Exception
     {
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server, new SilentLocalOutput() );
         server.shutdown();
         // Intentionally don't shutdown the client
     }

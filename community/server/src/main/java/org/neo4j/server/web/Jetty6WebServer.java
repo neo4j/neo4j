@@ -72,30 +72,30 @@ public class Jetty6WebServer implements WebServer
     private Collection<InjectableProvider<?>> defaultInjectables;
 
     private static class FilterDefinition
-	{
-		private final Filter filter;
-		private final String pathSpec;
+    {
+        private final Filter filter;
+        private final String pathSpec;
 
-		public FilterDefinition(Filter filter, String pathSpec)
-		{
-			this.filter = filter;
-			this.pathSpec = pathSpec;
-		}
-		
-		public boolean matches(Filter filter, String pathSpec)
-		{
-			return filter == this.filter && pathSpec.equals(this.pathSpec);
-		}
+        public FilterDefinition(Filter filter, String pathSpec)
+        {
+            this.filter = filter;
+            this.pathSpec = pathSpec;
+        }
 
-		public Filter getFilter() {
-			return filter;
-		}
+        public boolean matches(Filter filter, String pathSpec)
+        {
+            return filter == this.filter && pathSpec.equals(this.pathSpec);
+        }
 
-		public String getPathSpec() {
-			return pathSpec;
-		}
-	}
-	
+        public Filter getFilter() {
+            return filter;
+        }
+
+        public String getPathSpec() {
+            return pathSpec;
+        }
+    }
+
     private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
@@ -112,18 +112,18 @@ public class Jetty6WebServer implements WebServer
     private final Map<String,JaxRsServletHolderFactory> jaxRSClasses =
             new HashMap<String, JaxRsServletHolderFactory>();
     private final List<FilterDefinition> filters = new ArrayList<FilterDefinition>();
-    
+
     private int jettyMaxThreads = tenThreadsPerProcessor();
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
-	private File requestLoggingConfiguration;
+    private File requestLoggingConfiguration;
 
     @Override
     public void init()
     {
     }
-    
+
     @Override
     public void start()
     {
@@ -152,7 +152,7 @@ public class Jetty6WebServer implements WebServer
 
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
-        
+
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
@@ -212,7 +212,7 @@ public class Jetty6WebServer implements WebServer
 
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
     }
-    
+
     @Override
     public void addJAXRSClasses( List<String> classNames, String mountPoint, Collection<Injectable<?>> injectables )
     {
@@ -244,15 +244,15 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-	public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
+    public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
     {
-    	JaxRsServletHolderFactory factory = jaxRSPackages.get( serverMountPoint );
-    	if ( factory != null )
-    	{
-    	    factory.remove( packageNames );
-    	}
+        JaxRsServletHolderFactory factory = jaxRSPackages.get( serverMountPoint );
+        if ( factory != null )
+        {
+            factory.remove( packageNames );
+        }
     }
-    
+
     @Override
     public void removeJAXRSClasses( List<String> classNames, String serverMountPoint )
     {
@@ -266,33 +266,33 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addFilter(Filter filter, String pathSpec)
     {
-    	filters.add( new FilterDefinition( filter, pathSpec ) );
+        filters.add( new FilterDefinition( filter, pathSpec ) );
     }
-    
+
     @Override
     public void removeFilter(Filter filter, String pathSpec)
     {
-    	Iterator<FilterDefinition> iter = filters.iterator();
-    	while(iter.hasNext())
-    	{
-    		FilterDefinition current = iter.next();
-    		if(current.matches(filter, pathSpec))
-    		{
-    			iter.remove();
-    		}
-    	}
+        Iterator<FilterDefinition> iter = filters.iterator();
+        while(iter.hasNext())
+        {
+            FilterDefinition current = iter.next();
+            if(current.matches(filter, pathSpec))
+            {
+                iter.remove();
+            }
+        }
     }
 
-	@Override
+    @Override
     public void addStaticContent( String contentLocation, String serverMountPoint )
     {
         staticContent.put( serverMountPoint, contentLocation );
     }
-    
+
     @Override
-	public void removeStaticContent( String contentLocation, String serverMountPoint )
+    public void removeStaticContent( String contentLocation, String serverMountPoint )
     {
-    	staticContent.remove(serverMountPoint);
+        staticContent.remove(serverMountPoint);
     }
 
     @Override
@@ -305,7 +305,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void setHttpLoggingConfiguration( File logbackConfigFile )
     {
-    	this.requestLoggingConfiguration = logbackConfigFile;
+        this.requestLoggingConfiguration = logbackConfigFile;
     }
 
     @Override
@@ -401,7 +401,7 @@ public class Jetty6WebServer implements WebServer
         }
 
     }
-    
+
     private int countSet( boolean... booleans )
     {
         int count = 0;
@@ -423,9 +423,9 @@ public class Jetty6WebServer implements WebServer
         requestLogHandler.setRequestLog( requestLog );
 
         jetty.addHandler( requestLogHandler );
-	}
+    }
 
-	private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
+    private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
         if ( mountPoint.equals( "/" ) )
         {
@@ -480,9 +480,9 @@ public class Jetty6WebServer implements WebServer
                 final Resource resource = Resource.newResource( url );
                 staticContext.setBaseResource( resource );
                 log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
-                
+
                 addFiltersTo(staticContext);
-                
+
                 jetty.addHandler( staticContext );
             }
             else
@@ -500,7 +500,7 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
-	private void loadJAXRSPackage( SessionManager sm, String mountPoint )
+    private void loadJAXRSPackage( SessionManager sm, String mountPoint )
     {
         loadJAXRSResource( sm, mountPoint, jaxRSPackages.get( mountPoint ) );
     }
@@ -509,7 +509,7 @@ public class Jetty6WebServer implements WebServer
     {
         loadJAXRSResource( sm, mountPoint, jaxRSClasses.get( mountPoint ) );
     }
-    
+
     private void loadJAXRSResource( SessionManager sm, String mountPoint,
             JaxRsServletHolderFactory jaxRsServletHolderFactory )
     {
@@ -520,15 +520,15 @@ public class Jetty6WebServer implements WebServer
         jerseyContext.setSessionHandler( sh );
         addFiltersTo(jerseyContext);
     }
-    
+
     private void addFiltersTo(Context context) {
-    	for(FilterDefinition filterDef : filters)
-    	{
+        for(FilterDefinition filterDef : filters)
+        {
             context.addFilter( new FilterHolder(
-            		filterDef.getFilter() ), 
-            		filterDef.getPathSpec(), Handler.ALL );
-    	}
-	}
+                    filterDef.getFilter() ),
+                    filterDef.getPathSpec(), Handler.ALL );
+        }
+    }
 
     @Override
     public void addExecutionLimitFilter( final int timeout, final Guard guard )

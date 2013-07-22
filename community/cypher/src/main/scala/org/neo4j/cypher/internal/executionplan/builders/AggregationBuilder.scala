@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.EagerAggregationPipe
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{CachedExpression, AggregationExpression, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.ReturnItem
@@ -47,7 +47,7 @@ Rewrite the remainder of the query to not use the aggregation expression, instea
 value.
  */
 
-class AggregationBuilder extends PlanBuilder  {
+class AggregationBuilder extends LegacyPlanBuilder  {
   def apply(plan: ExecutionPlanInProgress) = {
     // First, calculate the key expressions and save them down to the map
     val keyExpressionsToExtract: ExtractedExpressions = getExpressions(plan)
@@ -71,7 +71,7 @@ class AggregationBuilder extends PlanBuilder  {
     //Mark aggregations as Solved.
     val resultQ = planToAggregate.query.copy(
       aggregation = planToAggregate.query.aggregation.map(_.solve),
-      aggregateQuery = planToAggregate.query.aggregateQuery.solve,
+      aggregateToDo = false,
       returns = returnItems,
       extracted = true
     )
@@ -104,9 +104,7 @@ class AggregationBuilder extends PlanBuilder  {
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
 
-    q.aggregateQuery.token &&
-    q.aggregateQuery.unsolved &&
-    q.readyToAggregate
+    q.aggregateToDo && q.readyToAggregate
   }
 
   def priority: Int = PlanBuilder.Aggregation

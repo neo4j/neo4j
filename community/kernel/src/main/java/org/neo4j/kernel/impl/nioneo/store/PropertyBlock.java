@@ -20,17 +20,20 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class PropertyBlock
+public class PropertyBlock implements Cloneable
 {
+    private static final long KEY_BITMASK = 0xFFFFFFL;
+    
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
-    // private boolean inUse;
     private boolean isCreated;
+    private boolean isChanged;
 
     public PropertyType getType()
     {
@@ -50,9 +53,15 @@ public class PropertyBlock
     public int getKeyIndexId()
     {
         // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        return (int) (valueBlocks[0]&0xFFFFFF);
+        return (int) (valueBlocks[0] & KEY_BITMASK);
     }
 
+    public void setKeyIndexId( int key )
+    {
+        valueBlocks[0] &= ~KEY_BITMASK;
+        valueBlocks[0] |= key;
+    }
+    
     public void setSingleBlock( long value )
     {
         valueBlocks = new long[1];
@@ -126,18 +135,6 @@ public class PropertyBlock
         valueRecords.clear();
     }
 
-    /*
-    public boolean inUse()
-    {
-        return inUse;
-    }
-
-    public void setInUse( boolean inUse )
-    {
-        this.inUse = inUse;
-    }
-    */
-
     public boolean isCreated()
     {
         return isCreated;
@@ -166,6 +163,10 @@ public class PropertyBlock
     {
         StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
+        if ( valueBlocks != null )
+        {
+            result.append( "blocks=" ).append( valueBlocks.length ).append( "," );
+        }
         result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
         result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
         if ( type != null ) switch ( type )
@@ -207,5 +208,34 @@ public class PropertyBlock
         }
         result.append( ']' );
         return result.toString();
+    }
+    
+    @Override
+    public PropertyBlock clone()
+    {
+        PropertyBlock result = new PropertyBlock();
+        result.isCreated = isCreated;
+        if ( valueBlocks != null )
+            result.valueBlocks = valueBlocks.clone();
+        for ( DynamicRecord valueRecord : valueRecords )
+            result.valueRecords.add( valueRecord.clone() );
+        return result;
+    }
+    
+    public boolean hasSameContentsAs( PropertyBlock other )
+    {
+        // Assumption (which happens to be true) that if a heavy (long string/array) property
+        // changes it will get another id, making the valueBlocks values differ.
+        return Arrays.equals( valueBlocks, other.valueBlocks );
+    }
+    
+    public void setChanged( boolean isChanged )
+    {
+        this.isChanged = isChanged;
+    }
+    
+    public boolean isChanged()
+    {
+        return isChanged;
     }
 }

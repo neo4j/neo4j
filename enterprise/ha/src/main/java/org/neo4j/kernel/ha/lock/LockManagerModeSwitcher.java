@@ -66,7 +66,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     @Override
     protected LockManager getMasterImpl()
     {
-        return new LockManagerImpl( new RagManager( txManager ) );
+        return new LockManagerImpl( new RagManager() );
     }
 
     @Override
@@ -81,7 +81,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
             }
         };
 
-        return new SlaveLockManager(txManager, txHook, switchBlock, slaveConfig, new RagManager( txManager ),
+        return new SlaveLockManager(txManager, txHook, switchBlock, slaveConfig, new RagManager(),
                 requestContextFactory, master, xaDsm );
     }
 }

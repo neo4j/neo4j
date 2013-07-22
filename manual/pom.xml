@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -23,9 +23,13 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>10</doctools.version>
+    <doctools.version>13</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
+  
+  <modules>
+    <module>cypherdoc</module>
+  </modules>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -189,13 +193,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.server.plugin</groupId>
-      <artifactId>neo4j-gremlin-plugin</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
       <version>${doctools.version}</version>
@@ -330,6 +327,20 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>parse-cypherdoc</id>
+            <phase>compile</phase>
+            <goals><goal>java</goal></goals>
+            <configuration>
+              <mainClass>org.neo4j.doc.cypherdoc.Main</mainClass>
+              <includePluginDependencies>true</includePluginDependencies>
+              <includeProjectDependencies>false</includeProjectDependencies>
+              <arguments>
+                <argument>${docs.sources}/cypherdoc</argument>
+                <argument>${project.build.directory}/../src/tutorials/cypher</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>execute-asciidoc</id>
             <phase>compile</phase>
             <goals>
@@ -344,6 +355,13 @@
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.doc</groupId>
+            <artifactId>neo4j-cypherdoc</artifactId>
+            <version>${neo4j.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>

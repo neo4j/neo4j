@@ -23,7 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -36,16 +36,17 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager(Config config, StringLogger logger, GraphDatabaseService graphDb,
-                               AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
-                               EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
-                               CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
-                               NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
+    public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb,
+                                AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
+                                EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
+                                ThreadToStatementContextBridge statementCtxProvider )
     {
-        super(config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
-                relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
-                nodeCache, relCache, xaDsm );
+        super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
+                relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
+                nodeCache, relCache, xaDsm, statementCtxProvider );
     }
 
     @Override
@@ -56,63 +57,19 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
-        RelationshipType type )
+                                            RelationshipType type )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    PropertyIndex createPropertyIndex( String key )
+    public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-            Object value, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData relAddProperty( RelationshipImpl rel, PropertyIndex index, Object value )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    PropertyData relChangeProperty( RelationshipImpl rel,
-            PropertyData property, Object value, TransactionState tx )
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
+    public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

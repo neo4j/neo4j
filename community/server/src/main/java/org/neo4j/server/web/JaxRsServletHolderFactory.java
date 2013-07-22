@@ -53,12 +53,12 @@ public abstract class JaxRsServletHolderFactory
             this.injectables.addAll( injectableProviders );
         }
     }
-    
+
     public void remove( List<String> items )
     {
         this.items.removeAll( items );
     }
-    
+
     public ServletHolder create( Collection<InjectableProvider<?>> defaultInjectables, boolean wadlEnabled )
     {
         Collection<InjectableProvider<?>> injectableProviders = mergeInjectables( defaultInjectables, injectables );
@@ -104,7 +104,7 @@ public abstract class JaxRsServletHolderFactory
         String result = sb.toString();
         return result.substring( 0, result.length() - 2 );
     }
-    
+
     public static class Packages extends JaxRsServletHolderFactory
     {
         @Override
@@ -113,7 +113,7 @@ public abstract class JaxRsServletHolderFactory
             servletHolder.setInitParameter( PackagesResourceConfig.PROPERTY_PACKAGES, packages );
         }
     }
-    
+
     public static class Classes extends JaxRsServletHolderFactory
     {
         @Override

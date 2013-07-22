@@ -50,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -63,24 +64,32 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<File, Boolean>() );
-    private final Map<File, EphemeralFileData> files = new ConcurrentHashMap<File, EphemeralFileData>();
+    private final Map<File, EphemeralFileData> files;
 
     public EphemeralFileSystemAbstraction()
     {
+        this.files = new ConcurrentHashMap<File, EphemeralFileData>();
     }
 
     private EphemeralFileSystemAbstraction( Set<File> directories, Map<File, EphemeralFileData> files )
     {
+        this.files = new ConcurrentHashMap<File, EphemeralFileData>( files );
         this.directories.addAll( directories );
         this.files.putAll( files );
     }
 
     @Override
-    public void shutdown()
+    public synchronized void shutdown()
     {
         for ( EphemeralFileData file : files.values() )
             free( file );
         files.clear();
+
+        for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
+        {
+            thirdPartyFileSystem.close();
+        }
+        thirdPartyFileSystems.clear();
     }
 
     @Override
@@ -896,5 +905,20 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             if ( sink != null )
                 sink.close();
         }
+    }
+
+    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
+            new HashMap<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem>();
+
+    @Override
+    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
+        if (fileSystem == null)
+        {
+            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
+        }
+        return clazz.cast( fileSystem );
     }
 }

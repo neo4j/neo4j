@@ -22,22 +22,23 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
-import java.io.{File, PrintWriter}
+import java.io.{StringWriter, File, PrintWriter}
 import org.neo4j.graphdb._
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{GeoffService, ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
+import export.{DatabaseSubGraph, SubGraphExporter}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.neo4j.kernel.GraphDatabaseAPI
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
  */
 abstract class ArticleTest extends Assertions with DocumentationHelper {
 
-  var db: GraphDatabaseService = null
+  var db: GraphDatabaseAPI = null
   val parser: CypherParser = new CypherParser
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
@@ -145,7 +146,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   private def consoleSnippet(query: String, empty: Boolean): String = {
     if (generateConsole) {
-      val create = if (!empty) new GeoffService(db).toGeoff.trim else "start n=node(*) match n-[r?]->() delete n, r;"
+      val create = if (!empty) {
+        db.inTx {
+          val out = new StringWriter()
+          new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+          out.toString
+        }
+      } else "start n=node(*) match n-[r?]->() delete n, r;"
       """[console]
 ----
 %s
@@ -213,11 +220,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   private def init() = {
     dir = createDir(section)
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
+    db = new TestGraphDatabaseFactory().
+      newImpermanentDatabaseBuilder().
+      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
-    db.inTx(() => {
+    db.inTx {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -236,7 +245,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
         val nod = node(n._1)
         n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
       })
-    })
+    }
     engine = new ExecutionEngine(db)
     db
   }

@@ -27,6 +27,7 @@ import expressions.CountStar
 import expressions.Property
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class ReattachAliasedExpressionsTest extends Assertions {
   @Test
@@ -36,12 +37,12 @@ class ReattachAliasedExpressionsTest extends Assertions {
     val q = Query.
       start(NodeById("a", 1)).
       orderBy(SortItem(Identifier("newAlias"), ascending = true)).
-      returns(ReturnItem(Property(Identifier("a"), "x"), "newAlias"))
+      returns(ReturnItem(Property(Identifier("a"), PropertyKey("x")), "newAlias"))
 
     val expected = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Property(Identifier("a"), "x"), ascending = true)).
-      returns(ReturnItem(Property(Identifier("a"), "x"), "newAlias"))
+      orderBy(SortItem(Property(Identifier("a"), PropertyKey("x")), ascending = true)).
+      returns(ReturnItem(Property(Identifier("a"), PropertyKey("x")), "newAlias"))
 
     assert(ReattachAliasedExpressions(q) === expected)
   }

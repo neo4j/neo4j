@@ -21,8 +21,7 @@ package org.neo4j.kernel.extension;
 
 public interface KernelExtensionListener
 {
-    public class Adapter
-            implements KernelExtensionListener
+    class Adapter implements KernelExtensionListener
     {
         @Override
         public void startedKernelExtension( Object extension )

@@ -68,7 +68,8 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger>
+    private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger,
+            RuntimeException>
     {
         private final File storeDir;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";

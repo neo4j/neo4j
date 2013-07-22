@@ -19,24 +19,26 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+
+import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class NodeImplTest
 {
@@ -54,11 +56,11 @@ public class NodeImplTest
     public void shouldQuietlyIgnoreSingleDuplicateEntryWhenGetSingleRelationshipCalled() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1
-        );
+        NodeImpl nodeImpl = new NodeImpl( 1 );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
+        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
 
         NodeManager nodeManager = mock( NodeManager.class );
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
@@ -74,7 +76,7 @@ public class NodeImplTest
         ) ).thenReturn( noMoreRelationshipsTriplet() );
         when( nodeManager.getTransactionState() ).thenReturn( txState );
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) ).thenReturn(
-                new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup ) );
+                new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup, stmCtxBridge ) );
 
         // when
         final Relationship singleRelationship = nodeImpl.getSingleRelationship( nodeManager, loves,
@@ -89,11 +91,11 @@ public class NodeImplTest
     public void shouldThrowExceptionIfMultipleDifferentEntries() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1
-        );
+        NodeImpl nodeImpl = new NodeImpl( 1 );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
+        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
 
         NodeManager nodeManager = mock( NodeManager.class );
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
@@ -115,9 +117,11 @@ public class NodeImplTest
         when( nodeManager.getTransactionState() ).thenReturn( txState );
 
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
-                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup ) );
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup,
+                        stmCtxBridge ) );
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1 ) )
-                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, relLookup ) );
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, relLookup,
+                        stmCtxBridge ) );
 
         // when
         try
@@ -139,11 +143,11 @@ public class NodeImplTest
     public void shouldThrowExceptionIfMultipleDifferentEntriesWithTwoOfThemBeingIdentical() throws Exception
     {
         // given
-        NodeImpl nodeImpl = new NodeImpl( 1
-        );
+        NodeImpl nodeImpl = new NodeImpl( 1 );
         RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
 
         TransactionState txState = mock( TransactionState.class );
+        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
 
         NodeManager nodeManager = mock( NodeManager.class );
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
@@ -167,9 +171,11 @@ public class NodeImplTest
         when( nodeManager.getTransactionState() ).thenReturn( txState );
 
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
-                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup ) );
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup,
+                        stmCtxBridge ) );
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1 ) )
-                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, relLookup ) );
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, relLookup,
+                        stmCtxBridge) );
 
         // when
         try

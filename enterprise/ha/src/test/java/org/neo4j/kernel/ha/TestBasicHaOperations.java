@@ -22,11 +22,11 @@ package org.neo4j.kernel.ha;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,28 +60,28 @@ public class TestBasicHaOperations
     @Test
     public void testBasicFailover() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
         // When
         long start = System.nanoTime();
         cluster.shutdown( master );
         logger.getLogger().warn( "Shut down master" );
 
-        // Then
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
         logger.getLogger().warn( "Failover took:"+(end-start)/1000000+"ms" );
 
+        // Then
         boolean slave1Master = slave1.isMaster();
         boolean slave2Master = slave2.isMaster();
 
@@ -98,18 +98,15 @@ public class TestBasicHaOperations
     @Test
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
-        // When
         long nodeId = 0;
-        Transaction tx = null;
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        Transaction tx = null;
         try
         {
             tx = slave.beginTx();
@@ -123,14 +120,13 @@ public class TestBasicHaOperations
         catch ( Throwable ex )
         {
             ex.printStackTrace();
-            Assert.fail();
+            fail();
         }
         finally
         {
-            tx.finish();
+            if ( tx != null ) tx.finish();
         }
 
-        // Then
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
@@ -141,17 +137,15 @@ public class TestBasicHaOperations
     @Test
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        // When
         long nodeId = 0;
-        Transaction tx = null;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
+        Transaction tx = null;
         try
         {
             tx = master.beginTx();
@@ -165,14 +159,13 @@ public class TestBasicHaOperations
         catch ( Throwable ex )
         {
             ex.printStackTrace();
-            Assert.fail();
+            fail();
         }
         finally
         {
-            tx.finish();
+            if ( tx != null ) tx.finish();
         }
 
-        // Then
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
 

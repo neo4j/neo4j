@@ -39,17 +39,17 @@ public class ManagementApiModule implements ServerModule
 {
     private final Logger log = Logger.getLogger( ManagementApiModule.class );
 
-	private final Configuration config;
-	private final WebServer webServer;
+    private final Configuration config;
+    private final WebServer webServer;
 
     public ManagementApiModule(WebServer webServer, Configuration config)
     {
-    	this.webServer = webServer;
-    	this.config = config;
+        this.webServer = webServer;
+        this.config = config;
     }
 
     @Override
-	public void start( StringLogger logger )
+    public void start( StringLogger logger )
     {
         try
         {
@@ -75,17 +75,17 @@ public class ManagementApiModule implements ServerModule
     }
 
     @Override
-	public void stop()
+    public void stop()
     {
         try
         {
-	    	webServer.removeJAXRSClasses( getClassNames(),
-	                managementApiUri(  ).toString() );
-    	}
-	    catch ( UnknownHostException e )
-	    {
-	        log.warn( e );
-	    }
+            webServer.removeJAXRSClasses( getClassNames(),
+                    managementApiUri(  ).toString() );
+        }
+        catch ( UnknownHostException e )
+        {
+            log.warn( e );
+        }
     }
 
     private URI managementApiUri( ) throws UnknownHostException

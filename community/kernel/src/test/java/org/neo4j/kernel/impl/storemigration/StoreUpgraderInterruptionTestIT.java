@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreUpgraderInterruptionTestIT
 {
@@ -59,7 +59,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
         try
         {
@@ -72,7 +72,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
         newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles(fileSystem) )
             .attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
@@ -82,7 +82,7 @@ public class StoreUpgraderInterruptionTestIT
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
+        return new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
                 files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
     }
 
@@ -102,7 +102,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
         try
         {

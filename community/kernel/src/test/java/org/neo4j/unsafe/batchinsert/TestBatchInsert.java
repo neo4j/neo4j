@@ -19,38 +19,67 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class TestBatchInsert
 {
@@ -100,6 +129,12 @@ public class TestBatchInsert
     {
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap() );
     }
+    
+    private BatchInserter newBatchInserter( KernelExtensionFactory<?> provider )
+    {
+        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( provider );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+    }
 
     private GraphDatabaseService newBatchGraphDatabase()
     {
@@ -113,7 +148,7 @@ public class TestBatchInsert
         long node1 = graphDb.createNode( null );
         long node2 = graphDb.createNode( null );
         long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
-            null );
+                null );
         BatchRelationship rel = graphDb.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
@@ -178,17 +213,17 @@ public class TestBatchInsert
         String key = "name";
         inserter.setNodeProperty( node, key, value );
         
-        System.out.println( "///////////" );
-        
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        assertEquals( value, db.getNodeById( node ).getProperty( key ) );
+        assertThat( db.getNodeById( node ), inTx( db, hasProperty( key ).withValue( value )  ) );
         db.shutdown();
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
-        return new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( inserter.getStoreDir() );
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fs.get() );
+        return factory.newImpermanentDatabase( inserter.getStoreDir() );
     }
 
     @Test
@@ -418,7 +453,6 @@ public class TestBatchInsert
                 fail( "Unexpected relationship " + rel.getId() );
             }
         }
-        graphDb.shutdown();
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
         Node realStartNode = db.getNodeById( startNode );
@@ -570,7 +604,7 @@ public class TestBatchInsert
             endNodes[i] = graphDb.createNode();
             setProperties( endNodes[i] );
             Relationship rel = startNode.createRelationshipTo( endNodes[i],
-                relTypeArray[i % 5] );
+                    relTypeArray[i % 5] );
             rels.add( rel );
             setProperties( rel );
         }
@@ -629,7 +663,6 @@ public class TestBatchInsert
                 RelTypes.BATCH_TEST, null );
         inserter.createRelationship( inserter.createNode( null ), nodeId,
                 RelTypes.REL_TYPE1, null );
-        inserter.shutdown();
 
         // Delete node and all its relationships
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
@@ -682,6 +715,225 @@ public class TestBatchInsert
 
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldAddInitialLabelsToCreatedNode() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        long node = inserter.createNode( map(), Labels.FIRST, Labels.SECOND );
+
+        // THEN
+        assertTrue( inserter.nodeHasLabel( node, Labels.FIRST ) );
+        assertTrue( inserter.nodeHasLabel( node, Labels.SECOND ) );
+        assertFalse( inserter.nodeHasLabel( node, Labels.THIRD ) );
+    }
+    
+    @Test
+    public void shouldGetNodeLabels() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), Labels.FIRST, Labels.THIRD );
+
+        // WHEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldAddManyInitialLabelsAsDynamicRecords() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        Pair<Label[], Set<String>> labels = manyLabels( 200 );
+        long node = inserter.createNode( map(), labels.first() );
+
+        // WHEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals( labels.other(), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldReplaceExistingInlinedLabelsWithDynamic() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), Labels.FIRST );
+
+        // WHEN
+        Pair<Label[], Set<String>> labels = manyLabels( 100 );
+        inserter.setNodeLabels( node, labels.first() );
+
+        // THEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+        assertEquals( labels.other(), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldReplaceExistingDynamicLabelsWithInlined() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), manyLabels( 150 ).first() );
+
+        // WHEN
+        inserter.setNodeLabels( node, Labels.FIRST );
+
+        // THEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+        assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+    }
+
+    @Test
+    public void shouldCreateDeferredSchemaIndexesInEmptyDatabase() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+
+        // THEN
+        assertEquals( "Hacker", definition.getLabel().name() );
+        assertEquals( asCollection( asIterator( "handle" ) ), asCollection( definition.getPropertyKeys() ) );
+    }
+
+    @Test
+    public void shouldCreateDeferredUniquenessConstraintInEmptyDatabase() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        ConstraintDefinition definition =
+                inserter.createDeferredConstraint( label( "Hacker" ) ).on( "handle" ).unique().create();
+
+        // THEN
+        assertEquals( "Hacker", definition.getLabel().name() );
+        assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
+        assertEquals( asSet( "handle" ), asSet( definition.asUniquenessConstraint().getPropertyKeys() ) );
+    }
+
+    @Test
+    public void shouldRunIndexPopulationJobAtShutdown() throws Throwable
+    {
+        // GIVEN
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+
+        // WHEN
+        inserter.shutdown();
+
+        // THEN
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( populator ).create();
+        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
+    }
+
+    @Test @Ignore("once we implement verify constraint on existing data")
+    public void shouldRunConstraintPopulationJobAtShutdown() throws Throwable
+    {
+        // GIVEN
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredConstraint( label("Hacker") ).on( "handle" ).unique().create();
+
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+
+        // WHEN
+        inserter.shutdown();
+
+        // THEN
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( populator ).create();
+        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
+    }
+
+    @Test
+    public void shouldRepopulatePreexistingIndexed() throws Throwable
+    {
+        // GIVEN
+        long jakewins = dbWithIndexAndSingleIndexedNode();
+
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
+
+        // WHEN
+        inserter.shutdown();
+
+        // THEN
+        verify( provider ).init();
+        verify( provider ).start();
+        verify( provider ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
+        verify( populator ).create();
+        verify( populator ).add( jakewins, "Jakewins" );
+        verify( populator ).add( boggle, "b0ggl3" );
+        verify( populator ).close( true );
+        verify( provider ).stop();
+        verify( provider ).shutdown();
+        verifyNoMoreInteractions( populator );
+    }
+
+    private long dbWithIndexAndSingleIndexedNode()
+    {
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserter(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+        inserter.shutdown();
+        return nodeId;
+    }
 
     private void setAndGet( BatchInserter inserter, Object value )
     {
@@ -702,5 +954,37 @@ public class TestBatchInsert
         int[] array = new int[length];
         for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ ) array[i] = startValue+i;
         return array;
+    }
+    
+    private static enum Labels implements Label
+    {
+        FIRST,
+        SECOND,
+        THIRD
+    }
+
+    private Iterable<String> asNames( Iterable<Label> nodeLabels )
+    {
+        return map( new Function<Label,String>()
+        {
+            @Override
+            public String apply( Label from )
+            {
+                return from.name();
+            }
+        }, nodeLabels );
+    }
+
+    private Pair<Label[],Set<String>> manyLabels( int count )
+    {
+        Label[] labels = new Label[count];
+        Set<String> expectedLabelNames = new HashSet<String>();
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            String labelName = "bach label " + i;
+            labels[i] = label( labelName );
+            expectedLabelNames.add( labelName );
+        }
+        return Pair.of( labels, expectedLabelNames );
     }
 }

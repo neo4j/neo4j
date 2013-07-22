@@ -21,65 +21,128 @@ package org.neo4j.cypher
 
 import org.junit.Assert._
 import org.junit.Test
+import org.scalatest.Assertions
+import org.hamcrest.CoreMatchers.equalTo
+import CypherVersion._
 
-class SemanticErrorTest extends ExecutionEngineHelper {
+class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def returnNodeThatsNotThere() {
-    expectedError("start x=node(0) return bar",
-      "Unknown identifier `bar`.")
-  }
-
-  @Test def throwOnDisconnectedPattern() {
-    expectedError("start x=node(0) match a-[rel]->b return x",
-      "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
+    test("start x=node(0) return bar",
+      v2_0    -> "Unknown identifier `bar`.",
+      vExperimental -> "bar not defined (line 1, column 24)"
+    )
   }
 
   @Test def defineNodeAndTreatItAsARelationship() {
-    expectedError("start r=node(0) match a-[r]->b return r",
-      "Some identifiers are used as both relationships and nodes: r")
+    test("start r=node(0) match a-[r]->b return r",
+      v2_0    -> "Some identifiers are used as both relationships and nodes: r",
+      vExperimental -> "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 26)"
+    )
   }
 
   @Test def redefineSymbolInMatch() {
-    expectedError("start a=node(0) match a-[r]->b-->r return r",
-      "Some identifiers are used as both relationships and nodes: r")
+    test("start a=node(0) match a-[r]->b-->r return r",
+      v2_0    -> "Some identifiers are used as both relationships and nodes: r",
+      vExperimental -> "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 34)"
+    )
   }
 
   @Test def cantUseTYPEOnNodes() {
-    expectedError("start r=node(0) return type(r)",
-      "Expected `r` to be a Relationship but it was a Node")
+    test("start r=node(0) return type(r)",
+      v2_0    -> "Expected `r` to be a Relationship but it was a Node",
+      vExperimental -> "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 29)"
+    )
   }
 
   @Test def cantUseLENGTHOnNodes() {
-    expectedError("start n=node(0) return length(n)",
-      "Expected `n` to be a Collection but it was a Node")
+    test("start n=node(0) return length(n)",
+      v2_0    -> "Expected `n` to be a Collection<Any> but it was a Node",
+      vExperimental -> "Type mismatch: n already defined with conflicting type Node (expected Collection<Any>) (line 1, column 31)"
+    )
   }
 
   @Test def cantReUseRelationshipIdentifier() {
-    expectedError("start a=node(0) match a-[r]->b-[r]->a return r",
-      "Can't re-use pattern relationship 'r' with different start/end nodes.")
+    test("start a=node(0) match a-[r]->b-[r]->a return r",
+      v2_0    -> "Can't re-use pattern relationship 'r' with different start/end nodes.",
+      vExperimental -> "Can't re-use pattern relationship 'r' with different start/end nodes."
+    )
   }
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
-    expectedError("start a=node(0) where a.age =~ 13 return a",
-      "Literal expected to be of type String but it is of type Number")
+    test("start a=node(0) where a.age =~ 13 return a",
+      v2_0    -> "Literal(13) expected to be of type String but it is of type Number",
+      vExperimental -> "Type mismatch: expected String but was Long (line 1, column 32)"
+    )
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {
-    expectedError("start s = node(1) where s.name = Name and s.age = 10 return s",
-      "Unknown identifier `Name`")
+    test("start s = node(1) where s.name = Name and s.age = 10 return s",
+      v2_0    -> "Unknown identifier `Name`",
+      vExperimental -> "Name not defined (line 1, column 34)"
+    )
+  }
+
+  @Test def shouldComplainIfShortestPathHasNoRelationship() {
+    test("start n=node(0) match p=shortestPath(n) return p",
+      vExperimental -> "shortestPath requires a pattern containing a single relationship (line 1, column 25)"
+    )
+  }
+
+  @Test def shouldComplainIfShortestPathHasMultipleRelationships() {
+    test("start a=node(0), b=node(1) match p=shortestPath(a--()--b) return p",
+      v2_0 -> "expected single path segment for shortest path",
+      vExperimental -> "shortestPath requires a pattern containing a single relationship (line 1, column 36)"
+    )
+  }
+
+  @Test def shouldComplainIfShortestPathHasAMinimalLength() {
+    test("start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
+      v2_0    -> "Shortest path does not support a minimal length",
+      vExperimental -> "shortestPath does not support a minimal length (line 1, column 36)"
+    )
   }
 
   @Test def shortestPathNeedsBothEndNodes() {
-    expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
-      "Unknown identifier `b`")
+    test("start a=node(0) match p=shortestPath(a-->b) return p",
+      v2_0    -> "Unknown identifier `b`",
+      vExperimental -> "b not defined (line 1, column 42)"
+    )
   }
 
-  def expectedError(query: String, message: String) {
+  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInCreateConstraint() {
+    test("create constraint on (foo:Foo) bar.name is unique",
+      v2_0    -> "Unknown identifier `bar`, was expecting `foo`"
+    )
+  }
+
+  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInDropConstraint() {
+    test("drop constraint on (foo:Foo) bar.name is unique",
+      v2_0    -> "Unknown identifier `bar`, was expecting `foo`"
+    )
+  }
+
+  private def test(query: String, variants: (CypherVersion, String)*) {
+    for ((versions, message) <- variants) {
+      test(versions, query, message)
+    }
+  }
+
+  def test(version: CypherVersion, query: String, message: String) {
+    val (qWithVer, versionString) = version match {
+      case `v2_0` => (query, "the default parser")
+      case _      => (s"cypher ${version.name} " + query, "parser version " + version.name)
+    }
+    val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
+
     try {
-      val result = parseAndExecute(query)
+      val result = parseAndExecute(qWithVer)
       result.toList
-      fail("Did not get the expected syntax error, expected: %s".format(message))
+      fail(errorMessage)
     } catch {
-      case x: CypherException => assertEquals(message, x.getMessage)
+      case x: CypherException => {
+        val actual = x.getMessage.lines.next.trim
+        assertThat(errorMessage, actual, equalTo(message))
+      }
     }
   }
 }

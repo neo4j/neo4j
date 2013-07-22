@@ -25,17 +25,22 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 import org.mockito.InOrder;
+
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionReader;
@@ -58,13 +63,14 @@ public class TransactionWriterTest
         TransactionWriter writer = new TransactionWriter( buffer, 1 );
 
         NodeRecord node = new NodeRecord( 0, -1, -1 );
+        node.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
         RelationshipRecord relationship = new RelationshipRecord( 0, 1, 1, 6 );
 
         // when
         writer.start( 1, 1 );
         writer.create( node );
         writer.update( relationship );
-        writer.delete( new PropertyRecord( 3 ) );
+        writer.delete( propertyRecordWithOneIntProperty( 3, 10, 45 ), new PropertyRecord( 3 ) );
         writer.prepare();
         writer.commit( false, 17 );
         writer.done();
@@ -80,6 +86,18 @@ public class TransactionWriterTest
         order.verify( visitor ).visitCommit( eq( 1 ), eq( false ), eq( 17l ), anyLong() );
         order.verify( visitor ).visitDone( eq( 1 ) );
         verifyNoMoreInteractions( visitor );
+    }
+
+    private PropertyRecord propertyRecordWithOneIntProperty( long id, int keyId, int value )
+    {
+        PropertyRecord record = new PropertyRecord( id );
+        record.setInUse( true );
+        PropertyBlock block = new PropertyBlock();
+        // Logic copied from PropertyStore#encodeValue
+        block.setSingleBlock( keyId | (((long) PropertyType.INT.intValue()) << 24)
+                | (value << 28) );
+        record.addPropertyBlock( block );
+        return record;
     }
 
     private static TransactionReader.Visitor visited( ReadableByteChannel source ) throws IOException

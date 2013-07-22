@@ -21,41 +21,38 @@ package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 
-public class WrappedDatabase extends Database {
-
-	@SuppressWarnings("deprecation")
-	public WrappedDatabase(AbstractGraphDatabase db) {
-		this.graph = db;
-	}
-	
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
-
-    @Override
-	public void shutdown()
+public class WrappedDatabase extends Database
+{
+    @SuppressWarnings("deprecation")
+    public WrappedDatabase( AbstractGraphDatabase db )
     {
-        
+        this.graph = db;
     }
-    
+
     @Override
-	public String getLocation()
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown()
+    {
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public String getLocation()
     {
         return graph.getStoreDir();
     }
-
 }

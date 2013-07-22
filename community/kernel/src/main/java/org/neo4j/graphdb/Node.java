@@ -69,7 +69,7 @@ public interface Node extends PropertyContainer
      *
      * @return the id of this node
      */
-    public long getId();
+    long getId();
 
     /**
      * Deletes this node if it has no relationships attached to it. If
@@ -78,7 +78,7 @@ public interface Node extends PropertyContainer
      * Invoking any methods on this node after <code>delete()</code> has
      * returned is invalid and will lead to unspecified behavior.
      */
-    public void delete();
+    void delete();
 
     // Relationships
 
@@ -88,7 +88,7 @@ public interface Node extends PropertyContainer
      *
      * @return all relationships attached to this node
      */
-    public Iterable<Relationship> getRelationships();
+    Iterable<Relationship> getRelationships();
 
     /**
      * Returns <code>true</code> if there are any relationships attached to this
@@ -97,7 +97,7 @@ public interface Node extends PropertyContainer
      * @return <code>true</code> if there are any relationships attached to this
      *         node, <code>false</code> otherwise
      */
-    public boolean hasRelationship();
+    boolean hasRelationship();
 
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -109,7 +109,7 @@ public interface Node extends PropertyContainer
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    public Iterable<Relationship> getRelationships( RelationshipType... types );
+    Iterable<Relationship> getRelationships( RelationshipType... types );
     
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -122,7 +122,7 @@ public interface Node extends PropertyContainer
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
+    Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -134,7 +134,7 @@ public interface Node extends PropertyContainer
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( RelationshipType... types );
+    boolean hasRelationship( RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -147,7 +147,7 @@ public interface Node extends PropertyContainer
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( Direction direction, RelationshipType... types );
+    boolean hasRelationship( Direction direction, RelationshipType... types );
     
     /**
      * Returns all {@link Direction#OUTGOING OUTGOING} or
@@ -166,7 +166,7 @@ public interface Node extends PropertyContainer
      * @return all relationships with the given direction that are attached to
      *         this node
      */
-    public Iterable<Relationship> getRelationships( Direction dir );
+    Iterable<Relationship> getRelationships( Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships in the given
@@ -184,7 +184,7 @@ public interface Node extends PropertyContainer
      * @return <code>true</code> if there are any relationships in the given
      *         direction attached to this node, <code>false</code> otherwise
      */
-    public boolean hasRelationship( Direction dir );
+    boolean hasRelationship( Direction dir );
 
     /**
      * Returns all relationships with the given type and direction that are
@@ -201,8 +201,7 @@ public interface Node extends PropertyContainer
      * @return all relationships attached to this node that match the given type
      *         and direction
      */
-    public Iterable<Relationship> getRelationships( RelationshipType type,
-            Direction dir );
+    Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships of the given
@@ -220,7 +219,7 @@ public interface Node extends PropertyContainer
      *         relationship type and direction attached to this node,
      *         <code>false</code> otherwise
      */
-    public boolean hasRelationship( RelationshipType type, Direction dir );
+    boolean hasRelationship( RelationshipType type, Direction dir );
 
     /**
      * Returns the only relationship of a given type and direction that is
@@ -258,8 +257,7 @@ public interface Node extends PropertyContainer
      * @throws RuntimeException if more than one relationship matches the given
      *             type and direction
      */
-    public Relationship getSingleRelationship( RelationshipType type,
-            Direction dir );
+    Relationship getSingleRelationship( RelationshipType type, Direction dir );
 
     /**
      * Creates a relationship between this node and another node. The
@@ -274,22 +272,8 @@ public interface Node extends PropertyContainer
      * @param type the type of the new relationship
      * @return the newly created relationship
      */
-    public Relationship createRelationshipTo( Node otherNode,
-            RelationshipType type );
+    Relationship createRelationshipTo( Node otherNode, RelationshipType type );
 
-    /* Expansion, tentatively added - save this for a later refactoring
-    Expansion<Relationship> expandAll();
-
-    Expansion<Relationship> expand( RelationshipType type );
-
-    Expansion<Relationship> expand( RelationshipType type, Direction direction );
-
-    Expansion<Relationship> expand( Direction direction );
-
-    Expansion<Relationship> expand( RelationshipExpander expander );
-    */
-
-    // Traversal
     /**
      * Instantiates a traverser that will start at this node and traverse
      * according to the given order and evaluators along the specified
@@ -301,6 +285,7 @@ public interface Node extends PropertyContainer
      * once. For more information about traversal, see the {@link Traverser}
      * documentation.
      * 
+     *
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -324,7 +309,8 @@ public interface Node extends PropertyContainer
      *             and then calling
      *             {@link TraversalDescription#traverse(Node...)}
      */
-    public Traverser traverse( Traverser.Order traversalOrder,
+    @Deprecated
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             RelationshipType relationshipType, Direction direction );
@@ -368,7 +354,8 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
-    public Traverser traverse( Traverser.Order traversalOrder,
+    @Deprecated
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             RelationshipType firstRelationshipType, Direction firstDirection,
@@ -422,8 +409,41 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
-    public Traverser traverse( Traverser.Order traversalOrder,
+    @Deprecated
+    Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections );
+
+    /**
+     * Adds a {@link Label} to this node. If this node doesn't already have
+     * this label it will be added. If it already has the label, nothing will happen.
+     *
+     * @param label the label to add to this node.
+     */
+    void addLabel( Label label );
+
+    /**
+     * Removes a {@link Label} from this node. If this node doesn't have this label,
+     * nothing will happen.
+     *
+     * @param label the label to remove from this node.
+     */
+    void removeLabel( Label label );
+
+    /**
+     * Checks whether or not this node has the given label.
+     *
+     * @param label the label to check for.
+     * @return {@code true} if this node has the given label, otherwise {@code false}.
+     */
+    boolean hasLabel( Label label );
+    
+    /**
+     * Lists all labels attached to this node. If this node has no
+     * labels an empty {@link Iterable} will be returned.
+     * 
+     * @return all labels attached to this node.
+     */
+    ResourceIterable<Label> getLabels();
 }

@@ -19,42 +19,61 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
-import graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe, EntityProducer}
+import org.neo4j.cypher.internal.pipes.NullPipe
+import graphdb.Node
+import org.neo4j.cypher.internal.pipes.{TraversalMatchPipe, EntityProducer}
 import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = extractExpanderStepsFromQuery(plan) match {
-    case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
-    case Some(longestPath) =>
-      val LongestTrail(start, end, longestTrail) = longestPath
+class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress =
+    extractExpanderStepsFromQuery(plan) match {
+      case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
+      case Some(longestPath) =>
+        val LongestTrail(start, end, longestTrail) = longestPath
 
-      val unsolvedItems = plan.query.start.filter(_.unsolved)
-      val (startToken, startNodeFn) = identifier2nodeFn(graph, start, unsolvedItems)
+        val unsolvedItems = plan.query.start.filter(_.unsolved)
+        val (startToken, startNodeFn) = identifier2nodeFn(ctx, start, unsolvedItems)
 
-      val (matcher,tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems)
+        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems, ctx)
 
-      val solvedPatterns = longestTrail.patterns
+        val solvedPatterns = longestTrail.patterns
 
-      val newWhereClause = markPredicatesAsSolved(plan, longestTrail)
+        checkPattern(plan, tokens)
 
-      val newQ = plan.query.copy(
-        patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
-        start = markStartItemsSolved(plan.query.start, tokens, longestTrail),
-        where = newWhereClause
-      )
+        val newWhereClause = markPredicatesAsSolved(plan, longestTrail)
 
-      val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
+        val newQ = plan.query.copy(
+          patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
+          start = markStartItemsSolved(plan.query.start, tokens, longestTrail),
+          where = newWhereClause
+        )
 
-      plan.copy(pipe = pipe, query = newQ)
+        val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
+
+        plan.copy(pipe = pipe, query = newQ)
+    }
+
+  private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
+    val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
+    val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
+    validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
   }
+
+
+  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern]) = {
+    //We build the graph here, because the pattern graph builder finds problems with the pattern
+    //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
+    buildPatternGraph(symbols, patterns)
+  }
+
 
   private def markStartItemsSolved(startItems: Seq[QueryToken[StartItem]], done: Seq[QueryToken[StartItem]], trail:Trail): Seq[QueryToken[StartItem]] = {
     val newStart = startItems.filterNot(done.contains) ++ done.map(_.solve)
@@ -67,7 +86,8 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
   private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
     val originalWhere = in.query.where
-    val predicates = trail.predicates.toList.filterNot(predicate => {
+
+    val predicates = trail.predicates.flatten.filterNot(predicate => {
       val symbolsNeeded = predicate.symbolTableDependencies
       symbolsNeeded.contains(trail.start) || symbolsNeeded.contains(trail.end) // The traversal matcher can't handle
                                                                                // predicates at the ends
@@ -81,12 +101,13 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
                            longestPath:LongestTrail,
                            startNodeFn:EntityProducer[Node],
                            startToken:QueryToken[StartItem],
-                           unsolvedItems: Seq[QueryToken[StartItem]] ): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
+                           unsolvedItems: Seq[QueryToken[StartItem]],
+                           ctx:PlanContext): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
     val (matcher, tokens) = if (end.isEmpty) {
       val matcher = new MonoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
       (matcher, Seq(startToken))
     } else {
-      val (endToken, endNodeFn) = identifier2nodeFn(graph, end.get, unsolvedItems)
+      val (endToken, endNodeFn) = identifier2nodeFn(ctx, end.get, unsolvedItems)
       val step = longestPath.step
       val matcher = new BidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
       (matcher, Seq(startToken, endToken))
@@ -94,15 +115,24 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     (matcher,tokens)
   }
 
-  def identifier2nodeFn(graph: GraphDatabaseService, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
+  def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
-    val token = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (token, IndexQueryBuilder.getNodeGetter(token.token, graph))
+    val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
+    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    val entityFactory = new EntityProducerFactory
+
+    entityFactory.nodeById orElse
+    entityFactory.nodeByIndex orElse
+    entityFactory.nodeByIndexQuery orElse
+    entityFactory.nodeByIndexHint
+  }
+
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
     val steps = extractExpanderStepsFromQuery(plan)
-    steps.nonEmpty && plan.pipe.isInstanceOf[ParameterPipe]
+    steps.nonEmpty && plan.pipe == NullPipe
   }
 
   private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): Option[LongestTrail] = {
@@ -122,7 +152,7 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     val preds = plan.query.where.filter(_.unsolved).map(_.token).
     // TODO We should not filter these out. This should be removed once we only use TraversalMatcher
     filterNot {
-      case pred => pred.exists( exp => exp.isInstanceOf[PathExpression] )
+      case pred => pred.exists( exp => exp.isInstanceOf[PatternPredicate] )
     }
 
     TrailBuilder.findLongestTrail(pattern, startPoints, preds)

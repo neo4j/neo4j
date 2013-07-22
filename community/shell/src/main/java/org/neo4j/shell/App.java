@@ -95,5 +95,5 @@ public interface App
 	 * as well as possible completions. Returns an empty list if no completions found
 	 * or if the implementing class chooses not to implement it properly.
 	 */
-	List<String> completionCandidates( String partOfLine, Session session );
+	List<String> completionCandidates( String partOfLine, Session session ) throws ShellException;
 }

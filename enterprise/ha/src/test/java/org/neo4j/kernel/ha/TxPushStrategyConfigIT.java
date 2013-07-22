@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import static junit.framework.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,18 +33,106 @@ import org.junit.rules.TestName;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+
 public class TxPushStrategyConfigIT
 {
-    private LifeSupport life = new LifeSupport();
+    @Test
+    public void twoFixed() throws Exception
+    {
+        startCluster( 4, 2, "fixed" );
+        
+        for ( int i = 0; i < 5; i++ )
+        {
+            createTransactionOnMaster();
+            assertLastTransactions( lastTx( 4, 2 + i ) );
+            assertLastTransactions( lastTx( 3, 2 + i ) );
+            assertLastTransactions( lastTx( 2, 1 ) );
+        }
+    }
+
+    @Test
+    public void twoRoundRobin() throws Exception
+    {
+        startCluster( 5, 2, "round_robin" );
+
+        createTransactionOnMaster();
+        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 2 ), lastTx( 4, 1 ), lastTx( 5, 1 ) );
+
+        createTransactionOnMaster();
+        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 3 ), lastTx( 4, 3 ), lastTx( 5, 1 ) );
+
+        createTransactionOnMaster();
+        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 3 ), lastTx( 4, 4 ), lastTx( 5, 4 ) );
+
+        createTransactionOnMaster();
+        assertLastTransactions( lastTx( 2, 5 ), lastTx( 3, 3 ), lastTx( 4, 4 ), lastTx( 5, 5 ) );
+    }
+
+    @Test
+    public void twoFixedFromSlaveCommit() throws Exception
+    {
+        startCluster( 4, 2, "fixed" );
+
+        createTransactionOn( 2 );
+        assertLastTransactions( lastTx( 4, 2 ), lastTx( 3, 1 ), lastTx( 2, 2 ), lastTx( 1, 2 ) );
+
+        createTransactionOn( 3 );
+        assertLastTransactions( lastTx( 4, 3 ), lastTx( 3, 3 ), lastTx( 2, 2 ), lastTx( 1, 3 ) );
+
+        createTransactionOn( 4 );
+        assertLastTransactions( lastTx( 4, 4 ), lastTx( 3, 4 ), lastTx( 2, 2 ), lastTx( 1, 4 ) );
+    }
+
+    @Test
+    public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
+    {
+        startCluster( 3, 1, "fixed" );
+
+        cluster.shutdown( cluster.getAnySlave() );
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+    }
+
+    @Test
+    public void slaveListIsCorrectAfterMasterSwitch() throws Exception
+    {
+        startCluster( 3, 1, "fixed" );
+        cluster.shutdown( cluster.getMaster() );
+        cluster.await( masterAvailable(), 10 );
+        HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+        createTransaction( newMaster );
+        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 2 ) );
+    }
+
+    @Test
+    public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
+    {
+        startCluster( 3, 1, "fixed" );
+        cluster.fail( cluster.getAnySlave() );
+
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+    }
+
+    private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private TargetDirectory dir;
-    
-    @Rule public TestName name = new TestName();
+
+    @Rule
+    public TestName name = new TestName();
+    private int[] machineIds;
 
     @Before
     public void before() throws Exception
@@ -60,7 +148,8 @@ public class TxPushStrategyConfigIT
 
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory( name.getMethodName(), true ), stringMap() )
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory(
+                name.getMethodName(), true ), stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
@@ -71,117 +160,82 @@ public class TxPushStrategyConfigIT
         } );
         life.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( masterSeesAllSlavesAsAvailable() );
+
+        mapMachineIds();
     }
 
-    @Test
-    public void twoFixed() throws Exception
+    private void mapMachineIds()
     {
-        startCluster( 4, 2, "fixed" );
-        cluster.await( masterSeesSlavesAsAvailable( 3 ) );
-        
-        for ( int i = 0; i < 5; i++ )
+        machineIds = new int[cluster.size()];
+        machineIds[0] = cluster.getServerId( cluster.getMaster() );
+        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
+        for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
         {
-            createTransactionOnMaster();
-            assertLastTxId( 2 + i, 4 );
-            assertLastTxId( 2 + i, 3 );
-            assertLastTxId( 1, 2 );
+            if ( !hadb.isMaster() )
+            {
+                slaves.add( hadb );
+            }
+        }
+        Collections.sort( slaves, new Comparator<HighlyAvailableGraphDatabase>()
+        {
+            @Override
+            public int compare( HighlyAvailableGraphDatabase o1, HighlyAvailableGraphDatabase o2 )
+            {
+                return cluster.getServerId( o1 ) - cluster.getServerId( o2 );
+            }
+        } );
+        Iterator<HighlyAvailableGraphDatabase> iter = slaves.iterator();
+        for ( int i = 1; iter.hasNext(); i++ )
+        {
+            machineIds[i] = cluster.getServerId( iter.next() );
         }
     }
 
-    @Test
-    public void twoRoundRobin() throws Exception
+    private void assertLastTransactions( LastTxMapping... transactionMappings )
     {
-        startCluster( 5, 2, "round_robin" );
-        cluster.await( masterSeesSlavesAsAvailable( 4 ) );
-
-        createTransactionOnMaster();
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 2, 3 );
-        assertLastTxId( 1, 4 );
-        assertLastTxId( 1, 5 );
-
-        createTransactionOnMaster();
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 3, 3 );
-        assertLastTxId( 3, 4 );
-        assertLastTxId( 1, 5 );
-
-        createTransactionOnMaster();
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 3, 3 );
-        assertLastTxId( 4, 4 );
-        assertLastTxId( 4, 5 );
-
-        createTransactionOnMaster();
-        assertLastTxId( 5, 2 );
-        assertLastTxId( 3, 3 );
-        assertLastTxId( 4, 4 );
-        assertLastTxId( 5, 5 );
+        StringBuilder failures = new StringBuilder();
+        for ( LastTxMapping mapping : transactionMappings )
+        {
+            GraphDatabaseAPI db = cluster.getMemberByServerId( mapping.serverId );
+            mapping.format( failures, getLastTx( db ) );
+        }
+        assertTrue( failures.toString(), failures.length() == 0 );
     }
 
-    @Test
-    public void twoFixedFromSlaveCommit() throws Exception
+    private long getLastTx( GraphDatabaseAPI db )
     {
-        startCluster( 4, 2, "fixed" );
-        cluster.await( masterSeesSlavesAsAvailable( 3 ) );
-
-        createTransactionOn( 2 );
-        assertLastTxId( 2, 4 );
-        assertLastTxId( 1, 3 );
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 2, 1 );
-
-        createTransactionOn( 3 );
-        assertLastTxId( 3, 4 );
-        assertLastTxId( 3, 3 );
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 3, 1 );
-
-        createTransactionOn( 4 );
-        assertLastTxId( 4, 4 );
-        assertLastTxId( 4, 3 );
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 4, 1 );
+        return db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getXaDataSource( DEFAULT_DATA_SOURCE_NAME ).getLastCommittedTxId();
     }
 
-    @Test
-    public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
+    private LastTxMapping lastTx( int serverIndex, long txId )
     {
-        startCluster( 3, 1, "fixed" );
-
-        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
-        cluster.shutdown( cluster.getAnySlave() );
-        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+        int serverId = machineIds[serverIndex - 1];
+        return new LastTxMapping( serverId, txId );
     }
 
-    @Test
-    public void slaveListIsCorrectAfterMasterSwitch() throws Exception
+    private static class LastTxMapping
     {
-        startCluster( 3, 1, "fixed" );
-        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
-        cluster.shutdown( cluster.getMaster() );
-        cluster.await( masterAvailable(), 10 );
-        HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
-        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-        createTransaction( newMaster );
-        assertLastTxId( 2, 2 );
-        assertLastTxId( 2, 3 );
-    }
+        private final int serverId;
+        private final long txId;
 
-    @Test
-    public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
-    {
-        startCluster( 3, 1, "fixed" );
-        cluster.fail( cluster.getAnySlave() );
+        public LastTxMapping( int serverId, long txId )
+        {
+            this.serverId = serverId;
+            this.txId = txId;
+        }
 
-        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-    }
-
-    private void assertLastTxId( long tx, int serverId )
-    {
-        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave(
-        // serverId );
-        assertEquals( tx, db.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
+        public void format( StringBuilder failures, long txId )
+        {
+            if ( txId != this.txId )
+            {
+                if ( failures.length() > 0 )
+                    failures.append( ", " );
+                failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
+                        serverId, this.txId, txId ) );
+            }
+        }
     }
 
     private void createTransactionOnMaster()

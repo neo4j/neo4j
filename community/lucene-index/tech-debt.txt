@@ -8,3 +8,7 @@
     need to be changed in subtle ways to please Hudson.
     * src/test/java/org/neo4j/index/impl/lucene/TestLuceneIndex.java
       Disabled testSortByRelevance
+
+[2013-03-12] FileSystemAbstraction vs. lucene Directory mismatch
+	Even if EphemeralFileSystemAbstraction is used in the db,
+	the schema indexes (at least Lucene) doesn't use it.

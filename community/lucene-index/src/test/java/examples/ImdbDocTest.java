@@ -19,12 +19,10 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -68,10 +66,35 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+
 public class ImdbDocTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
+    
+    /*
+     * Since this is a doc test, the code in here will be publically visible in e.g. a manual.
+     * This test desires to print something to System.out and there's no point in this test,
+     * when executed, actually printing anything to System.out. So we fool it by creating this
+     * inner class with the same name and looks which it uses instead.
+     */
+    private static class System
+    {
+        static PrintStream out = new PrintStream( new OutputStream()
+        {
+            @Override
+            public void write( int b ) throws IOException
+            {
+            }
+        } );
+    }
 
     @BeforeClass
     public static void setUpDb()
@@ -141,13 +164,21 @@ public class ImdbDocTest
         {
             transaction.finish();
         }
-        String title = "Movie and Actor Graph";
-        PrintWriter pw = AsciiDocGenerator.getPrintWriter( "target/docs/dev",
-                title );
-        pw.println( AsciidocHelper.createGraphVizDeletingReferenceNode( title,
-                graphDb, "initial" ) );
-        pw.flush();
-        pw.close();
+
+        transaction = graphDb.beginTx();
+        try
+        {
+            String title = "Movie and Actor Graph";
+            PrintWriter pw = AsciiDocGenerator.getPrintWriter( "target/docs/dev", title );
+            pw.println( AsciidocHelper.createGraphVizDeletingReferenceNode( title, graphDb, "initial" ) );
+            pw.flush();
+            pw.close();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
     }
 
     @AfterClass
@@ -563,7 +594,7 @@ public class ImdbDocTest
         Relationship typeNeo = typeHits.iterator().next();
         typeHits.close();
         // END SNIPPET: queryForRelationshipType
-        assertEquals( "Neo", typeNeo.getProperty( "name" ) );
+        assertThat(typeNeo, inTx( graphDb, hasProperty( "name" ).withValue( "Neo" ) ));
         actor = matrixNeo.getStartNode();
         assertEquals( reeves, actor );
     }

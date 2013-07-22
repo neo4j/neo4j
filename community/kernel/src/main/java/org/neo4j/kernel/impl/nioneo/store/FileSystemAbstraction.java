@@ -27,6 +27,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.helpers.Function;
+
 public interface FileSystemAbstraction
 {
     FileChannel open( File fileName, String mode ) throws IOException;
@@ -66,4 +68,11 @@ public interface FileSystemAbstraction
     void copyFile( File from, File to ) throws IOException;
     
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
+
+    <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K> creator );
+
+    interface ThirdPartyFileSystem
+    {
+        void close();
+    }
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -33,6 +30,9 @@ import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 public class TestStandaloneLogExtractor
 {
@@ -52,14 +52,29 @@ public class TestStandaloneLogExtractor
     {
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         
-        String storeDir = "dir";
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        String storeDir = "source" + nr;
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+                setFileSystem( fileSystem ).
+                newImpermanentDatabase( storeDir );
+
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         DbRepresentation rep = DbRepresentation.of( db );
-        db.shutdown();
-        
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
+
+        EphemeralFileSystemAbstraction snapshot;
+        if ( cleanShutdown )
+        {
+            db.shutdown();
+            snapshot = fileSystem.snapshot();
+        } else
+        {
+            snapshot = fileSystem.snapshot();
+            db.shutdown();
+        }
+
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+                setFileSystem( snapshot ).
+                newImpermanentDatabase( storeDir );
+
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ) );
         long expectedTxId = 2;
@@ -70,11 +85,13 @@ public class TestStandaloneLogExtractor
             assertEquals( expectedTxId++, txId );
 
             /* first tx=2
-             * 1 tx for relationship type + 1 for the first tx
-             * 5 additional tx
-             * ==> 9
+             * 1 tx for relationship type
+             * 1 tx for property index
+             * 1 for the first tx
+             * 5 additional tx + 1 tx for the other property index
+             * ==> 11
              */
-            if ( expectedTxId == 9 ) expectedTxId = -1;
+            if ( expectedTxId == 11 ) expectedTxId = -1;
             if ( txId == -1 ) break;
             ds.applyCommittedTransaction( txId, buffer );
         }

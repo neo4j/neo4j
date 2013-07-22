@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -72,7 +71,9 @@ public class ServerTestUtils
 
     public static File createTempPropertyFile() throws IOException
     {
-        return createTempPropertyFile( createTempDir() );
+        File file = File.createTempFile( "neo4j", "properties" );
+        file.delete();
+        return file;
     }
 
     public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties,
@@ -167,6 +168,6 @@ public class ServerTestUtils
 
     public static File createTempPropertyFile( File parentDir ) throws IOException
     {
-        return new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
+        return File.createTempFile( "neo4j", "properties", parentDir );
     }
 }

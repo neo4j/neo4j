@@ -23,9 +23,8 @@ import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Identifier}
 import java.util
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import collection.JavaConverters._
 import org.scalatest.Assertions
 
@@ -39,8 +38,10 @@ class CreateRelationshipTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode()
     val javaArray: util.List[Int] = util.Arrays.asList(1, 2, 3)
     val props = Map("props" -> Map("array" -> javaArray))
-    val relCreator = new CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "RELTYPE", Map("*" -> ParameterExpression("props")))
-    val state = QueryState().copy(params = props, db = graph, query = new GDSBackedQueryContext(graph))
+    val aEndNode = RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, bare = true)
+    val bEndNode = RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, bare = true)
+    val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
+    val state = QueryStateHelper.queryStateFrom(graph).copy(params = props)
     val ctx = ExecutionContext.from("a" -> a, "b" -> b)
 
     //when

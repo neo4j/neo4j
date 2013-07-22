@@ -20,12 +20,13 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public interface CheckDecorator
 {
@@ -41,11 +42,14 @@ public interface CheckDecorator
     RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
             RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
 
-    RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyChecker(
-            RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker );
+    RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+            RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker );
 
-    RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker );
+    RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+            RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
+
+    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
 
     static CheckDecorator NONE = new CheckDecorator()
     {
@@ -78,15 +82,22 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyChecker(
-                RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-                RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        {
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
         {
             return checker;
         }

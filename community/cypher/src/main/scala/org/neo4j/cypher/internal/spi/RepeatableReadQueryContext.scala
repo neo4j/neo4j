@@ -20,28 +20,40 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 trait Locker {
-  def readLock(p: PropertyContainer)
+  def acquireLock(p: PropertyContainer)
 
-  def releaseAllReadLocks()
+  def releaseAllLocks()
 }
 
-class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) {
+class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) with LockingQueryContext {
 
   override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = {
-    locker.readLock(node)
+    locker.acquireLock(node)
     val rels = inner.getRelationshipsFor(node, dir, types)
 
     new Iterable[Relationship] {
-      def iterator: Iterator[Relationship] = rels.iterator.map {
-        rel =>
-          locker.readLock(rel)
-          rel
-      }
+      def iterator: Iterator[Relationship] = lockAll(rels.iterator)
     }
   }
+
+  override def getLabelsForNode(node: Long): Iterator[Long] = {
+    lockNode(node)
+    inner.getLabelsForNode(node)
+  }
+
+  override def isLabelSetOnNode(label: Long, node: Long): Boolean = {
+    lockNode(node)
+    inner.isLabelSetOnNode(label, node)
+  }
+
+  override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
+    lockAll(inner.exactIndexSearch(index, value))
+
+  override def getNodesByLabel(id: Long): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
 
   val nodeOpsValue = new RepeatableReadOperations[Node](inner.nodeOps)
   val relationshipOpsValue = new RepeatableReadOperations[Relationship](inner.relationshipOps)
@@ -50,28 +62,48 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
 
   override def relationshipOps = relationshipOpsValue
 
-  override def close() {
-    locker.releaseAllReadLocks()
-    inner.close()
+  def releaseLocks() {
+    locker.releaseAllLocks()
   }
 
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
-    override def getProperty(obj: T, propertyKey: String) = {
-      locker.readLock(obj)
-      inner.getProperty(obj, propertyKey)
+    override def getProperty(obj: T, propertyKeyId: Long) = {
+      locker.acquireLock(obj)
+      inner.getProperty(obj, propertyKeyId)
     }
 
-    override def hasProperty(obj: T, propertyKey: String) = {
-      locker.readLock(obj)
-      inner.hasProperty(obj, propertyKey)
+    override def hasProperty(obj: T, propertyKeyId: Long) = {
+      locker.acquireLock(obj)
+      inner.hasProperty(obj, propertyKeyId)
     }
 
     override def propertyKeys(obj: T) = {
-      locker.readLock(obj)
+      locker.acquireLock(obj)
       inner.propertyKeys(obj)
     }
+
+    override def getById(id: Long): T = {
+      val result = inner.getById(id)
+      locker.acquireLock(result)
+      result
+    }
+
+    override def indexGet(name: String, key: String, value: Any): Iterator[T] = lockAll(inner.indexGet(name, key, value))
+
+    override def indexQuery(name: String, query: Any): Iterator[T] = lockAll(inner.indexQuery(name, query))
+
+    def getByInnerId(id: Long): T = inner.getById(id)
   }
 
+  private def lockNode(id: Long) {
+    locker.acquireLock(nodeOps.getByInnerId(id))
+  }
+
+  private def lockAll[T <: PropertyContainer](iter: Iterator[T]): Iterator[T] = iter.map {
+    item =>
+      locker.acquireLock(item)
+      item
+  }
 }
 
 

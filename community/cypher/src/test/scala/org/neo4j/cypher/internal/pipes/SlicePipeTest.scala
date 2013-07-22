@@ -33,7 +33,7 @@ class SlicePipeTest extends Assertions {
     val pipe = new SlicePipe(input, None, Some(Literal(42l)))
 
     //when
-    val result = pipe.createResults(QueryState.empty).toList
+    val result = pipe.createResults(QueryStateHelper.empty).toList
 
     //then
     assert(result.size == 3)

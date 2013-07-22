@@ -31,7 +31,7 @@ object ExtractPipe {
   }
 }
 
-class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
+class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)

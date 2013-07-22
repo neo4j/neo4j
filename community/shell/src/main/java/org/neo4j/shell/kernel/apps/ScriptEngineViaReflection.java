@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static org.neo4j.shell.kernel.apps.GraphDatabaseApp.getCurrent;
+import static org.neo4j.shell.kernel.apps.TransactionProvidingApp.getCurrent;
 
 import java.lang.reflect.Method;
 

@@ -1,0 +1,29 @@
+= Hello World =
+
+Text here.
+
+// console
+
+[[init]]
+[source,cypher,includeresult]
+----
+CREATE (n:Person {name:"Adam"})
+RETURN n;
+----
+Adam
+1 row
+Nodes created: 1
+Properties set: 1
+
+// graph:setup
+
+Let's find the node we created:
+
+[source,cypher]
+----
+MATCH person:Person
+WHERE person.name = "Adam"
+RETURN person;
+----
+Adam
+1 row

@@ -1,3 +1,7 @@
+1.9.1 (2013-07-16)
+------------------
+o Fixes bug where a single instance cluster will perpetually try to perform elections
+
 1.9 (2013-05-13)
 ----------------
 o Coordinator doesn't ask itself for snapshots, solving a bug where starting an arbiter first would make the

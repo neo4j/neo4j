@@ -48,7 +48,7 @@ public class CombinedIndexHits<T> extends CombiningIterator<T> implements IndexH
         return result;
     }
 
-    public Iterator<T> iterator()
+    public IndexHits<T> iterator()
     {
         return this;
     }

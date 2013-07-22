@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.ExecutionContext
@@ -34,17 +34,22 @@ case class PropertySetAction(prop: Property, e: Expression)
 
     val value = makeValueNeoSafe(e(context))
     val entity = mapExpr(context).asInstanceOf[PropertyContainer]
+    val qtx = state.query
 
-    (value, entity) match {
-      case (null, n: Node)         => state.query.nodeOps.removeProperty(n, propertyKey)
-      case (null, r: Relationship) => state.query.relationshipOps.removeProperty(r, propertyKey)
-      case (_, r: Relationship)    => state.query.relationshipOps.setProperty(r, propertyKey, value)
-      case (_, n: Node)            => state.query.nodeOps.setProperty(n, propertyKey, value)
+    entity match {
+      case (n: Node) =>
+        if ( null == value )
+          propertyKey.getOptId(qtx).foreach(qtx.nodeOps.removeProperty(n, _))
+        else
+          qtx.nodeOps.setProperty(n, propertyKey.getOrCreateId(qtx), value)
+      case (r: Relationship) =>
+        if ( null == value )
+          propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r, _))
+        else
+          qtx.relationshipOps.setProperty(r, propertyKey.getOrCreateId(qtx), value)
     }
 
-    state.propertySet.increase()
-
-    Stream(context)
+    Iterator(context)
   }
 
   def identifiers = Nil

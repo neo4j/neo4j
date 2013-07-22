@@ -19,6 +19,25 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.MonitorGc;
+
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
@@ -40,29 +59,11 @@ import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
-import org.neo4j.kernel.configuration.Migrator;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.MonitorGc;
-
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
  */
 @Description("Settings for the Community edition of Neo4j")
+@SuppressWarnings("deprecation"/*although it might be a good idea to go through and check these every once in a while*/)
 public abstract class GraphDatabaseSettings
 {
     @Migrator
@@ -103,7 +104,9 @@ public abstract class GraphDatabaseSettings
     // Cypher settings
     // TODO: These should live with cypher
     @Description("Enable this to specify a parser other than the default one.")
-    public static final OptionsSetting cypher_parser_version = new CypherParserSetting(setting( "cypher_parser_version", Settings.options( CypherParserSetting.v1_7, CypherParserSetting.v1_8, CypherParserSetting.v1_9 ), NO_DEFAULT ));
+    public static final OptionsSetting cypher_parser_version = new CypherParserSetting( setting(
+            "cypher_parser_version",
+            options( CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ) );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( setting("query_cache_size", INTEGER, "100", min( 0 ) ));
@@ -291,6 +294,13 @@ public abstract class GraphDatabaseSettings
     public static final IntegerSetting array_block_size =
             new IntegerSetting( setting("array_block_size", INTEGER, "120",min(1)));
 
+    @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
+    		"This parameter is only honored when the store is created, otherwise it is ignored. " +
+            "The default block size is 60 bytes, and the overhead of each block is the same as for string blocks, " +
+            "i.e., 8 bytes.")
+    public static final IntegerSetting label_block_size =
+            new IntegerSetting( setting("label_block_size", INTEGER, "60",min(1)));
+
     @Description("Mark this database as a backup slave.")
     public static final BooleanSetting backup_slave = new BooleanSetting( setting("backup_slave", BOOLEAN, FALSE ));
 
@@ -302,11 +312,11 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting execution_guard_enabled = new BooleanSetting( setting("execution_guard_enabled", BOOLEAN, FALSE ));
 
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
-    public static final GraphDatabaseSetting<Long> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
+    public static final GraphDatabaseSetting<Long> gc_monitor_interval = new GraphDatabaseSetting.LongSetting( MonitorGc.Configuration.gc_monitor_wait_time );
 
     @Description("The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
             "blocked.")
-    public static final GraphDatabaseSetting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
+    public static final GraphDatabaseSetting<Long> gc_monitor_block_threshold = new GraphDatabaseSetting.LongSetting( MonitorGc.Configuration.gc_monitor_threshold );
 
     // Deprecated GC monitor settings (old type)
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
@@ -398,21 +408,18 @@ public abstract class GraphDatabaseSettings
             for ( String prioritized : new String[] { "soft", "gcr" } )
                 if ( available.remove( prioritized ) )
                     available.add( 0, prioritized );
-            return available.toArray( new String[0] );
+            return available.toArray( new String[available.size()] );
         }
     }
 
     public static class CypherParserSetting
             extends OptionsSetting
     {
-        @Description("Cypher v1.7 syntax.")
-        public static final String v1_7 = "1.7";
-
-        @Description("Cypher v1.8 syntax.")
-        public static final String v1_8 = "1.8";
-
         @Description("Cypher v1.9 syntax.")
         public static final String v1_9 = "1.9";
+
+        @Description("Cypher v2.0 syntax.")
+        public static final String v2_0 = "2.0";
 
         public CypherParserSetting( Setting<String> setting )
         {
@@ -432,9 +439,6 @@ public abstract class GraphDatabaseSettings
          * Default for this setting is null, so wrap access with this call
          * to figure out actual value at runtime. If on Windows, don't do
          * memory mapping, and for other platforms do memory mapping
-         *
-         * @param useMemoryMapped
-         * @return
          */
         public static boolean shouldMemoryMap( Boolean useMemoryMapped )
         {
@@ -445,7 +449,7 @@ public abstract class GraphDatabaseSettings
             else
             {
                 // if on windows, default no memory mapping
-                return !osIsWindows();
+                return !Settings.osIsWindows();
             }
         }
     }

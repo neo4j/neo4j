@@ -18,7 +18,11 @@
  */
 package org.neo4j.examples;
 
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+
 import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,7 +49,7 @@ public class Matrix
     private GraphDatabaseService graphDb;
     private long matrixNodeId;
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         Matrix matrix = new Matrix();
         matrix.setUp();
@@ -54,9 +58,9 @@ public class Matrix
         matrix.shutdown();
     }
 
-    public void setUp()
+    public void setUp() throws IOException
     {
-        deleteFileOrDirectory( new File( MATRIX_DB ) );
+        deleteRecursively( new File( MATRIX_DB ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();
@@ -138,19 +142,18 @@ public class Matrix
         Node neoNode = getNeoNode();
         // START SNIPPET: friends-usage
         int numberOfFriends = 0;
-        String output = neoNode.getProperty( "name" ) + "'s friends:\n";
+        StringBuilder output = new StringBuilder( String.format( "%s's friends:\n", neoNode.getProperty( "name" ) ) );
         Traverser friendsTraverser = getFriends( neoNode );
         for ( Node friendNode : friendsTraverser )
         {
-            output += "At depth " +
-                        friendsTraverser.currentPosition().depth() + 
-                        " => " + 
-                        friendNode.getProperty( "name" ) + "\n";
+            output.append( String.format( "At depth %d => %s\n",
+                    friendsTraverser.currentPosition().depth(),
+                    friendNode.getProperty( "name" ) ) );
             numberOfFriends++;
         }
-        output += "Number of friends found: " + numberOfFriends + "\n";
+        output.append( String.format( "Number of friends found: %d\n", numberOfFriends ) );
         // END SNIPPET: friends-usage
-        return output;
+        return output.toString();
     }
 
     // START SNIPPET: get-friends
@@ -166,21 +169,19 @@ public class Matrix
     public String printMatrixHackers()
     {
         // START SNIPPET: find--hackers-usage
-        String output = "Hackers:\n";
+        StringBuilder output = new StringBuilder("Hackers:\n");
         int numberOfHackers = 0;
         Traverser traverser = findHackers( getNeoNode() );
         for ( Node hackerNode : traverser )
         {
-            output += "At depth " +
-                        traverser.currentPosition().depth() +
-                        " => " + 
-                        hackerNode.getProperty( "name" ) + "\n";
+            output.append( String.format( "At depth %d => %s\n",
+                    traverser.currentPosition().depth(),
+                    hackerNode.getProperty( "name" ) ) );
             numberOfHackers++;
         }
-        output += "Number of hackers found: " + numberOfHackers + "\n";
+        output.append( String.format( "Number of hackers found: %d\n", numberOfHackers ) );
         // END SNIPPET: find--hackers-usage
-        return output;
-        // assertEquals( 1, numberOfHackers );
+        return output.toString();
     }
 
     // START SNIPPET: find-hackers
@@ -216,25 +217,5 @@ public class Matrix
                 graphDb.shutdown();
             }
         } );
-    }
-
-    private static void deleteFileOrDirectory( final File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : file.listFiles() )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        else
-        {
-            file.delete();
-        }
     }
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.Query
+import internal.commands.AbstractQuery
+import internal.helpers.GraphIcing
 import org.junit.Before
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
+trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
   var engine: ExecutionEngine = null
 
@@ -35,17 +36,11 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
     engine = new ExecutionEngine(graph)
   }
 
-  def execute(query: Query, params:(String,Any)*) = {
-    val result = engine.execute(query, params.toMap)
-    result
-  }
+  def execute(query: AbstractQuery, params:(String,Any)*) =
+    engine.execute(query, params.toMap)
 
-
-  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
-    val plan = engine.prepare(q)
-    
-    plan.execute(params.toMap)
-  }
+  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
+    engine.execute(q, params.toMap)
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case List(m) => if (m.size!=1)

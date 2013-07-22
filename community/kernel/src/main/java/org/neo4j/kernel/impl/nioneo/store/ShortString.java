@@ -25,7 +25,7 @@ import java.util.EnumSet;
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
  *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
  */
 public enum ShortString
 {
@@ -75,7 +75,7 @@ public enum ShortString
         char decTranslate( byte codePoint )
         {
             if ( codePoint < 10 ) return (char) ( codePoint + '0' );
-            return decPunctuation( ( codePoint - 10 + 6 ) );
+            return decPunctuation( codePoint - 10 + 6 );
         }
 
         @Override
@@ -430,17 +430,17 @@ public enum ShortString
                 possible.retainAll( EnumSet.of( NUMERICAL ) );
                 break;
             default:
-                if ( ( c >= 'A' && c <= 'Z' ) )
+                if ( c >= 'A' && c <= 'Z' )
                 {
                     possible.remove( NUMERICAL );
                     possible.remove( LOWER );
                 }
-                else if ( ( c >= 'a' && c <= 'z' ) )
+                else if ( c >= 'a' && c <= 'z' )
                 {
                     possible.remove( NUMERICAL );
                     possible.remove( UPPER );
                 }
-                else if ( ( c >= '0' && c <= '9' ) )
+                else if ( c >= '0' && c <= '9' )
                 {
                     possible.remove( UPPER );
                     possible.remove( LOWER );
@@ -476,8 +476,7 @@ public enum ShortString
         return false;
     }
 
-    private static void applyInRecord( PropertyRecord target, int keyId,
-            long propBlock )
+    private static void applyInRecord( PropertyRecord target, int keyId, long propBlock )
     {
 //        long data = 0;
 //        data |= ( (long) keyId << 40 );
@@ -618,10 +617,7 @@ public enum ShortString
         else
         {
             result = new byte[7 - size];
-            for ( int i = 0; i < result.length; i++ )
-            {
-                result[i] = temp[size + i];
-            }
+            System.arraycopy( temp, size, result, 0, result.length );
         }
         try
         {

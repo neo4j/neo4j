@@ -19,12 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
@@ -35,12 +29,18 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         REPORT extends ConsistencyReport<RECORD, REPORT>,
@@ -49,7 +49,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     public static final int NONE = -1;
     private final CHECKER checker;
     private final Class<REPORT> reportClass;
-    private final RecordAccessStub records = new RecordAccessStub();
+    protected final RecordAccessStub records = new RecordAccessStub();
 
     RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass )
     {
@@ -149,37 +149,37 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         };
     }
 
-    public static RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> dummyPropertyKeyCheck()
+    public static RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> dummyPropertyKeyCheck()
     {
-        return new PropertyKeyRecordCheck()
+        return new PropertyKeyTokenRecordCheck()
         {
             @Override
-            public void check( PropertyIndexRecord record, ConsistencyReport.PropertyKeyConsistencyReport report,
+            public void check( PropertyKeyTokenRecord record, ConsistencyReport.PropertyKeyTokenConsistencyReport report,
                                RecordAccess records )
             {
             }
 
             @Override
-            public void checkChange( PropertyIndexRecord oldRecord, PropertyIndexRecord newRecord,
-                                     ConsistencyReport.PropertyKeyConsistencyReport report, DiffRecordAccess records )
+            public void checkChange( PropertyKeyTokenRecord oldRecord, PropertyKeyTokenRecord newRecord,
+                                     ConsistencyReport.PropertyKeyTokenConsistencyReport report, DiffRecordAccess records )
             {
             }
         };
     }
 
-    public static RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> dummyRelationshipLabelCheck()
+    public static RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> dummyRelationshipLabelCheck()
     {
-        return new RelationshipLabelRecordCheck()
+        return new RelationshipTypeTokenRecordCheck()
         {
             @Override
-            public void check( RelationshipTypeRecord record, ConsistencyReport.LabelConsistencyReport report,
+            public void check( RelationshipTypeTokenRecord record, ConsistencyReport.RelationshipTypeConsistencyReport report,
                                RecordAccess records )
             {
             }
 
             @Override
-            public void checkChange( RelationshipTypeRecord oldRecord, RelationshipTypeRecord newRecord,
-                                     ConsistencyReport.LabelConsistencyReport report, DiffRecordAccess records )
+            public void checkChange( RelationshipTypeTokenRecord oldRecord, RelationshipTypeTokenRecord newRecord,
+                                     ConsistencyReport.RelationshipTypeConsistencyReport report, DiffRecordAccess records )
             {
             }
         };
@@ -188,6 +188,11 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     final REPORT check( RECORD record )
     {
         return check( reportClass, checker, record, records );
+    }
+
+    final REPORT check( CHECKER externalChecker, RECORD record )
+    {
+        return check( reportClass, externalChecker, record, records );
     }
 
     final REPORT checkChange( RECORD oldRecord, RECORD newRecord )
@@ -225,9 +230,19 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return records.add( record );
     }
 
+    DynamicRecord addNodeDynamicLabels( DynamicRecord labels )
+    {
+        return records.addNodeDynamicLabels( labels );
+    }
+
     DynamicRecord addKeyName( DynamicRecord name )
     {
-        return records.addKeyName( name );
+        return records.addPropertyKeyName( name );
+    }
+
+    DynamicRecord addRelationshipTypeName(DynamicRecord name )
+    {
+        return records.addRelationshipTypeName( name );
     }
 
     DynamicRecord addLabelName( DynamicRecord name )
@@ -247,7 +262,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return record;
     }
 
-    static PropertyBlock propertyBlock( PropertyIndexRecord key, DynamicRecord value )
+    static PropertyBlock propertyBlock( PropertyKeyTokenRecord key, DynamicRecord value )
     {
         PropertyType type;
         if ( value.getType() == PropertyType.STRING.intValue() )
@@ -266,7 +281,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return propertyBlock( key, type, value.getId() );
     }
 
-    public static PropertyBlock propertyBlock( PropertyIndexRecord key, PropertyType type, long value )
+    public static PropertyBlock propertyBlock( PropertyKeyTokenRecord key, PropertyType type, long value )
     {
         PropertyBlock block = new PropertyBlock();
         block.setSingleBlock( key.getId() | (((long) type.intValue()) << 24) | (value << 28) );
@@ -291,5 +306,10 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         verify( report, atLeast( 0 ) )
                 .forReference( any( RecordReference.class ), any( ComparativeRecordChecker.class ) );
         verifyNoMoreInteractions( report );
+    }
+
+    protected CHECKER checker()
+    {
+        return checker;
     }
 }

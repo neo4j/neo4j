@@ -19,9 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -32,16 +29,20 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class BackupEmbeddedIT
 {
@@ -60,6 +61,7 @@ public class BackupEmbeddedIT
         ip = InetAddress.getLocalHost().getHostAddress();
     }
 
+    @SuppressWarnings("deprecation")
     public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
         Transaction tx = db.beginTx();
@@ -127,7 +129,7 @@ public class BackupEmbeddedIT
     {
         GraphDatabaseBuilder dbBuild = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH
                 .getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE );
+                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         if(backupPort != null)
         {
             dbBuild = dbBuild.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );

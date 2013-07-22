@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -42,6 +43,7 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.util.SingleNodePath;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.ColumnPrinter;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -54,7 +56,7 @@ import org.neo4j.shell.ShellException;
  * properties/relationships on a node or a relationship.
  */
 @Service.Implementation( App.class )
-public class Ls extends ReadOnlyGraphDatabaseApp
+public class Ls extends TransactionProvidingApp
 {
     private static final int DEFAULT_MAX_RELS_PER_TYPE_LIMIT = 10;
     
@@ -85,6 +87,8 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             "Sorts relationships by type." ) );
         addOptionDefinition( "m", new OptionDefinition( OptionValueType.MAY,
             "Display a maximum of M relationships per type (default " + DEFAULT_MAX_RELS_PER_TYPE_LIMIT + " if no value given)" ) );
+        addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
+            "Allows for cd:ing to a node not connected to the current node (e.g. 'absolute')" ) );
     }
 
     @Override
@@ -131,6 +135,7 @@ public class Ls extends ReadOnlyGraphDatabaseApp
 
         if ( displayProperties )
         {
+            displayLabels( thing, out, filterMap, caseInsensitiveFilters, looseFilters, brief );
             displayProperties( thing, out, verbose, quiet, filterMap, caseInsensitiveFilters,
                     looseFilters, brief );
         }
@@ -167,6 +172,7 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         }
         Collections.sort( list, new Comparator<String>()
         {
+            @Override
             public int compare( String item1, String item2 )
             {
                 return item1.toLowerCase().compareTo( item2.toLowerCase() );
@@ -180,7 +186,9 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         boolean caseInsensitiveFilters, boolean looseFilters, boolean brief )
         throws RemoteException
     {
-        int longestKey = findLongestKey( thing );
+        ColumnPrinter columnPrinter = quiet ?
+                new ColumnPrinter( "*" ) :
+                new ColumnPrinter( "*", "=" );
         int count = 0;
         for ( String key : sortKeys( thing.getPropertyKeys() ) )
         {
@@ -193,26 +201,46 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             count++;
             if ( !brief )
             {
-                StringBuilder builder = new StringBuilder();
-                builder.append( "*" + key );
-                if ( !quiet )
+                if ( quiet )
                 {
-                    builder.append( multiply( " ", longestKey - key.length() + 1 ) );
-                    builder.append( "=" + format( value, true ) );
-                    if ( verbose )
-                    {
-                        builder.append( " (" + getNiceType( value ) + ")" );
-                    }
+                    columnPrinter.add( key );
                 }
-                out.println( builder.toString() );
+                else
+                {
+                    columnPrinter.add( key, verbose ?
+                            format( value, true ) + " (" + getNiceType( value ) + ")" :
+                            format( value, true ) );
+                }
             }
         }
+        columnPrinter.print( out );
         if ( brief )
         {
             out.println( "Property count: " + count );
         }
     }
 
+    private void displayLabels( NodeOrRelationship thing, Output out, Map<String, Object> filterMap,
+            boolean caseInsensitiveFilters, boolean looseFilters, boolean brief ) throws RemoteException
+    {
+        List<String> labelNames = new ArrayList<String>();
+        for ( Label label : thing.asNode().getLabels() )
+            labelNames.add( label.name() );
+        
+        if ( brief )
+        {
+            out.println( "Label count: " + labelNames.size() );
+        }
+        else
+        {
+            for ( String label : sortKeys( labelNames ) )
+            {
+                if ( filterMatches( filterMap, caseInsensitiveFilters, looseFilters, label, "" ) )
+                    out.println( ":" + label );
+            }
+        }
+    }
+    
     private void displayRelationships( AppCommandParser parser, NodeOrRelationship thing,
         Session session, Output out, boolean verbose, boolean quiet,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
@@ -364,18 +392,5 @@ public class Ls extends ReadOnlyGraphDatabaseApp
     private static String getNiceType( Object value )
     {
         return Set.getValueTypeName( value.getClass() );
-    }
-
-    private static int findLongestKey( NodeOrRelationship thing )
-    {
-        int length = 0;
-        for ( String key : thing.getPropertyKeys() )
-        {
-            if ( key.length() > length )
-            {
-                length = key.length();
-            }
-        }
-        return length;
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.ancestor;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,8 +37,10 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class AncestorTestCase implements GraphHolder
 {
@@ -133,7 +134,7 @@ public class AncestorTestCase implements GraphHolder
     @BeforeClass
     public static void before()
     {
-        gdb = new ImpermanentGraphDatabase();
+        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     @AfterClass
     public static void after()
@@ -142,6 +143,6 @@ public class AncestorTestCase implements GraphHolder
     }
     enum Rels implements RelationshipType
     {
-        contains;
+        contains
     }
 }

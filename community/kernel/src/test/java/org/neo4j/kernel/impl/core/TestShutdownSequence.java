@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
-
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
 public class TestShutdownSequence
 {
@@ -40,7 +41,7 @@ public class TestShutdownSequence
     @Before
     public void createGraphDb()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @Test

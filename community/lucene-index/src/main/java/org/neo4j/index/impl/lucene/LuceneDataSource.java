@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -96,7 +95,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
-import org.neo4j.kernel.logging.Logging;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -182,23 +180,19 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
-    private final TxIdGenerator txIdGenerator;
 
     /**
      * Constructs this data source.
-     * @param logging 
-     *
      * @throws InstantiationException if the data source couldn't be
      *                                instantiated
      */
     public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory, TxIdGenerator txIdGenerator, Logging logging )
+                             XaFactory xaFactory )
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
         this.xaFactory = xaFactory;
-        this.txIdGenerator = txIdGenerator;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -754,7 +748,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         List<Fieldable> fields = document.getFields();
         for ( Fieldable field : fields )
         {
-            if ( !LuceneIndex.KEY_DOC_ID.equals( field.name() ) )
+            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_START_NODE_ID.equals( field.name() )))
             {
                 return false;
             }
@@ -974,14 +970,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     @Override
                     File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
                     {
-                        if ( !dir.exists() )
+                        if ( !dir.exists() && !dir.mkdirs() )
                         {
-                            if ( !dir.mkdirs() )
-                            {
-                                String message = String.format( "Unable to create directory path[%s] for Neo4j store" +
-                                        ".", dir.getAbsolutePath() );
-                                throw new RuntimeException( message );
-                            }
+                            String message = String.format( "Unable to create directory path[%s] for Neo4j store" +
+                                    ".", dir.getAbsolutePath() );
+                            throw new RuntimeException( message );
                         }
                         return dir;
 

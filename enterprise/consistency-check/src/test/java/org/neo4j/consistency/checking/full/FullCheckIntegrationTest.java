@@ -19,35 +19,62 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
+import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.GraphStoreFixture;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
+import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
@@ -61,7 +88,9 @@ public class FullCheckIntegrationTest
             try
             {
                 Node node1 = set( graphDb.createNode() );
+                node1.addLabel( DynamicLabel.label( "label1" ) );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
+                node2.addLabel( DynamicLabel.label( "label2" ) );
                 node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
                 tx.success();
             }
@@ -80,7 +109,7 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( StoreAccess access ) throws ConsistencyCheckIncompleteException
     {
-        FullCheck checker = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ), ProgressMonitorFactory.NONE );
+        FullCheck checker = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ), ProgressMonitorFactory.NONE );
         return checker.execute( access, StringLogger.wrap( log ) );
     }
 
@@ -147,6 +176,234 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportInlineNodeLabelInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null );
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportNodeDynamicLabelContainingUnknownLabelAsNodeInconsistency() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldNotReportAnythingForNodeWithConsistentChainOfDynamicRecordsWithLabels() throws Exception
+    {
+        // given
+        assertEquals( 3, chainOfDynamicRecordsWithLabelsForANode( 130 ).size() );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertTrue( "should be consistent", stats.isConsistent() );
+    }
+
+    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
+    {
+        // given
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 130 );
+        assertEquals( 3, chain.size() );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                DynamicRecord record1 = inUse( new DynamicRecord( chain.get( 0 ).getId() ) );
+                DynamicRecord record2 = notInUse( new DynamicRecord( chain.get( 1 ).getId() ) );
+                long[] data = (long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) );
+                PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
+                allocateFromNumbers( Arrays.copyOf( data, 11 ), asIterator( record1 ), allocator );
+
+                NodeRecord before = inUse( new NodeRecord( data[0], -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( data[0], -1, -1 ) );
+                before.setLabelField( dynamicPointer( asList( record1 ) ), chain );
+                after.setLabelField( dynamicPointer( asList( record1 ) ), asList( record1, record2 ) );
+                tx.update( before, after );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+    }
+
+    @Test
+    public void shouldReportCyclesInDynamicRecordsWithLabels() throws Exception
+    {
+        // given
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 176/*3 full records*/ );
+        assertEquals( "number of records in chain", 3, chain.size() );
+        assertEquals( "all records full", chain.get( 0 ).getLength(),  chain.get( 2 ).getLength() );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ))[0];
+                NodeRecord before = inUse( new NodeRecord( nodeId, -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( nodeId, -1, -1 ) );
+                DynamicRecord record1 = chain.get( 0 ).clone();
+                DynamicRecord record2 = chain.get( 1 ).clone();
+                DynamicRecord record3 = chain.get( 2 ).clone();
+
+                record3.setNextBlock( record2.getId() );
+                before.setLabelField( dynamicPointer( chain ), chain );
+                after.setLabelField( dynamicPointer( chain ), asList( record1, record2, record3 ) );
+                tx.update( before, after );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    private List<DynamicRecord> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
+    {
+        final long[] labels = new long[labelCount+1]; // allocate enough labels to need three records
+        for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
+        {
+            final int offset = i;
+            fixture.apply( new GraphStoreFixture.Transaction()
+            { // Neo4j can create no more than one label per transaction...
+                @Override
+                protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                                GraphStoreFixture.IdGenerator next )
+                {
+                    tx.nodeLabel( (int) (labels[offset] = next.label()), "label:" + offset );
+                }
+            } );
+        }
+        final List<DynamicRecord> chain = new ArrayList<>();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record1 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                DynamicRecord record2 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
+                labels[0] = nodeRecord.getLongId(); // the first id should not be a label id, but the id of the node
+                PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
+                chain.addAll( allocateFromNumbers(
+                        labels, asIterator( record1, record2, record3 ), allocator ) );
+
+                nodeRecord.setLabelField( dynamicPointer( chain ), chain );
+
+                tx.create( nodeRecord );
+            }
+        } );
+        return chain;
+    }
+
+    @Test
+    public void shouldReportNodeDynamicLabelContainingDuplicateLabelAsNodeInconsistency() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.nodeLabel( 42, "Label" );
+
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l, 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE, stats );
+    }
+
+    @Test
+    public void shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.nodeLabel( 42, "Label" );
+
+                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { next.node(), 42l },
+                        asIterator( record ), new PreAllocatedRecords( 60 ) );
+                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
+
+                tx.create( nodeRecord );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
     }
 
     @Test
@@ -232,6 +489,138 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportBrokenSchemaRecordChain() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                DynamicRecord schema = new DynamicRecord( next.schema() );
+                schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
+                IndexRule rule = IndexRule.indexRule( 1, 1, 1,
+                        new SchemaIndexProvider.Descriptor( "in-memory", "1.0" ) );
+                schema.setData( new RecordSerializer().append( rule ).serialize() );
+
+                tx.createSchema( asList( schema ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
+    }
+
+    @Test
+    public void shouldReportDuplicateConstraintReferences() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.label();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor,
+                        (long) ruleId1 );
+                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
+    }
+
+    @Test
+    public void shouldReportInvalidConstraintBackReferences() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.label();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
+                UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.SCHEMA, stats );
+    }
+
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    {
+        return serializeRule( rule, asList( records ) );
+    }
+
+    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
+    {
+        RecordSerializer serializer = new RecordSerializer();
+        serializer.append( rule );
+
+        byte[] data = serializer.serialize();
+        PreAllocatedRecords dynamicRecordAllocator = new PreAllocatedRecords( data.length );
+        return AbstractDynamicStore.allocateRecordsFromBytes( data, records.iterator(), dynamicRecordAllocator );
+    }
+
+    @Test
     public void shouldReportArrayPropertyInconsistencies() throws Exception
     {
         // given
@@ -244,12 +633,12 @@ public class FullCheckIntegrationTest
                 DynamicRecord array = new DynamicRecord( next.arrayProperty() );
                 array.setInUse( true );
                 array.setCreated();
-                array.setType( PropertyType.ARRAY.intValue() );
+                array.setType( ARRAY.intValue() );
                 array.setNextBlock( next.arrayProperty() );
                 array.setData( UTF8.encode( "hello world" ) );
 
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( (((long) PropertyType.ARRAY.intValue()) << 24) | (array.getId() << 28) );
+                block.setSingleBlock( (((long) ARRAY.intValue()) << 24) | (array.getId() << 28) );
                 block.addValueRecord( array );
 
                 PropertyRecord property = new PropertyRecord( next.property() );
@@ -270,7 +659,7 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipLabelNameInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentName = new Reference<Integer>();
+        final Reference<Integer> inconsistentName = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -282,22 +671,22 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getTypeNameStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getRelationshipTypeNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
-        access.getTypeNameStore().updateRecord( record );
+        access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_LABEL_NAME, stats );
+        verifyInconsistency( RecordType.RELATIONSHIP_TYPE_NAME, stats );
     }
 
     @Test
     public void shouldReportPropertyKeyNameInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentName = new Reference<Integer>();
+        final Reference<Integer> inconsistentName = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -309,9 +698,9 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getPropertyKeyStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
-        access.getPropertyKeyStore().updateRecord( record );
+        access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
@@ -321,27 +710,44 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    public void shouldReportRelationshipLabelInconsistencies() throws Exception
+    public void shouldReportRelationshipTypeInconsistencies() throws Exception
     {
         // given
         StoreAccess access = fixture.storeAccess();
-        RelationshipTypeRecord record = access.getRelationshipTypeStore().forceGetRecord( 1 );
+        RelationshipTypeTokenRecord record = access.getRelationshipTypeTokenStore().forceGetRecord( 1 );
         record.setNameId( 20 );
         record.setInUse( true );
-        access.getRelationshipTypeStore().updateRecord( record );
+        access.getRelationshipTypeTokenStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_LABEL, stats );
+        verifyInconsistency( RecordType.RELATIONSHIP_TYPE, stats );
+    }
+
+    @Test
+    public void shouldReportLabelInconsistencies() throws Exception
+    {
+        // given
+        StoreAccess access = fixture.storeAccess();
+        LabelTokenRecord record = access.getLabelTokenStore().forceGetRecord( 1 );
+        record.setNameId( 20 );
+        record.setInUse( true );
+        access.getLabelTokenStore().updateRecord( record );
+
+        // when
+        ConsistencySummaryStatistics stats = check( access );
+
+        // then
+        verifyInconsistency( RecordType.LABEL, stats );
     }
 
     @Test
     public void shouldReportPropertyKeyInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentKey = new Reference<Integer>();
+        final Reference<Integer> inconsistentKey = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -353,9 +759,9 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.storeAccess();
-        DynamicRecord record = access.getPropertyKeyStore().forceGetRecord( inconsistentKey.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get() );
         record.setInUse( false );
-        access.getPropertyKeyStore().updateRecord( record );
+        access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( access );

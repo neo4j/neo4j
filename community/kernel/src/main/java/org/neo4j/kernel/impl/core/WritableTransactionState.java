@@ -21,22 +21,18 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -55,7 +51,6 @@ public class WritableTransactionState implements TransactionState
 {
     // Dependencies
     private final LockManager lockManager;
-    private final PropertyIndexManager propertyIndexManager;
     private final NodeManager nodeManager;
     private final StringLogger log;
     private final Transaction tx;
@@ -65,8 +60,6 @@ public class WritableTransactionState implements TransactionState
     // State
     private List<LockElement> lockElements;
     private PrimitiveElement primitiveElement;
-    private Map<String, PropertyIndex> createdIndexes;
-    private Map<Integer, PropertyIndex> idToIndex;
 
     public static class PrimitiveElement
     {
@@ -74,10 +67,14 @@ public class WritableTransactionState implements TransactionState
         {
         }
 
-        private final ArrayMap<Long, CowNodeElement> nodes =
-                new ArrayMap<Long, CowNodeElement>();
-        private final ArrayMap<Long, CowRelElement> relationships =
-                new ArrayMap<Long, CowRelElement>();
+        private final ArrayMap<Long,CowNodeElement> nodes =
+                new ArrayMap<Long,CowNodeElement>();
+        private final ArrayMap<Long,CowRelElement> relationships =
+                new ArrayMap<Long,CowRelElement>();
+
+        private final Set<Long> createdNodes = new HashSet<Long>();
+        private final Set<Long> createdRelationships = new HashSet<Long>();
+
         private CowGraphElement graph;
 
         public CowNodeElement nodeElement( long id, boolean create )
@@ -111,7 +108,7 @@ public class WritableTransactionState implements TransactionState
             return graph;
         }
     }
-
+    
     static class CowEntityElement
     {
         protected long id;
@@ -122,6 +119,11 @@ public class WritableTransactionState implements TransactionState
         CowEntityElement( long id )
         {
             this.id = id;
+        }
+
+        public long getId()
+        {
+            return id;
         }
 
         public ArrayMap<Integer, PropertyData> getPropertyAddMap( boolean create )
@@ -136,10 +138,20 @@ public class WritableTransactionState implements TransactionState
 
         private void assertNotDeleted()
         {
-            if ( deleted )
+            if ( isDeleted() )
             {
                 throw new IllegalStateException( this + " has been deleted in this tx" );
             }
+        }
+
+        public boolean isDeleted()
+        {
+            return deleted;
+        }
+        
+        public void setDeleted()
+        {
+            deleted = true;
         }
 
         public ArrayMap<Integer, PropertyData> getPropertyRemoveMap( boolean create )
@@ -159,6 +171,7 @@ public class WritableTransactionState implements TransactionState
             super( id );
         }
 
+        private long firstRel = Record.NO_NEXT_RELATIONSHIP.intValue();
         private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
@@ -213,7 +226,7 @@ public class WritableTransactionState implements TransactionState
             }
             return result;
         }
-
+        
         @Override
         public String toString()
         {
@@ -250,11 +263,9 @@ public class WritableTransactionState implements TransactionState
     }
 
     public WritableTransactionState( LockManager lockManager,
-                                     PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-                                     Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
+            NodeManager nodeManager, Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
-        this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.tx = tx;
         this.txHook = txHook;
@@ -265,8 +276,8 @@ public class WritableTransactionState implements TransactionState
     @Override
     public LockElement acquireWriteLock( Object resource )
     {
-        lockManager.getWriteLock( resource );
-        LockElement lock = new LockElement( resource, LockType.WRITE, lockManager );
+        lockManager.getWriteLock( resource, tx );
+        LockElement lock = new LockElement( resource, tx, LockType.WRITE, lockManager );
         addLockToTransaction( lock );
         return lock;
     }
@@ -274,8 +285,8 @@ public class WritableTransactionState implements TransactionState
     @Override
     public LockElement acquireReadLock( Object resource )
     {
-        lockManager.getReadLock( resource );
-        LockElement lock = new LockElement( resource, LockType.READ, lockManager );
+        lockManager.getReadLock( resource, tx );
+        LockElement lock = new LockElement( resource, tx, LockType.READ, lockManager );
         addLockToTransaction( lock );
         return lock;
     }
@@ -323,20 +334,21 @@ public class WritableTransactionState implements TransactionState
     @Override
     public Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
     {
-        return getOrCreatePrimitiveElement().nodeElement( node.getId(), true ).getRelationshipRemoveMap( type, true );
+        return getPrimitiveElement( true ).nodeElement( node.getId(), true ).getRelationshipRemoveMap( type, true );
     }
 
     @Override
     public void setFirstIds( long nodeId, long firstRel, long firstProp )
     {
-        CowNodeElement nodeElement = getOrCreatePrimitiveElement().nodeElement( nodeId, true );
+        CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
+        nodeElement.firstRel = firstRel;
         nodeElement.firstProp = firstProp;
     }
 
     @Override
     public ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
-        PrimitiveElement primitiveElement = getPrimitiveElement();
+        PrimitiveElement primitiveElement = getPrimitiveElement( false );
         if ( primitiveElement == null )
         {
             return null;
@@ -348,7 +360,7 @@ public class WritableTransactionState implements TransactionState
     @Override
     public RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type )
     {
-        return getOrCreatePrimitiveElement().nodeElement( node.getId(), true ).getRelationshipAddMap( type, true );
+        return getPrimitiveElement( true ).nodeElement( node.getId(), true ).getRelationshipAddMap( type, true );
     }
 
     @Override
@@ -360,7 +372,6 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void commitCows()
     {
-        commitPropertyIndices();
         releaseCows( Status.STATUS_COMMITTED );
     }
 
@@ -377,17 +388,6 @@ public class WritableTransactionState implements TransactionState
         return lockElements != null && !lockElements.isEmpty();
     }
 
-    private void commitPropertyIndices()
-    {
-        if ( createdIndexes != null )
-        {
-            for ( PropertyIndex index : getAddedPropertyIndexes() )
-            {
-                propertyIndexManager.addPropertyIndex( index );
-            }
-        }
-    }
-
     private void releaseLocks()
     {
         if ( lockElements != null )
@@ -398,7 +398,7 @@ public class WritableTransactionState implements TransactionState
             {
                 try
                 {
-                    lockElement.releaseIfAcquired( tx );
+                    lockElement.releaseIfAcquired();
                 }
                 catch ( Exception e )
                 {
@@ -436,10 +436,9 @@ public class WritableTransactionState implements TransactionState
                 CowNodeElement nodeElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    node.commitRelationshipMaps( nodeElement.relationshipAddMap,
-                            nodeElement.relationshipRemoveMap, nodeManager );
+                    node.commitRelationshipMaps( nodeElement.relationshipAddMap, nodeElement.relationshipRemoveMap );
                     node.commitPropertyMaps( nodeElement.propertyAddMap,
-                            nodeElement.propertyRemoveMap, nodeElement.firstProp, nodeManager );
+                            nodeElement.propertyRemoveMap, nodeElement.firstProp );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -462,7 +461,7 @@ public class WritableTransactionState implements TransactionState
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     rel.commitPropertyMaps( relElement.propertyAddMap,
-                            relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue(), nodeManager );
+                            relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue() );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -476,14 +475,13 @@ public class WritableTransactionState implements TransactionState
         if ( primitiveElement.graph != null && param == Status.STATUS_COMMITTED )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( primitiveElement.graph.getPropertyAddMap( false ),
-                    primitiveElement.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue(),
-                    nodeManager );
+                    primitiveElement.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue()
+            );
         }
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap(
-            Primitive primitive )
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap( Primitive primitive )
     {
         if ( primitiveElement == null )
         {
@@ -505,16 +503,9 @@ public class WritableTransactionState implements TransactionState
         return element != null ? element.getPropertyAddMap( false ) : null;
     }
 
-    @Override
-    public PrimitiveElement getPrimitiveElement()
+    private PrimitiveElement getPrimitiveElement( boolean create )
     {
-        return primitiveElement;
-    }
-
-    @Override
-    public PrimitiveElement getOrCreatePrimitiveElement()
-    {
-        if ( primitiveElement == null )
+        if ( primitiveElement == null && create )
         {
             primitiveElement = new PrimitiveElement();
         }
@@ -525,70 +516,42 @@ public class WritableTransactionState implements TransactionState
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
             Primitive primitive )
     {
-        return primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).getPropertyAddMap( true );
+        return primitive.getEntityElement( getPrimitiveElement( true ), true ).getPropertyAddMap( true );
     }
 
     @Override
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
             Primitive primitive )
     {
-        return primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).getPropertyRemoveMap( true );
+        return primitive.getEntityElement( getPrimitiveElement( true ), true ).getPropertyRemoveMap( true );
+    }
+    
+    @Override
+    public void createNode( long id )
+    {
+        getPrimitiveElement( true ).createdNodes.add( id );
     }
 
     @Override
-    public void deletePrimitive( Primitive primitive )
+    public void createRelationship( long id )
     {
-        primitive.getEntityElement( getOrCreatePrimitiveElement(), true ).deleted = true;
+        getPrimitiveElement( true ).createdRelationships.add( id );
     }
-
+    
     @Override
-    public void removeNodeFromCache( long nodeId )
+    public void deleteNode( long id )
     {
-        nodeManager.removeNodeFromCache( nodeId );
+        PrimitiveElement element = getPrimitiveElement( true );
+        element.nodeElement( id, true ).setDeleted();
+        element.createdNodes.remove( id );
     }
-
+    
     @Override
-    public void addRelationshipType( NameData type )
+    public void deleteRelationship( long id )
     {
-        nodeManager.addRelationshipType( type );
-    }
-
-    @Override
-    public void addPropertyIndex( NameData index )
-    {
-        nodeManager.addPropertyIndex( index );
-    }
-
-    @Override
-    public void removeRelationshipFromCache( long id )
-    {
-        nodeManager.removeRelationshipFromCache( id );
-    }
-
-    @Override
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                               long secondNodeNextRelId )
-    {
-        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
-                secondNodeNextRelId );
-    }
-
-    @Override
-    public void removeRelationshipTypeFromCache( int id )
-    {
-        nodeManager.removeRelationshipTypeFromCache( id );
-    }
-
-    @Override
-    public void removeGraphPropertiesFromCache()
-    {
-        nodeManager.removeGraphPropertiesFromCache();
-    }
-
-    @Override
-    public void clearCache()
-    {
-        nodeManager.clearCache();
+        PrimitiveElement element = getPrimitiveElement( true );
+        element.relationshipElement( id, true ).setDeleted();
+        element.createdRelationships.remove( id );
     }
 
     @Override
@@ -613,21 +576,21 @@ public class WritableTransactionState implements TransactionState
             CowRelElement relElement = element.relationships.get( relId );
             RelationshipProxy rel = nodeManager.newRelationshipProxyById( relId );
             RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relId, null );
-            if ( relElement.deleted )
+            if ( relElement.isDeleted() )
             {
-                if ( nodeManager.relCreated( relId ) )
+                if ( primitiveElement.createdRelationships.contains( relId ) )
                 {
                     continue;
                 }
                 // note: this is done in node populate data
                 // result.deleted( rel );
             }
-            if ( relElement.propertyAddMap != null && !relElement.deleted )
+            if ( relElement.propertyAddMap != null && !relElement.isDeleted() )
             {
                 for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
-                    Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key, this );
+                    String key = nodeManager.getKeyForProperty( data );
+                    Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( rel, key, newValue, oldValue );
                 }
@@ -636,11 +599,11 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : relElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
-                    if ( oldValue != null && !relElement.deleted )
+                    if ( oldValue != null && !relElement.isDeleted() )
                     {
-                        relImpl.getCommittedPropertyValue( nodeManager, key, this );
+                        relImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( rel, key, oldValue );
                 }
@@ -656,15 +619,15 @@ public class WritableTransactionState implements TransactionState
             CowNodeElement nodeElement = element.nodes.get( nodeId );
             NodeProxy node = nodeManager.newNodeProxyById( nodeId );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, null );
-            if ( nodeElement.deleted )
+            if ( nodeElement.isDeleted() )
             {
-                if ( nodeManager.nodeCreated( nodeId ) )
+                if ( primitiveElement.createdNodes.contains( nodeId ) )
                 {
                     continue;
                 }
                 result.deleted( node );
             }
-            if ( nodeElement.relationshipAddMap != null && !nodeElement.deleted )
+            if ( nodeElement.relationshipAddMap != null && !nodeElement.isDeleted() )
             {
                 for ( Integer type : nodeElement.relationshipAddMap.keySet() )
                 {
@@ -679,7 +642,7 @@ public class WritableTransactionState implements TransactionState
                     Collection<Long> deletedRels = nodeElement.relationshipRemoveMap.get( type );
                     for ( long relId : deletedRels )
                     {
-                        if ( nodeManager.relCreated( relId ) )
+                        if ( primitiveElement.createdRelationships.contains( relId ) )
                         {
                             continue;
                         }
@@ -691,12 +654,12 @@ public class WritableTransactionState implements TransactionState
                     }
                 }
             }
-            if ( nodeElement.propertyAddMap != null && !nodeElement.deleted )
+            if ( nodeElement.propertyAddMap != null && !nodeElement.isDeleted() )
             {
                 for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
-                    Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key, this );
+                    String key = nodeManager.getKeyForProperty( data );
+                    Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( node, key, newValue, oldValue );
                 }
@@ -705,11 +668,11 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
-                    if ( oldValue == null && !nodeElement.deleted )
+                    if ( oldValue == null && !nodeElement.isDeleted() )
                     {
-                        nodeImpl.getCommittedPropertyValue( nodeManager, key, this );
+                        nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( node, key, oldValue );
                 }
@@ -724,7 +687,7 @@ public class WritableTransactionState implements TransactionState
         {
             long relId = iterator.next();
             CowRelElement relElement = element.relationships.get( relId );
-            if ( relElement != null && relElement.deleted )
+            if ( relElement != null && relElement.isDeleted() )
             {
                 continue;
             }
@@ -739,14 +702,12 @@ public class WritableTransactionState implements TransactionState
     private void populateCreatedNodes( PrimitiveElement element,
                                        TransactionDataImpl result )
     {
-        RelIdArray createdNodes = nodeManager.getCreatedNodes();
-        for ( RelIdIterator iterator = createdNodes.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
+        for ( Long nodeId : getCreatedNodes() )
         {
-            long nodeId = iterator.next();
             if ( element != null )
             {
                 CowNodeElement nodeElement = element.nodes.get( nodeId );
-                if ( nodeElement != null && nodeElement.deleted )
+                if ( nodeElement != null && nodeElement.isDeleted() )
                 {
                     continue;
                 }
@@ -754,59 +715,49 @@ public class WritableTransactionState implements TransactionState
             result.created( nodeManager.newNodeProxyById( nodeId ) );
         }
     }
-
+    
     @Override
-    public void addPropertyIndex( PropertyIndex index )
+    public Set<Long> getCreatedNodes()
     {
-        if ( createdIndexes == null )
-        {
-            createdIndexes = new HashMap<String, PropertyIndex>();
-            idToIndex = new HashMap<Integer, PropertyIndex>();
-        }
-        assert !createdIndexes.containsKey( index.getKey() );
-        createdIndexes.put( index.getKey(), index );
-        idToIndex.put( index.getKeyId(), index );
+        return primitiveElement != null ? primitiveElement.createdNodes : Collections.<Long>emptySet();
     }
 
     @Override
-    public PropertyIndex getPropertyIndex( String key )
+    public Set<Long> getCreatedRelationships()
     {
-        return createdIndexes != null ? createdIndexes.get( key ) : null;
+        return primitiveElement != null ? primitiveElement.createdRelationships : Collections.<Long>emptySet();
     }
 
     @Override
-    public PropertyIndex getPropertyIndex( int keyId )
+    public Iterable<CowNodeElement> getChangedNodes()
     {
-        return idToIndex != null ? idToIndex.get( keyId ) : null;
+        if ( primitiveElement == null )
+            return Iterables.empty();
+
+        return primitiveElement.nodes.values();
     }
 
     @Override
-    public PropertyIndex[] getAddedPropertyIndexes()
-    {
-        return createdIndexes != null ? createdIndexes.values().toArray( new PropertyIndex[createdIndexes.size()] ) :
-                null;
-    }
-
-    @Override
-    public boolean isDeleted( Node node )
+    public boolean nodeIsDeleted( long nodeId )
     {
         if ( primitiveElement == null )
         {
             return false;
         }
-        CowNodeElement nodeElement = primitiveElement.nodeElement( node.getId(), false );
-        return nodeElement != null ? nodeElement.deleted : false;
+
+        CowNodeElement nodeElement = primitiveElement.nodeElement( nodeId, false );
+        return nodeElement != null && nodeElement.isDeleted();
     }
 
     @Override
-    public boolean isDeleted( Relationship relationship )
+    public boolean relationshipIsDeleted( long relationshipId )
     {
         if ( primitiveElement == null )
         {
             return false;
         }
-        CowRelElement relationshipElement = primitiveElement.relationshipElement( relationship.getId(), false );
-        return relationshipElement != null ? relationshipElement.deleted : false;
+        CowRelElement relationshipElement = primitiveElement.relationshipElement( relationshipId, false );
+        return relationshipElement != null && relationshipElement.isDeleted();
     }
 
     @Override

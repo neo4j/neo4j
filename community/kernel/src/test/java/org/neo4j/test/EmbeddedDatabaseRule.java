@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.rules.TemporaryFolder;
@@ -30,7 +31,59 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
  */
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
-    private final TemporaryFolder temp = new TemporaryFolder();
+    private final TempDirectory temp;
+    
+    public EmbeddedDatabaseRule()
+    {
+        this.temp = new TempDirectory()
+        {
+            private final TemporaryFolder folder = new TemporaryFolder();
+            
+            @Override
+            public File root()
+            {
+                return folder.getRoot();
+            }
+            
+            @Override
+            public void delete()
+            {
+                folder.delete();
+            }
+            
+            @Override
+            public void create() throws IOException
+            {
+                folder.create();
+            }
+        };
+    }
+    
+    public EmbeddedDatabaseRule( final Class<?> testClass )
+    {
+        this.temp = new TempDirectory()
+        {
+            private final TargetDirectory targetDirectory = TargetDirectory.forTest( testClass );
+            
+            @Override
+            public File root()
+            {
+                return targetDirectory.graphDbDir( false );
+            }
+            
+            @Override
+            public void delete() throws IOException
+            {
+                targetDirectory.cleanup();
+            }
+            
+            @Override
+            public void create()
+            {
+                targetDirectory.graphDbDir( true );
+            }
+        };
+    }
     
     @Override
     protected GraphDatabaseFactory newFactory()
@@ -39,9 +92,9 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
     
     @Override
-    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+    protected GraphDatabaseBuilder newBuilder(GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( temp.getRoot().getAbsolutePath() );
+        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsolutePath() );
     }
 
     @Override
@@ -53,6 +106,22 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected void deleteResources()
     {
-        temp.delete();
+        try
+        {
+            temp.delete();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    private interface TempDirectory
+    {
+        File root();
+        
+        void create() throws IOException;
+        
+        void delete() throws IOException;
     }
 }

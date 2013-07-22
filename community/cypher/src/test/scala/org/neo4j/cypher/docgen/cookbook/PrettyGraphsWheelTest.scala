@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class PrettyGraphsWheelTest extends DocumentingTestBase {
   def graphDescription = List()
@@ -29,6 +31,9 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"
   override val graphvizExecutedAfter = true
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   @Test def completeGraph() {
     testQuery(
@@ -42,8 +47,8 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
 - Find the minimum and maximum leaf and connect these.
 - Return the id of the center node.""",
       queryText = """CREATE center
-foreach( x in range(1,6) : 
-   CREATE leaf={count:x}, center-[:X]->leaf
+foreach( x in range(1,6) |
+   CREATE (leaf {count:x}), center-[:X]->leaf
 )
 WITH center
 MATCH large_leaf<--center-->small_leaf

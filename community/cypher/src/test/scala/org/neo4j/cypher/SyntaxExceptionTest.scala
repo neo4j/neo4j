@@ -21,178 +21,228 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
-import org.junit.{Test}
+import org.junit.Test
+import org.scalatest.Assertions
+import org.hamcrest.CoreMatchers.equalTo
+import CypherVersion._
+import org.neo4j.cypher.internal.commands.{ReturnItem, SortItem, NodeById, Query}
+import org.neo4j.cypher.internal.commands.expressions.CountStar
 
-class SyntaxExceptionTest extends JUnitSuite {
-  def expectError(query: String, expectedError: String) {
-    val parser = new CypherParser()
-    try {
-      parser.parse(query)
-      fail("Should have produced the error: " + expectedError)
-    } catch {
-      case x: SyntaxException => {
-        assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
-      }
-    }
-  }
-
+class SyntaxExceptionTest extends JUnitSuite with Assertions {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
-    expectError(
-      "start s = node:index(key=) return s",
-      "string literal or parameter expected")
+    test("start s = node:index(key=) return s",
+      v2_0    -> "string literal or parameter expected",
+      vExperimental -> "Invalid input ')': expected whitespace, \"...string...\" or a parameter (line 1, column 26)"
+    )
   }
 
   @Test def shouldGiveNiceErrorWhenMissingEqualsSign() {
-    expectError(
-      "start n=node:customer(id : {id}) return n",
-      "`=` expected")
+    test("start n=node:customer(id : {id}) return n",
+      v2_0    -> "`=` expected",
+      vExperimental -> "Invalid input ':': expected whitespace, comment or '=' (line 1, column 26)"
+    )
   }
 
   @Test def shouldRaiseErrorWhenMissingIndexKey() {
-    expectError(
-      "start s = node:index(=\"value\") return s",
-      "Need index key")
+    test("start s = node:index(=\"value\") return s",
+      v2_0    -> "Need index key",
+      vExperimental -> "Invalid input '=': expected whitespace, an identifier, \"...string...\" or a parameter (line 1, column 22)"
+    )
   }
 
   @Test def startWithoutNodeOrRel() {
-    expectError(
-      "start s return s",
-      "expected identifier assignment")
+    test("start s return s",
+      v2_0    -> "expected identifier assignment",
+      vExperimental -> "Invalid input 'r': expected whitespace, comment or '=' (line 1, column 9)"
+    )
   }
 
   @Test def shouldRaiseErrorWhenMissingReturnColumns() {
-    expectError(
-      "start s = node(0) return",
-      "return column list expected")
+    test("start s = node(0) return",
+      v2_0    -> "return column list expected",
+      vExperimental -> "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 25)"
+    )
   }
 
   @Test def shouldRaiseErrorWhenMissingReturn() {
-    expectError(
-      "start s = node(0)",
-      "Non-mutating queries must return data")
+    test("start s = node(0)",
+      v2_0    -> "expected return clause",
+      vExperimental -> "Query must conclude with RETURN, WITH or an update clause (line 1, column 18)"
+    )
   }
 
   @Test def shouldWarnAboutMissingStart() {
-    expectError(
-      "where s.name = Name and s.age = 10 return s",
-      "expected START or CREATE")
+    test("where s.name = 'Name' and s.age = 10 return s",
+      v2_0    -> "invalid start of query",
+      vExperimental -> "Query must begin with START, MATCH or CREATE (line 1, column 1)"
+    )
   }
 
   @Test def shouldComplainAboutWholeNumbers() {
-    expectError(
-      "start s=node(0) return s limit -1",
-      "expected positive integer or parameter")
+    test("start s=node(0) return s limit -1",
+      v2_0    -> "expected positive integer or parameter",
+      vExperimental -> "Invalid input '-': expected whitespace, comment, an unsigned integer or a parameter (line 1, column 32)"
+    )
   }
 
   @Test def matchWithoutIdentifierHasToHaveParenthesis() {
-    expectError(
-      "start a = node(0) match a--b, --> a return a",
-      "expected an expression that is a node")
+    test("start a = node(0) match a--b, --> a return a",
+      v2_0    -> "expected an expression that is a node",
+      vExperimental -> "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 31)"
+    )
   }
 
   @Test def matchWithoutIdentifierHasToHaveParenthesis2() {
-    expectError(
-      "start a = node(0) match (a) -->, a-->b return a",
-      "expected an expression that is a node")
+    test("start a = node(0) match (a) -->, a-->b return a",
+      v2_0    -> "expected an expression that is a node",
+      vExperimental -> "Invalid input ',': expected whitespace or a node pattern (line 1, column 32)"
+    )
   }
 
-
   @Test def shouldComplainAboutAStringBeingExpected() {
-    expectError(
-      "start s=node:index(key = value) return s",
-      "string literal or parameter expected")
+    test("start s=node:index(key = value) return s",
+      v2_0    -> "string literal or parameter expected",
+      vExperimental -> "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 1, column 26)"
+    )
   }
 
   @Test def shortestPathCanNotHaveMinimumDepth() {
-    expectError(
-      "start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
-      "Shortest path does not support a minimal length")
+    test("start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
+      v2_0    -> "Shortest path does not support a minimal length",
+      vExperimental -> "shortestPath does not support a minimal length (line 1, column 36)"
+    )
   }
 
   @Test def shortestPathCanNotHaveMultipleLinksInIt() {
-    expectError(
-      "start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
-      "expected single path segment")
+    test("start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
+      v2_0    -> "expected single path segment for shortest path",
+      vExperimental -> "shortestPath requires a pattern containing a single relationship (line 1, column 36)"
+    )
   }
 
   @Test def oldNodeSyntaxGivesHelpfulError() {
-    expectError(
-      "start a=(0) return a",
-      "expected either node or relationship here")
+    test("start a=(0) return a",
+      v2_0    -> "expected either node or relationship here",
+      vExperimental -> "Invalid input '(': expected whitespace, NODE or RELATIONSHIP (line 1, column 9)"
+    )
   }
 
   @Test def weirdSpelling() {
-    expectError(
-      "start a=ndoe(0) return a",
-      "expected either node or relationship here")
+    test("start a=ndoe(0) return a",
+      v2_0    -> "expected either node or relationship here",
+      vExperimental -> "Invalid input 'd': expected 'o/O' (line 1, column 10)"
+    )
   }
 
   @Test def unclosedParenthesis() {
-    expectError(
-      "start a=node(0 return a",
-      "Unclosed parenthesis")
+    test("start a=node(0 return a",
+      v2_0    -> "Unclosed parenthesis",
+      vExperimental -> "Invalid input 'r': expected whitespace, comment, ',' or ')' (line 1, column 16)"
+    )
   }
 
   @Test def trailingComa() {
-    expectError(
-      "start a=node(0,1,) return a",
-      "trailing coma")
+    test("start a=node(0,1,) return a",
+      v2_0    -> "trailing coma",
+      vExperimental -> "Invalid input ')': expected whitespace or an unsigned integer (line 1, column 18)"
+    )
   }
 
   @Test def unclosedCurly() {
-    expectError(
-      "start a=node({0) return a",
-      "Unclosed curly bracket")
+    test("start a=node({0) return a",
+      v2_0    -> "Unclosed curly brackets",
+      vExperimental -> "Invalid input ')': expected an identifier character, whitespace or '}' (line 1, column 16)"
+    )
   }
 
   @Test def twoEqualSigns() {
-    expectError(
-      "start a==node(0) return a",
-      "expected either node or relationship here")
+    test("start a==node(0) return a",
+      v2_0    -> "expected either node or relationship here",
+      vExperimental -> "Invalid input '=' (line 1, column 9)"
+    )
   }
 
   @Test def oldSyntax() {
-    expectError(
-      "start a=node(0) where all(x in a.prop : x = 'apa') return a",
-      "expected where")
+    test("start a=node(0) where all(x in a.prop : x = 'apa') return a",
+      v2_0 -> "expected where"
+    )
   }
 
 
   @Test def forgetByInOrderBy() {
-    expectError(
-      "start a=node(0) return a order a.name",
-      "expected by")
+    test("start a=node(0) return a order a.name",
+      v2_0    -> "expected by",
+      vExperimental -> "Invalid input 'a': expected whitespace, comment or BY (line 1, column 32)"
+    )
   }
 
   @Test def unknownFunction() {
-    expectError(
-      "start a=node(0) return foo(a)",
-      "unknown function")
+    test("start a=node(0) return foo(a)",
+      v2_0    -> "unknown function",
+      vExperimental -> "Unknown function 'foo' (line 1, column 24)"
+    )
   }
 
-  @Test def handlesMultilineQueries() {
-    expectError("""start
-    a=node(0),
-    b=node(0),
-    c=node(0),
-    d=node(0),
-    e=node(0),
-    f=node(0),
-    g=node(0),
-    s=node:index(key = value) return s""",
-      "string literal or parameter expected")
+  @Test def usingRandomFunctionInAggregate() {
+    test("start a=node(0) return count(rand())",
+      v2_0 -> "Can't use non-deterministic (random) functions inside of aggregate functions."
+    )
+  }
+
+  @Test def handlesMultiLineQueries() {
+    test(
+      """start
+         a=node(0),
+         b=node(0),
+         c=node(0),
+         d=node(0),
+         e=node(0),
+         f=node(0),
+         g=node(0),
+         s=node:index(key = value) return s""",
+      v2_0    -> "string literal or parameter expected",
+      vExperimental -> "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 9, column 29)"
+    )
   }
 
   @Test def createNodeWithout() {
-    expectError("""start
-    a=node(0),
-    b=node(0),
-    c=node(0),
-    d=node(0),
-    e=node(0),
-    f=node(0),
-    g=node(0),
-    s=node:index(key = value) return s""",
-      "string literal or parameter expected")
+    test(
+      """start
+         a=node(0),
+         b=node(0),
+         c=node(0),
+         d=node(0),
+         e=node(0),
+         f=node(0),
+         g=node(0),
+         s=node:index(key = value) return s""",
+      v2_0    -> "string literal or parameter expected",
+      vExperimental -> "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 9, column 29)"
+    )
+  }
+
+  private def test(query: String, variants: (CypherVersion, String)*) {
+    for ((versions, message) <- variants) {
+      test(versions, query, message)
+    }
+  }
+
+  def test(version: CypherVersion, query: String, message: String) {
+    val (qWithVer, versionString) = version match {
+      case `v2_0` => (query, "the default parser")
+      case _      => (s"cypher ${version.name} " + query, "parser version " + version.name)
+    }
+    val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
+
+    val parser = new CypherParser()
+    try {
+      val result = parser.parse(qWithVer)
+      fail(errorMessage)
+    } catch {
+      case x: CypherException => {
+        val actual = x.getMessage.lines.next.trim
+        assertThat(errorMessage, actual, equalTo(message))
+      }
+    }
   }
 }

@@ -24,12 +24,13 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.PathEvaluator;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.traversal.Evaluation.ofIncludes;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -49,9 +50,78 @@ public class TestBranchState extends AbstractTestBase
          *           (e) -> (f) -> (g) -> (h)
          */
         createGraph( "a to b", "b to c", "c to d", "b to e", "e to f", "f to d", "f to g", "g to h" );
-        
-        DepthStateExpander expander = new DepthStateExpander();
-        count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
+
+        Transaction tx = beginTx();
+        try
+        {
+            DepthStateExpander expander = new DepthStateExpander();
+            count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
+    public void everyOtherDepthAsState() throws Exception
+    {
+        /*
+         * (a) -> (b) -> (c) -> (e)
+         */
+        createGraph( "a to b", "b to c", "c to d", "d to e" );
+        Transaction tx = beginTx();
+        try
+        {
+
+        /*
+         * Asserts that state continues down branches even when expander doesn't
+         * set new state for every step.
+         */
+            IncrementEveryOtherDepthCountingExpander expander = new IncrementEveryOtherDepthCountingExpander();
+            count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
+            tx.success();
+        }
+
+        finally
+
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
+    public void evaluateState() throws Exception
+    {
+        /*
+         * (a)-1->(b)-2->(c)-3->(d)
+         *   \           ^
+         *    4         6
+         *    (e)-5->(f)
+         */
+        createGraph( "a TO b", "b TO c", "c TO d", "a TO e", "e TO f", "f TO c" );
+
+        Transaction tx = beginTx();
+        try
+        {
+            PathEvaluator<Integer> evaluator = new PathEvaluator.Adapter<Integer>()
+            {
+                @Override
+                public Evaluation evaluate( Path path, BranchState<Integer> state )
+                {
+                    return ofIncludes( path.endNode().getProperty( "name" ).equals( "c" ) && state.getState() == 3 );
+                }
+            };
+
+            expectPaths( traversal( NODE_PATH ).expand( new RelationshipWeightExpander(), new InitialBranchState.State<Integer>( 1, 1 ) )
+                    .evaluator( evaluator ).traverse( getNodeWithName( "a" ) ), "a,b,c" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
     
     private static class DepthStateExpander implements PathExpander<Integer>
@@ -70,23 +140,7 @@ public class TestBranchState extends AbstractTestBase
             return this;
         }
     }
-    
-    @Test
-    public void everyOtherDepthAsState() throws Exception
-    {
-        /*
-         * (a) -> (b) -> (c) -> (e)
-         */
-        createGraph( "a to b", "b to c", "c to d", "d to e" );
-        
-        /*
-         * Asserts that state continues down branches even when expander doesn't
-         * set new state for every step.
-         */
-        IncrementEveryOtherDepthCountingExpander expander = new IncrementEveryOtherDepthCountingExpander();
-        count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
-    }
-    
+
     private static class IncrementEveryOtherDepthCountingExpander implements PathExpander<Integer>
     {
         @Override
@@ -94,7 +148,7 @@ public class TestBranchState extends AbstractTestBase
         {
             assertEquals( path.length()/2, state.getState().intValue() );
             if ( path.length() % 2 == 1 )
-                state.setState( ((Integer) state.getState())+1 );
+                state.setState( state.getState() + 1 );
             return path.endNode().getRelationships( Direction.OUTGOING );
         }
 
@@ -103,30 +157,6 @@ public class TestBranchState extends AbstractTestBase
         {
             return this;
         }
-    }
-    
-    @Test
-    public void evaluateState() throws Exception
-    {
-        /*
-         * (a)-1->(b)-2->(c)-3->(d)
-         *   \           ^
-         *    4         6
-         *    (e)-5->(f)
-         */
-        createGraph( "a TO b", "b TO c", "c TO d", "a TO e", "e TO f", "f TO c" );
-
-        PathEvaluator<Integer> evaluator = new PathEvaluator.Adapter<Integer>()
-        {
-            @Override
-            public Evaluation evaluate( Path path, BranchState<Integer> state )
-            {
-                return ofIncludes( path.endNode().getProperty( "name" ).equals( "c" ) && state.getState() == 3 );
-            }
-        };
-        
-        expectPaths( traversal( NODE_PATH ).expand( new RelationshipWeightExpander(), new InitialBranchState.State<Integer>( 1, 1 ) )
-                .evaluator( evaluator ).traverse( getNodeWithName( "a" ) ), "a,b,c" );
     }
     
     private static class RelationshipWeightExpander implements PathExpander<Integer>

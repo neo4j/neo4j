@@ -31,8 +31,8 @@ class PatternNode(key: String) extends PatternElement(key) {
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship, ctx:QueryContext): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node, ctx)
 
-  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction, optional: Boolean, predicate: Predicate): PatternRelationship = {
-    val rel = new PatternRelationship(key, this, other, relType, dir, optional, predicate)
+  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction, optional: Boolean): PatternRelationship = {
+    val rel = new PatternRelationship(key, this, other, relType, dir, optional)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
@@ -45,9 +45,8 @@ class PatternNode(key: String) extends PatternElement(key) {
                                     relType: Seq[String],
                                     dir: Direction,
                                     collectionOfRels: Option[String],
-                                    optional: Boolean,
-                                    predicate: Predicate): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, dir, optional, predicate)
+                                    optional: Boolean): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, dir, optional)
     relationships.add(rel)
     end.relationships.add(rel)
     rel

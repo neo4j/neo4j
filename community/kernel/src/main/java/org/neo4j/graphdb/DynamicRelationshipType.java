@@ -102,7 +102,7 @@ public final class DynamicRelationshipType implements RelationshipType
     @Override
     public String toString()
     {
-        return "DynamicRelationshipType[" + this.name() + "]";
+        return this.name;
     }
 
     /**

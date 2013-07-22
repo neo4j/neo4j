@@ -19,18 +19,13 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
-import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
-import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
-import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
-import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
@@ -42,15 +37,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 
 public class FullCheck
 {
@@ -92,37 +91,69 @@ public class FullCheck
                 new ConsistencyReporter( recordAccess, report ) );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
-        List<StoreProcessorTask> tasks = new ArrayList<StoreProcessorTask>( 9 );
+        List<StoreProcessorTask> tasks = new ArrayList<>( 16 );
+
 
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
                 decorator, totalMappedMemory, store, recordAccess, report );
 
-        tasks.add( new StoreProcessorTask<NodeRecord>(
+        tasks.add( new StoreProcessorTask<>(
                 store.getNodeStore(), progress, order,
                 processEverything, processorFactory.createAll( PROPERTIES, RELATIONSHIPS ) ) );
-        tasks.add( new StoreProcessorTask<RelationshipRecord>(
+
+        tasks.add( new StoreProcessorTask<>(
                 store.getRelationshipStore(), progress, order,
                 processEverything, processorFactory.createAll( NODES, PROPERTIES, RELATIONSHIPS ) ) );
-        tasks.add( new StoreProcessorTask<PropertyRecord>(
+        tasks.add( new StoreProcessorTask<>(
                 store.getPropertyStore(), progress, order,
                 processEverything, processorFactory.createAll( PROPERTIES, STRINGS, ARRAYS ) ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>(
+        tasks.add( new StoreProcessorTask<>(
                 store.getStringStore(), progress, order,
                 processEverything, processorFactory.createAll( STRINGS ) ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>(
+        tasks.add( new StoreProcessorTask<>(
                 store.getArrayStore(), progress, order,
                 processEverything, processorFactory.createAll( ARRAYS ) ) );
-        tasks.add( new StoreProcessorTask<RelationshipTypeRecord>(
-                store.getRelationshipTypeStore(), progress, order,
+
+        // The schema store is verified in multiple passes that share state since it fits into memory
+        // and we care about the consistency of back references (cf. SemanticCheck)
+
+        // PASS 1: Dynamic record chains
+        tasks.add( new StoreProcessorTask<>(
+                store.getSchemaStore(), progress, order,
                 processEverything, processEverything ) );
-        tasks.add( new StoreProcessorTask<PropertyIndexRecord>(
-                store.getPropertyIndexStore(), progress, order,
+
+        // PASS 2: Rule integrity and obligation build up
+        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( (SchemaStore) store.getSchemaStore() );
+        tasks.add( new SchemaStoreProcessorTask<>(
+                store.getSchemaStore(), "check_rules", schemaCheck, progress, order,
                 processEverything, processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>(
-                store.getTypeNameStore(), progress, order,
+
+        // PASS 3: Obligation verification and semantic rule uniqueness
+        tasks.add( new SchemaStoreProcessorTask<>(
+                store.getSchemaStore(), "check_obligations", schemaCheck.forObligationChecking(), progress, order,
                 processEverything, processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>(
-                store.getPropertyKeyStore(), progress, order,
+
+        tasks.add( new StoreProcessorTask<>(
+                store.getRelationshipTypeTokenStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<>(
+                store.getPropertyKeyTokenStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<>(
+                store.getLabelTokenStore(), progress, order,
+                processEverything, processEverything ) );
+
+        tasks.add( new StoreProcessorTask<>(
+                store.getRelationshipTypeNameStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<>(
+                store.getPropertyKeyNameStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<>(
+                store.getLabelNameStore(), progress, order,
+                processEverything, processEverything ) );
+
+        tasks.add( new StoreProcessorTask<>( store.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
         order.execute( tasks, progress.build() );
@@ -132,8 +163,9 @@ public class FullCheck
     {
         return new CacheSmallStoresRecordAccess(
                 new DirectRecordAccess( store ),
-                readAllRecords( PropertyIndexRecord.class, store.getPropertyIndexStore() ),
-                readAllRecords( RelationshipTypeRecord.class, store.getRelationshipTypeStore() ) );
+                readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
+                readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
+                readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

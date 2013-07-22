@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 @Ignore( "Impermanent graph database doesn't use GC resistant cache" )
 public class TestCacheObjectReuse
@@ -63,7 +64,7 @@ public class TestCacheObjectReuse
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME )
-                .setConfig( GraphDatabaseSettings.node_cache_array_fraction, "10" )
+                .setConfig( GcrSettings.node_cache_array_fraction, "10" )
                 .newGraphDatabase();
         try
         {

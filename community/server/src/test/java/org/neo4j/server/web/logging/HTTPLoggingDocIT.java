@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.web.logging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -46,8 +38,17 @@ import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class HTTPLoggingDocIT
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Settings.osIsWindows;
+
+public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
     @Test
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
@@ -190,8 +191,8 @@ public class HTTPLoggingDocIT
             TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
 
             file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
-            file.mkdirs();
-            file.setWritable( false, false );
+            assertTrue( "create directory to be unwritable", file.mkdirs() );
+            assertTrue( "mark directory as unwritable", file.setWritable( false, false ) );
         }
 
         return file;

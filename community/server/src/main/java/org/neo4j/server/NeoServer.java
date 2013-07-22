@@ -25,6 +25,7 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 
 public interface NeoServer
@@ -38,6 +39,8 @@ public interface NeoServer
     Configuration getConfiguration();
 
     Database getDatabase();
+
+    TransactionRegistry getTransactionRegistry();
 
     Configurator getConfigurator();
 

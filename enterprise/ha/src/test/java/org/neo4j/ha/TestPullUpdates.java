@@ -67,7 +67,7 @@ public class TestPullUpdates
     @Ignore("Breaks more often than it passes - must wait for a fix")
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch", true );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms") );
         clusterManager.start();
@@ -93,7 +93,7 @@ public class TestPullUpdates
     @Test
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates", true );
         Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
         for (int i = 1; i <= 2; i++)
         {
@@ -189,7 +189,7 @@ public class TestPullUpdates
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 Object value = db.getReferenceNode().getProperty( "i", null );
-                if ( value == null || ((Integer) value).intValue() != i )
+                if ( value == null || (Integer) value != i )
                 {
                     ok = false;
                 }

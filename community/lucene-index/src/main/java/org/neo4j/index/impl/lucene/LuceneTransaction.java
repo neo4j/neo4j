@@ -66,7 +66,7 @@ class LuceneTransaction extends XaTransaction
     {
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
-        insert( index, entity, key, value, data.added( true ), data.removed( false ) );
+        insert( entity, key, value, data.added( true ), data.removed( false ) );
         queueCommand( index.newAddCommand( entity, key, value ) );
     }
 
@@ -94,21 +94,21 @@ class LuceneTransaction extends XaTransaction
     {
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
-        insert( index, entity, key, value, data.removed( true ), data.added( false ) );
+        insert( entity, key, value, data.removed( true ), data.added( false ) );
         queueCommand( index.newRemoveCommand( entity, key, value ) );
     }
 
     <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity, String key )
     {
         TxDataBoth data = getTxData( index, true );
-        insert( index, entity, key, null, data.removed( true ), data.added( false ) );
+        insert( entity, key, null, data.removed( true ), data.added( false ) );
         queueCommand( index.newRemoveCommand( entity, key, null ) );
     }
 
     <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity )
     {
         TxDataBoth data = getTxData( index, true );
-        insert( index, entity, null, null, data.removed( true ), data.added( false ) );
+        insert( entity, null, null, data.removed( true ), data.added( false ) );
         queueCommand( index.newRemoveCommand( entity, null, null ) );
     }
 
@@ -136,8 +136,8 @@ class LuceneTransaction extends XaTransaction
         return commands;
     }
 
-    private <T extends PropertyContainer> void insert( LuceneIndex<T> index,
-            T entity, String key, Object value, TxDataHolder insertInto, TxDataHolder removeFrom )
+    private <T extends PropertyContainer> void insert( T entity, String key, Object value, TxDataHolder insertInto,
+                                                       TxDataHolder removeFrom )
     {
         Object id = getEntityId( entity );
         if ( removeFrom != null )

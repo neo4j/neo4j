@@ -18,6 +18,10 @@ include::syntax/index.asciidoc[]
 
 :leveloffset: 1
 
+include::general.asciidoc[]
+
+:leveloffset: 1
+
 include::read.asciidoc[]
 
 :leveloffset: 1
@@ -27,6 +31,14 @@ include::write.asciidoc[]
 :leveloffset: 1
 
 include::ql/functions/index.asciidoc[]
+
+:leveloffset: 1
+
+include::schema.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plans.asciidoc[]
 
 :leveloffset: 1
 

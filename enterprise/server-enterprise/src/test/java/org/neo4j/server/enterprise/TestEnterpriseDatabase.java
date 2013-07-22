@@ -20,16 +20,15 @@
 package org.neo4j.server.enterprise;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-
 public class TestEnterpriseDatabase
 {
-
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable
     {

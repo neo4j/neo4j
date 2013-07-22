@@ -20,23 +20,21 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.Set;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
+import static java.util.Collections.emptySet;
+
 public class NoTransactionState implements TransactionState
 {
-    protected final PropertyIndex[] EMPTY_PROPERTY_INDEX_ARRAY = new PropertyIndex[0];
-
     @Override
     public LockElement acquireWriteLock( Object resource )
     {
@@ -112,19 +110,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public PrimitiveElement getPrimitiveElement()
-    {
-        return null;
-    }
-
-
-    @Override
-    public PrimitiveElement getOrCreatePrimitiveElement()
-    {
-        return null;
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive )
     {
         throw new NotInTransactionException();
@@ -137,90 +122,43 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void deletePrimitive( Primitive primitive )
+    public void deleteNode( long id )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public void removeNodeFromCache( long nodeId )
+    public void deleteRelationship( long id )
     {
+        throw new NotInTransactionException();
     }
-
+    
     @Override
-    public void addRelationshipType( NameData type )
+    public void createNode( long id )
     {
+        throw new NotInTransactionException();
     }
-
+    
     @Override
-    public void addPropertyIndex( NameData index )
+    public void createRelationship( long id )
     {
+        throw new NotInTransactionException();
     }
-
-    @Override
-    public void removeRelationshipFromCache( long id )
-    {
-    }
-
-    @Override
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                               long secondNodeNextRelId )
-    {
-    }
-
-    @Override
-    public void removeRelationshipTypeFromCache( int id )
-    {
-    }
-
-    @Override
-    public void removeGraphPropertiesFromCache()
-    {
-    }
-
-    @Override
-    public void clearCache()
-    {
-    }
-
+    
     @Override
     public TransactionData getTransactionData()
     {
         throw new NotInTransactionException();
     }
-
-    @Override
-    public void addPropertyIndex( PropertyIndex index )
-    {
-        throw new NotInTransactionException();
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( String key )
-    {
-        return null;
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( int keyId )
-    {
-        return null;
-    }
     
     @Override
-    public PropertyIndex[] getAddedPropertyIndexes()
-    {
-        return EMPTY_PROPERTY_INDEX_ARRAY;
-    }
-
-    @Override
-    public boolean isDeleted( Node node )
+    public boolean nodeIsDeleted( long nodeId )
     {
         return false;
     }
-
+    
     @Override
-    public boolean isDeleted( Relationship relationship )
+    public boolean relationshipIsDeleted( long relationshpId )
     {
         return false;
     }
@@ -246,5 +184,23 @@ public class NoTransactionState implements TransactionState
     public TxIdGenerator getTxIdGenerator()
     {
         return null;
+    }
+
+    @Override
+    public Set<Long> getCreatedNodes()
+    {
+        return emptySet();
+    }
+
+    @Override
+    public Set<Long> getCreatedRelationships()
+    {
+        return emptySet();
+    }
+
+    @Override
+    public Iterable<WritableTransactionState.CowNodeElement> getChangedNodes()
+    {
+        return Iterables.empty();
     }
 }

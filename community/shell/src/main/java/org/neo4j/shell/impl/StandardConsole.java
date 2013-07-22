@@ -53,7 +53,7 @@ public class StandardConsole implements Console
 	        if ( consoleReader == null )
 	        {
 	            consoleReader = new BufferedReader( new InputStreamReader(
-	                System.in ) );
+	                System.in, "UTF-8" ) );
 	        }
 	        return consoleReader.readLine();
 	    }

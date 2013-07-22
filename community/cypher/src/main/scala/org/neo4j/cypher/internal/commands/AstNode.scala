@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
+import org.neo4j.cypher.CypherTypeException
 
 
 trait AstNode[T] {
@@ -27,9 +28,12 @@ trait AstNode[T] {
 
   def rewrite(f: Expression => Expression): T
 
-  def exists(f: Expression => Boolean) = filter(f).nonEmpty
+  def typedRewrite[R <: T](f: Expression => Expression)(implicit mf: Manifest[R]): R = rewrite(f) match {
+    case (value: R) => value
+    case _          => throw new CypherTypeException("Invalid rewrite")
+  }
 
-  def addsToRow():Seq[String] = Nil
+  def exists(f: Expression => Boolean) = filter(f).nonEmpty
 
   def filter(isMatch: Expression => Boolean): Seq[Expression] =
   // We use our visit method to create an traversable, from which we create the Seq
@@ -59,3 +63,4 @@ trait AstNode[T] {
     }
   }
 }
+

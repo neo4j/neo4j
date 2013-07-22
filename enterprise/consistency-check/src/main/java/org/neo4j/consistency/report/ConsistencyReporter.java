@@ -19,10 +19,6 @@
  */
 package org.neo4j.consistency.report;
 
-import static java.lang.reflect.Proxy.getInvocationHandler;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.Exceptions.withCause;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -38,11 +34,19 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static java.lang.reflect.Proxy.getInvocationHandler;
+import static java.util.Arrays.asList;
+
+import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
@@ -63,18 +67,24 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
     }
 
+    private static final ProxyFactory<ConsistencyReport.SchemaConsistencyReport> SCHEMA_REPORT =
+            ProxyFactory.create( ConsistencyReport.SchemaConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.NodeConsistencyReport> NODE_REPORT =
             ProxyFactory.create( ConsistencyReport.NodeConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipConsistencyReport> RELATIONSHIP_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyConsistencyReport> PROPERTY_REPORT =
             ProxyFactory.create( ConsistencyReport.PropertyConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.LabelConsistencyReport> LABEL_REPORT =
-            ProxyFactory.create( ConsistencyReport.LabelConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.PropertyKeyConsistencyReport> PROPERTY_KEY_REPORT =
-            ProxyFactory.create( ConsistencyReport.PropertyKeyConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.RelationshipTypeConsistencyReport> RELATIONSHIP_TYPE_REPORT =
+            ProxyFactory.create( ConsistencyReport.RelationshipTypeConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.LabelTokenConsistencyReport> LABEL_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.LabelTokenConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.PropertyKeyTokenConsistencyReport> PROPERTY_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
             ProxyFactory.create( ConsistencyReport.DynamicConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.DynamicLabelConsistencyReport> DYNAMIC_LABEL_REPORT =
+            ProxyFactory.create( ConsistencyReport.DynamicLabelConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -341,6 +351,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
+    public void forSchema( DynamicRecord schema,
+                           RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        dispatch( RecordType.SCHEMA, SCHEMA_REPORT, schema, checker );
+    }
+
+    @Override
+    public void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema, RecordCheck<DynamicRecord,
+            ConsistencyReport.SchemaConsistencyReport> checker )
+    {
+        dispatchChange( RecordType.SCHEMA, SCHEMA_REPORT, oldSchema, newSchema, checker );
+    }
+
+    @Override
     public void forNode( NodeRecord node,
                          RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
     {
@@ -383,29 +407,44 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forRelationshipLabel( RelationshipTypeRecord label,
-                                      RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipTypeTokenRecord,
+                                         RecordCheck<RelationshipTypeTokenRecord,
+                                                 ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatch( RecordType.RELATIONSHIP_LABEL, LABEL_REPORT, label, checker );
+        dispatch( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
     }
 
     @Override
-    public void forRelationshipLabelChange( RelationshipTypeRecord oldLabel, RelationshipTypeRecord newLabel,
-                                            RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+    public void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
+                                               RecordCheck<RelationshipTypeTokenRecord,
+                                                       ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
-        dispatchChange( RecordType.RELATIONSHIP_LABEL, LABEL_REPORT, oldLabel, newLabel, checker );
+        dispatchChange( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
     }
 
     @Override
-    public void forPropertyKey( PropertyIndexRecord key,
-                                RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+    {
+        dispatch( RecordType.LABEL, LABEL_KEY_REPORT, label, checker );
+    }
+
+    @Override
+    public void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel, RecordCheck<LabelTokenRecord,
+            ConsistencyReport.LabelTokenConsistencyReport> checker )
+    {
+        dispatchChange( RecordType.LABEL, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
+    }
+
+    @Override
+    public void forPropertyKey( PropertyKeyTokenRecord key,
+                                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         dispatch( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, key, checker );
     }
 
     @Override
-    public void forPropertyKeyChange( PropertyIndexRecord oldKey, PropertyIndexRecord newKey,
-                                      RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+    public void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
+                                      RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         dispatchChange( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, oldKey, newKey, checker );
     }
@@ -422,6 +461,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                        RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
     {
         dispatchChange( type, DYNAMIC_REPORT, oldRecord, newRecord, checker );
+    }
+
+    @Override
+    public void forDynamicLabelBlock( RecordType type, DynamicRecord record,
+                                      RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+    {
+        dispatch( type, DYNAMIC_LABEL_REPORT, record, checker );
+    }
+
+    @Override
+    public void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
+                                            RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+    {
+        dispatchChange( type, DYNAMIC_LABEL_REPORT, oldRecord, newRecord, checker );
     }
 
     private static class ProxyFactory<T>
@@ -443,6 +496,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             }
         }
 
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + asList( constructor.getDeclaringClass().getInterfaces() );
+        }
+
         public T create( InvocationHandler handler )
         {
             try
@@ -461,7 +520,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         public static <T> ProxyFactory<T> create( Class<T> type )
         {
-            return new ProxyFactory<T>( type );
+            return new ProxyFactory<>( type );
         }
     }
 }

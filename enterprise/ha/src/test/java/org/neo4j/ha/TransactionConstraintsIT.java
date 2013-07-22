@@ -19,15 +19,10 @@
  */
 package org.neo4j.ha;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
 import java.util.concurrent.Future;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
@@ -41,10 +36,21 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
@@ -59,7 +65,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().setProperty( "name", "slave" );
+            db.createNode().setProperty( "name", "slave" );
             tx.success();
         }
         finally
@@ -68,10 +74,13 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             assertFinishGetsTransactionFailure( tx );
         }
 
-        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( masterAvailable() );
 
         // THEN
         assertEquals( db, cluster.getMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
 
     @Test
@@ -99,6 +108,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
         // THEN
         assertFalse( db.isMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
     
     @Test
@@ -392,6 +404,38 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         public Lock doWork( HighlyAvailableGraphDatabase state )
         {
             return tx.acquireWriteLock( node );
+        }
+    }
+
+    @Rule
+    public DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
+
+    private void awaitFullyOperational( GraphDatabaseService db ) throws InterruptedException
+    {
+        while ( true )
+        {
+            try
+            {
+                doABogusTransaction( db );
+                break;
+            }
+            catch ( Exception e )
+            {
+                Thread.sleep( 100 );
+            }
+        }
+    }
+
+    private void doABogusTransaction( GraphDatabaseService db ) throws Exception
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.createNode();
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 }

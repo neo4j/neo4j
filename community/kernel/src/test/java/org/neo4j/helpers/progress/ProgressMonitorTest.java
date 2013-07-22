@@ -23,8 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,6 +37,9 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.ProcessFailureException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,12 +48,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -559,6 +564,58 @@ public class ProgressMonitorTest
         order.verify( indicator ).completeProcess();
     }
 
+    @Test
+    public void shouldAllowOpenEndedProgressListeners() throws Exception
+    {
+        // given
+        Indicator.OpenEnded indicator = mock( Indicator.OpenEnded.class );
+        ProgressListener progress = factory.mock( indicator ).openEnded( testName.getMethodName(), 10 );
+
+        // when
+        for ( int i = 0; i < 20; i++ )
+        {
+            progress.add( 5 );
+        }
+        progress.done();
+
+        // then
+        verify( indicator, atLeast( 1 ) ).reportResolution();
+        InOrder order = inOrder( indicator );
+        order.verify( indicator ).startProcess( 0 );
+        for ( int i = 0; i < 10; i++ )
+        {
+            order.verify( indicator ).progress( i, i + 1 );
+        }
+        order.verify( indicator ).completeProcess();
+        verifyNoMoreInteractions( indicator );
+    }
+
+    @Test
+    public void shouldReportOpenEndedProgressInANiceWay() throws Exception
+    {
+        // given
+        StringWriter buffer = new StringWriter();
+        ProgressListener progress = ProgressMonitorFactory.textual( buffer ).openEnded( testName.getMethodName(), 10 );
+
+        // when
+        for ( int i = 0; i < 25; i++ )
+        {
+            progress.add( 50 );
+        }
+        progress.done();
+
+        // then
+        assertEquals( String.format(
+                testName.getMethodName() + "%n" +
+                "....................     200%n" +
+                "....................     400%n" +
+                "....................     600%n" +
+                "....................     800%n" +
+                "....................    1000%n" +
+                "....................    1200%n" +
+                ".....                   done%n" ), buffer.toString() );
+    }
+
     @Rule
     public final TestName testName = new TestName();
     @Rule
@@ -571,11 +628,27 @@ public class ProgressMonitorTest
             when( indicatorMock.reportResolution() ).thenReturn( indicatorSteps );
             ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
             when( factory.newIndicator( any( String.class ) ) ).thenReturn( indicatorMock );
-            factoryMocks.add( factory );
+            factoryMocks.put( factory, false );
             return factory;
         }
 
-        private final Collection<ProgressMonitorFactory> factoryMocks = new ArrayList<ProgressMonitorFactory>();
+        ProgressMonitorFactory mock( final Indicator.OpenEnded indicatorMock )
+        {
+            ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
+            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( new Answer<Indicator>()
+            {
+                @Override
+                public Indicator answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    when( indicatorMock.reportResolution() ).thenReturn( (Integer) invocation.getArguments()[1] );
+                    return indicatorMock;
+                }
+            } );
+            factoryMocks.put( factory, true );
+            return factory;
+        }
+
+        private final Map<ProgressMonitorFactory,Boolean> factoryMocks = new HashMap<ProgressMonitorFactory,Boolean>();
 
         @Override
         public Statement apply( final Statement base, Description description )
@@ -586,9 +659,17 @@ public class ProgressMonitorTest
                 public void evaluate() throws Throwable
                 {
                     base.evaluate();
-                    for ( ProgressMonitorFactory factoryMock : factoryMocks )
+                    for ( Map.Entry<ProgressMonitorFactory,Boolean> factoryMock : factoryMocks.entrySet() )
                     {
-                        verify( factoryMock, times( 1 ) ).newIndicator( any( String.class ) );
+                        if ( factoryMock.getValue() )
+                        {
+                            verify( factoryMock.getKey(), times( 1 ) ).newOpenEndedIndicator( any( String.class ),
+                                                                                              anyInt() );
+                        }
+                        else
+                        {
+                            verify( factoryMock.getKey(), times( 1 ) ).newIndicator( any( String.class ) );
+                        }
                     }
                 }
             };

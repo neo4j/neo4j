@@ -23,8 +23,14 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.junit.Ignore
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class GraphityTest extends DocumentingTestBase {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def graphDescription = List(
     "Joe has Joe_s1",
     "Joe_s1 next Joe_s2",
@@ -54,9 +60,10 @@ This needs to be taken into consideration when designing a production system wit
 See <<capabilities-capacity>> for the maximum number of relationship types.
 
 To find the activity stream for a person, just follow the linked list of the friend list, and retrieve the needed amount of activities form the respective activity list of the friends.""",
-      queryText = "START me=node:node_auto_index(name = \"Jane\") " +
+      queryText =
         "MATCH p=me-[:jane_knows*]->friend, " +
         "friend-[:has]->status " +
+        "WHERE me.name = 'Jane' " +
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
       returns = "The returns the activity stream for Jane.",

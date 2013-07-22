@@ -32,7 +32,7 @@ public interface PersistenceWindow
      * 
      * @return the underlying buffer.
      */
-    public Buffer getBuffer();
+    Buffer getBuffer();
     
     /**
      * Returns the underlying buffer set at a specific record ({@code id}}.
@@ -43,33 +43,33 @@ public interface PersistenceWindow
      * @param id the record/block to offset the buffer to before returning it.
      * @return the underlying buffer.
      */
-    public Buffer getOffsettedBuffer( long id );
+    Buffer getOffsettedBuffer( long id );
 
     /**
      * @return the record size for each record. A window can hold many records.
      */
-    public int getRecordSize();
+    int getRecordSize();
     
     /**
      * @return the current absolute record/block position of the first record
      * in this window.
      */
-    public long position();
+    long position();
 
     /**
      * @return the size of this window meaning the number of records/blocks it
      * encapsulates.
      */
-    public int size();
+    int size();
 
     /**
      * Force (write) changes to the underlying buffer returned from {@link #getBuffer()}
      * and {@link #getOffsettedBuffer(long)}.
      */
-    public void force();
+    void force();
 
     /**
      * Just closes the window without writing any potential changes made to it.
      */
-    public void close();
+    void close();
 }

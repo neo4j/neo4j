@@ -47,7 +47,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * directories (if you look at Neo4j in a certain perspective).
  */
 @Service.Implementation( App.class )
-public class Rmrel extends GraphDatabaseApp
+public class Rmrel extends TransactionProvidingApp
 {
     /**
      * Constructs a new application which can delete relationships in Neo4j.

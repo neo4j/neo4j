@@ -19,14 +19,15 @@
  */
 package org.neo4j.shell;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class StartClientTest
 {
@@ -50,6 +51,7 @@ public class StartClientTest
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
 
         // Then
+        db.getGraphDatabaseService().beginTx();
         assertThat( (String) db.getGraphDatabaseService().getNodeById( 1 ).getProperty( "foo" ),
                 equalTo( "bar" ) );
     }

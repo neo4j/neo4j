@@ -23,7 +23,7 @@ import org.junit.Test
 import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.cypher.internal.ExecutionContext
 
 class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
@@ -41,7 +41,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
                       next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())
 
   private def context = ExecutionContext()
-  private def state = QueryState(graph)
+  private def state = QueryStateHelper.queryStateFrom(graph)
   val A = "A"
   val B = "B"
   val C = "C"

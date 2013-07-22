@@ -23,7 +23,7 @@ import expressions.{ExtractFunction, Identifier, LengthFunction}
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class ExtractTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
@@ -34,6 +34,6 @@ class ExtractTest extends Assertions {
 
     val extract = ExtractFunction(collection, "n", expression)
 
-    assert(extract.apply(m)(QueryState()) === Seq(1, 3, 2))
+    assert(extract.apply(m)(QueryStateHelper.empty) === Seq(1, 3, 2))
   }
 }

@@ -72,7 +72,7 @@ public class Neo4jShell
     private static void startLocalShell() throws Exception
     {
         graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        createExampleNodeSpace();
+        createExampleGraph();
         ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
         ShellLobby.newClient( shellServer ).grabPrompt();
         shellServer.shutdown();
@@ -84,7 +84,7 @@ public class Neo4jShell
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
-        createExampleNodeSpace();
+        createExampleGraph();
         waitForUserInput( "Remote shell enabled, connect to it by executing\n"
                 + "the shell-client script in a separate terminal."
                 + "The script is located in the bin directory.\n"
@@ -100,13 +100,13 @@ public class Neo4jShell
                 .readLine();
     }
 
-    private static void createExampleNodeSpace()
+    private static void createExampleGraph()
     {
         Transaction tx = graphDb.beginTx();
         try
         {
             // Create users sub reference node.
-            System.out.println( "Creating example node space ..." );
+            System.out.println( "Creating example graph ..." );
             Random random = new Random();
             Node usersReferenceNode = graphDb.createNode();
             Index<Node> references = graphDb.index().forNodes( "references" );
@@ -150,7 +150,7 @@ public class Neo4jShell
         try
         {
             // Delete the persons and remove them from the index
-            System.out.println( "Deleting example node space ..." );
+            System.out.println( "Deleting example graph ..." );
             Node usersReferenceNode = graphDb.index().forNodes( "references" ).get( "reference", "users" ).getSingle();
             for ( Relationship relationship : usersReferenceNode
                     .getRelationships( RelTypes.USER, Direction.OUTGOING ) )

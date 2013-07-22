@@ -21,19 +21,45 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType}
-import collection.mutable.{Map => MutableMap}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.pipes.{MutableMaps, Pipe, NullPipe, FakePipe}
+import org.junit.Assert._
+import org.neo4j.cypher.internal.spi.PlanContext
 
 trait BuilderTest extends Assertions {
-  def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()) = {
+  def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()): FakePipe = {
     val nodeIdentifiers = nodes.map(x => x -> NodeType())
     val relIdentifiers = relationships.map(x => x -> RelationshipType())
 
     new FakePipe(Seq(MutableMaps.empty), (nodeIdentifiers ++ relIdentifiers): _*)
   }
 
-  def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(NullPipe, q)
+  // for avoiding missing an override while refactoring
+  final def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(NullPipe, q)
 
-  def plan(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = ExecutionPlanInProgress(q, p)
+  final def plan(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = ExecutionPlanInProgress(q, p)
+
+  def assertAccepts(q: PartiallySolvedQuery): ExecutionPlanInProgress = assertAccepts(plan(q))
+
+  def assertAccepts(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = assertAccepts(plan(p, q))
+
+  def assertAccepts(planInProgress: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+    assertTrue("Should be able to build on this", builder.canWorkWith(planInProgress, context))
+    builder.apply(planInProgress, context)
+  }
+
+  def assertRejects(q: PartiallySolvedQuery) {
+    assertRejects(plan(q))
+  }
+
+  def assertRejects(p: Pipe, q: PartiallySolvedQuery) {
+    assertRejects(plan(p, q))
+  }
+
+  def assertRejects(planInProgress: ExecutionPlanInProgress) {
+    assertFalse("Should not accept this", builder.canWorkWith(planInProgress, context))
+  }
+
+  def builder: PlanBuilder
+  def context:PlanContext=null
 }

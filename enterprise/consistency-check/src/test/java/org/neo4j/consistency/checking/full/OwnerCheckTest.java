@@ -19,9 +19,28 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Test;
+
+import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.DynamicStore;
+import org.neo4j.consistency.checking.PrimitiveRecordCheck;
+import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.RecordAccessStub;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.consistency.checking.DynamicRecordCheckTest.configureDynamicStore;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.NONE;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.array;
@@ -38,23 +57,6 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.propertyBlock;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.string;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.verifyOnlyReferenceDispatch;
-
-import org.junit.Test;
-import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.DynamicStore;
-import org.neo4j.consistency.checking.PrimitiveRecordCheck;
-import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.RecordAccessStub;
-import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 public class OwnerCheckTest
 {
@@ -518,7 +520,7 @@ public class OwnerCheckTest
         DynamicRecord dynamic = records.add( inUse( string( new DynamicRecord( 42 ) ) ) );
         PropertyRecord property1 = records.add( inUse( new PropertyRecord( 1 ) ) );
         PropertyRecord property2 = records.add( inUse( new PropertyRecord( 2 ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 10 ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 10 ) ) );
         property1.addPropertyBlock( propertyBlock( key, PropertyType.STRING, dynamic.getId() ) );
         property2.addPropertyBlock( propertyBlock( key, PropertyType.STRING, dynamic.getId() ) );
 
@@ -547,7 +549,7 @@ public class OwnerCheckTest
         DynamicRecord dynamic = records.add( inUse( array( new DynamicRecord( 42 ) ) ) );
         PropertyRecord property1 = records.add( inUse( new PropertyRecord( 1 ) ) );
         PropertyRecord property2 = records.add( inUse( new PropertyRecord( 2 ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 10 ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 10 ) ) );
         property1.addPropertyBlock( propertyBlock( key, PropertyType.ARRAY, dynamic.getId() ) );
         property2.addPropertyBlock( propertyBlock( key, PropertyType.ARRAY, dynamic.getId() ) );
 
@@ -580,7 +582,7 @@ public class OwnerCheckTest
         DynamicRecord dynamic = records.add( inUse( string( new DynamicRecord( 100 ) ) ) );
         dynamic.setNextBlock( owned.getId() );
         PropertyRecord property = records.add( inUse( new PropertyRecord( 1 ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 10 ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 10 ) ) );
         property.addPropertyBlock( propertyBlock( key, PropertyType.STRING, owned.getId() ) );
 
         // when
@@ -612,7 +614,7 @@ public class OwnerCheckTest
         DynamicRecord dynamic = records.add( inUse( string( new DynamicRecord( 100 ) ) ) );
         dynamic.setNextBlock( owned.getId() );
         PropertyRecord property = records.add( inUse( new PropertyRecord( 1 ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 10 ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 10 ) ) );
         property.addPropertyBlock( propertyBlock( key, PropertyType.STRING, owned.getId() ) );
 
         // when
@@ -644,7 +646,7 @@ public class OwnerCheckTest
         DynamicRecord dynamic = records.add( inUse( array( new DynamicRecord( 100 ) ) ) );
         dynamic.setNextBlock( owned.getId() );
         PropertyRecord property = records.add( inUse( new PropertyRecord( 1 ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 10 ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 10 ) ) );
         property.addPropertyBlock( propertyBlock( key, PropertyType.ARRAY, owned.getId() ) );
 
         // when
@@ -664,21 +666,21 @@ public class OwnerCheckTest
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
-        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_LABEL );
+        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_TYPE );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker =
+                decorator.decorateRelationshipTypeTokenChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        RelationshipTypeRecord record1 = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
-        RelationshipTypeRecord record2 = records.add( inUse( new RelationshipTypeRecord( 2 ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        RelationshipTypeTokenRecord record1 = records.add( inUse( new RelationshipTypeTokenRecord( 1 ) ) );
+        RelationshipTypeTokenRecord record2 = records.add( inUse( new RelationshipTypeTokenRecord( 2 ) ) );
         record1.setNameId( (int) dynamic.getId() );
         record2.setNameId( (int) dynamic.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport report1 = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport report1 = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                   checker,record1, records );
-        ConsistencyReport.LabelConsistencyReport report2 = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport report2 = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                   checker,record2, records );
 
         // then
@@ -692,24 +694,24 @@ public class OwnerCheckTest
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
-        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_LABEL );
+        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_TYPE );
 
         RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> dynChecker =
                 decorator.decorateDynamicChecker(
-                        RecordType.RELATIONSHIP_LABEL_NAME,
-                        dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_LABEL ) );
+                        RecordType.RELATIONSHIP_TYPE_NAME,
+                        dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_TYPE ) );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> labelCheck =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> labelCheck =
+                decorator.decorateRelationshipTypeTokenChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord owned = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 1 ) ) ) );
-        RelationshipTypeRecord label = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
+        DynamicRecord owned = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        RelationshipTypeTokenRecord label = records.add( inUse( new RelationshipTypeTokenRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         label.setNameId( (int) owned.getId() );
 
         // when
-        ConsistencyReport.LabelConsistencyReport labelReport = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport labelReport = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                       labelCheck, label, records );
         ConsistencyReport.DynamicConsistencyReport dynReport = check( ConsistencyReport.DynamicConsistencyReport.class,
                                                                       dynChecker, dynamic, records );
@@ -725,26 +727,26 @@ public class OwnerCheckTest
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
-        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_LABEL );
+        OwnerCheck decorator = new OwnerCheck( true, DynamicStore.RELATIONSHIP_TYPE );
 
         RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> dynChecker =
                 decorator.decorateDynamicChecker(
-                        RecordType.RELATIONSHIP_LABEL_NAME,
-                        dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_LABEL ) );
+                        RecordType.RELATIONSHIP_TYPE_NAME,
+                        dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.RELATIONSHIP_TYPE ) );
 
-        RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> labelCheck =
-                decorator.decorateLabelChecker( dummyRelationshipLabelCheck() );
+        RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> labelCheck =
+                decorator.decorateRelationshipTypeTokenChecker( dummyRelationshipLabelCheck() );
 
-        DynamicRecord owned = records.addLabelName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addLabelName( inUse( string( new DynamicRecord( 1 ) ) ) );
-        RelationshipTypeRecord label = records.add( inUse( new RelationshipTypeRecord( 1 ) ) );
+        DynamicRecord owned = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addRelationshipTypeName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        RelationshipTypeTokenRecord label = records.add( inUse( new RelationshipTypeTokenRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         label.setNameId( (int) owned.getId() );
 
         // when
         ConsistencyReport.DynamicConsistencyReport dynReport = check( ConsistencyReport.DynamicConsistencyReport.class,
                                                                       dynChecker, dynamic, records );
-        ConsistencyReport.LabelConsistencyReport labelReport = check( ConsistencyReport.LabelConsistencyReport.class,
+        ConsistencyReport.RelationshipTypeConsistencyReport labelReport = check( ConsistencyReport.RelationshipTypeConsistencyReport.class,
                                                                       labelCheck, label, records );
 
         // then
@@ -760,20 +762,20 @@ public class OwnerCheckTest
         RecordAccessStub records = new RecordAccessStub();
         OwnerCheck decorator = new OwnerCheck( true, DynamicStore.PROPERTY_KEY );
 
-        RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker =
-                decorator.decoratePropertyKeyChecker( dummyPropertyKeyCheck() );
+        RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker =
+                decorator.decoratePropertyKeyTokenChecker( dummyPropertyKeyCheck() );
 
-        DynamicRecord dynamic = records.addKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        PropertyIndexRecord record1 = records.add( inUse( new PropertyIndexRecord( 1 ) ) );
-        PropertyIndexRecord record2 = records.add( inUse( new PropertyIndexRecord( 2 ) ) );
+        DynamicRecord dynamic = records.addPropertyKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        PropertyKeyTokenRecord record1 = records.add( inUse( new PropertyKeyTokenRecord( 1 ) ) );
+        PropertyKeyTokenRecord record2 = records.add( inUse( new PropertyKeyTokenRecord( 2 ) ) );
         record1.setNameId( (int) dynamic.getId() );
         record2.setNameId( (int) dynamic.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport report1 = check(
-                ConsistencyReport.PropertyKeyConsistencyReport.class, checker,record1, records );
-        ConsistencyReport.PropertyKeyConsistencyReport report2 = check(
-                ConsistencyReport.PropertyKeyConsistencyReport.class, checker,record2, records );
+        ConsistencyReport.PropertyKeyTokenConsistencyReport report1 = check(
+                ConsistencyReport.PropertyKeyTokenConsistencyReport.class, checker,record1, records );
+        ConsistencyReport.PropertyKeyTokenConsistencyReport report2 = check(
+                ConsistencyReport.PropertyKeyTokenConsistencyReport.class, checker,record2, records );
 
         // then
         verifyOnlyReferenceDispatch( report1 );
@@ -793,18 +795,18 @@ public class OwnerCheckTest
                         RecordType.PROPERTY_KEY_NAME,
                         dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.PROPERTY_KEY ) );
 
-        RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> keyCheck =
-                decorator.decoratePropertyKeyChecker( dummyPropertyKeyCheck() );
+        RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> keyCheck =
+                decorator.decoratePropertyKeyTokenChecker( dummyPropertyKeyCheck() );
 
-        DynamicRecord owned = records.addKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addKeyName( inUse( string( new DynamicRecord( 1 ) ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 1 ) ) );
+        DynamicRecord owned = records.addPropertyKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addPropertyKeyName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         key.setNameId( (int) owned.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyConsistencyReport keyReport = check(
-                ConsistencyReport.PropertyKeyConsistencyReport.class, keyCheck, key, records );
+        ConsistencyReport.PropertyKeyTokenConsistencyReport keyReport = check(
+                ConsistencyReport.PropertyKeyTokenConsistencyReport.class, keyCheck, key, records );
         ConsistencyReport.DynamicConsistencyReport dynReport = check(
                 ConsistencyReport.DynamicConsistencyReport.class, dynChecker, dynamic, records );
 
@@ -826,20 +828,20 @@ public class OwnerCheckTest
                         RecordType.PROPERTY_KEY_NAME,
                         dummyDynamicCheck( configureDynamicStore( 50 ), DynamicStore.PROPERTY_KEY ) );
 
-        RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> keyCheck =
-                decorator.decoratePropertyKeyChecker( dummyPropertyKeyCheck() );
+        RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> keyCheck =
+                decorator.decoratePropertyKeyTokenChecker( dummyPropertyKeyCheck() );
 
-        DynamicRecord owned = records.addKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
-        DynamicRecord dynamic = records.addKeyName( inUse( string( new DynamicRecord( 1 ) ) ) );
-        PropertyIndexRecord key = records.add( inUse( new PropertyIndexRecord( 1 ) ) );
+        DynamicRecord owned = records.addPropertyKeyName( inUse( string( new DynamicRecord( 42 ) ) ) );
+        DynamicRecord dynamic = records.addPropertyKeyName( inUse( string( new DynamicRecord( 1 ) ) ) );
+        PropertyKeyTokenRecord key = records.add( inUse( new PropertyKeyTokenRecord( 1 ) ) );
         dynamic.setNextBlock( owned.getId() );
         key.setNameId( (int) owned.getId() );
 
         // when
         ConsistencyReport.DynamicConsistencyReport dynReport = check(
                 ConsistencyReport.DynamicConsistencyReport.class,dynChecker, dynamic, records );
-        ConsistencyReport.PropertyKeyConsistencyReport keyReport = check(
-                ConsistencyReport.PropertyKeyConsistencyReport.class, keyCheck, key, records );
+        ConsistencyReport.PropertyKeyTokenConsistencyReport keyReport = check(
+                ConsistencyReport.PropertyKeyTokenConsistencyReport.class, keyCheck, key, records );
 
         // then
         verifyOnlyReferenceDispatch( dynReport );
@@ -898,12 +900,12 @@ public class OwnerCheckTest
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
-        OwnerCheck owners = new OwnerCheck( true, DynamicStore.RELATIONSHIP_LABEL );
+        OwnerCheck owners = new OwnerCheck( true, DynamicStore.RELATIONSHIP_TYPE );
 
         RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> stringCheck =
-                owners.decorateDynamicChecker( RecordType.RELATIONSHIP_LABEL_NAME,
+                owners.decorateDynamicChecker( RecordType.RELATIONSHIP_TYPE_NAME,
                                                dummyDynamicCheck( configureDynamicStore( 60 ),
-                                                                  DynamicStore.RELATIONSHIP_LABEL ) );
+                                                                  DynamicStore.RELATIONSHIP_TYPE ) );
         DynamicRecord record = string( inUse( new DynamicRecord( 42 ) ) );
 
         // when

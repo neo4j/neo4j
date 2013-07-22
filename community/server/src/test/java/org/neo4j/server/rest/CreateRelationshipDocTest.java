@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -35,12 +34,11 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
+import static org.junit.Assert.assertTrue;
 
 public class CreateRelationshipDocTest extends
         AbstractRestFunctionalTestBase
 {
-    private static String RELATIONSHIP_URI_PATTERN;
-
     /**
      * Upon successful creation of a relationship, the new relationship is
      * returned.
@@ -58,9 +56,9 @@ public class CreateRelationshipDocTest extends
                             + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
         Node i = getNode( "Joe" );
         gen.get().description( startGraph( "Add relationship with properties before" ) );
-        String entity = gen.get().expectedStatus(
+        gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
-                getNodeUri( i ) + "/relationships" ).entity();
+                getNodeUri( i ) + "/relationships" );
         assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
     }
 
@@ -123,8 +121,6 @@ public class CreateRelationshipDocTest extends
         Node joe = getNode( "Joe" );
         String jsonString = "{\"to\" : \"" + getNodeUri( joe )
                             + "\", \"type\" : \"LOVES\"}";
-        String uri = getNodeUri( joe )
-                     + "/relationships";
         String entity = gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                         getNodeUri( getNode( "Joe" ) ) + "/relationships" ).entity();

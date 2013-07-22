@@ -42,7 +42,7 @@ import org.rrd4j.core.RrdDb;
  * interface in 1.10, please use available subclasses instead
  * of directly instantiating this.
  */
-public class Database implements Lifecycle
+public abstract class Database implements Lifecycle
 {
     public static final Logger log = Logger.getLogger( Database.class );
 
@@ -53,7 +53,7 @@ public class Database implements Lifecycle
     @Deprecated
     public AbstractGraphDatabase graph;
 
-    private RrdDb rrdDb;
+    private RrdDbWrapper rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
     /**
@@ -183,7 +183,7 @@ public class Database implements Lifecycle
     @Deprecated
     public RrdDb rrdDb()
     {
-        return rrdDb;
+        return rrdDb.get();
     }
 
     /**
@@ -193,9 +193,14 @@ public class Database implements Lifecycle
      * @return
      */
     @Deprecated
-    public void setRrdDb( RrdDb rrdDb )
+    public void setRrdDb( final RrdDb rrdDb )
     {
-        this.rrdDb = rrdDb;
+        this.rrdDb = new RrdDbWrapper.Plain( rrdDb );
+    }
+    
+    public void setRrdDb( RrdDbWrapper provider )
+    {
+        this.rrdDb = provider;
     }
 
     /**
@@ -213,13 +218,11 @@ public class Database implements Lifecycle
     @Override
     public void init() throws Throwable
     {
-
     }
 
     @Override
     public void start() throws Throwable
     {
-
     }
 
     @Override

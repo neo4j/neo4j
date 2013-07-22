@@ -43,10 +43,12 @@ public class HighlyAvailableGraphDatabase
                 Service.load( IndexProvider.class ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast(Service.load( KernelExtensionFactory.class )),
                 Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ));
+                Service.load( TransactionInterceptorProvider.class ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders, Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
     }
@@ -55,5 +57,11 @@ public class HighlyAvailableGraphDatabase
     public void pullUpdates()
     {
         dependencyResolver.resolveDependency( UpdatePuller.class ).pullUpdates();
+    }
+
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return true;
     }
 }

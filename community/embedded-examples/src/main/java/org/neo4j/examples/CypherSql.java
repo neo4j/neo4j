@@ -248,10 +248,9 @@ public class CypherSql
             String targetMatchAttribute, Object[][] relationships,
             String relationshipType ) throws SQLException
     {
-        String targetAttribute = sourceEntity.toLowerCase() + "_id";
         PreparedStatement prep = prepareSimpleRelationshipStatement(
                 sourceEntity, sourceMatchAttribute, targetEntity,
-                targetMatchAttribute, targetAttribute );
+                targetMatchAttribute );
         insertIntoRdbms( prep, relationships );
         createRelationshipsInGraphdb( sourceEntity, sourceMatchAttribute,
                 targetEntity, targetMatchAttribute, relationships,
@@ -392,8 +391,15 @@ public class CypherSql
     {
         String sql = "CREATE TABLE " + identifierQuoteString + name
                      + identifierQuoteString + "(" + definition + ")";
+
         Statement statement = sqldb.createStatement();
-        statement.execute( sql );
+        try
+        {
+            statement.execute( sql );
+        } finally
+        {
+            statement.close();
+        }
     }
 
     private PreparedStatement prepareInsertStatement( String tableName,
@@ -418,8 +424,7 @@ public class CypherSql
 
     private PreparedStatement prepareSimpleRelationshipStatement(
             String sourceEntity, String sourceMatchAttribute,
-            String targetEntity, String targetMatchAttribute,
-            String targetAttribute ) throws SQLException
+            String targetEntity, String targetMatchAttribute) throws SQLException
     {
         StringBuilder sql = new StringBuilder( 100 );
         sql.append( "UPDATE " )
@@ -566,44 +571,64 @@ public class CypherSql
     String executeSql( String sql ) throws SQLException
     {
         StringBuilder builder = new StringBuilder( 512 );
-        Statement statement = sqldb.createStatement();
-        if ( statement.execute( sql ) )
+        Statement statement = null;
+        try
         {
-            ResultSet result = statement.getResultSet();
-            ResultSetMetaData meta = result.getMetaData();
-            int rowCount = 0;
-            int columnCount = meta.getColumnCount();
-            String line = new String( new char[columnCount] ).replace( "\0",
-                    "+" + LINE_SEGMENT ) + "+\n";
-            builder.append( line );
-
-            for ( int i = 1; i <= columnCount; i++ )
+            statement = sqldb.createStatement();
+            if ( statement.execute( sql ) )
             {
-                String output = meta.getColumnLabel( i );
-                printColumn( builder, output );
-            }
-            builder.append( "|\n" )
-                    .append( line );
-            while ( result.next() )
-            {
-                rowCount++;
-                for ( int i = 1; i <= columnCount; i++ )
+                ResultSet result = null;
+                try
                 {
-                    String output = result.getString( i );
-                    printColumn( builder, output );
+                    result  = statement.getResultSet();
+
+                    ResultSetMetaData meta = result.getMetaData();
+                    int rowCount = 0;
+                    int columnCount = meta.getColumnCount();
+                    String line = new String( new char[columnCount] ).replace( "\0",
+                            "+" + LINE_SEGMENT ) + "+\n";
+                    builder.append( line );
+
+                    for ( int i = 1; i <= columnCount; i++ )
+                    {
+                        String output = meta.getColumnLabel( i );
+                        printColumn( builder, output );
+                    }
+                    builder.append( "|\n" )
+                            .append( line );
+                    while ( result.next() )
+                    {
+                        rowCount++;
+                        for ( int i = 1; i <= columnCount; i++ )
+                        {
+                            String output = result.getString( i );
+                            printColumn( builder, output );
+                        }
+                        builder.append( "|\n" );
+                    }
+
+                    builder.append( line )
+                            .append( rowCount )
+                            .append( " rows\n" );
+                } finally
+                {
+                    if(result != null)
+                    {
+                        result.close();
+                    }
                 }
-                builder.append( "|\n" );
             }
-            result.close();
-            builder.append( line )
-                    .append( rowCount )
-                    .append( " rows\n" );
-        }
-        else
+            else
+            {
+                throw new RuntimeException( "Couldn't execute: " + sql );
+            }
+        } finally
         {
-            throw new RuntimeException( "Couldn't execute: " + sql );
+            if(statement != null)
+            {
+                statement.close();
+            }
         }
-        statement.close();
         return builder.toString();
     }
 
@@ -618,12 +643,12 @@ public class CypherSql
                 .append( SPACE_SEGMENT.substring( value.length() + 1 ) );
     }
 
-    class TestData
+    public static class TestData
     {
-        String name;
-        String sql;
-        String cypher;
-        String[] matchStrings;
+        public final String name;
+        public final String sql;
+        public final String cypher;
+        public final String[] matchStrings;
 
         /**
          * Create a sql/cypher test.

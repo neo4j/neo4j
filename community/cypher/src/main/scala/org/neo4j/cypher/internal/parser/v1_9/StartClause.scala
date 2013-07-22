@@ -20,10 +20,41 @@
 package org.neo4j.cypher.internal.parser.v1_9
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Expression, ParameterExpression, Identifier}
+import expressions._
+import expressions.Literal
+import expressions.ParameterExpression
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.mutation.{CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.NodeByIndex
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.CreateRelationship
+import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
+import org.neo4j.cypher.internal.commands.AllRelationships
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import org.neo4j.cypher.internal.commands.RelationshipByIndex
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.NodeByIndex
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.CreateRelationship
+import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
+import org.neo4j.cypher.internal.commands.AllRelationships
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.RelationshipByIndex
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
+import org.neo4j.cypher.internal.parser.ParsedRelation
 
 
 trait StartClause extends Base with Expressions with CreateUnique {
@@ -68,24 +99,24 @@ trait StartClause extends Base with Expressions with CreateUnique {
       startItems match {
         case No(msg)    => No(msg)
         case Yes(stuff) => namedPathPatterns.seqMap(p => {
-          val namedPath: NamedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
+          val namedPath: NamedPath = NamedPath(name, patterns: _*)
           Seq(NamedPathWStartItems(namedPath, stuff.map(_.asInstanceOf[StartItem])))
         })
       }
 
-    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, True()), ParsedEntity(_, b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
+    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, _, _), ParsedEntity(_, b, endProps, _, _), relType, dir, map) if relType.size == 1 =>
       val (from, to) = if (dir != Direction.INCOMING)
                          (a, b)
                        else
                          (b, a)
 
-      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, (from, startProps), (to, endProps), relType.head, props))))
+      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, Seq.empty, bare = true), RelationshipEndpoint(to, endProps, Seq.empty, true), relType.head, props))))
 
-    case ParsedEntity(_, Identifier(name), props, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props))))
+    case ParsedEntity(_, Identifier(name), props, _, _) =>
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Seq.empty))))
 
-    case ParsedEntity(_, p: ParameterExpression, _, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p)))))
+    case ParsedEntity(_, p: ParameterExpression, _, _, _) =>
+      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Seq.empty))))
 
     case _ => No(Seq(""))
   }

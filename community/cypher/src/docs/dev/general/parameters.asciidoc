@@ -50,12 +50,12 @@ tag=exampleWithStringLiteralAsParameter
 classifier=test-sources
 ----
 
-.Parameter for index key and value
+.Parameter for index value
 [snippet,java]
 ----
 component=neo4j-cypher
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
-tag=exampleWithParametersForIndexKeyAndValue
+tag=exampleWithParameterForIndexValue
 classifier=test-sources
 ----
 

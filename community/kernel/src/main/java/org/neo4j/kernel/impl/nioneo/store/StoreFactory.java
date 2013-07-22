@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -47,8 +47,9 @@ public class StoreFactory
 {
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.IntegerSetting string_block_size = GraphDatabaseSettings.string_block_size;
-        public static final GraphDatabaseSetting.IntegerSetting array_block_size = GraphDatabaseSettings.array_block_size;
+        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
+        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
+        public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
     }
     
     private final Config config;
@@ -57,7 +58,28 @@ public class StoreFactory
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
     private final TxHook txHook;
+    
+    public static final String LABELS_PART = ".labels";
+    public static final String NAMES_PART = ".names";
+    public static final String INDEX_PART = ".index";
+    public static final String KEYS_PART = ".keys";
+    public static final String ARRAYS_PART = ".arrays";
+    public static final String STRINGS_PART = ".strings";
 
+    public static final String NODE_STORE_NAME = ".nodestore.db";
+    public static final String NODE_LABELS_STORE_NAME = NODE_STORE_NAME + LABELS_PART;
+    public static final String PROPERTY_STORE_NAME = ".propertystore.db";
+    public static final String PROPERTY_KEY_TOKEN_STORE_NAME = PROPERTY_STORE_NAME + INDEX_PART;
+    public static final String PROPERTY_KEY_TOKEN_NAMES_STORE_NAME = PROPERTY_STORE_NAME + INDEX_PART + KEYS_PART;
+    public static final String PROPERTY_STRINGS_STORE_NAME = PROPERTY_STORE_NAME + STRINGS_PART;
+    public static final String PROPERTY_ARRAYS_STORE_NAME = PROPERTY_STORE_NAME + ARRAYS_PART;
+    public static final String RELATIONSHIP_STORE_NAME = ".relationshipstore.db";
+    public static final String RELATIONSHIP_TYPE_TOKEN_STORE_NAME = ".relationshiptypestore.db";
+    public static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME = RELATIONSHIP_TYPE_TOKEN_STORE_NAME + NAMES_PART;
+    public static final String LABEL_TOKEN_STORE_NAME = ".labeltokenstore.db";
+    public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
+    public static final String SCHEMA_STORE_NAME = ".schemastore.db";
+    
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, TxHook txHook )
     {
@@ -96,53 +118,78 @@ public class StoreFactory
             tryToUpgradeStores( fileName );
             return attemptNewNeoStore( fileName );
         }
+        catch ( StoreNotFoundException e )
+        {
+            tryToUpgradeStores( fileName );
+            return attemptNewNeoStore( fileName );
+        }
     }
 
     NeoStore attemptNewNeoStore( File fileName )
     {
         return new NeoStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
                 stringLogger, txHook,
-                newRelationshipTypeStore(new File(fileName.getPath() + ".relationshiptypestore.db")),
-                newPropertyStore(new File( fileName.getPath() + ".propertystore.db")),
-                newRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db")),
-                newNodeStore(new File( fileName.getPath() + ".nodestore.db")));
+                newRelationshipTypeTokenStore( new File( fileName.getPath() + RELATIONSHIP_TYPE_TOKEN_STORE_NAME ) ),
+                newLabelTokenStore( new File( fileName.getPath() + LABEL_TOKEN_STORE_NAME ) ),
+                newPropertyStore(new File( fileName.getPath() + PROPERTY_STORE_NAME)),
+                newRelationshipStore(new File( fileName.getPath() + RELATIONSHIP_STORE_NAME)),
+                newNodeStore(new File( fileName.getPath() + NODE_STORE_NAME)),
+                // We don't need any particular upgrade when we add the schema store
+                newSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)));
     }
 
     private void tryToUpgradeStores( File fileName )
     {
-        new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
+        new StoreUpgrader(config, new ConfigMapUpgradeConfiguration(config),
                 new UpgradableDatabase( fileSystemAbstraction ),
                 new StoreMigrator( new VisibleMigrationProgressMonitor( stringLogger, System.out ) ),
                 new DatabaseFiles( fileSystemAbstraction ),
                 idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
+    public SchemaStore newSchemaStore( File file )
+    {
+        return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger );
+    }
+    
     private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
 
-    private RelationshipTypeStore newRelationshipTypeStore(File baseFileName)
+    private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
     {
-        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + ".names"), IdType.RELATIONSHIP_TYPE_BLOCK );
-        return new RelationshipTypeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + NAMES_PART), IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
+        return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private PropertyStore newPropertyStore(File baseFileName)
+    public PropertyStore newPropertyStore( File baseFileName )
     {
-        DynamicStringStore stringPropertyStore = newDynamicStringStore(new File( baseFileName.getPath() + ".strings"), IdType.STRING_BLOCK);
-        PropertyIndexStore propertyIndexStore = newPropertyIndexStore(new File( baseFileName.getPath() + ".index"));
-        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ".arrays" ));
-        return new PropertyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                stringPropertyStore, propertyIndexStore, arrayPropertyStore);
+        DynamicStringStore stringPropertyStore = newDynamicStringStore(
+                new File( baseFileName.getPath() + STRINGS_PART ), IdType.STRING_BLOCK );
+        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore(
+                new File( baseFileName.getPath() + INDEX_PART ) );
+        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ARRAYS_PART ) );
+        return new PropertyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore );
     }
 
-    private PropertyIndexStore newPropertyIndexStore(File baseFileName)
+    public PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFileName )
     {
-        DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + ".keys"), IdType.PROPERTY_INDEX_BLOCK);
-        return new PropertyIndexStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + KEYS_PART ),
+                IdType.PROPERTY_KEY_TOKEN_NAME );
+        return new PropertyKeyTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger, nameStore );
+    }
+
+    private LabelTokenStore newLabelTokenStore( File baseFileName )
+    {
+        DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
+                IdType.LABEL_TOKEN_NAME );
+        return new LabelTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
@@ -152,15 +199,19 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger);
     }
 
-    private DynamicArrayStore newDynamicArrayStore(File baseFileName)
+    public DynamicArrayStore newDynamicArrayStore(File baseFileName)
     {
         return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
 
-    private NodeStore newNodeStore(File baseFileName)
+    public NodeStore newNodeStore(File baseFileName)
     {
-        return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        File labelsFileName = new File( baseFileName.getPath() + LABELS_PART );
+        DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelsFileName,
+                config, IdType.NODE_LABELS, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
+        return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, dynamicLabelStore );
     }
 
     public NeoStore createNeoStore(File fileName)
@@ -171,19 +222,13 @@ public class StoreFactory
     public NeoStore createNeoStore(File fileName, StoreId storeId)
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
-        createNodeStore(new File( fileName.getPath() + ".nodestore.db"));
-        createRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db"));
-        createPropertyStore(new File( fileName.getPath() + ".propertystore.db"));
-        createRelationshipTypeStore(new File( fileName.getPath() + ".relationshiptypestore.db"));
-/*
-        if ( !config.containsKey( "neo_store" ) )
-        {
-            // TODO Ugly
-            Map<String, Object> newConfig = new HashMap<String, Object>( config );
-            newConfig.put( "neo_store", fileName );
-            config = newConfig;
-        }
-*/
+        createNodeStore(new File( fileName.getPath() + NODE_STORE_NAME));
+        createRelationshipStore(new File( fileName.getPath() + RELATIONSHIP_STORE_NAME));
+        createPropertyStore(new File( fileName.getPath() + PROPERTY_STORE_NAME));
+        createRelationshipTypeStore(new File( fileName.getPath() + RELATIONSHIP_TYPE_TOKEN_STORE_NAME ));
+        createLabelTokenStore( new File( fileName.getPath() + LABEL_TOKEN_STORE_NAME ) );
+        createSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME));
+        
         NeoStore neoStore = newNeoStore( fileName );
         /*
         *  created time | random long | backup version | tx id | store version | next prop
@@ -206,14 +251,23 @@ public class StoreFactory
      * @param fileName
      *            File name of the new node store
      */
-    private void createNodeStore( File fileName )
+    public void createNodeStore( File fileName )
     {
+        createNodeLabelsStore( new File( fileName.getPath() + LABELS_PART ) );
+        
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
         NodeStore store = newNodeStore( fileName );
         NodeRecord nodeRecord = new NodeRecord( store.nextId(), Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
         nodeRecord.setInUse( true );
         store.updateRecord( nodeRecord );
         store.close();
+    }
+
+    private void createNodeLabelsStore( File fileName )
+    {
+        int labelStoreBlockSize = config.get( Configuration.label_block_size );
+        createEmptyDynamicStore( fileName, labelStoreBlockSize,
+                DynamicArrayStore.VERSION, IdType.NODE_LABELS );
     }
 
     /**
@@ -223,12 +277,10 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new relationship store
-     * @throws IOException
-     *             If unable to create relationship store or name null
      */
     private void createRelationshipStore( File fileName)
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR )  );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
     }
 
     /**
@@ -238,18 +290,16 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new property store
-     * @throws IOException
-     *             If unable to create property store or name null
      */
-    private void createPropertyStore( File fileName )
+    public void createPropertyStore( File fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
         int stringStoreBlockSize = config.get( Configuration.string_block_size );
         int arrayStoreBlockSize = config.get( Configuration.array_block_size );
 
-        createDynamicStringStore(new File( fileName.getPath() + ".strings"), stringStoreBlockSize, IdType.STRING_BLOCK);
-        createPropertyIndexStore(new File( fileName.getPath() + ".index"));
-        createDynamicArrayStore(new File( fileName.getPath() + ".arrays"), arrayStoreBlockSize);
+        createDynamicStringStore(new File( fileName.getPath() + STRINGS_PART), stringStoreBlockSize, IdType.STRING_BLOCK);
+        createPropertyKeyTokenStore( new File( fileName.getPath() + INDEX_PART ) );
+        createDynamicArrayStore( new File( fileName.getPath() + ARRAYS_PART ), arrayStoreBlockSize );
     }
 
     /**
@@ -259,14 +309,20 @@ public class StoreFactory
      *
      * @param fileName
      *            File name of the new relationship type store
-     * @throws IOException
-     *             If unable to create store or name null
      */
     private void createRelationshipTypeStore( File fileName )
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipTypeStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore( new File( fileName.getPath() + ".names"), AbstractNameStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_BLOCK);
-        RelationshipTypeStore store = newRelationshipTypeStore( fileName );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipTypeTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore( new File( fileName.getPath() + NAMES_PART), TokenStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
+        RelationshipTypeTokenStore store = newRelationshipTypeTokenStore( fileName );
+        store.close();
+    }
+
+    private void createLabelTokenStore( File fileName )
+    {
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( LabelTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore( new File( fileName.getPath() + NAMES_PART), TokenStore.NAME_STORE_BLOCK_SIZE, IdType.LABEL_TOKEN_NAME );
+        LabelTokenStore store = newLabelTokenStore( fileName );
         store.close();
     }
 
@@ -275,15 +331,20 @@ public class StoreFactory
         createEmptyDynamicStore(fileName, blockSize, DynamicStringStore.VERSION, idType);
     }
 
-    private void createPropertyIndexStore( File fileName)
+    private void createPropertyKeyTokenStore( File fileName )
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyIndexStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore(new File( fileName.getPath() + ".keys"), PropertyIndexStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_INDEX_BLOCK);
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore(new File( fileName.getPath() + KEYS_PART), PropertyKeyTokenStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_KEY_TOKEN_NAME );
     }
 
     public void createDynamicArrayStore( File fileName, int blockSize)
     {
         createEmptyDynamicStore(fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK);
+    }
+    
+    public void createSchemaStore( File fileName )
+    {
+        createEmptyDynamicStore( fileName, SchemaStore.BLOCK_SIZE, SchemaStore.VERSION, IdType.SCHEMA );
     }
 
     /**
@@ -304,9 +365,6 @@ public class StoreFactory
      *            The number of bytes for each block
      * @param typeAndVersionDescriptor
      *            The type and version descriptor that identifies this store
-     *
-     * @throws IOException
-     *             If fileName is null or if file exists or illegal block size
      */
     public void createEmptyDynamicStore( File fileName, int baseBlockSize,
                                             String typeAndVersionDescriptor, IdType idType)
@@ -356,7 +414,7 @@ public class StoreFactory
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
         IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, new File( fileName.getPath() + ".id"),
                 idType.getGrabSize(), idType, 0 );
-        idGenerator.nextId(); // reserv first for blockSize
+        idGenerator.nextId(); // reserve first for blockSize
         idGenerator.close();
     }
 

@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractStore implements Store, RecordStore<RelationshipRecord>
+public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -55,7 +55,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, RelationshipRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipRecord record ) throws FAILURE
     {
         processor.processRelationship( this, record );
     }
@@ -79,11 +79,6 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     }
 
     @Override
-    public void close()
-    {
-        super.close();
-    }
-
     public RelationshipRecord getRecord( long id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -100,7 +95,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -134,7 +129,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
 
     public RelationshipRecord getLightRel( long id )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( id, OperationType.READ );
@@ -146,8 +141,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         }
         try
         {
-            RelationshipRecord record = getRecord( id, window, RecordLoad.CHECK );
-            return record;
+            return getRecord( id, window, RecordLoad.CHECK );
         }
         finally
         {
@@ -155,21 +149,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         }
     }
 
-    public void updateRecord( RelationshipRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
+    @Override
     public void updateRecord( RelationshipRecord record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
@@ -203,6 +183,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         PersistenceWindow window, boolean force )
     {
         long id = record.getId();
+        registerIdFromUpdateRecord( id );
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() || force )
         {
@@ -338,7 +319,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
 
     public RelationshipRecord getChainRecord( long relId )
     {
-        PersistenceWindow window = null;
+        PersistenceWindow window;
         try
         {
             window = acquireWindow( relId, OperationType.READ );
@@ -362,7 +343,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        List<WindowPoolStats> list = new ArrayList<>();
         list.add( getWindowPoolStats() );
         return list;
     }

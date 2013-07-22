@@ -22,13 +22,16 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
 
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
@@ -61,17 +64,25 @@ public class TransactionReader
 
         void visitDeleteProperty( int localId, long node );
 
-        void visitUpdateRelationshipType( int localId, RelationshipTypeRecord node );
+        void visitUpdateRelationshipTypeToken( int localId, RelationshipTypeTokenRecord node );
 
-        void visitDeleteRelationshipType( int localId, int node );
+        void visitDeleteRelationshipTypeToken( int localId, int node );
 
-        void visitUpdatePropertyIndex( int localId, PropertyIndexRecord node );
+        void visitUpdateLabelToken( int localId, LabelTokenRecord node );
 
-        void visitDeletePropertyIndex( int localId, int node );
+        void visitDeleteLabelToken( int localId, int node );
+
+        void visitUpdatePropertyKeyToken( int localId, PropertyKeyTokenRecord node );
+
+        void visitDeletePropertyKeyToken( int localId, int node );
 
         void visitUpdateNeoStore( int localId, NeoStoreRecord node );
 
         void visitDeleteNeoStore( int localId, long node );
+
+        void visitDeleteSchemaRule( int localId, Collection<DynamicRecord> records, long id );
+
+        void visitUpdateSchemaRule( int localId, Collection<DynamicRecord> records );
     }
 
     private static final XaCommandFactory COMMAND_FACTORY = new XaCommandFactory()
@@ -79,7 +90,7 @@ public class TransactionReader
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
         {
-            return Command.readCommand( null, byteChannel, buffer );
+            return Command.readCommand( null, null, byteChannel, buffer );
         }
     };
     private final ByteBuffer buffer = ByteBuffer.wrap( new byte[256] );
@@ -178,28 +189,41 @@ public class TransactionReader
         }
 
         @Override
-        public void visitRelationshipType( RelationshipTypeRecord record )
+        public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
         {
             if ( !record.inUse() )
             {
-                visitor.visitDeleteRelationshipType( localId, record.getId() );
+                visitor.visitDeleteRelationshipTypeToken( localId, record.getId() );
             }
             else
             {
-                visitor.visitUpdateRelationshipType( localId, record );
+                visitor.visitUpdateRelationshipTypeToken( localId, record );
             }
         }
 
         @Override
-        public void visitPropertyIndex( PropertyIndexRecord record )
+        public void visitLabelToken( LabelTokenRecord record )
         {
             if ( !record.inUse() )
             {
-                visitor.visitDeletePropertyIndex( localId, record.getId() );
+                visitor.visitDeleteLabelToken( localId, record.getId() );
             }
             else
             {
-                visitor.visitUpdatePropertyIndex( localId, record );
+                visitor.visitUpdateLabelToken( localId, record );
+            }
+        }
+
+        @Override
+        public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
+        {
+            if ( !record.inUse() )
+            {
+                visitor.visitDeletePropertyKeyToken( localId, record.getId() );
+            }
+            else
+            {
+                visitor.visitUpdatePropertyKeyToken( localId, record );
             }
         }
 
@@ -213,6 +237,23 @@ public class TransactionReader
             else
             {
                 visitor.visitUpdateNeoStore( localId, record );
+            }
+        }
+
+        @Override
+        public void visitSchemaRule( Collection<DynamicRecord> records )
+        {
+            if ( ! records.isEmpty() )
+            {
+                DynamicRecord first = records.iterator().next();
+                if ( !first.inUse() )
+                {
+                    visitor.visitDeleteSchemaRule( localId, records, first.getId() );
+                }
+                else
+                {
+                    visitor.visitUpdateSchemaRule( localId, records );
+                }
             }
         }
     }

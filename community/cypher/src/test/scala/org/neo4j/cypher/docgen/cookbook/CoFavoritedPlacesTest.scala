@@ -52,9 +52,9 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
 * Determine who has favorited place x.
 * What else have they favorited that is not place x.""",
-      queryText = """START place=node:node_auto_index(name = "CoffeeShop1")
-      		MATCH place<-[:favorite]-person-[:favorite]->stuff 
-      		RETURN stuff.name, count(*) 
+      queryText = """MATCH place<-[:favorite]-person-[:favorite]->stuff
+          WHERE place.name = 'CoffeeShop1'
+      		RETURN stuff.name, count(*)
       		ORDER BY count(*) DESC, stuff.name""",
       returns = "The list of places that are favorited by people that favorited the start place.",
       assertions = (p) => assertEquals(List(Map("stuff.name" -> "MelsPlace", "count(*)" -> 2),
@@ -69,8 +69,8 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
 * Determine the tags for place x.
 * What else is tagged the same as x that is not x.""",
-      queryText = """START place=node:node_auto_index(name = "CoffeeShop1") 
-MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
+      queryText = """MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
+WHERE place.name = 'CoffeeShop1'
 RETURN otherPlace.name, collect(tag.name)
 ORDER BY length(collect(tag.name)) DESC, otherPlace.name""",
       returns = "This query returns other places than CoffeeShop1 which share the same tags; they are ranked by the number of tags.",

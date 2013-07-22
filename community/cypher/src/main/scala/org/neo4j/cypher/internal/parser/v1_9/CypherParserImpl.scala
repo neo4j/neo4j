@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_9
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Property, Expression, AggregationExpression}
+import expressions.AggregationExpression
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
@@ -36,10 +36,10 @@ with OrderByClause
 with Updates
 with ActualParser {
   @throws(classOf[SyntaxException])
-  def parse(text: String): Query = {
+  def parse(text: String): AbstractQuery = {
     namer = new NodeNamer
     parseAll(query, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.copy(queryString = text))
+      case Success(r, q) => ReattachAliasedExpressions(r.setQueryText(text))
       case NoSuccess(message, input) => {
         if (message.startsWith("INNER"))
           throw new SyntaxException(message.substring(5), text, input.offset)
@@ -117,18 +117,16 @@ Thank you, the Neo4j Team.
   private def expandQuery(start: Seq[StartItem], namedPaths: Seq[NamedPath], updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
+      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
     }
     case b: BodyReturn => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
+      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
     }
     case NoBody() => {
-      Query(Return(List.empty), start, updates, Seq(), None, None, Seq(), None, namedPaths, None)
+      Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
     }
   }
-
-  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 
   override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
     if (offset >= source.length())

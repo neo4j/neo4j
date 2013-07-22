@@ -41,4 +41,59 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
     assertTrue( "Columns did not apperar in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() );
   }
+
+  @Test def correctLabelStatisticsForCreate() {
+    val result = parseAndExecute("create n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  @Test def correctLabelStatisticsForAdd() {
+    val n      = createNode()
+    val result = parseAndExecute(s"start n=node(${n.getId}) set n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  @Test def correctLabelStatisticsForRemove() {
+    val n      = createNode()
+    parseAndExecute(s"start n=node(${n.getId}) set n:foo:bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 0)
+    assert(stats.labelsRemoved === 2)
+  }
+
+  @Test def correctLabelStatisticsForAddAndRemove() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 2)
+  }
+
+
+  @Test def correctLabelStatisticsForLabelAddedTwice() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) set n:bar:baz")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  @Test def correctLabelStatisticsForRemovalOfUnsetLabel() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:baz:foo")
+    val stats  = result.queryStatistics()
+
+    assert(stats.labelsAdded === 0)
+    assert(stats.labelsRemoved === 1)
+  }
 }

@@ -278,7 +278,15 @@ public abstract class IndexCommand extends XaCommand
             putIntOrLong( buffer, startNode );
             putIntOrLong( buffer, endNode );
         }
-        
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (startNode ^ (startNode >>> 32));
+            result = 31 * result + (int) (endNode ^ (endNode >>> 32));
+            return result;
+        }
+
         @Override
         public boolean equals( Object obj )
         {
@@ -351,7 +359,13 @@ public abstract class IndexCommand extends XaCommand
         {
             return false;
         }
-        
+
+        @Override
+        public int hashCode()
+        {
+            return config != null ? config.hashCode() : 0;
+        }
+
         @Override
         public boolean equals( Object obj )
         {

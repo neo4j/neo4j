@@ -23,8 +23,9 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
+import org.neo4j.cypher.internal.{ExecutionContext}
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
@@ -44,28 +45,40 @@ trait StringHelper {
     case _         => throw new CypherTypeException("Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString))
   }
 
-  protected def props(x: PropertyContainer, q: QueryContext): String = {
+  protected def props(x: PropertyContainer, qtx: QueryContext): String = {
 
     val keyValStrings = x match {
-      case n: Node         => q.nodeOps.propertyKeys(n).map(key => key + ":" + text(q.nodeOps.getProperty(n, key), q))
-      case r: Relationship => q.relationshipOps.propertyKeys(r).map(key => key + ":" + text(q.relationshipOps.getProperty(r, key), q))
+      case n: Node         => qtx.nodeOps.propertyKeyIds(n).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.nodeOps.getProperty(n, pkId), qtx))
+      case r: Relationship => qtx.relationshipOps.propertyKeyIds(r).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.relationshipOps.getProperty(r, pkId), qtx))
     }
 
     keyValStrings.mkString("{", ",", "}")
   }
 
-  protected def text(a: Any, ctx: QueryContext): String = a match {
-    case x: Node            => x.toString + props(x, ctx)
-    case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, ctx)
-    case IsCollection(coll) => coll.map(elem => text(elem, ctx)).mkString("[", ",", "]")
+  protected def text(a: Any, qtx: QueryContext): String = a match {
+    case x: Node            => x.toString + props(x, qtx)
+    case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
+    case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
+    case v: KeyToken        => v.name
     case Some(x)            => x.toString
     case null               => "<null>"
     case x                  => x.toString
   }
+
+  def makeSize(txt: String, wantedSize: Int): String = {
+    val actualSize = txt.length()
+    if (actualSize > wantedSize) {
+      txt.slice(0, wantedSize)
+    } else if (actualSize < wantedSize) {
+      txt + repeat(" ", wantedSize - actualSize)
+    } else txt
+  }
+
+  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 }
 
-case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper with StringExtras {
+case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper  {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = text(argument(m), state.query)
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))

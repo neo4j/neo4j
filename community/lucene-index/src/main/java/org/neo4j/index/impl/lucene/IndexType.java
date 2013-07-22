@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,9 +43,13 @@ import org.apache.lucene.util.Version;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 
-abstract class IndexType
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
+
+public abstract class IndexType
 {
-    private static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER, false )
+    public static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER, false )
     {
         @Override
         public Query deletionQuery( long entityId, String key, Object value )
@@ -72,6 +72,7 @@ abstract class IndexType
             document.add( instantiateField( key, value, Index.NOT_ANALYZED ) );
         }
 
+        @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
             Set<String> values = null;
@@ -307,9 +308,9 @@ abstract class IndexType
     
     abstract void addToDocument( Document document, String key, Object value );
     
-    Fieldable instantiateField( String key, Object value, Index analyzed )
+    public static Fieldable instantiateField( String key, Object value, Index analyzed )
     {
-        Fieldable field = null;
+        Fieldable field;
         if ( value instanceof Number )
         {
             Number number = (Number) value;
@@ -367,7 +368,7 @@ abstract class IndexType
         }
     }
     
-    static Document newBaseDocument( long entityId )
+    public static Document newBaseDocument( long entityId )
     {
         Document doc = new Document();
         doc.add( new Field( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES,
@@ -375,7 +376,7 @@ abstract class IndexType
         return doc;
     }
 
-    Term idTerm( long entityId )
+    public Term idTerm( long entityId )
     {
         return new Term( LuceneIndex.KEY_DOC_ID, "" + entityId );
     }

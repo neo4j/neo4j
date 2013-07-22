@@ -28,10 +28,12 @@ This rewriter rewrites expressions that come after the RETURN clause,
 so the user can either use the raw expression, or the alias
  */
 object ReattachAliasedExpressions {
-  def apply(q: Query): Query = {
-    val newSort = q.sort.map(rewrite(q.returns.returnItems))
+  def apply(in: AbstractQuery): AbstractQuery = in match {
+    case q: Query =>
+      val newSort = q.sort.map(rewrite(q.returns.returnItems))
+      q.copy(sort = newSort, tail = q.tail.map(x => apply(x).asInstanceOf[Query]))
 
-    q.copy(sort = newSort, tail = q.tail.map(apply))
+    case _ => in
   }
 
   private def rewrite(returnItems: Seq[ReturnColumn])(in: SortItem): SortItem = {

@@ -20,12 +20,9 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.Set;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -71,69 +68,38 @@ public interface TransactionState
 
     ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
 
-    PrimitiveElement getPrimitiveElement();
+    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive );
 
-    PrimitiveElement getOrCreatePrimitiveElement();
+    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap( Primitive primitive );
+    
+    void createNode( long id );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
-            Primitive primitive );
+    void createRelationship( long id );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
-            Primitive primitive );
+    void deleteNode( long id );
 
-    void deletePrimitive( Primitive primitive );
-
-    void removeNodeFromCache( long nodeId );
-
-    void addRelationshipType( NameData type );
-
-    void addPropertyIndex( NameData index );
-
-    void removeRelationshipFromCache( long id );
-
-    /**
-     * Patches the relationship chain loading parts of the start and end nodes of deleted relationships. This is
-     * a good idea to call when deleting relationships, otherwise the in memory representation of relationship chains
-     * may become damaged.
-     * This is not expected to remove the deleted relationship from the cache - use
-     * {@link #removeRelationshipFromCache(long)} for that purpose before calling this method.
-     *
-     * @param relId The relId of the relationship deleted
-     * @param firstNodeId The relId of the first node
-     * @param firstNodeNextRelId The next relationship relId of the first node in its relationship chain
-     * @param secondNodeId The relId of the second node
-     * @param secondNodeNextRelId The next relationship relId of the second node in its relationship chain
-     */
-    void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                      long secondNodeNextRelId );
-
-    void removeRelationshipTypeFromCache( int id );
-
-    void removeGraphPropertiesFromCache();
-
-    void clearCache();
+    void deleteRelationship( long id );
 
     TransactionData getTransactionData();
     
-    void addPropertyIndex( PropertyIndex index );
-
-    PropertyIndex getPropertyIndex( String key );
-
-    PropertyIndex getPropertyIndex( int keyId );
+    boolean nodeIsDeleted( long nodeId );
     
-    boolean isDeleted( Node node );
-
-    boolean isDeleted( Relationship relationship );
-    
-    PropertyIndex[] getAddedPropertyIndexes();
+    boolean relationshipIsDeleted( long relationshpId );
     
     boolean hasChanges();
     
     void setRollbackOnly();
     
-    public TxHook getTxHook();
+    TxHook getTxHook();
     
-    public TxIdGenerator getTxIdGenerator();
+    TxIdGenerator getTxIdGenerator();
     
-    public static final TransactionState NO_STATE = new NoTransactionState();
+    Set<Long> getCreatedNodes();
+    
+    Set<Long> getCreatedRelationships();
+
+    // Tech debt, this is here waiting for transaction state to move to the TxState class
+    Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
+    
+    TransactionState NO_STATE = new NoTransactionState();
 }

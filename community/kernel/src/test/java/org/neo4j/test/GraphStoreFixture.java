@@ -22,15 +22,18 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -93,9 +96,24 @@ public abstract class GraphStoreFixture implements TestRule
 
     public class IdGenerator
     {
+        public long schema()
+        {
+            return schemaId++;
+        }
+
         public long node()
         {
             return nodeId++;
+        }
+
+        public long label()
+        {
+            return labelId++;
+        }
+
+        public long nodeLabel()
+        {
+            return nodeLabelsId++;
         }
 
         public long relationship()
@@ -138,6 +156,18 @@ public abstract class GraphStoreFixture implements TestRule
             this.writer = writer;
         }
 
+        public void createSchema( Collection<DynamicRecord> records )
+        {
+            try
+            {
+                writer.createSchema( records );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
         public void propertyKey( int id, String key )
         {
             try
@@ -150,11 +180,23 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void relationshipType( int id, String label )
+        public void nodeLabel( int id, String name )
         {
             try
             {
-                writer.propertyKey( id, label, id );
+                writer.label( id, name, id );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
+        public void relationshipType( int id, String relationshipType )
+        {
+            try
+            {
+                writer.relationshipType( id, relationshipType, id );
             }
             catch ( IOException e )
             {
@@ -186,11 +228,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void update( NodeRecord node )
+        public void update( NodeRecord before, NodeRecord node )
         {
             try
             {
-                writer.update( node );
+                writer.update( before, node );
             }
             catch ( IOException e )
             {
@@ -258,11 +300,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void update( PropertyRecord property )
+        public void update( PropertyRecord before, PropertyRecord property )
         {
             try
             {
-                writer.update( property );
+                writer.update( before, property );
             }
             catch ( IOException e )
             {
@@ -270,11 +312,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void delete( PropertyRecord property )
+        public void delete( PropertyRecord before, PropertyRecord property )
         {
             try
             {
-                writer.delete( property );
+                writer.delete( before, property );
             }
             catch ( IOException e )
             {
@@ -290,7 +332,7 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( String storeDir )
+    protected void start( @SuppressWarnings("UnusedParameters") String storeDir )
     {
         // allow for override
     }
@@ -319,6 +361,7 @@ public abstract class GraphStoreFixture implements TestRule
         return transaction.write( new IdGenerator(), localIdGenerator++, masterId(), myId(), txId );
     }
 
+    @SuppressWarnings("deprecation")
     protected void applyTransaction( ReadableByteChannel transaction ) throws IOException
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
@@ -336,12 +379,15 @@ public abstract class GraphStoreFixture implements TestRule
 
     protected Map<String, String> configuration( boolean initialData )
     {
-        return new HashMap<String, String>();
+        return new HashMap<>();
     }
 
     private String directory;
     private int localIdGenerator = 0;
+    private long schemaId;
     private long nodeId;
+    private long labelId;
+    private long nodeLabelsId;
     private long relId;
     private long propId;
     private long stringPropId;
@@ -356,13 +402,16 @@ public abstract class GraphStoreFixture implements TestRule
         {
             generateInitialData( graphDb );
             StoreAccess stores = new StoreAccess( graphDb );
+            schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
+            labelId = stores.getLabelTokenStore().getHighId();
+            nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
             relId = stores.getRelationshipStore().getHighId();
             propId = stores.getPropertyStore().getHighId();
             stringPropId = stores.getStringStore().getHighId();
             arrayPropId = stores.getArrayStore().getHighId();
-            relTypeId = (int) stores.getRelationshipTypeStore().getHighId();
-            propKeyId = (int) stores.getPropertyKeyStore().getHighId();
+            relTypeId = (int) stores.getRelationshipTypeTokenStore().getHighId();
+            propKeyId = (int) stores.getPropertyKeyNameStore().getHighId();
         }
         finally
         {

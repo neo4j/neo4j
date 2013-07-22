@@ -28,24 +28,31 @@ import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
+import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.test.Mute.muteAll;
 
 public class TestCommunityDatabase
 {
+    @Rule
+    public Mute mute = muteAll();
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
@@ -57,7 +64,7 @@ public class TestCommunityDatabase
         theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
                 Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
     }
-    
+
     private static Configurator configuratorWithServerProperties( final Map<String, String> serverProperties )
     {
         return new Configurator.Adapter()
@@ -117,7 +124,7 @@ public class TestCommunityDatabase
     {
         deletionFailureOk = true;
         theDatabase.start();
-        
+
         CommunityDatabase db = new CommunityDatabase( configuratorWithServerProperties( stringMap(
                 Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
 
@@ -135,7 +142,7 @@ public class TestCommunityDatabase
     @Test
     public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
-    	theDatabase.start();
+        theDatabase.start();
         ShellLobby.newClient()
                 .shutdown();
     }
@@ -145,7 +152,7 @@ public class TestCommunityDatabase
     {
         final int customPort = findFreeShellPortToUse( 8881 );
         final File tempDir = createTempDir();
-        
+
         Database otherDb = new CommunityDatabase( new Configurator.Adapter()
         {
             @Override
@@ -154,12 +161,12 @@ public class TestCommunityDatabase
                 return new MapConfiguration( stringMap(
                         Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath() ) );
             }
-            
+
             @Override
             public Map<String, String> getDatabaseTuningProperties()
             {
                 return stringMap(
-                      ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
+                      ShellSettings.remote_shell_enabled.name(), Settings.TRUE,
                       ShellSettings.remote_shell_port.name(), "" + customPort );
             }
         } );
@@ -175,12 +182,11 @@ public class TestCommunityDatabase
     }
 
     @Test
+    @SuppressWarnings( "deprecation" )
     public void shouldBeAbleToGetLocation() throws Throwable
     {
-
         theDatabase.start();
         assertThat( theDatabase.getLocation(), is( theDatabase.getGraph().getStoreDir() ) );
-
     }
 
     private int findFreeShellPortToUse( int startingPort )
@@ -190,12 +196,10 @@ public class TestCommunityDatabase
         {
             try
             {
-                ShellLobby.newClient( startingPort )
-                        .shutdown();
-                startingPort++;
+                ShellLobby.newClient( startingPort++ ).shutdown();
             }
             catch ( ShellException e )
-            { // Good
+            {   // Good
                 return startingPort;
             }
         }

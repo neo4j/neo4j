@@ -26,7 +26,61 @@ import org.neo4j.graphdb.{Path, Node, Relationship}
 
 class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
-  val stats = QueryStatistics.empty
+  val stats = QueryStatistics()
+
+  @Test
+  def create_new_node_with_labels_on_the_right() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->b:FOO return b")
+    val createdNode = result.columnAs[Node]("b").toList.head
+
+    assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
+    assertInTx(createdNode.labels === List("FOO"))
+  }
+
+  @Test
+  def create_new_node_with_labels_on_the_left() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute("start b = node(1) create unique a:FOO-[r:X]->b return a")
+    val createdNode = result.columnAs[Node]("a").toList.head
+
+    assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
+    assertInTx(createdNode.labels === List("FOO"))
+  }
+
+  @Test
+  def create_new_node_with_labels_everywhere() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a = node(1) create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
+    val createdNode = result.columnAs[Node]("d").toList.head
+
+    assertStats(result, relationshipsCreated = 3, nodesCreated = 3, labelsAdded = 3)
+    assertInTx(createdNode.labels === List("BAZ"))
+  }
+
+  @Test
+  def create_new_node_with_labels_and_values() {
+    val a = createLabeledNode(Map("name"-> "Andres"), "FOO")
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute(s"start b = node(${b.getId}) create unique (a:FOO {name: 'Andres'})-[r:X]->b return a, b")
+
+    val row: Map[String, Any] = result.toList.head
+    val resultA = row("a").asInstanceOf[Node]
+    val resultB = row("b").asInstanceOf[Node]
+
+    assertStats(result)
+    assert(resultA === a)
+    assert(resultB === b)
+  }
 
   @Test
   def create_a_missing_relationship() {
@@ -62,7 +116,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     assert(r.getStartNode === a)
     val endNode = r.getEndNode
 
-    assert(endNode.getProperty("name") === "Lasse")
+    assertInTx(endNode.getProperty("name") === "Lasse")
   }
 
   @Test
@@ -74,7 +128,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
 
-    assert(endNode.getProperty("name") === "Lasse")
+    assertInTx(endNode.getProperty("name") === "Lasse")
   }
 
   @Test
@@ -87,10 +141,12 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
     val resultMap = result.toList.head
 
-    assert(resultMap("a").asInstanceOf[Node].getProperty("name") === "Andres")
-    assert(resultMap("a").asInstanceOf[Node].getProperty("position") === "Developer")
-    assert(resultMap("b").asInstanceOf[Node].getProperty("name") === "Lasse")
-    assert(resultMap("b").asInstanceOf[Node].getProperty("awesome") === true)
+    graph.inTx {
+      assert(resultMap("a").asInstanceOf[Node].getProperty("name") === "Andres")
+      assert(resultMap("a").asInstanceOf[Node].getProperty("position") === "Developer")
+      assert(resultMap("b").asInstanceOf[Node].getProperty("name") === "Lasse")
+      assert(resultMap("b").asInstanceOf[Node].getProperty("awesome") === true)
+    }
   }
 
   @Test
@@ -106,10 +162,12 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val lasse = path.endNode()
     val andres = path.nodes().asScala.toList(1)
 
-    assert(andres.getProperty("name") === "Andres")
-    assert(andres.getProperty("position") === "Developer")
-    assert(lasse.getProperty("name") === "Lasse")
-    assert(lasse.getProperty("awesome") === true)
+    graph.inTx {
+      assert(andres.getProperty("name") === "Andres")
+      assert(andres.getProperty("position") === "Developer")
+      assert(lasse.getProperty("name") === "Lasse")
+      assert(lasse.getProperty("awesome") === true)
+    }
   }
 
   @Test
@@ -219,7 +277,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val createdNode = executeScalar[Node]("start a = node(1) create unique a-[:X]->(b {name:'Andres'}) return b")
 
     assert(b != createdNode, "We should have created a new node - this one doesn't match")
-    assert(createdNode.getProperty("name") === "Andres")
+    assertInTx(createdNode.getProperty("name") === "Andres")
   }
 
   @Test
@@ -232,7 +290,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assert(b != createdNode, "We should have created a new node - this one doesn't match")
     val createdRelationship = createdNode.getRelationships.asScala.toList.head
-    assert(createdRelationship.getProperty("foo") === "not bar")
+    assertInTx(createdRelationship.getProperty("foo") === "not bar")
   }
 
   @Test
@@ -243,10 +301,12 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     val createdRel = executeScalar[Relationship]("start a = node(1), b = node(2) create unique a-[r:X {foo:'not bar'}]->b return r")
 
-    assert(r != createdRel, "We should have created a new rel - this one doesn't match")
-    assert(createdRel.getProperty("foo") === "not bar")
-    assert(createdRel.getStartNode === a)
-    assert(createdRel.getEndNode === b)
+    graph.inTx {
+      assert(r != createdRel, "We should have created a new rel - this one doesn't match")
+      assert(createdRel.getProperty("foo") === "not bar")
+      assert(createdRel.getStartNode === a)
+      assert(createdRel.getEndNode === b)
+    }
   }
 
   @Test
@@ -305,7 +365,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val result = parseAndExecute("""
 START root = node(1)
 CREATE book
-FOREACH(name in ['a','b','c'] :
+FOREACH(name in ['a','b','c'] |
   CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book
 )
 return book
@@ -338,15 +398,17 @@ return book
 
     val result = parseAndExecute("""
 START root = node(1)
-FOREACH(name in ['a','b','c'] :
+FOREACH(name in ['a','b','c'] |
   CREATE UNIQUE root-[:tag]->(tag {name:name})
 )
 """)
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
 
-    val bookTags = tagRoot.getRelationships.asScala.map(_.getOtherNode(tagRoot)).map(_.getProperty("name")).toSet
-    assert(bookTags === Set("a", "b", "c"))
+    graph.inTx {
+      val bookTags = tagRoot.getRelationships.asScala.map(_.getOtherNode(tagRoot)).map(_.getProperty("name")).toSet
+      assert(bookTags === Set("a", "b", "c"))
+    }
   }
 
   @Test def should_find_nodes_with_properties_first() {
@@ -401,8 +463,8 @@ RETURN x""")
     val result = parseAndExecute("""
 START a = node(*)
 WITH collect(a) as nodes
-FOREACH( x in nodes :
-      FOREACH( y in nodes :
+FOREACH( x in nodes |
+      FOREACH( y in nodes |
           CREATE UNIQUE x-[:FOO]->y
       )
 )""")

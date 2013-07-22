@@ -79,10 +79,18 @@ public abstract class Setting<T>
     public static <T> Setting<T> restrictSetting( Setting<T> setting, Predicate<? super T> firstPredicate,
                                                   Predicate<? super T>... morePredicates )
     {
-        final Collection<Predicate<? super T>> predicates = new ArrayList<Predicate<? super T>>(
-                1 + (morePredicates == null ? 0 : morePredicates.length) );
-        predicates.add( firstPredicate );
-        addAll( predicates, morePredicates );
+        final Collection<Predicate<? super T>> predicates;
+        if ( morePredicates == null || morePredicates.length == 0 )
+        {
+            predicates = new ArrayList<Predicate<? super T>>( 1 );
+            predicates.add( firstPredicate );
+        }
+        else
+        {
+            predicates = new ArrayList<Predicate<? super T>>( 1 + morePredicates.length );
+            predicates.add( firstPredicate );
+            addAll( predicates, morePredicates );
+        }
         return new SettingAdapter<T, T>( setting )
         {
             @Override

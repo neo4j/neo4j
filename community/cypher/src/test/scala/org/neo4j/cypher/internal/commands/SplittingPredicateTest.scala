@@ -31,8 +31,8 @@ class SplittingPredicateTest extends Assertions {
   }
 
   @Test def andCanBeSplitInTwo() {
-    val x = And(True(), True())
-    assert(x.atoms === Seq(True(), True()))
+    val x = And(Not(Not(True())), Not(True()))
+    assert(x.atoms === Seq(Not(Not(True())), Not(True())))
   }
 
   @Test def or_cannot_be_split() {

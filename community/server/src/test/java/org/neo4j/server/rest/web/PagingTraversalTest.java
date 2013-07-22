@@ -37,13 +37,15 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.tooling.FakeClock;
 
@@ -57,23 +59,26 @@ public class PagingTraversalTest
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
+    private AbstractGraphDatabase graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
+        graph = (AbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(),
                 output,
-                new DatabaseActions( database, leaseManager, ForceMode.forced, true ) );
+                new DatabaseActions( leaseManager, ForceMode.forced, true, database.getGraph() ) );
+        service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
     @After
     public void shutdownDatabase() throws Throwable
     {
-        this.database.shutdown();
+        this.graph.shutdown();
     }
 
     @Test
@@ -193,21 +198,19 @@ public class PagingTraversalTest
         String description = description();
 
         final int PAGE_SIZE = 10;
-        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
-                SIXTY_SECONDS, description );
 
-        return response;
+        return service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
+                SIXTY_SECONDS, description );
     }
 
     private String description()
     {
-        String description = "{"
-                + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name')" +
-                ".contains('9');\"},"
-                + "\"order\":\"depth first\","
-                + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
-        return description;
+        return "{"
+               + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+               + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('9');\"},"
+               + "\"order\":\"depth first\","
+               + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}"
+               + "}";
     }
 
     private long createListOfNodes( int numberOfNodes )
@@ -223,6 +226,7 @@ public class PagingTraversalTest
                 database.getGraph().getNodeById( previousNodeId )
                         .createRelationshipTo( database.getGraph().getNodeById( currentNodeId ),
                                 DynamicRelationshipType.withName( "PRECEDES" ) );
+                previousNodeId = currentNodeId;
             }
 
             tx.success();

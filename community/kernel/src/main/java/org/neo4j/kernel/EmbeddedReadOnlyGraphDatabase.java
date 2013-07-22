@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
@@ -119,24 +120,34 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
         return params;
     }
 
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return false;
+    }
+
+    @Override
     public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {

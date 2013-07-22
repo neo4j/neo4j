@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertTrue;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertTrue;
 
 public class TestTxSuspendResume
 {
     @Test
     public void testMultipleTxSameThread() throws Exception
     {
-        ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         TransactionManager tm = graphdb.getTxManager();
         tm.begin();
         Node refNode = graphdb.getReferenceNode();
@@ -73,7 +74,7 @@ public class TestTxSuspendResume
             {
                 while ( main.getState() != Thread.State.WAITING ) Thread.sleep( 1 );
                 tm.resume( tx );
-                tm.commit();
+                tm.getTransaction().commit();
                 success = true;
             }
             catch ( Throwable t )

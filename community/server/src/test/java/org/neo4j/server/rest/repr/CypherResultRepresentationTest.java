@@ -71,7 +71,7 @@ public class CypherResultRepresentationTest
         when( result.executionPlanDescription() ).thenReturn( plan );
 
         // When
-        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, true ) );
+        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, /*includeStats=*/false, true ) );
 
         // Then
         Map<String, Object> serializedPlan = (Map<String, Object>) serialized.get( "plan" );
@@ -96,7 +96,7 @@ public class CypherResultRepresentationTest
         when( result.columns() ).thenReturn( new ArrayList<String>() );
 
         // When
-        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, false ) );
+        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, /*includeStats=*/false, false ) );
 
         // Then
         assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );

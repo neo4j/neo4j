@@ -53,7 +53,7 @@ public class EnterpriseServerBuilder extends ServerBuilder
         {
             this.dbDir = createTempDir().getAbsolutePath();
         }
-        File configFile = createPropertiesFiles();
+        final File configFile = createPropertiesFiles();
 
         if ( preflightTasks == null )
         {
@@ -89,12 +89,19 @@ public class EnterpriseServerBuilder extends ServerBuilder
             {
                 Clock clockToUse = (clock != null) ? clock : new RealClock();
 
-                return new DatabaseActions( database,
+                return new DatabaseActions(
                         new LeaseManager( clockToUse ),
                         ForceMode.forced,
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            }
+            
+            @Override
+            public void stop()
+            {
+                super.stop();
+                configFile.delete();
             }
         };
     }

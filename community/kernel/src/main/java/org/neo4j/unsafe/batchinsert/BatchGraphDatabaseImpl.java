@@ -19,13 +19,18 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -33,6 +38,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -41,7 +47,9 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.PlaceboTransaction;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -79,20 +87,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             }
         };
 
-    BatchGraphDatabaseImpl( String storeDir )
-    {
-        this.batchInserter = new BatchInserterImpl( storeDir );
-    }
-
-    BatchGraphDatabaseImpl( String storeDir, Map<String, String> stringParams )
-    {
-        this.batchInserter = new BatchInserterImpl( storeDir, stringParams );
-    }
-
     BatchGraphDatabaseImpl( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String, String> stringParams )
+            Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this.batchInserter = new BatchInserterImpl( storeDir, fileSystem, stringParams );
+        this.batchInserter = new BatchInserterImpl( storeDir, fileSystem, stringParams, kernelExtensions );
     }
     
     /**
@@ -123,6 +121,20 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         return node;
     }
 
+    @Override
+    public Node createNode( Label... labels )
+    {
+        long id = batchInserter.createNode( null, labels );
+        NodeBatchImpl node = new NodeBatchImpl( id, this, emptyProps() );
+        nodes.put( id, node );
+        return node;
+    }
+
+    private static UnsupportedOperationException unsupportedOperation()
+    {
+        return new UnsupportedOperationException( "Batch inserter mode" );
+    }
+
     static Map<String,Object> emptyProps()
     {
         return new HashMap<String,Object>();
@@ -131,12 +143,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Iterable<Node> getAllNodes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
 
     public Iterable<Relationship> getAllRelationships()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
     
     @Override
@@ -191,7 +203,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
 
     @Override
@@ -275,7 +287,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException();
+            throw unsupportedOperation();
         }
 
         @Override
@@ -412,7 +424,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             ReturnableEvaluator returnableEvaluator,
             RelationshipType relationshipType, Direction direction )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -422,7 +434,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             RelationshipType firstRelationshipType, Direction firstDirection,
             RelationshipType secondRelationshipType, Direction secondDirection )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -431,7 +443,38 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void addLabel( Label label )
+        {
+           Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+           labelSet.add( label );
+           Label[] labelIds = new Label[ labelSet.size() ];
+           graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
+        }
+
+        @Override
+        public void removeLabel( Label label )
+        {
+            Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+            labelSet.remove( label );
+            Label[] labelIds = new Label[ labelSet.size() ];
+            graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
+        {
+            return graphDbService.batchInserter.nodeHasLabel( getId(), label );
+        }
+        
+        @Override
+        public ResourceIterable<Label> getLabels()
+        {
+            final Iterable<Label> labels = graphDbService.batchInserter.getNodeLabels( getId() );
+            return asResourceIterable( labels );
         }
 
         @Override
@@ -537,7 +580,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -796,6 +839,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
+    public Schema schema()
+    {
+        throw
+            new UnsupportedOperationException("Schema modification is currently not available through the BatchDatabase  API.");
+    }
+
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
@@ -804,6 +854,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
     @Override
     public IndexManager index()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
         throw new UnsupportedOperationException();
     }

@@ -20,24 +20,13 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.cypher.internal.spi.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.ParameterNotFoundException
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
-
-
-object QueryState {
-  def empty: QueryState = apply(null)
-
-  def apply(): QueryState = empty
-
-  def apply(db: GraphDatabaseService): QueryState =
-    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None, new TimeReader)
-}
 
 case class QueryState(db: GraphDatabaseService,
-                      query: QueryContext,
+                      inner: QueryContext,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
                       var transaction: Option[Transaction] = None,
@@ -45,11 +34,9 @@ case class QueryState(db: GraphDatabaseService,
   def readTimeStamp(): Long = timeReader.getTime
 
 
-  val createdNodes = new Counter
-  val createdRelationships = new Counter
-  val propertySet = new Counter
-  val deletedNodes = new Counter
-  val deletedRelationships = new Counter
+  private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
+  val query: QueryContext = updateTrackingQryCtx
+
 
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]
@@ -58,16 +45,8 @@ case class QueryState(db: GraphDatabaseService,
 
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
-}
 
-class Counter {
-  private val counter: AtomicInteger = new AtomicInteger()
-
-  def count: Int = counter.get()
-
-  def increase() {
-    counter.incrementAndGet()
-  }
+  def getStatistics = updateTrackingQryCtx.getStatistics
 }
 
 class TimeReader {

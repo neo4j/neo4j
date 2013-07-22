@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands.expressions.Expression
+import internal.commands.SchemaIndex
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
@@ -49,11 +50,26 @@ class PatternException(message:String) extends CypherException(message, null)
 class InternalException(message:String, inner:Exception=null) extends CypherException(message, inner)
 
 class MissingIndexException(indexName:String) extends CypherException("Index `" + indexName + "` does not exist")
+class MissingConstraintException() extends CypherException("Constraint not found")
 
 class InvalidAggregateException(message:String) extends CypherException(message)
 
-class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable) extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
+class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable)
+  extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.")
 
 class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
 
-class UnsupportedFormatException(format:String) extends CypherException("This format is not supported: "+format)
+class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`$labelName` does not exist in the store")
+
+class IndexHintException(identifier: String, label: String, property: String, message: String)
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
+  def this(hint:SchemaIndex, message:String) = this(hint.identifier, hint.label, hint.property, message)
+}
+
+class LabelScanHintException(identifier: String, label: String, message: String)
+  extends CypherException(s"$message\nLabel: `$label`") {
+}
+
+class UnableToPickStartPointException(message: String) extends CypherException(message)
+
+class InvalidSemanticsException( message: String ) extends CypherException(message)

@@ -35,6 +35,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -80,7 +82,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( String storeDir )
     {
-        super( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+        this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
     }
 
     /**
@@ -89,7 +91,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ) );
+        this( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
     /**
@@ -98,7 +100,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ) );
+        this( storeDir, withForcedInMemoryConfiguration( params ),
+                Service.load( IndexProvider.class ),
+                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
+                        KernelExtensionFactory.class ) ),
+                Service.load( CacheProvider.class ),
+                Service.load( TransactionInterceptorProvider.class ) );
     }
     
     /**

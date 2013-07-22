@@ -27,13 +27,13 @@ class EagerPipeTest extends Assertions {
   @Test
   def shouldMakeLazyEager() {
     // Given a lazy iterator that is not empty
-    val lazyIterator = new LazyIterator[ExecutionContext](10, (_)=>ExecutionContext.empty)
+    val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
     val src = new FakePipe(lazyIterator)
     val eager = new EagerPipe(src)
     assert(lazyIterator.nonEmpty, "Should not be empty")
 
     // When
-    val resultIterator = eager.createResults(QueryState.empty)
+    val resultIterator = eager.createResults(QueryStateHelper.empty)
 
     // Then the lazy iterator is emptied, and the returned iterator is not
     assert(lazyIterator.isEmpty, "Should be empty")

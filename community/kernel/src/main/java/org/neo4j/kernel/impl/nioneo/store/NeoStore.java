@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.String.format;
+
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
  * PropertyStore and RelationshipTypeStore". NeoStore doesn't actually "store"
@@ -68,29 +70,30 @@ public class NeoStore extends AbstractStore
     private NodeStore nodeStore;
     private PropertyStore propStore;
     private RelationshipStore relStore;
-    private RelationshipTypeStore relTypeStore;
+    private RelationshipTypeTokenStore relTypeStore;
+    private LabelTokenStore labelTokenStore;
+    private SchemaStore schemaStore;
     private final TxHook txHook;
-    private boolean isStarted;
     private long lastCommittedTx = -1;
 
     private final int REL_GRAB_SIZE;
-    private final File fileName;
-    private final Config conf;
 
-    public NeoStore(File fileName, Config conf,
-                    IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                    FileSystemAbstraction fileSystemAbstraction,
-                    StringLogger stringLogger, TxHook txHook,
-                    RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore, NodeStore nodeStore)
+    public NeoStore( File fileName, Config conf,
+                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                     FileSystemAbstraction fileSystemAbstraction,
+                     StringLogger stringLogger, TxHook txHook,
+                     RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
+                     PropertyStore propStore, RelationshipStore relStore,
+                     NodeStore nodeStore, SchemaStore schemaStore )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
-        this.fileName = fileName;
-        this.conf = conf;
         this.relTypeStore = relTypeStore;
+        this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
         this.relStore = relStore;
         this.nodeStore = nodeStore;
+        this.schemaStore = schemaStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
 
@@ -148,12 +151,10 @@ public class NeoStore extends AbstractStore
                 String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
-                    throw new IllegalStateException(
-                            String.format(
-                                    "Mismatching store version found (%s while expecting %s) and the store is not cleanly shutdown."
-                                            + " Recover the database with the previous database version and then attempt to upgrade",
-                                    foundVersion,
-                                    CommonAbstractStore.ALL_STORES_VERSION ) );
+                    throw new IllegalStateException( format(
+                            "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown." +
+                            " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
+                            foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
                 }
             }
         }
@@ -224,6 +225,11 @@ public class NeoStore extends AbstractStore
             relTypeStore.close();
             relTypeStore = null;
         }
+        if ( labelTokenStore != null )
+        {
+            labelTokenStore.close();
+            labelTokenStore = null;
+        }
         if ( propStore != null )
         {
             propStore.close();
@@ -239,21 +245,28 @@ public class NeoStore extends AbstractStore
             nodeStore.close();
             nodeStore = null;
         }
+        if ( schemaStore != null )
+        {
+            schemaStore.close();
+            schemaStore = null;
+        }
     }
 
     @Override
     public void flushAll()
     {
-        if ( relTypeStore == null || propStore == null || relStore == null ||
-                nodeStore == null )
+        if ( relTypeStore == null || labelTokenStore == null || propStore == null || relStore == null ||
+                nodeStore == null || schemaStore == null )
         {
             return;
         }
         super.flushAll();
         relTypeStore.flushAll();
+        labelTokenStore.flushAll();
         propStore.flushAll();
         relStore.flushAll();
         nodeStore.flushAll();
+        schemaStore.flushAll();
     }
 
     @Override
@@ -342,8 +355,7 @@ public class NeoStore extends AbstractStore
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
-            long previous = buffer.getLong();
-            return previous;
+            return buffer.getLong();
         }
         catch ( IOException e )
         {
@@ -394,10 +406,22 @@ public class NeoStore extends AbstractStore
         if ( status )
         {
             setRecovered();
+            nodeStore.setRecovered();
+            propStore.setRecovered();
+            relStore.setRecovered();
+            relTypeStore.setRecovered();
+            labelTokenStore.setRecovered();
+            schemaStore.setRecovered();
         }
         else
         {
             unsetRecovered();
+            nodeStore.unsetRecovered();
+            propStore.unsetRecovered();
+            relStore.unsetRecovered();
+            relTypeStore.unsetRecovered();
+            labelTokenStore.unsetRecovered();
+            schemaStore.unsetRecovered();
         }
     }
 
@@ -498,6 +522,14 @@ public class NeoStore extends AbstractStore
     {
         return nodeStore;
     }
+    
+    /**
+     * @return the schema store.
+     */
+    public SchemaStore getSchemaStore()
+    {
+        return schemaStore;
+    }
 
     /**
      * The relationship store.
@@ -514,9 +546,19 @@ public class NeoStore extends AbstractStore
      *
      * @return The relationship type store
      */
-    public RelationshipTypeStore getRelationshipTypeStore()
+    public RelationshipTypeTokenStore getRelationshipTypeStore()
     {
         return relTypeStore;
+    }
+
+    /**
+     * Returns the label store.
+     *
+     * @return The label store
+     */
+    public LabelTokenStore getLabelTokenStore()
+    {
+        return labelTokenStore;
     }
 
     /**
@@ -533,20 +575,23 @@ public class NeoStore extends AbstractStore
     public void makeStoreOk()
     {
         relTypeStore.makeStoreOk();
+        labelTokenStore.makeStoreOk();
         propStore.makeStoreOk();
         relStore.makeStoreOk();
         nodeStore.makeStoreOk();
+        schemaStore.makeStoreOk();
         super.makeStoreOk();
-        isStarted = true;
     }
 
     @Override
     public void rebuildIdGenerators()
     {
         relTypeStore.rebuildIdGenerators();
+        labelTokenStore.rebuildIdGenerators();
         propStore.rebuildIdGenerators();
         relStore.rebuildIdGenerators();
         nodeStore.rebuildIdGenerators();
+        schemaStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
     }
 
@@ -554,9 +599,11 @@ public class NeoStore extends AbstractStore
     {
         this.updateHighId();
         relTypeStore.updateIdGenerators();
+        labelTokenStore.updateIdGenerators();
         propStore.updateIdGenerators();
         relStore.updateHighId();
-        nodeStore.updateHighId();
+        nodeStore.updateIdGenerators();
+        schemaStore.updateHighId();
     }
 
     public int getRelationshipGrabSize()
@@ -567,11 +614,14 @@ public class NeoStore extends AbstractStore
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
+        // Reverse order from everything else
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        // TODO no stats for schema store?
         list.addAll( nodeStore.getAllWindowPoolStats() );
         list.addAll( propStore.getAllWindowPoolStats() );
         list.addAll( relStore.getAllWindowPoolStats() );
         list.addAll( relTypeStore.getAllWindowPoolStats() );
+        list.addAll( labelTokenStore.getAllWindowPoolStats() );
         return list;
     }
 
@@ -579,16 +629,18 @@ public class NeoStore extends AbstractStore
     public void logAllWindowPoolStats( StringLogger.LineLogger logger )
     {
         super.logAllWindowPoolStats( logger );
+        // TODO no stats for schema store?
         nodeStore.logAllWindowPoolStats( logger );
         relStore.logAllWindowPoolStats( logger );
         relTypeStore.logAllWindowPoolStats( logger );
+        labelTokenStore.logAllWindowPoolStats( logger );
         propStore.logAllWindowPoolStats( logger );
     }
 
     public boolean isStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() &&
-            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() &&
+            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk();
     }
 
     @Override
@@ -597,10 +649,12 @@ public class NeoStore extends AbstractStore
         msgLog.logLine( "Store versions:" );
 
         super.logVersions( msgLog );
+        schemaStore.logVersions( msgLog );
         nodeStore.logVersions( msgLog );
         relStore.logVersions( msgLog );
         relTypeStore.logVersions( msgLog );
-        propStore.logVersions(msgLog  );
+        labelTokenStore.logVersions( msgLog );
+        propStore.logVersions( msgLog );
 
         stringLogger.flush();
     }
@@ -609,9 +663,11 @@ public class NeoStore extends AbstractStore
     public void logIdUsage( StringLogger.LineLogger msgLog )
     {
         msgLog.logLine( "Id usage:" );
-        nodeStore.logIdUsage(msgLog );
-        relStore.logIdUsage(msgLog );
-        relTypeStore.logIdUsage( msgLog);
+        schemaStore.logIdUsage( msgLog );
+        nodeStore.logIdUsage( msgLog );
+        relStore.logIdUsage( msgLog );
+        relTypeStore.logIdUsage( msgLog );
+        labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         stringLogger.flush();
     }

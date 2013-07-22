@@ -43,10 +43,11 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.test.TargetDirectory;
 
 public class TestPerformUpgradeIfNecessary
 {
-    public static final String HOME_DIRECTORY = "target/" + TestPerformUpgradeIfNecessary.class.getSimpleName();
+    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).graphDbDir( true ).getAbsolutePath();
     public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
 
     @Test

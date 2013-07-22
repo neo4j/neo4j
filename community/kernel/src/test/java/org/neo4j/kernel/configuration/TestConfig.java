@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Settings;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Test;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 public class TestConfig
 {
@@ -45,8 +46,7 @@ public class TestConfig
                 add( new SpecificPropertyMigration( "old", "Old has been replaced by newer!" )
                 {
                     @Override
-                    public void setValueWithOldSetting( String value,
-                                                        Map<String, String> rawConfiguration )
+                    public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
                     {
                         rawConfiguration.put( newer.name(), value );
                     }
@@ -61,7 +61,7 @@ public class TestConfig
     {
         public static Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, GraphDatabaseSetting.TRUE );
+        public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
     }
 

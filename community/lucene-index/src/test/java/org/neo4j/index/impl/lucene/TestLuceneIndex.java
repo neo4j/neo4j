@@ -40,6 +40,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -55,9 +56,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
@@ -130,7 +130,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @Test
     public void testStartupInExistingDirectory() {
-        InternalAbstractGraphDatabase graphDatabase = new ImpermanentGraphDatabase();
+        GraphDatabaseService graphDatabase = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Index<Node> index = graphDatabase.index().forNodes("nodes");
         assertNotNull(index);
     }

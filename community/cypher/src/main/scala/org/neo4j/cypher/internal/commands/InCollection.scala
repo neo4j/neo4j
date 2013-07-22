@@ -39,8 +39,6 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
     seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
-
   def name: String
 
   override def toString() = name + "(" + id + " in " + collection + " where " + predicate + ")"
@@ -50,13 +48,11 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   def children = Seq(collection, predicate)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    val innerType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+    val innerType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
     predicate.throwIfSymbolsMissing(symbols.add(id, innerType))
   }
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
-
-  override def addsToRow() = Seq(id)
 }
 
 case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)

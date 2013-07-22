@@ -29,7 +29,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
   @Test
   def should_keep_time_stamp() {
     //GIVEN
-    val state = QueryState.empty
+    val state = QueryStateHelper.empty
 
     //WHEN
     val ts1 = state.readTimeStamp()
@@ -43,7 +43,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
   @Test
   def case_class_copying_should_still_see_same_time() {
     //GIVEN
-    val state = QueryState.empty
+    val state = QueryStateHelper.empty
     val mockDb = mock[GraphDatabaseService]
 
     //WHEN
@@ -59,7 +59,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
   @Test
   def if_state_is_copied_and_time_seen_in_one_querystate_it_should_be_reflected_in_copies() {
     //GIVEN
-    val state = QueryState.empty
+    val state = QueryStateHelper.empty
     val mockDb = mock[GraphDatabaseService]
 
     //WHEN

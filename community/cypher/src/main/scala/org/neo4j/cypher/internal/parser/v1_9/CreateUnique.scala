@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.parser.v1_9
 import org.neo4j.cypher.internal.commands._
 import expressions.Expression
 import org.neo4j.cypher.internal.mutation.UniqueLink
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.mutation.NamedExpectation
-import org.neo4j.cypher.internal.commands.True
 import collection.Map
+import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.mutation.CreateUniqueAction
+import org.neo4j.cypher.internal.commands.CreateUniqueStartItem
+import org.neo4j.cypher.internal.parser.ParsedNamedPath
+import org.neo4j.cypher.internal.parser.ParsedRelation
 
 trait CreateUnique extends Base with ParserPattern {
   case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])
@@ -53,18 +57,18 @@ trait CreateUnique extends Base with ParserPattern {
         startItems match {
           case No(msg)    => No(msg)
           case Yes(links) => namedPathPatterns.seqMap(p => {
-            val namedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
+            val namedPath = NamedPath(name, patterns: _*)
             Seq(PathAndRelateLink(Some(namedPath), links.flatMap(_.links)))
           })
         }
 
       case ParsedRelation(name, props,
-      ParsedEntity(startName, startExp, startProps, True()),
-      ParsedEntity(endName, endExp, endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
+      ParsedEntity(startName, startExp, startProps, _, _),
+      ParsedEntity(endName, endExp, endProps, _, _), typ, dir, map) if typ.size == 1 =>
         val link = UniqueLink(
-          start = NamedExpectation(startName, startExp, startProps),
-          end = NamedExpectation(endName, endExp, endProps),
-          rel = NamedExpectation(name, props),
+          start = NamedExpectation(startName, startExp, startProps, true),
+          end = NamedExpectation(endName, endExp, endProps, true),
+          rel = NamedExpectation(name, props, true),
           relType = typ.head,
           dir = dir
         )

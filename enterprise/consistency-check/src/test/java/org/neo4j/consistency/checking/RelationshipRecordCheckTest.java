@@ -19,14 +19,15 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
+import static org.mockito.Mockito.verify;
 
 public class RelationshipRecordCheckTest extends
                                          RecordCheckTestBase<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport, RelationshipRecordCheck>
@@ -54,7 +55,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
 
@@ -70,7 +71,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, relationship.getId(), NONE ) ) );
         add( inUse( new NodeRecord( 2, 53, NONE ) ) );
         add( inUse( new NodeRecord( 3, NONE, NONE ) ) );
@@ -95,7 +96,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportIllegalLabel() throws Exception
+    public void shouldReportIllegalRelationshipType() throws Exception
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, NONE ) );
@@ -106,16 +107,16 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verify( report ).illegalLabel();
+        verify( report ).illegalRelationshipType();
         verifyOnlyReferenceDispatch( report );
     }
 
     @Test
-    public void shouldReportLabelNotInUse() throws Exception
+    public void shouldReportRelationshipTypeNotInUse() throws Exception
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        RelationshipTypeRecord label = add( notInUse( new RelationshipTypeRecord( 4 ) ) );
+        RelationshipTypeTokenRecord relationshipType = add( notInUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
 
@@ -123,7 +124,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verify( report ).labelNotInUse( label );
+        verify( report ).relationshipTypeNotInUse( relationshipType );
         verifyOnlyReferenceDispatch( report );
     }
 
@@ -132,7 +133,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, NONE, 1, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
 
         // when
@@ -148,7 +149,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord node = add( notInUse( new NodeRecord( 1, NONE, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
 
@@ -165,7 +166,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, NONE, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
 
         // when
@@ -181,7 +182,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         NodeRecord node = add( notInUse( new NodeRecord( 2, NONE, NONE ) ) );
 
@@ -198,7 +199,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
@@ -217,7 +218,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
@@ -237,7 +238,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, 7, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
 
@@ -254,7 +255,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         NodeRecord target = add( inUse( new NodeRecord( 2, 7, NONE ) ) );
 
@@ -271,7 +272,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, NONE, NONE ) ) );
         NodeRecord target = add( inUse( new NodeRecord( 2, NONE, NONE ) ) );
 
@@ -289,7 +290,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, NONE, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51, 1, 0, 0 ) ) );
@@ -309,7 +310,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         NodeRecord target = add( inUse( new NodeRecord( 2, NONE, NONE ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51, 0, 2, 0 ) ) );
@@ -329,7 +330,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 0, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51, 8, 9, 0 ) ) );
@@ -348,7 +349,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 0, NONE ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51, 8, 9, 0 ) ) );
@@ -367,7 +368,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51, 8, 9, 0 ) ) );
@@ -386,7 +387,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51, 8, 9, 0 ) ) );
@@ -405,7 +406,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 0, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51, 2, 0, 0 ) ) );
@@ -424,7 +425,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 0, NONE ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51, 1, 0, 0 ) ) );
@@ -443,7 +444,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51, 2, 0, 0 ) ) );
@@ -462,7 +463,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51, 1, 0, 0 ) ) );
@@ -481,7 +482,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 0, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51, 1, 3, 0 ) ) );
@@ -500,7 +501,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 0, NONE ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51, 2, 3, 0 ) ) );
@@ -519,7 +520,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51, 3, 1, 0 ) ) );
@@ -538,7 +539,7 @@ public class RelationshipRecordCheckTest extends
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
-        add( inUse( new RelationshipTypeRecord( 4 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51, 3, 2, 0 ) ) );
@@ -571,7 +572,7 @@ public class RelationshipRecordCheckTest extends
         newRelationship.setSecondNextRel( 203 );
         newRelationship.setSecondPrevRel( 204 );
 
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
 
@@ -612,7 +613,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         NodeRecord source = add( notInUse( new NodeRecord( 1, 0, 0 ) ) );
         NodeRecord target = add( notInUse( new NodeRecord( 2, 0, 0 ) ) );
-        RelationshipTypeRecord label = add( notInUse( new RelationshipTypeRecord( 0 ) ) );
+        RelationshipTypeTokenRecord label = add( notInUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         // when
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
@@ -620,7 +621,7 @@ public class RelationshipRecordCheckTest extends
         // then
         verify( report ).sourceNodeNotInUse( source );
         verify( report ).targetNodeNotInUse( target );
-        verify( report ).labelNotInUse( label );
+        verify( report ).relationshipTypeNotInUse( label );
         verifyOnlyReferenceDispatch( report );
     }
 
@@ -628,7 +629,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenAddingAnInitialProperty() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -650,7 +651,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenChangingProperty() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -679,7 +680,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenAddingPrevSourceRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -705,7 +706,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenAddingPrevTargetRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -731,7 +732,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenAddingNextSourceRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -756,7 +757,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenAddingNextTargetRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -781,7 +782,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenChangingPrevSourceRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -810,7 +811,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenChangingNextSourceRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -839,7 +840,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenChangingPrevTargetRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -868,7 +869,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldNotReportAnythingWhenChangingNextTargetRelationship() throws Exception
     {
         // given
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
 
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
@@ -901,7 +902,7 @@ public class RelationshipRecordCheckTest extends
         oldRelationship.setNextProp( 1 );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 11, 12, 0 ) );
         newRelationship.setNextProp( 2 );
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
         addChange( notInUse( new PropertyRecord( 2 ) ),
@@ -924,7 +925,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 11, 12, 0 ) );
         newRelationship.setFirstPrevRel( 201 );
 
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
 
@@ -948,7 +949,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 11, 12, 0 ) );
         newRelationship.setFirstNextRel( 201 );
 
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
 
@@ -972,7 +973,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 11, 12, 0 ) );
         newRelationship.setSecondPrevRel( 201 );
 
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
 
@@ -996,7 +997,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 11, 12, 0 ) );
         newRelationship.setSecondNextRel( 201 );
 
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 11, 42, NONE ) ) );
         add( inUse( new NodeRecord( 12, 42, NONE ) ) );
 
@@ -1041,7 +1042,7 @@ public class RelationshipRecordCheckTest extends
         // given
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord prev = addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
@@ -1063,7 +1064,7 @@ public class RelationshipRecordCheckTest extends
         // given
         RelationshipRecord oldRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
         RelationshipRecord newRelationship = inUse( new RelationshipRecord( 42, 1, 2, 0 ) );
-        add( inUse( new RelationshipTypeRecord( 0 ) ) );
+        add( inUse( new RelationshipTypeTokenRecord( 0 ) ) );
         add( inUse( new NodeRecord( 1, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, 42, NONE ) ) );
         RelationshipRecord prev = addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),

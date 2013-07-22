@@ -42,8 +42,6 @@ import java.util.Random;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -51,6 +49,8 @@ import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Conversion;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class DataGenerator
 {
@@ -106,7 +106,7 @@ public class DataGenerator
         String storeDir = configuration.get( store_dir );
         FileUtils.deleteRecursively( new File( storeDir ) );
         DataGenerator generator = new DataGenerator( configuration );
-        BatchInserter batchInserter = new BatchInserterImpl( storeDir, batchInserterConfig( configuration ) );
+        BatchInserter batchInserter = BatchInserters.inserter( storeDir, batchInserterConfig( configuration ) );
         try
         {
             generator.generateData( batchInserter );

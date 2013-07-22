@@ -41,15 +41,14 @@ import org.neo4j.server.logging.Logger;
 
 public class PropertyFileConfigurator implements Configurator
 {
-
     private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
 
     public static final Logger log = Logger.getLogger( PropertyFileConfigurator.class );
 
-    private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
+    private final CompositeConfiguration serverConfiguration = new CompositeConfiguration();
     private File propertyFileDirectory;
 
-    private Validator validator = new Validator();
+    private final Validator validator = new Validator();
     private Map<String, String> databaseTuningProperties = null;
     private HashSet<ThirdPartyJaxRsPackage> thirdPartyPackages;
 

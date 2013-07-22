@@ -51,7 +51,7 @@ class TopDocsIterator extends AbstractIndexHits<Document>
     {
         Sort sorting = context != null ? context.getSorting() : null;
         TopDocs topDocs = null;
-        if ( sorting == null )
+        if ( sorting == null && context != null )
         {
             topDocs = searcher.search( query, context.getTop() );
         }

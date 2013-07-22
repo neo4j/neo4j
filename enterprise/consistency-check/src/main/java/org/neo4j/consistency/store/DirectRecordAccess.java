@@ -20,12 +20,13 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
 public class DirectRecordAccess implements DiffRecordAccess
@@ -38,60 +39,81 @@ public class DirectRecordAccess implements DiffRecordAccess
     }
 
     @Override
+    public RecordReference<DynamicRecord> schema( long id )
+    {
+        return new DirectRecordReference<>( access.getSchemaStore().forceGetRecord( id ), this );
+    }
+
+    @Override
     public RecordReference<NodeRecord> node( long id )
     {
-        return new DirectRecordReference<NodeRecord>( access.getNodeStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getNodeStore().forceGetRecord( id ), this );
     }
 
     @Override
     public RecordReference<RelationshipRecord> relationship( long id )
     {
-        return new DirectRecordReference<RelationshipRecord>( access.getRelationshipStore().forceGetRecord( id ),
-                                                              this );
+        return new DirectRecordReference<>( access.getRelationshipStore().forceGetRecord( id ), this );
     }
 
     @Override
     public RecordReference<PropertyRecord> property( long id )
     {
-        return new DirectRecordReference<PropertyRecord>( access.getPropertyStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getPropertyStore().forceGetRecord( id ), this );
     }
 
     @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
-        return new DirectRecordReference<RelationshipTypeRecord>( access.getRelationshipTypeStore().forceGetRecord( id ),
-                                                                  this );
+        return new DirectRecordReference<>( access.getRelationshipTypeTokenStore().forceGetRecord( id ), this );
     }
 
     @Override
-    public RecordReference<PropertyIndexRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
-        return new DirectRecordReference<PropertyIndexRecord>( access.getPropertyIndexStore().forceGetRecord( id ),
-                                                               this );
+        return new DirectRecordReference<>( access.getPropertyKeyTokenStore().forceGetRecord( id ), this );
     }
 
     @Override
     public RecordReference<DynamicRecord> string( long id )
     {
-        return new DirectRecordReference<DynamicRecord>( access.getStringStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getStringStore().forceGetRecord( id ), this );
     }
 
     @Override
     public RecordReference<DynamicRecord> array( long id )
     {
-        return new DirectRecordReference<DynamicRecord>( access.getArrayStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getArrayStore().forceGetRecord( id ), this );
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id )
     {
-        return new DirectRecordReference<DynamicRecord>( access.getTypeNameStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getRelationshipTypeNameStore().forceGetRecord( id ), this );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> nodeLabels( long id )
+    {
+        return new DirectRecordReference<>( access.getNodeDynamicLabelStore().forceGetRecord( id ), this );
+    }
+
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
+    {
+        return new DirectRecordReference<>( access.getLabelTokenStore().forceGetRecord( id ), this );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> labelName( int id )
+    {
+        return new DirectRecordReference<>( access.getLabelNameStore().forceGetRecord( id ), this );
     }
 
     @Override
     public RecordReference<DynamicRecord> propertyKeyName( int id )
     {
-        return new DirectRecordReference<DynamicRecord>( access.getPropertyKeyStore().forceGetRecord( id ), this );
+        return new DirectRecordReference<>( access.getPropertyKeyNameStore().forceGetRecord( id ), this );
     }
 
     @Override
@@ -99,30 +121,36 @@ public class DirectRecordAccess implements DiffRecordAccess
     {
         if ( access instanceof DiffStore )
         {
-            return new DirectRecordReference<NeoStoreRecord>( ((DiffStore) access).getMasterRecord(), this );
+            return new DirectRecordReference<>( ((DiffStore) access).getMasterRecord(), this );
         }
         else
         {
-            return new DirectRecordReference<NeoStoreRecord>( access.getRawNeoStore().asRecord(), this );
+            return new DirectRecordReference<>( access.getRawNeoStore().asRecord(), this );
         }
     }
 
     @Override
     public RecordReference<NodeRecord> previousNode( long id )
     {
-        return new DirectRecordReference<NodeRecord>( access.getNodeStore().forceGetRaw( id ), this );
+        return new DirectRecordReference<>( access.getNodeStore().forceGetRaw( id ), this );
     }
 
     @Override
     public RecordReference<RelationshipRecord> previousRelationship( long id )
     {
-        return new DirectRecordReference<RelationshipRecord>( access.getRelationshipStore().forceGetRaw( id ), this );
+        return new DirectRecordReference<>( access.getRelationshipStore().forceGetRaw( id ), this );
     }
 
     @Override
     public RecordReference<PropertyRecord> previousProperty( long id )
     {
-        return new DirectRecordReference<PropertyRecord>( access.getPropertyStore().forceGetRaw( id ), this );
+        return new DirectRecordReference<>( access.getPropertyStore().forceGetRaw( id ), this );
+    }
+
+    @Override
+    public DynamicRecord changedSchema( long id )
+    {
+        return access instanceof DiffStore ? ((DiffStore) access).getSchemaStore().getChangedRecord( id ) : null;
     }
 
     @Override
@@ -158,6 +186,6 @@ public class DirectRecordAccess implements DiffRecordAccess
     @Override
     public RecordReference<NeoStoreRecord> previousGraph()
     {
-        return new DirectRecordReference<NeoStoreRecord>( access.getRawNeoStore().asRecord(), this );
+        return new DirectRecordReference<>( access.getRawNeoStore().asRecord(), this );
     }
 }

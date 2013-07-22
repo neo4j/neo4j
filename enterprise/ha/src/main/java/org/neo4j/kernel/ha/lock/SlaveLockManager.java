@@ -32,7 +32,7 @@ import org.neo4j.kernel.ha.InstanceAccessGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
+import org.neo4j.kernel.impl.core.IndexLock;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -78,15 +78,6 @@ public class SlaveLockManager implements LockManager
     public long getDetectedDeadlockCount()
     {
         return local.getDetectedDeadlockCount();
-    }
-
-    @Override
-    public void getReadLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
-    {
-        if ( getReadLockOnMaster( resource ) )
-        {
-            local.getReadLock( resource );
-        }
     }
 
     @Override
@@ -145,15 +136,6 @@ public class SlaveLockManager implements LockManager
         }
 
         return true;
-    }
-
-    @Override
-    public void getWriteLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
-    {
-        if ( getWriteLockOnMaster( resource ) )
-        {
-            local.getWriteLock( resource );
-        }
     }
 
     @Override

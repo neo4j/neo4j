@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.pipes.DistinctPipe
 import org.neo4j.cypher.internal.commands.expressions.{CachedExpression, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
 
 
-class DistinctBuilder extends PlanBuilder {
+class DistinctBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
 
     //Extract expressions from return items
@@ -40,7 +40,7 @@ class DistinctBuilder extends PlanBuilder {
 
     //Mark stuff as done
     val query = newQuery.copy(
-      aggregateQuery = Solved(true),
+      aggregateToDo = false,
       extracted = true,
       returns = plan.query.returns.map(_.solve)
     )
@@ -67,7 +67,7 @@ class DistinctBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
 
-    plan.query.aggregateQuery == Unsolved(true) && //The parser marks DISTINCT queries as aggregates. Revisit?
+      plan.query.aggregateToDo && //The parser marks DISTINCT queries as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&
       plan.query.returns.exists {

@@ -64,6 +64,8 @@ import org.apache.lucene.search.Weight;
 // used for iterating over all the hits from a query result, not just the N
 // top docs.
 public final class Hits {
+  private static int MAX_CACHED_DOCS = 200;    // max to cache
+
   private Weight weight;
   private IndexSearcher searcher;
   private Filter filter = null;
@@ -75,14 +77,13 @@ public final class Hits {
   private HitDoc first;         // head of LRU cache
   private HitDoc last;          // tail of LRU cache
   private int numDocs = 0;      // number cached
-  private int maxDocs = 200;    // max to cache
 
   private int nDeletions;       // # deleted docs in the index.
   private int lengthAtStart;    // this is the number apps usually count on (although deletions can bring it down).
   private int nDeletedHits = 0; // # of already collected hits that were meanwhile deleted.
 
   boolean debugCheckedForDeletions = false; // for test purposes.
-  private final boolean score;
+  private boolean score;
 
   public Hits(IndexSearcher s, Query q, Filter f) throws IOException
   {
@@ -119,7 +120,7 @@ public final class Hits {
    * Tries to add new documents to hitDocs.
    * Ensures that the hit numbered <code>min</code> has been retrieved.
    */
-  private final void getMoreDocs(int min) throws IOException {
+  private void getMoreDocs(int min) throws IOException {
     if (hitDocs.size() > min) {
       min = hitDocs.size();
     }
@@ -188,7 +189,7 @@ public final class Hits {
   }
 
   /** Returns the total number of hits available in this set. */
-  public final int length() {
+  public int length() {
     return length;
   }
 
@@ -198,13 +199,13 @@ public final class Hits {
    * @throws org.apache.lucene.index.CorruptIndexException if the index is corrupt
    * @throws java.io.IOException if there is a low-level IO error
    */
-  public final Document doc(int n) throws CorruptIndexException, IOException {
+  public Document doc(int n) throws CorruptIndexException, IOException {
     HitDoc hitDoc = hitDoc(n);
 
     // Update LRU cache of documents
     remove(hitDoc);               // remove from list, if there
     addToFront(hitDoc);           // add to front of list
-    if (numDocs > maxDocs) {      // if cache is full
+    if (numDocs > MAX_CACHED_DOCS ) {      // if cache is full
       HitDoc oldLast = last;
       remove(last);             // flush last
       oldLast.doc = null;       // let doc get gc'd
@@ -218,7 +219,7 @@ public final class Hits {
   }
 
   /** Returns the score for the n<sup>th</sup> document in this set. */
-  public final float score(int n) throws IOException {
+  public float score(int n) throws IOException {
     return hitDoc(n).score;
   }
 
@@ -226,25 +227,11 @@ public final class Hits {
    * Note that ids may change when the index changes, so you cannot
    * rely on the id to be stable.
    */
-  public final int id(int n) throws IOException {
+  public int id(int n) throws IOException {
     return hitDoc(n).id;
   }
 
-  /**
-   * Returns a {@link HitIterator} to navigate the Hits.  Each item returned
-   * from {@link java.util.Iterator#next()} is a {@link Hit}.
-   * <p>
-   * <b>Caution:</b> Iterate only over the hits needed.  Iterating over all
-   * hits is generally not desirable and may be the source of
-   * performance issues. If you need to iterate over many or all hits, consider
-   * using a search method that takes a {@link HitCollector}.
-   * </p>
-   */
-//  public Iterator iterator() {
-//    return new HitIterator(this);
-//  }
-
-  private final HitDoc hitDoc(int n) throws IOException {
+  private HitDoc hitDoc(int n) throws IOException {
     if (n >= lengthAtStart) {
       throw new IndexOutOfBoundsException("Not a valid hit number: " + n);
     }
@@ -257,10 +244,10 @@ public final class Hits {
       throw new ConcurrentModificationException("Not a valid hit number: " + n);
     }
 
-    return (HitDoc) hitDocs.elementAt(n);
+    return hitDocs.elementAt(n);
   }
 
-  private final void addToFront(HitDoc hitDoc) {  // insert at front of cache
+  private void addToFront(HitDoc hitDoc) {  // insert at front of cache
     if (first == null) {
       last = hitDoc;
     } else {
@@ -274,7 +261,7 @@ public final class Hits {
     numDocs++;
   }
 
-  private final void remove(HitDoc hitDoc) {      // remove from cache
+  private void remove(HitDoc hitDoc) {      // remove from cache
     if (hitDoc.doc == null) {     // it's not in the list
       return;                     // abort
     }

@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ExtractPipe
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.commands.expressions._
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.commands.expressions.CachedExpression
 
-class ExtractBuilder extends PlanBuilder {
+class ExtractBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
 
     val expressions: Map[String, Expression] =
@@ -34,13 +36,14 @@ class ExtractBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+    !q.extracted && q.readyToAggregate && !q.aggregateToDo
   }
 
   def priority: Int = PlanBuilder.Extraction
 }
 
 object ExtractBuilder {
+
   def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression]): ExecutionPlanInProgress = {
 
     val expressions = expressionsToExtract.filter {
@@ -53,15 +56,17 @@ object ExtractBuilder {
     val pipe = plan.pipe
 
     if (expressions.nonEmpty) {
-      val newPsq = expressions.foldLeft(query)((psq, exp) => psq.rewrite(fromQueryExpression => {
-        if (exp._2 == fromQueryExpression)
-          CachedExpression(exp._1, fromQueryExpression.getType(plan.pipe.symbols))
+      val newPsq = expressions.foldLeft(query)((psq, entry) => psq.rewrite(fromQueryExpression => {
+        val (key, expr) = entry
+        val eqExpr  = expr == fromQueryExpression
+        val detExpr = expr.isDeterministic
+        if (eqExpr && detExpr)
+          CachedExpression(key, fromQueryExpression.getType(plan.pipe.symbols))
         else
           fromQueryExpression
-      }
-      ))
+      }))
 
-      val resultPipe = new ExtractPipe(pipe, expressions)
+      val resultPipe = ExtractPipe(pipe, expressions)
       val resultQuery = newPsq.copy(extracted = true)
       plan.copy(pipe = resultPipe, query = resultQuery)
     } else {

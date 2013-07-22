@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +30,20 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised and also a problem
@@ -69,7 +71,7 @@ public class TestCrashWithRebuildSlow
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
                 .newImpermanentDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.FALSE )
+                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
                 .newGraphDatabase();
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 4 );
         
@@ -82,7 +84,7 @@ public class TestCrashWithRebuildSlow
                 if ( node.equals( newDb.getReferenceNode() ) )
                     continue;
                 nameCount++;
-                assertNotNull( node.getProperty( "name" ) );
+                assertThat( node, inTx( newDb, hasProperty( "name" )  ) );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
             

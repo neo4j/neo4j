@@ -31,29 +31,27 @@ public class EphemeralDatabase extends CommunityDatabase
     {
         this( EMPTY );
     }
-	
+
     public EphemeralDatabase( Configurator configurator )
     {
         super( configurator );
     }
 
-	@Override
-	@SuppressWarnings("deprecation")
-	public void start()
-	{
-		this.graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory()
-			.newImpermanentDatabaseBuilder()
-			.setConfig( getDbTuningPropertiesWithServerDefaults() )
-			.newGraphDatabase();
-	}
+    @Override
+    protected AbstractGraphDatabase createDb()
+    {
+        return (AbstractGraphDatabase) new TestGraphDatabaseFactory()
+            .newImpermanentDatabaseBuilder()
+            .setConfig( getDbTuningPropertiesWithServerDefaults() )
+            .newGraphDatabase();
+    }
 
-	@Override
-	public void shutdown()
-	{
-		if(this.graph != null)
-		{
-			this.graph.shutdown();
-		}
-	}
-
+    @Override
+    public void shutdown()
+    {
+        if ( this.graph != null )
+        {
+            this.graph.shutdown();
+        }
+    }
 }

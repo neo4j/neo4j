@@ -72,7 +72,7 @@ final case class SingleStepTrail(next: Trail,
 
   def contains(target: String): Boolean = next.contains(target) || target == end
 
-  val predicates = originalPredicates ++ next.predicates
+  def predicates = Seq(originalPredicates) ++ next.predicates
 
   val patterns = next.patterns :+ pattern
 

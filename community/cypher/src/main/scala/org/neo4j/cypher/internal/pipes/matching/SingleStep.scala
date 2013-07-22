@@ -34,17 +34,15 @@ case class SingleStep(id: Int,
   def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
+  def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
+    val intermediate = state.query.getRelationshipsFor(node, direction, typ)
+    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters, state)
+    (rels, next)
+  }
 
   private def filter(r: Relationship, n: Node, parameters: ExecutionContext, state:QueryState): Boolean = {
     val m = new MiniMap(r, n)
     relPredicate.isMatch(m)(state) && nodePredicate.isMatch(m)(state)
-  }
-
-  def expand(node: Node, parameters: ExecutionContext, state:QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = state.query.getRelationshipsFor(node, direction, typ)
-
-    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters, state)
-    (rels, next)
   }
 
   override def toString = {

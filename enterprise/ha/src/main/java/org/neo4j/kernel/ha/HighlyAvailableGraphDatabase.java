@@ -80,7 +80,7 @@ import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -179,6 +179,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
     }
 
+    @Override
+    protected boolean isHighlyAvailable()
+    {
+        return true;
+    }
+
     public void start()
     {
         life.start();
@@ -227,7 +233,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             public TransactionState create( Transaction tx )
             {
                 return new WritableTransactionState( snapshot( lockManager ),
-                        propertyIndexManager, nodeManager, logging, tx, snapshot( txHook ),
+                        nodeManager, logging, tx, snapshot( txHook ),
                         snapshot( txIdGenerator ) );
             }
         };
@@ -416,10 +422,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
 
         idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
-        highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
-                clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory, config,
-                logging );
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
+                clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
+                config, logging, updateableSchemaState );
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
@@ -455,16 +460,42 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    protected TokenCreator createRelationshipTypeCreator()
     {
-        DelegateInvocationHandler<RelationshipTypeCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<RelationshipTypeCreator>();
-        RelationshipTypeCreator relationshipTypeCreator =
-                (RelationshipTypeCreator) Proxy.newProxyInstance( RelationshipTypeCreator.class.getClassLoader(),
-                        new Class[]{RelationshipTypeCreator.class}, relationshipTypeCreatorDelegate );
+        DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
+                new DelegateInvocationHandler<TokenCreator>();
+        TokenCreator relationshipTypeCreator =
+                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                        new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
         return relationshipTypeCreator;
+    }
+
+    @Override
+    protected TokenCreator createPropertyKeyCreator()
+    {
+        DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
+                new DelegateInvocationHandler<TokenCreator>();
+        TokenCreator propertyTokenCreator =
+                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                        new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
+        new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+        return propertyTokenCreator;
+    }
+
+    @Override
+    protected TokenCreator createLabelIdCreator()
+    {
+        DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
+                new DelegateInvocationHandler<TokenCreator>();
+        TokenCreator labelIdCreator =
+                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                        new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
+        new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+        return labelIdCreator;
     }
 
     @Override
@@ -498,7 +529,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) && event.getNewState().equals(
                         HighAvailabilityMemberState.MASTER ) )
                 {
-                    doAfterRecoveryAndStartup();
+                    doAfterRecoveryAndStartup( true );
                 }
             }
 
@@ -508,7 +539,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) && event.getNewState().equals(
                         HighAvailabilityMemberState.SLAVE ) )
                 {
-                    doAfterRecoveryAndStartup();
+                    doAfterRecoveryAndStartup( false );
                 }
             }
 
@@ -517,13 +548,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
             }
 
-            private void doAfterRecoveryAndStartup()
+            private void doAfterRecoveryAndStartup( boolean isMaster )
             {
                 try
                 {
                     synchronized ( xaDataSourceManager )
                     {
-                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup();
+                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
                     }
                 }
                 catch ( Throwable throwable )

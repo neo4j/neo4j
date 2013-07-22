@@ -19,17 +19,21 @@
  */
 package org.neo4j.test.server;
 
-import java.io.IOException;
+import java.util.concurrent.Callable;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.test.Mute;
+
+import static org.neo4j.test.Mute.muteAll;
 
 public class SharedServerTestBase
 {
-	private static boolean useExternal = Boolean.valueOf(System.getProperty("neo-server.external","false"));
-	private static String externalURL = System.getProperty("neo-server.external.url","http://localhost:7474");
+    private static boolean useExternal = Boolean.valueOf( System.getProperty( "neo-server.external", "false" ) );
+    private static String externalURL = System.getProperty( "neo-server.external.url", "http://localhost:7474" );
 
     protected static NeoServer server()
     {
@@ -38,49 +42,70 @@ public class SharedServerTestBase
 
     protected final void cleanDatabase()
     {
-    	if(useExternal) 
-    	{
-    		// TODO
-    	} else
-    	{
-    		ServerHelper.cleanTheDatabase( server );
-    	}
+        if ( useExternal )
+        {
+            // TODO
+        }
+        else
+        {
+            ServerHelper.cleanTheDatabase( server );
+        }
     }
 
     private static NeoServer server;
-	private static String serverUrl;
-	
-	public static String getServerURL()
-	{
-		return serverUrl;
-	}
+    private static String serverUrl;
 
-    @BeforeClass
-    public static void allocateServer() throws IOException
+    public static String getServerURL()
     {
-    	if(useExternal) 
-    	{
-    		serverUrl = externalURL;
-    	} else 
-    	{
-    		server = ServerHolder.allocate();
-    		serverUrl = server.baseUri().toString();
-    	}
+        return serverUrl;
+    }
+
+	@Rule
+	public Mute mute = muteAll();
+	
+    @BeforeClass
+    public static void allocateServer() throws Throwable
+    {
+        if ( useExternal )
+        {
+            serverUrl = externalURL;
+        }
+        else
+        {
+            muteAll().call( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    server = ServerHolder.allocate();
+                    serverUrl = server.baseUri().toString();
+                    return null;
+                }
+            } );
+        }
     }
 
     @AfterClass
-    public static void releaseServer()
+    public static void releaseServer() throws Exception
     {
-    	if(!useExternal) 
-    	{
-	        try
-	        {
-	            ServerHolder.release( server );
-	        }
-	        finally
-	        {
-	            server = null;
-	        }
-    	}
+        if ( !useExternal )
+        {
+            try
+            {
+                muteAll().call( new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        ServerHolder.release( server );
+                        return null;
+                    }
+                } );
+            }
+            finally
+            {
+                server = null;
+            }
+        }
     }
 }

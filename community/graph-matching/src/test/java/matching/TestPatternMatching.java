@@ -54,6 +54,7 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 
 public class TestPatternMatching implements GraphHolder
@@ -90,7 +91,7 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/db" );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPatternMatching.class ).graphDbDir( true ).getAbsolutePath() );
     }
 
     @Before

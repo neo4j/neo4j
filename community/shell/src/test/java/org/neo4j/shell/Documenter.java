@@ -29,6 +29,8 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Stack;
 
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.test.AsciiDocGenerator;
@@ -106,7 +108,15 @@ public class Documenter
     public Documenter( final String title, final ShellServer server )
     {
         this.title = title;
-        this.client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        try
+        {
+            this.client = new SameJvmClient( new HashMap<String, Serializable>(), server,
+                    new CollectingOutput() );
+        }
+        catch ( Exception e )
+        {
+            throw Exceptions.launderedException( "Error creating client",e );
+        }
     }
 
     public void add( final String query, final String assertion, final String comment )

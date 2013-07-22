@@ -24,8 +24,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-
 /**
  * Used in settings classes to denote that a field contains an {@link ConfigurationMigrator}.
  * This gets picked up by the configuration, and config migrations are applied whenever configuration

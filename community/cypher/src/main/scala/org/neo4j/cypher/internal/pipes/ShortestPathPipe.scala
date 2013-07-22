@@ -25,17 +25,22 @@ import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.helpers.{CastSupport, CollectionSupport}
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
-class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
+class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) with CollectionSupport {
   private def optional = ast.optional
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
-    val result: Stream[Path] = expression(ctx)(state)
+    val result: Stream[Path] = expression(ctx)(state) match {
+      case in: Stream[_]      => CastSupport.erasureCastOrFail[Stream[Path]](in)
+      case null               => Stream()
+      case path:Path          => Stream(path)
+    }
 
     if (result.isEmpty) {
       if (optional)

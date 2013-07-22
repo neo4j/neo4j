@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.commands.values.TokenType._
+import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 class FilterBuilderTest extends BuilderTest {
 
@@ -32,7 +35,7 @@ class FilterBuilderTest extends BuilderTest {
   @Test
   def does_not_offer_to_solve_queries_without_start_items() {
     val q = PartiallySolvedQuery().
-      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), "foo"), Literal("bar")))))
+      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
 
     assertFalse("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -40,7 +43,7 @@ class FilterBuilderTest extends BuilderTest {
   @Test
   def should_offer_to_filter_the_necessary_pipe_is_there() {
     val q = PartiallySolvedQuery().
-      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), "foo"), Literal("bar")))))
+      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
 
     val pipe = createPipe(nodes = Seq("s"))
 
@@ -51,8 +54,8 @@ class FilterBuilderTest extends BuilderTest {
   def should_solve_the_predicates_that_are_possible_to_solve() {
     val q = PartiallySolvedQuery().
       copy(where = Seq(
-      Unsolved(Equals(Property(Identifier("s"), "foo"), Literal("bar"))),
-      Unsolved(Equals(Property(Identifier("x"), "foo"), Literal("bar"))))
+      Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
+      Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar"))))
     )
 
     val pipe = createPipe(nodes = Seq("s"))
@@ -60,7 +63,7 @@ class FilterBuilderTest extends BuilderTest {
     val resultPlan = builder(plan(pipe, q))
 
     assert(resultPlan.query.where.toSet === Set(
-      Solved(Equals(Property(Identifier("s"), "foo"), Literal("bar"))),
-      Unsolved(Equals(Property(Identifier("x"), "foo"), Literal("bar")))))
+      Solved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
+      Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar")))))
   }
 }

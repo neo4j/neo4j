@@ -26,13 +26,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestRaceOnMultipleNodeImpl
 {
@@ -109,7 +113,7 @@ public class TestRaceOnMultipleNodeImpl
         await( done );
         clearCaches(); // to make sure that we do verification on the persistent state in the db
         // verify
-        assertEquals( "root should have a key property", "root", root.getProperty( "key" ) );
+        assertThat( root, inTx( graphdb, hasProperty( "key" )  ) );
         assertTrue( "invalid precondition", precondition.get() );
     }
 
@@ -165,7 +169,7 @@ public class TestRaceOnMultipleNodeImpl
                         @Override
                         public void run()
                         {
-                            for ( String key : root.getPropertyKeys() )
+                            for ( @SuppressWarnings("unused")String key : root.getPropertyKeys() )
                                 precondition.set( true );
                             offenderSetUp.countDown();
                             root.setProperty( "tx", "offender" );
@@ -184,7 +188,7 @@ public class TestRaceOnMultipleNodeImpl
         waitChainSetUp.countDown();
         await( done );
         clearCaches();
-        assertEquals( "'offender' should be the last writer", "offender", root.getProperty( "tx" ) );
+        assertThat( root, inTx( graphdb, hasProperty( "tx" ).withValue( "offender" )  ) );
         assertTrue( "node should not have any properties when entering second tx", precondition.get() );
     }
 
@@ -203,7 +207,7 @@ public class TestRaceOnMultipleNodeImpl
         }
         catch ( InterruptedException e )
         {
-            continue;
+            // ignore
         }
     }
 
@@ -284,12 +288,12 @@ public class TestRaceOnMultipleNodeImpl
         }
     }
 
-    private InternalAbstractGraphDatabase graphdb;
+    private GraphDatabaseAPI graphdb;
 
     @Before
     public void startDb()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After

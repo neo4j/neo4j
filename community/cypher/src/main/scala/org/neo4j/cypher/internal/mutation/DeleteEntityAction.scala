@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
 import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.cypher.internal.symbols.AnyType
 import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
 import org.neo4j.cypher.internal.ExecutionContext
 
@@ -40,7 +39,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
       case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
 
-    Stream(context)
+    Iterator(context)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
@@ -48,15 +47,12 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
     x match {
       case n: Node if (!nodeManager.isDeleted(n)) =>
-        state.deletedNodes.increase()
         state.query.nodeOps.delete(n)
 
       case r: Relationship if (!nodeManager.isDeleted(r))=>
-        state.deletedRelationships.increase()
         state.query.relationshipOps.delete(r)
 
       case _ => // Entity is already deleted. No need to do anything
-
     }
   }
 

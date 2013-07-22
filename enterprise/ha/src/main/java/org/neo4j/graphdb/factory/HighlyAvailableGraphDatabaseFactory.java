@@ -27,26 +27,29 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 /**
  * Factory for HA Neo4j instances.
  */
-public class HighlyAvailableGraphDatabaseFactory
-    extends GraphDatabaseFactory
+public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
-    public GraphDatabaseService newHighlyAvailableDatabase(String path)
+    public GraphDatabaseService newHighlyAvailableDatabase( String path )
     {
         return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
-    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder(final String path)
+    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )
     {
-        return new GraphDatabaseBuilder(new GraphDatabaseBuilder.DatabaseCreator()
+        final GraphDatabaseFactoryState state = getStateCopy();
+
+        return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            public GraphDatabaseService newDatabase(Map<String, String> config)
+            public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
-
-                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                        txInterceptorProviders );
+                return new HighlyAvailableGraphDatabase( path, config,
+                        state.getIndexProviders(),
+                        state.getKernelExtension(),
+                        state.getCacheProviders(),
+                        state.getTransactionInterceptorProviders() );
             }
-        });
+        } );
     }
 }

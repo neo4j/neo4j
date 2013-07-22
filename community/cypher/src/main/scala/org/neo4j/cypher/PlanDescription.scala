@@ -21,27 +21,22 @@ package org.neo4j.cypher
 
 import internal.data.{MapVal, SimpleVal}
 import internal.helpers.StringRenderingSupport
-import internal.pipes.Pipe
+import internal.pipes.{NullPipe, Pipe}
 import javacompat.{PlanDescription => JPlanDescription, ProfilerStatistics}
 import scala.collection.JavaConverters._
 import java.util
 
 /**
  * Abstract description of an execution plan
- *
- * @param name descriptive name of type of step
- * @param children optional predecessor step description
- * @param args optional arguments
  */
-class PlanDescription(val pipe: Pipe,
-                      val name: String,
-                      val children: Seq[PlanDescription],
-                      val args: Seq[(String, SimpleVal)]) extends StringRenderingSupport {
+trait PlanDescription {
+  def pipe: Pipe
 
-  lazy val argsMap: MapVal = MapVal(args.toMap)
+  def name: String
 
-  def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription =
-    new PlanDescription(pipe, name, children.map( _.mapArgs(f) ), f(this))
+  def children: Seq[PlanDescription]
+
+  def args: Seq[(String, SimpleVal)]
 
   /**
    * @param pipe the pipe on which this PlanDescription is based on
@@ -49,19 +44,16 @@ class PlanDescription(val pipe: Pipe,
    * @param args optional arguments
    * @return a new PlanDescription that uses this as optional predecessor step description
    */
-  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*) =
-    new PlanDescription(pipe, name, Seq(this), args)
+  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription
 
-  def withChildren(kids: PlanDescription*) =
-    new PlanDescription(pipe, name, kids, args)
+  def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription
+
   /**
    * Render this plan description and all predecessor step descriptions to builder using the default separator
    *
    * @param builder StringBuilder to be used
    */
-  final override def render(builder: StringBuilder) {
-    render(builder, "\n", "  ")
-  }
+  def render(builder: StringBuilder)
 
   /**
    * Render this plan description and all predecessor step descriptions to builder
@@ -70,17 +62,39 @@ class PlanDescription(val pipe: Pipe,
    * @param separator separator to be inserted between predecessor step descriptions
    * @param levelSuffix separator suffix to be added per child nesting level
    */
+  def render(builder: StringBuilder, separator: String, levelSuffix: String)
+
+  def find(name: String): Option[PlanDescription]
+
+  def asJava: JPlanDescription
+}
+
+class PlanDescriptionImpl(val pipe: Pipe,
+                          val name: String,
+                          val children: Seq[PlanDescription],
+                          val args: Seq[(String, SimpleVal)]) extends PlanDescription with StringRenderingSupport {
+
+  lazy val argsMap: MapVal = MapVal(args.toMap)
+
+  def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription =
+    new PlanDescriptionImpl(pipe, name, children.map(_.mapArgs(f)), f(this))
+
+  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription =
+    new PlanDescriptionImpl(pipe, name, Seq(this), args)
+
+  def withChildren(kids: PlanDescription*) =
+    new PlanDescriptionImpl(pipe, name, kids, args)
+
+  final override def render(builder: StringBuilder) {
+    render(builder, "\n", "  ")
+  }
+
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {
     renderThis(builder)
     renderPrev(builder, separator, levelSuffix)
   }
 
-  /**
-   * Render this plan description (ignoring predecessor step descriptions) to builder
-   *
-   * @param builder StringBuilder to be used
-   */
-  def renderThis(builder: StringBuilder) {
+  private def renderThis(builder: StringBuilder) {
     builder ++= name
     argsMap.render(builder, "(", ")", "()", escKey = false)
   }
@@ -135,21 +149,21 @@ class PlanDescription(val pipe: Pipe,
       if (hasProfilerStatistics) planStatisticsConverter else throw new ProfilerStatisticsNotReadyException()
 
     override def equals(obj: Any) = obj match {
-      case obj: PlanDescriptionConverter if obj != null => PlanDescription.this.equals(obj.asScala)
+      case obj: PlanDescriptionConverter if obj != null => PlanDescriptionImpl.this.equals(obj.asScala)
       case _ => false
     }
 
-    override def toString = PlanDescription.this.toString
+    override def toString = PlanDescriptionImpl.this.toString
 
-    override def hashCode = PlanDescription.this.hashCode()
+    override def hashCode = PlanDescriptionImpl.this.hashCode()
 
-    private def asScala = PlanDescription.this
+    private def asScala = PlanDescriptionImpl.this
 
     private def hasLongArg(name: String) = _args.containsKey(name) && _args.get(name).isInstanceOf[Long]
   }
 
   private object planStatisticsConverter extends ProfilerStatistics {
-    def getPlanDescription = PlanDescription.this.asJava
+    def getPlanDescription = PlanDescriptionImpl.this.asJava
 
     def getRows = getNamedLongStat("_rows")
 
@@ -176,8 +190,27 @@ object PlanDescription {
    * @param args optional arguments
    * @return a new PlanDescription without an optional predecessor step description
    */
-  def apply(pipe: Pipe, name: String, args: (String, SimpleVal)*) = new PlanDescription(pipe, name, Seq.empty, args)
+  def apply(pipe: Pipe, name: String, args: (String, SimpleVal)*) = new PlanDescriptionImpl(pipe, name, Seq.empty, args)
 }
 
+object NullPlanDescription extends PlanDescription {
+  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*) = PlanDescription(pipe, name, args: _*)
 
+  def args = ???
 
+  def asJava = ???
+
+  def children = ???
+
+  def find(name: String) = ???
+
+  def mapArgs(f: (PlanDescription) => Seq[(String, SimpleVal)]) = ???
+
+  def name = ???
+
+  def pipe = NullPipe
+
+  def render(builder: StringBuilder) {}
+
+  def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
+}

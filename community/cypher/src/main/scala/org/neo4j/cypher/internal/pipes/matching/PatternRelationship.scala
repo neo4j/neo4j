@@ -23,9 +23,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
-import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
-import scala.Some
 import org.neo4j.cypher.internal.symbols.RelationshipType
 import org.neo4j.cypher.internal.spi.QueryContext
 
@@ -34,8 +32,7 @@ class PatternRelationship(key: String,
                           val endNode: PatternNode,
                           val relTypes: Seq[String],
                           val dir: Direction,
-                          val optional: Boolean,
-                          val predicate: Predicate)
+                          val optional: Boolean)
   extends PatternElement(key) {
 
   def identifiers2: Map[String, CypherType] = Map(startNode.key -> NodeType(), endNode.key -> NodeType(), key -> RelationshipType())
@@ -44,9 +41,8 @@ class PatternRelationship(key: String,
 
   def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 
-    val apa = ctx.getRelationshipsFor(realNode, getDirection(node), relTypes)
     val result: Iterable[GraphRelationship] =
-      apa.map(new SingleGraphRelationship(_))
+      ctx.getRelationshipsFor(realNode, getDirection(node), relTypes).map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode).toSeq
@@ -107,15 +103,14 @@ class VariableLengthPatternRelationship(pathName: String,
                                         maxHops: Option[Int],
                                         relType: Seq[String],
                                         dir: Direction,
-                                        optional: Boolean,
-                                        predicate: Predicate)
-  extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
+                                        optional: Boolean)
+  extends PatternRelationship(pathName, start, end, relType, dir, optional) {
 
 
   override def identifiers2: Map[String, CypherType] =
     Map(startNode.key -> NodeType(),
       endNode.key -> NodeType(),
-      key -> new CollectionType(RelationshipType())) ++ relIterable.map(_ -> new CollectionType(RelationshipType())).toMap
+      key -> CollectionType(RelationshipType())) ++ relIterable.map(_ -> CollectionType(RelationshipType())).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 

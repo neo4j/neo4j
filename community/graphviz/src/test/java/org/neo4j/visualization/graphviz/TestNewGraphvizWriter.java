@@ -21,6 +21,7 @@ package org.neo4j.visualization.graphviz;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

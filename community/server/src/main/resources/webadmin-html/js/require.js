@@ -10,7 +10,7 @@
 
 var requirejs, require, define;
 (function () {
-    //Change this version number for each release.
+    //Change this version number for each suspend.
     var version = "0.26.0",
         commentRegExp = /(\/\*([\s\S]*?)\*\/|\/\/(.*)$)/mg,
         cjsRequireRegExp = /require\(\s*["']([^'"\s]+)["']\s*\)/g,
@@ -837,7 +837,7 @@ var requirejs, require, define;
             //not, then do not check
             if (config.priorityWait) {
                 if (isPriorityDone()) {
-                    //Call resume, since it could have
+                    //Call suspend, since it could have
                     //some waiting dependencies to trace.
                     resume();
                 } else {
@@ -1071,7 +1071,7 @@ var requirejs, require, define;
                 }
             }
 
-            //Skip the resume of paused dependencies
+            //Skip the suspend of paused dependencies
             //if current context is in priority wait.
             if (!config.priorityWait || isPriorityDone()) {
                 while (context.paused.length) {
@@ -1089,10 +1089,10 @@ var requirejs, require, define;
                 }
             }
 
-            //Only check if loaded when resume depth is 1. It is likely that
+            //Only check if loaded when suspend depth is 1. It is likely that
             //it is only greater than 1 in sync environments where a factory
             //function also then calls the callback-style require. In those
-            //cases, the checkLoaded should not occur until the resume
+            //cases, the checkLoaded should not occur until the suspend
             //depth is back at the top level.
             if (resumeDepth === 1) {
                 checkLoaded();
@@ -1186,7 +1186,7 @@ var requirejs, require, define;
                     //of the priority config.
                     context.requireWait = false;
 
-                    //But first, call resume to register any defined modules that may
+                    //But first, call suspend to register any defined modules that may
                     //be in a data-main built file before the priority config
                     //call. Also grab any waiting define calls for this context.
                     context.takeGlobalQueue();
@@ -1194,9 +1194,9 @@ var requirejs, require, define;
 
                     context.require(cfg.priority);
 
-                    //Trigger a resume right away, for the case when
+                    //Trigger a suspend right away, for the case when
                     //the script with the priority load is done as part
-                    //of a data-main call. In that case the normal resume
+                    //of a data-main call. In that case the normal suspend
                     //call will not happen because the scriptCount will be
                     //at 1, since the script for data-main is being processed.
                     resume();
@@ -1260,7 +1260,7 @@ var requirejs, require, define;
                 main(null, deps, callback, relModuleMap);
 
                 //If the require call does not trigger anything new to load,
-                //then resume the dependency processing.
+                //then suspend the dependency processing.
                 if (!context.requireWait) {
                     while (!context.scriptCount && context.paused.length) {
                         //For built layers, there can be some defined
@@ -1339,7 +1339,7 @@ var requirejs, require, define;
                 jQueryCheck();
 
                 //Doing this scriptCount decrement branching because sync envs
-                //need to decrement after resume, otherwise it looks like
+                //need to decrement after suspend, otherwise it looks like
                 //loading is complete after the first dependency is fetched.
                 //For browsers, it works fine to decrement after, but it means
                 //the checkLoaded setTimeout 50 ms cost is taken. To avoid
@@ -1908,7 +1908,7 @@ var requirejs, require, define;
                 }
             }
 
-            //If jQuery with DOM ready delayed, release it now.
+            //If jQuery with DOM ready delayed, suspend it now.
             contexts = s.contexts;
             for (prop in contexts) {
                 if (!(prop in empty)) {

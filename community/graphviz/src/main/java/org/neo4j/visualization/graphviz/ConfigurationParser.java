@@ -21,8 +21,10 @@ package org.neo4j.visualization.graphviz;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -276,11 +278,15 @@ public class ConfigurationParser
         {
             try
             {
-                return new BufferedReader( new FileReader( file ) );
+                return new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) );
             }
             catch ( FileNotFoundException e )
             {
                 return null;
+            }
+            catch ( UnsupportedEncodingException e )
+            {
+                throw new RuntimeException( e );
             }
         }
 

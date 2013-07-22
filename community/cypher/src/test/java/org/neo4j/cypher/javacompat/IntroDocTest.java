@@ -19,20 +19,27 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.*;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.AsciiDocGenerator;
+import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
@@ -53,6 +60,7 @@ public class IntroDocTest implements GraphHolder
             "Sara friend Maria", "Joe friend Steve" }, autoIndexNodes = true )
     public void intro_examples() throws Exception
     {
+        Transaction tx = graphdb.beginTx();
         Writer fw = AsciiDocGenerator.getFW( DOCS_TARGET, gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like the following one:\n\n" );
@@ -76,14 +84,10 @@ public class IntroDocTest implements GraphHolder
                    + "users that have an outgoing +friend+ relationship, returning "
                    + "only those followed users who have a +name+ property starting with +S+." );
         query = "START user=node("
-                + data.get().get( "Joe" ).getId()
-                + ","
-                + data.get().get( "John" ).getId()
-                + ","
-                + data.get().get( "Sara" ).getId()
-                + ","
-                + data.get().get( "Maria" ).getId()
-                + ","
+                + data.get().get( "Joe" ).getId() + ","
+                + data.get().get( "John" ).getId() + ","
+                + data.get().get( "Sara" ).getId() + ","
+                + data.get().get( "Maria" ).getId() + ","
                 + data.get().get( "Steve" ).getId()
                 + ") MATCH user-[:friend]->follower WHERE follower.name =~ 'S.*' RETURN user, follower.name ";
         fw.append( "\n\n" );
@@ -93,12 +97,13 @@ public class IntroDocTest implements GraphHolder
         fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
                 createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
         fw.close();
+        tx.finish();
     }
 
     @BeforeClass
     public static void setup() throws IOException
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = (ImpermanentGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         graphdb.cleanContent( false );
 
         engine = new ExecutionEngine( graphdb );

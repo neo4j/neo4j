@@ -24,18 +24,26 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.xa.XAResource;
 
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.LockElement;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 public class PlaceboTm extends AbstractTransactionManager
 {
     private LockManager lockManager;
-    private TxIdGenerator txIdGenerator;
+    private final TxIdGenerator txIdGenerator;
+    private final Transaction tx = new PlaceboTransaction();
 
     public PlaceboTm( LockManager lockManager, TxIdGenerator txIdGenerator )
     {
@@ -48,69 +56,61 @@ public class PlaceboTm extends AbstractTransactionManager
         this.lockManager = lockManager;
     }
     
+    @Override
     public void begin() throws NotSupportedException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public void commit() throws RollbackException, HeuristicMixedException,
             HeuristicRollbackException, SecurityException, IllegalStateException,
             SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public int getStatus() throws SystemException
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return Status.STATUS_ACTIVE;
     }
 
+    @Override
     public Transaction getTransaction() throws SystemException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return tx;
     }
 
+    @Override
     public void resume( Transaction arg0 ) throws InvalidTransactionException,
             IllegalStateException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public void rollback() throws IllegalStateException, SecurityException,
             SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public void setTransactionTimeout( int arg0 ) throws SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
+    @Override
     public Transaction suspend() throws SystemException
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public void init()
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -122,8 +122,6 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public void stop()
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -139,6 +137,17 @@ public class PlaceboTm extends AbstractTransactionManager
     }
 
     @Override
+    public StatementState newStatement()
+    {
+        return null;
+    }
+
+    @Override
+    public void setKernel( KernelAPI kernel )
+    {
+    }
+
+    @Override
     public void doRecovery() throws Throwable
     {
     }
@@ -151,15 +160,31 @@ public class PlaceboTm extends AbstractTransactionManager
             @Override
             public LockElement acquireReadLock( Object resource )
             {
-                lockManager.getReadLock( resource );
-                return new LockElement( resource, LockType.READ, lockManager );
+                try
+                {
+                    Transaction tx = getTransaction();
+                    lockManager.getReadLock( resource, tx );
+                    return new LockElement( resource, tx, LockType.READ, lockManager );
+                }
+                catch ( Exception e )
+                {
+                    throw launderedException( e );
+                }
             }
             
             @Override
             public LockElement acquireWriteLock( Object resource )
             {
-                lockManager.getWriteLock( resource );
-                return new LockElement( resource, LockType.WRITE, lockManager );
+                try
+                {
+                    Transaction tx = getTransaction();
+                    lockManager.getWriteLock( resource, tx );
+                    return new LockElement( resource, tx, LockType.WRITE, lockManager );
+                }
+                catch ( SystemException e )
+                {
+                    throw launderedException( e );
+                }
             }
             
             @Override
@@ -168,5 +193,49 @@ public class PlaceboTm extends AbstractTransactionManager
                 return txIdGenerator;
             }
         };
+    }
+    
+    private static class PlaceboTransaction implements Transaction
+    {
+        @Override
+        public void commit() throws HeuristicMixedException, HeuristicRollbackException, RollbackException,
+                SecurityException, SystemException
+        {
+        }
+
+        @Override
+        public boolean delistResource( XAResource xaRes, int flag ) throws IllegalStateException, SystemException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean enlistResource( XAResource xaRes ) throws IllegalStateException, RollbackException,
+                SystemException
+        {
+            return true;
+        }
+
+        @Override
+        public int getStatus() throws SystemException
+        {
+            return Status.STATUS_ACTIVE;
+        }
+
+        @Override
+        public void registerSynchronization( Synchronization synch ) throws IllegalStateException, RollbackException,
+                SystemException
+        {
+        }
+
+        @Override
+        public void rollback() throws IllegalStateException, SystemException
+        {
+        }
+
+        @Override
+        public void setRollbackOnly() throws IllegalStateException, SystemException
+        {
+        }
     }
 }

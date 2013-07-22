@@ -69,7 +69,6 @@ public class PingerTest
 
         hostname = server.getServiceHostName();
         serverUrl = "http://" + hostname + ":" + server.getServicePort();
-        System.out.println( "LocalTestServer available at " + serverUrl );
     }
 
     /**
@@ -82,7 +81,6 @@ public class PingerTest
     {
         HttpClient httpclient = new DefaultHttpClient();
         HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
-        System.out.println( "HttpClient: http-get " + httpget.getURI() );
         HttpResponse response = httpclient.execute( httpget );
         HttpEntity entity = response.getEntity();
         if ( entity != null )

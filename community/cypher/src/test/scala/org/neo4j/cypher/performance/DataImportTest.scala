@@ -21,13 +21,12 @@ package org.neo4j.cypher.performance
 
 import org.scalatest.Assertions
 import java.io.File
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProvider
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType
-import org.neo4j.graphdb.index.BatchInserterIndex
 import scala.io.Source.fromFile
 import org.junit.{Ignore, Test}
+import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserters, BatchInserterIndex}
+import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl
 
 class DataImportTest extends Assertions {
 
@@ -49,11 +48,11 @@ class DataImportTest extends Assertions {
     val movieMap = createMovies(sourceDir, inserter, moviesTitles, moviesId, typeIdx)
     addRatings(sourceDir, movieMap.toMap, inserter, typeIdx)
 
-    indexProvider.shutdown();
-    inserter.shutdown();
+    indexProvider.shutdown()
+    inserter.shutdown()
   }
 
-  private def addRatings(sourceDir: File, movies: Map[String, Long], inserter: BatchInserterImpl, typeIdx: BatchInserterIndex) = {
+  private def addRatings(sourceDir: File, movies: Map[String, Long], inserter: BatchInserter, typeIdx: BatchInserterIndex) = {
     val users = scala.collection.mutable.Map[String, Long]()
 
     fromFile(new File(sourceDir, "ratings.dat")).getLines().foreach(ratingLine => {
@@ -78,15 +77,15 @@ class DataImportTest extends Assertions {
     (userId, movieId, stars)
   }
 
-  def createNodeIdx(indexProvider: LuceneBatchInserterIndexProvider, name: String, typ: String, column: String): BatchInserterIndex = {
-    val moviesId = indexProvider.nodeIndex(name, Map("type" -> typ).asJava);
+  def createNodeIdx(indexProvider: LuceneBatchInserterIndexProviderNewImpl, name: String, typ: String, column: String): BatchInserterIndex = {
+    val moviesId = indexProvider.nodeIndex(name, Map("type" -> typ).asJava)
     moviesId.setCacheCapacity(column, 10000)
     moviesId
   }
 
   private def createInserters(targetDir: String) = {
-    val inserter = new BatchInserterImpl(targetDir);
-    val indexProvider = new LuceneBatchInserterIndexProvider(inserter);
+    val inserter = BatchInserters.inserter(targetDir)
+    val indexProvider = new LuceneBatchInserterIndexProviderNewImpl(inserter)
 
     val moviesTitles = createNodeIdx(indexProvider, "movieTitles", "fulltext", "title")
     val moviesId = createNodeIdx(indexProvider, "movieIds", "exact", "id")
@@ -95,7 +94,7 @@ class DataImportTest extends Assertions {
     (inserter, moviesId, moviesTitles, indexProvider, typeIdx)
   }
 
-  private def createMovies(sourceDir: File, inserter: BatchInserterImpl, moviesTitles: BatchInserterIndex, moviesId: BatchInserterIndex, typeIdx: BatchInserterIndex) = {
+  private def createMovies(sourceDir: File, inserter: BatchInserter, moviesTitles: BatchInserterIndex, moviesId: BatchInserterIndex, typeIdx: BatchInserterIndex) = {
 
     val categories = scala.collection.mutable.Map[String, Long]()
     val movies = scala.collection.mutable.Map[String, Long]()

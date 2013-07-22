@@ -19,11 +19,6 @@
  */
 package org.neo4j.test;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +33,11 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 /**
  * Executes {@link WorkerCommand}s in another thread. Very useful for writing
  * tests which handles two simultaneous transactions and interleave them,
@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  *
  * @param <T>
  */
-public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger>
+public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger, RuntimeException>
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
     protected final T state;
@@ -61,7 +61,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     {
         REQUESTED_EXECUTION,
         EXECUTING,
-        EXECUTED;
+        EXECUTED
     }
 
     public OtherThreadExecutor( String name, T initialState )
@@ -83,7 +83,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return commandExecutor.submit( new Callable<R>()
         {
             @Override
-            public R call()
+            public R call() throws Exception
             {
                 executionState = ExecutionState.EXECUTING;
                 try
@@ -109,6 +109,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         boolean success = false;
         try
         {
+            awaitStartExecuting();
             R result = future.get( timeout, unit );
             success = true;
             return result;
@@ -119,6 +120,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
                 future.cancel( true );
         }
     }
+
+    private void awaitStartExecuting() throws InterruptedException
+    {
+        while ( executionState == ExecutionState.REQUESTED_EXECUTION )
+        {
+            Thread.sleep( 10 );
+        }
+    }
     
     public <R> R awaitFuture( Future<R> future ) throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -127,7 +136,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     
     public interface WorkerCommand<T, R>
     {
-        R doWork( T state );
+        R doWork( T state ) throws Exception;
     }
 
     @Override
@@ -167,9 +176,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     {
         Set<Thread.State> stateSet = new HashSet<Thread.State>( asList( possibleStates ) );
         long end = System.currentTimeMillis() + timeout;
+        Thread thread = getThread();
         Set<Thread.State> seenStates = new HashSet<Thread.State>();
-        Thread.State state = null;
-        while ( !stateSet.contains( (state = thread.getState()) ) || executionState == ExecutionState.REQUESTED_EXECUTION )
+        for ( Thread.State state;
+              !stateSet.contains( (state = thread.getState()) ) ||
+                      executionState == ExecutionState.REQUESTED_EXECUTION; )
         {
             seenStates.add( state );
             try

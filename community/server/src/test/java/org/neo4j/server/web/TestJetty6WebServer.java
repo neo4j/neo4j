@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
 import java.util.Arrays;
 
 import javax.ws.rs.GET;
@@ -30,6 +26,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.guard.Guard;
@@ -41,60 +38,69 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.Mute;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.test.Mute.muteAll;
 
 @Path("/")
-public class TestJetty6WebServer {
+public class TestJetty6WebServer
+{
+    @GET
+    public Response index()
+    {
+        return Response.status( Status.NO_CONTENT ).build();
+    }
 
-	@GET
-	public Response index()
-	{
-		return Response.status( Status.NO_CONTENT )
-                .build();
-	}
-	
-	@Test
-	public void shouldBeAbleToRestart() throws Throwable
-	{
-		// TODO: This is needed because WebServer has a cyclic
-		// dependency to NeoServer, which should be removed.
-		// Once that is done, we should instantiate WebServer 
-		// here directly.
-        AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
-		WrappingNeoServer neoServer = new WrappingNeoServer(db);
-		WebServer server = neoServer.getWebServer();
-		
-		try 
-		{
-			server.setAddress("127.0.0.1");
-			server.setPort(7878);
-			
-			server.addJAXRSPackages(Arrays.asList(new String[]{"org.neo4j.server.web"}), "/", null );
-			
-			server.start();
-			server.stop();
-			server.start();
-		} finally 
-		{
-			try 
-			{
-				server.stop();
-			} catch(Throwable t)
-			{	
-				
-			}
-		}
-		
-	}
+    @Test
+    public void shouldBeAbleToRestart() throws Throwable
+    {
+        // TODO: This is needed because WebServer has a cyclic
+        // dependency to NeoServer, which should be removed.
+        // Once that is done, we should instantiate WebServer
+        // here directly.
+        AbstractGraphDatabase db = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        WrappingNeoServer neoServer = new WrappingNeoServer( db );
+        WebServer server = neoServer.getWebServer();
+
+        try
+        {
+            server.setAddress( "127.0.0.1" );
+            server.setPort( 7878 );
+
+            server.addJAXRSPackages( Arrays.asList( "org.neo4j.server.web" ), "/", null );
+
+            server.start();
+            server.stop();
+            server.start();
+        }
+        finally
+        {
+            try
+            {
+                server.stop();
+            }
+            catch ( Throwable t )
+            {
+                // ignore...
+            }
+            db.shutdown();
+        }
+    }
 
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender(AbstractNeoServer.log);
-        final Guard dummyGuard = new Guard(StringLogger.SYSTEM);
+        InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
+        final Guard dummyGuard = new Guard( StringLogger.DEV_NULL );
+        @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
         {
             @Override
-            public Guard getGuard() {
+            public Guard getGuard()
+            {
                 return dummyGuard;
             }
         };
@@ -107,5 +113,7 @@ public class TestJetty6WebServer {
         assertThat( appender.toString(), containsString( "Server started on" ) );
         testBootstrapper.stop();
     }
-	
+    
+    @Rule
+    public Mute mute = muteAll();
 }

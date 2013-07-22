@@ -113,7 +113,7 @@ public interface TransactionEventHandler<T>
      * @param <T> the type of object communicated from a successful
      * {@link #beforeCommit(TransactionData)} to {@link #afterCommit(TransactionData, Object)}.
      */
-    public class Adapter<T> implements TransactionEventHandler<T>
+    class Adapter<T> implements TransactionEventHandler<T>
     {
         @Override
         public T beforeCommit( TransactionData data ) throws Exception

@@ -19,10 +19,6 @@
  */
 package common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,12 +30,18 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.SillyUtils.nonNull;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
@@ -60,7 +62,7 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb() throws Exception
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 
@@ -84,13 +86,6 @@ public abstract class Neo4jAlgoTestCase
         tx.finish();
     }
 
-    protected void restartTx()
-    {
-        tx.success();
-        tx.finish();
-        tx = graphDb.beginTx();
-    }
-
     public static void deleteFileOrDirectory( File file )
     {
         if ( !file.exists() )
@@ -100,14 +95,14 @@ public abstract class Neo4jAlgoTestCase
 
         if ( file.isDirectory() )
         {
-            for ( File child : file.listFiles() )
+            for ( File child : nonNull( file.listFiles() ) )
             {
                 deleteFileOrDirectory( child );
             }
         }
         else
         {
-            file.delete();
+            assertTrue( "delete " + file, file.delete() );
         }
     }
 

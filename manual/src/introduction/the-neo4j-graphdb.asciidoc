@@ -12,11 +12,14 @@ In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,pr
 
 Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
 
+Apart from properties and relationships, nodes can also be <<graphdb-neo4j-labels,labeled>> with zero or more labels.
+
 ["dot", "graphdb-nodes-overview.svg", "meta"]
 ----
 "A Node" [fillcolor="NODEHIGHLIGHT"]
 "A Node" -> "Relationships" [label="can have"]
 "A Node" -> "Properties" [label="can have"]
+"A Node" -> "Labels" [label="can have"]
 "Relationships" -> "Properties" [label="can have"]
 ----
 
@@ -167,6 +170,41 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 
 For further details on float/double values, see http://docs.oracle.com/javase/specs/jls/se5.0/html/typesValues.html#4.2.3[Java Language Specification].
 
+[[graphdb-neo4j-labels]]
+== Labels ==
+
+[NOTE]
+This is a new feature in Neo4j, it is experimental and may still change.
+Your feedback on this addition to the model is very welcome.
+
+A label is a named graph construct that is used to group nodes into sets; all nodes labeled with the same label belongs to the same set.
+Many database queries can work with these sets instead of the whole graph, making queries easier to write and more efficient.
+A node may be labeled with any number of labels, including none, making labels an optional addition to the graph.
+
+["dot", "graphdb-labels.svg", "meta"]
+----
+"A Label" [fillcolor="NODEHIGHLIGHT"]
+"A Label" -> "Name" [label="has a"]
+"A Label" -> "Node" [label="groups"]
+----
+
+An example would be a label named 'User' that you label all your nodes representing users with.
+With that in place, you can ask Neo4j to perform operations only on your user nodes, such as finding all users with a given name.
+
+However, you can use labels for much more.
+For instance, since labels can be added and removed during runtime, they can be used to mark temporary states for your nodes.
+You might create an "Offline" label for phones that are offline, a "Happy" label for happy pets, and so on.
+
+=== Label names ===
+
+Any non-empty unicode string can be used as a label name.
+In Cypher, you may need to use the backtick (``) syntax to avoid clashes with Cypher identifier rules.
+By convention, labels are written with CamelCase notation, with the first letter in upper case.
+For instance, 'User' or 'CarOwner'.
+
+Labels currently share id space with property keys, meaning the maximum number of labels the database can contain depends on the number of property keys it stores.
+The combined number of property keys and labels that can be stored at the same time is 2^24^ (&#8764; 16 000 000)
+
 [[graphdb-neo4j-paths]]
 == Paths ==
 
@@ -214,6 +252,53 @@ At a basic level there's a choice between traversing breadth- or depth-first.
 For an in-depth introduction to the traversal framework, see <<tutorial-traversal>>.
 For Java code examples see <<tutorials-java-embedded-traversal>>.
 
-Other options to traverse or query graphs in Neo4j are <<cypher-query-lang, Cypher>> and <<gremlin-plugin, Gremlin>>.
+You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful declarative way to query the graph.
 
 
+[[graphdb-neo4j-schema]]
+== Schema ==
+
+Neo4j is a schema-optional graph database. You can use Neo4j without any schema.  Optionally you can introduce it in
+order to gain performance or modeling benefits. This allows a way of working where the schema does not get in your way
+until you are at a stage where you want to reap the benefits of having one.
+
+[[graphdb-neo4j-schema-indexes]]
+=== Indexes ===
+
+NOTE: This feature was introduced in Neo4j 2.0, and is not the same as the <<indexing, legacy indexes>>.
+
+Performance is gained by creating indexes, which improve the speed of looking up nodes in the database.
+Once you’ve specified which properties to index, Neo4j will make sure your indexes are kept up to date as your graph evolves.
+Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
+
+Indexes in Neo4j are _eventually available_. That means that when you first create an index, the operation returns immediately.
+The index is *populating* in the background and so is not immediately available for querying.
+When the index has been fully populated it will eventually come *online*. That means that it is now ready to be used in
+queries.
+
+If something should go wrong with the index, it can end up in a *failed* state. When it is failed, it will not be used
+to speed up queries. To rebuild it, you can drop and recreate the index. Look at logs for clues about the failure.
+
+You can track the status of your index by asking for the index state through the API you are using.
+Note, however, that this is not yet possible through cypher.
+
+How to use indexes in the different APIs:
+
+* <<query-schema-index, Cypher>>
+* <<tutorials-java-embedded-new-index, Java Core API>>
+* <<rest-api-schema-indexes, REST API>>
+
+[[graphdb-neo4j-schema-constraints]]
+=== Constraints ===
+
+NOTE: This feature was introduced in Neo4j 2.0.
+
+Neo4j can help you keep your data clean. It does so using constraints, that allow you to specify the rules for what
+your data should look like. Any changes that break these rules will be denied.
+
+In this version, unique constraints is the only available constraint type.
+
+How to use constraints in the different APIs:
+
+* <<query-constraints, Cypher>>
+* <<rest-api-schema-constraints, REST API>>

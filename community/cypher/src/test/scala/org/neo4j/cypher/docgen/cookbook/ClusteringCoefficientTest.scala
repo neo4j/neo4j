@@ -22,8 +22,14 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class ClusteringCoefficientTest extends DocumentingTestBase {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+
   def graphDescription = List()
 
   def section = "cookbook"
@@ -60,7 +66,7 @@ where `n` is the number of neighbors `n = 4` and the actual number `r` of connec
 Therefore the clustering coefficient of node 1 is `1/6`.
         
 `n` and `r` are quite simple to retrieve via the following query:""",
-              queryText = "START a = node(*)  " +
+              queryText =
       		"MATCH (a)--(b)  " +
       		"WITH a, count(distinct b) as n " +
       		"MATCH (a)--()-[r]-()--(a) " +

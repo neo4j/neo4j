@@ -41,6 +41,17 @@ public class LifeSupport
     List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
     LifecycleStatus status = LifecycleStatus.NONE;
     List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final StringLogger log;
+    
+    public LifeSupport()
+    {
+        this( StringLogger.SYSTEM_ERR );
+    }
+    
+    public LifeSupport( StringLogger log )
+    {
+        this.log = log;
+    }
 
     /**
      * Initialize all registered instances, transitioning from status NONE to STOPPED.
@@ -127,8 +138,6 @@ public class LifeSupport
      * <p/>
      * If any instance fails to stop, the rest of the instances will still be stopped,
      * so that the overall status is STOPPED.
-     *
-     * @throws Exception
      */
     @Override
     public synchronized void stop()
@@ -165,8 +174,6 @@ public class LifeSupport
      * <p/>
      * If any instance fails to shutdown, the rest of the instances will still be shut down,
      * so that the overall status is SHUTDOWN.
-     *
-     * @throws Exception
      */
     @Override
     public synchronized void shutdown()
@@ -212,8 +219,7 @@ public class LifeSupport
      * so that they don't try to use it during the restart. A restart is effectively a stop followed
      * by a start.
      *
-     * @param instance
-     * @throws Throwable                if any start or stop fails
+     * @throws LifecycleException       if any start or stop fails
      * @throws IllegalArgumentException if instance is not registered
      */
     public synchronized void restart( Lifecycle instance )
@@ -379,7 +385,8 @@ public class LifeSupport
 
     public synchronized void dump( StringLogger logger )
     {
-        logger.logLongMessage( "Lifecycle status:" + status.name(), new Visitor<StringLogger.LineLogger>()
+        logger.logLongMessage( "Lifecycle status:" + status.name(), new Visitor<StringLogger.LineLogger,
+                RuntimeException>()
         {
             @Override
             public boolean visit( StringLogger.LineLogger element )
@@ -418,8 +425,8 @@ public class LifeSupport
             return exception;
         }
 
-        exception.printStackTrace();
-        chainedLifecycleException.printStackTrace();
+        log.error( "Lifecycle exception", exception );
+        log.error( "Chained lifecycle exception", chainedLifecycleException );
         
         Throwable current = exception;
         while ( current.getCause() != null )
@@ -512,6 +519,7 @@ public class LifeSupport
                 }
                 catch ( Throwable e )
                 {
+                    log.error( "Exception when stopping " + instance, e );
                     throw new LifecycleException( instance, LifecycleStatus.STARTED, LifecycleStatus.STOPPED, e );
                 }
                 finally

@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.mutation
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.graphdb.{PropertyContainer, Transaction}
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 class MapPropertySetActionTest extends GraphDatabaseTestBase {
@@ -35,7 +34,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
   @Before
   def init() {
     tx = graph.beginTx()
-    state = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator, None)
+    state = QueryStateHelper.queryStateFrom(graph)
   }
 
   @After
@@ -51,7 +50,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     setThatShit(a, m)
 
     assert(a.getProperty("meaning_of_life") === 420)
-    assert(state.propertySet.count === 1)
+    assert(state.getStatistics.propertiesSet === 1)
   }
 
   @Test def set_multiple_properties() {
@@ -62,7 +61,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(a.getProperty("A") === 1)
     assert(a.getProperty("b") === 2)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def set_properties_on_relationship() {
@@ -75,7 +74,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(r.getProperty("A") === 1)
     assert(r.getProperty("b") === 2)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def transfer_properties_from_node_to_node() {
@@ -86,7 +85,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(to.getProperty("foo") === "bar")
     assert(to.getProperty("buzz") === 42)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def remove_properties_from_node() {
@@ -97,7 +96,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(to.getProperty("a") === 1)
     assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def should_overwrite_values() {
@@ -107,7 +106,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     setThatShit(to, from)
 
     assert(to.getProperty("a") === 1)
-    assert(state.propertySet.count === 1)
+    assert(state.getStatistics.propertiesSet === 1)
   }
 
   private def setThatShit(a: PropertyContainer, m: Any) {

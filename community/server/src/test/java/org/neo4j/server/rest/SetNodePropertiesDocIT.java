@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -54,11 +56,11 @@ public class SetNodePropertiesDocIT extends
             throws JsonParseException
     {
         Node jim = data.get().get( "jim" );
-        assertFalse( jim.hasProperty( "age" ) );
+        assertThat( jim, inTx(graphdb(), not( hasProperty( "age" ) ) ) );
         gen.get().payload(
                 JsonHelper.createJsonFrom( MapUtil.map( "age", "18" ) ) ).expectedStatus(
                 204 ).put( getPropertiesUri( jim ) );
-        assertTrue( jim.hasProperty( "age" ) );
+        assertThat( jim, inTx(graphdb(), hasProperty( "age" ).withValue( "18" ) ) );
     }
     
     @Graph( "jim knows joe" )
@@ -67,11 +69,10 @@ public class SetNodePropertiesDocIT extends
             throws JsonParseException
     {
         Node jim = data.get().get( "jim" );
-        assertFalse( jim.hasProperty( "age" ) );
         gen.get().payload(
                 JsonHelper.createJsonFrom( MapUtil.map( "name", "\u4f8b\u5b50" ) ) ).expectedStatus(
                 204 ).put( getPropertiesUri( jim ) );
-        assertTrue( jim.getProperty( "name" ).equals( "\u4f8b\u5b50" ) );
+        assertThat( jim, inTx( graphdb(), hasProperty( "name" ).withValue( "\u4f8b\u5b50" ) ) );
     }
 
     @Test
@@ -127,8 +128,8 @@ public class SetNodePropertiesDocIT extends
         Node jim = data.get().get( "jim" );
         gen.get().payload( JsonHelper.createJsonFrom( "bar" ) ).expectedStatus(
                 204 ).put( getPropertyUri( jim, "foo" ).toString() );
-        assertTrue( jim.hasProperty( "foo" ) );
-        assertTrue( jim.hasProperty( "foo2" ) );
+        assertThat( jim, inTx(graphdb(), hasProperty( "foo" ) ) );
+        assertThat( jim, inTx(graphdb(), hasProperty( "foo2" ) ) );
     }
 
     /**

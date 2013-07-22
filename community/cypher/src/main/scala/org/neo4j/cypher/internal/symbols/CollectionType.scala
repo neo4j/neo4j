@@ -19,25 +19,42 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import java.lang.String
+object CollectionType {
+  val anyCollectionTypeInstance = new CollectionType(AnyType())
+
+  def apply(iteratedType: CypherType) = if (iteratedType == AnyType()) anyCollectionTypeInstance else new CollectionType(iteratedType)
+}
 
 class CollectionType(override val iteratedType: CypherType) extends AnyType {
 
-  override def toString: String =
-    if (iteratedType.isInstanceOf[AnyType])
-      "Collection"
-    else
-      "Collection<" + iteratedType + ">"
+  override def toString: String = s"Collection<$iteratedType>"
 
-  override def isAssignableFrom(other:CypherType):Boolean = super.isAssignableFrom(other) &&
-                                                            iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
+  override def isAssignableFrom(other: CypherType): Boolean = super.isAssignableFrom(other) &&
+    iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
 
-  override def mergeWith(other: CypherType) = other match {
+  override def mergeDown(other: CypherType) = other match {
     case otherCollection: CollectionType =>
-      new CollectionType(iteratedType mergeWith otherCollection.iteratedType)
+      CollectionType(iteratedType mergeDown otherCollection.iteratedType)
     case _ =>
-      super.mergeWith(other)
+      super.mergeDown(other)
+  }
+
+  override def mergeUp(other: CypherType) = other match {
+    case otherCollection: CollectionType =>
+      for (ctype <- iteratedType mergeUp otherCollection.iteratedType) yield CollectionType(ctype)
+    case _ =>
+      super.mergeUp(other)
   }
 
   override val isCollection = true
+
+  override def equals(other: Any) = other match {
+    case null => false
+    case t: CollectionType => t.iteratedType.equals(iteratedType)
+    case _ => false
+  }
+
+  override def hashCode = 37 * iteratedType.hashCode
+
+  override def rewrite(f: CypherType => CypherType) = f(CollectionType(this.iteratedType.rewrite(f)))
 }

@@ -22,17 +22,22 @@ package org.neo4j.cypher.internal.commands
 import expressions.{ParameterExpression, Literal, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
-class QueryBuilder(startItems: Seq[StartItem]) {
+class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
   var updates = Seq[UpdateAction]()
   var matching: Seq[Pattern] = Seq()
-  var where: Option[Predicate] = None
+  var where: Predicate = True()
   var aggregation: Option[Seq[AggregationExpression]] = None
   var orderBy: Seq[SortItem] = Seq()
   var skip: Option[Expression] = None
   var limit: Option[Expression] = None
   var namedPaths: Seq[NamedPath] = Seq()
+  var using: Seq[StartItem with Hint] = Seq()
   var tail: Option[Query] = None
   var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
+
+  def startItems(items: StartItem*): QueryBuilder = store {
+    startItems = items
+  }
 
   def matches(patterns: Pattern*): QueryBuilder = store {
     matching = patterns
@@ -42,8 +47,12 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     updates = cmds
   }
 
+  def using(indexHints:StartItem with Hint*): QueryBuilder  = store {
+    this.using = indexHints.toSeq
+  }
+
   def where(predicate: Predicate): QueryBuilder = store {
-    where = Some(predicate)
+    where = predicate
   }
 
   def aggregation(aggregationItems: AggregationExpression*): QueryBuilder = store {
@@ -62,12 +71,20 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     skip = Some(ParameterExpression(skipTo))
   }
 
+  def skip(skipTo: Expression): QueryBuilder = store {
+    skip = Some(skipTo)
+  }
+
   def limit(limitTo: Int): QueryBuilder = store {
     limit = Some(Literal(limitTo))
   }
 
   def limit(limitTo: String): QueryBuilder = store {
     limit = Some(ParameterExpression(limitTo))
+  }
+
+  def limit(limitTo: Expression): QueryBuilder = store {
+    limit = Some(limitTo)
   }
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store {
@@ -93,5 +110,5 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def returns(returnItems: ReturnColumn*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, where, aggregation, orderBy, slice, namedPaths, tail)
+    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, using, where, aggregation, orderBy, slice, namedPaths, tail)
 }

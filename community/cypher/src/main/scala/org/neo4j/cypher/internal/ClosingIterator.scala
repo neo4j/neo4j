@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.graphdb.ConstraintViolationException
 import spi.QueryContext
-import org.neo4j.graphdb.{TransactionFailureException, Transaction}
-import org.neo4j.kernel.impl.nioneo.store.ConstraintViolationException
+import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.cypher.NodeStillHasRelationshipsException
+import org.neo4j.cypher.internal.helpers.IsCollection
 
 /**
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
  * the inner iterator is empty.
  */
-class ClosingIterator[+T](inner: Iterator[T], queryContext: QueryContext, tx: Transaction) extends Iterator[T] {
+class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext: QueryContext) extends Iterator[Map[String, Any]] {
   private var closed: Boolean = false
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
@@ -40,39 +41,42 @@ class ClosingIterator[+T](inner: Iterator[T], queryContext: QueryContext, tx: Tr
     innerHasNext
   }
 
-  def next(): T = failIfThrows {
-    val result: T = inner.next()
+  def next(): Map[String, Any] = failIfThrows {
+    val result: Map[String, Any] = inner.next().mapValues(materialize).toMap
     if (!inner.hasNext) {
       close()
     }
     result
   }
 
+  private def materialize(v: Any): Any = v match {
+    case (x: Stream[_])   => x.map(materialize).toList
+    case (x: Map[_, _])   => x.mapValues(materialize)
+    case (x: Iterable[_]) => x.map(materialize)
+    case x                => x
+  }
+
   def close() {
     translateException {
       if (!closed) {
         closed = true
-        queryContext.close()
+        queryContext.close(success = true)
       }
-      tx.success()
-      tx.finish()
     }
   }
 
   private def translateException[U](f: => U): U = try {
-     f
+    f
   } catch {
     case e: TransactionFailureException => {
 
-      var cause:Throwable = e
-      while(cause.getCause != null)
-      {
+      var cause: Throwable = e
+      while (cause.getCause != null) {
         cause = cause.getCause
-        if(cause.isInstanceOf[ConstraintViolationException])
-        {
+        if (cause.isInstanceOf[ConstraintViolationException]) {
           cause.getMessage match {
             case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
-            case _ => throw e
+            case _                           => throw e
           }
         }
       }
@@ -81,13 +85,11 @@ class ClosingIterator[+T](inner: Iterator[T], queryContext: QueryContext, tx: Tr
     }
   }
 
-
   private def failIfThrows[U](f: => U): U = try {
     f
   } catch {
     case t: Throwable if !closed =>
-      tx.failure()
-      tx.finish()
+      queryContext.close(success = false)
       throw t
   }
 }

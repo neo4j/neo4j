@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.commands.AstNode
 import org.neo4j.cypher.internal.ExecutionContext
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
-  def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
+  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
   def throwIfSymbolsMissing(symbols: SymbolTable)
 
@@ -43,21 +43,24 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {
+
+  implicit class RichMap(m:Map[String, Expression]) {
+    def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {
+      case (k, v) => k -> v.rewrite(f)
+    }
+
+    def throwIfSymbolsMissing(symbols: SymbolTable) {
+      m.values.foreach(_.throwIfSymbolsMissing(symbols))
+    }
+
+    def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
+  }
+
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
       case (key, expression) => setSingleValue(expression, context, pc, key, state)
     }
-  }
-
-  def throwIfSymbolsMissing(props: Map[String, Expression], symbols: SymbolTable) {
-    props.values.foreach(_.throwIfSymbolsMissing(symbols))
-  }
-
-  def symbolTableDependencies(props: Map[String, Expression]): Set[String] = props.values.flatMap(_.symbolTableDependencies).toSet
-
-  def rewrite(props: Map[String, Expression], f: (Expression) => Expression): Map[String, Expression] = props.map {
-    case (k, v) => k -> v.rewrite(f)
   }
 
   def getMapFromExpression(v: Any): Map[String, Any] = {
@@ -69,21 +72,18 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
       throw new CypherTypeException(s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
   }
 
-
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
     val map = getMapFromExpression(expression(context)(state))
 
     pc match {
       case n: Node => map.foreach {
         case (key, value) =>
-          state.query.nodeOps.setProperty(n, key, makeValueNeoSafe(value))
-          state.propertySet.increase()
+          state.query.nodeOps.setProperty(n, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
-          state.query.relationshipOps.setProperty(r, key, makeValueNeoSafe(value))
-          state.propertySet.increase()
+          state.query.relationshipOps.setProperty(r, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
     }
   }
@@ -92,13 +92,11 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     val value = makeValueNeoSafe(expression(context)(state))
     pc match {
       case n: Node =>
-        state.query.nodeOps.setProperty(n, key, value)
+        state.query.nodeOps.setProperty(n, state.query.getOrCreatePropertyKeyId(key), value)
 
       case r: Relationship =>
-        state.query.relationshipOps.setProperty(r, key, value)
+        state.query.relationshipOps.setProperty(r, state.query.getOrCreatePropertyKeyId(key), value)
     }
-
-    state.propertySet.increase()
   }
 
   def makeValueNeoSafe(a: Any): Any = if (isCollection(a)) {

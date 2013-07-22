@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.info;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -32,26 +31,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
-    @SuppressWarnings( "unchecked" )
-    public static final <T> Visitor<? super T> castToGenericVisitor( Class<T> type, Object visitor )
-    {
-        if ( visitor instanceof Visitor<?> )
-        {
-            for ( Type iface : visitor.getClass().getGenericInterfaces() )
-            {
-                if ( iface instanceof ParameterizedType )
-                {
-                    ParameterizedType paramType = (ParameterizedType) iface;
-                    if ( paramType.getRawType() == Visitor.class )
-                    {
-                        return (Visitor<? super T>) visitor;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<DiagnosticsProvider>();
     private final StringLogger logger;
     private volatile State state = State.INITIAL;
@@ -94,7 +73,8 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
             @Override
             public void acceptDiagnosticsVisitor( Object visitor )
             {
-                Visitor<? super DiagnosticsProvider> target = castToGenericVisitor( DiagnosticsProvider.class, visitor );
+                Visitor<? super DiagnosticsProvider, ? extends RuntimeException> target =
+                        Visitor.SafeGenerics.castOrNull( DiagnosticsProvider.class, RuntimeException.class, visitor );
                 if ( target != null ) for ( DiagnosticsProvider provider : providers )
                 {
                     target.visit( provider );

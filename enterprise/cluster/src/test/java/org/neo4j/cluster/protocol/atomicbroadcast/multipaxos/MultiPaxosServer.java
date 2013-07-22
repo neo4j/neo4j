@@ -25,15 +25,20 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.cluster.*;
+import org.slf4j.impl.StaticLoggerBinder;
+
+import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.MultiPaxosServerFactory;
+import org.neo4j.cluster.NetworkedServerFactory;
+import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -43,7 +48,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -55,7 +59,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * Multi Paxos test server
@@ -64,7 +67,6 @@ public class MultiPaxosServer
 {
     private AtomicBroadcastSerializer broadcastSerializer;
     private ProtocolServer server;
-    private Election election;
 
     public static void main( String[] args )
             throws IOException, InvocationTargetException, IllegalAccessException
@@ -161,8 +163,6 @@ public class MultiPaxosServer
                 }
             } );
 
-            election = server.newClient( Election.class );
-
             broadcast = server.newClient( AtomicBroadcast.class );
             broadcast.addAtomicBroadcastListener( new AtomicBroadcastListener()
             {
@@ -198,7 +198,7 @@ public class MultiPaxosServer
                     System.arraycopy( arguments, 1, realArgs, 0, realArgs.length );
                     try
                     {
-                        method.invoke( this, realArgs );
+                        method.invoke( this, (Object[])realArgs );
                     }
                     catch ( IllegalAccessException e )
                     {
@@ -222,18 +222,6 @@ public class MultiPaxosServer
             life.shutdown();
             System.out.println( "Done" );
         }
-    }
-
-    public void demote( InstanceId nodeId )
-            throws URISyntaxException
-    {
-        election.demote( nodeId );
-    }
-
-    public void promote( InstanceId nodeId, String role )
-            throws URISyntaxException
-    {
-        election.promote( nodeId, role );
     }
 
     public void logging( String name, String level )

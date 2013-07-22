@@ -19,28 +19,19 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -48,16 +39,27 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.test.GraphDescription.LABEL;
+
 public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
-    
     /**
      * A simple query returning all nodes connected to node 1, returning the
      * node and the name property, if it exists, otherwise `null`:
      */
     @Test
     @Documented
-    @Title( "Send a Query" )
+    @Title( "Send a query" )
     @Graph( nodes = {
             @NODE( name = "I", setNameProperty = true ),
             @NODE( name = "you", setNameProperty = true ),
@@ -78,6 +80,37 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     /**
+     * By passing in an additional GET header when you execute Cypher queries, metadata about the query will
+     * be returned, such as how many labels were added or removed by the query.
+     */
+    @Test
+    @Documented
+    @Title( "Retrieve query metadata" )
+    @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("bar") } ) } )
+    public void testQueryStatistics() throws JsonParseException
+    {
+        // Given
+        String script = createScript( "start n = node(%I%) set n:foo remove n:bar return labels(n)" );
+
+        // When
+        Map<String, Object> output = jsonToMap(doCypherRestCall( cypherUri() + "?includeStats=true", script, Status.OK ));
+
+        // Then
+        @SuppressWarnings("unchecked")
+        Map<String, Object> stats = (Map<String, Object>) output.get( "stats" );
+
+        assertThat( stats, isA( Map.class ) );
+        assertThat( (Boolean) stats.get( "contains_updates" ), is( true ) );
+        assertThat( (Integer) stats.get( "labels_added" ), is( 1 ) );
+        assertThat( (Integer) stats.get( "labels_removed" ), is( 1 ) );
+        assertThat( (Integer) stats.get( "nodes_created" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "nodes_deleted" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "properties_set" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "relationships_created" ), is( 0 ) );
+        assertThat( (Integer) stats.get( "relationship_deleted" ), is( 0 ) );
+    }
+
+    /**
      * Ensure that order of data and column is ok.
      */
     @Test
@@ -94,7 +127,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
         String response = cypherRestCall( script, Status.OK );
 
-        assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), CoreMatchers.is( true ));
+        assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), is( true ));
     }
 
     /**
@@ -148,6 +181,22 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
     }
+
+    /**
+     * Create a node with a label and a property using Cypher.
+     */
+    @Test
+    @Documented
+    @Title( "Create a node" )
+    @Graph
+    public void send_query_to_create_a_node() throws Exception {
+        data.get();
+        String script = "create (n:Person { name : {name} }) return n";
+        String response = cypherRestCall( script, Status.OK, Pair.of( "name", "Andres" ) );
+
+        assertTrue( response.contains( "name" ) );
+        assertTrue( response.contains( "Andres" ) );
+    }
     
     @Test
     @Graph( nodes = {
@@ -166,7 +215,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "Hello" ) );
         assertThat( response, containsString( "World" ) );
     }
-    
+
     /**
      * Sending a query with syntax errors will give a bad request (HTTP 400)
      * response together with an error message.
@@ -186,7 +235,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
     }
-    
+
     /**
      * When sending queries that
      * return nested results like list and maps,
@@ -232,6 +281,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Map<String, Object> des = jsonToMap( response );
         assertThat( des.get( "plan" ), instanceOf( Map.class ));
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> plan = (Map<String, Object>)des.get( "plan" );
         assertThat( plan.get( "name" ), instanceOf( String.class ) );
         assertThat( plan.get( "children" ), instanceOf( Collection.class ));

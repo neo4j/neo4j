@@ -9,6 +9,10 @@ Read <<introduction-pattern>> for an introduction.
 
 include::create-single-node.asciidoc[]
 
+include::create-node-and-add-labels.asciidoc[]
+
+include::create-node-and-add-labels-and-properties.asciidoc[]
+
 include::return-created-node.asciidoc[]
 
 include::create-single-node-and-set-properties.asciidoc[]
@@ -64,4 +68,5 @@ source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----
+
 

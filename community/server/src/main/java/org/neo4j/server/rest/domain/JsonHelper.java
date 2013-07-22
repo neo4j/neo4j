@@ -31,7 +31,6 @@ import org.neo4j.server.rest.web.PropertyValueException;
 
 public class JsonHelper
 {
-
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @SuppressWarnings( "unchecked" )

@@ -35,12 +35,6 @@ include::{importdir}/neo4j-server-docs-jar/dev/index.asciidoc[]
 
 include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
 
-:leveloffset: 2
-
-include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.asciidoc[]
-
 :leveloffset: 1
 
 include::deprecations.asciidoc[]
-
-

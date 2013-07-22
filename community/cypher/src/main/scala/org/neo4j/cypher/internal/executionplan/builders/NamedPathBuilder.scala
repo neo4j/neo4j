@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.pipes.{NamedPathPipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 
-class NamedPathBuilder extends PlanBuilder {
+class NamedPathBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val p = plan.pipe
 
@@ -31,7 +31,7 @@ class NamedPathBuilder extends PlanBuilder {
     val item = q.namedPaths.filter(np => yesOrNo(np, p)).head
     val namedPaths = item.token
 
-    val pipe = new NamedPathPipe(p, namedPaths)
+    val pipe = new NamedPathPipe(p, namedPaths.pathName, namedPaths.pathPattern)
 
     val newQ = q.copy(namedPaths = q.namedPaths.filterNot(_ == item) :+ item.solve)
     plan.copy(query = newQ, pipe = pipe)

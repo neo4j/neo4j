@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
   def graphDescription = List()
@@ -30,13 +32,16 @@ class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
   override val graphvizOptions = "graph [layout=neato]"
   override val graphvizExecutedAfter = true
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+
   @Test def completeGraph() {
     testQuery(
       title = "Friendship graph",
       text =
 """This query first creates a center node, and then once per element in the range, creates a cycle graph and connects it to the center""",
       queryText = """CREATE center
-foreach( x in range(1,3) : 
+foreach( x in range(1,3) |
    CREATE leaf1, leaf2, center-[:X]->leaf1, center-[:X]->leaf2, leaf1-[:X]->leaf2
 )
 RETURN ID(center) as id""",

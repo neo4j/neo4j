@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
 
@@ -32,6 +33,7 @@ public class Predicates
     {
         return new Predicate<T>()
         {
+            @Override
             public boolean accept( T instance )
             {
                 return true;
@@ -43,6 +45,7 @@ public class Predicates
     {
         return new Predicate<T>()
         {
+            @Override
             public boolean accept( T instance )
             {
                 return !specification.accept( instance );
@@ -91,6 +94,7 @@ public class Predicates
     {
         return new Predicate<T>()
         {
+            @Override
             public boolean accept( T item )
             {
                 for ( T allow : allowed )
@@ -104,17 +108,33 @@ public class Predicates
             }
         };
     }
-
-    public static <T> Predicate<T> notNull()
+    
+    public static <T> Predicate<T> in( final Collection<T> allowed )
     {
         return new Predicate<T>()
         {
             @Override
             public boolean accept( T item )
             {
-                return item != null;
+                return allowed.contains( item );
             }
         };
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    private static Predicate NOT_NULL = new Predicate()
+    {
+        @Override
+        public boolean accept( Object item )
+        {
+            return item != null;
+        }
+    };
+    
+    @SuppressWarnings( "unchecked" )
+    public static <T> Predicate<T> notNull()
+    {
+        return NOT_NULL;
     }
 
     public static <FROM, TO> Predicate<FROM> translate( final Function<FROM, TO> function,
@@ -139,6 +159,7 @@ public class Predicates
             this.predicates = predicates;
         }
 
+        @Override
         public boolean accept( T instance )
         {
             for ( Predicate<T> specification : predicates )
@@ -174,6 +195,7 @@ public class Predicates
             this.predicates = predicates;
         }
 
+        @Override
         public boolean accept( T instance )
         {
             for ( Predicate<T> specification : predicates )
@@ -198,5 +220,17 @@ public class Predicates
             Iterable<Predicate<T>> flatten = Iterables.flatten( this.predicates, iterable );
             return Predicates.or( flatten );
         }
+    }
+
+    public static Predicate<String> stringContains( final String string )
+    {
+        return new Predicate<String>()
+        {
+            @Override
+            public boolean accept( String item )
+            {
+                return item.contains( string );
+            }
+        };
     }
 }

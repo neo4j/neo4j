@@ -19,10 +19,11 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newFilePrintWriter;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
@@ -55,7 +56,7 @@ class JsonReportWriter implements TimingProgress.Visitor
     {
         ensureOpen( false );
         json = new JsonFactory().configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, true )
-                                .createJsonGenerator( new FileWriter( target ) );
+                                .createJsonGenerator( newFilePrintWriter( target, UTF_8 ) );
         json.setPrettyPrinter( new DefaultPrettyPrinter() );
         json.writeStartObject();
         {

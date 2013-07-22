@@ -19,19 +19,14 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.consistency.ConsistencyCheckingError;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
@@ -39,19 +34,133 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LongerShortString;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.GraphStoreFixture;
 
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.serializeRule;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 public class IncrementalCheckIntegrationTest
 {
+    @Test
+    public void shouldReportBrokenSchemaRecordChain() throws Exception
+    {
+        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                DynamicRecord schema = new DynamicRecord( next.schema() );
+                schema.setNextBlock( next.schema() );
+                IndexRule rule = IndexRule.indexRule( 1, 1, 1, new SchemaIndexProvider.Descriptor( "in-memory",
+                        "1.0" ) );
+                new RecordSerializer().append( rule ).serialize();
+                schema.setData( new RecordSerializer().append( rule ).serialize() );
+
+                tx.createSchema( asList( schema ) );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldReportDuplicateConstraintReferences() throws Exception
+    {
+        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.label();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
+                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1);
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+   }
+
+    @Test
+    public void shouldReportInvalidConstraintBackReferences() throws Exception
+    {
+        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = (int) next.label();
+                int propertyKeyId = next.propertyKey();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory",
+                        "1.0" );
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor,
+                        (long) ruleId2 );
+                UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId,
+                        propertyKeyId, ruleId2 );
+
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.nodeLabel( labelId, "label" );
+                tx.propertyKey( propertyKeyId, "property" );
+
+                tx.createSchema( records1 );
+                tx.createSchema( records2 );
+            }
+        } );
+    }
+
     @Test
     @Ignore("Support for checking NeoStore needs to be added")
     public void shouldReportNeoStoreInconsistencies() throws Exception

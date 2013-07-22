@@ -48,6 +48,9 @@ import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.FakeClock;
 import org.neo4j.tooling.RealClock;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
@@ -61,7 +64,7 @@ public class ServerBuilder
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
     protected PreFlightTasks preflightTasks;
-    private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
+    private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
     private static enum WhatToDo
@@ -78,7 +81,7 @@ public class ServerBuilder
     private String host = null;
     private String[] securityRuleClassNames;
     public boolean persistent;
-    private Boolean httpsEnabled = false;
+    private Boolean httpsEnabled = FALSE;
 
     public static ServerBuilder server()
     {
@@ -91,7 +94,7 @@ public class ServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        File configFile = createPropertiesFiles();
+        final File configFile = createPropertiesFiles();
 
         if ( preflightTasks == null )
         {
@@ -128,12 +131,18 @@ public class ServerBuilder
                 Clock clockToUse = (clock != null) ? clock : new RealClock();
 
                 return new DatabaseActions(
-                        database,
                         new LeaseManager( clockToUse ),
                         ForceMode.forced,
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            }
+
+            @Override
+            public void stop()
+            {
+                super.stop();
+                configFile.delete();
             }
         };
     }
@@ -160,7 +169,9 @@ public class ServerBuilder
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
                 Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
         if (dbDir != null)
+        {
             properties.put(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir);
+        }
 
         if ( portNo != null )
         {
@@ -252,15 +263,14 @@ public class ServerBuilder
     {
         File f = createTempPropertyFile();
 
-        FileWriter fstream = new FileWriter( f, true );
-        BufferedWriter out = new BufferedWriter( fstream );
-
-        for ( int i = 0; i < 100; i++ )
+        try ( FileWriter fstream = new FileWriter( f, true ); BufferedWriter out = new BufferedWriter( fstream ) )
         {
-            out.write( (int) System.currentTimeMillis() );
+            for ( int i = 0; i < 100; i++ )
+            {
+                out.write( (int) System.currentTimeMillis() );
+            }
         }
 
-        out.close();
         return f;
     }
 
@@ -373,19 +383,19 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withDefaultDatabaseTuning() throws IOException
+    public ServerBuilder withDefaultDatabaseTuning()
     {
         action = WhatToDo.CREATE_GOOD_TUNING_FILE;
         return this;
     }
 
-    public ServerBuilder withNonResolvableTuningFile() throws IOException
+    public ServerBuilder withNonResolvableTuningFile()
     {
         action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
         return this;
     }
 
-    public ServerBuilder withCorruptTuningFile() throws IOException
+    public ServerBuilder withCorruptTuningFile()
     {
         action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
@@ -429,7 +439,7 @@ public class ServerBuilder
 
     public ServerBuilder withHttpsEnabled()
     {
-        httpsEnabled = true;
+        httpsEnabled = TRUE;
         return this;
     }
 

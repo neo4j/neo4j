@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.mockito.Mockito.mock;
+
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.transaction.Transaction;
 
 class LockWorkerState
 {
@@ -28,6 +32,7 @@ class LockWorkerState
     volatile boolean deadlockOnLastWait;
     final List<String> completedOperations = new ArrayList<String>();
     String doing;
+    final Transaction tx = mock( Transaction.class );
     
     public LockWorkerState( LockManager grabber )
     {

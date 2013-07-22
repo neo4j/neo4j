@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.persistence;
 
 import java.util.Map;
-
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
@@ -31,19 +30,19 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -53,8 +52,7 @@ public class PersistenceManager
     private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
 
-    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
-        new ArrayMap<Transaction,NeoStoreTransaction>( (byte)5, true, true );
+    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = new ArrayMap<>( (byte) 5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
@@ -73,26 +71,58 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().nodeLoadLight( id );
     }
 
-    public Object loadPropertyValue( PropertyData property )
+    public Object nodeLoadPropertyValue( long nodeId, int propertyKey )
     {
-        return getReadOnlyResource().loadPropertyValue( property );
+        return getReadOnlyResource().nodeLoadPropertyValue( nodeId, propertyKey );
+    }
+    
+    public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
+    {
+        return getReadOnlyResource().relationshipLoadPropertyValue( relationshipId, propertyKey );
+    }
+    
+    public Object graphLoadPropertyValue( int propertyKey )
+    {
+        return getReadOnlyResource().graphLoadPropertyValue( propertyKey );
     }
 
-    public String loadIndex( int id )
+    public Token[] loadAllPropertyKeyTokens()
     {
-        return getReadOnlyResourceIfPossible().loadIndex( id );
-    }
-
-    public NameData[] loadPropertyIndexes( int maxCount )
-    {
-        /* Using getReadOnlyResource here since loadPropertyIndexes doesn't
+        /**
+         * Using getReadOnlyResource here since {@link #loadAllPropertyKeyTokens()} doesn't
          * follow transaction state visibility standard anyway. There's also
          * an issue where this is called right after the neostore data source
          * has been started, but potentially before all recovery has been
          * done on all data sources, meaning that a call to getTransaction
          * could fail.
          */
-        return getReadOnlyResource/*IfPossible*/().loadPropertyIndexes( maxCount );
+        return getReadOnlyResource/*IfPossible*/().loadAllPropertyKeyTokens();
+    }
+
+    public Token[] loadAllLabelTokens()
+    {
+        /**
+         * Using getReadOnlyResource here since {@link #loadAllLabelTokens()} doesn't
+         * follow transaction state visibility standard anyway. There's also
+         * an issue where this is called right after the neostore data source
+         * has been started, but potentially before all recovery has been
+         * done on all data sources, meaning that a call to getTransaction
+         * could fail.
+         */
+        return getReadOnlyResource/*IfPossible*/().loadAllLabelTokens();
+    }
+
+    public Token[] loadAllRelationshipTypeTokens()
+    {
+        /**
+         * Using getReadOnlyResource here since {@link #loadAllRelationshipTypeTokens()} doesn't
+         * follow transaction state visibility standard anyway. There's also
+         * an issue where this is called right after the neostore data source
+         * has been started, but potentially before all recovery has been
+         * done on all data sources, meaning that a call to getTransaction
+         * could fail.
+         */
+        return getReadOnlyResource/*IfPossible*/().loadRelationshipTypes();
     }
 
     public long getRelationshipChainPosition( long nodeId )
@@ -122,37 +152,24 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().relLoadLight( id );
     }
 
-    public NameData[] loadAllRelationshipTypes()
-    {
-        /* Using getReadOnlyResource here since loadRelationshipTypes doesn't
-         * follow transaction state visibility standard anyway. There's also
-         * an issue where this is called right after the neostore data source
-         * has been started, but potentially before all recovery has been
-         * done on all data sources, meaning that a call to getTransaction
-         * could fail.
-         */
-        return getReadOnlyResource/*IfPossible*/().loadRelationshipTypes();
-    }
-
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
     {
         return getResource( true ).nodeDelete( nodeId );
     }
 
-    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource( true ).nodeAddProperty( nodeId, index, value );
+        return getResource( true ).nodeAddProperty( nodeId, propertyKey, value );
     }
 
-    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
-            Object value )
+    public PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource( true ).nodeChangeProperty( nodeId, data, value );
+        return getResource( true ).nodeChangeProperty( nodeId, propertyKey, value );
     }
 
-    public void nodeRemoveProperty( long nodeId, PropertyData data )
+    public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        getResource( true ).nodeRemoveProperty( nodeId, data );
+        getResource( true ).nodeRemoveProperty( nodeId, propertyKey );
     }
 
     public void nodeCreate( long id )
@@ -171,35 +188,34 @@ public class PersistenceManager
         return getResource( true ).relDelete( relId );
     }
 
-    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
+    public PropertyData relAddProperty( long relId, int propertyKey, Object value )
     {
-        return getResource( true ).relAddProperty( relId, index, value );
+        return getResource( true ).relAddProperty( relId, propertyKey, value );
     }
 
-    public PropertyData relChangeProperty( long relId, PropertyData data,
-            Object value )
+    public PropertyData relChangeProperty( long relId, int propertyKey, Object value )
     {
-        return getResource( true ).relChangeProperty( relId, data, value );
+        return getResource( true ).relChangeProperty( relId, propertyKey, value );
     }
 
-    public void relRemoveProperty( long relId, PropertyData data )
+    public void relRemoveProperty( long relId, int propertyKey )
     {
-        getResource( true ).relRemoveProperty( relId, data );
+        getResource( true ).relRemoveProperty( relId, propertyKey );
     }
 
-    public PropertyData graphAddProperty( PropertyIndex index, Object value )
+    public PropertyData graphAddProperty( int propertyKey, Object value )
     {
-        return getResource( true ).graphAddProperty( index, value );
+        return getResource( true ).graphAddProperty( propertyKey, value );
     }
 
-    public PropertyData graphChangeProperty( PropertyData data, Object value )
+    public PropertyData graphChangeProperty( int propertyKey, Object value )
     {
-        return getResource( true ).graphChangeProperty( data, value );
+        return getResource( true ).graphChangeProperty( propertyKey, value );
     }
 
-    public void graphRemoveProperty( PropertyData data )
+    public void graphRemoveProperty( int propertyKey )
     {
-        getResource( true ).graphRemoveProperty( data );
+        getResource( true ).graphRemoveProperty( propertyKey );
     }
     
     public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
@@ -207,14 +223,19 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().graphLoadProperties( light );
     }
     
-    public void createPropertyIndex( String key, int id )
+    public void createPropertyKeyToken( String key, int id )
     {
-        getResource( true ).createPropertyIndex( key, id );
+        getResource( true ).createPropertyKeyToken( key, id );
+    }
+
+    public void createLabelId( String name, int id )
+    {
+        getResource( true ).createLabelToken( name, id );
     }
 
     public void createRelationshipType( int id, String name )
     {
-        getResource( false ).createRelationshipType( id, name );
+        getResource( false ).createRelationshipTypeToken( id, name );
     }
 
     private NeoStoreTransaction getReadOnlyResource()
@@ -226,22 +247,10 @@ public class PersistenceManager
     private NeoStoreTransaction getReadOnlyResourceIfPossible()
     {
         Transaction tx = this.getCurrentTransaction();
-//        if ( tx == null )
-//        {
-//            return ((NioNeoDbPersistenceSource)
-//                    persistenceSource ).createReadOnlyResourceConnection();
-//        }
 
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
-            // con is put in map on write operation, see getResoure()
-            // createReadOnlyResourceConnection just return a single final
-            // resource and does not create a new object
-            /*
-             * return ((NioNeoDbPersistenceSource)
-                persistenceSource ).createReadOnlyResourceConnection();
-             */
             return getReadOnlyResource();
         }
         return con;
@@ -249,14 +258,12 @@ public class PersistenceManager
 
     private NeoStoreTransaction getResource( boolean registerEventHooks )
     {
-        NeoStoreTransaction con = null;
-
         Transaction tx = this.getCurrentTransaction();
         if ( tx == null )
         {
             throw new NotInTransactionException();
         }
-        con = txConnectionMap.get( tx );
+        NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
             try
@@ -276,12 +283,12 @@ public class PersistenceManager
                     registerTransactionEventHookIfNeeded( tx );
                 txConnectionMap.put( tx, con );
             }
-            catch ( javax.transaction.RollbackException re )
+            catch ( RollbackException re )
             {
                 String msg = "The transaction is marked for rollback only.";
                 throw new ResourceAcquisitionFailedException( msg, re );
             }
-            catch ( javax.transaction.SystemException se )
+            catch ( SystemException se )
             {
                 String msg = "TM encountered an unexpected error condition.";
                 throw new ResourceAcquisitionFailedException( msg, se );
@@ -312,6 +319,16 @@ public class PersistenceManager
             throw new TransactionFailureException( "Error fetching transaction "
                 + "for current thread", se );
         }
+    }
+
+    public void dropSchemaRule( long ruleId )
+    {
+        getResource( true ).dropSchemaRule( ruleId );
+    }
+
+    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    {
+        getResource( true ).setConstraintIndexOwner( constraintIndexId, constraintId );
     }
 
     private class TxCommitHook implements Synchronization
@@ -391,28 +408,23 @@ public class PersistenceManager
         }
     }
 
-    public RelIdArray getCreatedNodes()
+    public void createSchemaRule( SchemaRule rule )
     {
-        return getResource( true ).getCreatedNodes();
+        getResource( true ).createSchemaRule( rule );
     }
 
-    public RelIdArray getCreatedRelationships()
+    public void addLabelToNode( long labelId, long nodeId )
     {
-        return getResource( true ).getCreatedRelationships();
+        getResource( true ).addLabelToNode( labelId, nodeId );
     }
     
-    public boolean isNodeCreated( long nodeId )
+    public void removeLabelFromNode( long labelId, long nodeId )
     {
-        return getResource( true ).isNodeCreated( nodeId );
+        getResource( true ).removeLabelFromNode( labelId, nodeId );
     }
 
-    public boolean isRelationshipCreated( long relId )
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
     {
-        return getResource( true ).isRelationshipCreated( relId );
-    }
-
-    public int getKeyIdForProperty( PropertyData property )
-    {
-        return getReadOnlyResourceIfPossible().getKeyIdForProperty( property );
+        return getReadOnlyResourceIfPossible().getLabelsForNode( nodeId );
     }
 }

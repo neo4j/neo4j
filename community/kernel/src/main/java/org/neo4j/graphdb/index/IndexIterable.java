@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.index;
 
-
 /**
  * Workaround for https://issues.apache.org/jira/browse/ARIES-834
  * 

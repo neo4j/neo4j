@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -51,6 +46,7 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.MasterClient20;
 import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
@@ -59,17 +55,16 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.ha.com.slave.MasterClient18;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -77,11 +72,17 @@ import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -124,11 +125,13 @@ public class
 
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
+    private final UpdateableSchemaState updateableSchemaState;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging )
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging,
+                                         UpdateableSchemaState updateableSchemaState )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
@@ -136,6 +139,7 @@ public class
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.logging = logging;
+        this.updateableSchemaState = updateableSchemaState;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -262,7 +266,6 @@ public class
         catch ( Throwable e )
         {
             msgLog.logMessage( "Failed to switch to master", e );
-            return;
         }
     }
 
@@ -279,15 +282,15 @@ public class
 
                 assert masterUri != null; // since we are here it must already have been set from outside
                 DependencyResolver resolver = graphDb.getDependencyResolver();
-                HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
-                        HaXaDataSourceManager.class );
+                HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
                 idGeneratorFactory.switchToSlave();
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized ( xaDataSourceManager )
                 {
-                    if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
+                    if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config )
+                         && !copyStoreFromMaster( masterUri ) )
                     {
-                        if ( !copyStoreFromMaster( masterUri ) )
-                            continue; // to the outer loop for a retry
+                        continue; // to the outer loop for a retry
                     }
 
                     /*
@@ -318,7 +321,7 @@ public class
     {
         try
         {
-            MasterClient18 master = new MasterClient18( masterUri, logging,
+            MasterClient20 master = new MasterClient20( masterUri, logging,
                     nioneoDataSource.getStoreId(), config );
 
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
@@ -350,7 +353,7 @@ public class
 
     private Server.Configuration serverConfig()
     {
-        Server.Configuration serverConfig = new Server.Configuration()
+        return new Server.Configuration()
         {
             @Override
             public long getOldChannelThreshold()
@@ -376,7 +379,6 @@ public class
                 return config.get( HaSettings.ha_server );
             }
         };
-        return serverConfig;
     }
 
     private boolean checkDataConsistency( HaXaDataSourceManager xaDataSourceManager,
@@ -387,7 +389,7 @@ public class
         LifeSupport checkConsistencyLife = new LifeSupport();
         try
         {
-            MasterClient18 checkConsistencyMaster = new MasterClient18( masterUri,
+            MasterClient20 checkConsistencyMaster = new MasterClient20( masterUri,
                     logging, nioneoDataSource.getStoreId(), config );
             checkConsistencyLife.add( checkConsistencyMaster );
             checkConsistencyLife.start();
@@ -412,7 +414,7 @@ public class
             try
             {
                 // Unregistering from a running DSManager stops the datasource
-                xaDataSourceManager.unregisterDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+                xaDataSourceManager.unregisterDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
                 stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
             }
             catch ( IOException e )
@@ -449,20 +451,22 @@ public class
             throws IOException
     {
         // Must be called under lock on XaDataSourceManager
-        NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource(
+                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
-            try
-            {
-                nioneoDataSource = new NeoStoreXaDataSource( config,
-                        resolver.resolveDependency( StoreFactory.class ),
-                        resolver.resolveDependency( LockManager.class ),
-                        resolver.resolveDependency( StringLogger.class ),
-                        resolver.resolveDependency( XaFactory.class ),
-                        resolver.resolveDependency( TransactionStateFactory.class ),
-                        resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver );
-                xaDataSourceManager.registerDataSource( nioneoDataSource );
+            nioneoDataSource = new NeoStoreXaDataSource( config,
+                    resolver.resolveDependency( StoreFactory.class ),
+                    resolver.resolveDependency( StringLogger.class ),
+                    resolver.resolveDependency( XaFactory.class ),
+                    resolver.resolveDependency( TransactionStateFactory.class ),
+                    resolver.resolveDependency( TransactionInterceptorProviders.class ),
+                    resolver.resolveDependency( JobScheduler.class ),
+                    logging,
+                    updateableSchemaState,
+                    resolver.resolveDependency( NodeManager.class ),
+                    resolver );
+            xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential
                  * emotional breakdown. On the plus side, it is correct.
@@ -471,13 +475,7 @@ public class
                  * register the datasource with the DsMgr we need to make sure that NodeManager re-reads the reltype
                  * and propindex information. Normally, we would have shutdown everything before getting here.
                  */
-                resolver.resolveDependency( NodeManager.class ).start();
-            }
-            catch ( IOException e )
-            {
-                msgLog.logMessage( "Failed while trying to create datasource", e );
-                throw e;
-            }
+            resolver.resolveDependency( NodeManager.class ).start();
         }
         return nioneoDataSource;
     }
@@ -490,8 +488,7 @@ public class
         {
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
-            MasterClient18 copyMaster =
-                    new MasterClient18( masterUri, logging, null, config );
+            MasterClient20 copyMaster = new MasterClient20( masterUri, logging, null, config );
 
             life.add( copyMaster );
             life.start();
@@ -517,17 +514,15 @@ public class
 
     private void startServicesAgain() throws Throwable
     {
-        @SuppressWarnings( "rawtypes" )
-        List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        @SuppressWarnings( "unchecked" )
+        List<Class<Lifecycle>> services = new ArrayList( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         for ( Class<Lifecycle> serviceClass : services )
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
     }
 
     @SuppressWarnings( "unchecked" )
-    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
-            throws Throwable
+    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )

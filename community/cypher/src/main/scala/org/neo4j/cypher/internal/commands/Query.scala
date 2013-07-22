@@ -25,65 +25,74 @@ import org.neo4j.cypher.internal.commands
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
+  def matches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*)
   def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
   def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
+
+  def empty = Query(
+    start = Seq.empty,
+    updatedCommands = Seq.empty,
+    matching = Seq.empty,
+    hints = Seq.empty,
+    sort = Seq.empty,
+    namedPaths = Seq.empty,
+    where = True(),
+    slice = None,
+    aggregation = None,
+    returns = Return(columns = List.empty)
+  )
+}
+
+trait AbstractQuery {
+  def queryString: QueryString
+  def setQueryText(t:String):AbstractQuery
+  def getQueryText: String = queryString.text
+  def verifySemantics() {}
 }
 
 case class Query(returns: Return,
                  start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
                  matching: Seq[Pattern],
-                 where: Option[Predicate],
+                 hints:Seq[StartItem with Hint],
+                 where: Predicate,
                  aggregation: Option[Seq[AggregationExpression]],
                  sort: Seq[SortItem],
                  slice: Option[Slice],
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
-                 queryString: String = "") {
-  override def equals(p1: Any): Boolean =
-    if (p1 == null)
-      false
-    else if (!p1.isInstanceOf[Query])
-      false
-    else {
-      val other = p1.asInstanceOf[Query]
-      returns == other.returns &&
-        start == other.start &&
-        updatedCommands == other.updatedCommands &&
-        matching == other.matching &&
-        where == other.where &&
-        aggregation == other.aggregation &&
-        sort == other.sort &&
-        slice == other.slice &&
-        namedPaths == other.namedPaths &&
-        tail == other.tail
-    }
+                 queryString: QueryString = QueryString.empty) extends AbstractQuery {
 
   def compact: Query = {
-    val compactableStart = start.forall(_.mutating) && start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
-      returns == Return(List("*"), AllIdentifiers()) &&
-      where.isEmpty &&
-      matching.isEmpty &&
-      sort.isEmpty &&
-      slice.isEmpty
+    val compactableStart = start.forall(_.mutating) &&
+        start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+        hints.isEmpty &&
+        returns == Return(List("*"), AllIdentifiers()) &&
+        where == True() &&
+        matching.isEmpty &&
+        sort.isEmpty &&
+        slice.isEmpty
 
     lazy val tailQ = tail.map(_.compact).get
 
     val compactableEnd = tail.nonEmpty &&
       tailQ.matching.isEmpty &&
-      tailQ.where.isEmpty &&
-      tailQ.start.forall(_.mutating) && tailQ.start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+      tailQ.where == True() &&
+      tailQ.start.forall(_.mutating) &&
+      tailQ.start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+      tailQ.hints.isEmpty &&
       tailQ.sort.isEmpty &&
       tailQ.slice.isEmpty &&
       tailQ.aggregation.isEmpty
 
     if (compactableStart && compactableEnd) {
       val result = commands.Query(
+        hints = hints ++ tailQ.hints,
         start = start ++ tailQ.start,
         returns = tailQ.returns,
         updatedCommands = updatedCommands ++ tailQ.updatedCommands,
         matching = Seq(),
-        where = None,
+        where = True(),
         aggregation = None,
         sort = Seq(),
         slice = None,
@@ -97,22 +106,24 @@ case class Query(returns: Return,
 
 
   override def toString: String =
-"""
+    """
 start  : %s
 updates: %s
 match  : %s
 paths  : %s
+hints  : %s
 where  : %s
 aggreg : %s
 return : %s
 order  : %s
 slice  : %s
 next   : %s
-""".format(
+    """.format(
   start.mkString(","),
   updatedCommands.mkString(","),
   matching,
   namedPaths,
+  hints,
   where,
   aggregation,
   returns.returnItems.mkString(","),
@@ -120,6 +131,18 @@ next   : %s
   slice,
   tail
 )
+
+  def setQueryText(t: String): Query = copy(queryString = QueryString(t))
+
+  def columns: List[String] = {
+    var last: Query = this
+
+    while (last.tail.nonEmpty)
+      last = last.tail.get
+
+    last.returns.columns
+  }
+
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)

@@ -45,7 +45,7 @@ import org.neo4j.shell.impl.RelationshipToNodeIterable;
  * Mimics the POSIX application with the same name, i.e. traverses to a node.
  */
 @Service.Implementation( App.class )
-public class Cd extends ReadOnlyGraphDatabaseApp
+public class Cd extends TransactionProvidingApp
 {
     private static final String START_ALIAS = "start";
     private static final String END_ALIAS = "end";
@@ -69,7 +69,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    public List<String> completionCandidates( String partOfLine, Session session )
+    public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
     {
         String lastWord = TextUtil.lastWordOrQuoteOf( partOfLine, false );
         if ( lastWord.startsWith( "-" ) )
@@ -96,7 +96,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                     node.getRelationships(), node ) )
             {
                 long otherNodeId = otherNode.getId();
-                String title = findTitle( getServer(), session, otherNode );
+                String title = findTitle( session, otherNode );
                 if ( title != null )
                 {
                     if ( !result.contains( title ) )
@@ -238,7 +238,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private long findNodeWithTitle( Node node, String match, Session session )
+    private long findNodeWithTitle( Node node, String match, Session session ) throws ShellException
     {
         Object[] matchParts = splitNodeTitleAndId( match );
         if ( matchParts[1] != null )
@@ -249,7 +249,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         String titleMatch = (String) matchParts[0];
         for ( Node otherNode : RelationshipToNodeIterable.wrap( node.getRelationships(), node ) )
         {
-            String title = findTitle( getServer(), session, otherNode );
+            String title = findTitle( session, otherNode );
             if ( titleMatch.equals( title ) )
             {
                 return otherNode.getId();

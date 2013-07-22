@@ -19,88 +19,119 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.text.MessageFormat;
+import java.util.Iterator;
 
-import org.neo4j.kernel.impl.nioneo.store.Buffer;
+import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.OperationType;
-import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
-import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 
-public class LegacyPropertyStoreReader
+import static java.nio.ByteBuffer.allocateDirect;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
+
+public class LegacyPropertyStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyStore v0.9.9";
-    public static final int RECORD_LENGTH = 25;
-    private final PersistenceWindowPool windowPool;
+    public static final String FROM_VERSION = "PropertyStore " + LegacyStore.LEGACY_VERSION;
+    public static final int RECORD_SIZE =
+            1/*next and prev high bits*/ + 4/*next*/ + 4/*prev*/ + 32 /*property blocks*/; // = 41
     private final FileChannel fileChannel;
+    private final long maxId;
 
-    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
+    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File file ) throws IOException
     {
-        this( fs, fileName, StringLogger.DEV_NULL );
+        fileChannel = fs.open( file, "r" );
+        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
-
-    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File fileName, StringLogger log )
-            throws IOException
+    
+    public Iterator<PropertyRecord> readPropertyStore() throws IOException
     {
-        fileChannel = fs.open( fileName, "r" );
-        windowPool = new PersistenceWindowPool( fileName,
-                RECORD_LENGTH, fileChannel, 0,
-                true, true, log );
-    }
-
-    public LegacyPropertyRecord readPropertyRecord( long id ) throws IOException
-    {
-        PersistenceWindow persistenceWindow = windowPool.acquire( id, OperationType.READ );
-        try
+        return new PrefetchingIterator<PropertyRecord>()
         {
-            Buffer buffer = persistenceWindow.getOffsettedBuffer( id );
-
-            // [    ,   x] in use
-            // [xxxx,    ] high prev prop bits
-            long inUseByte = buffer.get();
-
-            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-            if ( !inUse )
+            private long id = -1;
+            ByteBuffer buffer = allocateDirect( RECORD_SIZE );
+            
+            @Override
+            protected PropertyRecord fetchNextOrNull()
             {
-                throw new IllegalArgumentException( MessageFormat.format( "Record {0} not in use", id ) );
+                while ( ++id <= maxId )
+                {
+                    readIntoBuffer( fileChannel, buffer, RECORD_SIZE );
+                    PropertyRecord record = readPropertyRecord( id, buffer );
+                    if ( record.inUse() )
+                    {
+                        return record;
+                    }
+                }
+                return null;
             }
-            LegacyPropertyRecord record = new LegacyPropertyRecord( id );
-
-            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-            // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
-            long typeInt = buffer.getInt();
-
-            record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
-            record.setInUse( true );
-            record.setKeyIndexId( buffer.getInt() );
-            record.setPropBlock( buffer.getLong() );
-
-            long prevProp = buffer.getUnsignedInt();
-            long prevModifier = (inUseByte & 0xF0L) << 28;
-            long nextProp = buffer.getUnsignedInt();
-            long nextModifier = (typeInt & 0xF0000L) << 16;
-
-            record.setPrevProp( LegacyStore.longFromIntAndMod( prevProp, prevModifier ) );
-            record.setNextProp( LegacyStore.longFromIntAndMod( nextProp, nextModifier ) );
-
-            return record;
-        }
-        finally
-        {
-            windowPool.release( persistenceWindow );
-        }
+        };
     }
-
-    private LegacyPropertyType getEnumType( int type )
+    
+    protected PropertyRecord readPropertyRecord( long id, ByteBuffer buffer )
     {
-        return LegacyPropertyType.getPropertyType( type, false );
+        PropertyRecord record = new PropertyRecord( id );
+
+        /*
+         * [pppp,nnnn] previous, next high bits
+         */
+        byte modifiers = buffer.get();
+        long prevMod = ( ( modifiers & 0xF0L ) << 28 );
+        long nextMod = ( ( modifiers & 0x0FL ) << 32 );
+        long prevProp = getUnsignedInt( buffer );
+        long nextProp = getUnsignedInt( buffer );
+        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
+        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
+
+        while ( buffer.hasRemaining() )
+        {
+            PropertyBlock newBlock = getPropertyBlock( buffer );
+            if ( newBlock != null )
+            {
+                record.addPropertyBlock( newBlock );
+                record.setInUse( true );
+            }
+            else
+            {
+                // We assume that storage is defragged
+                break;
+            }
+        }
+        return record;
     }
 
+    private PropertyBlock getPropertyBlock( ByteBuffer buffer )
+    {
+        long header = buffer.getLong();
+        PropertyType type = PropertyType.getPropertyType( header, true );
+        if ( type == null )
+        {
+            return null;
+        }
+        PropertyBlock toReturn = new PropertyBlock();
+        // toReturn.setInUse( true );
+        int numBlocks = type.calculateNumberOfBlocksUsed( header );
+        long[] blockData = new long[numBlocks];
+        blockData[0] = header; // we already have that
+        for ( int i = 1; i < numBlocks; i++ )
+        {
+            blockData[i] = buffer.getLong();
+        }
+        toReturn.setValueBlocks( blockData );
+        return toReturn;
+    }
+    
+    @Override
     public void close() throws IOException
     {
         fileChannel.close();

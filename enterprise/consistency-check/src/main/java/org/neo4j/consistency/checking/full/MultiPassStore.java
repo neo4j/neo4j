@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,17 +26,13 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
-import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.consistency.store.FilteringRecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
-enum MultiPassStore
+public enum MultiPassStore
 {
-    NODES()
+    NODES
             {
                 @Override
                 RecordStore getRecordStore( StoreAccess storeAccess )
@@ -46,25 +40,8 @@ enum MultiPassStore
                     return storeAccess.getNodeStore();
                 }
 
-                @Override
-                DiffRecordAccess filter( final DiffRecordAccess recordAccess, final int iPass,
-                                         final long recordsPerPass )
-                {
-                    return new SkipAllButCached( recordAccess )
-                    {
-                        @Override
-                        public RecordReference<NodeRecord> node( long id )
-                        {
-                            if ( recordInCurrentPass( id, iPass, recordsPerPass ) )
-                            {
-                                return recordAccess.node( id );
-                            }
-                            return skipReference();
-                        }
-                    };
-                }
             },
-    RELATIONSHIPS()
+    RELATIONSHIPS
             {
                 @Override
                 RecordStore getRecordStore( StoreAccess storeAccess )
@@ -72,25 +49,8 @@ enum MultiPassStore
                     return storeAccess.getRelationshipStore();
                 }
 
-                @Override
-                DiffRecordAccess filter( final DiffRecordAccess recordAccess, final int iPass,
-                                         final long recordsPerPass )
-                {
-                    return new SkipAllButCached( recordAccess )
-                    {
-                        @Override
-                        public RecordReference<RelationshipRecord> relationship( long id )
-                        {
-                            if ( recordInCurrentPass( id, iPass, recordsPerPass ) )
-                            {
-                                return recordAccess.relationship( id );
-                            }
-                            return skipReference();
-                        }
-                    };
-                }
             },
-    PROPERTIES()
+    PROPERTIES
             {
                 @Override
                 RecordStore getRecordStore( StoreAccess storeAccess )
@@ -98,25 +58,8 @@ enum MultiPassStore
                     return storeAccess.getPropertyStore();
                 }
 
-                @Override
-                DiffRecordAccess filter( final DiffRecordAccess recordAccess, final int iPass,
-                                         final long recordsPerPass )
-                {
-                    return new SkipAllButCached( recordAccess )
-                    {
-                        @Override
-                        public RecordReference<PropertyRecord> property( long id )
-                        {
-                            if ( recordInCurrentPass( id, iPass, recordsPerPass ) )
-                            {
-                                return recordAccess.property( id );
-                            }
-                            return skipReference();
-                        }
-                    };
-                }
             },
-    STRINGS()
+    STRINGS
             {
                 @Override
                 RecordStore getRecordStore( StoreAccess storeAccess )
@@ -124,25 +67,8 @@ enum MultiPassStore
                     return storeAccess.getNodeStore();
                 }
 
-                @Override
-                DiffRecordAccess filter( final DiffRecordAccess recordAccess, final int iPass,
-                                         final long recordsPerPass )
-                {
-                    return new SkipAllButCached( recordAccess )
-                    {
-                        @Override
-                        public RecordReference<DynamicRecord> string( long id )
-                        {
-                            if ( recordInCurrentPass( id, iPass, recordsPerPass ) )
-                            {
-                                return recordAccess.string( id );
-                            }
-                            return skipReference();
-                        }
-                    };
-                }
             },
-    ARRAYS()
+    ARRAYS
             {
                 @Override
                 RecordStore getRecordStore( StoreAccess storeAccess )
@@ -150,47 +76,29 @@ enum MultiPassStore
                     return storeAccess.getNodeStore();
                 }
 
-                @Override
-                DiffRecordAccess filter( final DiffRecordAccess recordAccess, final int iPass,
-                                         final long recordsPerPass )
-                {
-                    return new SkipAllButCached( recordAccess )
-                    {
-                        @Override
-                        public RecordReference<DynamicRecord> array( long id )
-                        {
-                            if ( recordInCurrentPass( id, iPass, recordsPerPass ) )
-                            {
-                                return recordAccess.array( id );
-                            }
-                            return skipReference();
-                        }
-                    };
-                }
             };
 
-    private static boolean recordInCurrentPass( long id, int iPass, long recordsPerPass )
+    public static boolean recordInCurrentPass( long id, int iPass, long recordsPerPass )
     {
         return id >= iPass * recordsPerPass && id < (iPass + 1) * recordsPerPass;
     }
 
     public List<DiffRecordAccess> multiPassFilters( long memoryPerPass, StoreAccess storeAccess,
-                                                    DiffRecordAccess recordAccess )
+                                                    DiffRecordAccess recordAccess, MultiPassStore[] stores )
     {
-        ArrayList<DiffRecordAccess> filters = new ArrayList<DiffRecordAccess>();
+        ArrayList<DiffRecordAccess> filteringStores = new ArrayList<DiffRecordAccess>();
         RecordStore recordStore = getRecordStore( storeAccess );
         long recordsPerPass = memoryPerPass / recordStore.getRecordSize();
         long highId = recordStore.getHighId();
         for ( int iPass = 0; iPass * recordsPerPass <= highId; iPass++ )
         {
-            filters.add( filter( recordAccess, iPass, recordsPerPass ) );
+            filteringStores.add( new FilteringRecordAccess( recordAccess, iPass, recordsPerPass, this, stores ) );
         }
-        return filters;
+        return filteringStores;
     }
 
-    abstract RecordStore getRecordStore( StoreAccess storeAccess );
 
-    abstract DiffRecordAccess filter( DiffRecordAccess recordAccess, int iPass, long recordsPerPass );
+    abstract RecordStore getRecordStore( StoreAccess storeAccess );
 
     static class Factory
     {
@@ -215,7 +123,8 @@ enum MultiPassStore
             List<StoreProcessor> result = new ArrayList<StoreProcessor>();
             for ( MultiPassStore store : stores )
             {
-                List<DiffRecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess, recordAccess );
+                List<DiffRecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess,
+                        recordAccess, stores );
                 for ( DiffRecordAccess filter : filters )
                 {
                     result.add( new StoreProcessor( decorator, new ConsistencyReporter( filter, report ) ) );

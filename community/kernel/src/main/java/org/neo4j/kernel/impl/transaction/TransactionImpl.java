@@ -38,6 +38,9 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -57,21 +60,22 @@ class TransactionImpl implements Transaction
     private boolean globalStartRecordWritten = false;
 
     private final LinkedList<ResourceElement> resourceList =
-        new LinkedList<ResourceElement>();
+            new LinkedList<ResourceElement>();
     private List<Synchronization> syncHooks =
-        new ArrayList<Synchronization>();
-    private boolean hasChanges;
+            new ArrayList<Synchronization>();
 
     private final int eventIdentifier;
 
     private final TxManager txManager;
-    private StringLogger logger;
+    private final StringLogger logger;
     private final ForceMode forceMode;
     private Thread owner;
 
     private final TransactionState state;
+    private KernelTransaction transactionContext;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory, StringLogger logger )
+    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
+                     StringLogger logger )
     {
         this.txManager = txManager;
         this.logger = logger;
@@ -96,12 +100,7 @@ class TransactionImpl implements Transaction
     {
         return globalId;
     }
-    
-    boolean hasChanges()
-    {
-        return hasChanges;
-    }
-    
+
     public TransactionState getState()
     {
         return state;
@@ -110,28 +109,24 @@ class TransactionImpl implements Transaction
     @Override
     public String toString()
     {
-        StringBuffer txString = new StringBuffer( "Transaction(" +
-            eventIdentifier + ", owner:\"" + owner.getName() + "\")[" + txManager.getTxStatusAsString( status ) +
-            ",Resources=" + resourceList.size() + "]" );
-//        Iterator<ResourceElement> itr = resourceList.iterator();
-//        while ( itr.hasNext() )
-//        {
-//            txString.append( itr.next().toString() );
-//            if ( itr.hasNext() )
-//            {
-//                txString.append( "," );
-//            }
-//        }
-        return txString.toString();
+
+        return String.format( "Transaction(%d, owner:\"%s\")[%s,Resources=%d]",
+                eventIdentifier, owner.getName(), txManager.getTxStatusAsString( status ), resourceList.size() );
     }
 
     @Override
-	public synchronized void commit() throws RollbackException,
-        HeuristicMixedException, HeuristicRollbackException,
-        IllegalStateException, SystemException
+    public synchronized void commit() throws RollbackException,
+            HeuristicMixedException, HeuristicRollbackException,
+            IllegalStateException, SystemException
     {
-        // make sure tx not suspended
-        txManager.commit();
+        try
+        {
+            transactionContext.commit();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw e.unBoxedForCommit();
+        }
     }
 
     boolean isGlobalStartRecordWritten()
@@ -140,23 +135,29 @@ class TransactionImpl implements Transaction
     }
 
     @Override
-	public synchronized void rollback() throws IllegalStateException,
-        SystemException
+    public synchronized void rollback() throws IllegalStateException,
+            SystemException
     {
-        // make sure tx not suspended
-        txManager.rollback();
+        try
+        {
+            transactionContext.rollback();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw e.unBoxedForRollback();
+        }
     }
 
     @Override
-	public synchronized boolean enlistResource( XAResource xaRes )
-        throws RollbackException, IllegalStateException, SystemException
+    public synchronized boolean enlistResource( XAResource xaRes )
+            throws RollbackException, IllegalStateException, SystemException
     {
         if ( xaRes == null )
         {
             throw new IllegalArgumentException( "Null xa resource" );
         }
         if ( status == Status.STATUS_ACTIVE ||
-            status == Status.STATUS_PREPARING )
+                status == Status.STATUS_PREPARING )
         {
             try
             {
@@ -171,7 +172,6 @@ class TransactionImpl implements Transaction
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
                     resourceList.add( new ResourceElement( xid, xaRes ) );
-                    hasChanges = true;
                     xaRes.start( xid, XAResource.TMNOFLAGS );
                     try
                     {
@@ -182,18 +182,18 @@ class TransactionImpl implements Transaction
                         logger.error( "Error writing transaction log", e );
                         txManager.setTmNotOk( e );
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
-                                                                         + " error writing transaction log" ), e );
+                                + " error writing transaction log" ), e );
                     }
                     // TODO ties HA to our TxManager
                     if ( !hasAnyLocks() )
+                    {
                         getState().getTxHook().initializeTransaction( eventIdentifier );
+                    }
                     return true;
                 }
                 Xid sameRmXid = null;
-                Iterator<ResourceElement> itr = resourceList.iterator();
-                while ( itr.hasNext() )
+                for ( ResourceElement re : resourceList )
                 {
-                    ResourceElement re = itr.next();
                     if ( sameRmXid == null && re.getResource().isSameRM( xaRes ) )
                     {
                         sameRmXid = re.getXid();
@@ -236,7 +236,7 @@ class TransactionImpl implements Transaction
                         logger.error( "Error writing transaction log", e );
                         txManager.setTmNotOk( e );
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
-                                                                         + " error writing transaction log" ), e );
+                                + " error writing transaction log" ), e );
                     }
                 }
                 return true;
@@ -249,14 +249,14 @@ class TransactionImpl implements Transaction
             }
         }
         else if ( status == Status.STATUS_ROLLING_BACK ||
-            status == Status.STATUS_ROLLEDBACK ||
-            status == Status.STATUS_MARKED_ROLLBACK )
+                status == Status.STATUS_ROLLEDBACK ||
+                status == Status.STATUS_MARKED_ROLLBACK )
         {
             throw new RollbackException( "Tx status is: "
-                + txManager.getTxStatusAsString( status ) );
+                    + txManager.getTxStatusAsString( status ) );
         }
         throw new IllegalStateException( "Tx status is: "
-            + txManager.getTxStatusAsString( status ) );
+                + txManager.getTxStatusAsString( status ) );
     }
 
     private void addResourceToList( Xid xid, XAResource xaRes )
@@ -270,27 +270,24 @@ class TransactionImpl implements Transaction
         {
             resourceList.add( element );
         }
-        hasChanges = true;
     }
 
     @Override
-	public synchronized boolean delistResource( XAResource xaRes, int flag )
-        throws IllegalStateException
+    public synchronized boolean delistResource( XAResource xaRes, int flag )
+            throws IllegalStateException
     {
         if ( xaRes == null )
         {
             throw new IllegalArgumentException( "Null xa resource" );
         }
         if ( flag != XAResource.TMSUCCESS && flag != XAResource.TMSUSPEND &&
-            flag != XAResource.TMFAIL )
+                flag != XAResource.TMFAIL )
         {
             throw new IllegalArgumentException( "Illegal flag: " + flag );
         }
         ResourceElement re = null;
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        for ( ResourceElement reMatch : resourceList )
         {
-            ResourceElement reMatch = itr.next();
             if ( reMatch.getResource() == xaRes )
             {
                 re = reMatch;
@@ -302,7 +299,7 @@ class TransactionImpl implements Transaction
             return false;
         }
         if ( status == Status.STATUS_ACTIVE ||
-            status == Status.STATUS_MARKED_ROLLBACK )
+                status == Status.STATUS_MARKED_ROLLBACK )
         {
             try
             {
@@ -325,12 +322,12 @@ class TransactionImpl implements Transaction
             }
         }
         throw new IllegalStateException( "Tx status is: "
-            + txManager.getTxStatusAsString( status ) );
+                + txManager.getTxStatusAsString( status ) );
     }
 
-    // TODO: figure out if this needs syncrhonization or make status volatile
+    // TODO: figure out if this needs synchronization or make status volatile
     @Override
-	public int getStatus() // throws SystemException
+    public int getStatus() // throws SystemException
     {
         return status;
     }
@@ -342,19 +339,19 @@ class TransactionImpl implements Transaction
 
     private boolean beforeCompletionRunning = false;
     private List<Synchronization> syncHooksAdded =
-        new ArrayList<Synchronization>();
+            new ArrayList<Synchronization>();
 
     @Override
-	public synchronized void registerSynchronization( Synchronization s )
-        throws RollbackException, IllegalStateException
+    public synchronized void registerSynchronization( Synchronization s )
+            throws RollbackException, IllegalStateException
     {
         if ( s == null )
         {
             throw new IllegalArgumentException( "Null parameter" );
         }
         if ( status == Status.STATUS_ACTIVE ||
-            status == Status.STATUS_PREPARING ||
-            status == Status.STATUS_MARKED_ROLLBACK )
+                status == Status.STATUS_PREPARING ||
+                status == Status.STATUS_MARKED_ROLLBACK )
         {
             if ( !beforeCompletionRunning )
             {
@@ -367,15 +364,15 @@ class TransactionImpl implements Transaction
             }
         }
         else if ( status == Status.STATUS_ROLLING_BACK ||
-            status == Status.STATUS_ROLLEDBACK )
+                status == Status.STATUS_ROLLEDBACK )
         {
             throw new RollbackException( "Tx status is: "
-                + txManager.getTxStatusAsString( status ) );
+                    + txManager.getTxStatusAsString( status ) );
         }
         else
         {
             throw new IllegalStateException( "Tx status is: "
-                + txManager.getTxStatusAsString( status ) );
+                    + txManager.getTxStatusAsString( status ) );
         }
     }
 
@@ -392,7 +389,7 @@ class TransactionImpl implements Transaction
                 }
                 catch ( Throwable t )
                 {
-                    addRollbackCause(t);
+                    addRollbackCause( t );
                 }
             }
             // execute any hooks added since we entered doBeforeCompletion
@@ -413,7 +410,7 @@ class TransactionImpl implements Transaction
         }
     }
 
-	synchronized void doAfterCompletion()
+    synchronized void doAfterCompletion()
     {
         for ( Synchronization s : syncHooks )
         {
@@ -431,20 +428,20 @@ class TransactionImpl implements Transaction
     }
 
     @Override
-	public void setRollbackOnly() throws IllegalStateException
+    public void setRollbackOnly() throws IllegalStateException
     {
         if ( status == Status.STATUS_ACTIVE ||
-            status == Status.STATUS_PREPARING ||
-            status == Status.STATUS_PREPARED ||
-            status == Status.STATUS_MARKED_ROLLBACK ||
-            status == Status.STATUS_ROLLING_BACK )
+                status == Status.STATUS_PREPARING ||
+                status == Status.STATUS_PREPARED ||
+                status == Status.STATUS_MARKED_ROLLBACK ||
+                status == Status.STATUS_ROLLING_BACK )
         {
             status = Status.STATUS_MARKED_ROLLBACK;
         }
         else
         {
             throw new IllegalStateException( "Tx status is: "
-                + txManager.getTxStatusAsString( status ) );
+                    + txManager.getTxStatusAsString( status ) );
         }
     }
 
@@ -461,7 +458,7 @@ class TransactionImpl implements Transaction
 
     private volatile int hashCode = 0;
 
-	private Throwable rollbackCause;
+    private Throwable rollbackCause;
 
     @Override
     public int hashCode()
@@ -507,10 +504,8 @@ class TransactionImpl implements Transaction
             // prepare
             status = Status.STATUS_PREPARING;
             LinkedList<Xid> preparedXids = new LinkedList<Xid>();
-            Iterator<ResourceElement> itr = resourceList.iterator();
-            while ( itr.hasNext() )
+            for ( ResourceElement re : resourceList )
             {
-                ResourceElement re = itr.next();
                 if ( !preparedXids.contains( re.getXid() ) )
                 {
                     preparedXids.add( re.getXid() );
@@ -536,16 +531,16 @@ class TransactionImpl implements Transaction
                     re.setStatus( RS_READONLY );
                 }
             }
-            status = Status.STATUS_PREPARED;
-        }
-        // commit
-        if ( !onePhase && readOnly )
-        {
-            status = Status.STATUS_COMMITTED;
-            return;
-        }
-        if ( !onePhase )
-        {
+            if ( readOnly )
+            {
+                status = Status.STATUS_COMMITTED;
+                return;
+            }
+            else
+            {
+                status = Status.STATUS_PREPARED;
+            }
+            // everyone has prepared - mark as committing
             try
             {
                 txManager.getTxLog().markAsCommitting( getGlobalId(), forceMode );
@@ -558,22 +553,23 @@ class TransactionImpl implements Transaction
                                                                  + " error writing transaction log" ), e );
             }
         }
+        // commit
         status = Status.STATUS_COMMITTING;
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        for ( ResourceElement re : resourceList )
         {
-            ResourceElement re = itr.next();
             if ( re.getStatus() != RS_READONLY )
             {
                 try
                 {
                     re.getResource().commit( re.getXid(), onePhase );
-                } catch(XAException e)
+                }
+                catch ( XAException e )
                 {
                     throw e;
-                } catch(Throwable e)
+                }
+                catch ( Throwable e )
                 {
-                    throw Exceptions.withCause( new XAException(XAException.XAER_RMERR), e );
+                    throw Exceptions.withCause( new XAException( XAException.XAER_RMERR ), e );
                 }
             }
         }
@@ -584,10 +580,8 @@ class TransactionImpl implements Transaction
     {
         status = Status.STATUS_ROLLING_BACK;
         LinkedList<Xid> rolledbackXids = new LinkedList<Xid>();
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        for ( ResourceElement re : resourceList )
         {
-            ResourceElement re = itr.next();
             if ( !rolledbackXids.contains( re.getXid() ) )
             {
                 rolledbackXids.add( re.getXid() );
@@ -595,6 +589,27 @@ class TransactionImpl implements Transaction
             }
         }
         status = Status.STATUS_ROLLEDBACK;
+    }
+
+    public StatementState newStatement()
+    {
+        return transactionContext.newStatementState();
+    }
+
+    /*
+     * There is a circular dependency between creating the transaction context and this
+     * transactionimpl. As we move forward with introducing the KernelAPI, having TransactionImpl
+     * and TxManager handle TransactionContext like this should be refactored and moved to a point
+     * where the Neo4j transaction handling lives cleanly under the Kernel API, and is not tied to
+     * threads. The thread-bound, JTA-based, transaction management should probably live outside
+     * the kernel API entirely.
+     *
+     * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
+     * points to not have to do the full move in one step.
+     */
+    public void setTransactionContext( KernelTransaction transactionContext )
+    {
+        this.transactionContext = transactionContext;
     }
 
     private static class ResourceElement
@@ -633,7 +648,7 @@ class TransactionImpl implements Transaction
         @Override
         public String toString()
         {
-            String statusString = null;
+            String statusString;
             switch ( status )
             {
                 case RS_ENLISTED:
@@ -653,7 +668,7 @@ class TransactionImpl implements Transaction
             }
 
             return "Xid[" + xid + "] XAResource[" + resource + "] Status["
-                + statusString + "]";
+                    + statusString + "]";
         }
     }
 
@@ -667,7 +682,7 @@ class TransactionImpl implements Transaction
         if ( active )
         {
             throw new IllegalStateException( "Transaction[" + this
-                + "] already active" );
+                    + "] already active" );
         }
         owner = Thread.currentThread();
         active = true;
@@ -678,11 +693,11 @@ class TransactionImpl implements Transaction
         if ( !active )
         {
             throw new IllegalStateException( "Transaction[" + this
-                + "] already suspended" );
+                    + "] already suspended" );
         }
         active = false;
     }
-    
+
     public ForceMode getForceMode()
     {
         return forceMode;
@@ -704,7 +719,8 @@ class TransactionImpl implements Transaction
             if ( !(rollbackCause instanceof MultipleCauseException) )
             {
                 rollbackCause = new MultipleCauseException(
-                        "Multiple exceptions occurred, stack traces of all of them available below, or via #getCauses().",
+                        "Multiple exceptions occurred, stack traces of all of them available below, " +
+                                "or via #getCauses().",
                         rollbackCause );
             }
             ((MultipleCauseException) rollbackCause).addCause( cause );
@@ -719,5 +735,10 @@ class TransactionImpl implements Transaction
     public void finish( boolean successful )
     {
         getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
+    }
+
+    public KernelTransaction getTransactionContext()
+    {
+        return transactionContext;
     }
 }

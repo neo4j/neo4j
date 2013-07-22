@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.SortPipe
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.CypherTypeException
 
-class SortBuilder extends PlanBuilder with SortingPreparations {
+class SortBuilder extends LegacyPlanBuilder with SortingPreparations {
   def apply(plan: ExecutionPlanInProgress) = {
     val newPlan = extractBeforeSort(plan)
 

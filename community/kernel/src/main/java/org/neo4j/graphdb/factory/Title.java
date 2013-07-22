@@ -25,7 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}. These can then be accessed through the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
+ * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}.
+ * These can then be accessed through the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
  *
  * This is deprecated, it will be moved out of the public API in 1.11.
  */

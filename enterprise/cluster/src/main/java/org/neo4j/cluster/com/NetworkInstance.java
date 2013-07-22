@@ -51,12 +51,12 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.serialization.ClassResolvers;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
@@ -202,7 +202,7 @@ public class NetworkInstance
                 InetSocketAddress localAddress = new InetSocketAddress( host, checkPort );
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
-                listeningAt( (getURI( (InetSocketAddress) listenChannel.getLocalAddress() )) );
+                listeningAt( getURI( (InetSocketAddress) listenChannel.getLocalAddress() ) );
 
                 channels.add( listenChannel );
                 return;
@@ -223,6 +223,7 @@ public class NetworkInstance
         processors = Listeners.addListener( processor, processors );
     }
 
+    @SuppressWarnings("unchecked")
     public void receive( Message message )
     {
         for ( MessageProcessor processor : processors )
@@ -466,7 +467,8 @@ public class NetworkInstance
         private void addSerialization( ChannelPipeline pipeline )
         {
             pipeline.addLast( "frameDecoder",
-                    new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+                              new ObjectDecoder( 1024 * 1000, ClassResolvers.cacheDisabled(
+                                      NetworkNodePipelineFactory.this.getClass().getClassLoader() )) );
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
         }
     }
@@ -506,9 +508,10 @@ public class NetworkInstance
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
-            if ( !(e.getCause() instanceof ConnectException) )
+            Throwable cause = e.getCause();
+            if ( !(cause instanceof ConnectException) )
             {
-                msgLog.error( "Receive exception:", e.getCause() );
+                msgLog.error( "Receive exception:", cause );
             }
         }
     }

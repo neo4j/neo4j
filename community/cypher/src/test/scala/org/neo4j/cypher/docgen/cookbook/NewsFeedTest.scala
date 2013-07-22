@@ -22,8 +22,14 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class NewsFeedTest extends DocumentingTestBase {
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  
   def graphDescription = List()
 
   def section = "cookbook"
@@ -47,9 +53,9 @@ Implementation of newsfeed or timeline feature is a frequent requirement for soc
 The query asked here is:
         
 Starting at `me`, retrieve the time-ordered status feed of the status updates of me and and all friends that are connected via a `CONFIRMED` `FRIEND` relationship to me.""",
-      queryText = """START me=node:node_auto_index(name='Joe') 
-MATCH me-[rels:FRIEND*0..1]-myfriend WHERE ALL(r in rels WHERE r.status = 'CONFIRMED') 
-WITH myfriend 
+      queryText = """MATCH me-[rels:FRIEND*0..1]-myfriend
+WHERE me.name = 'Joe' AND ALL(r in rels WHERE r.status = 'CONFIRMED')
+WITH myfriend
 MATCH myfriend-[:STATUS]-latestupdate-[:NEXT*0..1]-statusupdates 
 RETURN myfriend.name as name, statusupdates.date as date, statusupdates.text as text
 ORDER BY statusupdates.date DESC LIMIT 3""",

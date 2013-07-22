@@ -144,24 +144,21 @@ public class CircuitBreaker
 
     public synchronized Status getStatus()
     {
-        if ( status == Status.off )
+        if ( status == Status.off && System.currentTimeMillis() > enableOn )
         {
-            if ( System.currentTimeMillis() > enableOn )
+            try
             {
-                try
+                turnOn();
+            }
+            catch ( PropertyVetoException e )
+            {
+                if ( e.getCause() != null )
                 {
-                    turnOn();
+                    lastThrowable = e.getCause();
                 }
-                catch ( PropertyVetoException e )
+                else
                 {
-                    if ( e.getCause() != null )
-                    {
-                        lastThrowable = e.getCause();
-                    }
-                    else
-                    {
-                        lastThrowable = e;
-                    }
+                    lastThrowable = e;
                 }
             }
         }

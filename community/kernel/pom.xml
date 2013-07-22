@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to
@@ -173,6 +173,8 @@ the relevant Commercial Agreement.
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
                 <property name="git.describe" value="${git.commit.id.describe}" />
+                <property name="git.branch" value="${git.commit.id.branch}" />
+                <property name="git.commit" value="${git.commit.id}" />
                 <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
 
 import org.neo4j.kernel.Version;
@@ -189,7 +191,27 @@ public class ComponentVersion extends Version
     @Override
     public String getRevision()
     {
-        return "${git.describe}";
+        // Goals with the revision returned from this method:
+        // 1. Which version of Neo4j is this?
+        // 2. If not a release version (i.e. SNAPSHOT), which git branch and commit hash was it built from?
+        // 3. Is there local modifications or not in this build? 
+        //
+        // This is a generated class, so why is there logic in here instead of generating this class
+        // with the correct revision directly? Because it's generated from a place that doesn't allow this
+        // kind of logic to build the revision at the place of generating it.
+        
+        String fromGitDescribe = "${git.describe}";
+        String version = "${project.version}";
+        StringBuilder result = new StringBuilder( version );
+        if ( version.endsWith( "-SNAPSHOT" ) )
+        {
+            result.append( "-${git.branch}-${git.commit}" );
+        }
+        if ( fromGitDescribe.endsWith( "-dirty" ) )
+        {
+            result.append( "-dirty" );
+        }
+        return result.toString();
     }
 }
 </echo>
@@ -202,8 +224,7 @@ public class ComponentVersion extends Version
             <phase>process-classes</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                      classpathref="maven.compile.classpath" failonerror="true">
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.compile.classpath" failonerror="true">
                   <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
                 </java>
@@ -340,24 +361,36 @@ public class ComponentVersion extends Version
           </execution>
         </executions>
         <configuration>
-          <failOnError>false</failOnError>
+          <failOnError>true</failOnError>
           <logResults>true</logResults>
           <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
            need to fix that. -->
-          <comparisonVersion>1.7</comparisonVersion>
+          <comparisonVersion>1.9.M05</comparisonVersion>
+          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
 
-          <!-- These are temporary exceptions for the 1.8 release, please remove after that. -->
+          <!-- Allowed breaking changes in Neo4j 2.0 -->
+          <!-- These rules should be looked over and modified appropriately in 2.1 -->
           <excludeMessageCodes>
             <param>6006</param><!-- Field was made final. -->
+            <param>7012</param><!-- Method added to interface -->
           </excludeMessageCodes>
           <excludes>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*UseMemoryMappedBuffers</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*BooleanSetting</exclude>
-          </excludes>
+            <!-- Ignore known breaking changes introduced in 2.0 -->
 
+            <!-- Changes to isolate state per builder to avoid race conditions -->
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory</exclude>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory$1</exclude>
+
+            <!-- Prepping for last cleanup of public config stuff. -->
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*</exclude>
+
+            <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
+            <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>
+            <exclude>org/neo4j/graphdb/index/BatchInserterIndexProvider</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>

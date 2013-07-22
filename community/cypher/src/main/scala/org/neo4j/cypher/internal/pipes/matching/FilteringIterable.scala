@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
-
 class FilteringIterable(inner: Iterable[Relationship],
                         startNode:Node,
                         predicate: Predicate,

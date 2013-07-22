@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.data
 
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.helpers.StringRenderingSupport
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
 // Values we are willing to expose as arguments in Java-side PlanDescriptions
 //
 // NOTE: Please update PlanDescription javadoc whenever you change the set of valid SimpleVals
 // NOTE: Roughly maps to the JSON data model; don't build graph-shaped data structures with these, only trees please for
 // REST interoperability
-//
 sealed abstract class SimpleVal extends StringRenderingSupport {
   type Value
   type JValue
@@ -134,5 +134,7 @@ object SimpleVal {
   implicit def fromIterable[V](v: Iterable[V], conv: V => SimpleVal): SeqVal = SeqVal(v.map(conv).toSeq)
 
   implicit def fromIterable[V](v: Iterable[V]): SeqVal = fromIterable(v, fromStr)
+
+  implicit def fromExpr(e: Expression) = StrVal(e.toString())
 }
 

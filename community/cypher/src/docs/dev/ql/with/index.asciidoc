@@ -4,7 +4,8 @@ With
 The ability to chain queries together allows for powerful constructs. In Cypher, the +WITH+ clause is
 used to pipe the result from one query to the next.
 
-+WITH+ is also used to separate reading from updating of the graph. Every sub-query of a query must be either read-only or write-only.
++WITH+ is also used to separate reading from updating of the graph. Every sub-query of a query must be either
+read-only or write-only.
 
 .Graph
 include::includes/cypher-with-graph.asciidoc[]
@@ -14,5 +15,3 @@ include::filter-on-aggregate-function-results.asciidoc[]
 include::sort-results-before-using-collect-on-them.asciidoc[]
 
 include::limit-branching-of-your-path-search.asciidoc[]
-
-include::alternative-syntax-of-with.asciidoc[]

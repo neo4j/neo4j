@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class AbstractBaseRecord
+import org.neo4j.helpers.CloneableInPublic;
+
+public abstract class AbstractBaseRecord implements CloneableInPublic
 {
     private boolean inUse;
     private boolean created = false;
 
-    AbstractBaseRecord(boolean inUse)
+    AbstractBaseRecord( boolean inUse )
     {
         // limit subclasses to this package only
         this.inUse = inUse;
@@ -50,5 +52,36 @@ public abstract class AbstractBaseRecord
     public final boolean isCreated()
     {
         return created;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        long id = getLongId();
+        result = prime * result + (int) (id ^ (id >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+            return true;
+        if ( obj == null )
+            return false;
+        if ( getClass() != obj.getClass() )
+            return false;
+        AbstractBaseRecord other = (AbstractBaseRecord) obj;
+        if ( getLongId() != other.getLongId() )
+            return false;
+        return true;
+    }
+    
+    @Override
+    public AbstractBaseRecord clone()
+    {
+        throw new UnsupportedOperationException();
     }
 }

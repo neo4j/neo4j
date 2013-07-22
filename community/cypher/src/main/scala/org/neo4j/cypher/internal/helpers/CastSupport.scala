@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+import org.neo4j.cypher.CypherTypeException
+
 object CastSupport {
 
   // TODO Switch to using ClassTag once we decide to depend on the reflection api
@@ -39,4 +41,10 @@ object CastSupport {
    * @return PartialFunction that is the identity function on all instances of the type erasure of A
    */
   def erasureCast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
+
+  def erasureCastOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
+    case v: A => v
+    case _    => throw new CypherTypeException(
+      s"Expected ${value} to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+  }
 }

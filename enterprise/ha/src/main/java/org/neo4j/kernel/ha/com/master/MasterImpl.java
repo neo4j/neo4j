@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -50,6 +49,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
@@ -62,7 +62,12 @@ import org.neo4j.kernel.ha.lock.LockableNode;
 import org.neo4j.kernel.ha.lock.LockableRelationship;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.IndexLock;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.SchemaLock;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -92,7 +97,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             MasterTransaction>();
     private ScheduledExecutorService unfinishedTransactionsExecutor;
     private long unfinishedTransactionThresholdMillis;
-    private GraphProperties graphProperties;
+    private final GraphProperties graphProperties;
     private final TransactionManager txManager;
 
     public MasterImpl( GraphDatabaseAPI db, Logging logging, Config config )
@@ -117,13 +122,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             {
                 try
                 {
-                    Map<RequestContext, MasterTransaction> safeTransactions = null;
-                    synchronized ( transactions )
-                    {
-                        safeTransactions = new HashMap<RequestContext, MasterTransaction>( transactions );
-                    }
-
-                    for ( Map.Entry<RequestContext, MasterTransaction> entry : safeTransactions.entrySet() )
+                    for ( Map.Entry<RequestContext, MasterTransaction> entry : transactions() )
                     {
                         long time = entry.getValue().timeLastSuspended.get();
                         if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis)
@@ -156,6 +155,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 {
                     // The show must go on
                     msgLog.logMessage( "Exception in MasterImpl", t );
+                }
+            }
+
+            /** Create a copy to make iteration safe, while minimizing the duration of the synchronized region. */
+            @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+            private Iterable<Map.Entry<RequestContext, MasterTransaction>> transactions()
+            {
+                Map<RequestContext, MasterTransaction> transactions = MasterImpl.this.transactions;
+                synchronized ( transactions )
+                {
+                    return new HashMap<RequestContext, MasterTransaction>( transactions ).entrySet();
                 }
             }
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
@@ -355,33 +365,39 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
+    @Override
     public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, nodesById( nodes ) );
+        return acquireLock( context, READ_LOCK_GRABBER, (Object[])nodesById( nodes ) );
     }
 
+    @Override
     public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, nodesById( nodes ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])nodesById( nodes ) );
     }
 
+    @Override
     public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
                                                              long... relationships )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, relationshipsById( relationships ) );
+        return acquireLock( context, READ_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
     }
 
+    @Override
     public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
                                                               long... relationships )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById( relationships ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
     }
 
+    @Override
     public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
         return acquireLock( context, READ_LOCK_GRABBER, graphProperties() );
     }
 
+    @Override
     public Response<LockResult> acquireGraphWriteLock( RequestContext context )
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, graphProperties() );
@@ -412,6 +428,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return result;
     }
 
+    @Override
     public Response<IdAllocation> allocateIds( IdType idType )
     {
         IdGenerator generator = graphDb.getIdGeneratorFactory().get( idType );
@@ -420,6 +437,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return ServerUtil.packResponseWithoutTransactionStream( graphDb.getStoreId(), result );
     }
 
+    @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context, String resource,
                                                            TxExtractor txGetter )
     {
@@ -431,6 +449,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
             {
+                @Override
                 public boolean accept( Long item )
                 {
                     return item < txId;
@@ -476,17 +495,41 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return packResponse( context, null );
     }
 
+    @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
-        graphDb.getRelationshipTypeHolder().addValidRelationshipType( name, true );
-        return packResponse( context, graphDb.getRelationshipTypeHolder().getIdFor( name ) );
+        try
+        {
+            graphDb.getRelationshipTypeTokenHolder().getOrCreateId( name );
+            return packResponse( context, graphDb.getRelationshipTypeTokenHolder().getIdByName( name ) );
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
+        }
     }
 
+    @Override
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        PropertyKeyTokenHolder propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
+        return packResponse( context, propertyKeyHolder.getOrCreateId( name ) );
+    }
+
+    @Override
+    public Response<Integer> createLabel( RequestContext context, String name )
+    {
+        LabelTokenHolder labels = graphDb.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
+        return packResponse( context, labels.getOrCreateId( name ) );
+    }
+
+    @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
         return packResponse( context, null );
     }
 
+    @Override
     public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId storeId )
     {
         XaDataSource nioneoDataSource = graphDb.getXaDataSourceManager()
@@ -502,6 +545,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
+    @Override
     public Response<Void> copyStore( RequestContext context, StoreWriter writer )
     {
         context = ServerUtil.rotateLogsAndStreamStoreFiles( graphDb, true, writer );
@@ -523,6 +567,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
     {
+        @Override
         public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             state.acquireReadLock( entity );
@@ -531,6 +576,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
     {
+        @Override
         public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             state.acquireWriteLock( entity );
@@ -540,16 +586,28 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
+        return acquireLock( context, READ_LOCK_GRABBER, new IndexLock( index, key ) );
     }
 
     @Override
     public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index,
                                                        String key )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexLock( index, key ) );
     }
 
+    @Override
+    public Response<LockResult> acquireSchemaReadLock( RequestContext context )
+    {
+        return acquireLock( context, READ_LOCK_GRABBER, new SchemaLock() );
+    }
+
+    @Override
+    public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
+    {
+        return acquireLock( context, WRITE_LOCK_GRABBER, new SchemaLock() );
+    }
+    
     @Override
     public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
     {

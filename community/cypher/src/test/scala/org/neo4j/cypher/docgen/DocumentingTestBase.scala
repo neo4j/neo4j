@@ -22,25 +22,26 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.{Before, After}
 import scala.collection.JavaConverters._
-import java.io.{PrintWriter, File}
+import java.io.{StringWriter, PrintWriter, File, ByteArrayOutputStream}
 import org.neo4j.graphdb._
-import factory.{GraphDatabaseSetting, GraphDatabaseSettings}
-import java.io.ByteArrayOutputStream
+import factory.GraphDatabaseSettings
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
-import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
-import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.kernel.{GraphDatabaseAPI, AbstractGraphDatabase}
+import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.export.{SubGraphExporter, DatabaseSubGraph}
+import org.neo4j.helpers.Settings
+import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 
-trait DocumentationHelper {
+trait DocumentationHelper extends GraphIcing {
   def generateConsole:Boolean
-  def db: GraphDatabaseService
+  def db: GraphDatabaseAPI
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -55,7 +56,7 @@ trait DocumentationHelper {
   }
 
   def createWriter(title: String, dir: File): PrintWriter = {
-    return new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
+    new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
   }
 
   val path: String = "target/docs/dev/ql/"
@@ -63,13 +64,16 @@ trait DocumentationHelper {
   val graphvizFileName = "cypher-" + simpleName + "-graph"
 
   def dumpGraphViz(dir: File, graphVizOptions:String) : String = {
-    return emitGraphviz(dir, graphvizFileName, graphVizOptions)
+    emitGraphviz(dir, graphvizFileName, graphVizOptions)
   }
 
   private def emitGraphviz(dir:File, testid:String, graphVizOptions:String): String = {
     val out = new ByteArrayOutputStream()
     val writer = new GraphvizWriter(getGraphvizStyle)
-    writer.emit(out, Walker.fullGraph(db))
+
+    db.inTx {
+      writer.emit(out, Walker.fullGraph(db))
+    }
 
     val graphOutput = """["dot", "%s.svg", "neoviz", "%s"]
 ----
@@ -77,30 +81,46 @@ trait DocumentationHelper {
 ----
 
 """.format(testid, graphVizOptions, out)
-    return ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, testid, graphOutput)
+    ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, testid, graphOutput)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
 
 }
 
-abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
+abstract class DocumentingTestBase extends Assertions with DocumentationHelper with GraphIcing {
+
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, returns, None, assertions: _*)
+  }
+
+  def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: (()=> Any), assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, returns, Some(prepare), assertions: _*)
+  }
+
+  def internalTestQuery(title: String, text: String, queryText: String, returns: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+    dumpGraphViz(dir, graphvizOptions.trim)
     if (!graphvizExecutedAfter) {
       dumpGraphViz(dir, graphvizOptions.trim)
     }
+
     var consoleData: String = ""
     if (generateConsole) {
       if (generateInitialGraphForConsole) {
-        consoleData = new GeoffService(db).toGeoff
+        val out = new StringWriter()
+        db.inTx {
+          new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+          consoleData = out.toString
+        }
       }
-      if (consoleData.isEmpty()) {
+      if (consoleData.isEmpty) {
         consoleData = "(0)"
       }
     }
-    val r = testWithoutDocs(queryText, assertions:_*)
+
+    val r = testWithoutDocs(queryText, prepare, assertions:_*)
     val result: ExecutionResult = r._1
-    var query: String = r._2
+    val query: String = r._2
 
     val writer: PrintWriter = createWriter(title, dir)
     dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
@@ -109,7 +129,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     }
   }
 
-  var db: GraphDatabaseService = null
+  var db: GraphDatabaseAPI = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
@@ -153,11 +173,14 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     }
   }
 
-  def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
+  def testWithoutDocs(queryText: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
+    prepare.foreach(runThunkInTx(_))
+
     var query = queryText
     val tx = db.beginTx()
     try {
-      nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+      val keySet = nodes.keySet
+      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = engine.execute(query)
       assertions.foreach(_.apply(result))
       tx.failure()
@@ -166,6 +189,22 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     }
 
     (engine.execute(query), query)
+  }
+
+  protected def getLabelsFromNode(p: ExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels
+
+  private def runThunkInTx(thunk: () => Any)
+  {
+    val tx = db.beginTx()
+    try
+    {
+      thunk()
+      tx.success()
+    }
+    finally
+    {
+      tx.finish()
+    }
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -178,6 +217,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   }
 
   def node(name: String): Node = db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name)))
+  def nodes(names: String*): List[Node] = names.map(node).toList
 
   def rel(id: Long): Relationship = db.getRelationshipById(id)
 
@@ -190,13 +230,13 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   def init() {
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
-      setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
-      newGraphDatabase()
+      setConfig( GraphDatabaseSettings.node_auto_indexing, Settings.TRUE ).
+      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ExecutionEngine(db)
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
-    db.inTx(() => {
+    db.inTx {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -211,17 +251,19 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })
 
-      properties.foreach((n) => {
-        val nod = node(n._1)
-        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-      })
-    })
+      asNodeMap(properties) foreach { case (n: Node, seq: Map[String, Any]) =>
+          seq foreach { case (k, v) => n.setProperty(k, v) }
+      }
+    }
   }
+
+  private def asNodeMap[T : Manifest](m: Map[String, T]): Map[Node, T] =
+    m map { case (k: String, v: T) => (node(k), v) }
 
   def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult, consoleData: String) {
     val output = new StringBuilder(2048)
     output.append(".Query\n")
-    output.append(AsciidocHelper.createCypherSnippet(query))
+    output.append(createCypherSnippet(query))
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString))
     writer.println
     writer.println(returns)
@@ -245,6 +287,12 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
       output.append("\n----")
       writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString))
     }
+  }
+
+  private def createCypherSnippet(query: String) = {
+    val prettifiedQuery = Prettifier(query)
+    val result = AsciidocHelper.createAsciiDocSnippet("cypher", prettifiedQuery)
+    result
   }
 }
 
