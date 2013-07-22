@@ -556,6 +556,7 @@ public class TestAutoIndexing
             tx.finish();
         }
 
+        Transaction transaction = graphDb.beginTx();
         // Verify
         ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
         // node1 is completely gone
@@ -574,6 +575,7 @@ public class TestAutoIndexing
         // Finally, node4 is removed because the property was removed.
         assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
         // END SNIPPET: Mutations
+        transaction.finish();
     }
 
     @Test

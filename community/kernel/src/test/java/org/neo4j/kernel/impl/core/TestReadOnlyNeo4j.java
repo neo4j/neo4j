@@ -95,7 +95,8 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase(
+                PATH );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
@@ -143,18 +144,19 @@ public class TestReadOnlyNeo4j
         
         // clear caches and try reads
         ((GraphDatabaseAPI)db).getNodeManager().clearCache();
-        
+
+        Transaction transaction = db.beginTx();
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
         ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         
-        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" )  ) );
+        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
         Relationship loadedRel = node1.getSingleRelationship(
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
-
+        transaction.finish();
         db.shutdown();
     }
 }

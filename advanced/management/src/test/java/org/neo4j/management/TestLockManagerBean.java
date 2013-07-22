@@ -141,11 +141,10 @@ public class TestLockManagerBean
     @Test
     public void canGetToContendedLocksOnly() throws Exception
     {
-        final Node root = graphDb.getReferenceNode();
-
         Transaction tx = graphDb.beginTx();
         try
         {
+            final Node root = graphDb.getReferenceNode();
             graphDb.createNode();
             Lock lock = tx.acquireReadLock( root );
 

@@ -757,7 +757,16 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
         assertEquals( value, data.get( key ) );
         assertEquals(Arrays.asList( 1, 2, 3), data.get( "array" ) );
-        Node node = graphdb().index().forNodes(index).get(key, value).getSingle();
+        Transaction transaction = graphdb().beginTx();
+        Node node;
+        try
+        {
+            node = graphdb().index().forNodes(index).get(key, value).getSingle();
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertThat(node, inTx( graphdb(), hasProperty( key ).withValue( value ) ));
         assertThat(node, inTx( graphdb(), hasProperty( "array" ).withValue( new int[]{1, 2, 3} ) ));
     }

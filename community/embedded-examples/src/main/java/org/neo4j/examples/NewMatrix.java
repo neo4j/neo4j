@@ -135,21 +135,29 @@ public class NewMatrix
 
     public String printNeoFriends()
     {
-        Node neoNode = getNeoNode();
-        // START SNIPPET: friends-usage
-        int numberOfFriends = 0;
-        String output = neoNode.getProperty( "name" ) + "'s friends:\n";
-        Traverser friendsTraverser = getFriends( neoNode );
-        for ( Path friendPath : friendsTraverser )
+        Transaction transaction = graphDb.beginTx();
+        try
         {
-            output += "At depth " + friendPath.length() + " => "
-                      + friendPath.endNode()
-                              .getProperty( "name" ) + "\n";
-            numberOfFriends++;
+            Node neoNode = getNeoNode();
+            // START SNIPPET: friends-usage
+            int numberOfFriends = 0;
+            String output = neoNode.getProperty( "name" ) + "'s friends:\n";
+            Traverser friendsTraverser = getFriends( neoNode );
+            for ( Path friendPath : friendsTraverser )
+            {
+                output += "At depth " + friendPath.length() + " => "
+                          + friendPath.endNode()
+                                  .getProperty( "name" ) + "\n";
+                numberOfFriends++;
+            }
+            output += "Number of friends found: " + numberOfFriends + "\n";
+            // END SNIPPET: friends-usage
+            return output;
         }
-        output += "Number of friends found: " + numberOfFriends + "\n";
-        // END SNIPPET: friends-usage
-        return output;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     // START SNIPPET: get-friends
@@ -166,20 +174,28 @@ public class NewMatrix
 
     public String printMatrixHackers()
     {
-        // START SNIPPET: find--hackers-usage
-        String output = "Hackers:\n";
-        int numberOfHackers = 0;
-        Traverser traverser = findHackers( getNeoNode() );
-        for ( Path hackerPath : traverser )
+        Transaction transaction = graphDb.beginTx();
+        try
         {
-            output += "At depth " + hackerPath.length() + " => "
-                      + hackerPath.endNode()
-                              .getProperty( "name" ) + "\n";
-            numberOfHackers++;
+            // START SNIPPET: find--hackers-usage
+            String output = "Hackers:\n";
+            int numberOfHackers = 0;
+            Traverser traverser = findHackers( getNeoNode() );
+            for ( Path hackerPath : traverser )
+            {
+                output += "At depth " + hackerPath.length() + " => "
+                          + hackerPath.endNode()
+                                  .getProperty( "name" ) + "\n";
+                numberOfHackers++;
+            }
+            output += "Number of hackers found: " + numberOfHackers + "\n";
+            // END SNIPPET: find--hackers-usage
+            return output;
         }
-        output += "Number of hackers found: " + numberOfHackers + "\n";
-        // END SNIPPET: find--hackers-usage
-        return output;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     // START SNIPPET: find-hackers

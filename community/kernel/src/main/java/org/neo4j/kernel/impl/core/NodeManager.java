@@ -310,6 +310,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public Node getNodeByIdOrNull( long nodeId )
     {
+        transactionManager.assertInTransaction();
         NodeImpl node = getLightNode( nodeId );
         return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) : null;
     }
@@ -383,7 +384,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         {
             return committedNodes;
         }
-            
+
         /* Created nodes are put in the cache right away, even before the transaction is committed.
          * We want this iterator to include nodes that have been created, but not yes committed in
          * this transaction. The thing with the cache is that stuff can be evicted at any point in time
@@ -454,6 +455,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     protected Relationship getRelationshipByIdOrNull( long relId )
     {
+        transactionManager.assertInTransaction();
         RelationshipImpl relationship = relCache.get( relId );
         return relationship != null ? new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) : null;
     }
@@ -515,7 +517,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         {
             return committedRelationships;
         }
-        
+
         /* Created relationships are put in the cache right away, even before the transaction is committed.
          * We want this iterator to include relationships that have been created, but not yes committed in
          * this transaction. The thing with the cache is that stuff can be evicted at any point in time
@@ -608,12 +610,12 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         return persistenceManager.nodeLoadPropertyValue( nodeId, propertyKey );
     }
-    
+
     Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
     {
         return persistenceManager.relationshipLoadPropertyValue( relationshipId, propertyKey );
     }
-    
+
     Object graphLoadPropertyValue( int propertyKey )
     {
         return persistenceManager.graphLoadPropertyValue( propertyKey );
@@ -856,10 +858,10 @@ public class NodeManager implements Lifecycle, EntityFactory
 
             ArrayMap<Integer,PropertyData> skipMap =
                 tx.getOrCreateCowPropertyRemoveMap( rel );
-            
+
             tx.deleteRelationship( rel.getId() );
             ArrayMap<Integer,PropertyData> removedProps = persistenceManager.relDelete( rel.getId() );
-            
+
             if ( removedProps.size() > 0 )
             {
                 for ( int index : removedProps.keySet() )
@@ -931,7 +933,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         return nodePropertyTrackers;
     }
-    
+
     public List<PropertyTracker<Relationship>> getRelationshipPropertyTrackers()
     {
         return relationshipPropertyTrackers;

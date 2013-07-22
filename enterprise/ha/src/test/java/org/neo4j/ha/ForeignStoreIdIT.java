@@ -127,11 +127,20 @@ public class ForeignStoreIdIT
     
     private long findNode( GraphDatabaseService db, String name )
     {
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-            if ( name.equals( node.getProperty( "name", null ) ) )
-                return node.getId();
-        fail( "Didn't find node '" + name + "' in " + db );
-        return -1; // will never happen
+        Transaction transaction = db.beginTx();
+
+        try
+        {
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+                if ( name.equals( node.getProperty( "name", null ) ) )
+                    return node.getId();
+            fail( "Didn't find node '" + name + "' in " + db );
+            return -1; // will never happen
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     private String createAnotherStore( File directory, int transactions )

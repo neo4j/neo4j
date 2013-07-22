@@ -107,7 +107,15 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
+            Transaction transaction = graphdb.beginTx();
+            try
+            {
+                assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
     }
 
@@ -143,7 +151,15 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+            Transaction transaction = graphdb.beginTx();
+            try
+            {
+                for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+            }
+            finally
+            {
+                transaction.finish();
+            }
             if ( resume ) resumeFlushThread();
         }
     }
@@ -174,9 +190,15 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )
         {
             Transaction tx = graphdb.beginTx();
-            graphdb.getReferenceNode().setProperty( "success", success );
-            tx.success();
-            tx.finish();
+            try
+            {
+                graphdb.getReferenceNode().setProperty( "success", success );
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
         }
 
         public boolean isSuccess()

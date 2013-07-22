@@ -53,12 +53,14 @@ public class DatabaseMetadataServiceTest
         Database database = new WrappedDatabase( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
+        tx = db.beginTx();
         Response response = service.getRelationshipTypes();
 
         assertEquals( 200, response.getStatus() );
         List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
                 .toString() );
         assertEquals( 3, jsonList.size() );
+        tx.finish();
         database.stop();
     }
 }

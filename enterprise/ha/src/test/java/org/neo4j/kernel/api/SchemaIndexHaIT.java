@@ -135,7 +135,17 @@ public class SchemaIndexHaIT
         
         // THEN
         assertEquals( "Unexpected new master", aSlave, newMaster );
-        awaitIndexOnline( single( newMaster.schema().getIndexes() ), newMaster, data );
+        Transaction transaction = newMaster.beginTx();
+        IndexDefinition index;
+        try
+        {
+            index = single( newMaster.schema().getIndexes() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        awaitIndexOnline( index, newMaster, data );
     }
 
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
@@ -208,17 +218,25 @@ public class SchemaIndexHaIT
     private static void awaitIndexOnline( IndexDefinition index, GraphDatabaseService db,
             Map<Object, Node> expectedData ) throws InterruptedException
     {
-        long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
-        while( !indexOnline( index, db ) )
+        Transaction transaction = db.beginTx();
+        try
         {
-            Thread.sleep( 1 );
-            if ( System.currentTimeMillis() > timeout )
+            long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
+            while( !indexOnline( index, db ) )
             {
-                fail( "Expected index to come online within a reasonable time." );
+                Thread.sleep( 1 );
+                if ( System.currentTimeMillis() > timeout )
+                {
+                    fail( "Expected index to come online within a reasonable time." );
+                }
             }
+
+            assertIndexContents( index, db, expectedData );
         }
-        
-        assertIndexContents( index, db, expectedData );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db,

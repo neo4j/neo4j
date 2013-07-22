@@ -126,7 +126,9 @@ public class TestRelationshipGrabSize
         assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
 
         finishTx( true );
+        beginTx();
         assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
+        finishTx( false );
     }
 
     @Test
@@ -189,7 +191,9 @@ public class TestRelationshipGrabSize
         }
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         finishTx( true );
+        beginTx();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
+        finishTx( false );
     }
 
     @Test
@@ -236,7 +240,10 @@ public class TestRelationshipGrabSize
         assertEquals( expectedCount, count( node2.getRelationships() ) );
         tx.success();
         tx.finish();
+
+        tx = db.beginTx();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
+        tx.finish();
     }
 }

@@ -65,18 +65,26 @@ public class CypherDoc
 
         StringBuilder output = new StringBuilder( 4096 );
         GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        ExecutionEngine engine = new ExecutionEngine( database );
-
-        removeReferenceNode( database );
-
-        for ( Block block : blocks )
+        Transaction transaction = database.beginTx();
+        try
         {
-            output.append( block.process( engine, database ) )
-                    .append( EOL )
-                    .append( EOL );
-        }
+            ExecutionEngine engine = new ExecutionEngine( database );
 
-        return output.toString();
+            removeReferenceNode( database );
+
+            for ( Block block : blocks )
+            {
+                output.append( block.process( engine, database ) )
+                        .append( EOL )
+                        .append( EOL );
+            }
+
+            return output.toString();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     static List<Block> parseBlocks( String input )

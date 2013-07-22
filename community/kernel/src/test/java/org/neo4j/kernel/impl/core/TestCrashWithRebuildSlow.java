@@ -74,7 +74,8 @@ public class TestCrashWithRebuildSlow
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
                 .newGraphDatabase();
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 4 );
-        
+
+        Transaction transaction = newDb.beginTx();
         try
         {
             int nameCount = 0;
@@ -93,6 +94,7 @@ public class TestCrashWithRebuildSlow
         }
         finally
         {
+            transaction.finish();
             newDb.shutdown();
         }
     }

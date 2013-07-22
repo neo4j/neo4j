@@ -136,6 +136,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
 
         private void assertUserExistsUniquely( String username )
         {
+            Transaction transaction = graphdb().beginTx();
             try
             {
                 assertNotNull( "User '" + username + "' not created.",
@@ -144,6 +145,9 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             catch ( NoSuchElementException e )
             {
                 throw new RuntimeException( "User '" + username + "' not created uniquely.", e );
+            }
+            finally {
+                transaction.finish();
             }
         }
     }
@@ -201,12 +205,13 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
     public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, 
                                                 Node lockNode )
     {
-        Index<Node> usersIndex = graphDb.index().forNodes( "users" );
-        Node userNode = usersIndex.get( "name", username ).getSingle();
-        if ( userNode != null ) return userNode;
         Transaction tx = graphDb.beginTx();
         try
         {
+            Index<Node> usersIndex = graphDb.index().forNodes( "users" );
+            Node userNode = usersIndex.get( "name", username ).getSingle();
+            if ( userNode != null ) return userNode;
+
             tx.acquireWriteLock( lockNode );
             userNode = usersIndex.get( "name", username ).getSingle();
             if ( userNode == null )
@@ -243,7 +248,17 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             }
         };
 
-        return factory.getOrCreate( "name", username );
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            Node node = factory.getOrCreate( "name", username );
+            transaction.success();
+            return node;
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
     // END SNIPPET: getOrCreate
 }

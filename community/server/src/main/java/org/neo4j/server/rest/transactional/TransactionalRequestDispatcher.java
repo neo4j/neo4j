@@ -20,13 +20,13 @@
 package org.neo4j.server.rest.transactional;
 
 import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.api.core.HttpResponseContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CypherService;
+import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
 public class TransactionalRequestDispatcher implements RequestDispatcher
@@ -49,27 +49,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            restfulGraphDatabase.getOutputFormat().setRepresentationWrittenHandler(
-                    new RepresentationWrittenHandler()
-                    {
-                        @Override
-                        public void onRepresentationWritten()
-                        {
-                            HttpResponseContext response = httpContext.getResponse();
-
-                            int statusCode = response.getStatus();
-                            if ( statusCode >= 200 && statusCode < 300 )
-                            {
-                                transaction.success();
-                            }
-                        }
-
-                        @Override
-                        public void onRepresentationFinal()
-                        {
-                            transaction.finish();
-                        }
-                    } );
+            restfulGraphDatabase.getOutputFormat().setRepresentationWrittenHandler( new
+                    DefaultRepresentationWrittenHandler( httpContext, transaction ) );
         }
         else if ( o instanceof BatchOperationService )
         {
@@ -77,18 +58,30 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            batchOperationService.setRepresentationWrittenHandler( new RepresentationWrittenHandler()
+            batchOperationService.setRepresentationWrittenHandler( new DefaultRepresentationWrittenHandler(
+                    httpContext, transaction ) );
+        }
+        else if ( o instanceof CypherService )
+        {
+            CypherService cypherService = (CypherService) o;
+
+            final Transaction transaction = database.getGraph().beginTx();
+
+            cypherService.getOutputFormat().setRepresentationWrittenHandler( new DefaultRepresentationWrittenHandler(
+                    httpContext, transaction ) );
+        }
+        else if ( o instanceof DatabaseMetadataService )
+        {
+            DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) o;
+
+            final Transaction transaction = database.getGraph().beginTx();
+
+            databaseMetadataService.setRepresentationWrittenHandler( new RepresentationWrittenHandler()
             {
                 @Override
                 public void onRepresentationWritten()
                 {
-                    HttpResponseContext response = httpContext.getResponse();
-
-                    int statusCode = response.getStatus();
-                    if ( statusCode >= 200 && statusCode < 300 )
-                    {
-                        transaction.success();
-                    }
+                    // doesn't need to write
                 }
 
                 @Override
@@ -97,34 +90,6 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                     transaction.finish();
                 }
             } );
-        }
-        else if ( o instanceof CypherService )
-        {
-            CypherService cypherService = (CypherService) o;
-
-            final Transaction transaction = database.getGraph().beginTx();
-
-            cypherService.getOutputFormat().setRepresentationWrittenHandler(
-                    new RepresentationWrittenHandler()
-                    {
-                        @Override
-                        public void onRepresentationWritten()
-                        {
-                            HttpResponseContext response = httpContext.getResponse();
-
-                            int statusCode = response.getStatus();
-                            if ( statusCode >= 200 && statusCode < 300 )
-                            {
-                                transaction.success();
-                            }
-                        }
-
-                        @Override
-                        public void onRepresentationFinal()
-                        {
-                            transaction.finish();
-                        }
-                    } );
         }
 
         requestDispatcher.dispatch( o, httpContext );

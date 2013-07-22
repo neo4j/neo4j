@@ -150,7 +150,15 @@ public class TestGcrCacheRemoveSizeDiverge
         final Node node = createNodeWithSomeRelationships();
         graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         enableBreakpoints();
-        graphdb.getNodeById( node.getId() );
+        Transaction transaction = graphdb.beginTx();
+        try
+        {
+            graphdb.getNodeById( node.getId() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         final Cache<?> nodeCache = graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).caches().iterator().next();
         assertTrue( "We didn't get a hold of the right cache object", nodeCache.getName().toLowerCase().contains( "node" ) );
 
@@ -160,7 +168,15 @@ public class TestGcrCacheRemoveSizeDiverge
             public void run()
             {
                 // It will break in NodeImpl#loadInitialRelationships right before calling updateSize
-                count( node.getRelationships() );
+                Transaction transaction = graphdb.beginTx();
+                try
+                {
+                    count( node.getRelationships() );
+                }
+                finally
+                {
+                    transaction.finish();
+                }
             }
         };
         t1.start();

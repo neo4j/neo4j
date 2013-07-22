@@ -91,6 +91,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         
         switchToGraphDatabaseService();
+        Transaction transaction = db.beginTx();
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );
@@ -108,6 +109,7 @@ public class TestLuceneBatchInsert
         }
         assertContains( dbIndex.query( "name", "Joe*" ), nodes.toArray( new Node[nodes.size()] ) );
         assertContains( dbIndex.query( "name:Joe0 AND other:Schmoe" ), db.getNodeById( ids.get( 0 ) ) );
+        transaction.finish();
     }
 
     @Test
@@ -136,10 +138,12 @@ public class TestLuceneBatchInsert
         provider.shutdown();
 
         switchToGraphDatabaseService();
+        Transaction transaction = db.beginTx();
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
         assertContains( dbIndex.query( "name", "persson" ), node1, node2 );
+        transaction.finish();
     }
 
     @Test
@@ -196,10 +200,12 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         
         switchToGraphDatabaseService();
+        Transaction transaction = db.beginTx();
         Node n1 = db.getNodeById( node1 );
         db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
         assertContains( idx.query( "number", newIntRange( "number", 21, 45, false, true ) ), n1 );
+        transaction.finish();
     }
 
     @Test
@@ -231,6 +237,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
 
         switchToGraphDatabaseService();
+        Transaction transaction = db.beginTx();
         Node node1 = db.getNodeById( nodeId1 );
         Node node2 = db.getNodeById( nodeId2 );
         Index<Node> index = db.index().forNodes( "mine" );
@@ -249,6 +256,7 @@ public class TestLuceneBatchInsert
 
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
         assertThat( indexResult4, isEmpty() );
+        transaction.finish();
     }
     
     @Test
@@ -303,9 +311,12 @@ public class TestLuceneBatchInsert
         {
             tx.finish();
         }
+
+        tx = db.beginTx();
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "peter" ).hasNext());
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "bob" ).hasNext());
         assertFalse(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "joe" ).hasNext());
+        tx.finish();
     }
 
     @Test

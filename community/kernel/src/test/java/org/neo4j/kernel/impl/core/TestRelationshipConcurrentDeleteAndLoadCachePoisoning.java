@@ -126,7 +126,9 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
             {
                 waitForPrepare();
                 // Get the first batch into the cache - relChainPosition points to theOneAfterTheGap
+                Transaction transaction = db.beginTx();
                 first.getRelationships().iterator().next();
+                transaction.finish();
                 readDone();
             }
         };
@@ -142,8 +144,10 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         dumpAndFailIfNotDeadWithin( writerThread, 1, MINUTES );
 
         // This should pass without any problems.
+        Transaction transaction = db.beginTx();
         int count = count( first.getRelationships() );
         assertEquals( "Should have read relationships created minus one", RelationshipGrabSize, count );
+        transaction.finish();
     }
 
     private void dumpAndFailIfNotDeadWithin( Thread thread, int duration, TimeUnit unit ) throws Exception

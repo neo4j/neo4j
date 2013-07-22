@@ -214,7 +214,7 @@ public class TestBatchInsert
         inserter.setNodeProperty( node, key, value );
         
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        assertThat( db.getNodeById( node ), inTx( db, hasProperty( key ).withValue( value )  ) );
+        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value )  ) );
         db.shutdown();
     }
 
@@ -455,13 +455,33 @@ public class TestBatchInsert
         }
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
-        Node realStartNode = db.getNodeById( startNode );
-        Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
-        Relationship realRelationship = db.getRelationshipById( relationship );
-        assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
-        assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
-        assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
-        db.shutdown();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Node realStartNode = db.getNodeById( startNode );
+            Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
+            Relationship realRelationship = db.getRelationshipById( relationship );
+            assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
+        }
+        finally {
+            transaction.finish();
+            db.shutdown();
+        }
+    }
+
+    private Node getNodeInTx( long nodeId, GraphDatabaseService db )
+    {
+        Transaction transaction = db.beginTx();
+        try
+        {
+            return db.getNodeById( nodeId );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     private static <T> Set<T> asSet( T... items )

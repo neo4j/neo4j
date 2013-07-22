@@ -228,6 +228,7 @@ public abstract class AbstractShellTest
 
     protected void assertRelationshipExists( long id )
     {
+        Transaction transaction = db.beginTx();
         try
         {
             db.getRelationshipById( id );
@@ -235,6 +236,9 @@ public abstract class AbstractShellTest
         catch ( NotFoundException e )
         {
             fail( "Relationship " + id + " should exist" );
+        }
+        finally {
+            transaction.finish();
         }
     }
 
@@ -245,6 +249,7 @@ public abstract class AbstractShellTest
 
     protected void assertRelationshipDoesntExist( long id )
     {
+        Transaction transaction = db.beginTx();
         try
         {
             db.getRelationshipById( id );
@@ -252,6 +257,10 @@ public abstract class AbstractShellTest
         }
         catch ( NotFoundException e )
         { // Good
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 
@@ -262,6 +271,7 @@ public abstract class AbstractShellTest
 
     protected void assertNodeExists( long id )
     {
+        Transaction transaction = db.beginTx();
         try
         {
             db.getNodeById( id );
@@ -269,6 +279,10 @@ public abstract class AbstractShellTest
         catch ( NotFoundException e )
         {
             fail( "Node " + id + " should exist" );
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 
@@ -279,6 +293,7 @@ public abstract class AbstractShellTest
 
     protected void assertNodeDoesntExist( long id )
     {
+        Transaction transaction = db.beginTx();
         try
         {
             db.getNodeById( id );
@@ -286,6 +301,10 @@ public abstract class AbstractShellTest
         }
         catch ( NotFoundException e )
         { // Good
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 
@@ -296,7 +315,14 @@ public abstract class AbstractShellTest
 
     protected Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
-        return createRelationshipChain( db.getReferenceNode(), type, length );
+        Transaction transaction = db.beginTx();
+        try {
+            Relationship[] relationshipChain = createRelationshipChain( db.getReferenceNode(), type, length );
+            transaction.success();
+            return relationshipChain;
+        } finally {
+            transaction.finish();
+        }
     }
 
     protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type,
@@ -335,6 +361,13 @@ public abstract class AbstractShellTest
     protected Node getCurrentNode() throws RemoteException, ShellException
     {
         Serializable current = shellServer.interpretVariable( shellClient.getId(), Variables.CURRENT_KEY );
-        return this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            return this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
+        }
+        finally {
+            transaction.finish();
+        }
     }
 }

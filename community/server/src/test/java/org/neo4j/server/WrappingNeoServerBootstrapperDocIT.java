@@ -188,6 +188,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         srv.stop();
 
         // Should be able to still talk to the db
+        myDb.beginTx();
         assertTrue( myDb.getReferenceNode() != null );
     }
 }
