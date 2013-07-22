@@ -103,7 +103,7 @@ public final class HaBackupProvider extends BackupExtensionService
                 new NotElectableElectionCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
-                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
+                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), null ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()

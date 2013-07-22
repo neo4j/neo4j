@@ -19,11 +19,13 @@
  */
 package org.neo4j.test.ha;
 
+import static org.junit.Assert.fail;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,10 +37,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
 {
