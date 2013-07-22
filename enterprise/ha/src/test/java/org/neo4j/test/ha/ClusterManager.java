@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -148,12 +149,12 @@ public class ClusterManager
         {
             cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
         }
-        
+
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
         return provided( clusters );
     }
-    
+
     /**
      * Provides a cluster specification with default values
      * @param haMemberCount the total number of members in the cluster to start.
@@ -187,7 +188,7 @@ public class ClusterManager
             }
         };
     }
-    
+
     LifeSupport life;
     private final File root;
     private final Map<String, String> commonConfig;
@@ -249,8 +250,7 @@ public class ClusterManager
     {
         private final Clusters.Cluster spec;
         private final String name;
-        private final Map<Integer, HighlyAvailableGraphDatabaseProxy> members = new HashMap<Integer,
-                HighlyAvailableGraphDatabaseProxy>();
+        private final Map<Integer, HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<Integer, HighlyAvailableGraphDatabaseProxy>();
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException
         {
@@ -265,7 +265,7 @@ public class ClusterManager
                 insertInitialData( member.get(), name, member.get().getConfig().get( ClusterSettings.server_id ) );
             }
         }
-        
+
         public String getInitialHostsConfigString()
         {
             StringBuilder result = new StringBuilder();
@@ -275,7 +275,7 @@ public class ClusterManager
                                 ClusterClient.class ).getClusterServer().getPort() );
             return result.toString();
         }
-        
+
         @Override
         public void stop() throws Throwable
         {
@@ -402,7 +402,7 @@ public class ClusterManager
                     "life" ) ).get( clusterClient );
             NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
             network.stop();
-            
+
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             //db.shutdown();
             return new StartNetworkAgainKit( db, network );
@@ -493,7 +493,6 @@ public class ClusterManager
                 {
                     return;
                 }
-
                 try
                 {
                     Thread.sleep( 100 );
@@ -514,7 +513,7 @@ public class ClusterManager
         {
             return spec.getMembers().size();
         }
-        
+
         public int getServerId( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
@@ -526,7 +525,7 @@ public class ClusterManager
             assertMember( member );
             return member.getConfig().get( GraphDatabaseSettings.store_dir );
         }
-        
+
         public void sync( HighlyAvailableGraphDatabase... except )
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
@@ -540,6 +539,7 @@ public class ClusterManager
     {
         private GraphDatabaseService result;
         private Future<GraphDatabaseService> untilThen;
+        private final ExecutorService executor;
 
         public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
         {
@@ -551,7 +551,7 @@ public class ClusterManager
                     return graphDatabaseBuilder.newGraphDatabase();
                 }
             };
-            ExecutorService executor = Executors.newFixedThreadPool( 1 );
+            executor = Executors.newFixedThreadPool( 1 );
             untilThen = executor.submit( starter );
         }
 
@@ -570,6 +570,9 @@ public class ClusterManager
                 catch ( ExecutionException e )
                 {
                     throw new RuntimeException( e );
+                } finally
+                {
+                    executor.shutdownNow();
                 }
             }
             return (HighlyAvailableGraphDatabase) result;
@@ -692,7 +695,7 @@ public class ClusterManager
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= count;
             }
-            
+
             @Override
             public String toString()
             {
@@ -738,14 +741,15 @@ public class ClusterManager
             {
                 for ( HighlyAvailableGraphDatabase graphDatabaseService : cluster.getAllMembers() )
                 {
-                    if ( !exceptSet.contains( graphDatabaseService ) && graphDatabaseService.isMaster() )
+                    if ( !exceptSet.contains( graphDatabaseService ))
                     {
-                        return true;
+                        if ( graphDatabaseService.isMaster() )
+                            return true;
                     }
                 }
                 return false;
             }
-            
+
             @Override
             public String toString()
             {
@@ -753,7 +757,7 @@ public class ClusterManager
             }
         };
     }
-    
+
     /**
      * The current master sees this many slaves as available.
      * @param count number of slaves to see as available.
@@ -765,12 +769,10 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-//                return ((ClusterMembers)cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class )).getMembers().length >= count;
-                Neo4jManager jmx = new Neo4jManager( cluster.getMaster().getDependencyResolver().resolveDependency( JmxKernelExtension
-                        .class ).getSingleManagementBean( Kernel.class ) );
-                return jmx.getHighAvailabilityBean().getInstancesInCluster().length >= count;
+                ClusterMembers members = cluster.getMaster().getDependencyResolver().resolveDependency( ClusterMembers.class );
+                return Iterables.count(members.getMembers()) >= count;
             }
-            
+
             @Override
             public String toString()
             {
@@ -870,7 +872,7 @@ public class ClusterManager
     protected void insertInitialData( GraphDatabaseService db, String name, int serverId )
     {
     }
-    
+
     public interface RepairKit
     {
         HighlyAvailableGraphDatabase repair() throws Throwable;
