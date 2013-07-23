@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -1635,12 +1636,18 @@ public class RestfulGraphDatabaseTest
     public void shouldGet200WhenNoHitsReturnedFromTraverse()
     {
         long startNode = helper.createNode();
-        Response response = service.traverse( startNode, TraverserReturnType.node, "" );
-        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
 
-        List<Object> resultAsList = output.getResultAsList();
-
-        assertThat( resultAsList.size(), is( 0 ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Response response = service.traverse( startNode, TraverserReturnType.node, "" );
+            assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+            assertThat( output.getResultAsList().size(), is( 0 ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

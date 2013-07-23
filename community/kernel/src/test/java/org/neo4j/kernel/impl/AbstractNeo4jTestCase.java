@@ -181,6 +181,15 @@ public abstract class AbstractNeo4jTestCase
         }
     }
 
+    public void finish()
+    {
+        if ( tx != null )
+        {
+            tx.finish();
+            tx = null;
+        }
+    }
+
     public void rollback()
     {
         if ( tx != null )

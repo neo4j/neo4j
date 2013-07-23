@@ -22,6 +22,7 @@ package org.neo4j.examples;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
@@ -118,37 +119,44 @@ public class TraversalDocTest extends AbstractJavaDocTestbase
                         createGraphVizWithNodeId( "Traversal Example Graph", graphdb(),
                         gen.get().getTitle() ) );
 
-        String output = example.knowsLikesTraverser( joe );
-        gen.get()
-                .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            String output = example.knowsLikesTraverser( joe );
+            gen.get()
+                    .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
 
-        output = example.traverseBaseTraverser( joe );
-        gen.get()
-                .addSnippet( "baseoutput", createOutputSnippet( output ) );
+            output = example.traverseBaseTraverser( joe );
+            gen.get()
+                    .addSnippet( "baseoutput", createOutputSnippet( output ) );
 
-        output = example.depth3( joe );
-        gen.get()
-                .addSnippet( "output3", createOutputSnippet( output ) );        
+            output = example.depth3( joe );
+            gen.get()
+                    .addSnippet( "output3", createOutputSnippet( output ) );
 
-        output = example.depth4( joe );
-        gen.get()
-                .addSnippet( "output4", createOutputSnippet( output ) );        
+            output = example.depth4( joe );
+            gen.get()
+                    .addSnippet( "output4", createOutputSnippet( output ) );
 
-        db.beginTx();
-        output = example.nodes( joe );
-        gen.get()
-                .addSnippet( "nodeoutput", createOutputSnippet( output ) );
+            output = example.nodes( joe );
+            gen.get()
+                    .addSnippet( "nodeoutput", createOutputSnippet( output ) );
 
-        output = example.relationships( joe );
-        gen.get()
-                .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
+            output = example.relationships( joe );
+            gen.get()
+                    .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
 
-        gen.get()
-                .addSourceSnippets( example.getClass(), "knowslikestraverser",
-                        "sourceRels", "basetraverser", "depth3", "depth4",
-                        "nodes", "relationships" );
-        gen.get()
-                .addGithubSourceLink( "github", example.getClass(),
-                        "community/embedded-examples" );
+            gen.get()
+                    .addSourceSnippets( example.getClass(), "knowslikestraverser",
+                            "sourceRels", "basetraverser", "depth3", "depth4",
+                            "nodes", "relationships" );
+            gen.get()
+                    .addGithubSourceLink( "github", example.getClass(),
+                            "community/embedded-examples" );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

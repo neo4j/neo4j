@@ -403,9 +403,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setMethod( request.getMethod() );
         data.setUri( uri );
         data.setStatus( responseCode );
-        System.out.println("**********************************");
-        System.out.println(data.entity);
-        System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
         if (graph == null) {

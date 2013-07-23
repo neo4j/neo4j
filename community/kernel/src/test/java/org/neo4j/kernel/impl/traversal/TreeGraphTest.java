@@ -67,44 +67,68 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void nodesIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = traversal().traverse( node( "1" ) );
-        int count = 0;
-        for ( Node node : traverser.nodes() )
+        Transaction transaction = beginTx();
+        try
         {
-            assertNotNull( "returned nodes should not be null. node #"
-                           + count, node );
-            count++;
+            Traverser traverser = traversal().traverse( node( "1" ) );
+            int count = 0;
+            for ( Node node : traverser.nodes() )
+            {
+                assertNotNull( "returned nodes should not be null. node #"
+                               + count, node );
+                count++;
+            }
+            assertEquals( 13, count );
         }
-        assertEquals( 13, count );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void relationshipsIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = traversal().traverse( node( "1" ) );
-        int count = 0;
-        for ( Relationship relationship : traverser.relationships() )
+        Transaction transaction = beginTx();
+        try
         {
-            assertNotNull(
-                    "returned relationships should not be. relationship #"
-                            + count, relationship );
-            count++;
+            Traverser traverser = traversal().traverse( node( "1" ) );
+            int count = 0;
+            for ( Relationship relationship : traverser.relationships() )
+            {
+                assertNotNull(
+                        "returned relationships should not be. relationship #"
+                                + count, relationship );
+                count++;
+            }
+            assertEquals( 12, count );
         }
-        assertEquals( 12, count );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void pathsIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = traversal().traverse( node( "1" ) );
-        int count = 0;
-        for ( Path path : traverser )
+        Transaction transaction = beginTx();
+        try
         {
-            assertNotNull( "returned paths should not be null. path #"
-                           + count, path );
-            count++;
+            Traverser traverser = traversal().traverse( node( "1" ) );
+            int count = 0;
+            for ( Path path : traverser )
+            {
+                assertNotNull( "returned paths should not be null. path #"
+                               + count, path );
+                count++;
+            }
+            assertEquals( 13, count );
         }
-        assertEquals( 13, count );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -133,13 +157,21 @@ public class TreeGraphTest extends AbstractTestBase
     public void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
             throws Exception
     {
-        Traverser traverser = traversal().depthFirst().traverse( node( "1" ) );
-        int i = 0;
-        for ( Path pos : traverser )
+        Transaction transaction = beginTx();
+        try
         {
-            assertEquals( expectedDepth( i++ ), pos.length() );
+            Traverser traverser = traversal().depthFirst().traverse( node( "1" ) );
+            int i = 0;
+            for ( Path pos : traverser )
+            {
+                assertEquals( expectedDepth( i++ ), pos.length() );
+            }
+            assertEquals( 13, i );
         }
-        assertEquals( 13, i );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

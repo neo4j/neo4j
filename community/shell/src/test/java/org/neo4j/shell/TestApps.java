@@ -219,10 +219,28 @@ public class TestApps extends AbstractShellTest
         Node currentNode = relationships[1].getStartNode();
         executeCommand( "rmrel -fd " + relationships[1].getId(), "not having any relationships" );
         assertNodeExists( currentNode );
-        assertFalse( currentNode.hasRelationship() );
+
+        Transaction transaction = db.beginTx();
+        try
+        {
+            assertFalse( currentNode.hasRelationship() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
         executeCommand( "pwd" );
-        beginTx();
-        executeCommand( "cd -a " + db.getReferenceNode().getId() );
+
+        transaction = db.beginTx();
+        try
+        {
+            executeCommand( "cd -a " + db.getReferenceNode().getId() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         executeCommand( "pwd" );
     }
 
@@ -401,8 +419,16 @@ public class TestApps extends AbstractShellTest
     {
         String type = "ARRAY";
         executeCommand( "mkrel -ct " + type + " --rp \"{'values':[1,2,3,4]}\"" );
-        assertThat( getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ), inTx( db, hasProperty(
-                "values" ).withValue( new int[] {1,2,3,4} ) ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            assertThat( getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ), inTx( db, hasProperty(
+                    "values" ).withValue( new int[]{1, 2, 3, 4} ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
     
     @Test
@@ -410,8 +436,16 @@ public class TestApps extends AbstractShellTest
     {
         String type = "TEST";
         executeCommand( "mkrel -ctl " + type + " Person" );
-        assertThat( getCurrentNode().getSingleRelationship(
-                withName( type ), OUTGOING ).getEndNode(), inTx( db, hasLabels( "Person" ) ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            assertThat( getCurrentNode().getSingleRelationship(
+                    withName( type ), OUTGOING ).getEndNode(), inTx( db, hasLabels( "Person" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
     
     @Test

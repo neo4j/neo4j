@@ -114,49 +114,56 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Relationship> getRelationships()
     {
-        statementCtxProvider.assertInTransaction();
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager() );
     }
 
     @Override
     public boolean hasRelationship()
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager() );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( Direction dir )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), dir );
     }
 
     @Override
     public boolean hasRelationship( Direction dir )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), dir );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), direction, types );
     }
 
     @Override
     public boolean hasRelationship( RelationshipType... types )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), direction, types );
     }
 
@@ -164,12 +171,14 @@ public class NodeProxy implements Node
     public Iterable<Relationship> getRelationships( RelationshipType type,
                                                     Direction dir )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), type, dir );
     }
 
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
@@ -177,7 +186,13 @@ public class NodeProxy implements Node
     public Relationship getSingleRelationship( RelationshipType type,
                                                Direction dir )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId ).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
+    }
+
+    private void assertInTransaction()
+    {
+        statementCtxProvider.assertInTransaction();
     }
 
     @Override
@@ -449,6 +464,7 @@ public class NodeProxy implements Node
     public Relationship createRelationshipTo( Node otherNode,
                                               RelationshipType type )
     {
+        assertInTransaction();
         return nodeLookup.lookup( nodeId, LockType.WRITE ).createRelationshipTo( nodeLookup.getNodeManager(), this,
                 otherNode, type );
     }
@@ -458,6 +474,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                RelationshipType relationshipType, Direction direction )
     {
+        assertInTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
@@ -469,6 +486,7 @@ public class NodeProxy implements Node
                                RelationshipType firstRelationshipType, Direction firstDirection,
                                RelationshipType secondRelationshipType, Direction secondDirection )
     {
+        assertInTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
@@ -480,6 +498,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                Object... relationshipTypesAndDirections )
     {
+        assertInTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );

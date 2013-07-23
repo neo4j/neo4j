@@ -69,9 +69,17 @@ public class TestGraphDescription implements GraphHolder
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
-            n = n.getSingleRelationship(
-                    DynamicRelationshipType.withName( "TO" ),
-                    Direction.OUTGOING ).getEndNode();
+            Transaction transaction = graphdb.beginTx();
+            try
+            {
+                n = n.getSingleRelationship(
+                        DynamicRelationshipType.withName( "TO" ),
+                        Direction.OUTGOING ).getEndNode();
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
         assertEquals( graph.size(), unique.size() );
     }

@@ -51,19 +51,11 @@ public class PersonRepository
         {
             return result.next();
         }
-        Transaction tx = this.graphDb.beginTx();
-        try
-        {
-            Node refNode = this.graphDb.createNode();
-            refNode.setProperty( "reference", "persons" );
-            referenceIndex.add( refNode, "reference", "persons" );
-            tx.success();
-            return refNode;
-        }
-        finally
-        {
-            tx.finish();
-        }
+
+        Node refNode = this.graphDb.createNode();
+        refNode.setProperty( "reference", "persons" );
+        referenceIndex.add( refNode, "reference", "persons" );
+        return refNode;
     }
 
     public Person createPerson( String name ) throws Exception
@@ -71,78 +63,51 @@ public class PersonRepository
         // to guard against duplications we use the lock grabbed on ref node
         // when
         // creating a relationship and are optimistic about person not existing
-        Transaction tx = graphDb.beginTx();
-        try
+        Node newPersonNode = graphDb.createNode();
+        personRefNode.createRelationshipTo( newPersonNode, A_PERSON );
+        // lock now taken, we can check if  already exist in index
+        Node alreadyExist = index.get( Person.NAME, name ).getSingle();
+        if ( alreadyExist != null )
         {
-            Node newPersonNode = graphDb.createNode();
-            personRefNode.createRelationshipTo( newPersonNode, A_PERSON );
-            // lock now taken, we can check if  already exist in index
-            Node alreadyExist = index.get( Person.NAME, name ).getSingle();
-            if ( alreadyExist != null )
-            {
-                tx.failure();
-                throw new Exception( "Person with this name already exists " );
-            }
-            newPersonNode.setProperty( Person.NAME, name );
-            index.add( newPersonNode, Person.NAME, name );
-            tx.success();
-            return new Person( newPersonNode );
+            throw new Exception( "Person with this name already exists " );
         }
-        finally
-        {
-            tx.finish();
-        }
+        newPersonNode.setProperty( Person.NAME, name );
+        index.add( newPersonNode, Person.NAME, name );
+        return new Person( newPersonNode );
     }
 
     public Person getPersonByName( String name )
     {
-        Transaction transaction = graphDb.beginTx();
-        try
+        Node personNode = index.get( Person.NAME, name ).getSingle();
+        if ( personNode == null )
         {
-            Node personNode = index.get( Person.NAME, name ).getSingle();
-            if ( personNode == null )
-            {
-                throw new IllegalArgumentException( "Person[" + name
-                        + "] not found" );
-            }
-            return new Person( personNode );
+            throw new IllegalArgumentException( "Person[" + name
+                    + "] not found" );
         }
-        finally
-        {
-            transaction.finish();
-        }
+        return new Person( personNode );
     }
 
     public void deletePerson( Person person )
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        Node personNode = person.getUnderlyingNode();
+        index.remove( personNode, Person.NAME, person.getName() );
+        for ( Person friend : person.getFriends() )
         {
-            Node personNode = person.getUnderlyingNode();
-            index.remove( personNode, Person.NAME, person.getName() );
-            for ( Person friend : person.getFriends() )
-            {
-                person.removeFriend( friend );
-            }
-            personNode.getSingleRelationship( A_PERSON, Direction.INCOMING ).delete();
-
-            for ( StatusUpdate status : person.getStatus() )
-            {
-                Node statusNode = status.getUnderlyingNode();
-                for ( Relationship r : statusNode.getRelationships() )
-                {
-                    r.delete();
-                }
-                statusNode.delete();
-            }
-
-            personNode.delete();
-            tx.success();
+            person.removeFriend( friend );
         }
-        finally
+        personNode.getSingleRelationship( A_PERSON, Direction.INCOMING ).delete();
+
+        for ( StatusUpdate status : person.getStatus() )
         {
-            tx.finish();
+            Node statusNode = status.getUnderlyingNode();
+            for ( Relationship r : statusNode.getRelationships() )
+            {
+                r.delete();
+            }
+            statusNode.delete();
         }
+
+        personNode.delete();
     }
 
     public Iterable<Person> getAllPersons()

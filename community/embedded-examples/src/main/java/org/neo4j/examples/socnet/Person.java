@@ -96,22 +96,13 @@ public class Person
 
     public void addFriend( Person otherPerson )
     {
-        Transaction tx = underlyingNode.getGraphDatabase().beginTx();
-        try
+        if ( !this.equals( otherPerson ) )
         {
-            if ( !this.equals( otherPerson ) )
+            Relationship friendRel = getFriendRelationshipTo( otherPerson );
+            if ( friendRel == null )
             {
-                Relationship friendRel = getFriendRelationshipTo( otherPerson );
-                if ( friendRel == null )
-                {
-                    underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
-                }
-                tx.success();
+                underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
             }
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -127,22 +118,13 @@ public class Person
 
     public void removeFriend( Person otherPerson )
     {
-        Transaction tx = underlyingNode.getGraphDatabase().beginTx();
-        try
+        if ( !this.equals( otherPerson ) )
         {
-            if ( !this.equals( otherPerson ) )
+            Relationship friendRel = getFriendRelationshipTo( otherPerson );
+            if ( friendRel != null )
             {
-                Relationship friendRel = getFriendRelationshipTo( otherPerson );
-                if ( friendRel != null )
-                {
-                    friendRel.delete();
-                }
-                tx.success();
+                friendRel.delete();
             }
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -221,33 +203,24 @@ public class Person
 
     public void addStatus( String text )
     {
-        Transaction tx = graphDb().beginTx();
-        try
+        StatusUpdate oldStatus;
+        if ( getStatus().iterator().hasNext() )
         {
-            StatusUpdate oldStatus;
-            if ( getStatus().iterator().hasNext() )
-            {
-                oldStatus = getStatus().iterator().next();
-            } else
-            {
-                oldStatus = null;
-            }
-
-            Node newStatus = createNewStatusNode( text );
-
-            if ( oldStatus != null )
-            {
-                underlyingNode.getSingleRelationship( RelTypes.STATUS, Direction.OUTGOING ).delete();
-                newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(), RelTypes.NEXT );
-            }
-
-            underlyingNode.createRelationshipTo( newStatus, RelTypes.STATUS );
-            tx.success();
-        }
-        finally
+            oldStatus = getStatus().iterator().next();
+        } else
         {
-            tx.finish();
+            oldStatus = null;
         }
+
+        Node newStatus = createNewStatusNode( text );
+
+        if ( oldStatus != null )
+        {
+            underlyingNode.getSingleRelationship( RelTypes.STATUS, Direction.OUTGOING ).delete();
+            newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(), RelTypes.NEXT );
+        }
+
+        underlyingNode.createRelationshipTo( newStatus, RelTypes.STATUS );
     }
 
     private GraphDatabaseService graphDb()
