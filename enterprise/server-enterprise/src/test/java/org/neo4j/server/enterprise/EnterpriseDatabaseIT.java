@@ -19,20 +19,38 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-public class TestEnterpriseDatabase
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+public class EnterpriseDatabaseIT
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable
     {
-        EnterpriseDatabase db = new EnterpriseDatabase( Configurator.EMPTY );
+        EnterpriseDatabase db = new EnterpriseDatabase( new Configurator.Adapter()
+        {
+            @Override
+            public Configuration configuration()
+            {
+                return new MapConfiguration( stringMap(
+                        DATABASE_LOCATION_PROPERTY_KEY,
+                        testDirectory.directory().getPath() ) );
+            }
+        } );
 
         try
         {

@@ -95,4 +95,48 @@ public class MemberIsAvailable
         return String.format( "MemberIsAvailable[ Role: %s, InstanceId: %s, Role URI: %s, Cluster URI: %s]",
                 role, instanceId.toString(), roleUri.toString(), clusterUri.toString() );
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        MemberIsAvailable that = (MemberIsAvailable) o;
+
+        if ( !clusterUri.equals( that.clusterUri ) )
+        {
+            return false;
+        }
+        if ( !instanceId.equals( that.instanceId ) )
+        {
+            return false;
+        }
+        if ( !role.equals( that.role ) )
+        {
+            return false;
+        }
+        if ( !roleUri.equals( that.roleUri ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = role.hashCode();
+        result = 31 * result + instanceId.hashCode();
+        result = 31 * result + clusterUri.hashCode();
+        result = 31 * result + roleUri.hashCode();
+        return result;
+    }
 }

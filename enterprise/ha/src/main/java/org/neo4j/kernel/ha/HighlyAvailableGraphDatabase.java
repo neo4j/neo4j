@@ -56,6 +56,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
+import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -303,22 +304,25 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        } );
+        }, new HANewSnapshotFunction() );
 
         // Force a reelection after we enter the cluster
         // and when that election is finished refresh the snapshot
         clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
+            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our request or thereafter
+
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
+                hasRequestedElection = true;
                 clusterClient.performRoleElections();
             }
 
             @Override
             public void elected( String role, InstanceId instanceId, URI electedMember )
             {
-                if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
                     clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );

@@ -5,6 +5,12 @@ Manpages
 
 The Neo4j Unix manual pages are included on the following pages.
 
+* <<neo4j-manpage,neo4j>>
+* <<shell-manpage,neo4j-shell>>
+* <<neo4j-backup-manpage,neo4j-backup>>
+* <<neo4j-arbiter-manpage,neo4j-arbiter>>
+
+
 :leveloffset: 1
 
 [subs="none"]
