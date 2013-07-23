@@ -33,6 +33,7 @@ import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -644,6 +645,14 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
     private int countNodes()
     {
-        return IteratorUtil.count( (Iterable)graphdb().getAllNodes() );
+        Transaction transaction = graphdb().beginTx();
+        try
+        {
+            return IteratorUtil.count( (Iterable)graphdb().getAllNodes() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

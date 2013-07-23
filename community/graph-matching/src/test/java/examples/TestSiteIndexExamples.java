@@ -241,6 +241,7 @@ public class TestSiteIndexExamples
         Iterable<Node> friends = findFriendsSinceSpecifiedTimeInSpecifiedPlace(
                 root, "Stockholm", 3 );
 
+        Transaction transaction = graphDb.getGraphDatabaseService().beginTx();
         for ( Node friend : friends )
         {
             String name = (String) friend.getProperty( "name", null );
@@ -249,6 +250,7 @@ public class TestSiteIndexExamples
         }
         assertTrue( "These friends were not found: " + expected,
                 expected.isEmpty() );
+        transaction.finish();
     }
 
     private int count( Iterable<?> objects )

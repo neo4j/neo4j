@@ -588,15 +588,17 @@ public class ImdbDocTest
         // and uncommitted index entries, so we'll commit before querying:
         tx.success();
         tx.finish();
+
         // and now we can search for it:
-        IndexHits<Relationship> typeHits;
-        typeHits = roles.query( "type:ACTS_IN AND name:Neo", null, theMatrix );
+        Transaction transaction = graphDb.beginTx();
+        IndexHits<Relationship> typeHits = roles.query( "type:ACTS_IN AND name:Neo", null, theMatrix );
         Relationship typeNeo = typeHits.iterator().next();
         typeHits.close();
         // END SNIPPET: queryForRelationshipType
         assertThat(typeNeo, inTx( graphDb, hasProperty( "name" ).withValue( "Neo" ) ));
         actor = matrixNeo.getStartNode();
         assertEquals( reeves, actor );
+        transaction.finish();
     }
 
     @Test
@@ -656,11 +658,13 @@ public class ImdbDocTest
         // END SNIPPET: batchInsert
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
+        Transaction transaction = db.beginTx();
         Index<Node> index = db.index()
                 .forNodes( "actors" );
         Node reeves = index.get( "name", "Keanu Reeves" )
                 .next();
         assertEquals( node, reeves.getId() );
+        transaction.finish();
         db.shutdown();
     }
 }

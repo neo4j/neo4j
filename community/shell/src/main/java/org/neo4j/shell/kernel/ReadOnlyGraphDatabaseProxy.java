@@ -87,35 +87,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
     private final GraphDatabaseAPI actual;
-    private final Transaction tx = new Transaction()
-    {
-        @Override
-        public void success()
-        {
-        }
-
-        @Override
-        public void failure()
-        {
-        }
-
-        @Override
-        public void finish()
-        {
-        }
-
-        @Override
-        public Lock acquireWriteLock( PropertyContainer entity )
-        {
-            return PlaceboTransaction.NO_LOCK;
-        }
-
-        @Override
-        public Lock acquireReadLock( PropertyContainer entity )
-        {
-            return PlaceboTransaction.NO_LOCK;
-        }
-    };
     private final AbstractTransactionManager txManager = new AbstractTransactionManager()
     {
         @Override
@@ -252,8 +223,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     @Override
     public Transaction beginTx()
     {
-        // return readOnly();
-        return tx;
+        return actual.beginTx();
     }
 
     @Override

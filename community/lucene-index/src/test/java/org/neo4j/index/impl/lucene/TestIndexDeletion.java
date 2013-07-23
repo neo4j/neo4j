@@ -21,6 +21,7 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -35,6 +36,8 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -211,14 +214,18 @@ public class TestIndexDeletion
 		firstTx.deleteIndex();
 		firstTx.commit();
 
-		try
+        try
         {
-            secondTx.queryIndex(key, "some other value");
+            secondTx.queryIndex( key, "some other value" );
             fail( "Should throw exception" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( e.getCause().getMessage(), is( "This index (Index[index,Node]) has been deleted" ) );
+        }
 
-		secondTx.rollback();
+        secondTx.rollback();
 
 		// Since $Before will start a tx, add a value and keep tx open and
 		// workers will delete the index so this test will fail in @After
@@ -232,13 +239,14 @@ public class TestIndexDeletion
         commitTx();
 
         WorkThread firstTx = createWorker( "First" );
-        WorkThread secondTx = createWorker( "Second" );
 
         firstTx.beginTransaction();
         firstTx.removeFromIndex( key, value );
 
-        IndexHits<Node> indexHits = secondTx.queryIndex( key, value );
+        Transaction transaction = graphDb.beginTx();
+        IndexHits<Node> indexHits = index.get( key, value );
         assertThat( indexHits, contains( node ) );
+        transaction.finish();
 
         firstTx.rollback();
     }

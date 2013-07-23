@@ -77,8 +77,8 @@ public class NestedTransactionLocksIT
     public void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
     {
         // given
-        Node resource = db.getReferenceNode();
         Transaction realTx = db.beginTx();
+        Node resource = db.getReferenceNode();
         Transaction nestedTx = db.beginTx();
         assertNotSame( realTx, nestedTx );
         OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( "other thread", null );

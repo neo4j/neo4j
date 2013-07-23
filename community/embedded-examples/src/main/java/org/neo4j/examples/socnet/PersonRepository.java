@@ -96,13 +96,21 @@ public class PersonRepository
 
     public Person getPersonByName( String name )
     {
-        Node personNode = index.get( Person.NAME, name ).getSingle();
-        if ( personNode == null )
+        Transaction transaction = graphDb.beginTx();
+        try
         {
-            throw new IllegalArgumentException( "Person[" + name
-                    + "] not found" );
+            Node personNode = index.get( Person.NAME, name ).getSingle();
+            if ( personNode == null )
+            {
+                throw new IllegalArgumentException( "Person[" + name
+                        + "] not found" );
+            }
+            return new Person( personNode );
         }
-        return new Person( personNode );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public void deletePerson( Person person )

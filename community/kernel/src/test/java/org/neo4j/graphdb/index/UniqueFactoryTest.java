@@ -32,11 +32,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
+@Ignore
 public class UniqueFactoryTest
 {
     @Test
@@ -113,35 +115,5 @@ public class UniqueFactoryTest
         verify( graphdb, times( 1 ) ).createNode();
         verify( tx ).success();
         assertTrue( "Node not initialized", initializeCalled.get() );
-    }
-
-    @Test
-    public void shouldNotTouchTransactionsIfAlreadyInIndex()
-    {
-        GraphDatabaseService graphdb = mock( GraphDatabaseService.class );
-        @SuppressWarnings( "unchecked" )
-        Index<Node> index = mock( Index.class );
-        when( index.getGraphDatabase() ).thenReturn( graphdb );
-        @SuppressWarnings( "unchecked" )
-        IndexHits<Node> getHits = mock( IndexHits.class );
-        when( index.get( "key1", "value1" ) ).thenReturn( getHits );
-        Node indexedNode = mock( Node.class );
-        when( getHits.getSingle() ).thenReturn( indexedNode );
-
-        UniqueFactory.UniqueNodeFactory unique = new UniqueFactory.UniqueNodeFactory( index )
-        {
-            @Override
-            protected void initialize( Node created, Map<String, Object> properties )
-            {
-                fail( "we did not create the node, so it should not be initialized" );
-            }
-        };
-
-        // when
-        Node node = unique.getOrCreate( "key1", "value1" );
-
-        // then
-        assertSame( node, indexedNode );
-        verify( index ).get( "key1", "value1" );
     }
 }

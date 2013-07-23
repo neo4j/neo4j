@@ -97,6 +97,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
                 public void run()
                 {
                     awaitStartSignalAndRandomTimeLonger( startSignal );
+                    Transaction transaction = db.beginTx();
                     try
                     {
                         assertEquals( relCount, count( node.getRelationships() ) );
@@ -104,6 +105,9 @@ public class TestConcurrentRelationshipChainLoadingIssue
                     catch ( Throwable e )
                     {
                         error.set( e );
+                    }
+                    finally {
+                        transaction.finish();
                     }
                 }
             } );

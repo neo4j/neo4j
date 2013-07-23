@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 
 @Path( "/" )
 public class DummyThirdPartyWebService
@@ -61,9 +62,17 @@ public class DummyThirdPartyWebService
     @Produces( MediaType.TEXT_PLAIN )
     public Response countNodes( @Context GraphDatabaseService db )
     {
-        return Response.ok()
-                .entity( String.valueOf( countNodesIn( db ) ) )
-                .build();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            return Response.ok()
+                    .entity( String.valueOf( countNodesIn( db ) ) )
+                    .build();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @GET

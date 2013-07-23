@@ -92,31 +92,26 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
     {
         return kernelAPI.statementOperations();
     }
-    
+
     public StatementState statementForReading()
     {
-        StatementState statement = newStatementIfInTx();
-        if ( statement != null )
-        {
-            return statement;
-        }
-        return statementStateOwners.get().getStatementState();
+        return statementForReadingAndWriting();
     }
-    
+
     public StatementState statementForWriting()
     {
-        StatementState statement = newStatementIfInTx();
+        return statementForReadingAndWriting();
+    }
+
+    private StatementState statementForReadingAndWriting()
+    {
+        checkIfShutdown();
+        StatementState statement = txManager.newStatement();
         if ( statement != null )
         {
             return statement;
         }
         throw new NotInTransactionException();
-    }
-
-    private StatementState newStatementIfInTx()
-    {
-        checkIfShutdown();
-        return txManager.newStatement();
     }
 
     @Override
@@ -133,7 +128,12 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
             throw new DatabaseShutdownException();
         }
     }
-    
+
+    public void assertInTransaction()
+    {
+        txManager.assertInTransaction();
+    }
+
     public static class ReadOnly extends ThreadToStatementContextBridge
     {
         public ReadOnly( KernelAPI kernelAPI, AbstractTransactionManager txManager,

@@ -93,15 +93,21 @@ public class MultipleClusterTest
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster1.getAllMembers() )
             {
                 highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+
+                Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
                         "cluster" ) );
+                transaction.finish();
             }
 
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
             {
                 highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+
+                Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
                         "cluster" ) );
+                transaction.finish();
             }
         }
         finally

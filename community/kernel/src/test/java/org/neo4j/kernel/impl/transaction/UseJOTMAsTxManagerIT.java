@@ -108,8 +108,13 @@ public class UseJOTMAsTxManagerIT
             } finally {
                 tx.finish();
             }
-            
-            assertThat( db.getNodeById( node.getId() ), is( node ) );
+
+            tx = db.beginTx();
+            try {
+                assertThat( db.getNodeById( node.getId() ), is( node ) );
+            } finally {
+                tx.finish();
+            }
         }
         finally
         {

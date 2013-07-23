@@ -184,7 +184,8 @@ public class RolesDocTest extends AbstractJavaDocTestbase
                 .relationships( RoleRels.MEMBER_OF, Direction.INCOMING );
         Traverser traverser = traversalDescription.traverse( admins );
         // END SNIPPET: get-admins
-        
+
+        graphdb().beginTx();
         gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
         String query = "start admins=node("
                        + admins.getId()

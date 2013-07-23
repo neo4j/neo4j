@@ -822,8 +822,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
         commit();
         clearCache();
-        
+
+        newTransaction();
         hub = graphDB.getNodeById( hub.getId() );
+
         int count = 0;
         for ( @SuppressWarnings( "unused" )
         Relationship r1 : hub.getRelationships() )
@@ -839,6 +841,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             count += count( hub.getRelationships() );
         }
         assertEquals( 40000, count );
+        commit();
     }
 
     @Test

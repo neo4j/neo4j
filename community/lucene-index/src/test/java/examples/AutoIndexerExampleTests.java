@@ -114,6 +114,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         // END SNIPPET: ConfigAutoIndexer
 
         // START SNIPPET: APIReadAutoIndex
+        Transaction transaction = graphDb.beginTx();
         // Get the Node auto index
         ReadableIndex<Node> autoNodeIndex = graphDb.index()
                 .getNodeAutoIndexer()
@@ -138,6 +139,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         assertFalse( autoRelIndex.get( "relPropNonIndexed",
                 "relPropValueNonIndexed" ).hasNext() );
         // END SNIPPET: APIReadAutoIndex
+        transaction.finish();
         graphDb.shutdown();
     }
 
@@ -198,6 +200,7 @@ public class AutoIndexerExampleTests implements GraphHolder
             tx.finish();
         }
 
+        Transaction transaction = graphDb.beginTx();
         // Get the Node auto index
         ReadableIndex<Node> autoNodeIndex = nodeAutoIndexer.getAutoIndex();
         // node1 and node2 both had auto indexed properties, get them
@@ -215,6 +218,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         assertEquals( rel,
                 autoRelIndex.get( "relProp1", "relProp1Value1" ).getSingle() );
         assertFalse( autoRelIndex.get( "relPropNonIndexed", "relProp1Value2" ).hasNext() );
+        transaction.finish();
         graphDb.shutdown();
     }
 
@@ -295,6 +299,7 @@ public class AutoIndexerExampleTests implements GraphHolder
             tx.finish();
         }
 
+        Transaction transaction = graphDb.beginTx();
         // Verify
         ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
         // node1 is completely gone
@@ -313,6 +318,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         // Finally, node4 is removed because the property was removed.
         assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
         // END SNIPPET: Mutations
+        transaction.finish();
         graphDb.shutdown();
     }
 

@@ -74,10 +74,12 @@ public class TestConcurrentModificationOfRelationshipChains
 
         deleteRelationshipInSameThread( db, firstFromSecondBatch );
 
+        Transaction transaction = db.beginTx();
         for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
         {
             rel.getId();
         }
+        transaction.finish();
     }
 
     @Test
@@ -89,10 +91,12 @@ public class TestConcurrentModificationOfRelationshipChains
 
         deleteRelationshipInDifferentThread( db, firstFromSecondBatch );
 
+        Transaction transaction = db.beginTx();
         for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
         {
             rel.getId();
         }
+        transaction.finish();
     }
 
     @Test
@@ -166,6 +170,9 @@ public class TestConcurrentModificationOfRelationshipChains
         tx.finish();
 
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
-        return Triplet.of( node1.getRelationships(), node1.getId(), firstFromSecondBatch );
+        Transaction transaction = db.beginTx();
+        Iterable<Relationship> relationships = node1.getRelationships();
+        transaction.finish();
+        return Triplet.of( relationships, node1.getId(), firstFromSecondBatch );
     }
 }

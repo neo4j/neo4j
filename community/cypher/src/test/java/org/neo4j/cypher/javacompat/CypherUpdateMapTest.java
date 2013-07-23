@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
@@ -48,7 +49,7 @@ public class CypherUpdateMapTest
                 )
         );
 
-        Node node1 = gdb.getNodeById(0);
+        Node node1 = getNodeByIdInTx( 0 );
 
         assertThat( node1, inTx( gdb, hasProperty( "key1" ).withValue( "value1" ) ) );
         assertThat( node1, inTx( gdb, hasProperty( "key2" ).withValue( 1234 ) ) );
@@ -60,11 +61,21 @@ public class CypherUpdateMapTest
                 )
         );
 
-        Node node2 = gdb.getNodeById(0);
+        Node node2 = getNodeByIdInTx( 0 );
 
         assertThat( node2, inTx( gdb, not( hasProperty( "key1" ) ) ) );
         assertThat( node2, inTx( gdb, not( hasProperty( "key2" ) ) ) );
         assertThat( node2, inTx( gdb, hasProperty( "key3" ).withValue(5678) ) );
+    }
+
+    private Node getNodeByIdInTx( int nodeId )
+    {
+        Transaction transaction = gdb.beginTx();
+        try {
+            return gdb.getNodeById( nodeId );
+        } finally {
+            transaction.finish();
+        }
     }
 
     @Before

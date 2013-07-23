@@ -139,21 +139,29 @@ public class Matrix
 
     public String printNeoFriends()
     {
-        Node neoNode = getNeoNode();
-        // START SNIPPET: friends-usage
-        int numberOfFriends = 0;
-        StringBuilder output = new StringBuilder( String.format( "%s's friends:\n", neoNode.getProperty( "name" ) ) );
-        Traverser friendsTraverser = getFriends( neoNode );
-        for ( Node friendNode : friendsTraverser )
+        Transaction transaction = graphDb.beginTx();
+        try
         {
-            output.append( String.format( "At depth %d => %s\n",
-                    friendsTraverser.currentPosition().depth(),
-                    friendNode.getProperty( "name" ) ) );
-            numberOfFriends++;
+            Node neoNode = getNeoNode();
+            // START SNIPPET: friends-usage
+            int numberOfFriends = 0;
+            StringBuilder output = new StringBuilder( String.format( "%s's friends:\n", neoNode.getProperty( "name" ) ) );
+            Traverser friendsTraverser = getFriends( neoNode );
+            for ( Node friendNode : friendsTraverser )
+            {
+                output.append( String.format( "At depth %d => %s\n",
+                        friendsTraverser.currentPosition().depth(),
+                        friendNode.getProperty( "name" ) ) );
+                numberOfFriends++;
+            }
+            output.append( String.format( "Number of friends found: %d\n", numberOfFriends ) );
+            // END SNIPPET: friends-usage
+            return output.toString();
         }
-        output.append( String.format( "Number of friends found: %d\n", numberOfFriends ) );
-        // END SNIPPET: friends-usage
-        return output.toString();
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     // START SNIPPET: get-friends
@@ -168,20 +176,28 @@ public class Matrix
 
     public String printMatrixHackers()
     {
-        // START SNIPPET: find--hackers-usage
-        StringBuilder output = new StringBuilder("Hackers:\n");
-        int numberOfHackers = 0;
-        Traverser traverser = findHackers( getNeoNode() );
-        for ( Node hackerNode : traverser )
+        Transaction transaction = graphDb.beginTx();
+        try
         {
-            output.append( String.format( "At depth %d => %s\n",
-                    traverser.currentPosition().depth(),
-                    hackerNode.getProperty( "name" ) ) );
-            numberOfHackers++;
+            // START SNIPPET: find--hackers-usage
+            StringBuilder output = new StringBuilder("Hackers:\n");
+            int numberOfHackers = 0;
+            Traverser traverser = findHackers( getNeoNode() );
+            for ( Node hackerNode : traverser )
+            {
+                output.append( String.format( "At depth %d => %s\n",
+                        traverser.currentPosition().depth(),
+                        hackerNode.getProperty( "name" ) ) );
+                numberOfHackers++;
+            }
+            output.append( String.format( "Number of hackers found: %d\n", numberOfHackers ) );
+            // END SNIPPET: find--hackers-usage
+            return output.toString();
         }
-        output.append( String.format( "Number of hackers found: %d\n", numberOfHackers ) );
-        // END SNIPPET: find--hackers-usage
-        return output.toString();
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     // START SNIPPET: find-hackers

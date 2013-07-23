@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import java.net.URI;
@@ -106,9 +107,15 @@ public class TestSlaveOnlyCluster
             tx.success();
             tx.finish();
 
-            node = master.getNodeById( nodeId );
-
-            Assert.assertThat(node.getProperty( "foo" ).toString(), equalTo( "bar" ));
+            Transaction transaction = master.beginTx();
+            try
+            {
+                assertThat( master.getNodeById( nodeId ).getProperty( "foo" ).toString(), equalTo( "bar" ) );
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
         finally
         {
@@ -129,7 +136,7 @@ public class TestSlaveOnlyCluster
             clusterManager.start();
 
             HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            Assert.assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ));
+            assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ) );
         }
         finally
         {

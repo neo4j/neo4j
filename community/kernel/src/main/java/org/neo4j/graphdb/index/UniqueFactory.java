@@ -192,29 +192,23 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     public final T getOrCreate( String key, Object value )
     {
         T result = index.get( key, value ).getSingle();
+
+        if ( result != null )
+        {
+            return result;
+        }
+
+        Map<String, Object> properties = Collections.singletonMap( key, value );
+        T created = create( properties );
+        result = index.putIfAbsent( created, key, value );
         if ( result == null )
         {
-            Transaction tx = graphDatabase().beginTx();
-            try
-            {
-                Map<String, Object> properties = Collections.singletonMap( key, value );
-                T created = create( properties );
-                result = index.putIfAbsent( created, key, value );
-                if ( result == null )
-                {
-                    initialize( created, properties );
-                    result = created;
-                }
-                else
-                {
-                    delete( created );
-                }
-                tx.success();
-            }
-            finally
-            {
-                tx.finish();
-            }
+            initialize( created, properties );
+            result = created;
+        }
+        else
+        {
+            delete( created );
         }
         return result;
     }
