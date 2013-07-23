@@ -80,7 +80,10 @@ public class TestImpermanentGraphDatabase
 
     private int nodeCount()
     {
-        return IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
+        Transaction transaction = db.beginTx();
+        int count = IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
+        transaction.finish();
+        return count;
     }
 
     private void createNode()

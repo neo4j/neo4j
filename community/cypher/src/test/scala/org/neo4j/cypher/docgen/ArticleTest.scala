@@ -86,9 +86,9 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     })
   }
 
-  def node(name: String): Node = db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name)))
+  def node(name: String): Node = db.inTx(db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name))))
 
-  def rel(id: Long): Relationship = db.getRelationshipById(id)
+  def rel(id: Long): Relationship = db.inTx(db.getRelationshipById(id))
 
 
   def text: String

@@ -141,6 +141,7 @@ public class ShellDocTest
                 "end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
+        db.beginTx();
         doc.run();
         doc.add( "rmnode -f 0", "", "delete node 0 (reference node)" );
         doc.add( "cd", "", "cd back to the reference node" );
@@ -250,6 +251,7 @@ public class ShellDocTest
                 "return zionist.name;",
                 "ColumnFilter",
                 "profile the query by displaying more query execution information" );
+        db.beginTx();
         doc.run();
         server.shutdown();
         PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );

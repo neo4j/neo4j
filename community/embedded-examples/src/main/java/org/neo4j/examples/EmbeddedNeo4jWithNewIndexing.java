@@ -60,7 +60,15 @@ public class EmbeddedNeo4jWithNewIndexing
             }
             // END SNIPPET: createIndex
             // START SNIPPET: wait
-            schema.awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
+            Transaction transaction = graphDb.beginTx();
+            try
+            {
+                schema.awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
+            }
+            finally
+            {
+                transaction.finish();
+            }
             // END SNIPPET: wait
         }
 
@@ -93,10 +101,11 @@ public class EmbeddedNeo4jWithNewIndexing
             Label label = DynamicLabel.label( "User" );
             int idToFind = 45;
             String nameToFind = "user" + idToFind + "@neo4j.org";
-            ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind )
-                    .iterator();
+            Transaction transaction = graphDb.beginTx();
             try
             {
+                ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind )
+                        .iterator();
                 while ( users.hasNext() )
                 {
                     Node node = users.next();
@@ -106,7 +115,7 @@ public class EmbeddedNeo4jWithNewIndexing
             finally
             {
                 // alternatively use a transaction
-                users.close();
+                transaction.finish();
             }
             // END SNIPPET: findUsers
         }

@@ -171,7 +171,6 @@ public class TestUniqueKeys extends AbstractClusterTest
             int highestId = 0;
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
-                System.err.println( db );
                 TokenHolder<Token> holder = db.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
                 highestId = highestIdOf( holder, highestId );
                 Set<String> types = new HashSet<String>();

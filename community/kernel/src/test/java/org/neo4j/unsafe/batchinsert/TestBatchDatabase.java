@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -32,7 +33,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TestBatchDatabase
@@ -56,7 +56,9 @@ public class TestBatchDatabase
         gdb = turnIntoRealGraphDatabase( gdb );
 
         // then
-        assertThat( gdb.getNodeById( nodeId ), inTx( gdb, hasLabels( luluLabel ) ) );
+        Transaction transaction = gdb.beginTx();
+        assertThat( gdb.getNodeById( nodeId ), hasLabels( luluLabel ) );
+        transaction.finish();
 
         gdb.shutdown();
     }

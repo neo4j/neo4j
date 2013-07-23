@@ -50,7 +50,7 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes === List(graph.getReferenceNode))
+    assertInTx(createdNodes === List(graph.getReferenceNode))
     assertStats(result, nodesCreated = 0)
   }
 

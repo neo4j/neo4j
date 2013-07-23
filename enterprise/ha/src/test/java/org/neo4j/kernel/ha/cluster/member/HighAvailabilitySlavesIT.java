@@ -60,8 +60,17 @@ public class HighAvailabilitySlavesIT
         long node = createNode( cluster.getMaster(), name );
 
         // then
-        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
-            assertEquals( node, getNodeByName( db, name ) );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() ) {
+            Transaction transaction = db.beginTx();
+            try
+            {
+                assertEquals( node, getNodeByName( db, name ) );
+            }
+            finally
+            {
+                transaction.finish();
+            }
+        }
     }
 
     private long getNodeByName( HighlyAvailableGraphDatabase db, String name )

@@ -104,9 +104,11 @@ public class Neo4jBasicDocTest
 
         // Retrieve a node by using the id of the created node. The id's and
         // property should match.
+        Transaction transaction = graphDb.beginTx();
         Node foundNode = graphDb.getNodeById( n.getId() );
         assertThat( foundNode.getId(), is( n.getId() ) );
         assertThat( (String) foundNode.getProperty( "name" ), is( "Nancy" ) );
+        transaction.finish();
         // END SNIPPET: unitTest
     }
 }

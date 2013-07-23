@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.junit.Test;
 
+import org.mockito.Matchers;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -40,6 +41,7 @@ import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -49,6 +51,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -135,17 +138,23 @@ public class TestApps extends AbstractShellTest
         executeCommandExpectingException( "mkrel -c", "type" );
 
         executeCommand( "mkrel -ct " + type1.name() );
+        Transaction transaction = db.beginTx();
         Relationship relationship = db.getReferenceNode().getSingleRelationship( type1, Direction.OUTGOING );
         Node node = relationship.getEndNode();
+        transaction.finish();
         executeCommand( "mkrel -t " + type2.name() + " " + node.getId() );
+        transaction = db.beginTx();
         Relationship otherRelationship = db.getReferenceNode().getSingleRelationship( type2, Direction.OUTGOING );
         assertEquals( node, otherRelationship.getEndNode() );
+        transaction.finish();
 
         // With properties
         executeCommand( "mkrel -ct " + type3.name() + " --np \"{'name':'Neo','destiny':'The one'}\" --rp \"{'number':11}\"" );
+        transaction = db.beginTx();
         Relationship thirdRelationship = db.getReferenceNode().getSingleRelationship( type3, Direction.OUTGOING );
         assertThat( thirdRelationship, inTx( db, hasProperty( "number" ).withValue( 11 ) ) );
         Node thirdNode = thirdRelationship.getEndNode();
+        transaction.finish();
         assertThat( thirdNode, inTx( db, hasProperty( "name" ).withValue( "Neo" ) ) );
         assertThat( thirdNode, inTx( db, hasProperty( "destiny" ).withValue( "The one" ) ) );
         executeCommand( "cd -r " + thirdRelationship.getId() );
@@ -212,6 +221,7 @@ public class TestApps extends AbstractShellTest
         assertNodeExists( currentNode );
         assertFalse( currentNode.hasRelationship() );
         executeCommand( "pwd" );
+        beginTx();
         executeCommand( "cd -a " + db.getReferenceNode().getId() );
         executeCommand( "pwd" );
     }
@@ -299,14 +309,16 @@ public class TestApps extends AbstractShellTest
         relationship.setProperty( name, relationshipName );
         Node strayNode = db.createNode();
         finishTx();
-        
+
+        beginTx();
         executeCommand( "cd -a " + node.getId() );
         executeCommand( "START n = node({self}) RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
         executeCommand( "START r = relationship({self}) RETURN r.name;", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
         executeCommand( "START n = node({self}) RETURN n.name;", nodeTwoName );
-        
+        finishTx();
+
         executeCommand( "cd -a " + strayNode.getId() );
         beginTx();
         strayNode.delete();
@@ -323,6 +335,7 @@ public class TestApps extends AbstractShellTest
         node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         finishTx();
 
+        beginTx();
         executeCommand( "START n = node(" + node.getId() + ") match p=n-[r?*]-m RETURN p;", "\\d+ ms" );
     }
 
@@ -482,8 +495,7 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
-            assertTrue( "Expected notice about cause not found in " + e.getMessage(),
-                    e.getMessage().contains( NodeStillHasRelationshipsException.class.getSimpleName() ) );
+            assertThat( e.getStackTraceAsString(), containsString( "Node record Node[1,used=false,rel=0,prop=-1,labels=0,light] still has relationships" ) );
         }
     }
 
@@ -538,15 +550,17 @@ public class TestApps extends AbstractShellTest
     {
         Map<String, Serializable> variables = genericMap( "id", 0 );
         ShellClient client = newShellClient( shellServer, variables );
+        Transaction transaction = db.beginTx();
         executeCommand( client, "start n=node({id}) return n;", "1 row" );
+        transaction.finish();
     }
 
     @Test
     public void canDumpSubgraphWithCypher() throws Exception
     {
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        createRelationshipChain( db.getReferenceNode(), type, 1 );
         db.beginTx();
+        createRelationshipChain( db.getReferenceNode(), type, 1 );
         executeCommand( "dump start n=node(0) match n-[r]->m return n,r,m;",
                 "begin",
                 "start _0 = node\\(0\\) with _0 ",
@@ -559,8 +573,8 @@ public class TestApps extends AbstractShellTest
     public void canDumpGraph() throws Exception
     {
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        final Relationship rel = createRelationshipChain( db.getReferenceNode(), type, 1 )[0];
         db.beginTx();
+        final Relationship rel = createRelationshipChain( db.getReferenceNode(), type, 1 )[0];
         rel.getStartNode().setProperty( "f o o", "bar" );
         rel.setProperty( "since", 2010 );
         rel.getEndNode().setProperty( "flags", new Boolean[]{true, false, true} );

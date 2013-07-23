@@ -202,7 +202,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val engine = new ExecutionEngine(fakeGraph)
 
     //When:
-    engine.execute("start n=node(*) return n limit 5").toList
+    graph.inTx(engine.execute("start n=node(*) return n limit 5").toList)
 
     //Then:
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")

@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -73,7 +74,15 @@ public class TestCacheBeans
     public void canMeasureSizeOfCache() throws Exception
     {
         long[] before = get( CacheBean.NUMBER_OF_CACHED_ELEMENTS );
-        graphDb.getReferenceNode();
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            graphDb.getReferenceNode();
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertChanged( "cache size not updated", before, get( CacheBean.NUMBER_OF_CACHED_ELEMENTS ) );
     }
 
@@ -81,8 +90,16 @@ public class TestCacheBeans
     public void canMeasureAmountsOfHitsAndMisses() throws Exception
     {
         long[] hits = get( CacheBean.HIT_COUNT ), miss = get( CacheBean.MISS_COUNT );
-        graphDb.getReferenceNode();
-        graphDb.getReferenceNode();
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            graphDb.getReferenceNode();
+            graphDb.getReferenceNode();
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertChanged( "hit count not updated", hits, get( CacheBean.HIT_COUNT ) );
         assertChanged( "miss count not updated", miss, get( CacheBean.MISS_COUNT ) );
     }

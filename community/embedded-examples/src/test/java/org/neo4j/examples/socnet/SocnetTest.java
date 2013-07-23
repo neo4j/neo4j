@@ -77,6 +77,7 @@ public class SocnetTest
 
         StatusUpdate update = person.getStatus().iterator().next();
 
+        graphDb.beginTx();
         assertThat( update, notNullValue() );
         assertThat( update.getStatusText(), equalTo( "Testing!" ) );
         assertThat( update.getPerson(), equalTo( person ) );

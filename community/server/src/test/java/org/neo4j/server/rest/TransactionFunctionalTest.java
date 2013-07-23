@@ -31,6 +31,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.server.HTTP;
@@ -376,14 +377,22 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private long countNodes()
     {
-        long count = 0;
-        Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
-        while ( allNodes.hasNext() )
+        Transaction transaction = graphdb().beginTx();
+        try
         {
-            allNodes.next();
-            count++;
+            long count = 0;
+            Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
+            while ( allNodes.hasNext() )
+            {
+                allNodes.next();
+                count++;
+            }
+            return count;
         }
-        return count;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     private static Matcher<String> matches( final String pattern )

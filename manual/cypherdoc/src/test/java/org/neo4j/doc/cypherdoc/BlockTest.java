@@ -38,6 +38,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class BlockTest
@@ -67,7 +68,16 @@ public class BlockTest
     public void noReferenceNode()
     {
         expectedException.expect( NotFoundException.class );
-        database.getReferenceNode();
+
+        Transaction transaction = database.beginTx();
+        try
+        {
+            database.getReferenceNode();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -130,7 +140,16 @@ public class BlockTest
         engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "// graph:xyz" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
-        String output = block.process( engine, database );
+        Transaction transaction = database.beginTx();
+        String output;
+        try
+        {
+            output = block.process( engine, database );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertThat(
                 output,
                 allOf( startsWith( "[\"dot\"" ), containsString( "Adam" ),

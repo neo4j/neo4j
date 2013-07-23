@@ -618,7 +618,6 @@ public class TestIdGenerator
         deleteRecursively( new File( storeDir ) );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
-        Node rootNode = db.getReferenceNode();
 
         // This transaction will, if some commands may be executed more than
         // once,
@@ -631,7 +630,7 @@ public class TestIdGenerator
         for ( int i = 0; i < 20; i++ )
         {
             Node otherNode = db.createNode();
-            Relationship relationship = rootNode.createRelationshipTo( otherNode, type );
+            Relationship relationship = db.getReferenceNode().createRelationshipTo( otherNode, type );
             if ( i % 5 == 0 )
             {
                 otherNode.delete();
@@ -651,7 +650,6 @@ public class TestIdGenerator
         // that
         // all ids are unique.
         db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
-        rootNode = db.getReferenceNode();
         tx = db.beginTx();
         for ( int i = 0; i < 100; i++ )
         {
@@ -660,7 +658,7 @@ public class TestIdGenerator
             {
                 fail( "Managed to create a node with an id that was already in use" );
             }
-            Relationship relationship = rootNode.createRelationshipTo( otherNode, type );
+            Relationship relationship = db.getReferenceNode().createRelationshipTo( otherNode, type );
             if ( !createdRelationshipIds.add( relationship.getId() ) )
             {
                 fail( "Managed to create a relationship with an id that was already in use" );
@@ -671,11 +669,12 @@ public class TestIdGenerator
 
         // Verify by loading everything from scratch
         ((GraphDatabaseAPI) db).getNodeManager().clearCache();
+        tx = db.beginTx();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
             lastOrNull( node.getRelationships() );
         }
-
+        tx.finish();
         db.shutdown();
     }
 

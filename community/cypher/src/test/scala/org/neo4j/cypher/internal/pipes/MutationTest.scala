@@ -59,7 +59,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     tx.failure()
     tx.finish()
 
-    intercept[NotFoundException](graph.getNodeById(1))
+    intercept[NotFoundException](graph.inTx(graph.getNodeById(1)))
   }
 
   @Test
@@ -73,8 +73,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     tx.success()
     tx.finish()
 
-    val n = graph.getNodeById(1)
-    assertInTx(n.getProperty("name") === "Andres")
+    assertInTx(graph.getNodeById(1).getProperty("name") === "Andres")
   }
 
   private def getNode(key: String, n: Node) = InjectValue(n, NodeType())
@@ -122,7 +121,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 
     state.inner.close(success = true)
 
-    intercept[NotFoundException](graph.getNodeById(node_id))
+    intercept[NotFoundException](graph.inTx(graph.getNodeById(node_id)))
   }
 }
 

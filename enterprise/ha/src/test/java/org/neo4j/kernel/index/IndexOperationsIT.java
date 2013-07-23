@@ -91,13 +91,36 @@ public class IndexOperationsIT extends AbstractClusterTest
 
         // THEN
         // -- the index instances should still be viable to use
-        for ( IndexManager indexManager : indexManagers.values() )
+        for ( Map.Entry<HighlyAvailableGraphDatabase, IndexManager> entry : indexManagers.entrySet() )
         {
-            assertTrue( indexManager.existsForNodes( key ) );
-            assertEquals( nodeId, indexManager.forNodes( key ).get( key, value ).getSingle().getId() );
+            HighlyAvailableGraphDatabase db = entry.getKey();
+            Transaction transaction = db.beginTx();
+            try
+            {
+                IndexManager indexManager = entry.getValue();
+                assertTrue( indexManager.existsForNodes( key ) );
+                assertEquals( nodeId, indexManager.forNodes( key ).get( key, value ).getSingle().getId() );
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
-        for ( Index<Node> index : indexes.values())
-            assertEquals( nodeId, index.get( key, value ).getSingle().getId() );
+
+        for ( Map.Entry<HighlyAvailableGraphDatabase, Index<Node>> entry : indexes.entrySet() )
+        {
+            HighlyAvailableGraphDatabase db = entry.getKey();
+            Transaction transaction = db.beginTx();
+            try
+            {
+                Index<Node> index = entry.getValue();
+                assertEquals( nodeId, index.get( key, value ).getSingle().getId() );
+            }
+            finally
+            {
+                transaction.finish();
+            }
+        }
     }
     
     @Test
@@ -159,10 +182,18 @@ public class IndexOperationsIT extends AbstractClusterTest
     
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        Node node = db.getNodeById( nodeId );
-        assertEquals( value, node.getProperty( key ) );
-        assertTrue( db.index().existsForNodes( key ) );
-        assertEquals( node, db.index().forNodes( key ).get( key, value ).getSingle() );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Node node = db.getNodeById( nodeId );
+            assertEquals( value, node.getProperty( key ) );
+            assertTrue( db.index().existsForNodes( key ) );
+            assertEquals( node, db.index().forNodes( key ).get( key, value ).getSingle() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
     
     private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase, Node>

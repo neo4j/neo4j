@@ -79,8 +79,16 @@ public class TestStoreCopy extends AbstractClusterTest
         slave = cluster.getAnySlave();
         slaveDir = cluster.getStoreDir( slave );
         slaveTempCopyDir = new File( slaveDir, COPY_FROM_MASTER_TEMP );
-        
-        assertEquals( VALUE, slave.getNodeById( nodeId ).getProperty( KEY ) );
+
+        Transaction transaction = slave.beginTx();
+        try
+        {
+            assertEquals( VALUE, slave.getNodeById( nodeId ).getProperty( KEY ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
     
     @After
@@ -158,11 +166,19 @@ public class TestStoreCopy extends AbstractClusterTest
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        Node node = db.getNodeById( nodeId );
-        assertEquals( "Property '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
-                value, node.getProperty( key ) );
-        assertTrue( "Index '" + key + "' not found for " + db, db.index().existsForNodes( key ) );
-        assertEquals( "Index '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
-                node, db.index().forNodes( key ).get( key, value ).getSingle() );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Node node = db.getNodeById( nodeId );
+            assertEquals( "Property '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
+                    value, node.getProperty( key ) );
+            assertTrue( "Index '" + key + "' not found for " + db, db.index().existsForNodes( key ) );
+            assertEquals( "Index '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
+                    node, db.index().forNodes( key ).get( key, value ).getSingle() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

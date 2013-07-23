@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -155,16 +156,24 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
                 .getRelationshipAutoIndexer()
                 .getAutoIndex()
                 .getName();
-        gen.get()
-                .noGraph()
-                .expectedStatus( 405 )
-                .payload( createJsonStringFor( getRelationshipUri( data.get()
-                        .get( "I" )
-                        .getRelationships()
-                        .iterator()
-                        .next() ), "name", "I" ) )
-                .post( postRelationshipIndexUri( indexName ) )
-                .entity();
+        Transaction transaction = graphdb().beginTx();
+        try
+        {
+            gen.get()
+                    .noGraph()
+                    .expectedStatus( 405 )
+                    .payload( createJsonStringFor( getRelationshipUri( data.get()
+                            .get( "I" )
+                            .getRelationships()
+                            .iterator()
+                            .next() ), "name", "I" ) )
+                    .post( postRelationshipIndexUri( indexName ) )
+                    .entity();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     /**
@@ -210,31 +219,39 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     public void autoindexed_relationships_cannot_be_removed_manually() throws 
             JsonParseException
     {
-        long id = data.get()
-                .get( "I" )
-                .getRelationships()
-                .iterator()
-                .next()
-                .getId();
-        String indexName = graphdb().index()
-                .getRelationshipAutoIndexer()
-                .getAutoIndex()
-                .getName();
-        gen.get()
-                .noGraph()
-                .expectedStatus( 405 )
-                .delete( getDataUri() + "index/relationship/" + indexName + "/since/today/" + id )
-                .entity();
-        gen.get()
-                .noGraph()
-                .expectedStatus( 405 )
-                .delete( getDataUri() + "index/relationship/" + indexName + "/since/" + id )
-                .entity();
-        gen.get()
-                .noGraph()
-                .expectedStatus( 405 )
-                .delete( getDataUri() + "index/relationship/" + indexName + "/" + id )
-                .entity();
+        Transaction transaction = graphdb().beginTx();
+        try
+        {
+            long id = data.get()
+                    .get( "I" )
+                    .getRelationships()
+                    .iterator()
+                    .next()
+                    .getId();
+            String indexName = graphdb().index()
+                    .getRelationshipAutoIndexer()
+                    .getAutoIndex()
+                    .getName();
+            gen.get()
+                    .noGraph()
+                    .expectedStatus( 405 )
+                    .delete( getDataUri() + "index/relationship/" + indexName + "/since/today/" + id )
+                    .entity();
+            gen.get()
+                    .noGraph()
+                    .expectedStatus( 405 )
+                    .delete( getDataUri() + "index/relationship/" + indexName + "/since/" + id )
+                    .entity();
+            gen.get()
+                    .noGraph()
+                    .expectedStatus( 405 )
+                    .delete( getDataUri() + "index/relationship/" + indexName + "/" + id )
+                    .entity();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     /**

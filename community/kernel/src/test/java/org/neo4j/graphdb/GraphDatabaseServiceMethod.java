@@ -17,35 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-
-public class TransactionLifecycleTest
+/**
+ * Test convenience: the ability to call a method on GraphDatabaseService using a generic interface
+ */
+interface GraphDatabaseServiceMethod
 {
-    @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
-
-    @Test
-    public void givenACallToFailATransactionSubsequentSuccessCallsShouldBeSwallowedSilently()
-    {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
-        Transaction tx = graphdb.beginTx();
-        try
-        {
-            graphdb.createNode();
-            tx.failure();
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
+    public void call( GraphDatabaseService graphDatabaseService );
 }

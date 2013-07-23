@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -73,7 +74,9 @@ public class TestIndexImplOnNeo
         assertEquals( config, db.index().getConfiguration( index ) );
         
         // Querying for "refnode" always returns the reference node for this dummy index.
+        Transaction transaction = db.beginTx();
         assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
+        transaction.finish();
         // Querying for something other than "refnode" returns null for this dummy index.
         assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
         

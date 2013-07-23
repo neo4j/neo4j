@@ -119,32 +119,27 @@ public class TraversalDocTest extends AbstractJavaDocTestbase
                         gen.get().getTitle() ) );
 
         String output = example.knowsLikesTraverser( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
 
         output = example.traverseBaseTraverser( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "baseoutput", createOutputSnippet( output ) );
 
         output = example.depth3( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "output3", createOutputSnippet( output ) );        
 
         output = example.depth4( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "output4", createOutputSnippet( output ) );        
 
+        db.beginTx();
         output = example.nodes( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "nodeoutput", createOutputSnippet( output ) );
 
         output = example.relationships( joe );
-        System.out.println( output );
         gen.get()
                 .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
 
