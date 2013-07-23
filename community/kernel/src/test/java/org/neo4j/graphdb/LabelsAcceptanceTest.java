@@ -420,7 +420,7 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        final Label label = DynamicLabel.label("A");
+        final Label label = DynamicLabel.label( "A" );
         {
             final Transaction tx = db.beginTx();
             final Node node = db.createNode();
@@ -443,7 +443,9 @@ public class LabelsAcceptanceTest
         }
 
         // THEN
+        Transaction transaction = db.beginTx();
         assertEquals( 0, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+        transaction.finish();
     }
 
     @Test
@@ -491,12 +493,20 @@ public class LabelsAcceptanceTest
         dbRule.clearCache();
 
         // then
-        List<String> labels = new ArrayList<>();
-        for ( Label label : node.getLabels() )
+        Transaction transaction = db.beginTx();
+        try
         {
-            labels.add( label.name() );
+            List<String> labels = new ArrayList<>();
+            for ( Label label : node.getLabels() )
+            {
+                labels.add( label.name() );
+            }
+            assertEquals( "labels on node: " + labels, NUMBER_OF_PRESERVED_LABELS, labels.size() );
         }
-        assertEquals( "labels on node: " + labels, NUMBER_OF_PRESERVED_LABELS, labels.size() );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @SuppressWarnings("deprecation")

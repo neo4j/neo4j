@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -52,30 +53,38 @@ public class RecoveryIT
         process.waitFor();
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(path );
-        assertTrue( db.index().existsForNodes( "myIndex" ) );
-        Index<Node> index = db.index().forNodes( "myIndex" );
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        Transaction transaction = db.beginTx();
+        try
         {
-            for ( String key : node.getPropertyKeys() )
+            assertTrue( db.index().existsForNodes( "myIndex" ) );
+            Index<Node> index = db.index().forNodes( "myIndex" );
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
-                String value = (String) node.getProperty( key );
-                boolean found = false;
-                for ( Node indexedNode : index.get( key, value ) )
+                for ( String key : node.getPropertyKeys() )
                 {
-                    if ( indexedNode.equals( node ) )
+                    String value = (String) node.getProperty( key );
+                    boolean found = false;
+                    for ( Node indexedNode : index.get( key, value ) )
                     {
-                        found = true;
-                        break;
+                        if ( indexedNode.equals( node ) )
+                        {
+                            found = true;
+                            break;
+                        }
                     }
-                }
-                if ( !found )
-                {
-                    throw new IllegalStateException( node + " has property '" + key + "'='" +
-                            value + "', but not in index" );
+                    if ( !found )
+                    {
+                        throw new IllegalStateException( node + " has property '" + key + "'='" +
+                                value + "', but not in index" );
+                    }
                 }
             }
         }
-        db.shutdown();
+        finally
+        {
+            transaction.finish();
+            db.shutdown();
+        }
     }
 
     private void awaitFile( File file ) throws InterruptedException

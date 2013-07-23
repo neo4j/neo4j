@@ -76,27 +76,27 @@ public class TestIdReuse
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
-            setSomeAndRemoveSome( db.getReferenceNode(), value );
+            setSomeAndRemoveSomePropertiesFromReferenceNode( db, value );
         }
         db.shutdown();
         long sizeBefore = file.length();
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
         for ( int i = 0; i < iterations; i++ )
         {
-            setSomeAndRemoveSome( db.getReferenceNode(), value );
+            setSomeAndRemoveSomePropertiesFromReferenceNode( db, value );
         }
         db.shutdown();
         assertEquals( sizeBefore, file.length() );
     }
     
-    private void setSomeAndRemoveSome( Node node, Object value )
+    private void setSomeAndRemoveSomePropertiesFromReferenceNode( GraphDatabaseService graphDatabaseService, Object value )
     {
-        Transaction tx = node.getGraphDatabase().beginTx();
+        Transaction tx = graphDatabaseService.beginTx();
         try
         {
             for ( int i = 0; i < 10; i++ )
             {
-                node.setProperty( "key" + i, value );
+                graphDatabaseService.getReferenceNode().setProperty( "key" + i, value );
             }
             tx.success();
         }
@@ -104,12 +104,12 @@ public class TestIdReuse
         {
             tx.finish();
         }
-        tx = node.getGraphDatabase().beginTx();
+        tx = graphDatabaseService.beginTx();
         try
         {
             for ( int i = 0; i < 10; i++ )
             {
-                node.removeProperty( "key" + i );
+                graphDatabaseService.getReferenceNode().removeProperty( "key" + i );
             }
             tx.success();
         }

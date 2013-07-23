@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
@@ -165,8 +166,10 @@ public class TestRecovery
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
 
         db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
+        Transaction transaction = db.beginTx();
         assertFalse( db.index().existsForNodes( "index" ) );
         assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
+        transaction.finish();
         db.shutdown();
     }
 }

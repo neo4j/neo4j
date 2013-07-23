@@ -185,9 +185,10 @@ public class IndexingAcceptanceTest
             }
             waitForIndex( beansAPI, indexDefinition );
         }
-        Node myNode = beansAPI.getNodeById( id );
+        Node myNode;
         {
             Transaction tx = beansAPI.beginTx();
+            myNode = beansAPI.getNodeById( id );
             try
             {
                 myNode.addLabel( MY_LABEL );

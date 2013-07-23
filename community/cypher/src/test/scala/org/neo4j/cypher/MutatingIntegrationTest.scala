@@ -34,25 +34,23 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
 
   @Test
   def create_a_single_node() {
-    val before = graph.getAllNodes.asScala.size
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = parseAndExecute("create a")
 
     assertStats(result, nodesCreated = 1)
-    assert(graph.getAllNodes.asScala.size === before + 1)
+    assertInTx(graph.getAllNodes.asScala.size === before + 1)
   }
 
 
   @Test
   def create_a_single_node_with_props_and_return_it() {
-    val before = graph.getAllNodes.asScala.size
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = parseAndExecute("create (a {name : 'Andres'}) return a")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
-    assert(graph.getAllNodes.asScala.size === before + 1)
-
-    assert(graph.getAllNodes.asScala.size === before + 1)
+    assertInTx(graph.getAllNodes.asScala.size === before + 1)
 
     val list = result.toList
     assert(list.size === 1)
@@ -99,7 +97,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     assertStats(result, nodesDeleted = 1    )
 
     assert(result.toList === List())
-    intercept[NotFoundException](graph.getNodeById(a))
+    intercept[NotFoundException](graph.inTx(graph.getNodeById(a)))
   }
 
   @Test
@@ -126,7 +124,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     val result = parseAndExecute("start a = node(1) match a-[r]->() delete r")
     assertStats(result, relationshipsDeleted = 3    )
 
-    assert(a.getRelationships.asScala.size === 0)
+    assertInTx(a.getRelationships.asScala.size === 0)
   }
 
   @Test
@@ -141,9 +139,9 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
       relationshipsCreated = 3
     )
 
-    assert(a.getRelationships.asScala.size === 1)
-    assert(b.getRelationships.asScala.size === 1)
-    assert(c.getRelationships.asScala.size === 1)
+    assertInTx(a.getRelationships.asScala.size === 1)
+    assertInTx(b.getRelationships.asScala.size === 1)
+    assertInTx(c.getRelationships.asScala.size === 1)
   }
 
   @Test
@@ -180,7 +178,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
       nodesCreated = 1
     )
 
-    assertThat(graph.getNodeById(4), inTx(graph, hasProperty("name").withValue(Array("Andres", "Michael", "Peter"))))
+    assertInTx(graph.getNodeById(4).getProperty("name") === Array("Andres", "Michael", "Peter"))
   }
 
   @Test
@@ -193,7 +191,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
       nodesCreated = 1
     )
 
-    assertThat(graph.getNodeById(2), inTx(graph, hasProperty("x").withValue(Array())))
+    assertInTx(graph.getNodeById(2).getProperty("x") === Array())
   }
 
   @Test
@@ -347,7 +345,7 @@ return distinct center""")
     relate(a,b)
 
     parseAndExecute("""start n=node(*) match n-[r?]-() delete n,r""")
-    assert(graph.getAllNodes.asScala.size === 0)
+    assertInTx(graph.getAllNodes.asScala.size === 0)
   }
 
   @Test
@@ -357,7 +355,7 @@ return distinct center""")
     relate(a,b)
 
     parseAndExecute("""start n=node(1) match p=n-->() delete p""")
-    assert(graph.getAllNodes.asScala.size === 1)
+    assertInTx(graph.getAllNodes.asScala.size === 1)
   }
 
   @Test

@@ -96,7 +96,15 @@ public class DeletionTest
             tx.finish();
         }
 
-        assertNotNull( master.getRelationshipById( rel.getId() ) );
+        Transaction transaction = master.beginTx();
+        try
+        {
+            assertNotNull( master.getRelationshipById( rel.getId() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
 
         // when
         tx = slave.beginTx();

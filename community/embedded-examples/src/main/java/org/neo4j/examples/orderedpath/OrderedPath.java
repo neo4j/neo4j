@@ -53,7 +53,6 @@ public class OrderedPath
         OrderedPath op = new OrderedPath( db );
         Node A = op.createTheGraph();
         TraversalDescription traversalDescription = op.findPaths();
-        System.out.println( op.printPaths( traversalDescription, A ) );
         op.shutdownGraph();
     }
 
@@ -124,17 +123,25 @@ public class OrderedPath
 
     String printPaths( TraversalDescription td, Node A )
     {
-        String output = "";
-        // START SNIPPET: printPath
-        Traverser traverser = td.traverse( A );
-        PathPrinter pathPrinter = new PathPrinter( "name" );
-        for ( Path path : traverser )
+        Transaction transaction = db.beginTx();
+        try
         {
-            output += Traversal.pathToString( path, pathPrinter );
+            String output = "";
+            // START SNIPPET: printPath
+            Traverser traverser = td.traverse( A );
+            PathPrinter pathPrinter = new PathPrinter( "name" );
+            for ( Path path : traverser )
+            {
+                output += Traversal.pathToString( path, pathPrinter );
+            }
+            // END SNIPPET: printPath
+            output += "\n";
+            return output;
         }
-        // END SNIPPET: printPath
-        output += "\n";
-        return output;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     // START SNIPPET: pathPrinter

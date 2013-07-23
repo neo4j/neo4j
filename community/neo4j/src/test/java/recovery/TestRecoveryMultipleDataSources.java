@@ -62,12 +62,14 @@ public class TestRecoveryMultipleDataSources
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
 
         // Then
+        Transaction transaction = db.beginTx();
         try
         {
             assertEquals( MyRelTypes.TEST.name(), GlobalGraphOperations.at( db ).getAllRelationshipTypes().iterator().next().name() );
         }
         finally
         {
+            transaction.finish();
             db.shutdown();
         }
     }

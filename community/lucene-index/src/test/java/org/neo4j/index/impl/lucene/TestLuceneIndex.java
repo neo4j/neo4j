@@ -46,6 +46,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -418,11 +419,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertContains( index.query( "name", "Mattias*" ), entity1 );
 
         commitTx();
+
+        beginTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.query( name, "\"" + mattias + "\"" ), contains( entity1 ) );
         assertThat( index.query( "name:\"" + mattias + "\"" ), contains( entity1 ) );
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
         assertThat( index.query( "name", "Mattias*" ), contains( entity1 ) );
+        commitTx();
 
         beginTx();
         index.add( entity2, title, hacker );
@@ -434,11 +438,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
                 hacker + "\"" ), entity1, entity2 );
 
         commitTx();
+
+        beginTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1, entity2 ) );
         assertThat( index.query( "name:\"" + mattias + "\" OR title:\"" + hacker + "\"" ), contains( entity1, entity2 ) );
         assertThat( index.query( "name:\"" + mattias + "\" AND title:\"" +
                 hacker + "\"" ), contains( entity1 ) );
+        commitTx();
 
         beginTx();
         index.remove( entity2, title, hacker );
@@ -449,10 +456,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
                 hacker + "\"" ), entity1 );
 
         commitTx();
+
+        beginTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1 ) );
         assertThat( index.query( "name:\"" + mattias + "\" OR title:\"" +
                 hacker + "\"" ), contains( entity1 ) );
+        commitTx();
 
         beginTx();
         index.remove( entity1, title, hacker );
@@ -1514,11 +1524,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t2.commit();
         assertNotNull( futurePut.get() );
         t1.commit();
-
-        assertEquals( node, index.get( key, value ).getSingle() );
-        
         t1.shutdown();
         t2.shutdown();
+
+        Transaction transaction = graphDb.beginTx();
+        assertEquals( node, index.get( key, value ).getSingle() );
+        transaction.finish();
     }
 
     @Test
@@ -1540,12 +1551,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t2.commit();
         assertNull( futurePut.get() );
         t1.commit();
-
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( key, otherValue ).getSingle() );
-
         t1.shutdown();
         t2.shutdown();
+
+        Transaction transaction = graphDb.beginTx();
+        assertEquals( node, index.get( key, value ).getSingle() );
+        assertEquals( node, index.get( key, otherValue ).getSingle() );
+        transaction.finish();
     }
 
     @Test
@@ -1566,12 +1578,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertNull( t1.putIfAbsent( node, otherKey, value ).get() );
         t2.commit();
         t1.commit();
-
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( otherKey, value ).getSingle() );
-
         t1.shutdown();
         t2.shutdown();
+
+        Transaction transaction = graphDb.beginTx();
+        assertEquals( node, index.get( key, value ).getSingle() );
+        assertEquals( node, index.get( otherKey, value ).getSingle() );
+        transaction.finish();
     }
 
     @Test
@@ -1627,6 +1640,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( unique, factory.getOrCreate( key, value ) );
         assertEquals( "initialized more than once", 0, unique.getProperty( property ) );
         assertEquals( unique, index.get( key, value ).getSingle() );
+        finishTx( false );
     }
 
     @Test
@@ -1658,6 +1672,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( unique, factory.getOrCreate( key, value ) );
         assertEquals( unique, root.getSingleRelationship( type, Direction.BOTH ) );
         assertEquals( unique, index.get( key, value ).getSingle() );
+
+        finishTx( false );
     }
 
     @Test

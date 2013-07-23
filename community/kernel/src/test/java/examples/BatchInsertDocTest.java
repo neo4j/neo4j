@@ -36,6 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -43,6 +44,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -71,10 +73,18 @@ public class BatchInsertDocTest
         // try it out from a normal db
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchinserter-example" );
-        Node mNode = db.getNodeById( mattiasNode );
-        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING ).getEndNode();
-        assertThat( cNode, inTx( db, hasProperty( "name" ).withValue( "Chris" ) ) );
-        db.shutdown();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Node mNode = db.getNodeById( mattiasNode );
+            Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING ).getEndNode();
+            assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
+        }
+        finally
+        {
+            transaction.finish();
+            db.shutdown();
+        }
     }
 
     @Test
@@ -137,11 +147,19 @@ public class BatchInsertDocTest
         // try it out from a normal db
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchdb-example" );
-        Node mNode = db.getNodeById( mattiasNodeId );
-        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
-                .getEndNode();
-        assertThat( cNode, inTx( db, hasProperty( "name" ).withValue( "Chris" ) ) );
-        db.shutdown();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Node mNode = db.getNodeById( mattiasNodeId );
+            Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
+                    .getEndNode();
+            assertThat( cNode, inTx( db, hasProperty( "name" ).withValue( "Chris" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+            db.shutdown();
+        }
     }
     
     @Test

@@ -19,134 +19,196 @@
  */
 package visibility;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.Collection;
+import java.util.HashSet;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.WriteTransaction;
-import org.neo4j.test.AbstractSubProcessTestBase;
-import org.neo4j.test.subprocess.BreakPoint;
-import org.neo4j.test.subprocess.DebugInterface;
-import org.neo4j.test.subprocess.DebuggedThread;
-import org.neo4j.test.subprocess.KillSubProcess;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
-@SuppressWarnings( "serial" )
-public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessTestBase
+public class TestDatasourceCommitOrderDataVisibility
 {
-    private final CountDownLatch barrier1 = new CountDownLatch( 1 ), barrier2 = new CountDownLatch( 1 );
+    private static final String INDEX_NAME = "foo";
+    private static final String INDEX_KEY = "bar";
+    private static final String INDEX_VALUE = "baz";
+    private static final String PROPERTY_NAME = "quux";
+    private static final int PROPERTY_VALUE = 42;
+
+    private GraphDatabaseService graphDatabaseService;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
+    }
 
     @Test
-    public void dataWrittenToTheIndexAndTheGraphShouldNotBeVisibleFromTheIndexBeforeTheGraph() throws Exception
+    public void shouldNotMakeIndexWritesVisibleUntilCommit() throws Exception
     {
-        runInThread( new CreateData() );
-        barrier1.await();
-        run( new ReadData( true ) );
-        barrier2.await();
-        run( new ReadData( false ) );
+        Transaction transaction = graphDatabaseService.beginTx();
+        try
+        {
+            // index write first so that that datastore is added first
+            graphDatabaseService.index().forNodes( INDEX_NAME ).add( graphDatabaseService.getReferenceNode(),
+                    INDEX_KEY, INDEX_VALUE );
+            graphDatabaseService.getReferenceNode().setProperty( PROPERTY_NAME, PROPERTY_VALUE );
+
+            assertReferenceNodeIsNotIndexedOutsideThisTransaction();
+            assertReferenceNodeIsUnchangedOutsideThisTransaction();
+
+            transaction.success();
+
+            assertReferenceNodeIsNotIndexedOutsideThisTransaction();
+            assertReferenceNodeIsUnchangedOutsideThisTransaction();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        assertReferenceNodeIsIndexed();
+        assertReferenceNodeHasBeenUpdated();
     }
 
-    private static class CreateData implements Task
+    private void assertReferenceNodeIsNotIndexedOutsideThisTransaction() throws Exception
     {
-        @Override
-        public void run( GraphDatabaseAPI graphdb )
+        final Collection<Exception> problems = new HashSet<>();
+
+        Thread thread = new Thread( new Runnable()
         {
-            Node node = graphdb.getReferenceNode();
-            Transaction tx = graphdb.beginTx();
-            try
+            @Override
+            public void run()
             {
-                // First do the index operations, to add that data source first
-                graphdb.index().forNodes( "nodes" ).add( node, "value", "indexed" );
-                // Then update the graph
-                node.setProperty( "value", "indexed" );
-
-                enableBreakPoint();
-
-                tx.success();
+                Transaction transaction = graphDatabaseService.beginTx();
+                try
+                {
+                    assertThat( graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
+                            INDEX_VALUE ).size(), is( 0 ) );
+                }
+                catch ( Throwable t )
+                {
+                    problems.add( new Exception( t ) );
+                }
+                finally
+                {
+                    transaction.finish();
+                }
             }
-            finally
+        } );
+        thread.start();
+        thread.join();
+
+        if ( problems.size() > 0 )
+        {
+            throw problems.iterator().next();
+        }
+    }
+
+    private void assertReferenceNodeIsUnchangedOutsideThisTransaction() throws Exception
+    {
+        final Collection<Exception> problems = new HashSet<>();
+
+        Thread thread = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
             {
-                tx.finish();
+                Transaction transaction = graphDatabaseService.beginTx();
+                try
+                {
+                    assertThat( graphDatabaseService.getReferenceNode().hasProperty( PROPERTY_NAME ), is( false ) );
+                }
+                catch ( Throwable t )
+                {
+                    problems.add( new Exception( t ) );
+                }
+                finally
+                {
+                    transaction.finish();
+                }
             }
-            done();
+        } );
+        thread.start();
+        thread.join();
+
+        if ( problems.size() > 0 )
+        {
+            throw problems.iterator().next();
         }
     }
 
-    private static class ReadData implements Task
+    private void assertReferenceNodeIsIndexed() throws Exception
     {
-        private final boolean acceptNull;
+        final Collection<Exception> problems = new HashSet<>();
 
-        ReadData( boolean acceptNull )
+        Thread thread = new Thread( new Runnable()
         {
-            this.acceptNull = acceptNull;
-        }
+            @Override
+            public void run()
+            {
+                Transaction transaction = graphDatabaseService.beginTx();
+                try
+                {
+                    Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
+                            INDEX_VALUE ).getSingle();
+                    assertThat( node, is( graphDatabaseService.getReferenceNode() ) );
+                }
+                catch ( Throwable t )
+                {
+                    problems.add( new Exception( t ) );
+                }
+                finally
+                {
+                    transaction.finish();
+                }
+            }
+        } );
+        thread.start();
+        thread.join();
 
-        @Override
-        public void run( GraphDatabaseAPI graphdb )
+        if ( problems.size() > 0 )
         {
-            Node node = graphdb.index().forNodes( "nodes" ).get( "value", "indexed" ).getSingle();
-            if ( !acceptNull ) assertNotNull( "node not in index", node );
-            if ( node != null ) assertEquals( "indexed", node.getProperty( "value", null ) );
-            resumeThread();
+            throw problems.iterator().next();
         }
     }
 
-    static void enableBreakPoint()
+    private void assertReferenceNodeHasBeenUpdated() throws Exception
     {
-        // activates breakpoint...
-    }
+        final Collection<Exception> problems = new HashSet<>();
 
-    static void resumeThread()
-    {
-        // activates breakpoint...
-    }
-
-    static void done()
-    {
-        // activates breakpoint...
-    }
-
-    volatile DebuggedThread thread;
-
-    private final BreakPoint doCommit = new BreakPoint( WriteTransaction.class, "doCommit" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
+        Thread thread = new Thread( new Runnable()
         {
-            thread = debug.thread().suspend( this );
-            this.disable();
-            barrier1.countDown();
-        }
-    }, enableBreakPoint = new BreakPoint( TestDatasourceCommitOrderDataVisibility.class, "enableBreakPoint" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            doCommit.enable();
-        }
-    }, resumeThread = new BreakPoint( TestDatasourceCommitOrderDataVisibility.class, "resumeThread" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            thread.resume();
-            this.disable();
-        }
-    }, done = new BreakPoint( TestDatasourceCommitOrderDataVisibility.class, "done" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            this.disable();
-            barrier2.countDown();
-        }
-    };
+            @Override
+            public void run()
+            {
+                Transaction transaction = graphDatabaseService.beginTx();
+                try
+                {
+                    assertThat( (Integer) graphDatabaseService.getReferenceNode().getProperty( PROPERTY_NAME ),
+                            is( PROPERTY_VALUE ) );
+                }
+                catch ( Throwable t )
+                {
+                    problems.add( new Exception( t ) );
+                }
+                finally
+                {
+                    transaction.finish();
+                }
+            }
+        } );
+        thread.start();
+        thread.join();
 
-    @Override
-    protected BreakPoint[] breakpoints( int id )
-    {
-        return new BreakPoint[] { doCommit, enableBreakPoint.enable(), resumeThread.enable(), done.enable() };
+        if ( problems.size() > 0 )
+        {
+            throw problems.iterator().next();
+        }
     }
 }

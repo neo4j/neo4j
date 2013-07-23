@@ -147,12 +147,20 @@ public class LuceneIndexRecoveryIT
         // When
         startDb( createForEverPopulatingLuceneIndexFactory() );
 
-        IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
-        db.schema().awaitIndexOnline( indexDefinition, 2l, TimeUnit.SECONDS );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
+            db.schema().awaitIndexOnline( indexDefinition, 2l, TimeUnit.SECONDS );
 
-        // Then
-        assertEquals( 12, db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
-        assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
+            // Then
+            assertEquals( 12, db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
+            assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -249,11 +257,14 @@ public class LuceneIndexRecoveryIT
 
     private void createIndex( Label label )
     {
-       Transaction tx = db.beginTx();
-       IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
-       tx.success();
-       tx.finish();
-       db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+        Transaction tx = db.beginTx();
+        IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
+        tx.success();
+        tx.finish();
+
+        tx = db.beginTx();
+        db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+        tx.finish();
     }
 
     private Set<Node> doIndexLookup( Label myLabel, Object value )

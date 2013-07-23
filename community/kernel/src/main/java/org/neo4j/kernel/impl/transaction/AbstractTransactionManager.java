@@ -23,6 +23,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -108,5 +109,20 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     {
         throw new UnsupportedOperationException( "The current transaction manager implementation does not support the " +
                 "new TransactionContext interface. This is an intermediary problem during transition to a new internal API." );
+    }
+
+    public void assertInTransaction()
+    {
+        try
+        {
+            if ( getTransaction() == null )
+            {
+                throw new NotInTransactionException();
+            }
+        }
+        catch ( SystemException e )
+        {
+            throw new IllegalStateException( "Unable to determine transaction state", e );
+        }
     }
 }

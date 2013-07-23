@@ -92,7 +92,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 1)
 
-    val r = a.getRelationships.asScala.head
+    val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
     assert(r.getStartNode === a)
@@ -110,7 +110,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
 
-    val r = a.getRelationships.asScala.head
+    val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
     assert(r.getStartNode === a)
@@ -180,7 +180,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 1)
 
-    val r = a.getRelationships.asScala.head
+    val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
     assert(r.getStartNode === a)
@@ -195,7 +195,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
-    assert(a.getRelationships.asScala.size === 1)
+    assertInTx(a.getRelationships.asScala.size === 1)
     assert(createdRel === r)
   }
 
@@ -209,7 +209,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 1)
 
-    assert(a.getRelationships.asScala.size === 2)
+    assertInTx(a.getRelationships.asScala.size === 2)
     assert(createdRel != r, "A new relationship should have been created")
   }
 
@@ -224,10 +224,10 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, relationshipsCreated = 3)
 
-    assert(a.getRelationships.asScala.size === 1)
-    assert(b.getRelationships.asScala.size === 1)
-    assert(c.getRelationships.asScala.size === 3)
-    assert(d.getRelationships.asScala.size === 1)
+    assertInTx(a.getRelationships.asScala.size === 1)
+    assertInTx(b.getRelationships.asScala.size === 1)
+    assertInTx(c.getRelationships.asScala.size === 3)
+    assertInTx(d.getRelationships.asScala.size === 1)
   }
 
   @Test
@@ -238,9 +238,9 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
 
-    val aRels = a.getRelationships.asScala.toList
-    val bRels = aRels.head.getOtherNode(a).getRelationships.asScala.toList
+    val aRels = graph.inTx(a.getRelationships.asScala.toList)
     assert(aRels.size === 1)
+    val bRels = graph.inTx(aRels.head.getOtherNode(a).getRelationships.asScala.toList)
     assert(bRels.size === 2)
   }
 
@@ -252,8 +252,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
-    val aRels = a.getRelationships.asScala
-    assert(aRels.size === 1)
+    assertInTx(a.getRelationships.asScala.size === 1)
   }
 
   @Test
@@ -264,8 +263,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
-    val aRels = a.getRelationships.asScala
-    assert(aRels.size === 1)
+    assertInTx(a.getRelationships.asScala.size === 1)
   }
 
   @Test
@@ -289,8 +287,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val createdNode = executeScalar[Node]("start a = node(1) create unique a-[:X {foo:'not bar'}]->b return b")
 
     assert(b != createdNode, "We should have created a new node - this one doesn't match")
-    val createdRelationship = createdNode.getRelationships.asScala.toList.head
-    assertInTx(createdRelationship.getProperty("foo") === "not bar")
+    assertInTx(createdNode.getRelationships.asScala.toList.head.getProperty("foo") === "not bar")
   }
 
   @Test
@@ -324,8 +321,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[:X]->root<-[:X]-b return root")
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
 
-    val aRels = a.getRelationships.asScala.toList
-    val bRels = b.getRelationships.asScala.toList
+    val aRels = graph.inTx(a.getRelationships.asScala.toList)
+    val bRels = graph.inTx(b.getRelationships.asScala.toList)
     assert(aRels.size === 1)
     assert(bRels.size === 1)
 
@@ -375,7 +372,7 @@ return book
 
     val book = result.toList.head("book").asInstanceOf[Node]
 
-    val bookTags = book.getRelationships.asScala.map(_.getOtherNode(book)).toList
+    val bookTags = graph.inTx(book.getRelationships.asScala.map(_.getOtherNode(book)).toList)
 
     assert(bookTags.contains(a), "Should have been tagged")
     assert(bookTags.contains(c), "Should have been tagged")

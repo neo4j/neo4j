@@ -111,7 +111,16 @@ public class TestPullUpdates
 
         setProperty( cluster.getMaster(), 1 );
         callPullUpdatesViaShell( 2 );
-        assertEquals( 1, cluster.getAnySlave().getReferenceNode().getProperty( "i" ) );
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        Transaction transaction = slave.beginTx();
+        try
+        {
+            assertEquals( 1, slave.getReferenceNode().getProperty( "i" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -153,7 +162,15 @@ public class TestPullUpdates
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
                     .newGraphDatabase();
 
-            assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
+            Transaction transaction = slave.beginTx();
+            try
+            {
+                assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
         finally
         {

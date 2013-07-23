@@ -32,6 +32,7 @@ import java.util.Map;
 import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -664,11 +665,19 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     
     private int countNodes()
     {
-        int count = 0;
-        for(Node node : graphdb().getAllNodes())
+        Transaction transaction = graphdb().beginTx();
+        try
         {
-            count++;
+            int count = 0;
+            for(Node node : graphdb().getAllNodes())
+            {
+                count++;
+            }
+            return count;
         }
-        return count;
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

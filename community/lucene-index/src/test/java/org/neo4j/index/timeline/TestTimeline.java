@@ -154,8 +154,10 @@ public class TestTimeline
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline, 223456, 12345, 432234 );
+        beginTx();
         assertEquals( timestamps.get( 1 ).first(), timeline.getFirst() );
         assertEquals( timestamps.getLast().first(), timeline.getLast() );
+        commitTx();
     }
 
     private void makeSureRangesAreReturnedInCorrectOrder( EntityCreator<PropertyContainer> creator,
@@ -163,7 +165,9 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
+        beginTx();
         assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ).iterator() ) );
+        commitTx();
     }
 
     private void makeSureRangesAreReturnedInCorrectReversedOrder( EntityCreator<PropertyContainer> creator,
@@ -171,7 +175,9 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
+        beginTx();
         assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ).iterator() ) );
+        commitTx();
     }
 
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
@@ -179,7 +185,9 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 -10000, 0, 10000 );
+        beginTx();
         assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
+        commitTx();
     }
 
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,

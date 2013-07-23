@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -40,11 +41,12 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TxPushStrategyConfigIT
@@ -160,7 +162,7 @@ public class TxPushStrategyConfigIT
         } );
         life.start();
         cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterSeesAllSlavesAsAvailable() );
+        cluster.await( allSeesAllAsAvailable() );
 
         mapMachineIds();
     }

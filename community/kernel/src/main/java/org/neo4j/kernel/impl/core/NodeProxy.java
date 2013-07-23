@@ -114,6 +114,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Relationship> getRelationships()
     {
+        statementCtxProvider.assertInTransaction();
         return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager() );
     }
 

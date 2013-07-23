@@ -43,7 +43,14 @@ public class TestRaceOnMultipleNodeImpl
     @Test
     public void concurrentRemoveProperty() throws Exception
     { // ASSUMPTION: locking is fair, first one to wait is first one to get the lock
-        final Node root = graphdb.getReferenceNode(), original = tx( new Callable<Node>()
+        final Node root =  tx( new Callable<Node>() {
+            @Override
+            public Node call() throws Exception
+            {
+                return graphdb.getReferenceNode();
+            }
+        });
+        final Node original = tx( new Callable<Node>()
         { // setup: create the node with the property that we will remove
             @Override
             public Node call() throws Exception
@@ -120,7 +127,14 @@ public class TestRaceOnMultipleNodeImpl
     @Test
     public void concurrentSetProperty() throws Exception
     { // ASSUMPTION: locking is fair, first one to wait is first one to get the lock
-        final Node root = graphdb.getReferenceNode();
+        final Node root = tx( new Callable<Node>()
+        {
+            @Override
+            public Node call() throws Exception
+            {
+                return graphdb.getReferenceNode();
+            }
+        } );
         tx( new Runnable()
         {
             @Override

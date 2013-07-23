@@ -121,16 +121,24 @@ public class HardKillIT
 
     private long getNamedNode( HighlyAvailableGraphDatabase db, String name )
     {
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        Transaction transaction = db.beginTx();
+        try
         {
-            if ( name.equals( node.getProperty( "name", null ) ) )
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
-                return node.getId();
+                if ( name.equals( node.getProperty( "name", null ) ) )
+                {
+                    return node.getId();
+                }
             }
+            fail( "Couldn't find named node '" + name + "' at " + db );
+            // The lone above will prevent this return from happening
+            return -1;
         }
-        fail( "Couldn't find named node '" + name + "' at " + db );
-        // The lone above will prevent this return from happening
-        return -1;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     private long createNamedNode( HighlyAvailableGraphDatabase db, String name )

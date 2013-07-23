@@ -126,29 +126,37 @@ public class AsciidocHelper
                                          GraphDatabaseService graph, String identifier,
                                          GraphStyle graphStyle, String graphvizOptions )
     {
-        GraphvizWriter writer = new GraphvizWriter( graphStyle );
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Transaction transaction = graph.beginTx();
         try
         {
-            writer.emit( out, Walker.fullGraph( graph ) );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
+            GraphvizWriter writer = new GraphvizWriter( graphStyle );
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            try
+            {
+                writer.emit( out, Walker.fullGraph( graph ) );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
 
-        String safeTitle = title.replaceAll( ILLEGAL_STRINGS, "" );
+            String safeTitle = title.replaceAll( ILLEGAL_STRINGS, "" );
 
-        try
-        {
-            return "." + title + "\n[\"dot\", \""
-                    + (safeTitle + "-" + identifier).replace( " ", "-" )
-                    + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
-                    + "----\n" + out.toString( "UTF-8" ) + "----\n";
+            try
+            {
+                return "." + title + "\n[\"dot\", \""
+                        + (safeTitle + "-" + identifier).replace( " ", "-" )
+                        + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
+                        + "----\n" + out.toString( "UTF-8" ) + "----\n";
+            }
+            catch ( UnsupportedEncodingException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
-        catch ( UnsupportedEncodingException e )
+        finally
         {
-            throw new RuntimeException( e );
+            transaction.finish();
         }
     }
 

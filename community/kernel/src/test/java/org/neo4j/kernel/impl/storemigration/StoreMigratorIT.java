@@ -206,9 +206,9 @@ public class StoreMigratorIT
 
         private void verifyRelationships()
         {
+            Transaction tx = database.beginTx();
             Node currentNode = database.getReferenceNode();
             int traversalCount = 0;
-            Transaction tx = database.beginTx();
             while ( currentNode.hasRelationship( Direction.OUTGOING ) )
             {
                 traversalCount++;
@@ -255,6 +255,7 @@ public class StoreMigratorIT
 
         private void verifyNodeIdsReused()
         {
+            Transaction transaction = database.beginTx();
             try
             {
                 database.getNodeById( 1 );
@@ -264,7 +265,11 @@ public class StoreMigratorIT
             {
                 //expected
             }
-            Transaction transaction = database.beginTx();
+            finally {
+                transaction.finish();
+            }
+
+            transaction = database.beginTx();
             try
             {
                 Node newNode = database.createNode();

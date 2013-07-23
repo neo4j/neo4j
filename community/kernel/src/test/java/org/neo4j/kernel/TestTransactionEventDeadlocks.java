@@ -44,8 +44,8 @@ public class TestTransactionEventDeadlocks
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseService();
-        final Node root = graphdb.getReferenceNode();
         Transaction tx = graphdb.beginTx();
+        final Node root = graphdb.getReferenceNode();
         try
         {
             root.setProperty( "counter", Long.valueOf( 0L ) );

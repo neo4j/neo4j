@@ -44,7 +44,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   @Before
   def baseInit() {
     graph = new ImpermanentGraphDatabase() with Snitch
-    refNode = graph.getReferenceNode
+    refNode = graph.inTx(graph.getReferenceNode)
   }
 
   def assertInTx(f: => Option[String]) {
