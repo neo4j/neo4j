@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.transaction.LockException;
-
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
+
+import org.neo4j.kernel.impl.transaction.LockException;
 
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a
@@ -39,7 +39,7 @@ abstract class LockableWindow implements PersistenceWindow
     private boolean locked;
     private int marked = 0;
     protected boolean closed;
-    
+
     private boolean isDirty = false;
 
     LockableWindow( FileChannel fileChannel )
@@ -131,8 +131,8 @@ abstract class LockableWindow implements PersistenceWindow
         Thread currentThread = Thread.currentThread();
         if ( !locked )
         {
-            throw new LockException( "" + currentThread
-                + " don't have window lock on " + this );
+            throw new LockException( currentThread
+                + " doesn't have window lock on " + this );
         }
         locked = false;
         lockingThread = null;

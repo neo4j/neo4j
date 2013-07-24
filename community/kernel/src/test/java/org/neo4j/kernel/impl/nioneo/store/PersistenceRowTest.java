@@ -22,10 +22,16 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
 import java.util.UUID;
@@ -33,12 +39,13 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PersistenceRowTests
+public class PersistenceRowTest
 {
     private static final Random RANDOM = new Random();
     private static final int RECORD_SIZE = 7;
 
     private PersistenceRow window;
+    private FileChannel realChannel;
 
     @Before
     public void before() throws Exception
@@ -47,8 +54,8 @@ public class PersistenceRowTests
         directory.mkdirs();
         String filename = new File( directory, UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
-        FileChannel channel = file.getChannel();
-        window = new PersistenceRow( 0, RECORD_SIZE, channel );
+        realChannel = file.getChannel();
+        window = new PersistenceRow( 0, RECORD_SIZE, realChannel );
         window.lock( OperationType.WRITE );
     }
 
@@ -89,7 +96,7 @@ public class PersistenceRowTests
         window.getBuffer().get();
         window.getBuffer().get();
         window.getBuffer().get();
-        // ad infimum, or at least up to RECORD_SIZE
+        // ad infinitum, or at least up to RECORD_SIZE
 
         assertThat( window.getBuffer().getBuffer().position(), is( 4 ) );
 
@@ -97,5 +104,59 @@ public class PersistenceRowTests
         window.force();
 
         assertThat( window.getBuffer().getBuffer().position(), is( 4 ) );
+    }
+
+    @Test
+    public void grabbingWriteLockShouldMarkRowAsDirty() throws Exception
+    {
+        // GIVEN a channel and a row over it
+        FileChannel channel = spy( realChannel );
+        PersistenceRow row = new PersistenceRow( 0, 1, channel );
+
+        // WHEN you grab a write lock
+        row.lock( OperationType.WRITE );
+
+        // THEN it should be dirty
+        assertThat( "Dirty before force", row.isDirty(), is( true ) );
+    }
+
+    @Test
+    public void forcingARowShouldMarkItAsClean() throws Exception
+    {
+        // GIVEN a channel and a row over it
+        FileChannel channel = spy( realChannel );
+        PersistenceRow row = new PersistenceRow( 0, 1, channel );
+
+        // WHEN you grab a write lock and force
+        row.lock( OperationType.WRITE );
+        row.force();
+
+        // THEN the row should be marked clean and a call made to write to the buffer
+        assertThat( "Dirty after force", row.isDirty(), is( false ) );
+        verify( channel, times( 1 ) ).write( any( ByteBuffer.class), anyLong() );
+
+        // WHEN you subsequently force again
+        row.force();
+
+        // THEN no writes should go through and the status should remain clean
+        verify( channel, times( 1 ) ).write( any( ByteBuffer.class), anyLong() );
+        assertThat( "Dirty after non-flushing force", row.isDirty(), is( false ) );
+    }
+
+    @Test
+    public void explicitlyMarkingAsCleanShouldDoSo() throws Exception
+    {
+        // GIVEN a channel and a row over it
+        FileChannel channel = spy( realChannel );
+        PersistenceRow row = new PersistenceRow( 0, 1, channel );
+
+        // WHEN you grab a write lock, marking as dirty
+        row.lock( OperationType.WRITE );
+        // and then manually mark is as clean
+        row.setClean();
+
+        // THEN it should be non-dirty
+        assertThat( "Dirty after setting clean", row.isDirty(), is( false ) );
+
     }
 }
