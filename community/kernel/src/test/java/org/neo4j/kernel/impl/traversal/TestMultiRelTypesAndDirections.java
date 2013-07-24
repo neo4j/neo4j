@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 public class TestMultiRelTypesAndDirections extends AbstractTestBase
@@ -55,11 +56,19 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
 
     private void testCIsReturnedOnDepthTwo( TraversalDescription description )
     {
-        description = description.expand( expanderForTypes( ONE, OUTGOING ) );
-        int i = 0;
-        for ( Path position : description.traverse( node( "A" ) ) )
+        Transaction transaction = beginTx();
+        try
         {
-            assertEquals( i++, position.length() );
+            description = description.expand( expanderForTypes( ONE, OUTGOING ) );
+            int i = 0;
+            for ( Path position : description.traverse( node( "A" ) ) )
+            {
+                assertEquals( i++, position.length() );
+            }
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 }

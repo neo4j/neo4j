@@ -63,40 +63,41 @@ public class CircularGraphTest extends AbstractTestBase
             tx.finish();
         }
 
-        final RelationshipType type = DynamicRelationshipType.withName( "TO" );
-        Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
-        {
-            public boolean isStopNode( TraversalPosition position )
-            {
-                Relationship last = position.lastRelationshipTraversed();
-                if ( last != null && last.isType( type ) )
-                {
-                    Node node = position.currentNode();
-                    long currentTime = (Long) node.getProperty( "timestamp" );
-                    return currentTime >= timestamp;
-                }
-                return false;
-            }
-        }, new ReturnableEvaluator()
-        {
-            public boolean isReturnableNode( TraversalPosition position )
-            {
-                Relationship last = position.lastRelationshipTraversed();
-                if ( last != null && last.isType( type ) )
-                {
-                    return true;
-                }
-                return false;
-            }
-        }, type, Direction.OUTGOING );
-        Iterator<Node> nodes = t.iterator();
         Transaction tx2 = beginTx();
         try
         {
+            final RelationshipType type = DynamicRelationshipType.withName( "TO" );
+            Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
+                    {
+                        public boolean isStopNode( TraversalPosition position )
+                        {
+                            Relationship last = position.lastRelationshipTraversed();
+                            if ( last != null && last.isType( type ) )
+                            {
+                                Node node = position.currentNode();
+                                long currentTime = (Long) node.getProperty( "timestamp" );
+                                return currentTime >= timestamp;
+                            }
+                            return false;
+                        }
+                    }, new ReturnableEvaluator()
+                    {
+                        public boolean isReturnableNode( TraversalPosition position )
+                        {
+                            Relationship last = position.lastRelationshipTraversed();
+                            if ( last != null && last.isType( type ) )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }, type, Direction.OUTGOING
+            );
+            Iterator<Node> nodes = t.iterator();
+
             assertEquals( "2", nodes.next().getProperty( "name" ) );
             assertEquals( "3", nodes.next().getProperty( "name" ) );
             assertFalse( nodes.hasNext() );
-            tx2.success();
         }
         finally
         {

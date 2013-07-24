@@ -614,15 +614,23 @@ public class DatabaseActionsTest
     {
         long nodeId = graphdbHelper.createNode();
 
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all,
-                        Collections.<String>emptyList() ) );
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.in,
-                        Collections.<String>emptyList() ) );
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.out,
-                        Collections.<String>emptyList() ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                            Collections.<String>emptyList() ) );
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.in,
+                            Collections.<String>emptyList() ) );
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                            Collections.<String>emptyList() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

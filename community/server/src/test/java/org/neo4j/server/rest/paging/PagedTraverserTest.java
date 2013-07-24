@@ -103,12 +103,20 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        int count = 0;
-        for ( List<Path> paths : traversalPager )
+        Transaction transaction = database.getGraph().beginTx();
+        try
         {
-            count++;
+            int count = 0;
+            for ( List<Path> paths : traversalPager )
+            {
+                count++;
+            }
+            return count;
         }
-        return count;
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

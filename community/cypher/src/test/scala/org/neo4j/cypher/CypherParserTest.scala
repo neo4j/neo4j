@@ -1231,6 +1231,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
+  @Test def testAllShortestPathsWithType() {
+    test(
+      """start a=node(0), b=node(1) match p = allShortestPaths( a-[:KNOWS*..6]->b ) return p""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        matches(ShortestPath("p", "a", "b", Seq("KNOWS"), Direction.OUTGOING, Some(6), false, false, None)).
+        returns(ReturnItem(Identifier("p"), "p")))
+  }
+
   @Test def testForNull() {
     test(
       """start a=node(0) where a is null return a""",

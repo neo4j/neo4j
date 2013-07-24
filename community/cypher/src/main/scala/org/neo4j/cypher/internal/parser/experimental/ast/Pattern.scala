@@ -120,7 +120,10 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   }
 }
 
-case class ShortestPath(element: PatternElement, token: InputToken) extends PathPattern {
+abstract class AbstractShortestPath(element: PatternElement, token: InputToken) extends PathPattern {
+  val name: String
+  val single: Boolean
+
   def semanticCheck(context: SemanticContext) = checkContainsSingle then checkNoMinimalLength
 
   private def checkContainsSingle: SemanticCheck = element match {
@@ -158,13 +161,23 @@ case class ShortestPath(element: PatternElement, token: InputToken) extends Path
       case Some(Some(Range(None, Some(i), _))) => Some(i.value.toInt)
       case _                                   => None
     }
-    Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, rel.optional, true, None))
+    Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, rel.optional, single, None))
   }
 
   def toLegacyNamedPath(pathName: String) = None
   def toLegacyCreates(pathName: Option[String]) = ???
   def toLegacyPredicates(pathName: Option[String]) = Seq()
   def toAbstractPatterns(pathName: Option[String]): Seq[AbstractPattern] = ???
+}
+
+case class ShortestPath(element: PatternElement, token: InputToken) extends AbstractShortestPath(element, token) {
+  val name: String = "shortestPath"
+  val single: Boolean = true
+}
+
+case class AllShortestPaths(element: PatternElement, token: InputToken) extends AbstractShortestPath(element, token) {
+  val name: String = "allShortestPath"
+  val single: Boolean = false
 }
 
 

@@ -71,10 +71,9 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     //Given:
     val limiter = new Limiter(1)
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
-    val iter = monitoredNode.getRelationships(Direction.OUTGOING).iterator()
 
     //When:
-    iter.next()
+    graph.inTx(monitoredNode.getRelationships(Direction.OUTGOING).iterator().next())
 
     //Then does not throw exception
   }
@@ -279,8 +278,10 @@ class LimitedIterator[T](limit: Int, f: Int => T, message: String = "Limit reach
 
   def next() = {
     count += 1
-    if (count > limit)
+    if ( count > limit )
+    {
       throw new RuntimeException(message)
+    }
     f(count)
   }
 }
@@ -290,8 +291,10 @@ class Limiter(limit: Int) {
 
   def monitor() {
     count += 1
-    if (count > limit)
+    if ( count > limit )
+    {
       throw new RuntimeException("Limit passed!")
+    }
   }
 }
 

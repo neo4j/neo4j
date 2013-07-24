@@ -121,51 +121,50 @@ public class TestUniqueness extends AbstractTestBase
         createGraph( "a TO b", "b TO c", "a TO b", "b TO c", "a TO c", "a TO c", "c TO d" );
         RelationshipType to = withName( "TO" );
 
-        Node a, d;
 
         Transaction tx = beginTx();
         try
         {
-            a = getNodeWithName( "a" );
-            d = getNodeWithName( "d" );
-            tx.success();
+            Node a = getNodeWithName( "a" );
+            Node d = getNodeWithName( "d" );
+
+            Iterator<Path> paths = traversal().relationships( to, OUTGOING ).uniqueness( Uniqueness.NONE ).evaluator(
+                    includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
+            int count = 0;
+            while ( paths.hasNext() )
+            {
+                count++;
+                paths.next();
+            }
+            assertEquals( "wrong number of paths calculated, the test assumption is wrong", 6, count );
+
+            // Now do the same traversal but with unique per level relationships
+            paths = traversal().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_LEVEL ).evaluator(
+                    includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
+            count = 0;
+            while ( paths.hasNext() )
+            {
+                count++;
+                paths.next();
+            }
+            /*
+            *  And yet again, but this time with global uniqueness, it should present only one path, since
+            *  c TO d is contained on all paths.
+            */
+            paths = traversal().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_GLOBAL ).evaluator(
+                    includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
+            count = 0;
+            while ( paths.hasNext() )
+            {
+                count++;
+                paths.next();
+            }
+            assertEquals( "wrong number of paths calculated with relationship global uniqueness", 1, count );
         }
         finally
         {
             tx.finish();
         }
-        Iterator<Path> paths = traversal().relationships( to, OUTGOING ).uniqueness( Uniqueness.NONE ).evaluator(
-                includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
-        int count = 0;
-        while ( paths.hasNext() )
-        {
-            count++;
-            paths.next();
-        }
-        assertEquals( "wrong number of paths calculated, the test assumption is wrong", 6, count );
-
-        // Now do the same traversal but with unique per level relationships
-        paths = traversal().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_LEVEL ).evaluator(
-                includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
-        count = 0;
-        while ( paths.hasNext() )
-        {
-            count++;
-            paths.next();
-        }
-        /*
-         *  And yet again, but this time with global uniqueness, it should present only one path, since
-         *  c TO d is contained on all paths.
-         */
-        paths = traversal().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_GLOBAL ).evaluator(
-                includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
-        count = 0;
-        while ( paths.hasNext() )
-        {
-            count++;
-            paths.next();
-        }
-        assertEquals( "wrong number of paths calculated with relationship global uniqueness", 1, count );
     }
 
     private Path[] splitPathsOnePerLevel( Traverser traverser )

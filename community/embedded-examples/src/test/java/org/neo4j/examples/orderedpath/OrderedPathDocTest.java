@@ -25,7 +25,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.JavaDocsGenerator;
@@ -42,6 +44,7 @@ public class OrderedPathDocTest
 {
     private static OrderedPath orderedPath;
     private static JavaDocsGenerator gen;
+    private static GraphDatabaseService db;
 
     @BeforeClass
     public static void setUp() throws IOException
@@ -51,7 +54,8 @@ public class OrderedPathDocTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        orderedPath = new OrderedPath( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        orderedPath = new OrderedPath( db );
         gen = new JavaDocsGenerator( "ordered-path-java", "dev" );
     }
 
@@ -66,7 +70,15 @@ public class OrderedPathDocTest
     {
         Node A = orderedPath.createTheGraph();
         TraversalDescription traversalDescription = orderedPath.findPaths();
-        assertEquals( 1, count( traversalDescription.traverse( A ) ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            assertEquals( 1, count( traversalDescription.traverse( A ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         String output = orderedPath.printPaths( traversalDescription, A );
         assertTrue( output.contains( "(A)--[REL1]-->(B)--[REL2]-->(C)--[REL3]-->(D)" ) );
         String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(

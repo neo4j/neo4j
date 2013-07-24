@@ -21,6 +21,7 @@ package org.neo4j.examples;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -111,10 +112,18 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         String output = "";
         int count = 0;
         //we should get two paths back, through Pet1 and Pet3
-        for ( Path path : results )
-        {       
-            count++;
-            output += path.toString() + "\n";
+        Transaction transaction = db.beginTx();
+        try
+        {
+            for ( Path path : results )
+            {
+                count++;
+                output += path.toString() + "\n";
+            }
+        }
+        finally
+        {
+            transaction.finish();
         }
         gen.get().addSnippet( "output", createOutputSnippet( output ) );
         assertEquals( 2, count );
@@ -126,10 +135,18 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         String output2 = "";
         count = 0;
         // we should get two paths back, through Pet1 and Pet3
-        for ( Path path : results )
+        transaction = db.beginTx();
+        try
         {
-            count++;
-            output2 += path.toString() + "\n";
+            for ( Path path : results )
+            {
+                count++;
+                output2 += path.toString() + "\n";
+            }
+        }
+        finally
+        {
+            transaction.finish();
         }
         gen.get()
                 .addSnippet( "outNodeGlobal", createOutputSnippet( output2 ) );

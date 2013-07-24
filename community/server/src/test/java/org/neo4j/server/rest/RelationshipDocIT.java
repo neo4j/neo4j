@@ -79,11 +79,22 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     @Graph("I know you")
     public void get_Relationship_by_ID() throws JsonParseException
     {
+        Node node = data.get().get( "I" );
+        Relationship relationship;
+        Transaction transaction = node.getGraphDatabase().beginTx();
+        try
+        {
+            relationship = node.getSingleRelationship(
+                    DynamicRelationshipType.withName( "know" ),
+                    Direction.OUTGOING );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         String response = gen().expectedStatus(
                 com.sun.jersey.api.client.ClientResponse.Status.OK.getStatusCode() ).get(
-                getRelationshipUri( data.get().get( "I" ).getSingleRelationship(
-                        DynamicRelationshipType.withName( "know" ),
-                        Direction.OUTGOING ) ) ).entity();
+                getRelationshipUri( relationship ) ).entity();
         assertTrue( JsonHelper.jsonToMap( response ).containsKey( "start" ) );
     }
 

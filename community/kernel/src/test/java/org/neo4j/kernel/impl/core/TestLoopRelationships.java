@@ -180,9 +180,12 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         commit();
+
+        newTransaction();
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
+        finish();
     }
     
     @Test

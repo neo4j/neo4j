@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
@@ -59,7 +60,15 @@ public class CreateRelationshipDocTest extends
         gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                 getNodeUri( i ) + "/relationships" );
-        assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+        Transaction transaction = graphdb().beginTx();
+        try
+        {
+            assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     /**
@@ -81,7 +90,15 @@ public class CreateRelationshipDocTest extends
         String entity = gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                 getNodeUri( i ) + "/relationships" ).entity();
-        assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+        Transaction transaction = graphdb().beginTx();
+        try
+        {
+            assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( entity ) );
     }
 
