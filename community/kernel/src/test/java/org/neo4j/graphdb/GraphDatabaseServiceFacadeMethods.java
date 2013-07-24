@@ -28,115 +28,115 @@ import static org.neo4j.graphdb.DynamicLabel.label;
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
 @SuppressWarnings("UnusedDeclaration")
-class GraphDatabaseServiceFacadeMethods
+public class GraphDatabaseServiceFacadeMethods
 {
 
     static final FacadeMethod<GraphDatabaseService> CREATE_NODE =
         new FacadeMethod<GraphDatabaseService>( "Node createNode()" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.createNode();
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.createNode();
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> CREATE_NODE_WITH_LABELS =
         new FacadeMethod<GraphDatabaseService>( "Node createNode( Label... labels )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.createNode( label( "FOO" ) );
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.createNode( label( "FOO" ) );
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> GET_NODE_BY_ID =
         new FacadeMethod<GraphDatabaseService>( "Node getNodeById( long id )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.getNodeById( 42 );
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.getNodeById( 42 );
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_BY_ID =
         new FacadeMethod<GraphDatabaseService>( "Relationship getRelationshipById( long id )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.getRelationshipById( 87 );
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.getRelationshipById( 87 );
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> GET_REFERENCE_NODE =
         new FacadeMethod<GraphDatabaseService>( "Node getReferenceNode()" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.getReferenceNode();
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.getReferenceNode();
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES =
-            new FacadeMethod<GraphDatabaseService>( "Iterable<Node> getAllNodes()" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
+        new FacadeMethod<GraphDatabaseService>( "Iterable<Node> getAllNodes()" )
         {
-            for ( Node node : graphDatabaseService.getAllNodes() )
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
             {
+                for ( Node node : graphDatabaseService.getAllNodes() )
+                {
 
+                }
             }
-        }
-    };
+        };
 
     static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY =
         new FacadeMethod<GraphDatabaseService>(
                 "ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
         {
-            for ( Node node : graphDatabaseService.findNodesByLabelAndProperty( label( "bar" ), "baz", 23 ) )
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
             {
+                for ( Node node : graphDatabaseService.findNodesByLabelAndProperty( label( "bar" ), "baz", 23 ) )
+                {
 
+                }
             }
-        }
-    };
+        };
 
     static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_TYPES =
-            new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getRelationshipTypes()" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
+        new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getRelationshipTypes()" )
         {
-            graphDatabaseService.getRelationshipTypes();
-        }
-    };
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
+            {
+                graphDatabaseService.getRelationshipTypes();
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> SCHEMA =
-            new FacadeMethod<GraphDatabaseService>( "Schema schema()" )
+        new FacadeMethod<GraphDatabaseService>( "Schema schema()" )
+        {
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
             {
-                @Override
-                public void call( GraphDatabaseService graphDatabaseService )
-                {
-                    graphDatabaseService.schema();
-                }
-            };
+                graphDatabaseService.schema();
+            }
+        };
 
     static final FacadeMethod<GraphDatabaseService> INDEX =
-            new FacadeMethod<GraphDatabaseService>( "IndexManager index()" )
+        new FacadeMethod<GraphDatabaseService>( "IndexManager index()" )
+        {
+            @Override
+            public void call( GraphDatabaseService graphDatabaseService )
             {
-                @Override
-                public void call( GraphDatabaseService graphDatabaseService )
-                {
-                    graphDatabaseService.index();
-                }
-            };
+                graphDatabaseService.index();
+            }
+        };
 
     static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
         unmodifiableCollection( asList(
@@ -151,6 +151,4 @@ class GraphDatabaseServiceFacadeMethods
             SCHEMA
             // TODO: INDEX
         ) );
-
-
 }
