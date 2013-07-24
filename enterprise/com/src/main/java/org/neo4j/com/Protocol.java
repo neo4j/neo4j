@@ -29,7 +29,6 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 
 public abstract class Protocol
 {
-    public static final int PORT = 8901;
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16*MEGA;
 
@@ -102,7 +101,7 @@ public abstract class Protocol
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
         pipeline.addLast( "frameDecoder",
-                new LengthFieldBasedFrameDecoder( frameLength+4, 0, 4, 0, 4 ) );
+                new LengthFieldBasedFrameDecoder( frameLength + 4, 0, 4, 0, 4 ) );
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
     }
 

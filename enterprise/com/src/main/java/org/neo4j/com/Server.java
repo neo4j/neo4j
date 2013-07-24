@@ -19,6 +19,12 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -51,7 +57,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -65,8 +70,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
-
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -84,9 +87,8 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
  *
  * @see Client
  */
-public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory, Lifecycle
+public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 {
-
     private InetSocketAddress socketAddress;
     private Clock clock;
 
