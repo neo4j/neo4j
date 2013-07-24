@@ -23,8 +23,10 @@ define(
    './RelationshipStyler'
    './VisualDataModel'
    './views/NodeFilterDialog'
-   'feature!arbor'],
-  (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog, arbor) ->
+   'feature!arbor'
+   'lib/amd/Backbone'
+   'lib/amd/contextmenu'],
+  (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog, arbor, Backbone) ->
 
     class VisualGraph
 
@@ -36,6 +38,8 @@ define(
         @relationshipStyler = new RelationshipStyler()
 
         @dataModel = new VisualDataModel()
+
+        _.extend(this, Backbone.Events)
 
         if arbor.works
           @sys = arbor.ParticleSystem()
@@ -55,8 +59,8 @@ define(
           @sys.renderer.bind "node:click", @nodeClicked
           @sys.renderer.bind "node:dropped", @nodeDropped
           @sys.screenPadding(20)
-
           @steadStateWorker = setInterval(@steadyStateCheck, 1000)
+
         else
           @el = $("<div class='missing' style='height:#{height}px'><div class='alert alert-error'><p><strong>Darn</strong>. I can see you have a beautiful graph. Sadly, I can't render that vision in this browser.</p></div></div>")
 
@@ -100,7 +104,18 @@ define(
       nodeClicked : (visualNode, event) =>
         if visualNode.data.type?
           if event.button == 2
-            1# TODO: right clicked, show context menu
+            switch visualNode.data.type
+              when "explored", "unexplored"
+                menu = []
+                o = {}
+                o["Show Details"] = =>
+                  @trigger("visualNode:showDetailsClicked", visualNode.data.neoNode)
+                  return true
+                menu.push o
+                @el.contextMenu menu,
+                  theme:'neo'
+                  beforeShow: =>
+                    @el.unbind 'contextmenu'
           else
             switch visualNode.data.type
               when "unexplored"
