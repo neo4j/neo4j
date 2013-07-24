@@ -20,12 +20,8 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
-import static org.neo4j.graphdb.GraphDatabaseServiceMethods.allGraphDatabaseServiceMethods;
+import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
 
 public class MandatoryTransactionsForGraphDatabaseServiceTests extends
         AbstractMandatoryTransactionsTest<GraphDatabaseService>
@@ -33,7 +29,7 @@ public class MandatoryTransactionsForGraphDatabaseServiceTests extends
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }
 
     @Override

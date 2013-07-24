@@ -124,7 +124,7 @@ class GraphDatabaseServiceFacadeMethods
     // TODO: schema
     // TODO: index
 
-    static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
+    static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
         unmodifiableCollection( asList(
             CREATE_NODE,
             CREATE_NODE_WITH_LABELS,

@@ -21,29 +21,22 @@ package org.neo4j.graphdb;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
 
 public abstract class AbstractMandatoryTransactionsTest<T>
 {
-    private GraphDatabaseService graphDatabaseService;
-
-    @Before
-    public void before()
-    {
-        graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
-    }
-
-    @After
-    public void after()
-    {
-        graphDatabaseService.shutdown();
-    }
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     public T obtainEntity()
     {
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+
         Transaction tx = graphDatabaseService.beginTx();
         try
         {
