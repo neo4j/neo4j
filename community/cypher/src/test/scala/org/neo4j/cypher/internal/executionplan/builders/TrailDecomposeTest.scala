@@ -130,11 +130,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val path =
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
-    //When
-    val resultMap = path.decompose(kernPath).toList
-
     //Then
-    assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*))))
+    assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*))))
   }
 
   @Test def decompose_single_varlength_step_introducing_reliterator() {
@@ -150,11 +147,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val path =
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
 
-    //When
-    val resultMap = path.decompose(kernPath).toList
-
     //Then
-    assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*), "r"->Seq(rel0))))
+    assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*), "r"->Seq(rel0))))
   }
 
   @Test def decompose_single_step_follow_with_varlength() {
@@ -175,11 +169,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val lastStep = VariableLengthStepTrail(point, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
     val firstStep = SingleStepTrail(lastStep, Direction.OUTGOING, "r1", Seq("B"), "x", True(), True(), null, Seq())
 
-    //When
-    val resultMap = firstStep.decompose(kernPath).toList
-
     //Then
-    assert(resultMap === List(Map("x" -> node0, "a" -> node1, "b" -> node2, "r1" -> rel1, "p" -> expectedPath)))
+    assertInTx(firstStep.decompose(kernPath).toList === List(Map("x" -> node0, "a" -> node1, "b" -> node2, "r1" -> rel1, "p" -> expectedPath)))
   }
 
   @Test def decompose_varlength_followed_by_single_step() {
@@ -199,11 +190,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val single = SingleStepTrail(bound, Direction.INCOMING, "r1", Seq("B"), "b", True(), True(), null, Seq())
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
-    //When
-    val resultMap = path.decompose(kernPath).toList
-
     //Then
-    assert(resultMap === List(Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)))
+    assertInTx(path.decompose(kernPath).toList === List(Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)))
   }
 
   @Test def multi_step_variable_length_decompose() {
@@ -223,11 +211,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val bound = EndPoint("b")
     val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
-    //When
-    val resultMap = path.decompose(input).toList
-
     //Then
-    assert(resultMap === List(Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath:_*))))
+    assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath:_*))))
   }
 
   @Test def zero_length_trail_can_be_ignored() {
@@ -246,11 +231,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val single = SingleStepTrail(bound, Direction.INCOMING, "r", Seq("B"), "b", True(), True(), null, Seq())
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
 
-    //When
-    val resultMap = path.decompose(input).toList
-
     //Then
-    assert(resultMap === List(Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)))
+    assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)))
   }
 
   @Test def linked_list_using_two_vartrails() {
@@ -275,11 +257,8 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
     val first = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 0, None, "p2", None, "x", null)
     val second = VariableLengthStepTrail(first, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
 
-    //When
-    val resultMap = second.decompose(input).toList
-
     //Then
-    assert(resultMap === List(
+    assertInTx(second.decompose(input).toList === List(
       Map("a" -> node0, "x" -> node0, "b" -> node4, "p1" -> PathImpl(node0), "p2" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4)),
       Map("a" -> node0, "x" -> node1, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1), "p2" -> PathImpl(node1, rel1, node2, rel2, node3, rel3, node4)),
       Map("a" -> node0, "x" -> node2, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2), "p2" -> PathImpl(node2, rel2, node3, rel3, node4)),

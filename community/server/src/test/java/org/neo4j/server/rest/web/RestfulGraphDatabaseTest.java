@@ -1745,14 +1745,21 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "knows", n1, n2 );
         Map<String, Object> config = MapUtil.map( "max depth", 3, "algorithm", "shortestPath", "to",
                 Long.toString( n2 ), "relationships", MapUtil.map( "type", "knows", "direction", "out" ) );
-
         String payload = JsonHelper.createJsonFrom( config );
 
         Response response = service.singlePath( n1, payload );
-        assertThat( response.getStatus(), is( 200 ) );
 
-        Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat( (Integer) resultAsMap.get( "length" ), is( 1 ) );
+        assertThat( response.getStatus(), is( 200 ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Map<String, Object> resultAsMap = output.getResultAsMap();
+            assertThat( (Integer) resultAsMap.get( "length" ), is( 1 ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -1763,14 +1770,21 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "knows", n1, n2 );
         Map<String, Object> config = MapUtil.map( "max depth", 3, "algorithm", "shortestPath", "to",
                 Long.toString( n2 ), "relationships", MapUtil.map( "type", "knows", "direction", "out" ) );
-
         String payload = JsonHelper.createJsonFrom( config );
 
         Response response = service.allPaths( n1, payload );
-        assertThat( response.getStatus(), is( 200 ) );
 
-        List<Object> resultAsList = output.getResultAsList();
-        assertThat( resultAsList.size(), is( 1 ) );
+        assertThat( response.getStatus(), is( 200 ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            List<Object> resultAsList = output.getResultAsList();
+            assertThat( resultAsList.size(), is( 1 ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

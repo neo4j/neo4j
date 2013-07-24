@@ -84,10 +84,10 @@ public class TestShortStringProperties extends TestShortString
         long recordCount = dynamicRecordsInUse();
         GraphDatabaseService db = graphdb.getGraphDatabaseService();
         Relationship rel = db.createNode().createRelationshipTo( db.createNode(), withName( "REL_TYPE" ) );
-        rel.setProperty( "type", rel.getType().name() );
+        rel.setProperty( "type", "dimsedut" );
         commit();
         assertEquals( recordCount, dynamicRecordsInUse() );
-        assertThat( rel, inTx( db, hasProperty( "type" ).withValue( rel.getType().name() ) ) );
+        assertThat( rel, inTx( db, hasProperty( "type" ).withValue( "dimsedut" ) ) );
     }
 
     @Test

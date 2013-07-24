@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import java.rmi.RemoteException;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -40,11 +41,24 @@ public class TestReadOnlyServer extends AbstractShellTest
     {
         Relationship[] rels = createRelationshipChain( 3 );
         executeCommand( "ls", "me", "TYPE" );
-        executeCommand( "cd " + rels[0].getEndNode().getId() );
+        executeCommand( "cd " + getEndNode( rels[0] ).getId() );
         executeCommand( "ls", "<", ">" );
         executeCommand( "trav", "me" );
     }
-    
+
+    private Node getEndNode( Relationship rel )
+    {
+        beginTx();
+        try
+        {
+            return rel.getEndNode();
+        }
+        finally
+        {
+            finishTx(false);
+        }
+    }
+
     @Test
     public void executeWriteCommands() throws Exception
     {
