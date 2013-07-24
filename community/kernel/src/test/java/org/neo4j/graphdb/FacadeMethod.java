@@ -19,16 +19,16 @@
  */
 package org.neo4j.graphdb;
 
-public abstract class NodeFacadeMethod
+public abstract class FacadeMethod<T>
 {
     private final String methodSignature;
 
-    public NodeFacadeMethod( String methodSignature )
+    public FacadeMethod( String methodSignature )
     {
         this.methodSignature = methodSignature;
     }
 
-    public abstract void call( Node node );
+    public abstract void call( T self );
 
     @Override
     public String toString()

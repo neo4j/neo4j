@@ -20,44 +20,21 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.NodeFacadeMethods.ALL_NODE_FACADE_METHODS;
 
-public class MandatoryTransactionsForNodeFacadeTests
+public class MandatoryTransactionsForNodeFacadeTests extends AbstractMandatoryTransactionsTest<Node>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNodeFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnNode() throws Exception
     {
-        GraphDatabaseService graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Node node = createNode( graphDatabaseService );
-
-        for ( NodeFacadeMethod nodeFacadeMethod : ALL_NODE_FACADE_METHODS )
-        {
-            try
-            {
-                nodeFacadeMethod.call( node );
-
-                fail( "Transactions are mandatory, also for reads: " + nodeFacadeMethod );
-            }
-            catch ( NotInTransactionException e )
-            {
-
-            }
-        }
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
     }
 
-    private Node createNode( GraphDatabaseService graphDatabaseService )
+    @Override
+    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        Transaction transaction = graphDatabaseService.beginTx();
-        try
-        {
-            return graphDatabaseService.createNode();
-        }
-        finally
-        {
-            transaction.finish();
-        }
+        return graphDatabaseService.createNode();
     }
 }
+

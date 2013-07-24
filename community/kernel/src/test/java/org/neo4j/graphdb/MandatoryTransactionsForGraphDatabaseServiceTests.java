@@ -23,27 +23,22 @@ import org.junit.Test;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
 import static org.neo4j.graphdb.GraphDatabaseServiceMethods.allGraphDatabaseServiceMethods;
 
-public class MandatoryTransactionsForGraphDatabaseServiceTests
+public class MandatoryTransactionsForGraphDatabaseServiceTests extends
+        AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
     {
-        GraphDatabaseService graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+    }
 
-        for ( GraphDatabaseServiceMethod graphDatabaseServiceMethod : allGraphDatabaseServiceMethods() )
-        {
-            try
-            {
-                graphDatabaseServiceMethod.call( graphDatabaseService );
-
-                fail( "Transactions are mandatory, also for reads: " + graphDatabaseServiceMethod );
-            }
-            catch ( NotInTransactionException e )
-            {
-
-            }
-        }
+    @Override
+    protected GraphDatabaseService obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    {
+        return graphDatabaseService;
     }
 }

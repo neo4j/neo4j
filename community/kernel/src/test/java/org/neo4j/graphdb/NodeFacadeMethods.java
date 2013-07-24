@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -28,6 +31,7 @@ import static org.neo4j.graphdb.ReturnableEvaluator.ALL;
 import static org.neo4j.graphdb.StopEvaluator.DEPTH_ONE;
 import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
 
+@SuppressWarnings("UnusedDeclaration")
 public class NodeFacadeMethods
 {
     private static final DynamicRelationshipType FOO = withName( "foo" );
@@ -35,7 +39,7 @@ public class NodeFacadeMethods
     private static final DynamicRelationshipType BAZ = withName( "baz" );
     private static final Label QUUX = label( "quux" );
 
-    private static final NodeFacadeMethod HAS_PROPERTY = new NodeFacadeMethod( "boolean hasProperty( " +
+    private static final FacadeMethod<Node> HAS_PROPERTY = new FacadeMethod<Node>( "boolean hasProperty( " +
             "String key )" )
     {
         @Override
@@ -45,7 +49,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_PROPERTY = new NodeFacadeMethod( "Object getProperty( String key )" )
+    private static final FacadeMethod<Node> GET_PROPERTY = new FacadeMethod<Node>( "Object getProperty( String key )" )
     {
         @Override
         public void call( Node node )
@@ -54,7 +58,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_PROPERTY_WITH_DEFAULT = new NodeFacadeMethod( "Object getProperty( " +
+    private static final FacadeMethod<Node> GET_PROPERTY_WITH_DEFAULT = new FacadeMethod<Node>( "Object getProperty( " +
             "String key, Object defaultValue )" )
     {
         @Override
@@ -64,7 +68,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod SET_PROPERTY = new NodeFacadeMethod( "void setProperty( String key, " +
+    private static final FacadeMethod<Node> SET_PROPERTY = new FacadeMethod<Node>( "void setProperty( String key, " +
             "Object value )" )
 
     {
@@ -75,7 +79,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod REMOVE_PROPERTY = new NodeFacadeMethod( "Object removeProperty( String key " +
+    private static final FacadeMethod<Node> REMOVE_PROPERTY = new FacadeMethod<Node>( "Object removeProperty( String key " +
             ")" )
 
     {
@@ -86,7 +90,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_PROPERTY_KEYS = new NodeFacadeMethod( "Iterable<String> getPropertyKeys" +
+    private static final FacadeMethod<Node> GET_PROPERTY_KEYS = new FacadeMethod<Node>( "Iterable<String> getPropertyKeys" +
             "()" )
     {
         @Override
@@ -99,7 +103,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_PROPERTY_VALUES = new NodeFacadeMethod( "Iterable<Object> " +
+    private static final FacadeMethod<Node> GET_PROPERTY_VALUES = new FacadeMethod<Node>( "Iterable<Object> " +
             "getPropertyValues()" )
     {
         @Override
@@ -113,7 +117,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod DELETE = new NodeFacadeMethod( "void delete()" )
+    private static final FacadeMethod<Node> DELETE = new FacadeMethod<Node>( "void delete()" )
     {
         @Override
         public void call( Node node )
@@ -122,7 +126,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_RELATIONSHIPS = new NodeFacadeMethod( "Iterable<Relationship> " +
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS = new FacadeMethod<Node>( "Iterable<Relationship> " +
             "getRelationships()" )
     {
         @Override
@@ -135,7 +139,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_RELATIONSHIP = new NodeFacadeMethod( "boolean hasRelationship()" )
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP = new FacadeMethod<Node>( "boolean hasRelationship()" )
 
     {
         @Override
@@ -145,7 +149,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_RELATIONSHIPS_BY_TYPE = new NodeFacadeMethod(
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE = new FacadeMethod<Node>(
             "Iterable<Relationship> getRelationships( RelationshipType... types )" )
     {
         @Override
@@ -158,7 +162,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES = new NodeFacadeMethod(
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES = new FacadeMethod<Node>(
             "Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )" )
     {
         @Override
@@ -171,7 +175,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_RELATIONSHIP_BY_TYPE = new NodeFacadeMethod( "boolean " +
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE = new FacadeMethod<Node>( "boolean " +
             "hasRelationship( RelationshipType... types )" )
 
     {
@@ -182,7 +186,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE = new NodeFacadeMethod( "boolean " +
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE = new FacadeMethod<Node>( "boolean " +
             "hasRelationship( Direction direction, RelationshipType... types )" )
     {
         @Override
@@ -192,7 +196,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_RELATIONSHIPS_BY_DIRECTION = new NodeFacadeMethod(
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION = new FacadeMethod<Node>(
             "Iterable<Relationship> getRelationships( Direction dir )" )
     {
         @Override
@@ -205,7 +209,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_RELATIONSHIP_BY_DIRECTION = new NodeFacadeMethod( "boolean " +
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION = new FacadeMethod<Node>( "boolean " +
             "hasRelationship( Direction dir )" )
 
     {
@@ -216,7 +220,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION = new NodeFacadeMethod(
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION = new FacadeMethod<Node>(
             "Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );" )
     {
         @Override
@@ -229,7 +233,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION = new NodeFacadeMethod( "boolean " +
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION = new FacadeMethod<Node>( "boolean " +
             "hasRelationship( RelationshipType type, Direction dir )" )
     {
         @Override
@@ -239,7 +243,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_SINGLE_RELATIONSHIP = new NodeFacadeMethod( "Relationship " +
+    private static final FacadeMethod<Node> GET_SINGLE_RELATIONSHIP = new FacadeMethod<Node>( "Relationship " +
             "getSingleRelationship( RelationshipType type, Direction dir )" )
     {
         @Override
@@ -249,7 +253,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod CREATE_RELATIONSHIP_TO = new NodeFacadeMethod( "Relationship " +
+    private static final FacadeMethod<Node> CREATE_RELATIONSHIP_TO = new FacadeMethod<Node>( "Relationship " +
             "createRelationshipTo( Node otherNode, RelationshipType type )" )
     {
         @Override
@@ -259,7 +263,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod TRAVERSE_USING_ONE_TYPE_AND_DIRECTION = new NodeFacadeMethod( "Traverser " +
+    private static final FacadeMethod<Node> TRAVERSE_USING_ONE_TYPE_AND_DIRECTION = new FacadeMethod<Node>( "Traverser " +
             "traverse( Traverser.Order " +
             "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
             "RelationshipType relationshipType, Direction direction )" )
@@ -273,7 +277,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS = new NodeFacadeMethod( "Traverser " +
+    private static final FacadeMethod<Node> TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS = new FacadeMethod<Node>( "Traverser " +
             "traverse( Traverser.Order " +
             "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
             "RelationshipType firstRelationshipType, Direction firstDirection, " +
@@ -286,7 +290,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS = new NodeFacadeMethod(
+    private static final FacadeMethod<Node> TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS = new FacadeMethod<Node>(
             "Traverser traverse( Traverser.Order " +
                     "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
                     "Object... relationshipTypesAndDirections )" )
@@ -298,7 +302,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod ADD_LABEL = new NodeFacadeMethod( "void addLabel( Label label )" )
+    private static final FacadeMethod<Node> ADD_LABEL = new FacadeMethod<Node>( "void addLabel( Label label )" )
     {
         @Override
         public void call( Node node )
@@ -307,7 +311,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod REMOVE_LABEL = new NodeFacadeMethod( "void removeLabel( Label label )" )
+    private static final FacadeMethod<Node> REMOVE_LABEL = new FacadeMethod<Node>( "void removeLabel( Label label )" )
     {
         @Override
         public void call( Node node )
@@ -316,7 +320,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod HAS_LABEL = new NodeFacadeMethod( "boolean hasLabel( Label label )" )
+    private static final FacadeMethod<Node> HAS_LABEL = new FacadeMethod<Node>( "boolean hasLabel( Label label )" )
     {
         @Override
         public void call( Node node )
@@ -325,7 +329,7 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final NodeFacadeMethod GET_LABELS = new NodeFacadeMethod( "ResourceIterable<Label> getLabels()" )
+    private static final FacadeMethod<Node> GET_LABELS = new FacadeMethod<Node>( "ResourceIterable<Label> getLabels()" )
 
     {
         @Override
@@ -335,15 +339,34 @@ public class NodeFacadeMethods
             {
 
             }
-        }
+        }        
     };
 
-    static final NodeFacadeMethod[] ALL_NODE_FACADE_METHODS = {HAS_PROPERTY, GET_PROPERTY, GET_PROPERTY_WITH_DEFAULT,
-            SET_PROPERTY, REMOVE_PROPERTY, GET_PROPERTY_KEYS, GET_PROPERTY_VALUES, DELETE, GET_RELATIONSHIPS,
-            HAS_RELATIONSHIP, GET_RELATIONSHIPS_BY_TYPE, GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES,
-            HAS_RELATIONSHIP_BY_TYPE, HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE, GET_RELATIONSHIPS_BY_DIRECTION,
-            HAS_RELATIONSHIP_BY_DIRECTION, GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION,
-            HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION, GET_SINGLE_RELATIONSHIP, CREATE_RELATIONSHIP_TO,
-            TRAVERSE_USING_ONE_TYPE_AND_DIRECTION, TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS,
-            TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS, ADD_LABEL, REMOVE_LABEL, HAS_LABEL, GET_LABELS};
+    static final Iterable<FacadeMethod<Node>> ALL_NODE_FACADE_METHODS = unmodifiableCollection( asList(
+        HAS_PROPERTY, 
+        GET_PROPERTY, 
+        GET_PROPERTY_WITH_DEFAULT,
+        SET_PROPERTY, 
+        REMOVE_PROPERTY, 
+        GET_PROPERTY_KEYS, 
+        GET_PROPERTY_VALUES, 
+        DELETE, GET_RELATIONSHIPS,
+        HAS_RELATIONSHIP, 
+        GET_RELATIONSHIPS_BY_TYPE, 
+        GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES,
+        HAS_RELATIONSHIP_BY_TYPE, 
+        HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE, 
+        GET_RELATIONSHIPS_BY_DIRECTION,
+        HAS_RELATIONSHIP_BY_DIRECTION, 
+        GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION,
+        HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION, 
+        GET_SINGLE_RELATIONSHIP, CREATE_RELATIONSHIP_TO,
+        TRAVERSE_USING_ONE_TYPE_AND_DIRECTION, 
+        TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS,
+        TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS, 
+        ADD_LABEL, 
+        REMOVE_LABEL, 
+        HAS_LABEL, 
+        GET_LABELS
+    ) );
 }

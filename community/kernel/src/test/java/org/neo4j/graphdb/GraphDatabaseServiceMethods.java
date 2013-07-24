@@ -23,50 +23,19 @@ import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
-class GraphDatabaseServiceMethods
+class GraphDatabaseServiceFacadeMethods
 {
-    static final Set<GraphDatabaseServiceMethod> allGraphDatabaseServiceMethods()
-    {
-        Set<GraphDatabaseServiceMethod> gdsMethods = new HashSet<>();
 
-        // wrap them in nice pretty printing
-        for ( final Field field : GraphDatabaseServiceMethods.class.getDeclaredFields() )
-        {
-            gdsMethods.add( new GraphDatabaseServiceMethod()
-            {
-                @Override
-                public void call( GraphDatabaseService graphDatabaseService )
-                {
-                    try
-                    {
-                        GraphDatabaseServiceMethod graphDatabaseServiceMethod = (GraphDatabaseServiceMethod) field
-                                .get( null );
-
-                        graphDatabaseServiceMethod.call( graphDatabaseService );
-                    }
-                    catch ( IllegalAccessException e )
-                    {
-                        throw new UnsupportedOperationException( "TODO", e );
-                    }
-                }
-
-                @Override
-                public String toString()
-                {
-                    return field.getName();
-                }
-            } );
-        }
-
-        return gdsMethods;
-    }
-
-    static final GraphDatabaseServiceMethod createNode = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> CREATE_NODE =
+        new FacadeMethod<GraphDatabaseService>( "Node createNode()" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -75,7 +44,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod createNodeWithLabels = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> CREATE_NODE_WITH_LABELS =
+        new FacadeMethod<GraphDatabaseService>( "Node createNode( Label... labels )" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -84,7 +54,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod getNodeById = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> GET_NODE_BY_ID =
+        new FacadeMethod<GraphDatabaseService>( "Node getNodeById( long id )" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -93,7 +64,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod getRelationshipById = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_BY_ID =
+        new FacadeMethod<GraphDatabaseService>( "Relationship getRelationshipById( long id )" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -102,7 +74,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod getReferenceNode = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> GET_REFERENCE_NODE =
+        new FacadeMethod<GraphDatabaseService>( "Node getReferenceNode()" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -111,7 +84,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod getAllNodes = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES =
+            new FacadeMethod<GraphDatabaseService>( "Iterable<Node> getAllNodes()" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -123,7 +97,9 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod findNodesByLabelAndProperty = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY =
+        new FacadeMethod<GraphDatabaseService>(
+                "ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -135,7 +111,8 @@ class GraphDatabaseServiceMethods
         }
     };
 
-    static final GraphDatabaseServiceMethod getRelationshipTypes = new GraphDatabaseServiceMethod()
+    static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_TYPES =
+            new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getRelationshipTypes()" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -143,4 +120,21 @@ class GraphDatabaseServiceMethods
             graphDatabaseService.getRelationshipTypes();
         }
     };
+
+    // TODO: schema
+    // TODO: index
+
+    static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
+        unmodifiableCollection( asList(
+            CREATE_NODE,
+            CREATE_NODE_WITH_LABELS,
+            GET_NODE_BY_ID,
+            GET_RELATIONSHIP_BY_ID,
+            GET_REFERENCE_NODE,
+            GET_ALL_NODES,
+            FIND_NODES_BY_LABEL_AND_PROPERTY,
+            GET_RELATIONSHIP_TYPES
+        ) );
+
+
 }

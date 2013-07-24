@@ -20,46 +20,23 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS;
 
-public class MandatoryTransactionsForRelationshipFacadeTests
+public class MandatoryTransactionsForRelationshipFacadeTests extends AbstractMandatoryTransactionsTest<Relationship>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade() throws Exception
     {
-        GraphDatabaseService graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Relationship relationship = createRelationship( graphDatabaseService );
-
-        for ( RelationshipFacadeMethod relationshipFacadeMethod : ALL_RELATIONSHIP_FACADE_METHODS )
-        {
-            try
-            {
-                relationshipFacadeMethod.call( relationship );
-
-                fail( "Transactions are mandatory, also for reads: " + relationshipFacadeMethod );
-            }
-            catch ( NotInTransactionException e )
-            {
-
-            }
-        }
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
     }
 
-    private Relationship createRelationship( GraphDatabaseService graphDatabaseService )
+    @Override
+    protected Relationship obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        Transaction transaction = graphDatabaseService.beginTx();
-        try
-        {
-            return graphDatabaseService.createNode().createRelationshipTo( graphDatabaseService.createNode(),
-                    withName( "foo" ) );
-        }
-        finally
-        {
-            transaction.finish();
-        }
+        return graphDatabaseService
+                .createNode()
+                .createRelationshipTo( graphDatabaseService.createNode(), withName( "foo" ) );
     }
 }
