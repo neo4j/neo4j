@@ -158,7 +158,7 @@ public class NoTransactionState implements TransactionState
     }
     
     @Override
-    public boolean relationshipIsDeleted( long relationshpId )
+    public boolean relationshipIsDeleted( long relationshipId )
     {
         return false;
     }

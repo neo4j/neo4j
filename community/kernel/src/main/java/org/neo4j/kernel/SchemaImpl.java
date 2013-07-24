@@ -76,17 +76,21 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexFor( Label label )
     {
+        assertInTransaction();
+
         return new IndexCreatorImpl( actions, label );
     }
 
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
+        assertInTransaction();
+
         StatementOperationParts context = ctxProvider.getCtxForReading();
         StatementState state = ctxProvider.statementForReading();
         try
         {
-            List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
+            List<IndexDefinition> definitions = new ArrayList<>();
             long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
             addDefinitions( definitions, context, state, context.schemaReadOperations().indexesGetForLabel( state, labelId ), false );
             addDefinitions( definitions, context, state, context.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ), true );
@@ -105,11 +109,13 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
+        assertInTransaction();
+
         StatementOperationParts context = ctxProvider.getCtxForReading();
         StatementState state = ctxProvider.statementForReading();
         try
         {
-            List<IndexDefinition> definitions = new ArrayList<IndexDefinition>();
+            List<IndexDefinition> definitions = new ArrayList<>();
             addDefinitions( definitions, context, state, context.schemaReadOperations().indexesGetAll( state ), false );
             addDefinitions( definitions, context, state, context.schemaReadOperations().uniqueIndexesGetAll( state ), true );
             return definitions;
@@ -145,6 +151,8 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
+        assertInTransaction();
+
         long now = System.currentTimeMillis();
         long timeout = now + unit.toMillis( duration );
         do
@@ -173,8 +181,10 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
+        assertInTransaction();
+
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
-        Collection<IndexDefinition> onlineIndexes = new ArrayList<IndexDefinition>();
+        Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
 
         for ( Iterator<IndexDefinition> iter = getIndexes().iterator(); iter.hasNext(); )
         {
@@ -195,6 +205,8 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
+        assertInTransaction();
+
         StatementOperationParts context = ctxProvider.getCtxForReading();
         String propertyKey = single( index.getPropertyKeys() );
         StatementState state = ctxProvider.statementForReading();
@@ -238,6 +250,8 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
+        assertInTransaction();
+
         StatementOperationParts context = ctxProvider.getCtxForReading();
         StatementState state = ctxProvider.statementForReading();
         String propertyKey = single( index.getPropertyKeys() );
@@ -270,12 +284,16 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
+        assertInTransaction();
+
         return new BaseConstraintCreator( actions, label );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
+        assertInTransaction();
+
         final StatementOperationParts context = ctxProvider.getCtxForReading();
         StatementState state = ctxProvider.statementForReading();
         try
@@ -292,6 +310,8 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
+        assertInTransaction();
+
         final StatementOperationParts context = ctxProvider.getCtxForReading();
         StatementState state = ctxProvider.statementForReading();
         try
@@ -472,5 +492,10 @@ public class SchemaImpl implements Schema
                 context.close( state );
             }
         }
+    }
+
+    private void assertInTransaction()
+    {
+        ctxProvider.assertInTransaction();
     }
 }

@@ -44,11 +44,11 @@ public class EmbeddedNeo4jWithNewIndexing
 
         {
             // START SNIPPET: createIndex
-            Schema schema = graphDb.schema();
             IndexDefinition indexDefinition;
             Transaction tx = graphDb.beginTx();
             try
             {
+                Schema schema = graphDb.schema();
                 indexDefinition = schema.indexFor( DynamicLabel.label( "User" ) )
                         .on( "username" )
                         .create();
@@ -63,6 +63,7 @@ public class EmbeddedNeo4jWithNewIndexing
             Transaction transaction = graphDb.beginTx();
             try
             {
+                Schema schema = graphDb.schema();
                 schema.awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
             }
             finally

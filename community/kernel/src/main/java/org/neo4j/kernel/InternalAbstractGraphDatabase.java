@@ -1040,12 +1040,14 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public IndexManager index()
     {
+        // TODO: txManager.assertInTransaction();
         return indexManager;
     }
 
     @Override
     public Schema schema()
     {
+        txManager.assertInTransaction();
         return schema;
     }
 

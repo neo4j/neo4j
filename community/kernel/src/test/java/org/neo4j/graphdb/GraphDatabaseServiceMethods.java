@@ -19,10 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.Set;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
@@ -31,6 +27,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
+@SuppressWarnings("UnusedDeclaration")
 class GraphDatabaseServiceFacadeMethods
 {
 
@@ -121,8 +118,25 @@ class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    // TODO: schema
-    // TODO: index
+    static final FacadeMethod<GraphDatabaseService> SCHEMA =
+            new FacadeMethod<GraphDatabaseService>( "Schema schema()" )
+            {
+                @Override
+                public void call( GraphDatabaseService graphDatabaseService )
+                {
+                    graphDatabaseService.schema();
+                }
+            };
+
+    static final FacadeMethod<GraphDatabaseService> INDEX =
+            new FacadeMethod<GraphDatabaseService>( "IndexManager index()" )
+            {
+                @Override
+                public void call( GraphDatabaseService graphDatabaseService )
+                {
+                    graphDatabaseService.index();
+                }
+            };
 
     static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
         unmodifiableCollection( asList(
@@ -133,7 +147,9 @@ class GraphDatabaseServiceFacadeMethods
             GET_REFERENCE_NODE,
             GET_ALL_NODES,
             FIND_NODES_BY_LABEL_AND_PROPERTY,
-            GET_RELATIONSHIP_TYPES
+            GET_RELATIONSHIP_TYPES,
+            SCHEMA
+            // TODO: INDEX
         ) );
 
 

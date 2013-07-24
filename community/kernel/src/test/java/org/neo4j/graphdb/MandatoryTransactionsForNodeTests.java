@@ -21,22 +21,20 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.graphdb.RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS;
+import static org.neo4j.graphdb.NodeFacadeMethods.ALL_NODE_FACADE_METHODS;
 
-public class MandatoryTransactionsForRelationshipFacadeTests extends AbstractMandatoryTransactionsTest<Relationship>
+public class MandatoryTransactionsForNodeTests extends AbstractMandatoryTransactionsTest<Node>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnNode() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
     }
 
     @Override
-    protected Relationship obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService
-                .createNode()
-                .createRelationshipTo( graphDatabaseService.createNode(), withName( "foo" ) );
+        return graphDatabaseService.createNode();
     }
 }
+

@@ -22,8 +22,10 @@ package org.neo4j.graphdb;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -37,6 +39,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -49,12 +52,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class SchemaAcceptanceTest
 {
-    public @Rule
-    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
     private String propertyKey = "my_property_key";
-
 
     private enum Labels implements Label
     {
@@ -65,26 +67,42 @@ public class SchemaAcceptanceTest
     @Test
     public void addingAnIndexingRuleShouldSucceed() throws Exception
     {
-        // Given
-        Schema schema = db.schema();
-
-        // When
+        // WHEN
         IndexDefinition index = createIndex( db, label , propertyKey );
 
-        // Then
+        // THEN
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
+    }
+
+    @Test @Ignore("2013-07-24 Non-urgent bug, needs fixing")
+    public void addingAnIndexingRuleInNestedTxShouldSucceed() throws Exception
+    {
+        IndexDefinition index;
+
+        // WHEN
+        Transaction tx = db.beginTx();
+        try
+        {
+            index = createIndex( db, label , propertyKey );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
         assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
     @Test
     public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
     {
-        // Given
-        Schema schema = db.schema();
-
-        // When
+        // WHEN
         Transaction tx = db.beginTx();
         try
         {
+            Schema schema = db.schema();
             schema.indexFor( label ).on( propertyKey ).create();
             try
             {
@@ -107,16 +125,14 @@ public class SchemaAcceptanceTest
     @Test
     public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed() throws Exception
     {
-        // Given
-        Schema schema = db.schema();
-
-        // And given
+        // GIVEN
         Transaction tx = db.beginTx();
+        Schema schema = db.schema();
         schema.indexFor( label ).on( propertyKey ).create();
         tx.success();
         tx.finish();
 
-        // When
+        // WHEN
         ConstraintViolationException caught = null;
         tx = db.beginTx();
         try
@@ -133,20 +149,18 @@ public class SchemaAcceptanceTest
             tx.finish();
         }
 
-        // Then
+        // THEN
         assertThat(caught, not(nullValue()));
     }
 
     @Test
     public void shouldThrowConstraintViolationIfAskedToCreateCompoundIdex() throws Exception
     {
-        // Given
-        Schema schema = db.schema();
-
-        // When
+        // WHEN
         Transaction tx = db.beginTx();
         try
         {
+            Schema schema = db.schema();
             schema.indexFor( label )
                     .on( "my_property_key" )
                     .on( "other_property" ).create();
