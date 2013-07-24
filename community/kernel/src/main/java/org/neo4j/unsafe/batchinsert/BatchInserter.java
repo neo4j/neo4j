@@ -256,7 +256,9 @@ public interface BatchInserter
      * have the details supplied to the {@link IndexCreator returned index creator}.
      *
      * Indexes created with the method are deferred until the batch inserter is shut down, at
-     * which point a background job will populate all indexes.
+     * which point a background job will populate all indexes, i.e. the index
+     * is not available during the batch insertion itself. It is therefor advisable to
+     * create deferred schema indexes just before shutting down the batch inserter.
      *
      * @param label {@link Label label} on nodes to be indexed
      *
