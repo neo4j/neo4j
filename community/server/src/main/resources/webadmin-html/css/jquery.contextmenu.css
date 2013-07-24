@@ -1,0 +1,47 @@
+/* neo context Theme */
+/* ================= */
+.context-menu-theme-neo {
+	background: #f2f2f2;
+	border:1px solid #963;
+}
+.context-menu-theme-neo .context-menu-item {
+	text-align:left;
+	cursor:pointer;
+	color:black;
+  font:12px/15px Helvetica Neue,Arial,"Lucida Grande",Sans-serif;
+	line-height:20px;
+	height:28px;
+	border: 1px solid #CCC;
+	border-left:0;
+	border-right:0;
+}
+.context-menu-theme-neo .context-menu-separator {
+	margin:0px 0px 0px 12px;
+	font-size:0px;
+	border-top:1px solid #C5C5C5;
+	border-bottom:1px solid #F5F5F5;
+}
+.context-menu-theme-neo .context-menu-item-hover {
+  border:1px solid #7EB3D6;
+  background: #abd3ee;
+  background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
+  background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
+  background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+}
+.context-menu-theme-neo .context-menu-item .context-menu-item-inner {
+	padding:4px 8px 4px 25px;
+	margin-left:0px;
+	background-color:none;
+	background-repeat:no-repeat;
+	background-position:3px center;
+	background-image:none;
+}
+.context-menu-theme-neo .context-menu-item-hover .context-menu-item-inner {
+}
+.context-menu-theme-neo .context-menu-item-disabled {
+	color:#A7A7A7;
+}
