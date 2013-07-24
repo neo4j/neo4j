@@ -67,19 +67,19 @@ public class TestApps extends AbstractShellTest
     {
         Relationship[] relationships = createRelationshipChain( 3 );
         executeCommand( "cd" );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode() ) );
-        executeCommandExpectingException( "cd " + relationships[0].getStartNode().getId(), "stand" );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode() ) );
-        executeCommand( "cd " + relationships[0].getEndNode().getId() );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
-        executeCommandExpectingException( "cd " + relationships[2].getEndNode().getId(), "connected" );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
-        executeCommand( "cd -a " + relationships[2].getEndNode().getId() );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode(), relationships[2].getEndNode() ) );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ) ) );
+        executeCommandExpectingException( "cd " + getStartNode( relationships[0] ).getId(), "stand" );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ) ) );
+        executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
+        executeCommandExpectingException( "cd " + getEndNode( relationships[2] ).getId(), "connected" );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
+        executeCommand( "cd -a " + getEndNode( relationships[2] ).getId() );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ), getEndNode( relationships[2] ) ) );
         executeCommand( "cd .." );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
-        executeCommand( "cd " + relationships[1].getEndNode().getId() );
-        executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode(), relationships[1].getEndNode() ) );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
+        executeCommand( "cd " + getEndNode( relationships[1] ).getId() );
+        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ), getEndNode( relationships[1] ) ) );
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TestApps extends AbstractShellTest
         RelationshipType type1 = DynamicRelationshipType.withName( "KNOWS" );
         RelationshipType type2 = DynamicRelationshipType.withName( "LOVES" );
         Relationship[] relationships = createRelationshipChain( type1, 2 );
-        Node node = relationships[0].getEndNode();
+        Node node = getEndNode( relationships[0] );
         createRelationshipChain( node, type2, 1 );
         executeCommand( "cd " + node.getId() );
         executeCommand( "ls", "<-", "->" );
@@ -111,7 +111,7 @@ public class TestApps extends AbstractShellTest
     public void canSetAndRemoveProperties() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
-        Node node = relationships[0].getEndNode();
+        Node node = getEndNode( relationships[0] );
         executeCommand( "cd " + node.getId() );
         String name = "Mattias";
         executeCommand( "set name " + name );
@@ -172,13 +172,13 @@ public class TestApps extends AbstractShellTest
     public void rmrelCanLeaveStrandedIslands() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 4 );
-        executeCommand( "cd -a " + relationships[1].getEndNode().getId() );
+        executeCommand( "cd -a " + getEndNode( relationships[1] ).getId() );
 
         Relationship relToDelete = relationships[2];
         executeCommandExpectingException( "rmrel " + relToDelete.getId(), "decoupled" );
         assertRelationshipExists( relToDelete );
 
-        Node otherNode = relToDelete.getEndNode();
+        Node otherNode = getEndNode( relToDelete );
         executeCommand( "rmrel -fd " + relToDelete.getId() );
         assertRelationshipDoesntExist( relToDelete );
         assertNodeExists( otherNode );
@@ -188,7 +188,7 @@ public class TestApps extends AbstractShellTest
     public void rmrelCanLeaveStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
-        Node otherNode = relationships[0].getEndNode();
+        Node otherNode = getEndNode( relationships[0] );
 
         executeCommandExpectingException( "rmrel " + relationships[0].getId(), "decoupled" );
         assertRelationshipExists( relationships[0] );
@@ -203,7 +203,7 @@ public class TestApps extends AbstractShellTest
     public void rmrelCanDeleteStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
-        Node otherNode = relationships[0].getEndNode();
+        Node otherNode = getEndNode( relationships[0] );
 
         executeCommand( "rmrel -fd " + relationships[0].getId(), "not having any relationships" );
         assertRelationshipDoesntExist( relationships[0] );
@@ -214,9 +214,9 @@ public class TestApps extends AbstractShellTest
     public void rmrelCanDeleteRelationshipSoThatCurrentNodeGetsStranded() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
-        executeCommand( "cd " + relationships[0].getEndNode().getId() );
+        executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
         deleteRelationship( relationships[0] );
-        Node currentNode = relationships[1].getStartNode();
+        Node currentNode = getStartNode( relationships[1] );
         executeCommand( "rmrel -fd " + relationships[1].getId(), "not having any relationships" );
         assertNodeExists( currentNode );
 
@@ -244,11 +244,24 @@ public class TestApps extends AbstractShellTest
         executeCommand( "pwd" );
     }
 
+    private Node getStartNode( Relationship relationship )
+    {
+        beginTx();
+        try
+        {
+            return relationship.getStartNode();
+        }
+        finally
+        {
+            finishTx( false );
+        }
+    }
+
     @Test
     public void rmnodeCanDeleteStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
-        Node strandedNode = relationships[0].getEndNode();
+        Node strandedNode = getEndNode( relationships[0] );
         deleteRelationship( relationships[0] );
         executeCommand( "rmnode " + strandedNode.getId() );
         assertNodeDoesntExist( strandedNode );
@@ -258,10 +271,10 @@ public class TestApps extends AbstractShellTest
     public void rmnodeCanDeleteConnectedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
-        Node middleNode = relationships[0].getEndNode();
+        Node middleNode = getEndNode( relationships[0] );
         executeCommandExpectingException( "rmnode " + middleNode.getId(), "still has relationships" );
         assertNodeExists( middleNode );
-        Node endNode = relationships[1].getEndNode();
+        Node endNode = getEndNode( relationships[1] );
         executeCommand( "rmnode -f " + middleNode.getId(), "deleted" );
         assertNodeDoesntExist( middleNode );
         assertRelationshipDoesntExist( relationships[0] );
@@ -273,11 +286,24 @@ public class TestApps extends AbstractShellTest
         executeCommand( "pwd", Pattern.quote( "(?)" ) );
     }
 
+    private Node getEndNode( Relationship relationship )
+    {
+        beginTx();
+        try
+        {
+            return relationship.getEndNode();
+        }
+        finally
+        {
+            finishTx( false );
+        }
+    }
+
     @Test
     public void pwdWorksOnDeletedNode() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
-        executeCommand( "cd " + relationships[0].getEndNode().getId() );
+        executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
 
         // Delete the relationship and node we're standing on
         beginTx();
@@ -287,7 +313,7 @@ public class TestApps extends AbstractShellTest
 
         Relationship[] otherRelationships = createRelationshipChain( 1 );
         executeCommand( "pwd", "\\(0\\)-->\\(\\?\\)" );
-        executeCommand( "cd -a " + otherRelationships[0].getEndNode().getId() );
+        executeCommand( "cd -a " + getEndNode( otherRelationships[0] ).getId() );
         executeCommand( "ls" );
     }
 
@@ -638,7 +664,7 @@ public class TestApps extends AbstractShellTest
     {
         // GIVEN
         Relationship[] chain = createRelationshipChain( 1 );
-        Node node = chain[0].getEndNode();
+        Node node = getEndNode( chain[0] );
         executeCommand( "cd -a " + node.getId() );
         
         // WHEN
@@ -653,7 +679,7 @@ public class TestApps extends AbstractShellTest
     {
         // GIVEN
         Relationship[] chain = createRelationshipChain( 1 );
-        Node node = chain[0].getEndNode();
+        Node node = getEndNode( chain[0] );
         executeCommand( "cd -a " + node.getId() );
         
         // WHEN

@@ -1166,12 +1166,12 @@ return x, p""")
     val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = shortestPath(a -[?*]-> x)
-return x, p""")
+return x, p""").toList
 
-    assert(List(
+    assertInTx(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
       Map("x" -> c, "p" -> null)
-    ) === result.toList)
+    ) === result)
   }
 
   @Test def shouldHandleOptionalPathsFromACombo() {
