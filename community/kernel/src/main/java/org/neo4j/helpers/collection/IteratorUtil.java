@@ -36,7 +36,6 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
@@ -573,6 +572,7 @@ public abstract class IteratorUtil
      * @param items the items to add to the set.
      * @return the {@link Set} containing the items.
      */
+    @SafeVarargs
     public static <T> Set<T> asSet( T... items )
     {
         return new HashSet<>( asList( items ) );
@@ -591,6 +591,7 @@ public abstract class IteratorUtil
     /**
      * Alias for asSet()
      */
+    @SafeVarargs
     public static <T> Set<T> set( T... items)
     {
         return asSet(items);
@@ -602,6 +603,7 @@ public abstract class IteratorUtil
      * @param items the items to add to the set.
      * @return the {@link Set} containing the items.
      */
+    @SafeVarargs
     public static <T> Set<T> asUniqueSet( T... items )
     {
         HashSet<T> set = new HashSet<>();
@@ -719,6 +721,7 @@ public abstract class IteratorUtil
         };
     }
 
+    @SafeVarargs
     public static <T> Iterable<T> asIterable( final T... array )
     {
         return new Iterable<T>()
@@ -757,6 +760,7 @@ public abstract class IteratorUtil
         return new PrimitiveLongIteratorForArray( array );
     }
 
+    @SafeVarargs
     public static <T> Iterator<T> asIterator( final T... array )
     {
         return new PrefetchingIterator<T>()
@@ -778,18 +782,12 @@ public abstract class IteratorUtil
         };
     }
 
+    @SafeVarargs
     public static <T> Iterator<T> iterator( T ... items )
     {
         return asIterator( items );
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> singletonIterator( T item )
-    {
-        return asIterator(item);
-    }
-
-    @SuppressWarnings("unchecked")
     public static PrimitiveLongIterator singletonPrimitiveLongIterator( final long item )
     {
         return new AbstractPrimitiveLongIterator()
@@ -856,7 +854,6 @@ public abstract class IteratorUtil
         return EMPTY_ITERATOR;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static PrimitiveLongIterator emptyPrimitiveLongIterator()
     {
         return EMPTY_PRIMITIVE_LONG_ITERATOR;
@@ -976,8 +973,7 @@ public abstract class IteratorUtil
         };
     }
 
-    // Useful when debugging in tests
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
     public static Iterator<Long> toJavaIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()
@@ -998,29 +994,6 @@ public abstract class IteratorUtil
             public void remove()
             {
                 throw new UnsupportedOperationException(  );
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
-                                                final PrimitiveLongIterator source )
-    {
-        return new AbstractPrimitiveLongIterator()
-        {
-            {
-                computeNext();
-            }
-
-            protected void computeNext()
-            {
-                for ( hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
-                {
-                    nextValue = source.next();
-                    if ( predicate.accept( nextValue ) )
-                    {
-                        return;
-                    }
-                }
             }
         };
     }

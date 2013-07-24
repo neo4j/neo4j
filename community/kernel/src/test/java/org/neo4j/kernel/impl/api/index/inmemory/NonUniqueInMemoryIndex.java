@@ -30,13 +30,12 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
-import static org.neo4j.helpers.collection.Iterables.MAP_LONG_TO_PRIMITIVE_LONG;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 class NonUniqueInMemoryIndex extends InMemoryIndex
 {
-    private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
+    private final Map<Object, Set<Long>> indexData = new HashMap<>();
 
     @Override
     IndexPopulator getPopulator()
@@ -85,7 +84,7 @@ class NonUniqueInMemoryIndex extends InMemoryIndex
         Set<Long> nodes = indexData.get( key );
         if ( nodes == null )
         {
-            nodes = new HashSet<Long>();
+            nodes = new HashSet<>();
             indexData.put( key, nodes );
         }
         return nodes;
@@ -150,14 +149,14 @@ class NonUniqueInMemoryIndex extends InMemoryIndex
 
         NonUniqueInMemoryIndexReader( Map<Object, Set<Long>> indexData )
         {
-            this.indexData = new HashMap<Object, Set<Long>>( indexData );
+            this.indexData = new HashMap<>( indexData );
         }
 
         @Override
         public PrimitiveLongIterator lookup( Object value )
         {
             Set<Long> result = indexData.get( encode( value ) );
-            return result != null ? map( MAP_LONG_TO_PRIMITIVE_LONG, result.iterator() ) : emptyPrimitiveLongIterator();
+            return result != null ? toPrimitiveLongIterator( result.iterator() )  : emptyPrimitiveLongIterator();
         }
 
         @Override

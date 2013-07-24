@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -61,7 +62,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 {
     private final NodeManager nodeManager;
     private Map<Integer, Property> properties;
-    private boolean loaded;
     private final ThreadToStatementContextBridge statementCtxProvider;
     
     GraphPropertiesImpl( NodeManager nodeManager, ThreadToStatementContextBridge statementCtxProvider )
@@ -149,15 +149,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
             return ctxForReading.entityReadOperations().graphGetProperty( state, propertyId ).value();
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyNotFoundException e )
+        catch ( PropertyKeyIdNotFoundException | PropertyKeyNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -316,9 +308,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof GraphProperties) )
-            return false;
-        return ((GraphProperties) obj).getNodeManager().equals( nodeManager );
+        return obj instanceof GraphProperties && ((GraphProperties) obj).getNodeManager().equals( nodeManager );
     }
     
     @Override
@@ -336,8 +326,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     protected void setEmptyProperties()
     {
-        properties = new HashMap<Integer, Property>();
-        loaded = true;
+        properties = new HashMap<>();
     }
     
     @Override
@@ -349,21 +338,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     protected PrimitiveLongIterator getCachedPropertyKeys()
     {
-        final Iterator<Property> iterator = getCachedProperties();
-        return new PrimitiveLongIterator()
-        {
-            @Override
-            public long next()
-            {
-                return iterator.next().propertyKeyId();
-            }
-            
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-        };
+        return new PropertyKeyIdIterator( getCachedProperties() );
     }
     
     @Override
@@ -374,6 +349,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
     
     @Override
+    @SuppressWarnings("deprecation")
     protected PropertyData getPropertyForIndex( int keyId )
     {
         Property property = properties.get( keyId );
@@ -385,7 +361,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     {
         if ( loadedProperties != null && loadedProperties.hasNext() )
         {
-            Map<Integer, Property> newProperties = new HashMap<Integer, Property>();
+            Map<Integer, Property> newProperties = new HashMap<>();
             while ( loadedProperties.hasNext() )
             {
                 Property property = loadedProperties.next();
@@ -395,9 +371,8 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         else
         {
-            properties = new HashMap<Integer, Property>();
+            properties = new HashMap<>();
         }
-        loaded = true;
     }
 
     @Override

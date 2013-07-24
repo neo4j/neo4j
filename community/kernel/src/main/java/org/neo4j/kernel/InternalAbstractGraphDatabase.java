@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+
+import ch.qos.logback.classic.LoggerContext;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,14 +55,15 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
-import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -73,6 +75,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -149,15 +152,12 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
-
 import static java.lang.String.format;
+
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.filter;
-
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -241,7 +241,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<Class<?>> settingsClasses,
-                                             Iterable<IndexProvider> indexProviders,
+                                             @SuppressWarnings("deprecation") Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
@@ -259,10 +259,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // Convert IndexProviders into KernelExtensionFactories
         // Remove this when the deprecated IndexProvider is removed
+        @SuppressWarnings("deprecation")
         Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = map( new Function<IndexProvider, KernelExtensionFactory<?>>()
         {
             @Override
-            public KernelExtensionFactory<?> apply( IndexProvider from )
+            public KernelExtensionFactory<?> apply( @SuppressWarnings("deprecation") IndexProvider from )
             {
                 return new IndexProviderKernelExtensionFactory( from );
             }
@@ -352,6 +353,7 @@ public abstract class InternalAbstractGraphDatabase
         statementContextProvider.bootstrapAfterRecovery();
         if ( txManager instanceof TxManager )
         {
+            @SuppressWarnings("deprecation")
             NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
             storeId = neoStoreDataSource.getStoreId();
             KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
@@ -1193,20 +1195,17 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         @Override
-        public void init()
-                throws Throwable
+        public void init() throws Throwable
         {
         }
 
         @Override
-        public void start()
-                throws Throwable
+        public void start() throws Throwable
         {
         }
 
         @Override
-        public void stop()
-                throws Throwable
+        public void stop() throws Throwable
         {
         }
     }
@@ -1389,42 +1388,36 @@ public abstract class InternalAbstractGraphDatabase
      * As it runs as the last service in the lifecycle list, the stop() is called first
      * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
      */
-    class DatabaseAvailability
-            implements Lifecycle
+    class DatabaseAvailability implements Lifecycle
     {
         @Override
-        public void init()
-                throws Throwable
+        public void init() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
         }
 
         @Override
-        public void start()
-                throws Throwable
+        public void start() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
             msgLog.logMessage( "Started - database is now available" );
         }
 
         @Override
-        public void stop()
-                throws Throwable
+        public void stop() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
             msgLog.logMessage( "Stopping - database is now unavailable" );
         }
 
         @Override
-        public void shutdown()
-                throws Throwable
+        public void shutdown() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
         }
     }
 
-    private class ConfigurationChangedRestarter
-            extends LifecycleAdapter
+    private class ConfigurationChangedRestarter extends LifecycleAdapter
     {
         private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
         {
@@ -1458,15 +1451,13 @@ public abstract class InternalAbstractGraphDatabase
         };
 
         @Override
-        public void start()
-                throws Throwable
+        public void start() throws Throwable
         {
             config.addConfigurationChangeListener( listener );
         }
 
         @Override
-        public void stop()
-                throws Throwable
+        public void stop() throws Throwable
         {
             config.removeConfigurationChangeListener( listener );
         }
@@ -1515,11 +1506,7 @@ public abstract class InternalAbstractGraphDatabase
                         state );
             }
         }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        catch ( IndexNotFoundKernelException e )
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
@@ -1527,28 +1514,11 @@ public abstract class InternalAbstractGraphDatabase
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, ctx, state, labelId );
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final long propertyId, final Object value,
-            final StatementOperationParts ctx, final StatementState state, long labelId )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( long propertyId, Object value,
+            StatementOperationParts ctx, StatementState state, long labelId )
     {
-        PrimitiveLongIterator nodesWithLabel = ctx.entityReadOperations().nodesGetForLabel( state, labelId );
-
-        PrimitiveLongIterator matches = filter( new PrimitiveLongPredicate()
-        {
-            @Override
-            public boolean accept( long item )
-            {
-                try
-                {
-                    return ctx.entityReadOperations().nodeGetProperty( state, item, propertyId ).valueEquals( value );
-                }
-                catch ( KernelException e )
-                {
-                    return false;
-                }
-            }
-        }, nodesWithLabel );
-
-        return map2nodes( matches, state );
+        return map2nodes( new PropertyValueFilteringNodeIdIterator(
+                ctx.entityReadOperations().nodesGetForLabel( state, labelId ), ctx, state, propertyId, value ), state );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, StatementState state )
@@ -1561,5 +1531,50 @@ public abstract class InternalAbstractGraphDatabase
                 return getNodeById( id );
             }
         }, input ), state.closeable( kernelAPI.statementOperations().lifecycleOperations() ) );
+    }
+
+    private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
+    {
+        private final PrimitiveLongIterator nodesWithLabel;
+        private final StatementOperationParts ctx;
+        private final StatementState state;
+        private final long propertyId;
+        private final Object value;
+
+        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, StatementOperationParts ctx,
+                                              StatementState state, long propertyId, Object value )
+        {
+            this.nodesWithLabel = nodesWithLabel;
+            this.ctx = ctx;
+            this.state = state;
+            this.propertyId = propertyId;
+            this.value = value;
+            computeNext();
+        }
+
+        protected void computeNext()
+        {
+            for ( hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
+            {
+                nextValue = nodesWithLabel.next();
+                try
+                {
+                    if ( ctx.entityReadOperations().nodeGetProperty( state, nextValue, propertyId ).valueEquals( value ) )
+                    {
+                        return;
+                    }
+                }
+                catch ( PropertyKeyIdNotFoundException e )
+                {
+                    // if they key doesn't exist, no node could possibly have a property with that key
+                    hasNext = false;
+                    return;
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    // continue to the next node
+                }
+            }
+        }
     }
 }

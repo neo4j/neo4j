@@ -24,5 +24,4 @@ public interface PrimitiveLongIterator
     boolean hasNext();
     
     long next();
-
 }

@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -174,9 +175,7 @@ public class StateHandlingStatementOperations implements
             PrimitiveLongIterator wLabelChanges =
                     state.txState().nodesWithLabelChanged( labelId ).applyPrimitiveLongIterator(
                             entityReadDelegate.nodesGetForLabel( state, labelId ) );
-            PrimitiveLongIterator wDeletions =
-                    state.txState().nodesDeletedInTx().applyPrimitiveLongIterator( wLabelChanges );
-            return wDeletions;
+            return state.txState().nodesDeletedInTx().applyPrimitiveLongIterator( wLabelChanges );
         }
 
         return entityReadDelegate.nodesGetForLabel( state, labelId );
@@ -234,11 +233,7 @@ public class StateHandlingStatementOperations implements
                         state, this, labelId, propertyKeyId );
                 state.txState().constraintDoAdd( constraint, indexId );
             }
-            catch ( TransactionalException e )
-            {
-                throw new ConstraintCreationKernelException( constraint, e );
-            }
-            catch ( KernelException e )
+            catch ( TransactionalException | KernelException e )
             {
                 throw new ConstraintCreationKernelException( constraint, e );
             }
@@ -591,21 +586,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            final Iterator<Property> properties = nodeGetAllProperties( state, nodeId );
-            return new PrimitiveLongIterator()
-            {
-                @Override
-                public long next()
-                {
-                    return properties.next().propertyKeyId();
-                }
-
-                @Override
-                public boolean hasNext()
-                {
-                    return properties.hasNext();
-                }
-            };
+            return new PropertyKeyIdIterator( nodeGetAllProperties( state, nodeId ) );
         }
         
         return entityReadDelegate.nodeGetPropertyKeys( state, nodeId );
@@ -667,21 +648,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            final Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
-            return new PrimitiveLongIterator()
-            {
-                @Override
-                public long next()
-                {
-                    return properties.next().propertyKeyId();
-                }
-
-                @Override
-                public boolean hasNext()
-                {
-                    return properties.hasNext();
-                }
-            };
+            return new PropertyKeyIdIterator( relationshipGetAllProperties( state, relationshipId ) );
         }
         
         return entityReadDelegate.relationshipGetPropertyKeys( state, relationshipId );
@@ -743,21 +710,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            final Iterator<Property> properties = graphGetAllProperties( state );
-            return new PrimitiveLongIterator()
-            {
-                @Override
-                public long next()
-                {
-                    return properties.next().propertyKeyId();
-                }
-
-                @Override
-                public boolean hasNext()
-                {
-                    return properties.hasNext();
-                }
-            };
+            return new PropertyKeyIdIterator( graphGetAllProperties( state ) );
         }
         
         return entityReadDelegate.graphGetPropertyKeys( state );
@@ -818,11 +771,7 @@ public class StateHandlingStatementOperations implements
                     return false;
                 }
                 Property property = nodeGetProperty( state, nodeId, propertyKeyId );
-                if ( property.isNoProperty() )
-                {
-                    return false;
-                }
-                return property.valueEquals( value );
+                return !property.isNoProperty() && property.valueEquals( value );
             }
             catch ( EntityNotFoundException | PropertyKeyIdNotFoundException e )
             {

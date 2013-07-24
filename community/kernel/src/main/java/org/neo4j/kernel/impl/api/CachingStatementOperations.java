@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -244,21 +245,7 @@ public class CachingStatementOperations implements
     public PrimitiveLongIterator relationshipGetPropertyKeys( StatementState state, long relationshipId )
             throws EntityNotFoundException
     {
-        final Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
-        return new PrimitiveLongIterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return properties.hasNext();
-            }
-            
-            @Override
-            public long next()
-            {
-                return properties.next().propertyKeyId();
-            }
-        };
+        return new PropertyKeyIdIterator( relationshipGetAllProperties( state, relationshipId ) );
     }
     
     @Override

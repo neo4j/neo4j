@@ -17,37 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.properties;
 
-import java.util.NoSuchElementException;
+import java.util.Iterator;
 
-public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+
+public class PropertyKeyIdIterator implements PrimitiveLongIterator
 {
-    private final long[] values;
+    private final Iterator<Property> properties;
 
-    int i = 0;
-
-    public PrimitiveLongIteratorForArray( long... values )
+    public PropertyKeyIdIterator( Iterator<Property> properties )
     {
-        this.values = values;
+        this.properties = properties;
     }
 
     @Override
     public boolean hasNext()
     {
-        return i < values.length;
+        return properties.hasNext();
     }
 
     @Override
     public long next()
     {
-        if ( hasNext() )
-        {
-            return values[i++];
-        }
-        else
-        {
-            throw new NoSuchElementException( );
-        }
+        return properties.next().propertyKeyId();
     }
 }

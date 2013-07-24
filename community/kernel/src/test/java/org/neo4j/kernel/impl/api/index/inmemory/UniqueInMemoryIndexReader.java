@@ -34,7 +34,7 @@ class UniqueInMemoryIndexReader implements IndexReader
 
     UniqueInMemoryIndexReader( Map<Object, Long> indexData )
     {
-        this.indexData = new HashMap<Object, Long>( indexData );
+        this.indexData = new HashMap<>( indexData );
     }
 
     @Override

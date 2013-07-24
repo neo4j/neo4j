@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
-import org.neo4j.helpers.FunctionToPrimitiveLong;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
@@ -49,21 +47,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
  */
 public final class Iterables
 {
-    public static final FunctionToPrimitiveLong<Long> MAP_LONG_TO_PRIMITIVE_LONG = new FunctionToPrimitiveLong<Long>()
-    {
-        @Override
-        public long apply( Long value )
-        {
-            if ( null == value )
-            {
-                throw new IllegalArgumentException( "null Long not convertible to primitive long" );
-            }
-            else
-            {
-                return value.longValue();
-            }
-        }
-    };
     private static Iterable EMPTY = new Iterable()
     {
         Iterator iterator = new Iterator()
@@ -93,6 +76,7 @@ public final class Iterables
         }
     };
 
+    @SuppressWarnings("unchecked")
     public static <T> Iterable<T> empty()
     {
         return EMPTY;
@@ -209,10 +193,8 @@ public final class Iterables
     public static long count( Iterable<?> iterable )
     {
         long c = 0;
-        Iterator<?> iterator = iterable.iterator();
-        while ( iterator.hasNext() )
+        for ( Iterator<?> iterator = iterable.iterator(); iterator.hasNext(); iterator.next() )
         {
-            iterator.next();
             c++;
         }
         return c;
@@ -306,46 +288,13 @@ public final class Iterables
         return list;
     }
 
-    public static <T> boolean matchesAny( Predicate<? super T> specification, Iterable<T> iterable )
-    {
-        boolean result = false;
-
-        for ( T item : iterable )
-        {
-            if ( specification.accept( item ) )
-            {
-                result = true;
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    public static <T> boolean matchesAll( Predicate<? super T> specification, Iterable<T> iterable )
-    {
-        boolean result = true;
-        for ( T item : iterable )
-        {
-            if ( !specification.accept( item ) )
-            {
-                result = false;
-            }
-        }
-
-        return result;
-    }
-
+    @SafeVarargs
     public static <X, I extends Iterable<? extends X>> Iterable<X> flatten( I... multiIterator )
     {
         return new FlattenIterable<>( asList(multiIterator) );
     }
 
-    public static <X, I extends Iterable<? extends X>> Iterable<X> flattenIterables( Iterable<I> multiIterator )
-    {
-        return new FlattenIterable<>( multiIterator );
-    }
-
+    @SafeVarargs
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
         return new Iterable<T>()
@@ -458,47 +407,21 @@ public final class Iterables
         };
     }
 
-    public static <T> PrimitiveLongIterator map( final FunctionToPrimitiveLong<T> mapFunction,
-                                                 final Iterator<T> source )
-    {
-        return new PrimitiveLongIterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public long next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-        };
-    }
-
-    public static <T> Iterable<T> iterableEnumeration( Enumeration<T> enumeration )
-    {
-        List<T> list = new ArrayList<>();
-        while ( enumeration.hasMoreElements() )
-        {
-            T item = enumeration.nextElement();
-            list.add( item );
-        }
-
-        return list;
-    }
-
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
         return (Iterable<T>) asList(items);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T, C> Iterable<T> cast( Iterable<C> iterable )
     {
         return (Iterable) iterable;
     }
 
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
     public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
     {
         return concat( asList( (Iterable<T>[]) iterables ) );
@@ -506,9 +429,11 @@ public final class Iterables
 
     public static <T> Iterable<T> concat( final Iterable<Iterable<T>> iterables )
     {
-        return new CombiningIterable<T>( iterables );
+        return new CombiningIterable<>( iterables );
     }
 
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat( Iterator<? extends T>... iterables )
     {
         return concat( Arrays.asList( (Iterator<T>[]) iterables ).iterator() );
@@ -524,16 +449,12 @@ public final class Iterables
         return new Function<FROM, TO>()
         {
             @Override
+            @SuppressWarnings("unchecked")
             public TO apply( FROM from )
             {
                 return (TO) from;
             }
         };
-    }
-
-    public static <FROM, TO> TO fold( Function<? super FROM, TO> function, Iterable<? extends FROM> i )
-    {
-        return last( map( function, i ) );
     }
 
     public static <T, C extends T> Iterable<T> prepend( final C item, final Iterable<T> iterable )
@@ -611,14 +532,7 @@ public final class Iterables
                     @Override
                     public boolean hasNext()
                     {
-                        if ( iterator.hasNext() )
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return last != null;
-                        }
+                        return iterator.hasNext() || last != null;
                     }
 
                     @Override
@@ -665,6 +579,7 @@ public final class Iterables
         return toArray( Object.class, iterable );
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T[] toArray( Class<T> componentType, Iterable<T> iterable )
     {
         if ( iterable == null )

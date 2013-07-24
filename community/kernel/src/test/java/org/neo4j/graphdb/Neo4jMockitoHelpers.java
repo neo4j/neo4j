@@ -24,10 +24,9 @@ import java.util.Iterator;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
-import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 public class Neo4jMockitoHelpers
 {
@@ -51,7 +50,7 @@ public class Neo4jMockitoHelpers
             @Override
             public PrimitiveLongIterator answer( InvocationOnMock invocation ) throws Throwable
             {
-                return map( Iterables.MAP_LONG_TO_PRIMITIVE_LONG, values.iterator() );
+                return toPrimitiveLongIterator( values.iterator() );
             }
         };
     }
