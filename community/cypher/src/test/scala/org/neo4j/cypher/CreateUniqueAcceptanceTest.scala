@@ -95,8 +95,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
-    assert(r.getStartNode === a)
-    assert(r.getEndNode === b)
+    assertInTx(r.getStartNode === a)
+    assertInTx(r.getEndNode === b)
   }
 
   @Test
@@ -113,10 +113,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
-    assert(r.getStartNode === a)
-    val endNode = r.getEndNode
-
-    assertInTx(endNode.getProperty("name") === "Lasse")
+    assertInTx(r.getStartNode === a)
+    assertInTx(r.getEndNode.getProperty("name") === "Lasse")
   }
 
   @Test
@@ -183,8 +181,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
-    assert(r.getStartNode === a)
-    assert(r.getEndNode === b)
+    assertInTx(r.getStartNode === a)
+    assertInTx(r.getEndNode === b)
   }
 
   @Test
@@ -326,8 +324,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     assert(aRels.size === 1)
     assert(bRels.size === 1)
 
-    val aOpposite = aRels.head.getEndNode
-    val bOpposite = bRels.head.getEndNode
+    val aOpposite = graph.inTx(aRels.head.getEndNode)
+    val bOpposite = graph.inTx(bRels.head.getEndNode)
     assert(aOpposite != b)
     assert(bOpposite != a)
 

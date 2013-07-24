@@ -95,6 +95,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node[] getNodes()
     {
+        assertInTransaction();
         RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
         return new Node[]{ relationshipLookups.newNodeProxy( relationship.getStartNodeId() ), relationshipLookups.newNodeProxy( relationship.getEndNodeId() )};
     }
@@ -102,6 +103,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node getOtherNode( Node node )
     {
+        assertInTransaction();
         RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
         if ( relationship.getStartNodeId() == node.getId() )
         {
@@ -118,18 +120,21 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node getStartNode()
     {
+        assertInTransaction();
         return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getStartNodeId() );
     }
 
     @Override
     public Node getEndNode()
     {
+        assertInTransaction();
         return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getEndNodeId() );
     }
 
     @Override
     public RelationshipType getType()
     {
+        assertInTransaction();
         try
         {
             return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
@@ -373,6 +378,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public boolean isType( RelationshipType type )
     {
+        assertInTransaction();
         try
         {
             return relationshipLookups.getNodeManager().getRelationshipTypeById(
@@ -419,5 +425,10 @@ public class RelationshipProxy implements Relationship
     public String toString()
     {
         return "Relationship[" + this.getId() + "]";
+    }
+
+    private void assertInTransaction()
+    {
+        statementCtxProvider.assertInTransaction();
     }
 }
