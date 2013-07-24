@@ -27,19 +27,35 @@ define(
    'ribcage/security/HtmlEscaper'
    './visualization'
    'ribcage/ui/Dropdown'
-   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'],
-  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown, DataBrowserState) ->
+   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'
+   '../visualization/models/VisualizationProfile'],
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown, DataBrowserState, VisualizationProfile) ->
   
     State = DataBrowserState.State
 
     class ProfilesDropdown extends Dropdown
       
-      constructor : (@profiles, @settings) ->
+      constructor : (@profiles, @settings, @serverNode) ->
         super()
       
       getItems : () ->
         items = []
         items.push @title "Profiles"
+        # rafzalan
+        saveButton = $ "<div class='bad-button micro-button'>Save profiles to root</div>"
+        saveButton.click (ev) =>
+          @saveProfilesToRoot()
+          ev.stopPropagation()
+
+        items.push @actionable saveButton
+
+        loadButton = $ "<div class='bad-button micro-button'>Load profiles from root</div>"
+        loadButton.click (ev) =>
+          @loadProfilesFromRoot()
+          ev.stopPropagation()
+          
+        items.push @actionable loadButton
+        
         @profiles.each (profile) =>
           items.push @actionable @renderProfileItem(profile), (ev) =>
             @settings.setCurrentVisualizationProfile profile.id
@@ -59,7 +75,7 @@ define(
         profileButton = $ "<span class='#{currentClass}'>#{profile.getName()}</span>"
         
         if not profile.isDefault()
-          editButton = $ "<a class='micro-button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a>"
+          editButton = $ "<a class='micro-button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a><div class='break'></div>"
           editButton.click @hide
           
           deleteButton = $ "<div class='bad-button micro-button'>Remove</div>"
@@ -88,7 +104,37 @@ define(
           @profiles.remove(profile)
           @profiles.save()
         
-
+      # rafzalan
+      # save all profiles to node(0) 
+      # update/create property name "_style#" + profilename and JSON value
+      saveProfilesToRoot : () =>
+        if confirm("Save profiles to root node. Are you sure?")
+          @profiles.each (browserProfile) =>
+            if not browserProfile.isDefault()
+              data = browserProfile.toJSON()
+              @serverNode.then (_root) ->
+                _root.setProperty("_style#"+data['name'],JSON.stringify(data))
+                _root.save()
+          
+      # rafzalan
+      loadProfilesFromRoot : () =>
+        if confirm("Load profiles from root node. Are you sure?")
+          pattern = /^_style#(.+)$/
+          @serverNode.then (_root) =>
+            @serverNode=_root.fetch()
+          @serverNode.then (_root) =>
+            data = _root.getProperties()
+            for key, value of data 
+              if pattern.test(key)
+                collec = JSON.parse(value)
+                if not collec.builtin 
+                  _profile = new VisualizationProfile(name:collec.name, styleRules:collec.styleRules)
+                  @profiles.add(_profile)
+                  _profile.save()  
+                  @profiles.save()
+                  @render()
+          
+          
     class VisualizedView extends View
 
       events :
@@ -136,7 +182,9 @@ define(
         return this
         
       showProfilesDropdown : () ->
-        @_profilesDropdown ?= new ProfilesDropdown(@settings.getVisualizationProfiles(), @settings)
+        # rafzalan
+        urlResolver = new ItemUrlResolver(@server)
+        @_profilesDropdown ?= new ProfilesDropdown(@settings.getVisualizationProfiles(), @settings, @server.node(urlResolver.getNodeUrl(0)))
         if @_profilesDropdown.isVisible()
           @_profilesDropdown.hide()
         else
@@ -200,5 +248,4 @@ define(
         if @vizEl?
           @getViz().start()
           @dataModel.bind("change:data", @render)
-          
 )
