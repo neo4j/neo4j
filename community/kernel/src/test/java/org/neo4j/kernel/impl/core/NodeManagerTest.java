@@ -40,11 +40,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -144,7 +146,7 @@ public class NodeManagerTest
         Node secondAdditionalNode = db.createNode();
         thirdCommittedNode.delete();
         List<Node> allNodes = addToCollection( getNodeManager().getAllNodes(), new ArrayList<Node>() );
-        Set<Node> allNodesSet = new HashSet<Node>( allNodes );
+        Set<Node> allNodesSet = new HashSet<>( allNodes );
         tx.finish();
 
         // THEN
@@ -176,7 +178,7 @@ public class NodeManagerTest
         thirdCommittedRelationship.delete();
         List<Relationship> allRelationships = addToCollection( getNodeManager().getAllRelationships(),
                 new ArrayList<Relationship>() );
-        Set<Relationship> allRelationshipsSet = new HashSet<Relationship>( allRelationships );
+        Set<Relationship> allRelationshipsSet = new HashSet<>( allRelationships );
         tx.finish();
 
         // THEN
@@ -235,16 +237,14 @@ public class NodeManagerTest
         tx.finish();
         
         // WHEN
-        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
         tx = db.beginTx();
+        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
         Relationship relationship3 = createRelationshipAssumingTxWith( "key", 3 );
-        tx.success();
-        tx.finish();
 
         // THEN
-        tx = db.beginTx();
         assertEquals( asList( relationship1, relationship2, relationship3 ),
                 addToCollection( allRelationships, new ArrayList<Relationship>() ) );
+        tx.success();
         tx.finish();
     }
 

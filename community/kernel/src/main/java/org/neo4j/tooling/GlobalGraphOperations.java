@@ -81,6 +81,7 @@ public class GlobalGraphOperations
      */
     public Iterable<Node> getAllNodes()
     {
+        assertInTransaction();
         return new Iterable<Node>()
         {
             @Override
@@ -98,6 +99,7 @@ public class GlobalGraphOperations
      */
     public Iterable<Relationship> getAllRelationships()
     {
+        assertInTransaction();
         return new Iterable<Relationship>()
         {
             @Override
@@ -120,6 +122,7 @@ public class GlobalGraphOperations
      */
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
+        assertInTransaction();
         statementCtxProvider.assertInTransaction();
         return nodeManager.getRelationshipTypes();
     }
@@ -136,6 +139,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<Label> getAllLabels()
     {
+        assertInTransaction();
         return new ResourceIterable<Label>()
         {
             @Override
@@ -166,6 +170,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
     {
+        assertInTransaction();
         return new ResourceIterable<Node>()
         {
             @Override
@@ -199,5 +204,10 @@ public class GlobalGraphOperations
             context.close( state );
             return emptyIterator();
         }
+    }
+
+    private void assertInTransaction()
+    {
+        statementCtxProvider.assertInTransaction();
     }
 }

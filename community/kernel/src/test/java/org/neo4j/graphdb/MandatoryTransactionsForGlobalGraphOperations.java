@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -30,7 +29,6 @@ public class MandatoryTransactionsForGlobalGraphOperations
     extends AbstractMandatoryTransactionsTest<GlobalGraphOperations>
 {
     @Test
-    @Ignore("2013-07-24 Unignore and fix tests to finish story")
     public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_GLOBAL_GRAPH_OPERATIONS_FACADE_METHODS );

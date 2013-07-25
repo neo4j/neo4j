@@ -31,18 +31,15 @@ import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
 import org.neo4j.graphdb.Traverser.Order
+import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
-import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
-import org.mockito.Matchers
-import org.mockito.stubbing.Answer
-import org.neo4j.kernel.api.operations.{StatementState, KeyReadOperations, KeyWriteOperations, EntityReadOperations, EntityWriteOperations, SchemaReadOperations, SchemaWriteOperations, SchemaStateOperations, LifecycleOperations}
+import org.neo4j.kernel.api.operations.{KeyReadOperations, KeyWriteOperations, EntityReadOperations, EntityWriteOperations, SchemaReadOperations, SchemaWriteOperations, LifecycleOperations}
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -171,11 +168,11 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   @Test def graph_global_queries_are_lazy() {
     //Given:
-    val (iter, counter) = countElementsPassedThrough(graph.getAllNodes.iterator())
+    val counter = new CountingJIterator()
 
     val fakeGraph = mock[GraphDatabaseAPI]
     val tx = mock[Transaction]
-    val nodeMgre = mock[NodeManager]
+    val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
     val schemaState = new KernelSchemaStateStore()
@@ -190,18 +187,22 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
         mock[SchemaWriteOperations],
         schemaOps,
         mock[LifecycleOperations] )
-    when(nodeMgre.getAllNodes).thenReturn(iter)
+
+    when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.getCtxForWriting).thenReturn(fakeCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
-    when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeMgre)
+    when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(fakeGraph.beginTx()).thenReturn(tx)
 
     val engine = new ExecutionEngine(fakeGraph)
 
     //When:
-    graph.inTx(engine.execute("start n=node(*) return n limit 5").toList)
+    graph.inTx {
+      counter.source = graph.getAllNodes.iterator()
+      engine.execute("start n=node(*) return n limit 5").toList
+    }
 
     //Then:
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")
@@ -248,27 +249,31 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
     new TraversalMatchPipe(NullPipe, matcher, trail)
   }
+}
 
-  trait GetCount {
-    def count: Int
+class CountingJIterator extends JIterator[Node] {
+  private var seenNodes = 0
+  private var _source: Option[JIterator[Node]] = None
+
+  def source = _source.getOrElse(Seq.empty.asJava)
+
+  def source_= (newSource: JIterator[Node]): Unit = _source = Some(newSource)
+
+  def hasNext: Boolean = _source.exists(_.hasNext)
+
+  def next(): Node = _source match {
+    case Some(jIterator) =>
+      val result = jIterator.next()
+      seenNodes  = seenNodes + 1
+      result
+
+    case _  =>
+      throw new NoSuchElementException()
   }
 
-  private def countElementsPassedThrough(in: JIterator[Node]): (JIterator[Node], GetCount) = {
-    var seenNodes = 0
+  def remove() { throw new UnsupportedOperationException }
 
-    val countingIterator = new IteratorWrapper[Node, Node](in) {
-      def underlyingObjectToObject(in: Node): Node = {
-        seenNodes += 1
-        in
-      }
-    }
-
-    val counter = new GetCount {
-      def count: Int = seenNodes
-    }
-
-    (countingIterator, counter)
-  }
+  def count = seenNodes
 }
 
 class LimitedIterator[T](limit: Int, f: Int => T, message: String = "Limit reached!") extends Iterator[T] {
