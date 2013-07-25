@@ -418,7 +418,16 @@ public class TestBackup
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
-            db.index().forNodes( "created-no-commits" );
+            Transaction transaction = db.beginTx();
+            try
+            {
+                db.index().forNodes( "created-no-commits" );
+                transaction.success();
+            }
+            finally
+            {
+                transaction.finish();
+            }
 
             OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
@@ -456,12 +465,20 @@ public class TestBackup
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
-        Index<Node> index = db.index().forNodes( key );
         Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( key, value );
-        tx.success();
-        tx.finish();
+        Index<Node> index;
+        Node node;
+        try
+        {
+            index = db.index().forNodes( key );
+            node = db.createNode();
+            node.setProperty( key, value );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
@@ -469,9 +486,15 @@ public class TestBackup
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
-        index.add( node, key, value );
-        tx.success();
-        tx.finish();
+        try
+        {
+            index.add( node, key, value );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );

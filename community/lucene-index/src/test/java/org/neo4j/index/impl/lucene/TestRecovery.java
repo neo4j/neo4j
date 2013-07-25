@@ -22,20 +22,18 @@ package org.neo4j.index.impl.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import java.io.File;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -72,34 +70,43 @@ public class TestRecovery
     public void testRecovery() throws Exception
     {
         GraphDatabaseService graphDb = newGraphDbService();
-        Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
-        Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
-        RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
-
-        graphDb.beginTx();
-        Node node = graphDb.createNode();
-        Node otherNode = graphDb.createNode();
-        Relationship rel = node.createRelationshipTo( otherNode, relType );
-        nodeIndex.add( node, "key1", "string value" );
-        nodeIndex.add( node, "key2", 12345 );
-        relIndex.add( rel, "key1", "string value" );
-        relIndex.add( rel, "key2", 12345 );
-        graphDb.shutdown();
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            Node node = graphDb.createNode();
+            Node otherNode = graphDb.createNode();
+            Relationship rel = node.createRelationshipTo( otherNode, withName( "recovery" ) );
+            graphDb.index().forNodes( "node-index" ).add( node, "key1", "string value" );
+            graphDb.index().forNodes( "node-index" ).add( node, "key2", 12345 );
+            graphDb.index().forRelationships( "rel-index" ).add( rel, "key1", "string value" );
+            graphDb.index().forRelationships( "rel-index" ).add( rel, "key2", 12345 );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+            graphDb.shutdown();
+        }
 
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
-        newGraphDb.shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
     }
 
     @Test
     public void testAsLittleAsPossibleRecoveryScenario() throws Exception
     {
         GraphDatabaseService db = newGraphDbService();
-        Index<Node> index = db.index().forNodes( "my-index" );
-        db.beginTx();
-        Node node = db.createNode();
-        index.add( node, "key", "value" );
-        db.shutdown();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            db.index().forNodes( "my-index" ).add( db.createNode(), "key", "value" );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+            db.shutdown();
+        }
 
         // This doesn't seem to trigger recovery... it really should
         new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
@@ -108,9 +115,7 @@ public class TestRecovery
     @Test
     public void testIndexDeleteIssue() throws Exception
     {
-        GraphDatabaseService db = newGraphDbService();
-        db.index().forNodes( "index" );
-        db.shutdown();
+        createIndex();
 
         Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-cp", System.getProperty( "java.class.path" ),
@@ -119,7 +124,6 @@ public class TestRecovery
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
 
         new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
-        db.shutdown();
     }
 
     @Test
@@ -155,9 +159,7 @@ public class TestRecovery
     @Test
     public void recoveryOnDeletedIndex() throws Exception
     {
-        GraphDatabaseService db = newGraphDbService();
-        db.index().forNodes( "index" );
-        db.shutdown();
+        createIndex();
 
         Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-cp", System.getProperty( "java.class.path" ),
@@ -165,11 +167,27 @@ public class TestRecovery
         } );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
 
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
         Transaction transaction = db.beginTx();
         assertFalse( db.index().existsForNodes( "index" ) );
         assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
         transaction.finish();
         db.shutdown();
+    }
+
+    private void createIndex()
+    {
+        GraphDatabaseService db = newGraphDbService();
+        Transaction transaction = db.beginTx();
+        try
+        {
+            db.index().forNodes( "index" );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+            db.shutdown();
+        }
     }
 }

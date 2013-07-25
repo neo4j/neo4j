@@ -35,7 +35,6 @@ public class EmbeddedNeo4jWithIndexing
     {
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        nodeIndex = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         // END SNIPPET: startDb
 
@@ -43,6 +42,7 @@ public class EmbeddedNeo4jWithIndexing
         Transaction tx = graphDb.beginTx();
         try
         {
+            nodeIndex = graphDb.index().forNodes( "nodes" );
             // Create some users and index their names with the IndexService
             for ( int id = 0; id < 100; id++ )
             {

@@ -38,6 +38,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
@@ -98,12 +100,34 @@ public class TestTimeline
 
     private TimelineIndex<PropertyContainer> nodeTimeline()
     {
-        return new LuceneTimeline( db, db.index().forNodes( "timeline" ) );
+        Transaction transaction = db.beginTx();
+        Index<Node> nodeIndex;
+        try
+        {
+            nodeIndex = db.index().forNodes( "timeline" );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        return new LuceneTimeline( db, nodeIndex );
     }
 
     private TimelineIndex<PropertyContainer> relationshipTimeline()
     {
-        return new LuceneTimeline( db, db.index().forRelationships( "timeline" ) );
+        Transaction transaction = db.beginTx();
+        RelationshipIndex relationshipIndex;
+        try
+        {
+            relationshipIndex = db.index().forRelationships( "timeline" );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        return new LuceneTimeline( db, relationshipIndex );
     }
 
     private LinkedList<Pair<PropertyContainer, Long>> createTimestamps( EntityCreator<PropertyContainer> creator,

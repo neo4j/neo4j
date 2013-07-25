@@ -79,8 +79,17 @@ public class IndexOperationsIT extends AbstractClusterTest
         Map<HighlyAvailableGraphDatabase,Index<Node>> indexes = new HashMap<HighlyAvailableGraphDatabase, Index<Node>>();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            indexManagers.put( db, db.index() );
-            indexes.put( db, db.index().forNodes( key ) );
+            Transaction transaction = db.beginTx();
+            try
+            {
+                indexManagers.put( db, db.index() );
+                indexes.put( db, db.index().forNodes( key ) );
+                transaction.success();
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
 
         // WHEN

@@ -19,27 +19,25 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestIndexImplOnNeo
 {
@@ -68,67 +66,54 @@ public class TestIndexImplOnNeo
     public void createIndexWithProviderThatUsesNeoAsDataSource() throws Exception
     {
         String indexName = "inneo";
-        assertFalse( hasIndexWithName( indexName ) );
+        assertFalse( indexExists( indexName ) );
         Map<String, String> config = stringMap( PROVIDER, "test-dummy-neo-index",
                 "config1", "A value", "another config", "Another value" );
-        Index<Node> index = index( indexName, config );
-        assertTrue( hasIndexWithName( indexName ) );
-        assertEquals( config, indexConfiguration( index ) );
+
+        Transaction transaction = db.beginTx();
+        Index<Node> index;
+        try
+        {
+            index = db.index().forNodes( indexName, config );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        assertTrue( indexExists( indexName ) );
+        assertEquals( config, db.index().getConfiguration( index ) );
         
         // Querying for "refnode" always returns the reference node for this dummy index.
-        Transaction transaction = db.beginTx();
-        assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
-        transaction.finish();
+        transaction = db.beginTx();
+        try
+        {
+            assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
         // Querying for something other than "refnode" returns null for this dummy index.
         assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
         
         restartDb();
-        assertTrue( hasIndexWithName( indexName ) );
-        assertEquals( config, indexConfiguration( index ) );
+        assertTrue( indexExists( indexName ) );
+        assertEquals( config, db.index().getConfiguration( index ) );
     }
 
-    private Index<Node> index( String indexName, Map<String, String> config )
+    private boolean indexExists( String indexName )
     {
-        Transaction tx = db.beginTx();
+        Transaction transaction = db.beginTx();
         try
         {
-            Index<Node> result = db.index().forNodes( indexName, config );
-            tx.success();
-            return result;
+            return db.index().existsForNodes( indexName );
         }
         finally
         {
-            tx.finish();
-        }
-    }
-
-    private Map<String, String> indexConfiguration( Index<Node> index )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            Map<String, String> result = db.index().getConfiguration( index );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private boolean hasIndexWithName( String indexName )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            boolean result = db.index().existsForNodes( indexName );
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
+            transaction.finish();
         }
     }
 }
