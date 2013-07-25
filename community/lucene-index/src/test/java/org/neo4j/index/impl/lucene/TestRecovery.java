@@ -151,7 +151,7 @@ public class TestRecovery
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         fileSystemAbstraction, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         ds.start();
         ds.stop();
     }

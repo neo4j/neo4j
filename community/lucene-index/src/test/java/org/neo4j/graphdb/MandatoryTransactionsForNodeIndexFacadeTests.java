@@ -20,21 +20,21 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.Index;
 
-import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS;
+import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;
 
-public class MandatoryTransactionsForIndexManagerFacadeTests extends AbstractMandatoryTransactionsTest<IndexManager>
+public class MandatoryTransactionsForNodeIndexFacadeTests extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexFacade() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
     }
 
     @Override
-    protected IndexManager obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Index<Node> obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.index();
+        return graphDatabaseService.index().forNodes( "foo" );
     }
 }

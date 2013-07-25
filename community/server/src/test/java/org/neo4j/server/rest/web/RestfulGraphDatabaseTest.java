@@ -1906,9 +1906,17 @@ public class RestfulGraphDatabaseTest
 
         service.createNode( FORCE, "{\"myAutoIndexedProperty\" : \"value\"}" );
 
-        IndexHits<Node> indexResult = database.getIndexManager().getNodeAutoIndexer().getAutoIndex().get(
-                "myAutoIndexedProperty", "value" );
-        assertEquals( 1, indexResult.size() );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            IndexHits<Node> indexResult = database.getIndexManager().getNodeAutoIndexer().getAutoIndex().get(
+                    "myAutoIndexedProperty", "value" );
+            assertEquals( 1, indexResult.size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @SuppressWarnings("unchecked")
