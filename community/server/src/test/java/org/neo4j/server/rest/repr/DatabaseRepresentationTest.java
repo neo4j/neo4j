@@ -32,16 +32,38 @@ import org.neo4j.graphdb.Node;
 public class DatabaseRepresentationTest
 {
     @Test
-    public void shouldProvideUriForTheAvailableRelationshipTypes()
+    public void shouldProvideUrisForTheAvailableRoots()
     {
+        // GIVEN
         Node mockNode = mock( Node.class );
         GraphDatabaseService mockDb = mock( GraphDatabaseService.class );
         when( mockDb.getReferenceNode() ).thenReturn( mockNode );
         DatabaseRepresentation representation = new DatabaseRepresentation( mockDb );
 
+        // WHEN
         Map<String, Object> map = RepresentationTestAccess.serialize( representation );
 
-        assertTrue( map.containsKey( "relationship_types" ) );
+        // THEN
+        assertRootExists( map, "node" );
+        assertRootExists( map, "node_index", "/index/node" );
+        assertRootExists( map, "relationship" );
+        assertRootExists( map, "relationship_index", "/index/relationship" );
+        assertRootExists( map, "relationship_types", "/relationship/types" );
+        assertRootExists( map, "extensions_info", "/ext" );
+        assertRootExists( map, "batch" );
+        assertRootExists( map, "cypher" );
+        assertTrue( map.containsKey( "neo4j_version" ) );
+    }
 
+    private void assertRootExists( Map<String, Object> representation, String key, String containsValue )
+    {
+        assertTrue( "Representation should have contained '" + key + "'", representation.containsKey( key ) );
+        assertTrue( "Representation for '" + key + "' should have contained '" + containsValue + "'",
+                representation.get( key ).toString().contains( containsValue ) );
+    }
+
+    private void assertRootExists( Map<String, Object> representation, String key )
+    {
+        assertRootExists( representation, key, "/" + key );
     }
 }
