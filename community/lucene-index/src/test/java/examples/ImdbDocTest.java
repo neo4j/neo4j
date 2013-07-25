@@ -234,8 +234,21 @@ public class ImdbDocTest
         {
             transaction.finish();
         }
-        assertFalse( graphDb.index().existsForNodes( "actors" ) );
+        assertFalse( indexExists( graphDb ) );
         graphDb.shutdown();
+    }
+
+    private boolean indexExists( GraphDatabaseService graphDb )
+    {
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            return graphDb.index().existsForNodes( "actors" );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

@@ -113,7 +113,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .get( "Location" )
                 .get( 0 ) );
         assertEquals( expectedIndexes, helper.getRelationshipIndexes().length );
-        assertNotNull( helper.getRelationshipIndex( indexName ) );
+        assertNotNull( helper.createRelationshipIndex( indexName ) );
 
         // Add a relationship to the index
         String key = "key";

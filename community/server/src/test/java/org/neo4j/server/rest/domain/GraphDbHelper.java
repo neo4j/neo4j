@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -251,11 +252,10 @@ public class GraphDbHelper
 
     public void addNodeToIndex( String indexName, String key, Object value, long id )
     {
-        Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            index.add( database.getGraph().getNodeById( id ), key, value );
+            database.getNodeIndex( indexName ).add( database.getGraph().getNodeById( id ), key, value );
             tx.success();
         }
         finally
@@ -277,14 +277,12 @@ public class GraphDbHelper
     }
 
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
-           
     {
-        Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.getGraph().beginTx();
         try
         {
             Collection<Long> result = new ArrayList<Long>();
-            for ( Node node : index.query( key, value ) )
+            for ( Node node : database.getNodeIndex( indexName ).query( key, value ) )
             {
                 result.add( node.getId() );
             }
@@ -298,15 +296,12 @@ public class GraphDbHelper
     }
 
     public Collection<Long> getIndexedNodes( String indexName, String key, Object value )
-           
     {
-
-        Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.getGraph().beginTx();
         try
         {
             Collection<Long> result = new ArrayList<Long>();
-            for ( Node node : index.get( key, value ) )
+            for ( Node node : database.getNodeIndex( indexName ).get( key, value ) )
             {
                 result.add( node.getId() );
             }
@@ -321,13 +316,11 @@ public class GraphDbHelper
 
     public Collection<Long> getIndexedRelationships( String indexName, String key, Object value )
     {
-
-        Index<Relationship> index = database.getRelationshipIndex( indexName );
         Transaction tx = database.getGraph().beginTx();
         try
         {
             Collection<Long> result = new ArrayList<Long>();
-            for ( Relationship relationship : index.get( key, value ) )
+            for ( Relationship relationship : database.getRelationshipIndex( indexName ).get( key, value ) )
             {
                 result.add( relationship.getId() );
             }
@@ -342,10 +335,10 @@ public class GraphDbHelper
 
     public void addRelationshipToIndex( String indexName, String key, String value, long relationshipId )
     {
-        Index<Relationship> index = database.getRelationshipIndex( indexName );
         Transaction tx = database.getGraph().beginTx();
         try
         {
+            Index<Relationship> index = database.getRelationshipIndex( indexName );
             index.add( database.getGraph().getRelationshipById( relationshipId ), key, value );
             tx.success();
         }
@@ -357,8 +350,16 @@ public class GraphDbHelper
 
     public String[] getNodeIndexes()
     {
-        return database.getIndexManager()
-                .nodeIndexNames();
+        Transaction transaction = database.getGraph().beginTx();
+        try
+        {
+            return database.getIndexManager()
+                    .nodeIndexNames();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public Index<Node> getNodeIndex( String indexName )
@@ -369,32 +370,54 @@ public class GraphDbHelper
 
     public Index<Node> createNodeFullTextIndex( String named )
     {
-        return database.getIndexManager()
-                .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+        Transaction transaction = database.getGraph().beginTx();
+        try
+        {
+            Index<Node> index = database.getIndexManager()
+                    .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+            transaction.success();
+            return index;
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public Index<Node> createNodeIndex( String named )
     {
-        return database.getIndexManager()
-                .forNodes( named );
+        Transaction transaction = database.getGraph().beginTx();
+        try
+        {
+            Index<Node> nodeIndex = database.getIndexManager()
+                    .forNodes( named );
+            transaction.success();
+            return nodeIndex;
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public String[] getRelationshipIndexes()
     {
-        return database.getIndexManager()
-                .relationshipIndexNames();
+        Transaction transaction = database.getGraph().beginTx();
+        try
+        {
+            return database.getIndexManager()
+                    .relationshipIndexNames();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public long getReferenceNode()
     {
         return database.getGraph().getReferenceNode()
                 .getId();
-    }
-
-    public Index<Relationship> getRelationshipIndex( String indexName )
-    {
-        return database.getIndexManager()
-                .forRelationships( indexName );
     }
 
     public Index<Relationship> createRelationshipFullTextIndex( String named )
@@ -405,8 +428,18 @@ public class GraphDbHelper
 
     public Index<Relationship> createRelationshipIndex( String named )
     {
-        return database.getIndexManager()
-                .forRelationships( named );
+        Transaction transaction = database.getGraph().beginTx();
+        try
+        {
+            RelationshipIndex relationshipIndex = database.getIndexManager()
+                    .forRelationships( named );
+            transaction.success();
+            return relationshipIndex;
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     public Iterable<String> getNodeLabels( long node )

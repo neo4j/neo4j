@@ -34,11 +34,14 @@ public class AddThenDeleteInAnotherTxAndQuit
     public static void main( String[] args )
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
-        Index<Node> index = db.index().forNodes( "index" );
-        Index<Node> index2 = db.index().forNodes( "index2" );
+
         Transaction tx = db.beginTx();
+        Index<Node> index;
+        Index<Node> index2;
         try
         {
+            index = db.index().forNodes( "index" );
+            index2 = db.index().forNodes( "index2" );
             Node node = db.createNode();
             index.add( node, "key", "value" );
             tx.success();
@@ -47,7 +50,7 @@ public class AddThenDeleteInAnotherTxAndQuit
         {
             tx.finish();
         }
-        
+
         tx = db.beginTx();
         try
         {

@@ -2118,7 +2118,7 @@ RETURN x0.name?
 
   @Test
   def with_should_not_forget_parameters() {
-    graph.index().forNodes("test")
+    graph.inTx(graph.index().forNodes("test"))
     val id = "bar"
     val result = parseAndExecute("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x", "id" -> id).toList
 

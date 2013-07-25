@@ -444,8 +444,16 @@ public class TestLuceneBatchInsert
         // THEN -- both indexes should exist when starting up in "graph mode"
         {
             switchToGraphDatabaseService();
-            assertTrue( indexName1 + " should exist", db.index().existsForNodes( indexName1 ) );
-            assertTrue( indexName2 + " should exist", db.index().existsForNodes( indexName2 ) );
+            Transaction transaction = db.beginTx();
+            try
+            {
+                assertTrue( indexName1 + " should exist", db.index().existsForNodes( indexName1 ) );
+                assertTrue( indexName2 + " should exist", db.index().existsForNodes( indexName2 ) );
+            }
+            finally
+            {
+                transaction.finish();
+            }
         }
     }
     

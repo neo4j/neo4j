@@ -925,9 +925,17 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
 
-        Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat( resultAsMap.size(), is( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1 ) );
-        assertThat( resultAsMap, hasKey( indexName ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Map<String, Object> resultAsMap = output.getResultAsMap();
+            assertThat( resultAsMap.size(), is( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1 ) );
+            assertThat( resultAsMap, hasKey( indexName ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -944,9 +952,18 @@ public class RestfulGraphDatabaseTest
         helper.createRelationshipIndex( indexName );
         Response response = service.getRelationshipIndexRoot();
         assertEquals( 200, response.getStatus() );
-        Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat( resultAsMap.size(), is( 1 ) );
-        assertThat( resultAsMap, hasKey( indexName ) );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Map<String, Object> resultAsMap = output.getResultAsMap();
+            assertThat( resultAsMap.size(), is( 1 ) );
+            assertThat( resultAsMap, hasKey( indexName ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

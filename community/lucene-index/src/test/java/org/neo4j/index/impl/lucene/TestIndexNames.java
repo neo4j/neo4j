@@ -88,6 +88,7 @@ public class TestIndexNames
     @Test
     public void makeSureIndexNamesCanBeRead()
     {
+        beginTx();
         assertEquals( 0, graphDb.index().nodeIndexNames().length );
         String name1 = "my-index-1";
         Index<Node> nodeIndex1 = graphDb.index().forNodes( name1 );
@@ -98,15 +99,18 @@ public class TestIndexNames
         graphDb.index().forRelationships( name1 );
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
-        
+        finishTx( true );
+
         restartTx();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
         nodeIndex1.delete();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
-        restartTx();
+        finishTx( true );
+        beginTx();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
+        finishTx( false );
     }
 }

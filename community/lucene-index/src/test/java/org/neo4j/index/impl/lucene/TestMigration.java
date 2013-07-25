@@ -38,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
@@ -59,15 +60,23 @@ public class TestMigration
         InputStream stream = getClass().getClassLoader().getResourceAsStream( "old-index.db" );
         writeFile( stream, new File( path, "index.db" ) );
         db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
-        assertTrue( db.index().existsForNodes( "indexOne" ) );
-        Index<Node> indexOne = db.index().forNodes( "indexOne" );
-        verifyConfiguration( db, indexOne, LuceneIndexImplementation.EXACT_CONFIG );
-        assertTrue( db.index().existsForNodes( "indexTwo" ) );
-        Index<Node> indexTwo = db.index().forNodes( "indexTwo" );
-        verifyConfiguration( db, indexTwo, LuceneIndexImplementation.FULLTEXT_CONFIG );
-        assertTrue( db.index().existsForRelationships( "indexThree" ) );
-        Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
-        verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            assertTrue( db.index().existsForNodes( "indexOne" ) );
+            Index<Node> indexOne = db.index().forNodes( "indexOne" );
+            verifyConfiguration( db, indexOne, LuceneIndexImplementation.EXACT_CONFIG );
+            assertTrue( db.index().existsForNodes( "indexTwo" ) );
+            Index<Node> indexTwo = db.index().forNodes( "indexTwo" );
+            verifyConfiguration( db, indexTwo, LuceneIndexImplementation.FULLTEXT_CONFIG );
+            assertTrue( db.index().existsForRelationships( "indexThree" ) );
+            Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
+            verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         db.shutdown();
     }
 
@@ -136,34 +145,60 @@ public class TestMigration
         File storeDir = new File( "target/var/index" );
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            transaction.success();
+        }
+        finally
+        {
+            transaction.finish();
+        }
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-        // Getting the index w/o exception means that the provider has been reinstated
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+        transaction = graphDb.beginTx();
+        try
+        {
+            // Getting the index w/o exception means that the provider has been reinstated
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider",
+                    MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-        // Getting the index w/o exception means that the provider has been reinstated
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider" ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider" ) ) );
+        transaction = graphDb.beginTx();
+        try
+        {
+            // Getting the index w/o exception means that the provider has been reinstated
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         graphDb.shutdown();
     }
 
