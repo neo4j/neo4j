@@ -37,15 +37,13 @@ public class PropertyConstraintCreator extends BaseConstraintCreator
     @Override
     public final ConstraintCreator on( String propertyKey )
     {
-        if ( this.propertyKey != null )
-            throw new UnsupportedOperationException( "Constraints on compound keys are not yet supported, " +
-            		"only one property per constraint is allowed." );
-        return doOn( propertyKey );
-    }
+        if ( this.propertyKey == null )
+        {
+            return doOn( propertyKey );
+        }
 
-    protected ConstraintCreator doOn( String propertyKey )
-    {
-        return new PropertyConstraintCreator( actions, label, propertyKey );
+        throw new UnsupportedOperationException(
+            "Constraints on compound keys are not yet supported, only one property per constraint is allowed." );
     }
 
     @Override
@@ -61,7 +59,12 @@ public class PropertyConstraintCreator extends BaseConstraintCreator
             super.create();
         return doCreate();
     }
-    
+
+    protected ConstraintCreator doOn( String propertyKey )
+    {
+        return new PropertyConstraintCreator( actions, label, propertyKey );
+    }
+
     protected ConstraintDefinition doCreate()
     {
         throw new IllegalStateException( "Property key " + propertyKey + " specified, but not what it's for" );

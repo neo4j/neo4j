@@ -38,24 +38,28 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     @Override
     public ConstraintType getConstraintType()
     {
+        assertInTransaction();
         return ConstraintType.UNIQUENESS;
     }
     
     @Override
     public void drop()
     {
+        assertInTransaction();
         actions.dropPropertyUniquenessConstraint( label, propertyKey );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
+        assertInTransaction();
         return singletonList( propertyKey );
     }
 
     @Override
     public UniquenessConstraintDefinition asUniquenessConstraint()
     {
+        assertInTransaction();
         return this;
     }
 

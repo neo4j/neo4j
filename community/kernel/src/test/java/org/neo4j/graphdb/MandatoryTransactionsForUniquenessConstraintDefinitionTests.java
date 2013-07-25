@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
@@ -30,7 +29,7 @@ import static org.neo4j.graphdb.UniquenessConstraintDefinitionFacadeMethods
 public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
     extends AbstractMandatoryTransactionsTest<UniquenessConstraintDefinition>
 {
-    @Test @Ignore("2013-07-24 Unignore and fix tests to finish story")
+    @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_UNIQUENESS_CONSTRAINT_DEFINITION_FACADE_METHODS );

@@ -492,6 +492,12 @@ public class SchemaImpl implements Schema
                 context.close( state );
             }
         }
+
+        @Override
+        public void assertInTransaction()
+        {
+            ctxProvider.assertInTransaction();
+        }
     }
 
     private void assertInTransaction()

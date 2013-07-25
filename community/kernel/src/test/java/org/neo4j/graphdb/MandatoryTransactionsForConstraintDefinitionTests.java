@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -30,7 +29,7 @@ import static org.neo4j.graphdb.ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT
 public class MandatoryTransactionsForConstraintDefinitionTests
     extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
-    @Test @Ignore("2013-07-24 Unignore and fix tests to finish story")
+    @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );

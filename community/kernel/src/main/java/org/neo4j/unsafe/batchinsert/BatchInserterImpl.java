@@ -209,7 +209,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private Map<String, String> getDefaultParams()
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( "neostore.nodestore.db.mapped_memory", "20M" );
         params.put( "neostore.propertystore.db.mapped_memory", "90M" );
         params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -371,7 +371,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private IndexRule[] getIndexesNeedingPopulation()
     {
-        List<IndexRule> indexesNeedingPopulation = new ArrayList<IndexRule>();
+        List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
         for ( SchemaRule rule : schemaCache.getSchemaRules() )
         {
             if ( rule.getKind().isIndex() )
@@ -870,7 +870,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         long nextRel = nodeRecord.getNextRel();
-        List<Long> ids = new ArrayList<Long>();
+        List<Long> ids = new ArrayList<>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RelationshipRecord relRecord = getRelationshipRecord( nextRel );
@@ -1011,7 +1011,7 @@ public class BatchInserterImpl implements BatchInserter
             return Record.NO_NEXT_PROPERTY.intValue();
         }
         PropertyStore propStore = getPropertyStore();
-        List<PropertyRecord> propRecords = new ArrayList<PropertyRecord>();
+        List<PropertyRecord> propRecords = new ArrayList<>();
         PropertyRecord currentRecord = new PropertyRecord( propStore.nextId() );
         currentRecord.setInUse( true );
         currentRecord.setCreated();
@@ -1090,7 +1090,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, Object> getPropertyChain( long nextProp )
     {
         PropertyStore propStore = getPropertyStore();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
 
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -1240,6 +1240,7 @@ public class BatchInserterImpl implements BatchInserter
         return -1;
     }
 
+    // needed by lucene-index
     public IndexStore getIndexStore()
     {
         return this.indexStore;
@@ -1296,6 +1297,12 @@ public class BatchInserterImpl implements BatchInserter
         public String getUserMessage( KernelException e )
         {
             throw unsupportedException();
+        }
+
+        @Override
+        public void assertInTransaction()
+        {
+            // BatchInserterImpl always is expected to be running in one big single "transaction"
         }
 
         private UnsupportedOperationException unsupportedException()

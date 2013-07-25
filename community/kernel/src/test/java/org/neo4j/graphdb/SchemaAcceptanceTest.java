@@ -322,11 +322,20 @@ public class SchemaAcceptanceTest
         ConstraintDefinition constraint = createConstraint( label, propertyKey );
 
         // THEN
-        assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
-        
-        UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
-        assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
-        assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
+        Transaction tx = db.beginTx();
+        try
+        {
+            assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
+
+            UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
+            assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
+            assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
     
     @Test

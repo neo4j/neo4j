@@ -41,4 +41,6 @@ public interface InternalSchemaActions
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 
     String getUserMessage( KernelException e );
+
+    void assertInTransaction();
 }

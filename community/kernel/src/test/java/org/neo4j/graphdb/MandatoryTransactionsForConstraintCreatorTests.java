@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -30,7 +29,6 @@ public class MandatoryTransactionsForConstraintCreatorTests
     extends AbstractMandatoryTransactionsTest<ConstraintCreator>
 {
     @Test
-    @Ignore("2013-07-24 Unignore and fix tests to finish story")
     public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );

@@ -1475,8 +1475,17 @@ public class DatabaseActionsTest
         actions.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
 
         // THEN
-        Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
-        assertEquals( asSet( propertyKey ), asSet( single( defs ).asUniquenessConstraint().getPropertyKeys() ) );
+        Transaction tx  = graph.beginTx();
+        try
+        {
+            Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
+            assertEquals( asSet( propertyKey ), asSet( single( defs ).asUniquenessConstraint().getPropertyKeys() ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @Test

@@ -33,20 +33,22 @@ public class PropertyUniqueConstraintCreator extends PropertyConstraintCreator
     }
 
     @Override
-    protected ConstraintCreator doOn( String propertyKey )
-    {
-        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
-    }
-
-    @Override
     public ConstraintCreator unique()
     {
         throw new IllegalStateException( "Already unique" );
     }
 
     @Override
+    protected ConstraintCreator doOn( String propertyKey )
+    {
+        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
+    }
+
+    @Override
     protected ConstraintDefinition doCreate()
     {
+        assertInTransaction();
+
         try
         {
             return actions.createPropertyUniquenessConstraint( label, propertyKey );
