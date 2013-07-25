@@ -96,7 +96,8 @@ public class TestLuceneDataSource
                 new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT,
                         new PlaceboTm( null, null ), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(),
-                        new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                        new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ),
+                null );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
@@ -110,7 +111,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         new DefaultFileSystemAbstraction(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -129,7 +130,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         new DefaultFileSystemAbstraction(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -152,7 +153,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -177,7 +178,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         new DefaultFileSystemAbstraction(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -205,7 +206,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         new DefaultFileSystemAbstraction(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -226,7 +227,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
                         new DefaultFileSystemAbstraction(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                        LogPruneStrategies.NO_PRUNING ), null );
         dataSource.start();
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
         IndexReference oldSearcher = dataSource.getIndexSearcher( identifier );

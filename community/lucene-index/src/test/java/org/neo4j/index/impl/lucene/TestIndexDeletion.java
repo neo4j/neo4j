@@ -150,6 +150,7 @@ public class TestIndexDeletion
         restartTx();
         index.delete();
         rollbackTx();
+        beginTx();
         index.get( key, value );
     }
 
