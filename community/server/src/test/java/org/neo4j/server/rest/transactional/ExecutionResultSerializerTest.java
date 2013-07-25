@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -44,10 +45,12 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 
@@ -89,7 +92,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -110,7 +113,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -133,7 +136,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -155,7 +159,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -185,7 +190,7 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
@@ -228,7 +233,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"],[\"value3\",\"value4\"]]}],\"errors\":[]}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"]},{\"row\":[\"value3\",\"value4\"]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -253,8 +259,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[" +
-                "{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}," +
-                "{\"columns\":[\"column3\",\"column4\"],\"data\":[[\"value3\",\"value4\"]]}]," +
+                "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}," +
+                "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"]}]}]," +
                 "\"errors\":[]}", result );
     }
 
@@ -280,7 +286,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
-                "\"data\":[[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]]}]," +
+                "\"data\":[{\"row\":[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]}]}]," +
                 "\"errors\":[]}", result );
     }
 
@@ -301,7 +307,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
-                "\"data\":[[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]]}]," +
+                "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]}]}]," +
                 "\"errors\":[]}", result );
     }
 
@@ -316,7 +322,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true, true, false );
@@ -337,7 +343,7 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
@@ -353,7 +359,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true ).thenThrow(
@@ -375,7 +381,8 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+        assertEquals(
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
@@ -397,15 +404,16 @@ public class ExecutionResultSerializerTest
         log.assertExactly( error( "Failed to generate JSON output.", failure ) );
     }
 
+    @SafeVarargs
     private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
     {
-        Set<String> keys = new HashSet<String>();
+        Set<String> keys = new HashSet<>();
         for ( Map<String, Object> row : rows )
         {
             keys.addAll( row.keySet() );
         }
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( keys ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
 
         ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>() {

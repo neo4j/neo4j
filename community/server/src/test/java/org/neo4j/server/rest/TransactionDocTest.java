@@ -287,8 +287,8 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     private <T> T resultCell( Map<String, Object> response, int row, int column )
     {
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
-        List<List> data = (List<List>) result.get( "data" );
-        return (T) data.get( row ).get( column );
+        List<Map<String,List>> data = (List<Map<String,List>>) result.get( "data" );
+        return (T) data.get( row ).get( "row" ).get( column );
     }
 
     private String quotedJson( String singleQuoted )

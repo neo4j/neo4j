@@ -26,12 +26,26 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.neo4j.server.rest.web.PropertyValueException;
 
 public class JsonHelper
 {
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static JsonNode jsonNode(String json) throws JsonParseException
+    {
+        try
+        {
+            return OBJECT_MAPPER.readTree( json );
+        }
+        catch ( IOException e )
+        {
+            throw new JsonParseException( e );
+        }
+    }
 
     @SuppressWarnings( "unchecked" )
     public static Map<String, Object> jsonToMap( String json ) throws JsonParseException
@@ -71,17 +85,14 @@ public class JsonHelper
 
         }
 
-        if ( jsonObject instanceof String ||
-             jsonObject instanceof Number ||
-             jsonObject instanceof Boolean )
-        {
-        }
-        else
+        if ( !(jsonObject instanceof String ||
+               jsonObject instanceof Number ||
+               jsonObject instanceof Boolean) )
         {
             throw new org.neo4j.server.rest.web.PropertyValueException(
                     "Unsupported value type " + jsonObject.getClass() + "."
-                            + " Supported value types are all java primitives (byte, char, short, int, "
-                            + "long, float, double) and String, as well as arrays of all those types" );
+                    + " Supported value types are all java primitives (byte, char, short, int, "
+                    + "long, float, double) and String, as well as arrays of all those types" );
         }
         return jsonObject;
     }

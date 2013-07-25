@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.codehaus.jackson.JsonNode;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -52,6 +53,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -281,7 +283,6 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
     
-    @SuppressWarnings( { "rawtypes" } )
     @Test
     public void begin_create_two_nodes_delete_one() throws Exception
     {
@@ -295,9 +296,9 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         Response response = http.POST( "/db/data/transaction/commit",
                 rawPayload( "{ \"statements\" : [{\"statement\" : \"CREATE (n0:DecibelEntity :AlbumGroup{DecibelID : '34a2201b-f4a9-420f-87ae-00a9c691cc5c', Title : 'Dance With Me', ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', OriginalReleaseDate : '2013-01-08', IsCanon : 'False'}) return id(n0)\"}, {\"statement\" : \"CREATE (n1:DecibelEntity :AlbumRelease{DecibelID : '9ed529fa-7c19-11e2-be78-bcaec5bea3c3', Title : 'Dance With Me', ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', LabelName : 'Barsuk Records', FormatNames : 'File', TrackCount : '3', MediaCount : '1', Duration : '460.000000', ReleaseDate : '2013-01-08', ReleaseYear : '2013', ReleaseRegion : 'USA', Cline : 'Barsuk Records', Pline : 'Barsuk Records', CYear : '2013', PYear : '2013', ParentalAdvisory : 'False', IsLimitedEdition : 'False'}) return id(n1)\"}]}" ) );
         assertEquals( 200, response.status() );
-        Map<String,Object> everything = jsonToMap( response.rawContent() );
-        Map result = (Map) ((List) everything.get( "results" )).get( 0 );
-        long id = ((Number) ((List) ((List) result.get( "data" )).get( 0 )).get( 0 )).longValue();
+        JsonNode everything = jsonNode( response.rawContent() );
+        JsonNode result = everything.get( "results" ).get( 0 );
+        long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
         
         // WHEN
         http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"start n = node(" + id + ") delete n\"}" ) );

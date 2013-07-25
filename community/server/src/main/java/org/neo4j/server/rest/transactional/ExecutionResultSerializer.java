@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
@@ -41,7 +42,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
  * <li>{@link #statementResult(ExecutionResult) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
- * <li>{@link #transactionStatus(Date expiryDate)}{@code ?}</li>
+ * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
  * </ul>
  * <p/>
@@ -161,7 +162,7 @@ public class ExecutionResultSerializer
             ensureDocumentOpen();
             ensureResultsFieldClosed();
             out.writeObjectFieldStart( "transaction" );
-            out.writeStringField( "expires", RFC1123.formatDate( new Date ( expiryDate ) ) );
+            out.writeStringField( "expires", RFC1123.formatDate( new Date( expiryDate ) ) );
             out.writeEndObject();
         }
         catch ( IOException e )
@@ -240,18 +241,26 @@ public class ExecutionResultSerializer
             while ( data.hasNext() )
             {
                 Map<String, Object> row = data.next();
+                out.writeStartObject();
                 try
                 {
-                    out.writeStartArray();
-                    for ( String key : columns )
+                    out.writeArrayFieldStart( "row" );
+                    try
                     {
-                        Object val = row.get( key );
-                        out.writeObject( val );
+                        for ( String key : columns )
+                        {
+                            Object val = row.get( key );
+                            out.writeObject( val );
+                        }
+                    }
+                    finally
+                    {
+                        out.writeEndArray();
                     }
                 }
                 finally
                 {
-                    out.writeEndArray();
+                    out.writeEndObject();
                 }
             }
         }
