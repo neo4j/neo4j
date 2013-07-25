@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 
 import java.util.concurrent.Future;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,6 +49,13 @@ import org.neo4j.test.ha.ClusterManager;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
+    @Before
+    public void stableCluster()
+    {
+        // Ensure a stable cluster before starting tests
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+    }
+
     @Test
     public void start_tx_as_slave_and_finish_it_after_having_switched_to_master_should_not_succeed() throws Exception
     {
