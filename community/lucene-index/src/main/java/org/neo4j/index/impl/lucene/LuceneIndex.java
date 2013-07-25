@@ -524,6 +524,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                 Node endNodeOrNull )
         {
+            super.assertInTransaction();
             BooleanQuery query = new BooleanQuery();
             if ( key != null && valueOrNull != null )
             {
@@ -538,6 +539,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
+            super.assertInTransaction();
             QueryContext context = queryOrQueryObjectOrNull != null &&
                     queryOrQueryObjectOrNull instanceof QueryContext ?
                             (QueryContext) queryOrQueryObjectOrNull : null;
@@ -567,6 +569,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
+            super.assertInTransaction();
             return query( null, queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull );
         }
 
