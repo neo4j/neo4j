@@ -239,18 +239,19 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
     // START SNIPPET: getOrCreate
     public Node getOrCreateUserWithUniqueFactory( String username, GraphDatabaseService graphDb )
     {
-        UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
-        {
-            @Override
-            protected void initialize( Node created, Map<String, Object> properties )
-            {
-                created.setProperty( "name", properties.get( "name" ) );
-            }
-        };
+
 
         Transaction transaction = graphDb.beginTx();
         try
         {
+            UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
+            {
+                @Override
+                protected void initialize( Node created, Map<String, Object> properties )
+                {
+                    created.setProperty( "name", properties.get( "name" ) );
+                }
+            };
             Node node = factory.getOrCreate( "name", username );
             transaction.success();
             return node;

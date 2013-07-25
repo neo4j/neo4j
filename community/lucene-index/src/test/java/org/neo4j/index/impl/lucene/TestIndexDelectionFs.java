@@ -65,27 +65,40 @@ public class TestIndexDelectionFs
         File pathToLuceneIndex = new File( tempPath.toString() + indexName );
         File pathToOtherLuceneIndex = new File( tempPath.toString() + otherIndexName );
 
-        Index<Node> index = db.index().forNodes( indexName );
-        Index<Node> otherIndex = db.index().forNodes(otherIndexName);
         Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        index.add( node, "someKey", "someValue" );
-        otherIndex.add( node, "someKey", "someValue" );
-        assertFalse( pathToLuceneIndex.exists() );
-        assertFalse( pathToOtherLuceneIndex.exists() );
-        tx.success();
-        tx.finish();
+        Index<Node> index;
+        try
+        {
+            index = db.index().forNodes( indexName );
+            Index<Node> otherIndex = db.index().forNodes( otherIndexName );
+            Node node = db.createNode();
+            index.add( node, "someKey", "someValue" );
+            otherIndex.add( node, "someKey", "someValue" );
+            assertFalse( pathToLuceneIndex.exists() );
+            assertFalse( pathToOtherLuceneIndex.exists() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
 
         // Here "index" and "other-index" indexes should exist
 
         assertTrue( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
         tx = db.beginTx();
-        index.delete();
-        assertTrue( pathToLuceneIndex.exists() );
-        assertTrue( pathToOtherLuceneIndex.exists() );
-        tx.success();
-        tx.finish();
+        try
+        {
+            index.delete();
+            assertTrue( pathToLuceneIndex.exists() );
+            assertTrue( pathToOtherLuceneIndex.exists() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
 
         // Here only "other-index" should exist
 

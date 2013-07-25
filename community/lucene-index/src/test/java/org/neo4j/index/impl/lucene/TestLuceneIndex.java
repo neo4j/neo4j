@@ -132,8 +132,16 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void testStartupInExistingDirectory() {
         GraphDatabaseService graphDatabase = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Index<Node> index = graphDatabase.index().forNodes("nodes");
-        assertNotNull(index);
+        Transaction transaction = graphDatabase.beginTx();
+        try
+        {
+            assertNotNull( graphDatabase.index().forNodes("nodes") );
+        }
+        finally
+        {
+            transaction.finish();
+            graphDatabase.shutdown();
+        }
     }
 
     @Test
@@ -776,8 +784,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         nodeIndex( LuceneIndexImplementation.FULLTEXT_CONFIG );
         assertTrue( graphDb.index().existsForNodes( currentIndexName() ) );
         rollbackTx();
+        beginTx();
         assertTrue( graphDb.index().existsForNodes( currentIndexName() ) );
         nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
+        rollbackTx();
     }
 
     @Test

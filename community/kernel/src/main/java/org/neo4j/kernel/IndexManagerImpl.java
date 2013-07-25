@@ -288,6 +288,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     @Override
     public boolean existsForNodes( String indexName )
     {
+        assertInTransaction();
         return indexStore.get( Node.class, indexName ) != null;
     }
 
@@ -301,6 +302,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     public Index<Node> forNodes( String indexName,
                                  Map<String, String> customConfiguration )
     {
+        assertInTransaction();
         Index<Node> toReturn = getOrCreateNodeIndex( indexName,
                 customConfiguration );
         if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
@@ -353,12 +355,14 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     @Override
     public String[] nodeIndexNames()
     {
+        assertInTransaction();
         return indexStore.getNames( Node.class );
     }
 
     @Override
     public boolean existsForRelationships( String indexName )
     {
+        assertInTransaction();
         return indexStore.get( Relationship.class, indexName ) != null;
     }
 
@@ -372,6 +376,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     public RelationshipIndex forRelationships( String indexName,
                                                Map<String, String> customConfiguration )
     {
+        assertInTransaction();
         RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
                 customConfiguration );
         if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
@@ -385,6 +390,7 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     @Override
     public String[] relationshipIndexNames()
     {
+        assertInTransaction();
         return indexStore.getNames( Relationship.class );
     }
 
@@ -457,5 +463,10 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     public RelationshipAutoIndexer getRelationshipAutoIndexer()
     {
         return relAutoIndexer;
+    }
+
+    private void assertInTransaction()
+    {
+        txManager.assertInTransaction();
     }
 }
