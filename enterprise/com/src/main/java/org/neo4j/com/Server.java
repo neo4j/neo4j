@@ -19,6 +19,12 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -65,8 +71,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
  * of a specified communication interface, injected in the constructor.
@@ -83,9 +87,8 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
  *
  * @see Client
  */
-public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory, Lifecycle
+public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 {
-
     private InetSocketAddress socketAddress;
     private final Clock clock;
 

@@ -118,8 +118,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
 
         if ( failure )
         {
-            Throwable failure = readAndThrowFailureResponse();
-            throw new ComException( "Server side exception", failure );
+            readAndThrowFailureResponse();
         }
     }
 
@@ -145,7 +144,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         }
     }
 
-    private Throwable readAndThrowFailureResponse()
+    private void readAndThrowFailureResponse()
     {
         Throwable cause = null;
         try

@@ -165,6 +165,13 @@ class PersistenceRow extends LockableWindow
         }
     }
 
+    @Override
+    synchronized void setClean()
+    {
+        super.setClean();
+        bufferState = State.CLEAN;
+    }
+
     private void writeContents()
     {
         if ( isDirty() )
@@ -192,6 +199,7 @@ class PersistenceRow extends LockableWindow
                 throw new UnderlyingStorageException( "Unable to write record["
                         + position + "] @[" + position * recordSize + "]", e );
             }
+            setClean();
         }
     }
 

@@ -38,7 +38,7 @@ import org.neo4j.test.ha.ClusterManager.Provider;
 public abstract class AbstractClusterTest
 {
     private final File dir = TargetDirectory.forTest( getClass() ).directory( "dbs", true );
-    private final LifeSupport life = new LifeSupport();
+    protected LifeSupport life = new LifeSupport();
     private final Provider provider;
     protected ClusterManager clusterManager;
     protected ManagedCluster cluster;

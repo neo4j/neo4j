@@ -62,7 +62,7 @@ public class PersistenceWindowPool implements WindowPool
     private BrickElement brickArray[] = new BrickElement[0];
     private int brickMiss = 0;
 
-    private static final int REFRESH_BRICK_COUNT = 50000;
+    static final int REFRESH_BRICK_COUNT = 50000;
     private final FileChannel.MapMode mapMode;
 
     private int hit = 0;
@@ -458,8 +458,10 @@ public class PersistenceWindowPool implements WindowPool
     private void refreshBricks()
     {
         if ( brickMiss < REFRESH_BRICK_COUNT || brickSize <= 0 )
+        {
             return;
-     
+        }
+
         if ( refreshing.compareAndSet( false, true ) )
         {
             // No one is doing refresh right now, go ahead and do it

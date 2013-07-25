@@ -22,6 +22,7 @@ package org.neo4j.ha;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,13 @@ import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
+    @Before
+    public void stableCluster()
+    {
+        // Ensure a stable cluster before starting tests
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+    }
+
     @Test
     public void start_tx_as_slave_and_finish_it_after_having_switched_to_master_should_not_succeed() throws Exception
     {
