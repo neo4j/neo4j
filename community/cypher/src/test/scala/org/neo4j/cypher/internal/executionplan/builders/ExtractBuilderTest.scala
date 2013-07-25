@@ -88,7 +88,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
   }
 
   @Test

@@ -2520,4 +2520,11 @@ RETURN x0.name?
     }
   }
 
+  @Test
+  def columns_should_not_change_when_using_order_by_and_distinct() {
+    val result = parseAndExecute("start n=node(*) return distinct n order by id(n)")
+
+    assert(result.toList === List(Map("n" -> refNode)))
+  }
+
 }
