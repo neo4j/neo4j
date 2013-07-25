@@ -19,17 +19,20 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
+import java.io.File;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.test.AbstractClusterTest;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
-import java.io.File;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.AbstractClusterTest;
+import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
 public class HaLoggingIT extends AbstractClusterTest
 {
@@ -38,6 +41,7 @@ public class HaLoggingIT extends AbstractClusterTest
     {
         // GIVEN
         // -- look at the slave and see notices of startup diagnostics
+        cluster.await( masterSeesMembers( 3 ) );
         String logMessage = "Just a test for that logging continues as expected";
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
         StringLogger logger = db.getDependencyResolver().resolveDependency( StringLogger.class );
@@ -53,7 +57,7 @@ public class HaLoggingIT extends AbstractClusterTest
 
         // THEN
         int count = findLoggingLines( db, logMessage );
-        assertEquals( 2, count );
+        Assert.assertEquals( 2, count );
     }
 
     public HaLoggingIT()
