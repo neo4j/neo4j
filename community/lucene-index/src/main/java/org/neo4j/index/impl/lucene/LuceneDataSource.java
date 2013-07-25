@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.transaction.TransactionManager;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -168,6 +170,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
     private final XaFactory xaFactory;
+    private final TransactionManager txManager;
     IndexProviderStore providerStore;
     private IndexTypeCache typeCache;
     private boolean closed;
@@ -187,12 +190,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
      *                                instantiated
      */
     public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory )
+                             XaFactory xaFactory, TransactionManager txManager )
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
         this.xaFactory = xaFactory;
+        this.txManager = txManager;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -340,7 +344,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier );
+                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier, txManager );
                 indexes.put( identifier, index );
             }
             return index;
@@ -359,7 +363,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier );
+                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier, txManager );
                 indexes.put( identifier, index );
             }
             return (RelationshipIndex) index;
