@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
+import org.codehaus.jackson.JsonNode;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -124,7 +125,7 @@ public class HTTP
 
         public Builder withHeaders( Map<String, String> newHeaders )
         {
-            HashMap<String, String> combined = new HashMap<String, String>();
+            HashMap<String, String> combined = new HashMap<>();
             combined.putAll( newHeaders );
             combined.putAll( headers );
             return new Builder( combined, baseUri );
@@ -157,12 +158,12 @@ public class HTTP
 
         public Response PUT( String uri, Object payload )
         {
-            return exec( "PUT", uri );
+            return exec( "PUT", uri, payload );
         }
 
         public Response PUT( String uri, RawPayload payload )
         {
-            return exec( "PUT", uri );
+            return exec( "PUT", uri, payload );
         }
 
         public Response DELETE( String uri )
@@ -245,6 +246,7 @@ public class HTTP
             return response.getHeaders().getFirst( key );
         }
 
+        @SuppressWarnings("unchecked")
         public <T> T content()
         {
             try
@@ -265,6 +267,11 @@ public class HTTP
         public String stringFromContent( String key )
         {
             return (String) ((Map<String, Object>) content()).get( key );
+        }
+
+        public JsonNode jsonContent() throws JsonParseException
+        {
+            return JsonHelper.jsonNode( entity );
         }
     }
 

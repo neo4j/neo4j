@@ -104,6 +104,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                 case IN_BODY:
                     String statement = null;
                     Map<String, Object> parameters = null;
+                    List<Object> resultsDataContents = null;
                     JsonToken tok;
 
                     while ( (tok = input.nextToken()) != null && tok != END_OBJECT )
@@ -117,13 +118,17 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                         input.nextToken();
                         String currentName = input.getCurrentName();
-                        if ( "statement".equals( currentName ) )
+                        switch ( currentName )
                         {
+                        case "statement":
                             statement = input.nextTextValue();
-                        }
-                        else if ( "parameters".equals( currentName ) )
-                        {
+                            break;
+                        case "parameters":
                             parameters = readMap( input );
+                            break;
+                        case "resultDataContents":
+                            resultsDataContents = readArray( input );
+                            break;
                         }
                     }
 
@@ -132,7 +137,8 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                         addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new DeserializationException( "No statement provided." ) ) );
                         return null;
                     }
-                    return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters );
+                    return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters,
+                                          ResultDataContent.fromNames( resultsDataContents ) );
 
 
                 case FINISHED:
@@ -159,11 +165,17 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         return input.readValueAs( Map.class );
     }
 
+    @SuppressWarnings("unchecked")
+    private static List<Object> readArray( JsonParser input ) throws IOException
+    {
+        return input.readValueAs( List.class );
+    }
+
     private void addError( Neo4jError error )
     {
         if ( errors == null )
         {
-            errors = new LinkedList<Neo4jError>();
+            errors = new LinkedList<>();
         }
         errors.add( error );
     }
@@ -173,7 +185,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         List<JsonToken> expectedTokens = asList( START_OBJECT, FIELD_NAME, START_ARRAY );
         String expectedField = "statements";
 
-        List<JsonToken> foundTokens = new ArrayList<JsonToken>();
+        List<JsonToken> foundTokens = new ArrayList<>();
 
         for ( int i = 0; i < expectedTokens.size(); i++ )
         {

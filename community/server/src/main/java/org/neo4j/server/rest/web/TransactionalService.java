@@ -176,8 +176,7 @@ public class TransactionalService
         return builder.header( HttpHeaders.CONTENT_ENCODING, "UTF-8" );
     }
 
-    private StreamingOutput executeStatements( final InputStream input, final TransactionHandle
-            transactionHandle )
+    private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle )
     {
         return new StreamingOutput()
         {

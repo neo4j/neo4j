@@ -40,7 +40,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * order, as follows:
  * <ul>
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
- * <li>{@link #statementResult(ExecutionResult) statementResult}{@code *}</li>
+ * <li>{@link #statementResult(ExecutionResult, ResultDataContent...) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
  * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
@@ -87,7 +87,7 @@ public class ExecutionResultSerializer
      * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
      * to execute further statements.
      */
-    public void statementResult( ExecutionResult result ) throws IOException
+    public void statementResult( ExecutionResult result, ResultDataContent... resultDataContents ) throws IOException
     {
         try
         {
@@ -97,7 +97,7 @@ public class ExecutionResultSerializer
             {
                 Iterable<String> columns = result.columns();
                 writeColumns( columns );
-                writeRows( columns, result.iterator() );
+                writeRows( columns, result.iterator(), configureWriters( resultDataContents ) );
             }
             finally
             {
@@ -111,7 +111,7 @@ public class ExecutionResultSerializer
     }
 
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(ExecutionResult) statementResults}
+     * Will get called once if any errors occurred, after {@link #statementResult(ExecutionResult, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      */
@@ -193,6 +193,24 @@ public class ExecutionResultSerializer
         }
     }
 
+    private ResultDataContentWriter configureWriters( ResultDataContent[] specifiers )
+    {
+        if ( specifiers == null || specifiers.length == 0 )
+        {
+            return ResultDataContent.row.writer(); // default
+        }
+        if ( specifiers.length == 1 )
+        {
+            return specifiers[0].writer();
+        }
+        ResultDataContentWriter[] writers = new ResultDataContentWriter[specifiers.length];
+        for ( int i = 0; i < specifiers.length; i++ )
+        {
+            writers[i] = specifiers[i].writer();
+        }
+        return new AggregatingWriter( writers );
+    }
+
     private enum State
     {
         EMPTY, DOCUMENT_OPEN, RESULTS_OPEN, RESULTS_CLOSED, ERRORS_WRITTEN
@@ -233,7 +251,8 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data ) throws IOException
+    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data,
+                            ResultDataContentWriter writer ) throws IOException
     {
         out.writeArrayFieldStart( "data" );
         try
@@ -244,19 +263,7 @@ public class ExecutionResultSerializer
                 out.writeStartObject();
                 try
                 {
-                    out.writeArrayFieldStart( "row" );
-                    try
-                    {
-                        for ( String key : columns )
-                        {
-                            Object val = row.get( key );
-                            out.writeObject( val );
-                        }
-                    }
-                    finally
-                    {
-                        out.writeEndArray();
-                    }
+                    writer.write( out, columns, row );
                 }
                 finally
                 {

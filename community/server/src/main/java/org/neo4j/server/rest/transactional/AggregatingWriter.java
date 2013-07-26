@@ -19,33 +19,26 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.io.IOException;
 import java.util.Map;
 
-public class Statement
+import org.codehaus.jackson.JsonGenerator;
+
+class AggregatingWriter implements ResultDataContentWriter
 {
-    private final String statement;
-    private final Map<String, Object> parameters;
-    private final ResultDataContent[] resultDataContents;
+    private final ResultDataContentWriter[] writers;
 
-    public Statement( String statement, Map<String, Object> parameters, ResultDataContent... resultDataContents )
+    public AggregatingWriter( ResultDataContentWriter[] writers )
     {
-        this.statement = statement;
-        this.parameters = parameters;
-        this.resultDataContents = resultDataContents;
+        this.writers = writers;
     }
 
-    public String statement()
+    @Override
+    public void write( JsonGenerator out, Iterable<String> columns, Map<String, Object> row ) throws IOException
     {
-        return statement;
-    }
-
-    public Map<String, Object> parameters()
-    {
-        return parameters;
-    }
-
-    public ResultDataContent[] resultDataContents()
-    {
-        return resultDataContents;
+        for ( ResultDataContentWriter writer : writers )
+        {
+            writer.write( out, columns, row );
+        }
     }
 }

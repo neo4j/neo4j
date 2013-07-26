@@ -20,9 +20,11 @@
 package org.neo4j.server.rest;
 
 import java.text.ParseException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.codehaus.jackson.JsonNode;
@@ -50,6 +52,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
@@ -305,6 +308,42 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         // THEN
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction+1 ) );
+    }
+
+    @Test
+    public void should_include_graph_format_when_requested() throws Exception
+    {
+        // given
+        http.POST( "/db/data/transaction/commit", singleStatement( "CREATE (n:Foo:Bar)" ) );
+
+        // when
+        Response response = http.POST( "/db/data/transaction/commit", quotedJson(
+                "{ 'statements': [ { 'statement': 'MATCH (n:Foo) RETURN n', 'resultDataContents':['row','graph'] } ] }" ) );
+
+        // then
+        assertThat( response.status(), equalTo( 200 ) );
+        JsonNode data = response.jsonContent().get( "results" ).get( 0 ).get( "data" );
+        assertTrue( "data is a list", data.isArray() );
+        assertEquals( "one entry", 1, data.size() );
+        JsonNode entry = data.get( 0 );
+        assertTrue( "entry has row", entry.has( "row" ) );
+        assertTrue( "entry has graph", entry.has( "graph" ) );
+        JsonNode nodes = entry.get( "graph" ).get( "nodes" ), rels = entry.get( "graph" ).get( "relationships" );
+        assertTrue( "nodes is a list", nodes.isArray() );
+        assertTrue( "relationships is a list", rels.isArray() );
+        assertEquals( "one node", 1, nodes.size() );
+        assertEquals( "no relationships", 0, rels.size() );
+        Set<String> labels = new HashSet<>();
+        for ( JsonNode node : nodes.get( 0 ).get( "labels" ) )
+        {
+            labels.add( node.getTextValue() );
+        }
+        assertEquals( "labels", asSet( "Foo", "Bar" ), labels );
+    }
+
+    private HTTP.RawPayload singleStatement( String statement )
+    {
+        return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
     }
 
     private void assertNoErrors( Response response )
