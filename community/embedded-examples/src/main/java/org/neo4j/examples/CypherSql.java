@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -564,8 +565,16 @@ public class CypherSql
 
     String executeCypher( String cypher )
     {
-        return engine.execute( cypher )
-                .dumpToString();
+        Transaction transaction = graphdb.beginTx();
+        try
+        {
+            ExecutionResult executionResult = engine.execute( cypher );
+            return executionResult.dumpToString();
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     String executeSql( String sql ) throws SQLException

@@ -350,6 +350,27 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             {
                 abandonedIds.add( item );
             }
+
+            @Override
+            public boolean hasNext()
+            {
+                assertInTransaction();
+                return super.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                assertInTransaction();
+                return super.next();
+            }
+
+            @Override
+            public T getSingle()
+            {
+                assertInTransaction();
+                return super.getSingle();
+            }
         };
     }
 

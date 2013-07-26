@@ -118,12 +118,15 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       }
     }
 
-    val r = testWithoutDocs(queryText, prepare, assertions:_*)
-    val result: ExecutionResult = r._1
-    val query: String = r._2
+    db.inTx({
+      val r = testWithoutDocs(queryText, prepare, assertions:_*)
+      val result: ExecutionResult = r._1
+      val query: String = r._2
 
-    val writer: PrintWriter = createWriter(title, dir)
-    dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
+      val writer: PrintWriter = createWriter(title, dir)
+      dumpToFile(dir, writer, title, query, returns, text, result, consoleData)}
+    )
+
     if (graphvizExecutedAfter) {
       dumpGraphViz(dir, graphvizOptions.trim)
     }
@@ -174,38 +177,18 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   def testWithoutDocs(queryText: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
-    prepare.foreach(runThunkInTx(_))
+    prepare.foreach(_)
 
     var query = queryText
-    val tx = db.beginTx()
-    try {
       val keySet = nodes.keySet
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = engine.execute(query)
       assertions.foreach(_.apply(result))
-      tx.failure()
-    } finally {
-      tx.finish()
-    }
 
-    (engine.execute(query), query)
+    (result, query)
   }
 
   protected def getLabelsFromNode(p: ExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels
-
-  private def runThunkInTx(thunk: () => Any)
-  {
-    val tx = db.beginTx()
-    try
-    {
-      thunk()
-      tx.success()
-    }
-    finally
-    {
-      tx.finish()
-    }
-  }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
     indexProps.foreach((property) => {

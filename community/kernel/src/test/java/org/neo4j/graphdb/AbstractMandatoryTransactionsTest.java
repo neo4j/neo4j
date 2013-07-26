@@ -19,12 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
 

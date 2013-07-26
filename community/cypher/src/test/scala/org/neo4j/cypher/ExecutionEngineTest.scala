@@ -271,9 +271,7 @@ foreach(x in [1,2,3] |
       start(NodeByIndex("n", idxName, Literal(key), Literal(value))).
       returns(ReturnItem(Identifier("n"), "n"))
 
-    val result = execute(query)
-
-    assertEquals(List(Map("n" -> n)), result.toList)
+    assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
 
   @Test def shouldFindNodesByIndexQuery() {
@@ -287,9 +285,7 @@ foreach(x in [1,2,3] |
       start(NodeByIndexQuery("n", idxName, Literal(key + ":" + value))).
       returns(ReturnItem(Identifier("n"), "n"))
 
-    val result = execute(query)
-
-    assertEquals(List(Map("n" -> n)), result.toList)
+    assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
 
   @Test def shouldFindNodesByIndexParameters() {
@@ -302,9 +298,7 @@ foreach(x in [1,2,3] |
       start(NodeByIndex("n", idxName, Literal(key), ParameterExpression("value"))).
       returns(ReturnItem(Identifier("n"), "n"))
 
-    val result = execute(query, "value" -> "Andres")
-
-    assertEquals(List(Map("n" -> n)), result.toList)
+    assertInTx(List(Map("n" -> n)) === execute(query, "value" -> "Andres").toList)
   }
 
   @Test def shouldFindNodesByIndexWildcardQuery() {
@@ -318,9 +312,7 @@ foreach(x in [1,2,3] |
       start(NodeByIndexQuery("n", idxName, Literal(key + ":andr*"))).
       returns(ReturnItem(Identifier("n"), "n"))
 
-    val result = execute(query)
-
-    assertEquals(List(Map("n" -> n)), result.toList)
+    assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
 
   @Test def shouldHandleOrFilters() {
@@ -1543,9 +1535,7 @@ RETURN x0.name?
     val r = relate(a, b)
     indexRel(r, "relIdx", "key", "value")
 
-
-    val result = parseAndExecute("start r=relationship:relIdx(key='value') return r")
-    assert(List(Map("r" -> r)) === result.toList)
+    assertInTx(List(Map("r" -> r)) === parseAndExecute("start r=relationship:relIdx(key='value') return r").toList)
   }
 
   @Test def shouldHandleComparisonsWithDifferentTypes() {
@@ -1643,11 +1633,18 @@ RETURN x0.name?
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
     result.foreach(x => {
       val c = x("a.color").asInstanceOf[Array[_]]
-      if (c.toList == List("red"))
+      if ( c.toList == List("red") )
+      {
         assertEquals(2L, x("count(*)"))
-      else if (c.toList == List("blue"))
+      }
+      else if ( c.toList == List("blue") )
+      {
         assertEquals(1L, x("count(*)"))
-      else fail("wut?")
+      }
+      else
+      {
+        fail("wut?")
+      }
     })
   }
 

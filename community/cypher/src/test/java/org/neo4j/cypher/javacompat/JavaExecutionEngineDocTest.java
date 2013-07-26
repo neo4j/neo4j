@@ -188,11 +188,19 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForIndexValue
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "value", "Michaela" );
-        ExecutionResult result =
-                engine.execute( "start n=node:people(name = {value}) return n", params );
+
         // END SNIPPET: exampleWithParameterForIndexValue
 
-        assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            ExecutionResult result = engine.execute( "start n=node:people(name = {value}) return n", params );
+            assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -201,10 +209,19 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParametersForQuery
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "query", "name:Andreas" );
-        ExecutionResult result = engine.execute( "start n=node:people({query}) return n", params );
+
         // END SNIPPET: exampleWithParametersForQuery
 
-        assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
+        Transaction transaction = db.beginTx();
+        try
+        {
+            ExecutionResult result = engine.execute( "start n=node:people({query}) return n", params );
+            assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
