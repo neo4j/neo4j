@@ -177,7 +177,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   def testWithoutDocs(queryText: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
-    prepare.foreach(_)
+    prepare.foreach{ (prepareStep: () => Any) => prepareStep() }
 
     var query = queryText
       val keySet = nodes.keySet
