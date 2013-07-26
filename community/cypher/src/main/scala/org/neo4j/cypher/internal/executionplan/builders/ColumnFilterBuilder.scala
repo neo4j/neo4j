@@ -23,8 +23,11 @@ import org.neo4j.cypher.internal.pipes.{Pipe, ColumnFilterPipe}
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
-import org.neo4j.cypher.internal.commands.expressions.Expression
 
+/**
+ * This class should get rid of any extra columns built up while building the execution plan, that weren't in the
+ * queries return clause.
+ */
 class ColumnFilterBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
@@ -42,35 +45,28 @@ class ColumnFilterBuilder extends LegacyPlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
 
-    q.extracted &&
+    val preConditionsMet = q.extracted &&
       !q.sort.exists(_.unsolved) &&
       !q.slice.exists(_.unsolved) &&
-      q.returns.exists(_.unsolved)
+      (q.returns.forall(_.solved) && q.returns.nonEmpty)
+
+    preConditionsMet && {
+      val expectedColumns = getReturnItems(q.returns, plan.pipe.symbols).map (ri => ri.name).toSet
+      val givenColumns = plan.pipe.symbols.keys.toSet
+
+      expectedColumns != givenColumns
+    }
   }
 
   def priority = PlanBuilder.ColumnFilter
 
   private def handleReturnClause(q: PartiallySolvedQuery, inPipe: Pipe, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
     val returnItems: Seq[ReturnItem] = getReturnItems(q.returns, inPipe.symbols)
-    val expressionsToExtract: Map[String, Expression] = returnItems.map {
-      case ReturnItem(expression, name, _) => name -> expression
-    }.toMap
+    val outPipe = new ColumnFilterPipe(inPipe, returnItems)
 
-    val extractedStep = ExtractBuilder.extractIfNecessary(plan, expressionsToExtract)
-    val filterPipe = new ColumnFilterPipe(extractedStep.pipe, returnItems)
+    val resultQ = plan.query.copy(returns = q.returns.map(_.solve))
 
-    val after: SymbolTable = filterPipe.symbols
-    val before: SymbolTable = inPipe.symbols
-
-    val resultPipe = if (after != before) {
-      filterPipe
-    } else {
-      inPipe
-    }
-
-    val resultQ = extractedStep.query.copy(returns = q.returns.map(_.solve))
-
-    plan.copy(pipe = resultPipe, query = resultQ)
+    plan.copy(pipe = outPipe, query = resultQ)
   }
 
   private def handleWithClause(q: PartiallySolvedQuery, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {

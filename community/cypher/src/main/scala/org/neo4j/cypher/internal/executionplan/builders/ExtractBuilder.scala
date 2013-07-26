@@ -20,31 +20,72 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ExtractPipe
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
-import org.neo4j.cypher.internal.commands.expressions._
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.commands.expressions.CachedExpression
+import org.neo4j.cypher.internal.executionplan.LegacyPlanBuilder
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
+import org.neo4j.cypher.internal.commands.AllIdentifiers
 
+/**
+ * This builder will materialize expression results down to the result map, so they can be seen by the user
+ */
 class ExtractBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
 
-    val expressions: Map[String, Expression] =
-      plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
+    // This is just a query part switch. No need to extract anything
+    if (q.tail.nonEmpty && q.returns == Seq(Unsolved(AllIdentifiers()))) {
+      plan.copy(query = q.copy(returns = Seq(Solved(AllIdentifiers()))))
+    } else {
+      val expressions: Map[String, Expression] =
+        q.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
 
-    ExtractBuilder.extractIfNecessary(plan, expressions)
+      val result = ExtractBuilder.extractIfNecessary(plan, expressions, materializeAll = true)
+      result.copy(query = result.query.copy(returns = result.query.returns.map(_.solve)))
+    }
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    !q.extracted && q.readyToAggregate && !q.aggregateToDo
+    val unsolvedReturnItems = q.returns.filter(_.unsolved)
+
+    val a = unsolvedReturnItems.forall {
+      ri => ri.token.expressions(plan.pipe.symbols).values.forall {
+        e => e.symbolDependenciesMet(plan.pipe.symbols)
+      }
+    }
+
+    val b = q.readyToAggregate
+    val c = !q.aggregateToDo
+    a && b && c && unsolvedReturnItems.nonEmpty
   }
 
   def priority: Int = PlanBuilder.Extraction
+
+  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] =
+    if (plan.query.patterns.exists(_.unsolved))
+      Seq.empty
+    else {
+      val unsolvedReturnItems = plan.query.returns.filter(_.unsolved)
+
+      unsolvedReturnItems.flatMap {
+        ri => ri.token.expressions(plan.pipe.symbols).values.flatMap {
+          e => e.symbolTableDependencies
+        }
+      }.distinct.
+        map("Unknown identifier `%s`.".format(_))
+    }
 }
 
 object ExtractBuilder {
-
-  def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression]): ExecutionPlanInProgress = {
+  /**
+   *
+   * @param plan the plan to work on
+   * @param expressionsToExtract extract these expressions
+   * @param materializeAll materialise results even for non-deterministic calls
+   * @return
+   */
+  def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression], materializeAll:Boolean = false):
+  ExecutionPlanInProgress = {
 
     val expressions = expressionsToExtract.filter {
       case (k, CachedExpression(_, _))      => false
@@ -58,9 +99,9 @@ object ExtractBuilder {
     if (expressions.nonEmpty) {
       val newPsq = expressions.foldLeft(query)((psq, entry) => psq.rewrite(fromQueryExpression => {
         val (key, expr) = entry
-        val eqExpr  = expr == fromQueryExpression
-        val detExpr = expr.isDeterministic
-        if (eqExpr && detExpr)
+        val correctExpression  = expr == fromQueryExpression
+        val shouldMaterialize = expr.isDeterministic || materializeAll
+        if (correctExpression && shouldMaterialize)
           CachedExpression(key, fromQueryExpression.getType(plan.pipe.symbols))
         else
           fromQueryExpression
