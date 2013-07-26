@@ -25,11 +25,13 @@ public class Statement
 {
     private final String statement;
     private final Map<String, Object> parameters;
+    private final ResultDataContent[] resultDataContents;
 
-    public Statement( String statement, Map<String, Object> parameters )
+    public Statement( String statement, Map<String, Object> parameters, ResultDataContent[] resultDataContents )
     {
         this.statement = statement;
         this.parameters = parameters;
+        this.resultDataContents = resultDataContents;
     }
 
     public String statement()
@@ -40,5 +42,10 @@ public class Statement
     public Map<String, Object> parameters()
     {
         return parameters;
+    }
+
+    public ResultDataContent[] resultDataContents()
+    {
+        return resultDataContents;
     }
 }

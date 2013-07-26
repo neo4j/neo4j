@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
@@ -39,9 +40,9 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * order, as follows:
  * <ul>
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
- * <li>{@link #statementResult(ExecutionResult) statementResult}{@code *}</li>
+ * <li>{@link #statementResult(ExecutionResult, ResultDataContent...) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
- * <li>{@link #transactionStatus(Date expiryDate)}{@code ?}</li>
+ * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
  * </ul>
  * <p/>
@@ -86,7 +87,7 @@ public class ExecutionResultSerializer
      * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
      * to execute further statements.
      */
-    public void statementResult( ExecutionResult result ) throws IOException
+    public void statementResult( ExecutionResult result, ResultDataContent... resultDataContents ) throws IOException
     {
         try
         {
@@ -96,7 +97,7 @@ public class ExecutionResultSerializer
             {
                 Iterable<String> columns = result.columns();
                 writeColumns( columns );
-                writeRows( columns, result.iterator() );
+                writeRows( columns, result.iterator(), ResultDataContent.atLeastDefault( resultDataContents ) );
             }
             finally
             {
@@ -110,7 +111,7 @@ public class ExecutionResultSerializer
     }
 
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(ExecutionResult) statementResults}
+     * Will get called once if any errors occurred, after {@link #statementResult(ExecutionResult, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      */
@@ -161,7 +162,7 @@ public class ExecutionResultSerializer
             ensureDocumentOpen();
             ensureResultsFieldClosed();
             out.writeObjectFieldStart( "transaction" );
-            out.writeStringField( "expires", RFC1123.formatDate( new Date ( expiryDate ) ) );
+            out.writeStringField( "expires", RFC1123.formatDate( new Date( expiryDate ) ) );
             out.writeEndObject();
         }
         catch ( IOException e )
@@ -232,7 +233,8 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data ) throws IOException
+    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data,
+                            ResultDataContent[] resultDataContents ) throws IOException
     {
         out.writeArrayFieldStart( "data" );
         try
@@ -240,18 +242,17 @@ public class ExecutionResultSerializer
             while ( data.hasNext() )
             {
                 Map<String, Object> row = data.next();
+                out.writeStartObject();
                 try
                 {
-                    out.writeStartArray();
-                    for ( String key : columns )
+                    for ( ResultDataContent resultDataContent : resultDataContents )
                     {
-                        Object val = row.get( key );
-                        out.writeObject( val );
+                        resultDataContent.write( out, columns, row );
                     }
                 }
                 finally
                 {
-                    out.writeEndArray();
+                    out.writeEndObject();
                 }
             }
         }

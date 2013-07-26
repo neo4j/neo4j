@@ -31,12 +31,18 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -44,10 +50,13 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 
@@ -89,7 +98,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -110,7 +119,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -127,13 +136,15 @@ public class ExecutionResultSerializerTest
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                      "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                      result );
     }
 
     @Test
@@ -149,13 +160,15 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.statementResult( executionResult );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") )) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"]]}],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                      "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                      result );
     }
 
     @Test
@@ -167,14 +180,14 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":40001," +
-                "\"status\":\"INVALID_REQUEST_FORMAT\"," +
-                "\"message\":\"cause1\"}]}", result );
+                      "\"status\":\"INVALID_REQUEST_FORMAT\"," +
+                      "\"message\":\"cause1\"}]}", result );
     }
 
     @Test
@@ -185,12 +198,14 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         // when
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception("cause1") ) ) );
+        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}", result );
+        assertEquals(
+                "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                result );
     }
 
     @Test
@@ -228,7 +243,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                "\"data\":[[\"value1\",\"value2\"],[\"value3\",\"value4\"]]}],\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"]},{\"row\":[\"value3\",\"value4\"]}]}]," +
+                      "\"errors\":[]}", result );
     }
 
     @Test
@@ -253,9 +269,9 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[" +
-                "{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}," +
-                "{\"columns\":[\"column3\",\"column4\"],\"data\":[[\"value3\",\"value4\"]]}]," +
-                "\"errors\":[]}", result );
+                      "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}," +
+                      "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"]}]}]," +
+                      "\"errors\":[]}", result );
     }
 
     @Test
@@ -280,8 +296,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
-                "\"data\":[[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]]}]," +
-                "\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]}]}]," +
+                      "\"errors\":[]}", result );
     }
 
     @Test
@@ -301,8 +317,8 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
-                "\"data\":[[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]]}]," +
-                "\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]}]}]," +
+                      "\"errors\":[]}", result );
     }
 
     @Test
@@ -316,7 +332,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true, true, false );
@@ -337,7 +353,8 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+        assertEquals(
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
@@ -353,7 +370,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( data.keySet() ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
         when( iterator.hasNext() ).thenReturn( true ).thenThrow(
@@ -375,10 +392,72 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[[\"value1\",\"value2\"]]}]," +
+        assertEquals(
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
+    }
+
+    @Test
+    public void shouldProduceResultStreamWithGraphEntries() throws Exception
+    {
+        // given
+        Node[] node = {
+                node( "node0", "Node" ),
+                node( "node1" ),
+                node( "node2", "This", "That" ),
+                node( "node3", "Other" )};
+        for ( int id = 0; id < node.length; id++ )
+        {
+            when( node[id].getId() ).thenReturn( (long) id );
+        }
+
+        Relationship[] rel = {
+                relationship( "rel0", node[0], "KNOWS", node[1] ),
+                relationship( "rel1", node[2], "LOVES", node[3] )};
+        for ( int id = 0; id < rel.length; id++ )
+        {
+            when( rel[id].getId() ).thenReturn( (long) id );
+        }
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
+
+        // when
+        serializer.statementResult( mockExecutionResult(
+                map( "node", node[0], "rel", rel[0] ),
+                map( "node", node[2], "rel", rel[1] ) ), ResultDataContent.row, ResultDataContent.graph );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        // Nodes and relationships form sets, so we cannot test for a fixed string, since we don't know the order.
+        String node0 = "{\"id\":\"0\",\"labels\":[\"Node\"],\"properties\":{\"name\":\"node0\"}}";
+        String node1 = "{\"id\":\"1\",\"labels\":[],\"properties\":{\"name\":\"node1\"}}";
+        String node2 = "{\"id\":\"2\",\"labels\":[\"This\",\"That\"],\"properties\":{\"name\":\"node2\"}}";
+        String node3 = "{\"id\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
+        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\",\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
+        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\",\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
+        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],\"graph\":{\"nodes\":[";
+        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],\"graph\":{\"nodes\":[";
+        int n0 = result.indexOf( node0 );
+        int n1 = result.indexOf( node1 );
+        int n2 = result.indexOf( node2 );
+        int n3 = result.indexOf( node3 );
+        int r0 = result.indexOf( rel0 );
+        int r1 = result.indexOf( rel1 );
+        int _0 = result.indexOf( row0 );
+        int _1 = result.indexOf( row1 );
+        assertTrue( "result should contain row0", _0 > 0 );
+        assertTrue( "result should contain row1 after row0", _1 > _0 );
+        assertTrue( "result should contain node0 after row0", n0 > _0 );
+        assertTrue( "result should contain node1 after row0", n1 > _0 );
+        assertTrue( "result should contain node2 after row1", n2 > _1 );
+        assertTrue( "result should contain node3 after row1", n3 > _1 );
+        assertTrue( "result should contain rel0 after node0 and node1", r0 > n0 && r0 > n1 );
+        assertTrue( "result should contain rel1 after node2 and node3", r1 > n2 && r1 > n3 );
     }
 
     @Test
@@ -397,18 +476,20 @@ public class ExecutionResultSerializerTest
         log.assertExactly( error( "Failed to generate JSON output.", failure ) );
     }
 
+    @SafeVarargs
     private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
     {
-        Set<String> keys = new HashSet<String>();
+        Set<String> keys = new HashSet<>();
         for ( Map<String, Object> row : rows )
         {
             keys.addAll( row.keySet() );
         }
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionResult.columns() ).thenReturn( new ArrayList<String>( keys ) );
+        when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
 
-        ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>() {
+        ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>()
+        {
             @Override
             public void close()
             {
@@ -437,9 +518,34 @@ public class ExecutionResultSerializerTest
         return executionResult;
     }
 
-    private static Node mockNode( Map<String, Object> properties )
+    private static Node node( String name, String... labels )
     {
-        return mockPropertiesContainer( Node.class, properties );
+        return mockNode( map( "name", name ), labels );
+    }
+
+    private static Relationship relationship( String name, Node source, String type, Node target )
+    {
+        Relationship relationship = mockRelationship( type, map( "name", name ) );
+        when( relationship.getStartNode() ).thenReturn( source );
+        when( relationship.getEndNode() ).thenReturn( target );
+        return relationship;
+    }
+
+    private static Node mockNode( Map<String, Object> properties, String... labels )
+    {
+        Node node = mockPropertiesContainer( Node.class, properties );
+        when( node.getLabels() ).thenReturn( labels( labels ) );
+        return node;
+    }
+
+    private static ResourceIterable<Label> labels( String[] names )
+    {
+        Label[] labels = new Label[names.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            labels[i] = DynamicLabel.label( names[i] );
+        }
+        return Iterables.asResourceIterable( asList( labels ) );
     }
 
     private static <T extends PropertyContainer> T mockPropertiesContainer( Class<T> containerType, Map<String,
@@ -456,7 +562,14 @@ public class ExecutionResultSerializerTest
 
     private static Relationship mockRelationship( Map<String, Object> properties )
     {
-        return mockPropertiesContainer( Relationship.class, properties );
+        return mockRelationship( "RELATED", properties );
+    }
+
+    private static Relationship mockRelationship( String type, Map<String, Object> properties )
+    {
+        Relationship relationship = mockPropertiesContainer( Relationship.class, properties );
+        when( relationship.getType() ).thenReturn( DynamicRelationshipType.withName( type ) );
+        return relationship;
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String,

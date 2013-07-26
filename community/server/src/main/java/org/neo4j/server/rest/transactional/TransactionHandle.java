@@ -83,7 +83,7 @@ public class TransactionHandle
 
     public void execute( StatementDeserializer statements, ExecutionResultSerializer output )
     {
-        List<Neo4jError> errors = new LinkedList<Neo4jError>();
+        List<Neo4jError> errors = new LinkedList<>();
         try
         {
             output.transactionCommitUri( uriScheme.txCommitUri( id ) );
@@ -103,7 +103,7 @@ public class TransactionHandle
 
     public void commit( StatementDeserializer statements, ExecutionResultSerializer output )
     {
-        List<Neo4jError> errors = new LinkedList<Neo4jError>();
+        List<Neo4jError> errors = new LinkedList<>();
         try
         {
             ensureActiveTransaction();
@@ -122,7 +122,7 @@ public class TransactionHandle
 
     public void rollback( ExecutionResultSerializer output )
     {
-        List<Neo4jError> errors = new LinkedList<Neo4jError>();
+        List<Neo4jError> errors = new LinkedList<>();
         try
         {
             ensureActiveTransaction();
@@ -256,7 +256,7 @@ public class TransactionHandle
                     // cypher.execute( ctx, statement, resultVisitor );
                     // ctx.close()
 
-                    output.statementResult( result );
+                    output.statementResult( result, statement.resultDataContents() );
                 }
                 catch ( CypherException e )
                 {
