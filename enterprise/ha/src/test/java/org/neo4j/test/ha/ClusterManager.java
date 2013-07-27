@@ -60,8 +60,6 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.jmx.Kernel;
-import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -74,7 +72,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.management.Neo4jManager;
 
 import static java.util.Arrays.asList;
 

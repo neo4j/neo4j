@@ -25,7 +25,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.AbstractClusterTest;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
