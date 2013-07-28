@@ -119,14 +119,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def escapedNamesShouldNotContainEscapeChars() {
-    test(
-      """start `a a` = rel:`index a`(`key s` = "value") return `a a`""",
-      Query.
-        start(RelationshipByIndex("a a", "index a", Literal("key s"), Literal("value"))).
-        returns(ReturnItem(Identifier("a a"), "a a")))
-  }
-
   @Test def keywordsShouldBeCaseInsensitive() {
     test(
       "START s = NODE(1) RETURN s",
@@ -2814,6 +2806,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ReturnItem(percentileDisc, "percentile_disc(n.property, 0.5)"),
         ReturnItem(stdev, "stdev(n.property)"),
         ReturnItem(stdevP, "stdevp(n.property)")))
+  }
+
+  @Test def escaped_identifier() {
+    test(vFrom2_0, "match `Unusual identifier` return `Unusual identifier`.propertyName",
+      Query.
+        matches(SingleNode("Unusual identifier")).
+        returns(
+        ReturnItem(Property(Identifier("Unusual identifier"), PropertyKey("propertyName")), "`Unusual identifier`.propertyName")))
+  }
+
+  @Test def aliased_column_does_not_keep_escape_symbols() {
+    test(vFrom2_0, "match a return a as `Escaped alias`",
+      Query.
+        matches(SingleNode("a")).
+        returns(
+        ReturnItem(Identifier("a"), "Escaped alias", renamed = true)))
   }
 
   private def run(f: () => Unit) =

@@ -72,7 +72,7 @@ class ReturnTest extends DocumentingTestBase {
       queryText = """match `This isn't a common identifier` where `This isn't a common identifier`.name='A'
 return `This isn't a common identifier`.happy""",
       returns = """The node indexed with name "A" is returned""",
-      assertions = (p) => assertEquals(List(Map("This isn't a common identifier.happy" -> "Yes!")), p.toList))
+      assertions = (p) => assertEquals(List(Map("`This isn't a common identifier`.happy" -> "Yes!")), p.toList))
   }
 
   @Test def nullable_properties() {
