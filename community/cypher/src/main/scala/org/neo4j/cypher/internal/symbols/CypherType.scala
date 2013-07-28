@@ -90,29 +90,3 @@ trait Typed {
   */
   def getType(symbols: SymbolTable): CypherType = evaluateType(AnyType(), symbols)
 }
-
-
-case class MergeableCypherTypeSet[T <: CypherType](set: Set[T]) {
-  def mergeDown(other: Set[CypherType]) : Set[CypherType] = {
-    set.foldLeft(Vector.empty[CypherType])((ts, t) => {
-      val dt = other.map { _.mergeDown(t) } reduce { (t1, t2) => (t1 mergeUp t2).get }
-      ts.filter(_.mergeUp(dt) != Some(dt)) :+ dt
-    }).toSet
-  }
-
-  def mergeUp(other: Set[CypherType]) : Set[CypherType] = {
-    set.flatMap { t => other.flatMap { _ mergeUp t } }
-  }
-}
-
-
-case class FormattableCypherTypeSet[T <: CypherType](set: Set[T]) {
-  def formattedString : String = {
-    val types = set.toIndexedSeq.map(_.toString)
-    types.length match {
-      case 0 => ""
-      case 1 => types.head
-      case _ => s"${types.dropRight(1).mkString(", ")} or ${types.last}"
-    }
-  }
-}
