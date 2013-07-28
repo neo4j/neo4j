@@ -20,5 +20,9 @@
 package org.neo4j.cypher.internal
 
 package object symbols {
-  implicit def cypherTypeSet[T <: CypherType](set: Set[T]) : TypeSet = TypeSet(set)
+  // Allows Sets of CypherType to be merged
+  implicit def mergeableCypherTypeSet[T <: CypherType](set: Set[T]) = MergeableCypherTypeSet(set)
+
+  // Allows Sets of CypherType to be formatted for pretty printing
+  implicit def formattableCypherTypeSet[T <: CypherType](set: Set[T]) = FormattableCypherTypeSet(set)
 }
