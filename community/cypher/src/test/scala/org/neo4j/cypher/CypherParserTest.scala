@@ -2765,6 +2765,40 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
+  @Test def reduce_function() {
+    val collection = Collection(Literal(1), Literal(2), Literal(3))
+    val expression = Add(Identifier("acc"), Identifier("x"))
+    test(vFrom2_0, "start n=node(1) return reduce(acc = 0, x in [1,2,3] | acc + x)",
+      Query.
+        start(NodeById("n", 1)).
+        returns(ReturnItem(ReduceFunction(collection, "x", expression, "acc", Literal(0)), "reduce(acc = 0, x in [1,2,3] | acc + x)")))
+  }
+
+  @Test def start_and_endNode() {
+    test(vFrom2_0, "start r=rel(1) return startNode(r), endNode(r)",
+      Query.
+        start(RelationshipById("r", 1)).
+        returns(
+        ReturnItem(RelationshipEndPoints(Identifier("r"), start = true), "startNode(r)"),
+        ReturnItem(RelationshipEndPoints(Identifier("r"), start = false), "endNode(r)")))
+  }
+
+  @Test def mathy_aggregation_expressions() {
+    val property = Property(Identifier("n"), PropertyKey("property"))
+    val percentileCont = PercentileCont(property, Literal(0.4))
+    val percentileDisc = PercentileDisc(property, Literal(0.5))
+    val stdev = Stdev(property)
+    val stdevP = StdevP(property)
+    test(vFrom2_0, "match n return percentile_cont(n.property, 0.4), percentile_disc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
+      Query.
+        matches(SingleNode("n")).
+        aggregation(percentileCont, percentileDisc, stdev, stdevP).
+        returns(
+        ReturnItem(percentileCont, "percentile_cont(n.property, 0.4)"),
+        ReturnItem(percentileDisc, "percentile_disc(n.property, 0.5)"),
+        ReturnItem(stdev, "stdev(n.property)"),
+        ReturnItem(stdevP, "stdevp(n.property)")))
+  }
 
   private def run(f: () => Unit) =
     new Runnable() {
@@ -2808,7 +2842,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         case _ => Some(version)
       }
       testQuery(maybeVersion, query, expectedQuery)
-//      testQuery(maybeVersion, query + ";", expectedQuery)
     }
   }
 
