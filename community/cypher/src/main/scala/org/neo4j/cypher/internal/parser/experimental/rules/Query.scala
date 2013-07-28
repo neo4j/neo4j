@@ -117,7 +117,7 @@ trait Query extends Parser
   )
 
   private def Foreach : Rule1[ast.Foreach] = rule("FOREACH") {
-    group(keyword("FOREACH") ~~ "(" ~~ Identifier ~~ keyword("IN") ~~ Expression ~~ "|" ~~ oneOrMore(Updates) ~~ ")") ~>> token ~~> ast.Foreach
+    group(keyword("FOREACH") ~~ "(" ~~ Identifier ~~ keyword("IN") ~~ Expression ~~ "|" ~~ oneOrMore(Updates, separator = WS) ~~ ")") ~>> token ~~> ast.Foreach
   }
 
   private def With : Rule1[ast.With] = rule("WITH") (
