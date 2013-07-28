@@ -31,7 +31,7 @@ trait ReturnClause extends Base with Expressions {
   } | "*" ^^^ AllIdentifiers()
 
   def returnItem: Parser[ReturnItem] = trap(exprOrPred) ^^ {
-    case (expression, name) => ReturnItem(expression, name.replace("`", ""))
+    case (expression, name) => ReturnItem(expression, name)
   }
 
   def returns =

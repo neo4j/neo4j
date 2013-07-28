@@ -2,6 +2,8 @@
 ---------
 o Fixes #844 - Label predicate do not work on optional nodes that are null
 o Introduced a new experimental PEG parser (Parboiled)
+o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the
+                   user entered them.
 
 2.0.0-M03
 ---------
