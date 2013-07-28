@@ -30,7 +30,10 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
 
   def rewrite(f: (Expression) => Expression) = f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = anInner.evaluateType(NumberType(), symbols)
+  def calculateType(symbols: SymbolTable): CypherType = {
+    percentile.evaluateType(NumberType(), symbols)
+    anInner.evaluateType(NumberType(), symbols)
+  }
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -40,5 +43,8 @@ case class PercentileDisc(anInner: Expression, percentile: Expression) extends A
 
   def rewrite(f: (Expression) => Expression) = f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = anInner.evaluateType(NumberType(), symbols)
+  def calculateType(symbols: SymbolTable): CypherType = {
+    percentile.evaluateType(NumberType(), symbols)
+    anInner.evaluateType(NumberType(), symbols)
+  }
 }

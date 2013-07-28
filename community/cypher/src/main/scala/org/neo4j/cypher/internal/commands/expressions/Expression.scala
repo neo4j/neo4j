@@ -59,7 +59,11 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
     evaluateType(AnyType(), symbols)
   }
 
-  override def toString = getClass.getSimpleName
+  override def toString = this match {
+    case p: Product => scala.runtime.ScalaRunTime._toString(p)
+    case _          => getClass.getSimpleName
+  }
+
 
   def isDeterministic = ! exists {
     case RandFunction() => true
