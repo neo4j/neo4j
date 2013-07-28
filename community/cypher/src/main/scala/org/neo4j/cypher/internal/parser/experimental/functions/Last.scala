@@ -34,7 +34,7 @@ case object Last extends Function {
     }
   }
 
-  private def iteratedTypes(expression: ast.Expression) : SemanticState => Set[CypherType] = {
+  private def iteratedTypes(expression: ast.Expression) : SemanticState => TypeSet = {
     expression.types(_).flatMap {
       case t if t.isCollection => Some(t.iteratedType)
       case _ => None

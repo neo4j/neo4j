@@ -22,8 +22,34 @@ package org.neo4j.cypher.internal.symbols
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
+import scala.collection.immutable.SortedSet
 
-class MergeableCypherTypeSetTest extends Assertions {
+class TypeSetTest extends Assertions {
+
+  implicit def orderingOfCypherType[T <: CypherType] : Ordering[T] = Ordering.by(_.toString)
+
+  @Test
+  def shouldFormatNoType() {
+    assertEquals("", TypeSet().formattedString)
+  }
+
+  @Test
+  def shouldFormatSingleType() {
+    assertEquals("Scalar", SortedSet(ScalarType()).formattedString)
+    assertEquals("Node", SortedSet(NodeType()).formattedString)
+  }
+
+  @Test
+  def shouldFormatTwoTypes() {
+    assertEquals("Node or Scalar", SortedSet(ScalarType(), NodeType()).formattedString)
+    assertEquals("Node or Relationship", SortedSet(RelationshipType(), NodeType()).formattedString)
+  }
+
+  @Test
+  def shouldFormatThreeTypes() {
+	  assertEquals("Node, Relationship or Scalar", SortedSet(RelationshipType(), ScalarType(), NodeType()).formattedString)
+	  assertEquals("Integer, Node or Relationship", SortedSet(RelationshipType(), IntegerType(), NodeType()).formattedString)
+  }
 
   @Test
   def shouldInferTypeSetsUsingCovariantMergeDown() {
@@ -42,15 +68,15 @@ class MergeableCypherTypeSetTest extends Assertions {
   @Test
   def shouldMergeDownCollectionIterable() {
     assertEquals(Set(NumberType(), CollectionType(ScalarType())),
-        Set(IntegerType(), CollectionType(StringType())) mergeDown Set(NumberType(), CollectionType(IntegerType())))
+      Set(IntegerType(), CollectionType(StringType())) mergeDown Set(NumberType(), CollectionType(IntegerType())))
   }
 
   @Test
   def shouldMergeUpCollectionIterable() {
-	assertEquals(Set(IntegerType()),
-        Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
+    assertEquals(Set(IntegerType()),
+      Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
     assertEquals(Set(IntegerType(), CollectionType(StringType())),
-        Set(IntegerType(), StringType(), CollectionType(ScalarType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
+      Set(IntegerType(), StringType(), CollectionType(ScalarType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
   }
 
   @Test
