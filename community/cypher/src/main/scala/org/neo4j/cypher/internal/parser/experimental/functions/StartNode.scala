@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes.aggregation
+package org.neo4j.cypher.internal.parser.experimental.functions
 
-import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.parser.experimental._
+import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
-trait NumericExpressionOnly {
-  def name: String
+case object StartNode extends Function {
+  def name = "STARTNODE"
 
-  def value: Expression
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
 
-  def actOnNumber[U](obj: Any, f: Number => U) {
-    obj match {
-      case null           =>
-      case number: Number => f(number)
-      case _              =>
-        throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))
+    super.semanticCheck(ctx, invocation) then
+      checkArgs(invocation, 1) ifOkThen {
+      invocation.arguments(0).limitType(RelationshipType()) then
+        invocation.limitType(NodeType())
     }
+  }
+
+  def toCommand(invocation: ast.FunctionInvocation) = {
+    commandexpressions.RelationshipEndPoints(invocation.arguments(0).toCommand, start = true)
   }
 }

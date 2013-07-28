@@ -102,6 +102,7 @@ trait Expressions extends Parser
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
     | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterFunction
     | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~~ ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~ ")") ~>> token ~~> ast.ExtractFunction
+    | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.Reduce
     | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate
@@ -118,10 +119,12 @@ trait Expressions extends Parser
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
   )
 
-  private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] = {
-    Identifier ~~ keyword("IN") ~~ Expression ~~
-    (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))
-  }
+  private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
+    IdInColl ~~ (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))
+
+
+  private def IdInColl: Rule2[ast.Identifier, ast.Expression] =
+    Identifier ~~ keyword("IN") ~~ Expression
 
   private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule {
     group(Identifier ~~ "(" ~~

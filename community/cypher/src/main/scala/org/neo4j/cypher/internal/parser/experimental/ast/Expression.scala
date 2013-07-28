@@ -340,3 +340,21 @@ case class SingleIterablePredicate(identifier: Identifier, expression: Expressio
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
       commands.SingleInCollection(command, identifier.name, inner)
 }
+
+case class Reduce(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression, token: ContextToken) extends Expression {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    init.semanticCheck(ctx) then
+      collection.semanticCheck(ctx) then
+      collection.limitType(CollectionType(AnyType())) then
+      withScopedState {
+        val indexType: TypeGenerator = collection.types(_).map(_.iteratedType)
+        val accType: TypeGenerator = init.types
+        id.declare(indexType) then
+          accumulator.declare(accType) then
+          expression.semanticCheck(SemanticContext.Simple)
+      }
+
+  def toCommand: CommandExpression =
+    commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)
+}
+
