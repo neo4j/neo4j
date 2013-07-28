@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.pipes.EmptyResultPipe
 
+/**
+ * This builder should make sure that the execution result is consumed, even if the user didn't ask for any results
+ */
 class EmptyResultBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val resultPipe = new EmptyResultPipe(plan.pipe)
@@ -32,18 +35,15 @@ class EmptyResultBuilder extends LegacyPlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
 
-    val notYetExtracted = q.extracted
-    val noSortingLeftToDo = !q.sort.exists(_.unsolved)
-    val noSkipOrLimitLeftToDo = !q.slice.exists(_.unsolved)
-    val notYetHandledReturnItems = q.returns.exists(_.unsolved)
+    val noSortingLeftToDo = q.sort.isEmpty
+    val noSkipOrLimitLeftToDo = q.slice.isEmpty
     val nothingToReturnButPipeNotEmpty = q.returns.size == 0 && plan.pipe.symbols.size > 0
     val isLastPipe = q.tail.isEmpty
 
-    notYetExtracted &&
       noSortingLeftToDo &&
       noSkipOrLimitLeftToDo &&
       isLastPipe &&
-      (notYetHandledReturnItems || nothingToReturnButPipeNotEmpty)
+      nothingToReturnButPipeNotEmpty
   }
 
   def priority = PlanBuilder.ColumnFilter

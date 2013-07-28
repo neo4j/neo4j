@@ -21,7 +21,7 @@ include::nested-results.asciidoc[]
 
 include::retrieve-query-metadata.asciidoc[]
 
-include::profile-a-query.asciidoc[]
+//include::profile-a-query.asciidoc[]
 
 include::server-errors.asciidoc[]
 

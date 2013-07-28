@@ -2807,4 +2807,12 @@ RETURN x0.name?
     // then
     assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, relationshipsCreated = 1)
   }
+
+  @Test
+  def columns_should_not_change_when_using_order_by_and_distinct() {
+    val result = parseAndExecute("start n=node(*) return distinct n order by id(n)")
+
+    assert(result.toList === List(Map("n" -> refNode)))
+  }
+
 }
