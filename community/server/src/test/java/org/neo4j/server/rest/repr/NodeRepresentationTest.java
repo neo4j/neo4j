@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
-
-import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
+
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
+import static org.neo4j.test.mocking.GraphMock.node;
+import static org.neo4j.test.mocking.Properties.properties;
 
 public class NodeRepresentationTest
 {
@@ -119,15 +118,7 @@ public class NodeRepresentationTest
 
     private NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( node( id ) );
-    }
-
-    private Node node( long id )
-    {
-        Node node = mock( Node.class );
-        when( node.getId() ).thenReturn( id );
-        when( node.getPropertyKeys() ).thenReturn( Collections.<String>emptySet() );
-        return node;
+        return new NodeRepresentation( node( id, properties() ) );
     }
 
     public static void verifySerialisation( Map<String, Object> noderep )

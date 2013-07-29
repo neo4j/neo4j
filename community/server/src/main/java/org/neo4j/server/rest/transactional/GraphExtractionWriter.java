@@ -28,6 +28,7 @@ import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
@@ -147,6 +148,18 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 relationships.add( relationship );
                 nodes.add( relationship.getStartNode() );
                 nodes.add( relationship.getEndNode() );
+            }
+            if ( item instanceof Path )
+            {
+                Path path = (Path) item;
+                for ( Node node : path.nodes() )
+                {
+                    nodes.add( node );
+                }
+                for ( Relationship relationship : path.relationships() )
+                {
+                    relationships.add( relationship );
+                }
             }
             else if ( item instanceof Map<?, ?> )
             {

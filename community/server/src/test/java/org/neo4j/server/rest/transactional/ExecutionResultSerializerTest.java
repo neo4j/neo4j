@@ -33,21 +33,15 @@ import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.test.mocking.GraphMock;
 
 import static java.util.Arrays.asList;
 
@@ -59,6 +53,11 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.mocking.GraphMock.node;
+import static org.neo4j.test.mocking.GraphMock.path;
+import static org.neo4j.test.mocking.Link.link;
+import static org.neo4j.test.mocking.Properties.properties;
 
 public class ExecutionResultSerializerTest
 {
@@ -282,12 +281,12 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
 
         ExecutionResult executionResult = mockExecutionResult( map(
-                "node", mockNode( map(
-                "a", 12,
-                "b", true,
-                "c", new int[]{1, 0, 1, 2},
-                "d", new byte[]{1, 0, 1, 2},
-                "e", new String[]{"a", "b", "ääö"} ) ) ) );
+                "node", node( 1, properties(
+                property( "a", 12 ),
+                property( "b", true ),
+                property( "c", new int[]{1, 0, 1, 2} ),
+                property( "d", new byte[]{1, 0, 1, 2} ),
+                property( "e", new String[]{"a", "b", "ääö"} ) ) ) ) );
 
         // when
         serializer.statementResult( executionResult );
@@ -404,22 +403,13 @@ public class ExecutionResultSerializerTest
     {
         // given
         Node[] node = {
-                node( "node0", "Node" ),
-                node( "node1" ),
-                node( "node2", "This", "That" ),
-                node( "node3", "Other" )};
-        for ( int id = 0; id < node.length; id++ )
-        {
-            when( node[id].getId() ).thenReturn( (long) id );
-        }
-
+                node( 0, properties( property( "name", "node0" ) ), "Node" ),
+                node( 1, properties( property( "name", "node1" ) ) ),
+                node( 2, properties( property( "name", "node2" ) ), "This", "That" ),
+                node( 3, properties( property( "name", "node3" ) ), "Other" )};
         Relationship[] rel = {
-                relationship( "rel0", node[0], "KNOWS", node[1] ),
-                relationship( "rel1", node[2], "LOVES", node[3] )};
-        for ( int id = 0; id < rel.length; id++ )
-        {
-            when( rel[id].getId() ).thenReturn( (long) id );
-        }
+                GraphMock.relationship( 0, node[0], "KNOWS", node[1], property( "name", "rel0" ) ),
+                GraphMock.relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
@@ -458,41 +448,6 @@ public class ExecutionResultSerializerTest
         assertTrue( "result should contain node3 after row1", n3 > _1 );
         assertTrue( "result should contain rel0 after node0 and node1", r0 > n0 && r0 > n1 );
         assertTrue( "result should contain rel1 after node2 and node3", r1 > n2 && r1 > n3 );
-    }
-
-    @Test
-    public void shouldBeAbleToCustomizeGraphFormat() throws Exception
-    {
-        // given
-        // given
-        Node[] node = {
-                node( "node0", "Node" ),
-                node( "node1" ),
-                node( "node2", "This", "That" ),
-                node( "node3", "Other" )};
-        for ( int id = 0; id < node.length; id++ )
-        {
-            when( node[id].getId() ).thenReturn( (long) id );
-        }
-
-        Relationship[] rel = {
-                relationship( "rel0", node[0], "KNOWS", node[1] ),
-                relationship( "rel1", node[2], "LOVES", node[3] )};
-        for ( int id = 0; id < rel.length; id++ )
-        {
-            when( rel[id].getId() ).thenReturn( (long) id );
-        }
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, StringLogger.DEV_NULL );
-
-        // when
-        serializer.statementResult( mockExecutionResult(
-                map( "node", node[0], "rel", rel[0] ),
-                map( "node", node[2], "rel", rel[1] ) ), ResultDataContent.row, ResultDataContent.graph );
-        serializer.finish();
-
-        // then
     }
 
     @Test
@@ -553,70 +508,14 @@ public class ExecutionResultSerializerTest
         return executionResult;
     }
 
-    private static Node node( String name, String... labels )
+    private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,
+                                  Map<String,Object> endNodeProperties )
     {
-        return mockNode( map( "name", name ), labels );
-    }
-
-    private static Relationship relationship( String name, Node source, String type, Node target )
-    {
-        Relationship relationship = mockRelationship( type, map( "name", name ) );
-        when( relationship.getStartNode() ).thenReturn( source );
-        when( relationship.getEndNode() ).thenReturn( target );
-        return relationship;
-    }
-
-    private static Node mockNode( Map<String, Object> properties, String... labels )
-    {
-        Node node = mockPropertiesContainer( Node.class, properties );
-        when( node.getLabels() ).thenReturn( labels( labels ) );
-        return node;
-    }
-
-    private static ResourceIterable<Label> labels( String[] names )
-    {
-        Label[] labels = new Label[names.length];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            labels[i] = DynamicLabel.label( names[i] );
-        }
-        return Iterables.asResourceIterable( asList( labels ) );
-    }
-
-    private static <T extends PropertyContainer> T mockPropertiesContainer( Class<T> containerType, Map<String,
-            Object> properties )
-    {
-        T propertyContainer = mock( containerType );
-        when( propertyContainer.getPropertyKeys() ).thenReturn( properties.keySet() );
-        for ( Map.Entry<String, Object> entry : properties.entrySet() )
-        {
-            when( propertyContainer.getProperty( entry.getKey() ) ).thenReturn( entry.getValue() );
-        }
-        return propertyContainer;
-    }
-
-    private static Relationship mockRelationship( Map<String, Object> properties )
-    {
-        return mockRelationship( "RELATED", properties );
-    }
-
-    private static Relationship mockRelationship( String type, Map<String, Object> properties )
-    {
-        Relationship relationship = mockPropertiesContainer( Relationship.class, properties );
-        when( relationship.getType() ).thenReturn( DynamicRelationshipType.withName( type ) );
-        return relationship;
-    }
-
-    private static Path mockPath( Map<String, Object> startNodeProperties, Map<String,
-            Object> relationshipProperties, Map<String,
-            Object> endNodeProperties )
-    {
-        Path p = mock( Path.class );
-        Node startNode = mockNode( startNodeProperties );
-        Relationship relationship = mockRelationship( relationshipProperties );
-        Node endNode = mockNode( endNodeProperties );
-        when( p.iterator() ).thenReturn( IteratorUtil.<PropertyContainer>iterator( startNode, relationship, endNode ) );
-        return p;
+        Node startNode = node( 1, properties( startNodeProperties ) );
+        Node endNode = node( 2, properties( endNodeProperties ) );
+        Relationship relationship = GraphMock.relationship( 1, properties( relationshipProperties ),
+                                                            startNode, "RELATED", endNode );
+        return path( startNode, link( relationship, endNode ) );
     }
 
     private String replaceStackTrace( String json, String matchableStackTrace )

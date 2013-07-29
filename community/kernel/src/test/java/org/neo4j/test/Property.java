@@ -46,6 +46,16 @@ public final class Property
         this.value = value;
     }
 
+    public String key()
+    {
+        return key;
+    }
+
+    public Object value()
+    {
+        return value;
+    }
+
     @Override
     public String toString()
     {

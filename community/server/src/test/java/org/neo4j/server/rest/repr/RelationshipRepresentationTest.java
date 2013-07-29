@@ -19,21 +19,19 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.Map;
+
+import org.junit.Test;
+
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
-
-import java.util.Collections;
-import java.util.Map;
-
-import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
+import static org.neo4j.test.mocking.GraphMock.node;
+import static org.neo4j.test.mocking.GraphMock.relationship;
+import static org.neo4j.test.mocking.Properties.properties;
 
 public class RelationshipRepresentationTest
 {
@@ -83,28 +81,8 @@ public class RelationshipRepresentationTest
 
     private RelationshipRepresentation relrep( long id )
     {
-        return new RelationshipRepresentation( relationship( id ) );
-    }
-
-    static Relationship relationship( long id )
-    {
-        Node startNode = mock( Node.class );
-        when( startNode.getId() ).thenReturn( 0L );
-
-        Node endNode = mock( Node.class );
-        when( endNode.getId() ).thenReturn( 1L );
-
-        RelationshipType type = mock( RelationshipType.class );
-        when( type.name() ).thenReturn( "LOVES" );
-
-        Relationship relationship = mock( Relationship.class );
-        when( relationship.getId() ).thenReturn( id );
-        when( relationship.getPropertyKeys() ).thenReturn( Collections.<String>emptySet() );
-        when( relationship.getStartNode() ).thenReturn( startNode );
-        when( relationship.getEndNode() ).thenReturn( endNode );
-        when( relationship.getType() ).thenReturn( type );
-
-        return relationship;
+        return new RelationshipRepresentation(
+                relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ) );
     }
 
     public static void verifySerialisation( Map<String, Object> relrep )
