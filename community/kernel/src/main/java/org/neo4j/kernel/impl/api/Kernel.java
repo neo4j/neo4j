@@ -24,6 +24,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.operations.KeyNameLookupProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -135,6 +136,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private StatementOperationParts statementOperations;
     private StatementOperationParts readOnlyStatementOperations;
 
+    private KeyNameLookupProvider keyNameLookupProvider;
+
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                    PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
@@ -189,19 +192,35 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void bootstrapAfterRecovery()
     {
-            StatementOperationParts parts = newTransaction().newStatementOperations();
-            this.statementOperations = parts;
-            
-            ReadOnlyStatementOperations readOnlyParts = new ReadOnlyStatementOperations( parts.schemaStateOperations() );
-            this.readOnlyStatementOperations = parts.override(
-                    parts.keyReadOperations(),
-                    readOnlyParts,
-                    parts.entityReadOperations(),
-                    readOnlyParts,
-                    parts.schemaReadOperations(),
-                    readOnlyParts,
-                    readOnlyParts,
-                    parts.lifecycleOperations() );
+        StatementOperationParts parts = newTransaction().newStatementOperations();
+        this.statementOperations = parts;
+
+        ReadOnlyStatementOperations readOnlyParts =
+                new ReadOnlyStatementOperations( parts.schemaStateOperations() );
+        this.readOnlyStatementOperations = parts.override(
+                parts.keyReadOperations(),
+                readOnlyParts,
+                parts.entityReadOperations(),
+                readOnlyParts,
+                parts.schemaReadOperations(),
+                readOnlyParts,
+                readOnlyParts,
+                parts.lifecycleOperations() );
+
+        keyNameLookupProvider = new KernelKeyNameLookupProvider( new OldTxSafeStatementExecutor( transactionManager )
+        {
+            @Override
+            public String toString()
+            {
+                return "read-only statement executor used for key lookup";
+            }
+
+            @Override
+            protected StatementOperationParts statementOperations()
+            {
+                return readOnlyStatementOperations();
+            }
+        } );
     }
 
     @Override
@@ -285,5 +304,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementOperationParts readOnlyStatementOperations()
     {
         return readOnlyStatementOperations;
+    }
+
+    @Override
+    public KeyNameLookupProvider keyNameLookupProvider()
+    {
+        return keyNameLookupProvider;
     }
 }
