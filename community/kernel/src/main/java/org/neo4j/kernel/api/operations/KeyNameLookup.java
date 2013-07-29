@@ -22,7 +22,12 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 
-public class KeyNameLookup
+/**
+ * Instances allow looking up ids back to their names
+ *
+ * This class MUST never change the database, it is expected to be read only.
+ */
+public final class KeyNameLookup
 {
     private final KeyReadOperations keyReadOperations;
     private final StatementState state;
