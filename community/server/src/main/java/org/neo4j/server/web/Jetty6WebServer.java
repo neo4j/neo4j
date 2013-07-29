@@ -33,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -52,8 +52,8 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionManager;
 import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
-import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
+
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
@@ -61,8 +61,6 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
-
-import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static java.lang.String.format;
 
@@ -467,21 +465,21 @@ public class Jetty6WebServer implements WebServer
         log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
         try
         {
-            final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
-            staticContext.setServer( getJetty() );
-            staticContext.setContextPath( mountPoint );
-            URL resourceLoc = getClass().getClassLoader()
-                .getResource( contentLocation );
+            URL resourceLoc = getClass().getClassLoader().getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 log.debug( "Found [%s]", resourceLoc );
-                URL url = resourceLoc.toURI()
-                    .toURL();
-                final Resource resource = Resource.newResource( url );
-                staticContext.setBaseResource( resource );
-                log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
+                String location = resourceLoc.toExternalForm();
+                if ( !location.endsWith( "/" ) )
+                {
+                    location += "/"; // We want the *content* of the directory, not the directory itself.
+                }
+                System.out.println( "resourceLoc: " + location );
+                WebAppContext staticContext = new WebAppContext( jetty, location, mountPoint );
+                staticContext.setSessionHandler( new SessionHandler( sm ) );
+                log.debug( "Mounting static content from [%s] at [%s]", resourceLoc, mountPoint );
 
-                addFiltersTo(staticContext);
+                addFiltersTo( staticContext );
 
                 jetty.addHandler( staticContext );
             }
