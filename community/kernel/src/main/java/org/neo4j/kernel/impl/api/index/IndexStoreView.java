@@ -31,7 +31,7 @@ public interface IndexStoreView
     /**
      * Get properties of a node, if those properties exist.
      */
-    Iterator<Pair<Integer, Object>> getNodeProperties( long nodeId, Iterator<Long> propertyKeys );
+    Iterator<Pair<Integer, Object>> nodeProperties( long nodeId, Iterator<Long> propertyKeys );
 
     /**
      * Retrieve all nodes in the database with a given label and property, as pairs of node id and property value.

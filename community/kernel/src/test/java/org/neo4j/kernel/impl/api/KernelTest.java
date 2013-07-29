@@ -33,10 +33,10 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -96,7 +96,7 @@ public class KernelTest
     }
 
     @Test
-    public void shouldLookupNamesUsingKeyNameLookupProvider() throws SchemaKernelException, TransactionFailureException
+    public void shouldLookupNamesUsingKeyNameLookupProvider() throws SchemaKernelException, TransactionalException
     {
         // GIVEN
         final String labelName = "Label";
@@ -127,15 +127,16 @@ public class KernelTest
         }
 
         // WHEN
-        kernel.keyNameLookupProvider().withKeyNameLookup( new Function<KeyNameLookup, Void>() {
+        kernel.keyNameLookupProvider().withTokenNameLookup( new Function<TokenNameLookup, Void>()
+        {
 
             @Override
-            public Void apply( KeyNameLookup keyNameLookup )
+            public Void apply( TokenNameLookup tokenNameLookup )
             {
                 // THEN
-                assertNotNull( keyNameLookup );
-                assertEquals( labelName, keyNameLookup.getLabelName( labelId.get() ) );
-                assertEquals( propertyKeyName, keyNameLookup.getPropertyKeyName( propertyKeyId.get() ) );
+                assertNotNull( tokenNameLookup );
+                assertEquals( labelName, tokenNameLookup.labelGetName( labelId.get() ) );
+                assertEquals( propertyKeyName, tokenNameLookup.propertyKeyGetName( propertyKeyId.get() ) );
                 return null;
             }
         } );

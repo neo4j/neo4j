@@ -43,7 +43,8 @@ public class PopulatingIndexProxy implements IndexProxy
     public PopulatingIndexProxy( JobScheduler scheduler,
                                  IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                                  IndexPopulator writer,
-                                 FlippableIndexProxy flipper, IndexStoreView storeView,
+                                 FlippableIndexProxy flipper,
+                                 IndexStoreView storeView, String indexUserDescription,
                                  UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.scheduler  = scheduler;
@@ -51,7 +52,8 @@ public class PopulatingIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
 
         this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                                            writer, flipper, storeView, updateableSchemaState, logging );
+                                            writer, flipper, storeView, indexUserDescription,
+                                            updateableSchemaState, logging );
     }
 
     @Override

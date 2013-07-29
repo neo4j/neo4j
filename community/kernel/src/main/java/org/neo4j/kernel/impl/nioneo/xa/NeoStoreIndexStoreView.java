@@ -61,7 +61,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Iterator<Pair<Integer, Object>> getNodeProperties( final long nodeId, final Iterator<Long>
+    public Iterator<Pair<Integer, Object>> nodeProperties( final long nodeId, final Iterator<Long>
             propertyKeysIterator )
     {
         long firstPropertyId = nodeStore.forceGetRecord( nodeId ).getNextProp();
@@ -107,7 +107,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         // Create a processor that for each accepted node (containing the desired label) looks through its properties,
         // getting the desired one (if any) and feeds to the index manipulator.
         LabelsReference labelsReference = new LabelsReference();
-        final RecordStore.Processor<FAILURE> processor = new NodeIndexingProcessor<FAILURE>( propertyStore,
+        final RecordStore.Processor<FAILURE> processor = new NodeIndexingProcessor<>( propertyStore,
                 propertyKeyPredicate,
                 labelsReference, visitor );
 
@@ -117,7 +117,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 labelsReference );
 
         // Run the processor, be sure that the predicate filters out removed nodes by checking in-use
-        return new ProcessStoreScan<FAILURE>( processor, predicate );
+        return new ProcessStoreScan<>( processor, predicate );
     }
 
     /**

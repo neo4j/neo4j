@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -57,6 +58,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,6 +72,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -225,7 +228,7 @@ public class IndexPopulationJobTest
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 StringLogger.DEV_NULL );
 
-        OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<Void>(
+        OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<>(
                 "Population job test runner", null );
         Future<Void> runFuture = populationJobRunner.executeDontWait( new WorkerCommand<Void, Void>()
         {
@@ -267,8 +270,8 @@ public class IndexPopulationJobTest
 
         // Then
         logger.assertExactly(
-                info( "Index population started for label id 0 on property id 0" ),
-                info( "Index population completed for label id 0 on property id 0, index is now online." )
+                info( "Index population started: [:FIRST(name)]" ),
+                info( "Index population completed. Index is now online: [:FIRST(name)]" )
         );
     }
 
@@ -292,7 +295,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // Then
-        logger.assertAtLeastOnce( error( "Failed to populate index.", failure ) );
+        logger.assertAtLeastOnce( error( "Failed to populate index: [:FIRST(name)]", failure ) );
     }
     
     @Test
@@ -336,7 +339,7 @@ public class IndexPopulationJobTest
 
     private class NodeChangingWriter extends IndexPopulator.Adapter
     {
-        private final Set<Pair<Long, Object>> added = new HashSet<Pair<Long, Object>>();
+        private final Set<Pair<Long, Object>> added = new HashSet<>();
         private IndexPopulationJob job;
         private final long changedNode;
         private final Object newValue;
@@ -389,8 +392,8 @@ public class IndexPopulationJobTest
 
     private class NodeDeletingWriter extends IndexPopulator.Adapter
     {
-        private final Map<Long, Object> added = new HashMap<Long, Object>();
-        private final Map<Long, Object> removed = new HashMap<Long, Object>();
+        private final Map<Long, Object> added = new HashMap<>();
+        private final Map<Long, Object> removed = new HashMap<>();
         private final long nodeToDelete;
         private IndexPopulationJob job;
         private final long propertyKeyId;
@@ -440,13 +443,20 @@ public class IndexPopulationJobTest
     }
 
     private ImpermanentGraphDatabase db;
-    private final Label FIRST = DynamicLabel.label( "FIRST" ), SECOND = DynamicLabel.label( "SECOND" );
+
+    private final Label FIRST = DynamicLabel.label( "FIRST" );
+    private final Label SECOND = DynamicLabel.label( "SECOND" );
+
     private final String name = "name", age = "age";
     private ThreadToStatementContextBridge ctxProvider;
     private IndexPopulator populator;
     private KernelSchemaStateStore stateHolder;
 
     private long firstLabelId;
+    private long secondLabelId;
+
+    private long namePropertyKeyId;
+    private long agePropertyKeyId;
 
     @Before
     public void before() throws Exception
@@ -460,6 +470,11 @@ public class IndexPopulationJobTest
         StatementOperations ctxForWriting = ctxProvider.getCtxForWriting().asStatementOperations();
         StatementState state = ctxProvider.statementForReading();
         firstLabelId = ctxForWriting.labelGetOrCreateForName( state, FIRST.name() );
+        secondLabelId = ctxForWriting.labelGetOrCreateForName( state, SECOND.name() );
+
+        namePropertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( state, name );
+        agePropertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( state, age );
+
         ctxForWriting.labelGetOrCreateForName( state, SECOND.name() );
         ctxForWriting.close( state );
         tx.success();
@@ -504,8 +519,9 @@ public class IndexPopulationJobTest
 
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return
-                new IndexPopulationJob( descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,
-                        stateHolder, new SingleLoggingService( logger ) );
+            new IndexPopulationJob(
+                descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,
+                format( ":%s(%s)", label.name(), propertyKey ), stateHolder, new SingleLoggingService( logger ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

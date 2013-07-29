@@ -17,27 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.operations.TokenNameLookup;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
-import static java.lang.String.format;
-
-public class NoSuchIndexException extends SchemaKernelException
+public interface TokenNameLookup
 {
-    private final IndexDescriptor descriptor;
-    private final static String message = "No such INDEX ON %s.";
+    String labelGetName( long labelId );
 
-    public NoSuchIndexException( IndexDescriptor descriptor )
-    {
-        super( format( message, descriptor ) );
-        this.descriptor = descriptor;
-    }
-
-    @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        return format( message, descriptor.userDescription( tokenNameLookup ) );
-    }
+    String propertyKeyGetName( long propertyKeyId );
 }

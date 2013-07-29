@@ -33,11 +33,13 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.LogMode;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
 
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
@@ -53,9 +55,10 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class IndexPopulationJob implements Runnable
 {
     private final IndexStoreView storeView;
+    private final String indexUserDescription;
 
     // NOTE: unbounded queue expected here
-    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
+    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
 
     private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
@@ -70,8 +73,8 @@ public class IndexPopulationJob implements Runnable
 
     public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                                IndexPopulator populator, FlippableIndexProxy flipper,
-                               IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
-                               Logging logging )
+                               IndexStoreView storeView, String indexUserDescription,
+                               UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
@@ -79,18 +82,20 @@ public class IndexPopulationJob implements Runnable
         this.flipper = flipper;
         this.storeView = storeView;
         this.updateableSchemaState = updateableSchemaState;
+        this.indexUserDescription = indexUserDescription;
         this.log = logging.getMessagesLog( getClass() );
     }
     
     @Override
     public void run()
     {
+        String oldThreadName = currentThread().getName();
+        currentThread().setName( format( "Index populator on %s [runs on: %s]", indexUserDescription, oldThreadName ) );
         boolean success = false;
         Throwable failureCause = null;
         try
         {
-            log.info( format( "Index population started for label id %d on property id %d",
-                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            logMessage( LogMode.INFO, "Index population started:" );
             log.flush();
             populator.create();
 
@@ -120,12 +125,12 @@ public class IndexPopulationJob implements Runnable
                 }
             } );
             success = true;
-            log.info( format( "Index population completed for label id %d on property id %d, index is now online.",
-                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            logMessage( LogMode.INFO, "Index population completed. Index is now online:" );
             log.flush();
         }
         catch ( Throwable t )
         {
+            t.printStackTrace(System.err);
             if ( t instanceof IndexPopulationFailedKernelException )
             {
                 Throwable cause = t.getCause();
@@ -139,7 +144,7 @@ public class IndexPopulationJob implements Runnable
             // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
-                log.error( "Failed to populate index.", t );
+                logMessage( LogMode.ERROR, "Failed to populate index:", t );
                 log.flush();
             }
             
@@ -168,12 +173,13 @@ public class IndexPopulationJob implements Runnable
             }
             catch ( Throwable e )
             {
-                log.warn( "Unable to close failed populator", e );
+                logMessage( LogMode.WARN, "Unable to close failed populator for index:", e );
                 log.flush();
             }
             finally
             {
                 doneSignal.countDown();
+                currentThread().setName( oldThreadName );
             }
         }
     }
@@ -201,7 +207,8 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
-    private void populateFromQueueIfAvailable( final long highestIndexedNodeId ) throws IndexEntryConflictException, IOException
+    private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
+            throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {
@@ -243,11 +250,44 @@ public class IndexPopulationJob implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[populator:" + populator + ",descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[populator:" + populator + ", descriptor:" + descriptor + "]";
     }
 
     public void awaitCompletion() throws InterruptedException
     {
         doneSignal.await();
+    }
+
+    private void logMessage( LogMode info, String message )
+    {
+        try
+        {
+            info.log( log, withAppendedUserDescription( message ) );
+        }
+        catch ( RuntimeException e )
+        {
+            // ignore if just failing to log
+            System.err.println( format( "Error during logging %s", message) );
+            e.printStackTrace( System.err );
+        }
+    }
+
+    private void logMessage( LogMode info, String message, Throwable cause )
+    {
+        try
+        {
+            info.log( log, withAppendedUserDescription( message ), cause );
+        }
+        catch ( RuntimeException e )
+        {
+            // ignore if just failing to log
+            System.err.println( format( "Error during logging %s (cause: %s)", message, cause ) );
+            e.printStackTrace( System.err );
+        }
+    }
+
+    private String withAppendedUserDescription( final String message )
+    {
+        return format( "%s [%s]", message, indexUserDescription );
     }
 }
