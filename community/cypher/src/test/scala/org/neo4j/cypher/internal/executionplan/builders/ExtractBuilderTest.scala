@@ -49,7 +49,7 @@ import org.neo4j.cypher.internal.commands.expressions.AbsFunction
 import org.neo4j.cypher.internal.commands.expressions.RandFunction
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.symbols.NumberType
+import org.neo4j.cypher.internal.symbols.{DoubleType, NumberType}
 
 class ExtractBuilderTest extends BuilderTest {
 
@@ -93,7 +93,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
   }
 
   @Test
@@ -115,7 +115,7 @@ class ExtractBuilderTest extends BuilderTest {
   }
 
   @Test
-  def should_not_cache_calls_to_rand() {
+  def should_materialize_non_deterministic_expressions() {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(
         Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
@@ -132,8 +132,43 @@ class ExtractBuilderTest extends BuilderTest {
 
     val returnItems = result.query.returns.toSet
     assertEquals( Set(
+      Solved(ReturnItem(CachedExpression("bar", DoubleType()), "bar")),
+      Solved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+    ), returnItems )
+  }
+
+  @Test
+  def should_not_cache_calls_to_rand() {
+    val q = PartiallySolvedQuery().
+      copy(returns = Seq(
+      Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
+      Unsolved(ReturnItem(AbsFunction(Literal(1)), "foo")))
+    )
+
+    val p = createPipe(nodes = Seq("s"))
+    val planInProgress = plan(p, q)
+    val expressions = Map("bar" -> AbsFunction(RandFunction()), "foo" -> AbsFunction(Literal(1)))
+    val result: ExecutionPlanInProgress = ExtractBuilder.extractIfNecessary(planInProgress, expressions)
+//    fail(result.query.toString)
+
+    val returnItems = result.query.returns.toSet
+
+    assertEquals(Set(
       Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
       Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
-    ), returnItems )
+    ), returnItems)
+
+
+    //    assertTrue("This query should be accepted", builder.canWorkWith(plan))
+    //
+    //    val result = builder(plan(p, q))
+    //
+    //    assertTrue("the builder did not mark the query as extracted", result.query.extracted)
+    //
+    //    val returnItems = result.query.returns.toSet
+    //    assertEquals( Set(
+    //      Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
+    //      Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+    //    ), returnItems )
   }
 }

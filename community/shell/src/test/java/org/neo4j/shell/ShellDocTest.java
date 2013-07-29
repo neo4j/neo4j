@@ -246,11 +246,11 @@ public class ShellDocTest
                 "return zionist.name;",
                 "Cypher",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
-                "match morpheus-[:KNOWS]-zionist " +
-                "return zionist.name;",
-                "ColumnFilter",
-                "profile the query by displaying more query execution information" );
+//        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
+//                "match morpheus-[:KNOWS]-zionist " +
+//                "return zionist.name;",
+//                "ColumnFilter",
+//                "profile the query by displaying more query execution information" );
         db.beginTx();
         doc.run();
         server.shutdown();
