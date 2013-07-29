@@ -19,52 +19,9 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-
-/**
- * Instances allow looking up ids back to their names
- *
- * This class MUST never change the database, it is expected to be read only.
- */
-public final class TokenNameLookup
+public interface TokenNameLookup
 {
-    private final KeyReadOperations keyReadOperations;
-    private final StatementState state;
+    String labelGetName( long labelId );
 
-    public TokenNameLookup( StatementState state, KeyReadOperations context )
-    {
-        this.state = state;
-        this.keyReadOperations = context;
-    }
-
-    /**
-     * Returns the label name for the given label id. In case of downstream failure, returns label[id].
-     */
-    public String labelGetName( long labelId )
-    {
-        try
-        {
-            return keyReadOperations.labelGetName( state, labelId );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return "[" + labelId + "]";
-        }
-    }
-
-    /**
-     * Returns the name of a property given its property key id. In case of downstream failure, returns property[id].
-     */
-    public String propertyKeyGetName( long propertyKeyId )
-    {
-        try
-        {
-            return keyReadOperations.propertyKeyGetName( state, propertyKeyId );
-        }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return "[" + propertyKeyId + "]";
-        }
-    }
+    String propertyKeyGetName( long propertyKeyId );
 }

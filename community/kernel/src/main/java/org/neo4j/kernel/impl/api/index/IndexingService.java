@@ -335,10 +335,12 @@ public class IndexingService extends LifecycleAdapter
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
-        IndexPopulator populator = getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
+        IndexPopulator populator =
+            getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
         PopulatingIndexProxy populatingIndex =
-                new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
-                                          populator, flipper, storeView, updateableSchemaState, logging );
+            new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
+                                      populator, flipper, storeView, tokenNameLookupProvider,
+                                      updateableSchemaState, logging );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode

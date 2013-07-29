@@ -26,13 +26,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
+import org.neo4j.kernel.impl.api.LogMode;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -53,6 +58,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class IndexPopulationJob implements Runnable
 {
     private final IndexStoreView storeView;
+    private final TokenNameLookupProvider tokenNameLookupProvider;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
@@ -70,14 +76,15 @@ public class IndexPopulationJob implements Runnable
 
     public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                                IndexPopulator populator, FlippableIndexProxy flipper,
-                               IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
-                               Logging logging )
+                               IndexStoreView storeView, TokenNameLookupProvider tokenNameLookupProvider,
+                               UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
+        this.tokenNameLookupProvider = tokenNameLookupProvider;
         this.updateableSchemaState = updateableSchemaState;
         this.log = logging.getMessagesLog( getClass() );
     }
@@ -89,8 +96,7 @@ public class IndexPopulationJob implements Runnable
         Throwable failureCause = null;
         try
         {
-            log.info( format( "Index population started for label id %d on property id %d",
-                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            LogMode.INFO.log( log, withAppendedUserDescription( "Index population started:" ) );
             log.flush();
             populator.create();
 
@@ -120,8 +126,7 @@ public class IndexPopulationJob implements Runnable
                 }
             } );
             success = true;
-            log.info( format( "Index population completed for label id %d on property id %d, index is now online.",
-                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            LogMode.INFO.log( log, withAppendedUserDescription( "Index population completed. Index is now online:" ) );
             log.flush();
         }
         catch ( Throwable t )
@@ -139,7 +144,8 @@ public class IndexPopulationJob implements Runnable
             // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
-                log.error( "Failed to populate index.", t );
+                LogMode.ERROR
+                       .log( log, withAppendedUserDescription( "Failed to populate index:" ), t );
                 log.flush();
             }
             
@@ -168,7 +174,8 @@ public class IndexPopulationJob implements Runnable
             }
             catch ( Throwable e )
             {
-                log.warn( "Unable to close failed populator", e );
+                LogMode.WARN
+                       .log( log, withAppendedUserDescription( "Unable to close failed populator for index:" ), e );
                 log.flush();
             }
             finally
@@ -243,11 +250,32 @@ public class IndexPopulationJob implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[populator:" + populator + ",descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[populator:" + populator + ", descriptor:" + descriptor + "]";
     }
 
     public void awaitCompletion() throws InterruptedException
     {
         doneSignal.await();
     }
+
+    private String withAppendedUserDescription( final String message )
+    {
+        try
+        {
+            return tokenNameLookupProvider.withTokenNameLookup( new Function<TokenNameLookup, String>()
+            {
+                @Override
+                public String apply( TokenNameLookup tokenNameLookup )
+                {
+                    return format( "%s [%s]", message, descriptor.userDescription( tokenNameLookup ) );
+                }
+            } );
+        }
+        catch ( TransactionFailureException e )
+        {
+            log.error( "Error resolving token names", e );
+            return format( "%s [%s]", message, descriptor.toString() );
+        }
+    }
+
 }

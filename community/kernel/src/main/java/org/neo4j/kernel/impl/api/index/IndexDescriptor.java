@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 
+import static java.lang.String.format;
+
 /**
  * Description of a single index as needed by the {@link IndexProxy} cake
  * <p/>
@@ -74,12 +76,12 @@ public class IndexDescriptor
     @Override
     public String toString()
     {
-        return String.format( ":label[%d](property[%d])", labelId, propertyKeyId );
+        return format( ":label[%d](property[%d])", labelId, propertyKeyId );
     }
 
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return String.format( ":%s(%s)",
+        return format( ":%s(%s)",
                 tokenNameLookup.labelGetName( labelId ), tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 }

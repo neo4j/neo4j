@@ -24,6 +24,7 @@ import org.neo4j.helpers.Function2;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -45,7 +46,7 @@ public class TokenNameLookupProviderImpl implements TokenNameLookupProvider
             @Override
             public T apply( StatementState state, StatementOperationParts logic )
             {
-                return work.apply( new TokenNameLookup( state, logic.keyReadOperations() ) );
+                return work.apply( new StatementTokenNameLookup( state, logic.keyReadOperations() ) );
             }
         } );
     }

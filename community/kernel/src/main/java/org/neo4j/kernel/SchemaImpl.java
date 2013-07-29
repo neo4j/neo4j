@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -398,7 +398,7 @@ public class SchemaImpl implements Schema
             }
             catch ( SchemaKernelException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage( new TokenNameLookup( state, context.keyReadOperations() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( state, context.keyReadOperations() ) ), e );
             }
             finally
             {
@@ -485,7 +485,7 @@ public class SchemaImpl implements Schema
             StatementState state = ctxProvider.statementForReading();
             try
             {
-                return e.getUserMessage( new TokenNameLookup( state, context.keyReadOperations() ) );
+                return e.getUserMessage( new StatementTokenNameLookup( state, context.keyReadOperations() ) );
             }
             finally
             {
