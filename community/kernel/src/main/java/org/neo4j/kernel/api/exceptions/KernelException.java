@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 /** A super class of checked exceptions coming from the {@link org.neo4j.kernel.api.KernelAPI Kernel API}. */
 public abstract class KernelException extends Exception
@@ -53,7 +53,7 @@ public abstract class KernelException extends Exception
         super( cause );
     }
 
-    public String getUserMessage( KeyNameLookup keyNameLookup )
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         return getMessage();
     }

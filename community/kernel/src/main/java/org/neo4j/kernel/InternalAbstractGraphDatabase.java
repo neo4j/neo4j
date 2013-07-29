@@ -77,6 +77,7 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -861,7 +862,8 @@ public abstract class InternalAbstractGraphDatabase
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState, nodeManager, dependencyResolver );
+                updateableSchemaState, nodeManager,
+                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ), dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 

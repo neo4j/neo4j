@@ -33,7 +33,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class KernelTest
 {
@@ -44,7 +44,7 @@ public class KernelTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         DoubleLatch latch = new DoubleLatch( 10 );
-        List<Worker> workers = new ArrayList<Worker>();
+        List<Worker> workers = new ArrayList<>();
         for ( int i = 0; i < latch.getNumberOfContestants(); i++ )
         {
             workers.add( new Worker( kernel, latch ) );

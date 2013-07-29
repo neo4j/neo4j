@@ -26,11 +26,11 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -48,7 +48,7 @@ public class ReadOnlyStatementOperations implements
         this.schemaStateDelegate = schemaStateDelegate;
     }
 
-    public NotInTransactionException notInTransaction()
+    public NotInTransactionException throwNotInTransaction()
     {
         return new NotInTransactionException(
                 "You have to be in a transaction context to perform write operations." );
@@ -57,108 +57,108 @@ public class ReadOnlyStatementOperations implements
     @Override
     public long labelGetOrCreateForName( StatementState state, String labelName ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public void nodeDelete( StatementState state, long nodeId )
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public void relationshipDelete( StatementState state, long relationshipId )
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
             throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override
     public void constraintDrop( StatementState state, UniquenessConstraint constraint )
     {
-        throw notInTransaction();
+        throw throwNotInTransaction();
     }
 
     @Override

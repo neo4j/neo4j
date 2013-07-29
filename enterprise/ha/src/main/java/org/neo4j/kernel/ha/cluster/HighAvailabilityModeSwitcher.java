@@ -58,8 +58,11 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
@@ -465,6 +468,9 @@ public class
                     logging,
                     updateableSchemaState,
                     resolver.resolveDependency( NodeManager.class ),
+                    new NonTransactionalTokenNameLookup(
+                            resolver.resolveDependency( LabelTokenHolder.class ),
+                            resolver.resolveDependency( PropertyKeyTokenHolder.class ) ),
                     resolver );
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*

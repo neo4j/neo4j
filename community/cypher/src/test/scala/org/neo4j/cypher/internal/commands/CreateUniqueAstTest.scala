@@ -42,7 +42,6 @@ class CreateUniqueAstTest(name: String,
     val (startItems, namedPaths) = new CreateUniqueAst(patterns).nextStep()
 
     //then
-    println(name)
     assert(startItems === expectedStartItems)
     assert(namedPaths === expectedNamedPaths)
   }

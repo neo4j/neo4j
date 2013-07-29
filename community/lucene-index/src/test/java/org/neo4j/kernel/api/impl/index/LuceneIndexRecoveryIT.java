@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,6 +45,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -134,7 +136,7 @@ public class LuceneIndexRecoveryIT
     public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
     {
         // Given
-        startDb( createForEverPopulatingLuceneIndexFactory() );
+        startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
         Label myLabel = label( "MyLabel" );
 
         createIndex( myLabel );
@@ -145,13 +147,13 @@ public class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createForEverPopulatingLuceneIndexFactory() );
+        startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
 
         Transaction transaction = db.beginTx();
         try
         {
             IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
-            db.schema().awaitIndexOnline( indexDefinition, 2l, TimeUnit.SECONDS );
+            db.schema().awaitIndexOnline( indexDefinition, 10l, TimeUnit.SECONDS );
 
             // Then
             assertEquals( 12, db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
@@ -206,7 +208,6 @@ public class LuceneIndexRecoveryIT
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
-
 
     private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {
@@ -310,7 +311,7 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createForEverPopulatingLuceneIndexFactory()
+    private KernelExtensionFactory<?> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
@@ -330,7 +331,6 @@ public class LuceneIndexRecoveryIT
             }
         };
     }
-
 
     // Creates a lucene index factory with the shared in-memory directory
     private KernelExtensionFactory<?> createLuceneIndexFactory()

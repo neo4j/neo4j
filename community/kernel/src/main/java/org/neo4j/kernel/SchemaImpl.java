@@ -46,8 +46,10 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -173,7 +175,8 @@ public class SchemaImpl implements Schema
                 }
                 break;
             }
-        } while ( System.currentTimeMillis() < timeout );
+            now = System.currentTimeMillis();
+        } while ( now < timeout );
         throw new IllegalStateException( "Expected index to come online within a reasonable time." );
     }
 
@@ -209,12 +212,14 @@ public class SchemaImpl implements Schema
         StatementOperationParts context = ctxProvider.getCtxForReading();
         String propertyKey = single( index.getPropertyKeys() );
         StatementState state = ctxProvider.statementForReading();
+        SchemaReadOperations schemaReading = context.schemaReadOperations();
         try
         {
             long labelId = context.keyReadOperations().labelGetForName( state, index.getLabel().name() );
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, propertyKey );
-            org.neo4j.kernel.api.index.InternalIndexState indexState = context.schemaReadOperations().indexGetState( state,
-                    context.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );
+            IndexDescriptor descriptor =
+                    schemaReading.indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
+            InternalIndexState indexState = schemaReading.indexGetState( state, descriptor );
             switch ( indexState )
             {
             case POPULATING:
@@ -397,7 +402,7 @@ public class SchemaImpl implements Schema
             }
             catch ( SchemaKernelException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage( new KeyNameLookup( state, context.keyReadOperations() ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( state, context.keyReadOperations() ) ), e );
             }
             finally
             {
@@ -484,7 +489,7 @@ public class SchemaImpl implements Schema
             StatementState state = ctxProvider.statementForReading();
             try
             {
-                return e.getUserMessage( new KeyNameLookup( state, context.keyReadOperations() ) );
+                return e.getUserMessage( new StatementTokenNameLookup( state, context.keyReadOperations() ) );
             }
             finally
             {

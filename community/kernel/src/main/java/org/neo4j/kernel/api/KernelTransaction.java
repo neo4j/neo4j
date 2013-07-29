@@ -41,10 +41,11 @@ import org.neo4j.kernel.api.operations.StatementState;
 public interface KernelTransaction
 {
     /**
-     * Creates a new {@link StatementOperations statement} which operations can be performed on.
-     * When done it must be {@link StatementOperations#close() closed}.
+     * Creates a new {@link StatementOperationParts statement} using which operations can be performed.
+     * When done it must be
+     * {@link StatementOperationParts#close(org.neo4j.kernel.api.operations.StatementState)} closed}.
      *
-     * @return a new {@link StatementOperations} to do operations on.
+     * @return a new {@link StatementOperations} to do operations with.
      */
     StatementOperationParts newStatementOperations();
 
