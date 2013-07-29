@@ -28,6 +28,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
@@ -39,35 +40,44 @@ public class IndexCreatorImpl implements IndexCreator
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this.actions = actions;
-        this.label = label;
-        this.propertyKeys = new ArrayList<String>();
+        this( actions, label, new ArrayList<String>() );
     }
-    
+
     private IndexCreatorImpl( InternalSchemaActions actions, Label label, Collection<String> propertyKeys )
     {
         this.actions = actions;
         this.label = label;
         this.propertyKeys = propertyKeys;
+
+        assertInTransaction();
     }
     
     @Override
     public IndexCreator on( String propertyKey )
     {
+        assertInTransaction();
+
         if ( !propertyKeys.isEmpty() )
             throw new UnsupportedOperationException(
                     "Compound indexes are not yet supported, only one property per index is allowed." );
         return
             new IndexCreatorImpl( actions, label,
-                                  addToCollection( asList( propertyKey ), new ArrayList<String>( propertyKeys ) ) );
+                                  addToCollection( asList( propertyKey ), new ArrayList<>( propertyKeys ) ) );
     }
 
     @Override
     public IndexDefinition create() throws ConstraintViolationException
     {
+        assertInTransaction();
+
         if ( propertyKeys.isEmpty() )
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
 
         return actions.createIndexDefinition( label, single( propertyKeys ) );
+    }
+
+    protected void assertInTransaction()
+    {
+        actions.assertInTransaction();
     }
 }

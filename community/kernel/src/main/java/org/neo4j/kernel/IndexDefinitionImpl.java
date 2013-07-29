@@ -39,34 +39,41 @@ public class IndexDefinitionImpl implements IndexDefinition
         this.label = label;
         this.propertyKey = propertyKey;
         this.constraintIndex = constraintIndex;
+
+        assertInTransaction();
     }
 
     @Override
     public Label getLabel()
     {
+        assertInTransaction();
         return label;
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
+        assertInTransaction();
         return asList( propertyKey );
     }
 
     @Override
     public void drop()
     {
+        // expected to call assertInTransaction()
         if ( this.isConstraintIndex() )
         {
             throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
                                              "instead drop the owning uniqueness constraint." );
         }
+
         actions.dropIndexDefinitions( label, propertyKey );
     }
 
     @Override
     public boolean isConstraintIndex()
     {
+        assertInTransaction();
         return constraintIndex;
     }
 
@@ -103,5 +110,10 @@ public class IndexDefinitionImpl implements IndexDefinition
     public String toString()
     {
         return "IndexDefinition[label:" + label + ", on:" + propertyKey + "]";
+    }
+
+    protected void assertInTransaction()
+    {
+        actions.assertInTransaction();
     }
 }

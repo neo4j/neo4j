@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -29,7 +28,7 @@ import static org.neo4j.graphdb.IndexDefinitionFacadeMethods.ALL_INDEX_DEFINITIO
 public class MandatoryTransactionsForIndexDefinitionTests
     extends AbstractMandatoryTransactionsTest<IndexDefinition>
 {
-    @Test @Ignore("2013-07-24 Unignore and fix tests to finish story")
+    @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );

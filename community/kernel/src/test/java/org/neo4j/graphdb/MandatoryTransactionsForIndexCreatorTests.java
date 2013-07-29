@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -30,11 +29,11 @@ public class MandatoryTransactionsForIndexCreatorTests
     extends AbstractMandatoryTransactionsTest<IndexCreator>
 {
     @Test
-    @Ignore("2013-07-24 Unignore and fix tests to finish story")
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_CREATOR_FACADE_METHODS );
     }
+
     @Override
     protected IndexCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
