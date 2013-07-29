@@ -50,6 +50,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -73,10 +74,8 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -114,7 +113,7 @@ public class TestXa
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        propertyKeyTokens = new HashMap<String, Token>();
+        propertyKeyTokens = new HashMap<>();
 
         StoreFactory sf = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
                 GraphDatabaseSettings.class ), new DefaultIdGeneratorFactory(),
@@ -358,6 +357,7 @@ public class TestXa
                                 Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,
                                 new SingleLoggingService( DEV_NULL ),
                                 new KernelSchemaStateStore(), nodeManager,
+                                mock(TokenNameLookup.class),
                                 dependencyResolverForNoIndexProvider( nodeManager ) );
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();

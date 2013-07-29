@@ -22,12 +22,15 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 
-public class KeyNameLookup
+/**
+ * Instances allow looking up ids back to their names.
+ */
+public final class StatementTokenNameLookup implements TokenNameLookup
 {
     private final KeyReadOperations keyReadOperations;
     private final StatementState state;
 
-    public KeyNameLookup( StatementState state, KeyReadOperations context )
+    public StatementTokenNameLookup( StatementState state, KeyReadOperations context )
     {
         this.state = state;
         this.keyReadOperations = context;
@@ -36,7 +39,8 @@ public class KeyNameLookup
     /**
      * Returns the label name for the given label id. In case of downstream failure, returns label[id].
      */
-    public String getLabelName( long labelId )
+    @Override
+    public String labelGetName( long labelId )
     {
         try
         {
@@ -51,15 +55,16 @@ public class KeyNameLookup
     /**
      * Returns the name of a property given its property key id. In case of downstream failure, returns property[id].
      */
-    public String getPropertyKeyName( long propertyId )
+    @Override
+    public String propertyKeyGetName( long propertyKeyId )
     {
         try
         {
-            return keyReadOperations.propertyKeyGetName( state, propertyId );
+            return keyReadOperations.propertyKeyGetName( state, propertyKeyId );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
-            return "[" + propertyId + "]";
+            return "[" + propertyKeyId + "]";
         }
     }
 }

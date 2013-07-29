@@ -765,14 +765,14 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
                 txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem );
-                log.logMessage( "TM new log: " + txLog1FileName, true );
+                log.info( "TM new log: " + txLog1FileName );
                 fc.force( true );
                 fc.close();
             }
         }
         catch ( IOException e )
         {
-            log.logMessage( "Unable to start TM", e );
+            log.error( "Unable to start TM", e );
             throw logAndReturn( "TM startup failure",
                     new TransactionFailureException( "Unable to start TM", e ) );
         }

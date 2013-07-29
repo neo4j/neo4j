@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
@@ -84,15 +84,15 @@ public class ConstraintVerificationFailedKernelException extends KernelException
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup keyNameLookup )
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         StringBuilder message = new StringBuilder();
         for ( Evidence evidenceItem : evidence() )
         {
             IndexEntryConflictException conflict = evidenceItem.conflict;
             message.append( conflict.evidenceMessage(
-                    keyNameLookup.getLabelName( constraint.label() ),
-                    keyNameLookup.getPropertyKeyName( constraint.property() ) ) );
+                    tokenNameLookup.labelGetName( constraint.label() ),
+                    tokenNameLookup.propertyKeyGetName( constraint.property() ) ) );
         }
         return message.toString();
     }

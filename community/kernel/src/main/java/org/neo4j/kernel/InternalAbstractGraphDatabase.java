@@ -77,6 +77,7 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -312,7 +313,7 @@ public abstract class InternalAbstractGraphDatabase
                 temporaryThrowable = temporaryThrowable.getCause();
             }
 
-            msgLog.logMessage( msg.toString() );
+            msgLog.error( msg.toString() );
 
             shutdown();
 
@@ -731,7 +732,7 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( LifecycleException throwable )
         {
-            msgLog.logMessage( "Shutdown failed", throwable );
+            msgLog.error( "Shutdown failed", throwable );
         }
     }
 
@@ -861,7 +862,8 @@ public abstract class InternalAbstractGraphDatabase
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState, nodeManager, dependencyResolver );
+                updateableSchemaState, nodeManager,
+                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ), dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1391,14 +1393,14 @@ public abstract class InternalAbstractGraphDatabase
         public void start() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Started - database is now available" );
+            msgLog.info( "Started - database is now available" );
         }
 
         @Override
         public void stop() throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Stopping - database is now unavailable" );
+            msgLog.info( "Stopping - database is now unavailable" );
         }
 
         @Override

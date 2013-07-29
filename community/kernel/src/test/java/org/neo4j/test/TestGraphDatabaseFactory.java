@@ -34,9 +34,17 @@ import org.neo4j.kernel.logging.SingleLoggingService;
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
+    private Logging overrideLoggingAndUseThis;
+
     public TestGraphDatabaseFactory()
     {
        super( new TestGraphDatabaseFactoryState() );
+    }
+
+    public TestGraphDatabaseFactory(Logging logging)
+    {
+        super( new TestGraphDatabaseFactoryState() );
+        this.overrideLoggingAndUseThis = logging;
     }
 
     public GraphDatabaseService newImpermanentDatabase()
@@ -116,8 +124,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     @Override
                     protected Logging createLogging()
                     {
-                        boolean systemOutLogging = state.isSystemOutLogging();
-                        if ( systemOutLogging )
+                        if(overrideLoggingAndUseThis != null)
+                            return overrideLoggingAndUseThis;
+
+                        if ( state.isSystemOutLogging() )
                             return new SingleLoggingService( StringLogger.SYSTEM );
                         else
                             return super.createLogging();

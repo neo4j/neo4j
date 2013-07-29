@@ -43,7 +43,7 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 {
     public ShutdownXaDataSource()
     {
-        super( new Config(), null, null, null, null, null, null, null, null, null, null );
+        super( new Config(), null, null, null, null, null, null, null, null, null, null, null );
     }
 
     @Override

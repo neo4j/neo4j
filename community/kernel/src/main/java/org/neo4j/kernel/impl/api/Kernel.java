@@ -176,18 +176,19 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void bootstrapAfterRecovery()
     {
-            StatementOperationParts parts = newTransaction().newStatementOperations();
-            this.statementOperations = parts;
-            
-            ReadOnlyStatementOperations readOnlyParts = new ReadOnlyStatementOperations( parts.schemaStateOperations() );
-            this.readOnlyStatementOperations = parts.override(
-                    parts.keyReadOperations(),
-                    readOnlyParts,
-                    parts.entityReadOperations(),
-                    readOnlyParts,
-                    parts.schemaReadOperations(),
-                    readOnlyParts,
-                    readOnlyParts);
+        StatementOperationParts parts = newTransaction().newStatementOperations();
+        this.statementOperations = parts;
+
+        ReadOnlyStatementOperations readOnlyParts =
+                new ReadOnlyStatementOperations( parts.schemaStateOperations() );
+        this.readOnlyStatementOperations = parts.override(
+                parts.keyReadOperations(),
+                readOnlyParts,
+                parts.entityReadOperations(),
+                readOnlyParts,
+                parts.schemaReadOperations(),
+                readOnlyParts,
+                readOnlyParts );
     }
 
     @Override
@@ -270,4 +271,5 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         return readOnlyStatementOperations;
     }
+
 }

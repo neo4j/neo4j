@@ -52,6 +52,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -81,11 +82,8 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
@@ -116,8 +114,8 @@ public class TestNeoStore
 
     private static class MyPropertyKeyToken extends Token
     {
-        private static Map<String, Token> stringToIndex = new HashMap<String, Token>();
-        private static Map<Integer, Token> intToIndex = new HashMap<Integer, Token>();
+        private static Map<String, Token> stringToIndex = new HashMap<>();
+        private static Map<Integer, Token> intToIndex = new HashMap<>();
 
         protected MyPropertyKeyToken( String key, int keyId )
         {
@@ -180,6 +178,7 @@ public class TestNeoStore
                                 dependencyResolverForConfig( config ) ), null, new SingleLoggingService( DEV_NULL ),
                                 new KernelSchemaStateStore(),
                                 nodeManager,
+                                mock(TokenNameLookup.class),
                                 dependencyResolverForNoIndexProvider( nodeManager ) );
         ds.init();
         ds.start();
@@ -404,12 +403,12 @@ public class TestNeoStore
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
                 xaCon.getWriteTransaction().getMoreRelationships( node, pos.get() );
         pos.set( rels.other() );
-        List<Iterable<RelationshipRecord>> list = new ArrayList<Iterable<RelationshipRecord>>();
+        List<Iterable<RelationshipRecord>> list = new ArrayList<>();
         for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
         {
             list.add( entry.getValue() );
         }
-        return new CombiningIterable<RelationshipRecord>( list );
+        return new CombiningIterable<>( list );
     }
 
     private void validateNodeRel1( long node, PropertyData prop1,

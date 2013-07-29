@@ -209,7 +209,7 @@ public class PersistenceWindowPool implements WindowPool
     
     void dumpStatistics()
     {
-        log.logMessage( storeName + " hit=" + hit + " miss=" + miss + " switches="
+        log.info( storeName + " hit=" + hit + " miss=" + miss + " switches="
                         + switches + " ooe=" + ooe );
     }
 
@@ -641,7 +641,7 @@ public class PersistenceWindowPool implements WindowPool
     {
         try
         {
-            log.logMessage( "[" + storeName + "] brickCount=" + brickCount
+            log.info( "[" + storeName + "] brickCount=" + brickCount
                             + " brickSize=" + brickSize + "b mappedMem=" + availableMem
                             + "b (storeSize=" + fileChannel.size() + "b)" );
         }
@@ -654,12 +654,12 @@ public class PersistenceWindowPool implements WindowPool
 
     private void logWarn( String logMessage )
     {
-        log.logMessage( "[" + storeName + "] " + logMessage );
+        log.warn( "[" + storeName + "] " + logMessage );
     }
 
     private void logWarn( String logMessage, Throwable cause )
     {
-        log.logMessage( "[" + storeName + "] " + logMessage, cause );
+        log.warn( "[" + storeName + "] " + logMessage, cause );
     }
 
     @Override

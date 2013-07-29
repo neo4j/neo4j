@@ -46,8 +46,10 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     }
     
     @Override
-    public synchronized int getOrCreate( final AbstractTransactionManager txManager, final EntityIdGenerator idGenerator,
-            final PersistenceManager persistence, final String name )
+    public synchronized int getOrCreate( final AbstractTransactionManager txManager,
+                                         final EntityIdGenerator idGenerator,
+                                         final PersistenceManager persistence,
+                                         final String name )
     {
         try
         {

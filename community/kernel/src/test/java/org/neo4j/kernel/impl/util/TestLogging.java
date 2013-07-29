@@ -17,27 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.kernel.api.operations.TokenNameLookup;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import java.util.HashMap;
+import java.util.Map;
 
-import static java.lang.String.format;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
-public class NoSuchIndexException extends SchemaKernelException
+/* Utility to test log messages in integration tests. */
+public class TestLogging implements Logging
 {
-    private final IndexDescriptor descriptor;
-    private final static String message = "No such INDEX ON %s.";
 
-    public NoSuchIndexException( IndexDescriptor descriptor )
+    private Map<Class, TestLogger> loggers = new HashMap<>();
+
+    @Override
+    public TestLogger getMessagesLog( Class loggingClass )
     {
-        super( format( message, descriptor ) );
-        this.descriptor = descriptor;
+        if(!loggers.containsKey( loggingClass ))
+        {
+            loggers.put( loggingClass, new TestLogger() );
+        }
+        return loggers.get( loggingClass );
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
+    public ConsoleLogger getConsoleLog( Class loggingClass )
     {
-        return format( message, descriptor.userDescription( tokenNameLookup ) );
+        return new ConsoleLogger( getMessagesLog( loggingClass ) );
     }
 }

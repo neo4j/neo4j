@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -52,6 +47,11 @@ import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -236,7 +236,7 @@ public class XaLogicalLog implements LogLoader
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
             fileChannel.write( sharedBuffer );
             scanIsComplete = true;
-            msgLog.logMessage( openedLogicalLogMessage( fileToOpen, lastTxId, true ), true );
+            msgLog.info( openedLogicalLogMessage( fileToOpen, lastTxId, true ) );
         }
     }
 
@@ -711,7 +711,7 @@ public class XaLogicalLog implements LogLoader
         xaTf.getAndSetNewVersion();
         pruneStrategy.prune( this );
 
-        msgLog.logMessage( "Closed log " + fileName, true );
+        msgLog.info( "Closed log " + fileName );
     }
 
     static long[] readAndAssertLogHeader( ByteBuffer localBuffer,

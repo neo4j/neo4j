@@ -30,7 +30,8 @@ import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.helpers.collection.IteratorUtil.singleOrNull
-import org.neo4j.kernel.api.operations.KeyNameLookup
+import org.neo4j.helpers.collection.IteratorUtil
+import org.neo4j.kernel.api.operations.StatementTokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
 import org.neo4j.kernel.api.operations.StatementState
@@ -224,7 +225,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
       ctx.schemaWriteOperations.indexDrop(theState, new IndexDescriptor(labelId, propertyKeyId))
     } catch {
       case e: DropIndexFailureException =>
-        throw new CouldNotDropIndexException(e.getUserMessage(new KeyNameLookup(theState, ctx.keyReadOperations)), e)
+        throw new CouldNotDropIndexException(
+          e.getUserMessage(new StatementTokenNameLookup(theState, ctx.keyReadOperations)), e)
     }
   }
 
@@ -268,7 +270,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
     } catch {
         case e: KernelException =>
           throw new CouldNotCreateConstraintException(
-            e.getUserMessage(new KeyNameLookup(theState, ctx.keyReadOperations)), e)
+            e.getUserMessage(new StatementTokenNameLookup(theState, ctx.keyReadOperations)), e)
     }
   }
 

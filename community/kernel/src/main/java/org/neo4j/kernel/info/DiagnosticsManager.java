@@ -269,7 +269,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
         }
         catch ( Exception cause )
         {
-            logger.logMessage( "Failure while logging diagnostics for " + provider, cause );
+            logger.error( "Failure while logging diagnostics for " + provider, cause );
         }
     }
 

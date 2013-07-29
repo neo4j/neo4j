@@ -26,11 +26,11 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 

@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
@@ -51,19 +52,11 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -224,29 +217,36 @@ public class IndexingServiceTest
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
                 providerMap,
                 mock( IndexStoreView.class ),
+                mockLookup,
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
-        IndexRule populatingIndex = IndexRule.indexRule( 2, 2, 2, PROVIDER_DESCRIPTOR );
-        IndexRule failedIndex = IndexRule.indexRule( 3, 3, 3, PROVIDER_DESCRIPTOR );
+        IndexRule onlineIndex     = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
+        IndexRule populatingIndex = IndexRule.indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
+        IndexRule failedIndex     = IndexRule.indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
         when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( InternalIndexState.FAILED );
+
+        when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
+        when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
+        when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
+        when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
 
         // when
         indexingService.initIndexes( asList( onlineIndex, populatingIndex, failedIndex ).iterator() );
 
         // then
         logger.assertExactly(
-                info( "IndexingService.initIndexes: index on :label[1](property[1]) is ONLINE" ),
-                info( "IndexingService.initIndexes: index on :label[2](property[2]) is POPULATING" ),
-                info( "IndexingService.initIndexes: index on :label[3](property[3]) is FAILED" )
+                info( "IndexingService.initIndexes: index on :LabelOne(propertyOne) is ONLINE" ),
+                info( "IndexingService.initIndexes: index on :LabelOne(propertyTwo) is POPULATING" ),
+                info( "IndexingService.initIndexes: index on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 
@@ -258,21 +258,28 @@ public class IndexingServiceTest
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
                 providerMap,
                 mock( IndexStoreView.class ),
+                mockLookup,
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
-        IndexRule populatingIndex = IndexRule.indexRule( 2, 2, 2, PROVIDER_DESCRIPTOR );
-        IndexRule failedIndex = IndexRule.indexRule( 3, 3, 3, PROVIDER_DESCRIPTOR );
+        IndexRule onlineIndex     = IndexRule.indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
+        IndexRule populatingIndex = IndexRule.indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
+        IndexRule failedIndex     = IndexRule.indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
         when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( InternalIndexState.FAILED );
         indexingService.initIndexes( asList( onlineIndex, populatingIndex, failedIndex ).iterator() );
+
+        when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
+        when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
+        when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
+        when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
 
         logger.clear();
 
@@ -282,11 +289,11 @@ public class IndexingServiceTest
         // then
         verify( provider ).getPopulationFailure( 3 );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :label[1](property[1]) is ONLINE" ) );
+                info( "IndexingService.start: index on :LabelOne(propertyOne) is ONLINE" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :label[2](property[2]) is POPULATING" ) );
+                info( "IndexingService.start: index on :LabelOne(propertyTwo) is POPULATING" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :label[3](property[3]) is FAILED" ) );
+                info( "IndexingService.start: index on :LabelTwo(propertyTwo) is FAILED" ) );
     }
     
     private static Logging mockLogging( StringLogger logger )
@@ -317,7 +324,7 @@ public class IndexingServiceTest
 
         return life.add( new IndexingService(
                 life.add( new Neo4jJobScheduler( logger ) ), new DefaultSchemaIndexProviderMap( indexProvider ),
-                storeView, schemaState, mockLogging( logger ) ) );
+                storeView, mock( TokenNameLookup.class ), schemaState, mockLogging( logger ) ) );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )
@@ -372,7 +379,7 @@ public class IndexingServiceTest
         @Override
         public Iterator<NodePropertyUpdate> iterator()
         {
-            return new ArrayIterator<NodePropertyUpdate>( updates );
+            return new ArrayIterator<>( updates );
         }
 
         @Override
