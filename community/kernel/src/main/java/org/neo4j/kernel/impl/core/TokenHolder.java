@@ -21,6 +21,11 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.regex.PatternSyntaxException;
 
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -177,5 +182,25 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         idToToken.clear();
     }
 
+    public Iterable<Integer> filterIdsByNameRegx( String regx ) throws TokenNotFoundException,PatternSyntaxException//rafzalan
+    {
+      Set<Integer> filteredSet = new HashSet<Integer>();
+      Pattern p = null;
+      Matcher m = null;
+      p = Pattern.compile( regx );
+      for (String name : nameToId.keySet()) {
+          m = p.matcher(name);
+          if ( m.matches() )
+          {
+              Integer id = nameToId.get(name);
+              if(id != null)
+                filteredSet.add(id);    
+              else
+                throw new TokenNotFoundException( name );
+          }
+      }
+      return filteredSet;
+    }
+    
     protected abstract TOKEN newToken( String name, int id );
 }

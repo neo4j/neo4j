@@ -34,6 +34,9 @@ define [], () ->
     getNodeIndexHitsUrl: (index,key,value) =>
       @server.url + "/db/data/index" + index + "/" + ( encodeURIComponent key ) + "/" + ( encodeURIComponent value )
  
+    getPropRegXUrl: (keyRegX,valueRegX) =>
+      @server.url + "/db/data/properties/" + keyRegX + "/" + valueRegX + "/" + "nodes"
+ 
     extractNodeId : (url) =>
       @extractLastUrlSegment(url)
 

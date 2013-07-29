@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -167,6 +168,18 @@ public class StateHandlingStatementOperations implements
         return true;
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetForPropertyKeyValueRegx( StatementState state, String propertyKeyRegx , String propertyValueRegx ) throws PropertyKeyNotFoundException//rafzalan
+    {
+        PrimitiveLongIterator committed = entityReadDelegate.nodesGetForPropertyKeyValueRegx( state, propertyKeyRegx, propertyValueRegx );
+        if ( !state.txState().hasChanges() )
+        {
+            return committed;
+        }
+
+        return null;
+    }
+    
     @Override
     public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
     {

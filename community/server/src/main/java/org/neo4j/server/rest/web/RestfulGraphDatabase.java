@@ -131,6 +131,8 @@ public class RestfulGraphDatabase
 
     public static final String PATH_ALL_NODES_LABELED = "label/{label}/nodes";
 
+    public static final String PATH_ALL_NODES_PROPERTY_REGX = "properties/{propertyKeyRegx}/{propertyValueRegx}/nodes";
+    
     public static final String PATH_SCHEMA = "schema";
     public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
     public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
@@ -548,6 +550,23 @@ public class RestfulGraphDatabase
         }
     }
 
+    @GET
+    @Path( PATH_ALL_NODES_PROPERTY_REGX )
+    public Response getNodesWithPropertyKeyValueRegx( @PathParam("propertyKeyRegx") String propertyKeyRegx, @PathParam("propertyValueRegx") String propertyValueRegx )//rafzalan
+    {
+        try
+        {
+            if ( propertyKeyRegx.isEmpty() | propertyValueRegx.isEmpty() )
+                throw new BadInputException( "Empty pattern found" );
+
+            return output.ok( actions.getNodesWithPropertyKeyValueRegx( propertyKeyRegx, propertyValueRegx ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+    }
+    
     @GET
     @Path( PATH_LABELS )
     public Response getAllLabels( )

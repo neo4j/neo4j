@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
@@ -31,6 +32,13 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 public interface EntityReadOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
+
+    /**
+     * @param propertyKeyRegx the property key regx for properties that returned nodes are guaranteed to matches
+     * @param propertyValueRegx the property value regx for properties that returned nodes are guaranteed to matches
+     * @return ids of all nodes that match the given property key regx and property value regx
+     */
+    PrimitiveLongIterator nodesGetForPropertyKeyValueRegx( StatementState state, String propertyKeyRegx , String propertyValueRegx ) throws PropertyKeyNotFoundException;
 
     /**
      *

@@ -1458,6 +1458,23 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
+    public ListRepresentation getNodesWithPropertyKeyValueRegx( String propertyKeyRegx , String propertyValueRegx)//rafzalan
+    {
+        Iterable<Node> nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithPropertyKeyValueRegx( propertyKeyRegx, propertyValueRegx );;
+
+        IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
+                new IterableWrapper<NodeRepresentation, Node>( nodes )
+                {
+                    @Override
+                    protected NodeRepresentation underlyingObjectToObject( Node node )
+                    {
+                        return new NodeRepresentation( node );
+                    }
+                };
+
+        return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
+    }
+    
     public ListRepresentation getAllLabels()
     {
         Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label, ValueRepresentation>()

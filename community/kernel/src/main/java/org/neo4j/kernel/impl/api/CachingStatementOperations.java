@@ -46,6 +46,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -300,6 +301,12 @@ public class CachingStatementOperations implements
         return entityReadDelegate.nodesGetForLabel( state, labelId );
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetForPropertyKeyValueRegx( StatementState state, String propertyKeyRegx , String propertyValueRegx) throws PropertyKeyNotFoundException//rafzalan
+    {
+        return entityReadDelegate.nodesGetForPropertyKeyValueRegx( state, propertyKeyRegx, propertyValueRegx );
+    }
+    
     @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
