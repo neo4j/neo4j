@@ -26,12 +26,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -71,6 +71,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -641,13 +642,14 @@ public class WriteTransactionTest
     
     private class CapturingIndexingService extends IndexingService
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        private final Set<NodePropertyUpdate> updates = new HashSet<>();
         
         public CapturingIndexingService()
         {
             super(  null,
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
                     new NeoStoreIndexStoreView( neoStore ),
+                    null,
                     new KernelSchemaStateStore(),
                     new SingleLoggingService( DEV_NULL )
                 );

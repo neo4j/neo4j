@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -79,6 +80,7 @@ import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.TokenNameLookupProviderImpl;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -221,6 +223,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreFactory storeFactory;
     protected XaFactory xaFactory;
     protected DiagnosticsManager diagnosticsManager;
+    protected TokenNameLookupProviderImpl tokenNameLookupProvider;
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
     protected Guard guard;
@@ -455,6 +458,7 @@ public abstract class InternalAbstractGraphDatabase
             }
         }
         life.add( txManager );
+        tokenNameLookupProvider = TokenNameLookupProviderImpl.newForTransactionManager( txManager );
 
         cleanupService = life.add( createCleanupService() );
 
@@ -872,7 +876,7 @@ public abstract class InternalAbstractGraphDatabase
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState, nodeManager, dependencyResolver );
+                updateableSchemaState, nodeManager, tokenNameLookupProvider, dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1328,6 +1332,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
             {
                 return type.cast( persistenceManager );
+            }
+            else if ( TokenNameLookupProvider.class.equals( type ) )
+            {
+                return type.cast( tokenNameLookupProvider );
             }
             else if ( KernelAPI.class.equals( type ) )
             {

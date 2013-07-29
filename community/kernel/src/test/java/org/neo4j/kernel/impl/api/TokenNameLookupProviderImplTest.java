@@ -23,13 +23,13 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Function2;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class KernelKeyNameLookupProviderTest
+public class TokenNameLookupProviderImplTest
 {
     @SuppressWarnings("unchecked")
     @Test
@@ -37,13 +37,13 @@ public class KernelKeyNameLookupProviderTest
     {
         // GIVEN
         OldTxSafeStatementExecutor executor = mock( OldTxSafeStatementExecutor.class );
-        KernelKeyNameLookupProvider provider = new KernelKeyNameLookupProvider( executor );
+        TokenNameLookupProviderImpl provider = new TokenNameLookupProviderImpl( executor );
 
         // WHEN
-        provider.withKeyNameLookup( new Function<KeyNameLookup, Void>()
+        provider.withTokenNameLookup( new Function<TokenNameLookup, Void>()
         {
             @Override
-            public Void apply( KeyNameLookup keyNameLookup )
+            public Void apply( TokenNameLookup tokenNameLookup )
             {
                 return null;
             }

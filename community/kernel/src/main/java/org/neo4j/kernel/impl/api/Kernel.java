@@ -24,7 +24,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.operations.KeyNameLookupProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -136,7 +136,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private StatementOperationParts statementOperations;
     private StatementOperationParts readOnlyStatementOperations;
 
-    private KeyNameLookupProvider keyNameLookupProvider;
+    private TokenNameLookupProvider keyNameLookupProvider;
 
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -174,6 +174,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 providerMap = neoDataSource.getProviderMap();
                 persistenceCache = neoDataSource.getPersistenceCache();
                 schemaCache = neoDataSource.getSchemaCache();
+                keyNameLookupProvider = neoDataSource.getTokenNameLookupProvider();
 
                 for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
                 {
@@ -206,21 +207,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 readOnlyParts,
                 readOnlyParts,
                 parts.lifecycleOperations() );
-
-        keyNameLookupProvider = new KernelKeyNameLookupProvider( new OldTxSafeStatementExecutor( transactionManager )
-        {
-            @Override
-            public String toString()
-            {
-                return "read-only statement executor used for key lookup";
-            }
-
-            @Override
-            protected StatementOperationParts statementOperations()
-            {
-                return readOnlyStatementOperations();
-            }
-        } );
     }
 
     @Override
@@ -307,7 +293,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KeyNameLookupProvider keyNameLookupProvider()
+    public TokenNameLookupProvider keyNameLookupProvider()
     {
         return keyNameLookupProvider;
     }

@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
@@ -76,9 +77,10 @@ public class IndexingService extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final SchemaIndexProviderMap providerMap;
 
-    private final ConcurrentHashMap<Long, IndexProxy> indexes = new ConcurrentHashMap<Long, IndexProxy>();
+    private final ConcurrentHashMap<Long, IndexProxy> indexes = new ConcurrentHashMap<>();
     private boolean serviceRunning = false;
     private final IndexStoreView storeView;
+    private final TokenNameLookupProvider tokenNameLookupProvider;
     private final Logging logging;
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
@@ -86,6 +88,7 @@ public class IndexingService extends LifecycleAdapter
     public IndexingService( JobScheduler scheduler,
                             SchemaIndexProviderMap providerMap,
                             IndexStoreView storeView,
+                            TokenNameLookupProvider tokenNameLookupProvider,
                             UpdateableSchemaState updateableSchemaState,
                             Logging logging )
     {
@@ -95,6 +98,7 @@ public class IndexingService extends LifecycleAdapter
         this.logging = logging;
         this.logger = logging.getMessagesLog( getClass() );
         this.updateableSchemaState = updateableSchemaState;
+        this.tokenNameLookupProvider = tokenNameLookupProvider;
 
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -108,9 +112,8 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void start() throws Exception
     {
-        Set<IndexProxy> rebuildingIndexes = new HashSet<IndexProxy>();
-        Map<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> rebuildingIndexDescriptors =
-                new HashMap<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>>();
+        Set<IndexProxy> rebuildingIndexes = new HashSet<>();
+        Map<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> rebuildingIndexDescriptors = new HashMap<>();
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
         for ( Map.Entry<Long, IndexProxy> entry : indexes.entrySet() )
@@ -166,9 +169,9 @@ public class IndexingService extends LifecycleAdapter
 
     private void closeAllIndexes()
     {
-        Collection<IndexProxy> indexesToStop = new ArrayList<IndexProxy>( indexes.values() );
+        Collection<IndexProxy> indexesToStop = new ArrayList<>( indexes.values() );
         indexes.clear();
-        Collection<Future<Void>> indexStopFutures = new ArrayList<Future<Void>>();
+        Collection<Future<Void>> indexStopFutures = new ArrayList<>();
         for ( IndexProxy index : indexesToStop )
         {
             try

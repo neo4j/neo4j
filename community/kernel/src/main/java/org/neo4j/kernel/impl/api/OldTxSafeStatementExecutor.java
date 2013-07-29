@@ -25,6 +25,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Function2;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -33,12 +34,14 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
 import static java.lang.String.format;
 
-public abstract class OldTxSafeStatementExecutor
+public class OldTxSafeStatementExecutor
 {
     private final AbstractTransactionManager transactionManager;
+    private final String executorDescription;
 
-    public OldTxSafeStatementExecutor( AbstractTransactionManager transactionManager )
+    public OldTxSafeStatementExecutor( String executorDescription, AbstractTransactionManager transactionManager )
     {
+        this.executorDescription = executorDescription;
         this.transactionManager = transactionManager;
     }
 
@@ -124,12 +127,19 @@ public abstract class OldTxSafeStatementExecutor
         }
     }
 
+    protected StatementOperationParts statementOperations()
+    {
+        KernelTransaction kernelTransaction = transactionManager.getKernelTransaction();
+        return kernelTransaction.newStatementOperations();
+    }
+
     private String exceptionMessage( String messageStart )
     {
         return format( "%s (statement executor: %s)", messageStart, toString() );
     }
 
-    public abstract String toString();
-
-    protected abstract StatementOperationParts statementOperations();
+    public String toString()
+    {
+        return executorDescription;
+    }
 }

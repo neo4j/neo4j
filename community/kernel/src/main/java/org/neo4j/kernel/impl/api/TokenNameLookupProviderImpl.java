@@ -23,29 +23,36 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Function2;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
-import org.neo4j.kernel.api.operations.KeyNameLookupProvider;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class KernelKeyNameLookupProvider implements KeyNameLookupProvider
+public class TokenNameLookupProviderImpl implements TokenNameLookupProvider
 {
     private final OldTxSafeStatementExecutor executor;
 
-    KernelKeyNameLookupProvider( OldTxSafeStatementExecutor executor )
+    public TokenNameLookupProviderImpl( OldTxSafeStatementExecutor executor )
     {
         this.executor = executor;
     }
 
     @Override
-    public <T> T withKeyNameLookup( final Function<KeyNameLookup, T> work ) throws TransactionFailureException
+    public <T> T withTokenNameLookup( final Function<TokenNameLookup, T> work ) throws TransactionFailureException
     {
         return executor.executeSingleStatement( new Function2<StatementState, StatementOperationParts, T>()
         {
             @Override
             public T apply( StatementState state, StatementOperationParts logic )
             {
-                return work.apply( new KeyNameLookup( state, logic.keyReadOperations() ) );
+                return work.apply( new TokenNameLookup( state, logic.keyReadOperations() ) );
             }
         } );
+    }
+
+    public static TokenNameLookupProviderImpl newForTransactionManager( AbstractTransactionManager txManager )
+    {
+        return new TokenNameLookupProviderImpl(
+            new OldTxSafeStatementExecutor( "read-only statement for token name lookup", txManager ) );
     }
 }

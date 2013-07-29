@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
-public interface KeyNameLookupProvider
+public interface TokenNameLookupProvider
 {
-    <T> T withKeyNameLookup( Function<KeyNameLookup, T> work ) throws TransactionFailureException;
+    <T> T withTokenNameLookup( Function<TokenNameLookup, T> work ) throws TransactionFailureException;
 }

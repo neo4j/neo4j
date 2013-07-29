@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -37,9 +37,9 @@ public class DropIndexFailureException extends SchemaKernelException
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup keyNameLookup )
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, indexDescriptor.userDescription( keyNameLookup ),
-                ((KernelException) getCause()).getUserMessage( keyNameLookup ) );
+        return format( message, indexDescriptor.userDescription( tokenNameLookup ),
+                ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
     }
 }

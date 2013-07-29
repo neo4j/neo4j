@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api;
 
 
-import org.neo4j.kernel.api.operations.KeyNameLookupProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
@@ -52,14 +52,14 @@ public interface KernelAPI
     KernelTransaction newTransaction();
 
     /**
-     * Creates and returns a new {@link KeyNameLookupProvider} that cannot modify
+     * Creates and returns a new {@link org.neo4j.kernel.api.operations.TokenNameLookupProvider} that cannot modify
      * the graph but grants safe access to lookup up token names by opening
      * an implicit read-only statement during the execution of
-     * {@link KeyNameLookupProvider#withKeyNameLookup(org.neo4j.helpers.Function)}
+     * {@link org.neo4j.kernel.api.operations.TokenNameLookupProvider#withTokenNameLookup(org.neo4j.helpers.Function)}
      *
-     * @return a {@link KeyNameLookupProvider} for looking up token names
+     * @return a {@link org.neo4j.kernel.api.operations.TokenNameLookupProvider} for looking up token names
      */
-    KeyNameLookupProvider keyNameLookupProvider();
+    TokenNameLookupProvider keyNameLookupProvider();
 
     /**
      * Returns a {@link StatementOperations context} that can be used for read and write operations.
