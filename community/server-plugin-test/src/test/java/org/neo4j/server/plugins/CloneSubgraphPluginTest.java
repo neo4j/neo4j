@@ -32,6 +32,7 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -190,7 +191,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         response.close();
         response = new RestRequest().post( clonedSubgraphUri, "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
-        assertEquals( 200, response.getStatus() );
+        Assert.assertEquals( 200, response.getStatus() );
 
         int doubleTheNumberOfNodes = ( originalCount * 2 ) + 1;
         assertEquals( doubleTheNumberOfNodes, eagerlyCount( server.getDatabase().getGraph().getAllNodes() ) );

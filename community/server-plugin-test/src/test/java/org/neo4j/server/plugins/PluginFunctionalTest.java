@@ -58,13 +58,13 @@ public class PluginFunctionalTest extends SharedServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        functionalTestHelper = new FunctionalTestHelper( server() );
+        functionalTestHelper = new FunctionalTestHelper( SharedServerTestBase.server() );
     }
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server() );
+        ServerHelper.cleanTheDatabase( SharedServerTestBase.server() );
     }
 
     @Test
