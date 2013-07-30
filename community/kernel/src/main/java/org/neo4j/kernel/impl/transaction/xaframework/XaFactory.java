@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 /**
 * TODO
 */
@@ -69,15 +71,17 @@ public class XaFactory
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
         XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog.getName() );
 
+        long rotateAtSize = config.get( logical_log_rotation_threshold );
         XaLogicalLog log;
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
-                    fileSystemAbstraction, logging, pruneStrategy, stateFactory );
+                    fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, logging, pruneStrategy, stateFactory );
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction,
+                    logging, pruneStrategy, stateFactory, rotateAtSize );
         }
 
         // TODO These setters should be removed somehow
