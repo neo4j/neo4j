@@ -23,13 +23,13 @@ package org.neo4j.graphdb;
  * {@link Iterable} whose {@link ResourceIterator iterators} have associated resources
  * that need to be released.
  * 
- * {@link ResourceIterator ResourceIterators} obtained inside a transaction are always
- * automatically released when the transaction is committed or rolled back. Outside a transaction, 
- * you must ensure that all returned ResourceIterators are either fully exhausted, 
- * or explicitly closed. Failure to ensure this may cause indefinitely blocking of write operations.
+ * {@link ResourceIterator ResourceIterators} are always automatically released when their owning
+ * transaction is committed or rolled back.
+ *
+ * Inside a long running transaction, it is possible to release associated resources early. To do so
+ * you must ensure that all returned ResourceIterators are either fully exhausted, or explicitly closed.
  * <p>
- * If you intend to exhaust the returned iterators, you can use conventional
- * code as you would with a normal Iterable:
+ * If you intend to exhaust the returned iterators, you can use conventional code as you would with a normal Iterable:
  *
  * <pre>
  * {@code
@@ -42,7 +42,7 @@ package org.neo4j.graphdb;
  *
  * However, if your code might not exhaust the iterator, (run until {@link java.util.Iterator#hasNext()} 
  * returns {@code false}), {@link ResourceIterator} provides you with a {@link ResourceIterator#close()} method that 
- * should be invoked to free its resources, by using a {@code finally}-block, or try-with-resource.
+ * can be invoked to release its associated resources early, by using a {@code finally}-block, or try-with-resource.
  *
  * <pre>
  * {@code
@@ -73,10 +73,7 @@ package org.neo4j.graphdb;
 public interface ResourceIterable<T> extends Iterable<T>
 {
     /**
-     * Returns an {@link ResourceIterator iterator} with associated resources that must be managed.
-     *
-     * Don't forget to either exhaust the returned iterator or call the
-     * {@link ResourceIterator#close() close method} on it.
+     * Returns an {@link ResourceIterator iterator} with associated resources that may be managed.
      */
     @Override
     ResourceIterator<T> iterator();

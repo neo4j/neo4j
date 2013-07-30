@@ -23,12 +23,11 @@ import java.io.Closeable;
 import java.util.Iterator;
 
 /**
- * Closeable Iterator with associated resources that needs to be managed.
- * <p/>
- * 
- * However, if your code might not exhaust the iterator, (run until {@link #hasNext()} returns {@code false}),
- * {@link ResourceIterator} provides you with a {@link #close()} method that should be invoked to free its
- * resources, by using a {@code finally}-block, or try-with-resource.
+ * Closeable Iterator with associated resources.
+ *
+ * The associated resources are always released when the owning transaction is committed or rolled back.
+ * The resource may also be released eagerly by explicitly calling {@link org.neo4j.graphdb.ResourceIterator#close()}
+ * or by exhausting the iterator.
  *
  * @param <T> type of values returned by this Iterator
  * 

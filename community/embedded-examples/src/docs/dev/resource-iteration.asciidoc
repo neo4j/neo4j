@@ -1,12 +1,13 @@
 [[tutorials-java-embedded-resource-iteration]]
 
-Managing resources when not using transactions
-==============================================
+Managing resources when using long running transactions
+=======================================================
 
-It is recommended to always open a transaction when accessing the database. While it is possible to perform read only operations without opening a transaction, it is advised that you open transactions anyhow. Otherwise you should take care to close any ResourceIterators that you retrieve (generally these come from ResourceIterables). If these ResourceIterators are not closed, files and other resources will be kept open for a long time, potentially blocking other operations.
-The best way to ensure this, is to close each ResourceIterator in a finally-block.
+It is necessary to always open a transaction when accessing the database. Inside a long running transaction it is good practice to ensure
+that any ResourceIterators obtained inside the transaction are closed as early as possible. This is either achieved by just exhausting
+the iterator or by explicitly calling its close method.
 
-What follows is an example of how to close a ResourceIterator. The example is taken from <<tutorials-java-embedded-new-index>>.
+What follows is an example of how to work with a ResourceIterator. The example is taken from <<tutorials-java-embedded-new-index>>.
 
 [snippet,java]
 ----

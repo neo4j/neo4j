@@ -66,9 +66,9 @@ Transactions are thread confined.
 As seen, we register a shutdown hook that will make sure the database shuts down when the JVM exits.
 Now it's time to interact with the database.
 
-== Wrap writes in a transaction ==
+== Wrap operations in a transaction ==
 
-All writes (creating, deleting and updating any data) have to be performed in a transaction.
+All operations have to be performed in a transaction.
 This is a conscious design decision, since we believe transaction demarcation to be an important part of working with a real enterprise database.
 Now, transaction handling in Neo4j is very easy:
 
@@ -83,6 +83,8 @@ tag=transaction
 
 For more information on transactions, see <<transactions>> and
 http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
+
+NOTE: For brevity, we do not spell out wrapping of operations in a transaction throughout the manual.
 
 == Create a small graph ==
 

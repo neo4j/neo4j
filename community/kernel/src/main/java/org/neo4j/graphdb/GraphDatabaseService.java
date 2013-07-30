@@ -123,8 +123,8 @@ public interface GraphDatabaseService
      *
      * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
      *
-     * If you call this operation outside of a transaction, please take care that the returned 
-     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+     * Please ensure that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
      *   
      * @param label consider nodes with this label
      * @param key required property key
@@ -159,19 +159,14 @@ public interface GraphDatabaseService
     /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.
      * <p>
-     * <em>All database operations that modify the graph must be wrapped in a transaction.</em> 
+     * <em>All database operations must be wrapped in a transaction.</em>
      * <p>
-     * If you attempt to modify the graph outside of a transaction, those operations will throw 
+     * If you attempt to access the graph outside of a transaction, those operations will throw
      * {@link NotInTransactionException}.
      * <p>
-     * Transactions are not required for read-only operations, however it is recommended to 
-     * enclose read only operations in a transaction, because the database can be more intelligent about managing 
-     * resources. In particular, returned {@link ResourceIterable ResourceIterables} will be automatically released 
-     * at the end of a transaction.
-     * <p>
-     * If you execute read-only operations outside of a transaction, please take care that any returned 
-     * {@link ResourceIterable ResourceIterables} are closed correctly to avoid potential blocking of write operations.  
-     * 
+     * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
      * @return a new transaction instance
      */
     Transaction beginTx();

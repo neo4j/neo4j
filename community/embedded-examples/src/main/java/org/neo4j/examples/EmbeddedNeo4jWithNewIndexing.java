@@ -18,6 +18,7 @@
  */
 package org.neo4j.examples;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -107,15 +108,24 @@ public class EmbeddedNeo4jWithNewIndexing
             {
                 ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind )
                         .iterator();
+                ArrayList<Node> userNodes = new ArrayList<>();
                 while ( users.hasNext() )
                 {
-                    Node node = users.next();
+                    userNodes.add( users.next() );
+                }
+
+                // The resource iterator for users has already been closed here as part of iteration.
+                // This has released associated resources even before the transaction has committed and would help
+                // to increase performance if we needed to do more work below, i.e. if this would be a long running
+                // transaction.
+
+                for ( Node node : userNodes )
+                {
                     System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
                 }
             }
             finally
             {
-                // alternatively use a transaction
                 transaction.finish();
             }
             // END SNIPPET: findUsers
@@ -192,4 +202,5 @@ public class EmbeddedNeo4jWithNewIndexing
         graphDb.shutdown();
         // END SNIPPET: shutdownDb
     }
+
 }
