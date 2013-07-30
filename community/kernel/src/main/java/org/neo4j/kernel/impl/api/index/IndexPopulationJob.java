@@ -27,9 +27,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -300,8 +302,7 @@ public class IndexPopulationJob implements Runnable
         {
             // intentionally ignore
         }
-        catch (   org.neo4j.kernel.api.exceptions.TransactionFailureException
-                | org.neo4j.graphdb.TransactionFailureException e )
+        catch ( TransactionalException | TransactionFailureException e )
         {
             // TODO: Ensure population jobs are not started before TM is available during recovery
             // (as that will cause logging to fail due to inability to lookup label and pk names)

@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Function2;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.NoKernelException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
@@ -31,29 +32,36 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class TokenNameLookupProviderImpl implements TokenNameLookupProvider
 {
-    private final OldTxSafeStatementExecutor executor;
+    private final Transactor transactor;
 
-    public TokenNameLookupProviderImpl( OldTxSafeStatementExecutor executor )
+    public TokenNameLookupProviderImpl( Transactor executor )
     {
-        this.executor = executor;
+        this.transactor = executor;
     }
 
     @Override
-    public <T> T withTokenNameLookup( final Function<TokenNameLookup, T> work ) throws TransactionFailureException
+    public <T> T withTokenNameLookup( final Function<TokenNameLookup, T> work ) throws TransactionalException
     {
-        return executor.executeSingleStatement( new Function2<StatementState, StatementOperationParts, T>()
+        try
         {
-            @Override
-            public T apply( StatementState state, StatementOperationParts logic )
-            {
-                return work.apply( new StatementTokenNameLookup( state, logic.keyReadOperations() ) );
-            }
-        } );
+            return transactor.execute( new Transactor.Statement<T, NoKernelException>() {
+
+                @Override
+                public T perform( StatementOperationParts logic, StatementState state ) throws NoKernelException
+                {
+                    StatementTokenNameLookup lookup = new StatementTokenNameLookup( state, logic.keyReadOperations() );
+                    return work.apply( lookup );
+                }
+            } );
+        }
+        catch ( NoKernelException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan", "NoKernelException is not expected to EVER be instantiated" );
+        }
     }
 
     public static TokenNameLookupProviderImpl newForTransactionManager( AbstractTransactionManager txManager )
     {
-        return new TokenNameLookupProviderImpl(
-            new OldTxSafeStatementExecutor( "read-only statement for token name lookup", txManager ) );
+        return new TokenNameLookupProviderImpl( new Transactor( txManager ) );
     }
 }

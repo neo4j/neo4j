@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Function2;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 import static org.mockito.Matchers.any;
@@ -36,8 +35,8 @@ public class TokenNameLookupProviderImplTest
     public void shouldRunUsingExecutor() throws Exception
     {
         // GIVEN
-        OldTxSafeStatementExecutor executor = mock( OldTxSafeStatementExecutor.class );
-        TokenNameLookupProviderImpl provider = new TokenNameLookupProviderImpl( executor );
+        Transactor transactor = mock( Transactor.class );
+        TokenNameLookupProviderImpl provider = new TokenNameLookupProviderImpl( transactor );
 
         // WHEN
         provider.withTokenNameLookup( new Function<TokenNameLookup, Void>()
@@ -50,6 +49,6 @@ public class TokenNameLookupProviderImplTest
         } );
 
         // THEN
-        verify( executor ).executeSingleStatement( any( Function2.class ) );
+        verify( transactor ).execute( any( Transactor.Statement.class ) );
     }
 }

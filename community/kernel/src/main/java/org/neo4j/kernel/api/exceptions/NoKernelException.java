@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.exceptions.TransactionalException;
-
-public interface TokenNameLookupProvider
+public final class NoKernelException extends KernelException
 {
-    <T> T withTokenNameLookup( Function<TokenNameLookup, T> work ) throws TransactionalException;
+    private NoKernelException()
+    {
+        super( new Throwable(), "<impossible>" );
+        throw new UnsupportedOperationException(  );
+    }
 }
