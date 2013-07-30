@@ -47,6 +47,9 @@ org.neo4j.server.webserver.https.key.location=ssl/snakeoil.key
 Note that the key should be unencrypted. 
 Make sure you set correct permissions on the private key, so that only the Neo4j server user can read/write it.
 
+Neo4j also supports chained SSL certificates. 
+This requires to have all certificates in PEM format combined in one file and the private key needs to be in DER format.
+
 You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS off:
 
 [source]
