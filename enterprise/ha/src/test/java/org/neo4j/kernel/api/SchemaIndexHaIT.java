@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.After;
@@ -214,13 +215,27 @@ public class SchemaIndexHaIT
         for ( GraphDatabaseService db : cluster.getAllMembers() )
             awaitIndexOnline( index, db, expectedDdata );
     }
-    
-    private static void awaitIndexOnline( IndexDefinition index, GraphDatabaseService db,
+
+    private static IndexDefinition reHomedIndexDefinition( GraphDatabaseService db, IndexDefinition definition )
+    {
+        for ( IndexDefinition candidate : db.schema().getIndexes() )
+        {
+            if ( candidate.equals( definition ) )
+            {
+                return candidate;
+            }
+        }
+        throw new NoSuchElementException( "New database doesn't have requested index" );
+    }
+
+    private static void awaitIndexOnline( IndexDefinition requestedIndex, GraphDatabaseService db,
             Map<Object, Node> expectedData ) throws InterruptedException
     {
         Transaction transaction = db.beginTx();
         try
         {
+            IndexDefinition index = reHomedIndexDefinition( db, requestedIndex );
+
             long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
             while( !indexOnline( index, db ) )
             {
@@ -371,4 +386,4 @@ public class SchemaIndexHaIT
             }
         };
     }
-}
+ }
