@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
@@ -401,6 +402,24 @@ public final class Settings
         }
     };
 
+    /**
+     * For values such as:
+     * <ul>
+     *   <li>100M</li>   ==> 100 * 1024 * 1024
+     *   <li>37261</li>  ==> 37261
+     *   <li>2g</li>     ==> 2 * 1024 * 1024 * 1024
+     *   <li>50m</li>    ==> 50 * 1024 * 1024
+     *   <li>10k</li>    ==> 10 * 1024
+     * </ul>
+     */
+    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = new Function<String, Long>()
+    {
+        @Override
+        public Long apply( String from )
+        {
+            return Config.parseLongWithUnit( from );
+        }
+    };
 
     public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
     {
