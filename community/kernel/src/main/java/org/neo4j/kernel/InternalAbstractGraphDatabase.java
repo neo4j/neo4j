@@ -20,7 +20,8 @@
 package org.neo4j.kernel;
 
 import static java.lang.String.format;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import java.util.concurrent.Executors;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -119,8 +119,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -769,17 +768,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        Logging logging;
-        try
-        {
-            getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            logging = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
-        }
-        catch ( Exception e )
-        {
-            logging = new ClassicLoggingService( config );
-        }
-        return life.add( logging );
+        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC ) );
     }
 
     protected void createNeoDataSource()
@@ -1342,7 +1331,9 @@ public abstract class InternalAbstractGraphDatabase
             // Try known single dependencies
             T result = resolveKnownSingleDependency( type );
             if ( result != null )
+            {
                 return selector.select( type, Iterables.option( result ) );
+            }
             
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
