@@ -39,7 +39,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
-public class PropertyFileConfigurator implements Configurator
+public class PropertyFileConfigurator extends Configurator.Adapter
 {
 
     private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
