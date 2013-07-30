@@ -30,7 +30,6 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -146,7 +145,7 @@ public class IndexPopulationJob implements Runnable
             // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
-                logMessage( LogMode.ERROR, "Failed to populate index:" );
+                logMessage( LogMode.ERROR, "Failed to populate index:", t );
                 log.flush();
             }
             
