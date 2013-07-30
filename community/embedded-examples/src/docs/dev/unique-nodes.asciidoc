@@ -1,0 +1,68 @@
+[[tutorials-java-embedded-unique-nodes]]
+= How to create unique nodes =
+
+This section is about how to ensure uniqueness of a property when creating nodes.
+For an overview of the topic, see <<transactions-unique-nodes>>.
+
+
+[[tutorials-java-embedded-unique-get-or-create]]
+== Get or create unique node ==
+
+By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
+entity uniqueness can be guaranteed using an index.
+Here the index acts as the lock and will only lock the smallest part needed to guarantee uniqueness across threads and transactions.
+To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
+
+.Create a factory for unique nodes at application start
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=prepareUniqueFactory
+----
+
+.Use the unique node factory to get or create a node
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=getOrCreate
+----
+
+[[tutorials-java-embedded-unique-pessimistic]]
+== Pessimistic locking for node creation ==
+
+[IMPORTANT]
+While this is a working solution, please consider using the preferred  <<tutorials-java-embedded-unique-get-or-create>> instead.
+
+One might be tempted to use Java synchronization for pessimistic locking, but this is dangerous.
+By mixing locks in Neo4j and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j.
+As long as all locking is done by Neo4j, all deadlocks will be detected and avoided.
+Also, a solution using manual synchronization doesn't ensure uniqueness in an HA environment.
+
+This example uses a single ``lock node'' for locking.
+We create it only as a place to put locks, nothing else.
+
+.Create a lock node at application start
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=prepareLockNode
+----
+
+
+.Use the lock node to ensure nodes are not created concurrently
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=pessimisticLocking
+----
+
+Note that finishing the transaction will release the lock on the lock node.
+
