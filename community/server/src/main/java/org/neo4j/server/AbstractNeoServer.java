@@ -415,7 +415,7 @@ public abstract class AbstractNeoServer implements NeoServer
     /**
      * Jetty wants certificates stored in a key store, which is nice, but
      * to make it easier for non-java savvy users, we let them put
-     * their certificates directly on the file system (advicing apropriate
+     * their certificates directly on the file system (advising appropriate
      * permissions etc), like you do with Apache Web Server. On each startup
      * we set up a key store for them with their certificate in it.
      */
