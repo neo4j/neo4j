@@ -1876,6 +1876,48 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test("start a=node(0) with a delete a", q)
   }
 
+  @Test def simple_delete_node() {
+    val secondQ = Query.
+      updates(DeleteEntityAction(Identifier("a"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test("start a=node(0) delete a", q)
+  }
+
+  @Test def delete_rel() {
+    val secondQ = Query.
+      updates(DeleteEntityAction(Identifier("r"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test("start a=node(0) match (a)-[r:REL]->(b) delete r", q)
+  }
+
+  @Test def delete_path() {
+    val secondQ = Query.
+      updates(DeleteEntityAction(Identifier("p"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      matches(RelatedTo("a", "b", "r", "REL", Direction.OUTGOING)).
+      namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING))).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test("start a=node(0) match p=(a)-[r:REL]->(b) delete p", q)
+  }
+
   @Test def set_property_on_node() {
     val secondQ = Query.
       updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
@@ -1915,6 +1957,32 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Identifier("a"), "a"))
 
     test("start a=node(0) with a set a.salary = a.salary * 2 ", q)
+  }
+
+  @Test def delete_property_old() {
+    val secondQ = Query.
+      updates(DeletePropertyAction(Identifier("a"), PropertyKey("salary"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test(v1_9, "start a=node(0) delete a.salary", q)
+  }
+
+  @Test def remove_property() {
+    val secondQ = Query.
+      updates(DeletePropertyAction(Identifier("a"), PropertyKey("salary"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test(vFrom2_0 diff List(vExperimental), "start a=node(0) remove a.salary", q)
   }
 
   @Test def foreach_on_pathOld() {
@@ -2042,19 +2110,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
 
     test("start a=node(0), b=node(1) create a<-[r:REL {why : 42, foo : 'bar'}]-b", q)
-  }
-
-  @Test def simple_delete_node() {
-    val secondQ = Query.
-      updates(DeleteEntityAction(Identifier("a"))).
-      returns()
-
-    val q = Query.
-      start(NodeById("a", 0)).
-      tail(secondQ).
-      returns(AllIdentifiers())
-
-    test("start a=node(0) delete a", q)
   }
 
   @Test def simple_set_property_on_node() {
