@@ -57,9 +57,9 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
- * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter changes that come into the database.
- * Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be replayed to perform
- * recovery after a crash.
+ * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter
+ * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
+ * the database can be replayed to perform recovery after a crash.
  * <p/>
  * <h3>Recovery procedure</h3>
  * <p/>
@@ -152,9 +152,8 @@ public class IndexingService extends LifecycleAdapter
             Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> descriptors = entry.getValue();
             IndexDescriptor indexDescriptor = descriptors.first();
             SchemaIndexProvider.Descriptor providerDescriptor = descriptors.other();
-            IndexProxy indexProxy = createPopulatingIndexProxy( ruleId, indexDescriptor, providerDescriptor,
-                                                                serviceRunning );
-            indexProxy.start();
+            IndexProxy indexProxy =
+                    createAndStartPopulatingIndexProxy( ruleId, indexDescriptor, providerDescriptor, serviceRunning );
             indexes.put( ruleId, indexProxy );
         }
 
@@ -229,15 +228,16 @@ public class IndexingService extends LifecycleAdapter
             {
             case ONLINE:
                 // TODO ask provider to verify
-                indexProxy = createOnlineIndexProxy( ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex() );
+                indexProxy = createAndStartedOnlineIndexProxy(
+                    ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex() );
                 break;
             case POPULATING:
                 // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                indexProxy = createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
+                indexProxy = createAndStartRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
                 break;
             case FAILED:
-                indexProxy = createFailedIndexProxy( ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex(),
-                                                     failure( provider.getPopulationFailure( ruleId ) ) );
+                indexProxy = createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor,
+                    indexRule.isConstraintIndex(), failure( provider.getPopulationFailure( ruleId ) ) );
                 break;
             default:
                 throw new IllegalArgumentException( "" + initialState );
@@ -261,10 +261,10 @@ public class IndexingService extends LifecycleAdapter
         if ( serviceRunning )
         {
             assert index == null : "Index " + rule + " already exists";
-            index = createPopulatingIndexProxy( ruleId, descriptor, rule.getProviderDescriptor(), rule.isConstraintIndex() );
             try
             {
-                index.start();
+                index = createAndStartPopulatingIndexProxy(
+                    ruleId, descriptor, rule.getProviderDescriptor(), rule.isConstraintIndex() );
             }
             catch ( IOException e )
             {
@@ -273,7 +273,7 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( index == null )
         {
-            index = createRecoveringIndexProxy( ruleId, descriptor, rule.getProviderDescriptor() );
+            index = createAndStartRecoveringIndexProxy( ruleId, descriptor, rule.getProviderDescriptor() );
         }
 
         indexes.put( rule.getId(), index );
@@ -319,7 +319,8 @@ public class IndexingService extends LifecycleAdapter
             assert index != null : "Index " + rule + " doesn't exists";
             try
             {
-                awaitIndexFuture( index.drop() );
+                Future<Void> dropFuture = index.drop();
+                awaitIndexFuture( dropFuture );
             }
             catch ( Exception e )
             {
@@ -328,10 +329,10 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private IndexProxy createPopulatingIndexProxy( final long ruleId,
-                                                   final IndexDescriptor descriptor,
-                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                   final boolean unique )
+    private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
+                                                           final IndexDescriptor descriptor,
+                                                           final SchemaIndexProvider.Descriptor providerDescriptor,
+                                                           final boolean unique ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
@@ -364,19 +365,22 @@ public class IndexingService extends LifecycleAdapter
                 }
                 catch ( IOException e )
                 {
-                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+                    return
+                        createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
                 }
             }
         } );
 
         IndexProxy result = contractCheckedProxy( flipper, false );
-        return serviceDecoratedProxy( ruleId, result );
+        result = serviceDecoratedProxy( ruleId, result );
+        result.start();
+        return result;
     }
 
-    private IndexProxy createOnlineIndexProxy( long ruleId,
-                                               IndexDescriptor descriptor,
-                                               SchemaIndexProvider.Descriptor providerDescriptor,
-                                               boolean unique )
+    private IndexProxy createAndStartedOnlineIndexProxy( long ruleId,
+                                                         IndexDescriptor descriptor,
+                                                         SchemaIndexProvider.Descriptor providerDescriptor,
+                                                         boolean unique )
     {
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
         try
@@ -389,14 +393,15 @@ public class IndexingService extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+            return createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
         }
     }
 
-    private IndexProxy createFailedIndexProxy( long ruleId,
-                                               IndexDescriptor descriptor,
-                                               SchemaIndexProvider.Descriptor providerDescriptor, boolean unique,
-                                               IndexPopulationFailure populationFailure )
+    private IndexProxy createAndStartFailedIndexProxy( long ruleId,
+                                                       IndexDescriptor descriptor,
+                                                       SchemaIndexProvider.Descriptor providerDescriptor,
+                                                       boolean unique,
+                                                       IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
                                                                   new IndexConfiguration( unique ) );
@@ -406,9 +411,9 @@ public class IndexingService extends LifecycleAdapter
         return serviceDecoratedProxy( ruleId, result );
     }
 
-    private IndexProxy createRecoveringIndexProxy( long ruleId,
-                                                   IndexDescriptor descriptor,
-                                                   SchemaIndexProvider.Descriptor providerDescriptor )
+    private IndexProxy createAndStartRecoveringIndexProxy( long ruleId,
+                                                           IndexDescriptor descriptor,
+                                                           SchemaIndexProvider.Descriptor providerDescriptor )
     {
         IndexProxy result = new RecoveringIndexProxy( descriptor, providerDescriptor );
         result = contractCheckedProxy( result, true );

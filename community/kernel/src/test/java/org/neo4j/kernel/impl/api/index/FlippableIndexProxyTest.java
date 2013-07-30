@@ -25,14 +25,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
@@ -56,7 +60,7 @@ public class FlippableIndexProxyTest
         verify( other ).drop();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldNotBeAbleToFlipAfterClosed() throws Exception
     {
         //GIVEN
@@ -69,12 +73,20 @@ public class FlippableIndexProxyTest
         delegate.close().get();
 
         delegate.setFlipTarget( indexContextFactory );
-        delegate.flip( noOp(), null );
 
-        //THEN throws exception
+        //THEN
+        try
+        {
+            delegate.flip( noOp(), null );
+            fail("Expected IndexProxyAlreadyClosedKernelException to be thrown");
+        }
+        catch ( IndexProxyAlreadyClosedKernelException e )
+        {
+            // expected
+        }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldNotBeAbleToFlipAfterDrop() throws Exception
     {
         //GIVEN
@@ -88,9 +100,16 @@ public class FlippableIndexProxyTest
         //WHEN
         delegate.drop().get();
 
-        delegate.flip( noOp(), singleFailedDelegate( failed ) );
-
-        //THEN throws exception
+        //THEN
+        try
+        {
+            delegate.flip( noOp(), singleFailedDelegate( failed ) );
+            fail("Expected IndexProxyAlreadyClosedKernelException to be thrown");
+        }
+        catch ( IndexProxyAlreadyClosedKernelException e )
+        {
+            // expected
+        }
     }
 
     @Test

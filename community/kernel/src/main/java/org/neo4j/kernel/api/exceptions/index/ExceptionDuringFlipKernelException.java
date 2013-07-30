@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
-
-public abstract class FlipFailedKernelException extends KernelException
+public final class ExceptionDuringFlipKernelException extends FlipFailedKernelException
 {
-    public FlipFailedKernelException( Throwable cause, String message, Object... parameters )
+    public ExceptionDuringFlipKernelException( Throwable cause )
     {
-        super( cause, message, parameters );
-    }
-
-    public FlipFailedKernelException( String message, Object... parameters )
-    {
-        super( message, parameters );
+        super( cause, "Failed to transition index to new context: %s", cause.getMessage() );
     }
 }

@@ -25,9 +25,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -290,7 +292,7 @@ public class FlippableIndexProxy implements IndexProxy
             catch ( Exception e )
             {
                 this.delegate = failureDelegate.create( e );
-                throw new FlipFailedKernelException( e );
+                throw new ExceptionDuringFlipKernelException( e );
             }
         }
         finally
@@ -305,12 +307,11 @@ public class FlippableIndexProxy implements IndexProxy
         return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + "]";
     }
 
-    private void assertStillOpenForBusiness()
+    private void assertStillOpenForBusiness() throws IndexProxyAlreadyClosedKernelException
     {
         if ( closed )
         {
-            throw new IllegalStateException(
-                    this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
+            throw new IndexProxyAlreadyClosedKernelException( this.getClass() );
         }
     }
 }
