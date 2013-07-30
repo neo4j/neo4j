@@ -19,26 +19,28 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
 import java.net.URI;
 
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
 {
@@ -61,19 +63,20 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
+    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
+    {
         server = ServerHelper.createNonPersistentServer();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = new RestRequest().get(functionalTestHelper.webAdminUri());
-        assertEquals(200, response.getStatus());
+        JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() );
+        assertEquals( 200, response.getStatus() );
         response.close();
     }
 
     @Test
     public void shouldLoadThirdPartyJaxRsClasses() throws Exception
     {
-        server = ServerBuilder.server()
+        server = CommunityServerBuilder.server()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
@@ -94,7 +97,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
                 .get( String.class );
         assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
     }
-    
+
     private int createSimpleDatabase( final GraphDatabaseAPI graph )
     {
         final int numberOfNodes = 10;
@@ -113,7 +116,10 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
                 {
                     for ( Node n2 : graph.getAllNodes() )
                     {
-                        if ( n1.equals( n2 ) ) continue;
+                        if ( n1.equals( n2 ) )
+                        {
+                            continue;
+                        }
 
                         n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "REL" ) );
                     }

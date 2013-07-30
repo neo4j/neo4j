@@ -27,11 +27,12 @@ import java.util.UUID;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.preflight.PreflightFailedException;
@@ -46,6 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
@@ -64,12 +66,13 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
-        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withProperty( Configurator.HTTP_LOGGING, "false" )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-            .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
-                    "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir", true ).getAbsolutePath() )
-            .build();
+        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+                .withProperty( Configurator.HTTP_LOGGING, "false" )
+                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
+                        "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir",
+                        true ).getAbsolutePath() )
+                .build();
         try
         {
             server.start();
@@ -102,16 +105,17 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
-            HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
+                HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
         String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
 
-        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-            .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
-                    "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir", true ).getAbsolutePath() )
-            .build();
+        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+                .withProperty( Configurator.HTTP_LOGGING, "true" )
+                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
+                        "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir",
+                        true ).getAbsolutePath() )
+                .build();
         try
         {
             server.start();
@@ -128,7 +132,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             assertTrue( occursIn( query, outputLog ) );
 
         }
-        catch (Throwable t)
+        catch ( Throwable t )
         {
             t.printStackTrace();
         }
@@ -147,18 +151,18 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         final File unwritableLogDir = createUnwritableDirectory();
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
-            HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
+                HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
 
         Configuration config = new MapBasedConfiguration();
-        config.setProperty(Configurator.HTTP_LOGGING, "true");
-        config.setProperty(Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath());
-        
-        NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withPreflightTasks( new EnsurePreparedForHttpLogging(config) )
-            .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-            .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory( "confdir" ).getAbsolutePath() )
-            .build();
+        config.setProperty( Configurator.HTTP_LOGGING, "true" );
+        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() );
+
+        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+                .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
+                .withProperty( Configurator.HTTP_LOGGING, "true" )
+                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory( "confdir" ).getAbsolutePath() )
+                .build();
 
         // when
         try
@@ -170,8 +174,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log directory [%s]",
-                    unwritableLogDir.getAbsolutePath() ) ) );
+                    containsString( String.format( "HTTP log directory [%s]",
+                            unwritableLogDir.getAbsolutePath() ) ) );
         }
         finally
         {

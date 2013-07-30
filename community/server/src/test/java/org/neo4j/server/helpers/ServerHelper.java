@@ -119,8 +119,8 @@ public class ServerHelper
                     try
                     {
                         db.index()
-                              .forNodes( indexName )
-                              .delete();
+                                .forNodes( indexName )
+                                .delete();
                     }
                     catch ( UnsupportedOperationException e )
                     {
@@ -133,8 +133,8 @@ public class ServerHelper
                     try
                     {
                         db.index()
-                              .forRelationships( indexName )
-                              .delete();
+                                .forRelationships( indexName )
+                                .delete();
                     }
                     catch ( UnsupportedOperationException e )
                     {
@@ -182,7 +182,7 @@ public class ServerHelper
 
     private static NeoServer createServer( boolean persistent, File path ) throws IOException
     {
-        ServerBuilder builder = ServerBuilder.server();
+        CommunityServerBuilder builder = CommunityServerBuilder.server();
         configureHostname( builder );
         if ( persistent )
         {
@@ -192,26 +192,33 @@ public class ServerHelper
                 .usingDatabaseDir( path != null ? path.getAbsolutePath() : null )
                 .build();
 
-        checkServerCanStart(server.baseUri().getHost(), server.baseUri().getPort());
+        checkServerCanStart( server.baseUri().getHost(), server.baseUri().getPort() );
 
         server.start();
         return server;
     }
 
-    private static void checkServerCanStart(String host, int port) throws IOException {
+    private static void checkServerCanStart( String host, int port ) throws IOException
+    {
         ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(port, 1, InetAddress.getByName(host));
-        } catch(IOException ex) {
-            throw new RuntimeException("Unable to start server on " + host + ":" + port, ex);
-        } finally {
-            if(serverSocket != null) {
+        try
+        {
+            serverSocket = new ServerSocket( port, 1, InetAddress.getByName( host ) );
+        }
+        catch ( IOException ex )
+        {
+            throw new RuntimeException( "Unable to start server on " + host + ":" + port, ex );
+        }
+        finally
+        {
+            if ( serverSocket != null )
+            {
                 serverSocket.close();
             }
         }
     }
 
-    private static void configureHostname( ServerBuilder builder )
+    private static void configureHostname( CommunityServerBuilder builder )
     {
         String hostName = System.getProperty( "neo-server.test.hostname" );
         if ( StringUtils.isNotEmpty( hostName ) )

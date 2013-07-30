@@ -19,18 +19,19 @@
  */
 package org.neo4j.server.advanced;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.File;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+
+import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class BootstrapperTest
 {
@@ -38,25 +39,25 @@ public class BootstrapperTest
     public void shouldBeAbleToRestartServer() throws Exception
     {
         TargetDirectory target = TargetDirectory.forTest( getClass() );
-        String dbDir1 =  target.directory( "db1", true ).getAbsolutePath();
+        String dbDir1 = target.directory( "db1", true ).getAbsolutePath();
         Configurator config = new PropertyFileConfigurator(
-        		ServerBuilder
-	        		.server()
-	        		.usingDatabaseDir( dbDir1 )
-	                .createPropertiesFiles());
+                AdvancedServerBuilder
+                        .server()
+                        .usingDatabaseDir( dbDir1 )
+                        .createPropertiesFiles() );
 
         // TODO: This needs to be here because of a startuphealthcheck
         // that requires this system property. Look into moving
         // config file check into bootstrapper to avoid this.
         File irrelevant = target.file( "irrelevant" );
         irrelevant.createNewFile();
-        
-        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath());
-        
-        AdvancedNeoServer server = new AdvancedNeoServer(config);
-        
-        server.start( );
-        
+
+        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath() );
+
+        AdvancedNeoServer server = new AdvancedNeoServer( config );
+
+        server.start();
+
         assertNotNull( server.getDatabase().getGraph() );
         assertEquals( dbDir1, server.getDatabase().getGraph().getStoreDir() );
 
@@ -64,11 +65,11 @@ public class BootstrapperTest
         String dbDir2 = target.directory( "db2", true ).getAbsolutePath();
 
         Configuration conf = config.configuration();
-        conf.setProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2);
-        
+        conf.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2 );
+
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
         assertEquals( dbDir2, server.getDatabase().getGraph().getStoreDir() );
- 
+
     }
 }
