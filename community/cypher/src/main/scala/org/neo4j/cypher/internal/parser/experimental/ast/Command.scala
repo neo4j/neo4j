@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.parser.experimental.ast
 
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 sealed trait Command extends Statement
 
@@ -35,4 +34,24 @@ case class DropIndex(label: Identifier, property: Identifier, token: InputToken)
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.DropIndex(label.name, Seq(property.name))
+}
+
+case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier, token: InputToken) extends Command {
+  def semanticCheck = Seq()
+
+  def toLegacyQuery = commands.CreateUniqueConstraint(
+    id = id.name,
+    label = label.name,
+    idForProperty = idForProperty.name,
+    propertyKey = propertyKey.name)
+}
+
+case class DropUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier, token: InputToken) extends Command {
+  def semanticCheck = Seq()
+
+  def toLegacyQuery = commands.DropUniqueConstraint(
+    id = id.name,
+    label = label.name,
+    idForProperty = idForProperty.name,
+    propertyKey = propertyKey.name)
 }

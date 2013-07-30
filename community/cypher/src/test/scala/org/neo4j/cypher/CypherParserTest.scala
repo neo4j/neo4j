@@ -2824,6 +2824,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ReturnItem(Identifier("a"), "Escaped alias", renamed = true)))
   }
 
+  @Test def create_with_labels_and_props_without_parens() {
+    test(vFrom2_0, "CREATE node :FOO:BAR {name: 'Stefan'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("node", Map("name"->Literal("Stefan")),
+                                             LabelSupport.labelCollection("FOO", "BAR"), bare = false))).
+        returns())
+  }
+
+  @Test def constraint_creation() {
+    test(vFrom2_0, "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS UNIQUE",
+      CreateUniqueConstraint("id", "Label", "id", "property")
+    )
+  }
+
+  @Test def named_path_with_variable_length_path_and_named_relationships_collection() {
+    test(vExperimental, "match p = (a)-[r*]->(b) return p",
+    Query.
+      matches(VarLengthRelatedTo("  UNNAMED13", "a", "b", None, None, Seq.empty, Direction.OUTGOING, Some("r"), optional = false)).
+      namedPaths(NamedPath("p", ParsedVarLengthRelation("  UNNAMED13", Map.empty, ParsedEntity("a"), ParsedEntity("b"), Seq.empty, Direction.OUTGOING, optional = false, None, None, Some("r")))).
+      returns(ReturnItem(Identifier("p"), "p"))
+    )
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
@@ -2866,7 +2889,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         case _ => Some(version)
       }
       testQuery(maybeVersion, query, expectedQuery)
-//      testQuery(maybeVersion, query + ";", expectedQuery)
     }
   }
 

@@ -223,7 +223,6 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
   def toAbstractPatterns: Seq[AbstractPattern] = {
 
     def createParsedRelationship(node: NodePattern): AbstractPattern = {
-      val relName: String = relationship.legacyName
       val props: Map[String, CommandExpression] = relationship.toLegacyProperties
       val startNode: ParsedEntity = node.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
       val endNode: ParsedEntity = rightNode.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
@@ -232,16 +231,24 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
         case Some(Some(Range(_, Some(i), _))) => Some(i.value.toInt)
         case _                                => None
       }
+
       val minDepth = relationship.length match {
         case Some(Some(Range(Some(i), _, _))) => Some(i.value.toInt)
         case _                                => None
       }
 
       relationship.length match {
-        case None    => ParsedRelation(relName, props, startNode, endNode, relationship.types.map(_.name),
+        case None => ParsedRelation(relationship.legacyName, props, startNode, endNode, relationship.types.map(_.name),
           relationship.direction, relationship.optional)
-        case Some(x) => ParsedVarLengthRelation(relationship.legacyName, Map.empty, startNode, endNode, relationship.types.map(_.name),
-          relationship.direction, relationship.optional, minDepth, maxDepth, None)
+
+        case _    =>
+          val (relName, relIterator) = if (relationship.isInstanceOf[NamedRelationshipPattern])
+            ("  UNNAMED" + relationship.token.startPosition.offset, Some(relationship.legacyName))
+          else
+            (relationship.legacyName, None)
+
+          ParsedVarLengthRelation(relName, props, startNode, endNode, relationship.types.map(_.name),
+            relationship.direction, relationship.optional, minDepth, maxDepth, relIterator)
       }
     }
 
@@ -411,7 +418,9 @@ case class NamedRelationshipPattern(
     properties : Option[Expression],
     token: InputToken) extends RelationshipPattern
 {
-  override def semanticCheck(context: SemanticContext) = super.semanticCheck(context) then identifier.implicitDeclaration(RelationshipType())
+  override def semanticCheck(context: SemanticContext) =
+    super.semanticCheck(context) then
+      identifier.implicitDeclaration(RelationshipType())
 
   val legacyName = identifier.name
 }

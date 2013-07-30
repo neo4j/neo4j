@@ -26,9 +26,11 @@ trait Command extends Parser
   with Literals
   with Base {
 
-  def Command : Rule1[ast.Command] = rule (
-      CreateIndex
-    | DropIndex
+  def Command: Rule1[ast.Command] = rule(
+    CreateUniqueConstraint
+      | CreateIndex
+      | DropUniqueConstraint
+      | DropIndex
   )
 
   def CreateIndex : Rule1[ast.CreateIndex] = rule {
@@ -39,4 +41,14 @@ trait Command extends Parser
     group(keyword("DROP", "INDEX", "ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~>> token ~~> ast.DropIndex
   }
 
+  def CreateUniqueConstraint: Rule1[ast.CreateUniqueConstraint] = rule {
+    group(keyword("CREATE") ~~ ConstraintSyntax) ~>> token ~~> ast.CreateUniqueConstraint
+  }
+
+  def DropUniqueConstraint: Rule1[ast.DropUniqueConstraint] = rule {
+    group(keyword("DROP") ~~ ConstraintSyntax) ~>> token ~~> ast.DropUniqueConstraint
+  }
+
+  private def ConstraintSyntax = keyword("CONSTRAINT", "ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+    optional(keyword("ASSERT")) ~~ Identifier ~~ "." ~~ Identifier ~~ keyword("IS", "UNIQUE")
 }
