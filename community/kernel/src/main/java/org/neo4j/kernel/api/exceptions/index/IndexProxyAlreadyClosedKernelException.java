@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
-
-public abstract class FlipFailedKernelException extends KernelException
+public final class IndexProxyAlreadyClosedKernelException extends FlipFailedKernelException
 {
-    public FlipFailedKernelException( Throwable cause, String message, Object... parameters )
+    public IndexProxyAlreadyClosedKernelException( Class<?> proxyClazz )
     {
-        super( cause, message, parameters );
-    }
-
-    public FlipFailedKernelException( String message, Object... parameters )
-    {
-        super( message, parameters );
+        super( proxyClazz.getSimpleName() + " has been closed. No more interactions allowed." );
     }
 }

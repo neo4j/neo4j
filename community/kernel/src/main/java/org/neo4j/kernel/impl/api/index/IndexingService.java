@@ -61,9 +61,9 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
- * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter changes that come into the database.
- * Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be replayed to perform
- * recovery after a crash.
+ * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter
+ * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
+ * the database can be replayed to perform recovery after a crash.
  * <p/>
  * <h3>Recovery procedure</h3>
  * <p/>
@@ -151,6 +151,7 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
+
     // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
     @Override
     public void start() throws Exception
@@ -195,9 +196,8 @@ public class IndexingService extends LifecycleAdapter
             Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> descriptors = entry.getValue();
             IndexDescriptor indexDescriptor = descriptors.first();
             SchemaIndexProvider.Descriptor providerDescriptor = descriptors.other();
-            IndexProxy indexProxy = createAndStartPopulatingIndexProxy( ruleId, indexDescriptor, providerDescriptor,
-                    serviceRunning );
-            indexProxy.start();
+            IndexProxy indexProxy =
+                createAndStartPopulatingIndexProxy( ruleId, indexDescriptor, providerDescriptor, serviceRunning );
             indexes.put( ruleId, indexProxy );
         }
 
@@ -266,11 +266,10 @@ public class IndexingService extends LifecycleAdapter
         if ( serviceRunning )
         {
             assert index == null : "Index " + rule + " already exists";
-            index = createAndStartPopulatingIndexProxy( ruleId, descriptor, rule.getProviderDescriptor(), rule
-                    .isConstraintIndex() );
             try
             {
-                index.start();
+                index = createAndStartPopulatingIndexProxy(
+                            ruleId, descriptor, rule.getProviderDescriptor(), rule.isConstraintIndex() );
             }
             catch ( IOException e )
             {
@@ -349,7 +348,8 @@ public class IndexingService extends LifecycleAdapter
             assert index != null : "Index " + rule + " doesn't exists";
             try
             {
-                awaitIndexFuture( index.drop() );
+                Future<Void> dropFuture = index.drop();
+                awaitIndexFuture( dropFuture );
             }
             catch ( Exception e )
             {
@@ -361,7 +361,7 @@ public class IndexingService extends LifecycleAdapter
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
                                                            final IndexDescriptor descriptor,
                                                            final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                           final boolean unique )
+                                                           final boolean unique ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
@@ -395,14 +395,16 @@ public class IndexingService extends LifecycleAdapter
                 }
                 catch ( IOException e )
                 {
-                    return createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique,
-                            failure( e ) );
+                    return
+                        createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
                 }
             }
         } );
 
         IndexProxy result = contractCheckedProxy( flipper, false );
-        return serviceDecoratedProxy( ruleId, result );
+        result = serviceDecoratedProxy( ruleId, result );
+        result.start();
+        return result;
     }
 
     private IndexProxy createAndStartOnlineIndexProxy( long ruleId,
