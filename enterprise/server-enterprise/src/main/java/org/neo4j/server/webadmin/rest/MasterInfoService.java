@@ -47,7 +47,6 @@ public class MasterInfoService implements AdvertisableService
 
     public MasterInfoService( @Context OutputFormat output, @Context GraphDatabaseService db )
     {
-        System.out.println( "masterinfo" );
         this.output = output;
         if ( db instanceof HighlyAvailableGraphDatabase )
         {
