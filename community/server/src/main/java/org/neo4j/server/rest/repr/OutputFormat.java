@@ -19,13 +19,10 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.server.web.HttpHeaderUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import javax.management.relation.RelationNotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -35,6 +32,8 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.neo4j.server.rest.web.NodeNotFoundException;
+import org.neo4j.server.rest.web.RelationshipNotFoundException;
+import org.neo4j.server.web.HttpHeaderUtils;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
@@ -45,20 +44,7 @@ public class OutputFormat
     private final ExtensionInjector extensions;
     private final URI baseUri;
 
-    private RepresentationWrittenHandler representationWrittenHandler = new RepresentationWrittenHandler()
-    {
-        @Override
-        public void onRepresentationWritten()
-        {
-            // Do nothing
-        }
-
-        @Override
-        public void onRepresentationFinal()
-        {
-            // Do nothing
-        }
-    };
+    private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
 
     public OutputFormat( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
     {
@@ -67,9 +53,9 @@ public class OutputFormat
         this.extensions = extensions;
     }
 
-    public void setRepresentationWrittenHandler( RepresentationWrittenHandler representationWrittenHandler ) {
+    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler ) {
 
-        this.representationWrittenHandler = representationWrittenHandler;
+        this.representationWriteHandler = representationWriteHandler;
     }
 
     public final Response ok( Representation representation )
@@ -113,7 +99,7 @@ public class OutputFormat
 
     public Response notFound()
     {
-        representationWrittenHandler.onRepresentationFinal();
+        representationWriteHandler.onRepresentationFinal();
         return Response.status( Status.NOT_FOUND )
                 .build();
     }
@@ -141,13 +127,15 @@ public class OutputFormat
 
     protected Response response( ResponseBuilder response, Representation representation )
     {
-        return formatRepresentation(response, representation)
-                .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(getMediaType()))
+        return formatRepresentation( response, representation )
+                .type( HttpHeaderUtils.mediaTypeWithCharsetUtf8( getMediaType() ) )
                 .build();
     }
 
     private ResponseBuilder formatRepresentation( ResponseBuilder response, final Representation representation )
     {
+        representationWriteHandler.onRepresentationStartWriting();
+
         boolean mustFail = representation instanceof ExceptionRepresentation;
 
         if ( format instanceof StreamingFormat )
@@ -171,11 +159,11 @@ public class OutputFormat
                 {
                     representation.serialize( outputStreamFormat, baseUri, extensions );
 
-                    if (! mustFail) representationWrittenHandler.onRepresentationWritten();
+                    if ( !mustFail ) representationWriteHandler.onRepresentationWritten();
                 }
                 catch ( Exception e )
                 {
-                    if ( e instanceof NodeNotFoundException || e instanceof RelationNotFoundException )
+                    if ( e instanceof NodeNotFoundException || e instanceof RelationshipNotFoundException )
                     {
                         new WebApplicationException( notFound( e ) );
                     }
@@ -185,8 +173,9 @@ public class OutputFormat
                     }
                     throw new WebApplicationException( serverError( e ) );
                 }
-                finally {
-                    representationWrittenHandler.onRepresentationFinal();
+                finally
+                {
+                    representationWriteHandler.onRepresentationFinal();
                 }
             }
         };
@@ -198,14 +187,15 @@ public class OutputFormat
         try
         {
             entityAsBytes = entity.getBytes( UTF8 );
-            if (! mustFail) representationWrittenHandler.onRepresentationWritten();
+            if (! mustFail) representationWriteHandler.onRepresentationWritten();
         }
         catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( "Could not encode string as UTF-8", e );
         }
-        finally {
-            representationWrittenHandler.onRepresentationFinal();
+        finally
+        {
+            representationWriteHandler.onRepresentationFinal();
         }
         return entityAsBytes;
     }
@@ -222,8 +212,9 @@ public class OutputFormat
 
     public Response noContent()
     {
-        representationWrittenHandler.onRepresentationWritten();
-        representationWrittenHandler.onRepresentationFinal();
+        representationWriteHandler.onRepresentationStartWriting();
+        representationWriteHandler.onRepresentationWritten();
+        representationWriteHandler.onRepresentationFinal();
         return Response.status( Status.NO_CONTENT )
                 .build();
     }
@@ -235,14 +226,16 @@ public class OutputFormat
 
     public Response ok()
     {
-        representationWrittenHandler.onRepresentationWritten();
-        representationWrittenHandler.onRepresentationFinal();
+        representationWriteHandler.onRepresentationStartWriting();
+        representationWriteHandler.onRepresentationWritten();
+        representationWriteHandler.onRepresentationFinal();
         return Response.ok().build();
     }
 
     public Response badRequest( MediaType mediaType, String entity )
     {
-        representationWrittenHandler.onRepresentationFinal();
+        representationWriteHandler.onRepresentationStartWriting();
+        representationWriteHandler.onRepresentationFinal();
         return Response.status( BAD_REQUEST ).type( mediaType  ).entity( entity ).build();
     }
 }

@@ -63,20 +63,28 @@ public class FunctionalTestPlugin extends ServerPlugin
     @Name( GET_REFERENCE_NODE )
     public Node getReferenceNode( @Source GraphDatabaseService graphDb )
     {
-        return graphDb.getReferenceNode();
+        return referenceNode( graphDb );
     }
 
     @Name( GET_CONNECTED_NODES )
     @PluginTarget( Node.class )
     public Iterable<Node> getAllConnectedNodes( @Source Node start )
     {
-        ArrayList<Node> nodes = new ArrayList<Node>();
-
-        for ( Relationship rel : start.getRelationships() )
+        ArrayList<Node> nodes = new ArrayList<>();
+        Transaction tx = start.getGraphDatabase().beginTx();
+        try
         {
-            nodes.add( rel.getOtherNode( start ) );
-        }
+            for ( Relationship rel : start.getRelationships() )
+            {
+                nodes.add( rel.getOtherNode( start ) );
+            }
 
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
         return nodes;
     }
 
@@ -84,24 +92,30 @@ public class FunctionalTestPlugin extends ServerPlugin
     public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
             final @Parameter( name = "other" ) Node end )
     {
-        return new FilteringIterable<Relationship>( start.getRelationships(), new Predicate<Relationship>()
+        Transaction tx = start.getGraphDatabase().beginTx();
+        try
         {
-            @Override
-            public boolean accept( Relationship item )
+            return new FilteringIterable<>( start.getRelationships(), new Predicate<Relationship>()
             {
-                return item.getOtherNode( start )
-                        .equals( end );
-            }
-        } );
+                @Override
+                public boolean accept( Relationship item )
+                {
+                    return item.getOtherNode( start ).equals( end );
+                }
+            } );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @PluginTarget( Node.class )
     public Iterable<Relationship> createRelationships( @Source Node start,
             @Parameter( name = "type" ) RelationshipType type, @Parameter( name = "nodes" ) Iterable<Node> nodes )
     {
-        List<Relationship> result = new ArrayList<Relationship>();
-        Transaction tx = start.getGraphDatabase()
-                .beginTx();
+        List<Relationship> result = new ArrayList<>();
+        Transaction tx = start.getGraphDatabase().beginTx();
         try
         {
             for ( Node end : nodes )
@@ -127,20 +141,52 @@ public class FunctionalTestPlugin extends ServerPlugin
             return start;
         }
 
-        return start.getGraphDatabase()
-                .getNodeById( id );
+        Transaction tx = start.getGraphDatabase().beginTx();
+        try
+        {
+            Node node = start.getGraphDatabase().getNodeById( id );
+
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithIntParam( @Source GraphDatabaseService db, @Parameter( name = "id", optional = false ) int id )
     {
-        return db.getNodeById( id );
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.getNodeById( id );
+
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @PluginTarget( Relationship.class )
     public Iterable<Node> methodOnRelationship( @Source Relationship rel )
     {
-        return Arrays.asList( rel.getNodes() );
+        Transaction tx = rel.getGraphDatabase().beginTx();
+        try
+        {
+            List<Node> nodes = Arrays.asList( rel.getNodes() );
+
+            tx.success();
+            return nodes;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -163,7 +209,7 @@ public class FunctionalTestPlugin extends ServerPlugin
         _double = h;
         _boolean = i;
 
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -171,7 +217,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) Set<String> params )
     {
         stringSet = params;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -179,7 +225,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) List<String> params )
     {
         stringList = params;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -189,7 +235,7 @@ public class FunctionalTestPlugin extends ServerPlugin
     {
         stringList = params;
         _integer = i;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -197,7 +243,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) String[] params )
     {
         stringArray = params;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -205,7 +251,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "ints", optional = false ) int[] params )
     {
         intArray = params;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -213,14 +259,42 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "ints", optional = true ) int[] params )
     {
         intArray = params;
-        return db.getReferenceNode();
+        return referenceNode( db );
     }
 
     @PluginTarget( Node.class )
     public Path pathToReference( @Source Node me )
     {
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath( Traversal.expanderForAllTypes(), 6 );
-        return finder.findSinglePath( me.getGraphDatabase()
-                .getReferenceNode(), me );
+        Transaction tx = me.getGraphDatabase().beginTx();
+        try
+        {
+            @SuppressWarnings("deprecation")
+            Path path = finder.findSinglePath( me.getGraphDatabase().getReferenceNode(), me );
+
+            tx.success();
+            return path;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private Node referenceNode( GraphDatabaseService db )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            @SuppressWarnings("deprecation")
+            Node node = db.getReferenceNode();
+
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

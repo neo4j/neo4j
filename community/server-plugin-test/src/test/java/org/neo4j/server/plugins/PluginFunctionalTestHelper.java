@@ -19,15 +19,8 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.hamcrest.CoreMatchers;
@@ -41,6 +34,10 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class PluginFunctionalTestHelper
 {

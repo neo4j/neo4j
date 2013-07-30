@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
-
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -37,11 +36,10 @@ import javax.ws.rs.core.UriInfo;
 
 import org.mortbay.log.Log;
 
-import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
+import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.server.web.WebServer;
@@ -51,31 +49,17 @@ public class BatchOperationService
 {
     private final OutputFormat output;
     private final WebServer webServer;
-    private RepresentationWrittenHandler representationWrittenHandler = new RepresentationWrittenHandler()
-    {
-        @Override
-        public void onRepresentationWritten()
-        {
-            // do nothing
-        }
+    private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
 
-        @Override
-        public void onRepresentationFinal()
-        {
-            // do nothing
-        }
-    };
-
-    public BatchOperationService(@Context Database database,
-            @Context WebServer webServer, @Context OutputFormat output)
+    public BatchOperationService( @Context WebServer webServer, @Context OutputFormat output )
     {
         this.output = output;
         this.webServer = webServer;
     }
 
-    public void setRepresentationWrittenHandler( RepresentationWrittenHandler representationWrittenHandler )
+    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler )
     {
-        this.representationWrittenHandler = representationWrittenHandler;
+        this.representationWriteHandler = representationWriteHandler;
     }
 
     @POST
@@ -110,7 +94,7 @@ public class BatchOperationService
                         };
                         new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, body,
                                 servletOutputStream );
-                        representationWrittenHandler.onRepresentationWritten();
+                        representationWriteHandler.onRepresentationWritten();
                     }
                     catch ( Exception e )
                     {
@@ -118,7 +102,7 @@ public class BatchOperationService
                     }
                     finally
                     {
-                        representationWrittenHandler.onRepresentationFinal();
+                        representationWriteHandler.onRepresentationFinal();
                     }
                 }
             };
@@ -141,7 +125,7 @@ public class BatchOperationService
             Response res = Response.ok().entity(results.toJSON())
                     .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
                     .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
-            representationWrittenHandler.onRepresentationWritten();
+            representationWriteHandler.onRepresentationWritten();
             return res;
         }
         catch ( Exception e )
@@ -150,7 +134,7 @@ public class BatchOperationService
         }
         finally
         {
-            representationWrittenHandler.onRepresentationFinal();
+            representationWriteHandler.onRepresentationFinal();
         }
     }
 
