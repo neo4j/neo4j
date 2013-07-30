@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 
 import org.junit.Test;
 
-import org.mockito.Matchers;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -45,13 +44,11 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;

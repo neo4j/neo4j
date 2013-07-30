@@ -35,14 +35,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -73,17 +68,16 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
 import ch.qos.logback.classic.LoggerContext;
 
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ClusterManager
@@ -284,9 +278,11 @@ public class ClusterManager
         {
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
+            {
                 result.append( result.length() > 0 ? "," : "" ).append( ":" +
                         member.getDependencyResolver().resolveDependency(
                                 ClusterClient.class ).getClusterServer().getPort() );
+            }
             return result.toString();
         }
 
@@ -427,7 +423,9 @@ public class ClusterManager
             Clusters.Member member = spec.getMembers().get( serverId-1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
             for (int i = 1; i < spec.getMembers().size(); i++)
+            {
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+            }
             if ( member.isFullHaMember() )
             {
                 int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
@@ -544,8 +542,12 @@ public class ClusterManager
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+            {
                 if ( !exceptSet.contains( db ) )
+                {
                     db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                }
+            }
         }
     }
 
@@ -758,7 +760,9 @@ public class ClusterManager
                     if ( !exceptSet.contains( graphDatabaseService ))
                     {
                         if ( graphDatabaseService.isMaster() )
+                        {
                             return true;
+                        }
                     }
                 }
                 return false;

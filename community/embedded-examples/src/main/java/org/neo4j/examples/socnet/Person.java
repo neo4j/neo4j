@@ -18,10 +18,6 @@
  */
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.FRIEND;
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -44,6 +39,10 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+
+import static org.neo4j.examples.socnet.RelTypes.FRIEND;
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
 
 public class Person
 {
@@ -262,6 +261,7 @@ public class Person
 
     private class RankedComparer implements Comparator<RankedPerson>
     {
+        @Override
         public int compare( RankedPerson a, RankedPerson b )
         {
             return b.getRank() - a.getRank();

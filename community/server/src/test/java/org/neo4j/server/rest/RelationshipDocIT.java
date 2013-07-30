@@ -23,21 +23,20 @@ import java.io.IOException;
 
 import javax.ws.rs.core.Response.Status;
 
-import com.sun.jersey.api.client.ClientResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
+import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -45,9 +44,11 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
+import com.sun.jersey.api.client.ClientResponse;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -147,7 +148,7 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().withHeader( StreamingJsonFormat.STREAM_HEADER, "true" ).expectedStatus( Status.NOT_FOUND.getStatusCode
+        gen().withHeader( StreamingFormat.STREAM_HEADER, "true" ).expectedStatus( Status.NOT_FOUND.getStatusCode
                 () ).delete(
                 getPropertiesUri( loves ) + "/non-existent" ).entity();
     }

@@ -18,16 +18,15 @@
  */
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IterableWrapper;
+
+import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
 
 public class PersonRepository
 {

@@ -38,7 +38,6 @@ import org.neo4j.shell.OutputAsWriter;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
-import org.neo4j.shell.kernel.apps.NonTransactionProvidingApp;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
 @Service.Implementation(App.class)

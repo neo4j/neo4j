@@ -26,7 +26,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
