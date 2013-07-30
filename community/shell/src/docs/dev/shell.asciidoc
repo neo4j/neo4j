@@ -96,6 +96,16 @@ $ neo4j-shell -c "cd -a 24 && set name Mattias"
 $ neo4j-shell -c "trav -r KNOWS" | less
 ----
 
+=== Pass Neo4j configuration options ===
+
+By setting the +-config+ switch, you can provide a properties file that will be used to configure your Neo4j instance,
+if started in embedded mode.
+
+[source,plain]
+----
+$ neo4j-shell -config conf/neo4j.properties -path mydb
+----
+
 === Execute a file and then exit ===
 
 To execute commands from a file  and then exit just provide a +-file
