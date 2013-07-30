@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
@@ -61,7 +62,7 @@ public class IndexPopulationJob implements Runnable
     private final TokenNameLookupProvider tokenNameLookupProvider;
 
     // NOTE: unbounded queue expected here
-    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
+    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
 
     private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
@@ -96,7 +97,7 @@ public class IndexPopulationJob implements Runnable
         Throwable failureCause = null;
         try
         {
-            LogMode.INFO.log( log, withAppendedUserDescription( "Index population started:" ) );
+            logMessage( LogMode.INFO, "Index population started:" );
             log.flush();
             populator.create();
 
@@ -126,11 +127,12 @@ public class IndexPopulationJob implements Runnable
                 }
             } );
             success = true;
-            LogMode.INFO.log( log, withAppendedUserDescription( "Index population completed. Index is now online:" ) );
+            logMessage( LogMode.INFO, "Index population completed. Index is now online:" );
             log.flush();
         }
         catch ( Throwable t )
         {
+            t.printStackTrace(System.err);
             if ( t instanceof IndexPopulationFailedKernelException )
             {
                 Throwable cause = t.getCause();
@@ -144,8 +146,7 @@ public class IndexPopulationJob implements Runnable
             // Index conflicts are expected (for unique indexes) so we don't need to log them.
             if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
             {
-                LogMode.ERROR
-                       .log( log, withAppendedUserDescription( "Failed to populate index:" ), t );
+                logMessage( LogMode.ERROR, "Failed to populate index:" );
                 log.flush();
             }
             
@@ -174,8 +175,7 @@ public class IndexPopulationJob implements Runnable
             }
             catch ( Throwable e )
             {
-                LogMode.WARN
-                       .log( log, withAppendedUserDescription( "Unable to close failed populator for index:" ), e );
+                logMessage( LogMode.WARN, "Unable to close failed populator for index:", e );
                 log.flush();
             }
             finally
@@ -258,6 +258,32 @@ public class IndexPopulationJob implements Runnable
         doneSignal.await();
     }
 
+    private void logMessage( LogMode info, String message )
+    {
+        try
+        {
+            info.log( log, withAppendedUserDescription( message ) );
+        }
+        catch ( RuntimeException e )
+        {
+            // ignore if just failing to log
+            e.printStackTrace( System.err );
+        }
+    }
+
+    private void logMessage( LogMode info, String message, Throwable cause )
+    {
+        try
+        {
+            info.log( log, withAppendedUserDescription( message ), cause );
+        }
+        catch ( RuntimeException e )
+        {
+            // ignore if just failing to log
+            e.printStackTrace( System.err );
+        }
+    }
+
     private String withAppendedUserDescription( final String message )
     {
         try
@@ -271,11 +297,18 @@ public class IndexPopulationJob implements Runnable
                 }
             } );
         }
-        catch ( TransactionFailureException e )
+        catch ( DatabaseShutdownException e )
         {
-            log.error( "Error resolving token names", e );
-            return format( "%s [%s]", message, descriptor.toString() );
+            // intentionally ignore
         }
+        catch (   org.neo4j.kernel.api.exceptions.TransactionFailureException
+                | org.neo4j.graphdb.TransactionFailureException e )
+        {
+            // TODO: Ensure population jobs are not started before TM is available during recovery
+            // (as that will cause logging to fail due to inability to lookup label and pk names)
+            log.warn( "Error resolving token names", e );
+        }
+        return format( "%s [%s]", message, descriptor.toString() );
     }
 
 }

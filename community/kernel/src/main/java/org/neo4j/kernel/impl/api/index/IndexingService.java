@@ -145,7 +145,8 @@ public class IndexingService extends LifecycleAdapter
         dropIndexes( rebuildingIndexes );
 
         // Rebuild indexes by recreating and repopulating them
-        for ( Map.Entry<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> entry : rebuildingIndexDescriptors.entrySet() )
+        for ( Map.Entry<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> entry :
+                rebuildingIndexDescriptors.entrySet() )
         {
             long ruleId = entry.getKey();
             Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> descriptors = entry.getValue();
