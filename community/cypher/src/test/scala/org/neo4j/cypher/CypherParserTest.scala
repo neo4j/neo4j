@@ -2885,8 +2885,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
   private def test(versions: Seq[CypherVersion], query: String, expectedQuery: AbstractQuery) {
     for (version <- versions) {
       val maybeVersion = version match {
-        case `v2_0` => None
-        case _ => Some(version)
+        case `vDefault` => None
+        case _          => Some(version)
       }
       testQuery(maybeVersion, query, expectedQuery)
     }
