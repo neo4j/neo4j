@@ -32,7 +32,7 @@ import org.neo4j.graphdb.schema.Schema;
 
 public class EmbeddedNeo4jWithNewIndexing
 {
-    private static final String DB_PATH = "target/neo4j-store";
+    private static final String DB_PATH = "target/neo4j-store-with-new-indexing";
 
     public static void main( final String[] args )
     {
