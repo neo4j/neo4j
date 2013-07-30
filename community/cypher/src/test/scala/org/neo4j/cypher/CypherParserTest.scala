@@ -1985,6 +1985,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test(vFrom2_0 diff List(vExperimental), "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
+  @Test def foreach_on_path_with_multiple_updates() {
+    val secondQ = Query.
+      updates(ForeachAction(Collection(Literal(1), Literal(2), Literal(3)), "n", Seq(
+      CreateRelationship("r", RelationshipEndpoint("x"), RelationshipEndpoint("z"), "HAS", Map.empty),
+      CreateRelationship("r", RelationshipEndpoint("x"), RelationshipEndpoint("z2"), "HAS", Map.empty)
+    ))).
+      returns()
+
+    val q = Query.
+      matches(SingleNode("n")).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    test(vExperimental, "match n foreach(n in [1,2,3] | create (x)-[r:HAS]->(z) create (x)-[r:HAS]->(z2) )", q)
+  }
+
   @Test def simple_read_first_and_update_next() {
     val string = "start a = node(1) create (b {age : a.age * 2}) return b"
     def query(bare: Boolean): Query = {
