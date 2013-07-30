@@ -67,9 +67,9 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Count non-null values",
       text = "You can count the non-`null` values by using +count(<identifier>)+.",
-      queryText = "match n:Person return count(n.property?)",
+      queryText = "match n:Person return count(n.property)",
       returns = "The count of related nodes with the `property` property set is returned by the query.",
-      assertions = p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
+      assertions = p => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
   }
 
   @Test def sumProperty() {
@@ -113,9 +113,9 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "COLLECT",
       text = "+COLLECT+ collects all the values into a list. It will ignore null values,",
-      queryText = "match n:Person return collect(n.property?)",
+      queryText = "match n:Person return collect(n.property)",
       returns = "Returns a single row, with all the values collected.",
-      assertions = p => assertEquals(Map("collect(n.property?)" -> Seq(13, 33, 44)), p.toList.head))
+      assertions = p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
   }
 
   @Test def count_distinct() {

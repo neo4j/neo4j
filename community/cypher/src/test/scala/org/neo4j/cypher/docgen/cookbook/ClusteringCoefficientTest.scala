@@ -70,7 +70,7 @@ Therefore the clustering coefficient of node 1 is `1/6`.
       		"MATCH (a)--(b)  " +
       		"WITH a, count(distinct b) as n " +
       		"MATCH (a)--()-[r]-()--(a) " +
-      		"WHERE a.name! = \"startnode\" " +
+            "WHERE a.name = \"startnode\" " +
       		"RETURN n, count(distinct r) as r",
       returns = "This returns `n` and `r` for the above calculations.",
       assertions = (p) => assertEquals(List(

@@ -269,9 +269,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "COALESCE( expression [, expression]* )",
       arguments = List("expression" -> "The expression that might return null."),
       text = """Returns the first non-+null+ value in the list of expressions passed to it.""",
-      queryText = """match a where a.name='Alice' return coalesce(a.hairColour?, a.eyes?)""",
+      queryText = """match a where a.name='Alice' return coalesce(a.hairColour, a.eyes)""",
       returns = """""",
-      assertions = (p) => assert(Seq("brown") === p.columnAs[String]("coalesce(a.hairColour?, a.eyes?)").toSeq)
+      assertions = (p) => assert(Seq("brown") === p.columnAs[String]("coalesce(a.hairColour, a.eyes)").toSeq)
     )
   }
 

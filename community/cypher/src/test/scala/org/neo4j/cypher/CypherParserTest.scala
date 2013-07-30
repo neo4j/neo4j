@@ -699,7 +699,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def nullableProperty() {
-    test(
+    test(vPre2_0,
       "start a = NODE(1) return a.name?",
       Query.
         start(NodeById("a", 1)).
@@ -1033,7 +1033,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def questionMarkOperator() {
-    test(
+    test(vPre2_0,
       "start a = node(1) where a.prop? = 42 return a",
       Query.
         start(NodeById("a", 1)).
@@ -1042,7 +1042,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def exclamationMarkOperator() {
-    test(
+    test(vPre2_0,
       "start a = node(1) where a.prop! = 42 return a",
       Query.
         start(NodeById("a", 1)).

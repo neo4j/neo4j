@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.parser.experimental
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 
@@ -157,13 +156,5 @@ trait LegacyPredicate { self: Function =>
       case Some((arg, _)) => throw new SyntaxException(s"Argument to function '$name' is not a predicate (${arg.token.startPosition})")
       case None => constructor(commands.map(_._2.asInstanceOf[CommandPredicate]).toIndexedSeq)
     }
-  }
-
-  protected def nullable(invocation: ast.FunctionInvocation, predicate: CommandPredicate) = {
-    val map = invocation.arguments.filter(_.isInstanceOf[ast.Nullable]).map(e => (e.toCommand, e.isInstanceOf[ast.DefaultTrue]))
-    if (map.isEmpty)
-      predicate
-    else
-      commands.NullablePredicate(predicate, map)
   }
 }

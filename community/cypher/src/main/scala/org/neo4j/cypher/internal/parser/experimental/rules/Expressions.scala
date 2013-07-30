@@ -112,7 +112,7 @@ trait Expressions extends Parser
     | Parameter
     | StringLiteral
     | NumberLiteral
-    | MaybeNullableProperty
+    | Property
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
     | ListComprehension
@@ -130,14 +130,6 @@ trait Expressions extends Parser
       (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq) ~>> token ~~> (ast.FunctionInvocation(_, _, _, _))
-  }
-
-  private def MaybeNullableProperty : Rule1[ast.Expression] = rule {
-    Property ~~ (
-        "?" ~>> token ~~> (new ast.Nullable(_: ast.Expression, _) with ast.DefaultTrue)
-      | "!" ~>> token ~ !("=") ~~> ast.Nullable
-      | EMPTY ~~> ((e: ast.Expression) => e)
-    )
   }
 
   def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {

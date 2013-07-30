@@ -26,14 +26,52 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.commands.values.KeyToken
 
-case class Property(mapExpr: Expression, propertyKey: KeyToken) extends Expression {
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.cypher.EntityNotFoundException
+import scala.runtime.ScalaRunTime
+
+object Property {
+  def apply(mapExpr: Expression, propertyKey: KeyToken) = new Property(mapExpr, propertyKey, true)
+  def unapply(property: Property) = Some((property.mapExpr, property.propertyKey))
+}
+
+class Property(val mapExpr: Expression,
+               val propertyKey: KeyToken,
+               val nullOnNotFound: Boolean /* Required only for Cypher 1.9 */)
+  extends Expression with Product with Serializable
+{
+  def copy(mapExpr: Expression = this.mapExpr, propertyKey: KeyToken = this.propertyKey, nullOnNotFound: Boolean = this.nullOnNotFound) =
+    new Property(mapExpr, propertyKey, nullOnNotFound)
+  override def productPrefix = classOf[Product].getSimpleName
+  def productArity = 3
+  def productElement(n: Int): Any = n match {
+    case 0 => this.mapExpr
+    case 1 => this.propertyKey
+    case 2 => this.nullOnNotFound
+    case _ => throw new IndexOutOfBoundsException(n.toString)
+  }
+
+  def canEqual(that: Any) = that.isInstanceOf[Property]
+  override def equals(that: Any) = canEqual(that) && {
+    val other = that.asInstanceOf[Property]
+    this.mapExpr == other.mapExpr && this.propertyKey == other.propertyKey
+  }
+  override def hashCode() = this.mapExpr.hashCode * this.propertyKey.hashCode
+
+  override def toString = ScalaRunTime._toString(this)
+
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null           => null
-    case IsMap(mapFunc) => mapFunc(state.query).apply(propertyKey.name)
+    case IsMap(mapFunc) => try {
+      mapFunc(state.query).apply(propertyKey.name)
+    } catch {
+      case _: EntityNotFoundException if nullOnNotFound => null
+      case _: NotFoundException if nullOnNotFound => null
+    }
     case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(new Property(mapExpr.rewrite(f), propertyKey.rewrite(f), nullOnNotFound))
 
   def children = Seq(mapExpr)
 

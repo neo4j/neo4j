@@ -136,16 +136,6 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }
 
-case class Nullable(expression: Expression, token: InputToken) extends Expression {
-  def semanticCheck(ctx: SemanticContext) = expression.semanticCheck(ctx) then limitType(expression.types)
-
-  def toCommand = commandexpressions.Nullable(expression.toCommand)
-}
-
-trait DefaultTrue {
-  self: Nullable => ()
-}
-
 case class PatternExpression(pattern: Pattern, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(CollectionType(PathType()))
 
@@ -307,14 +297,8 @@ sealed trait IterablePredicateExpression extends FilterExpression {
 
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
 
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
-    val predicate = toPredicate(command, identifier.name, inner)
-    if (expression.isInstanceOf[ast.Nullable]) {
-      commands.NullablePredicate(predicate, Seq((command, expression.isInstanceOf[ast.DefaultTrue])))
-    } else {
-      predicate
-    }
-  }
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
+    toPredicate(command, identifier.name, inner)
 }
 
 case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {

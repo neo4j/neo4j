@@ -103,9 +103,9 @@ class WhereTest extends DocumentingTestBase {
   @Test def compare_if_property_exists() {
     testQuery(
       title = "Default true if property is missing",
-      text = "If you want to compare a property on a graph element, but only if it exists, use the nullable property syntax. " +
-        "You can use a question mark if you want missing property to return true, like:",
-      queryText = """match n where n.belt? = 'white' return n order by n.name""",
+      text = "If you want to compare a property on a graph element, but only if it exists, you can compare the " +
+        "property against both the value you are looking for and null, like:",
+      queryText = """match n where n.belt = 'white' or n.belt = null return n order by n.name""",
       returns = "This returns all nodes, even those without the belt property.",
       assertions = (p) => assertEquals(List(node("Andres"), node("Peter"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
@@ -114,7 +114,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Default false if property is missing",
       text = "When you need missing property to evaluate to false, use the exclamation mark.",
-      queryText = """match n where n.belt! = 'white' return n""",
+      queryText = """match n where n.belt = 'white' return n""",
       returns = "No nodes without the belt property are returned.",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }

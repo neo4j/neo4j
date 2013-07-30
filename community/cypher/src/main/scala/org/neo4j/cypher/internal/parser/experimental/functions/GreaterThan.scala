@@ -35,6 +35,6 @@ case object GreaterThan extends Function with LegacyPredicate {
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
-    nullable(invocation, commands.GreaterThan(left.toCommand, right.toCommand))
+    commands.GreaterThan(left.toCommand, right.toCommand)
   }
 }

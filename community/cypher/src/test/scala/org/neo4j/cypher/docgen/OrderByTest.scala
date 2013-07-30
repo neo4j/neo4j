@@ -72,7 +72,7 @@ class OrderByTest extends DocumentingTestBase {
       title = "Ordering null",
       text = "When sorting the result set, +null+ will always come at the end of the result set for" +
         " ascending sorting, and first when doing descending sort.",
-      queryText = """match n return n.length?, n order by n.length?""",
+      queryText = """match n return n.length, n order by n.length""",
       returns = """The nodes are returned sorted by the length property, with a node without that property last.""",
       (p) => assertEquals(List(node("A"), node("C"), node("B")), p.columnAs[Node]("n").toList))
   }

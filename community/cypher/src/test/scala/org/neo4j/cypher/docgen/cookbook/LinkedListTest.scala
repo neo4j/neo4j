@@ -82,9 +82,9 @@ a new node, and two relationships to it.
 MATCH root-[:LINK*0..]->before,// before could be same as root
       after-[:LINK*0..]->root, // after could be same as root
       before-[old:LINK]->after
-WHERE root.name! = 'ROOT'
-  AND before.value? < 25  // This is the value, which would normally
-  AND 25 < after.value?   // be supplied through a parameter.
+WHERE root.name = 'ROOT'
+  AND before.value < 25  // This is the value, which would normally
+  AND 25 < after.value   // be supplied through a parameter.
 CREATE before-[:LINK]->({value:25})-[:LINK]->after
 DELETE old###
 
@@ -95,9 +95,9 @@ from it, and replacing with a new value.
 MATCH root-[:LINK*0..]->before,
       before-[delBefore:LINK]->del-[delAfter:LINK]->after,
       after-[:LINK*0..]->root
-WHERE root.name! = 'ROOT'
-  AND del.value! = 10
+WHERE root.name = 'ROOT'
+  AND del.value = 10
 CREATE before-[:LINK]->after
 DELETE del, delBefore, delAfter###
-"""
+             """
 }

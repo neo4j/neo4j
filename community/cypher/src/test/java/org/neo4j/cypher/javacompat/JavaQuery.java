@@ -70,7 +70,7 @@ public class JavaQuery
         // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
         tx = db.beginTx();
-        ExecutionResult result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
+        ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
         // END SNIPPET: execute
         // START SNIPPET: columns
         List<String> columns = result.columns();
@@ -86,7 +86,7 @@ public class JavaQuery
         // END SNIPPET: items
         tx.finish();
         // the result is now empty, get a new one
-        result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
+        result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
         // START SNIPPET: rows
         for ( Map<String, Object> row : result )
         {
@@ -97,7 +97,7 @@ public class JavaQuery
             rows += "\n";
         }
         // END SNIPPET: rows
-        resultString = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" ).dumpToString();
+        resultString = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" ).dumpToString();
         columnsString = columns.toString();
         db.shutdown();
     }

@@ -65,7 +65,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
   def tracks_graph_global_queries() {
     //GIVEN
-    val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo?")
+    val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo")
 
     //WHEN THEN
     assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
