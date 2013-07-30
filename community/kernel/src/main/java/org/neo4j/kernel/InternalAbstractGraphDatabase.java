@@ -354,7 +354,11 @@ public abstract class InternalAbstractGraphDatabase
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
-            throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
+            throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
+                    "Cache providers are loaded using java service loading where they " +
+                    "register themselves in resource (plain-text) files found on the class path under " +
+                    "META-INF/services/" + CacheProvider.class.getName() + ". This missing provider may have " +
+                    "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
         kernelEventHandlers = new KernelEventHandlers();
