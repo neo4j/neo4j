@@ -230,7 +230,7 @@ public class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( directoryFactory,
-                new Config( stringMap( store_dir.name(), "whatever" ) ) );
+                new Config( stringMap( store_dir.name(), "target/whatever" ) ) );
         index = provider.getPopulator( indexId, new IndexConfiguration( false ) );
         index.create();
     }

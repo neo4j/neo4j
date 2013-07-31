@@ -182,7 +182,7 @@ terms of the relevant Commercial Agreement.
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <!-- This actually conflicts with the jcl-over-slf4j version which is 1.6.1. -->
-      <version>1.6.2</version>
+      <!--  version>1.6.2</version -->
     </dependency>
 
   </dependencies>

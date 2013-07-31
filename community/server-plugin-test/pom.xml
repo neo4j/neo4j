@@ -65,7 +65,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -83,5 +82,12 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>
