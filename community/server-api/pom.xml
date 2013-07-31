@@ -64,30 +64,17 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
       <artifactId>jsr311-api</artifactId>
-      <version>1.1.2.r612</version>
     </dependency>
 
     <dependency>
       <groupId>commons-configuration</groupId>
       <artifactId>commons-configuration</artifactId>
-      <version>1.6</version>
-      <type>jar</type>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-digester</artifactId>
-          <groupId>commons-digester</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Added directly to avoid version clash in commons-configuration. -->
     <dependency>
       <groupId>commons-digester</groupId>
       <artifactId>commons-digester</artifactId>
-      <version>1.8.1</version>
-      <type>jar</type>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 

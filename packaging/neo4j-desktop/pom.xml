@@ -33,7 +33,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -48,7 +47,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -80,4 +78,12 @@
             </plugin>
         </plugins>
     </build>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>

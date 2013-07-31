@@ -156,7 +156,6 @@ terms of the relevant Commercial Agreement.
        <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>licensing-maven-plugin</artifactId>
-        <version>1.7.5</version>
         <configuration>
           <failIfDisliked>true</failIfDisliked>
           <failIfMissing>true</failIfMissing>
