@@ -2785,4 +2785,23 @@ RETURN x0.name
     assert(result.toList === List(Map("n" -> refNode)))
   }
 
+  @Test
+  def should_iterate_all_node_id_sets_from_start_during_matching()
+  {
+    // given
+    val nodes: List[Node] =
+      parseAndExecute("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
+      .columnAs[List[Node]]("nodes").next().sortBy(_.getId)
+
+    val nodeIds = s"node(${nodes.map(_.getId).mkString(",")})"
+
+    // when
+    val result = parseAndExecute(s"START src=${nodeIds}, dst=${nodeIds} MATCH src-[r:EDGE]-dst RETURN r")
+
+    // then
+    val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
+
+    assert( 6 === relationships.size )
+
+  }
 }
