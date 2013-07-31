@@ -69,7 +69,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testPropertyColumn() throws UnsupportedEncodingException {
-        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name, n.age" );
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -123,7 +123,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testDataColumnOrder() throws UnsupportedEncodingException {
-        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name, n.age" );
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -139,7 +139,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Title( "Server errors" )
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
-        String response = cypherRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
+        String response = cypherRestCall( "start x = node(%I%) return x.dummy/0", Status.BAD_REQUEST );
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
@@ -272,7 +272,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testProfiling() throws Exception {
-        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name, n.age" );
 
         // WHEN
         String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
