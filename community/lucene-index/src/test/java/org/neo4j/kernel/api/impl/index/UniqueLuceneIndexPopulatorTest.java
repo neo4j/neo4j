@@ -43,7 +43,7 @@ public class UniqueLuceneIndexPopulatorTest
     {
         // given
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        File indexDirectory = new File( "whatever" );
+        File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 documentStructure, standard(),
@@ -66,7 +66,7 @@ public class UniqueLuceneIndexPopulatorTest
     {
         // given
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        File indexDirectory = new File( "whatever" );
+        File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 documentStructure, standard(),
@@ -91,7 +91,7 @@ public class UniqueLuceneIndexPopulatorTest
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 new LuceneDocumentStructure(), standard(),
-                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ),
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "target/whatever" ),
                 failureStorage, indexId
         );
         populator.create();
@@ -117,7 +117,7 @@ public class UniqueLuceneIndexPopulatorTest
     public void shouldRejectEntryWithAlreadyIndexedValueFromPreviousBatch() throws Exception
     {
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        File indexDirectory = new File( "whatever" );
+        File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 2,
                 documentLogic, standard(),
@@ -149,7 +149,7 @@ public class UniqueLuceneIndexPopulatorTest
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
                 new LuceneDocumentStructure(), standard(),
-                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "whatever" ),
+                new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "target/whatever" ),
                 failureStorage, indexId
         );
         populator.create();

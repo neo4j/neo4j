@@ -25,6 +25,8 @@
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
     <powermock.version>1.4.12</powermock.version>
+    <slf4j-api.version>1.6.2</slf4j-api.version>
+    <logback-classic.version>0.9.30</logback-classic.version>
   </properties>
 
   <modules>
@@ -37,9 +39,39 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.0</version> <!-- 2.1 ? -->
+        </plugin>
+        <plugin>
+          <groupId>com.voltvoodoo</groupId>
+          <artifactId>brew</artifactId>
+          <version>0.2.10</version>
+        </plugin>
+        <plugin>
+          <groupId>com.github.searls</groupId>
+          <artifactId>jasmine-maven-plugin</artifactId>
+          <version>1.2.0.0</version>
+        </plugin>
+        <plugin>
           <groupId>pl.project13.maven</groupId>
           <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.1.4</version>
+          <version>2.1.5</version>
           <executions>
             <execution>
               <id>generate-git-hash</id>
@@ -276,6 +308,21 @@
           <artifactId>lucene-core</artifactId>
           <version>${lucene.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.3.2</version>
+        <exclusions>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
       <!-- special -->
       <dependency>
         <groupId>${jta.groupId}</groupId>
@@ -326,6 +373,36 @@
         <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.jmock</groupId>
+        <artifactId>jmock</artifactId>
+        <version>2.5.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jmock</groupId>
+        <artifactId>jmock-junit4</artifactId>
+        <version>2.5.1</version> <!-- 2.6.0 ? -->
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.jotm</groupId>
+        <artifactId>jotm-core</artifactId>
+        <version>2.2.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>geronimo-spec</groupId>
+        <artifactId>geronimo-spec-j2ee</artifactId>
+        <version>1.4-rc4</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.hsqldb</groupId>
+        <artifactId>hsqldb</artifactId>
+        <version>2.3.0</version>
+        <scope>test</scope>
+      </dependency>
 
       <!-- other -->
       <dependency>
@@ -337,6 +414,32 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>1.4</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-configuration</groupId>
+        <artifactId>commons-configuration</artifactId>
+        <version>1.6</version>
+        <type>jar</type>
+        <scope>compile</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>commons-digester</artifactId>
+            <groupId>commons-digester</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <!-- Added (directly) to avoid version clash in commons-configuration. -->
+      <dependency>
+        <groupId>commons-digester</groupId>
+        <artifactId>commons-digester</artifactId>
+        <version>1.8.1</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.1</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -351,22 +454,33 @@
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>0.9.30</version>
+        <version>${logback-classic.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
-        <version>0.9.30</version>
+        <version>${logback-classic.version}</version>
       </dependency>
       <dependency>
-          <groupId>ch.qos.logback</groupId>
-          <artifactId>logback-access</artifactId>
-          <version>0.9.30</version>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-access</artifactId>
+        <version>${logback-classic.version}</version>
       </dependency>
       <dependency>
-          <groupId>janino</groupId>
-          <artifactId>janino</artifactId>
-          <version>2.5.10</version>
+        <groupId>janino</groupId>
+        <artifactId>janino</artifactId>
+        <version>2.5.10</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <!-- This actually conflicts with the jcl-over-slf4j version which is 1.6.1. -->
+        <version>${slf4j-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>1.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -391,6 +505,46 @@
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-server</artifactId>
         <version>1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey.contribs</groupId>
+        <artifactId>jersey-multipart</artifactId>
+        <version>1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-core-lgpl</artifactId>
+        <version>1.9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-jaxrs</artifactId>
+        <version>1.9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty</artifactId>
+        <version>6.1.25</version>
+      </dependency>
+      <dependency>
+        <groupId>org.rrd4j</groupId>
+        <artifactId>rrd4j</artifactId>
+        <version>2.0.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mozilla</groupId>
+        <artifactId>rhino</artifactId>
+        <version>1.7R3</version>
+      </dependency>
+      <dependency>
+        <groupId>bouncycastle</groupId>
+        <artifactId>bcprov-jdk16</artifactId>
+        <version>140</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
+        <artifactId>jsr311-api</artifactId>
+        <version>1.1.2.r612</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

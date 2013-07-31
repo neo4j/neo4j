@@ -183,7 +183,6 @@ terms of the relevant Commercial Agreement.
       <!-- Ugly addition just to make the download package contain the same jars. -->
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
-      <version>1.6.1</version>
       <!-- Remove conflicting version (why do we have this conflict?) -->
       <exclusions>
         <exclusion>

@@ -94,6 +94,24 @@
             </comments>
         </license>
     </licenses>
+    
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <scope>test</scope>
+            <version>4.1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <scope>test</scope>
+            <version>4.1.3</version>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -141,7 +159,6 @@
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
-            <version>6.1.25</version>
         </dependency>
 
         <dependency>
@@ -152,24 +169,12 @@
         <dependency>
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
-            <type>jar</type>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-digester</artifactId>
-                    <groupId>commons-digester</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- Added directly to avoid version clash in commons-configuration. -->
         <dependency>
             <groupId>commons-digester</groupId>
             <artifactId>commons-digester</artifactId>
-            <version>1.8.1</version>
-            <type>jar</type>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -180,26 +185,22 @@
         <dependency>
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-jaxrs</artifactId>
-          <version>1.9.7</version>
         </dependency>
 
         <dependency>
             <groupId>org.rrd4j</groupId>
             <artifactId>rrd4j</artifactId>
-            <version>2.0.7</version>
         </dependency>
 
         <dependency>
           <groupId>org.mozilla</groupId>
           <artifactId>rhino</artifactId>
-          <version>1.7R3</version>
         </dependency>
 
         <!-- File uploads -->
         <dependency>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-multipart</artifactId>
-            <version>1.9</version>
         </dependency>
 
         <!-- Test dependencies -->
@@ -207,14 +208,12 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>1.9</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.2.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -222,14 +221,12 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <scope>test</scope>
-            <version>4.1.3</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
             <scope>test</scope>
-            <version>4.1.3</version>
         </dependency>
 
         <dependency>
@@ -297,7 +294,6 @@
         <dependency>
             <groupId>bouncycastle</groupId>
             <artifactId>bcprov-jdk16</artifactId>
-            <version>140</version>
         </dependency>
     </dependencies>
 
@@ -504,7 +500,6 @@
             <plugin>
                 <groupId>com.voltvoodoo</groupId>
                 <artifactId>brew</artifactId>
-                <version>0.2.10</version>
                 <executions>
                     <execution>
                         <id>compile-webadmin</id>
@@ -547,7 +542,6 @@
           <plugin>
             <groupId>com.github.searls</groupId>
             <artifactId>jasmine-maven-plugin</artifactId>
-            <version>1.2.0.0</version>
             <extensions>true</extensions>
             <executions>
               <execution>

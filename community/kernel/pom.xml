@@ -238,8 +238,8 @@ public class ComponentVersion extends Version
             <groupId>org.apache.ant</groupId>
             <artifactId>ant-launcher</artifactId>
             <version>1.8.4</version>
-        </dependency>
-      </dependencies>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -267,15 +267,17 @@ public class ComponentVersion extends Version
                   <additionnalDependency>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
+                    <version>${logback-classic.version}</version>
                   </additionnalDependency>
                   <additionnalDependency>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-core</artifactId>
+                    <version>${logback-classic.version}</version>
                   </additionnalDependency>
                   <additionnalDependency>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
-                    <version>1.6.4</version>
+                    <version>${slf4j-api.version}</version>
                   </additionnalDependency>
                 </additionnalDependencies>
                 <detectJavaApiLink>true</detectJavaApiLink>
@@ -320,15 +322,17 @@ public class ComponentVersion extends Version
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-classic</artifactId>
+              <version>${logback-classic.version}</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-core</artifactId>
+              <version>${logback-classic.version}</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>org.slf4j</groupId>
               <artifactId>slf4j-api</artifactId>
-              <version>1.6.4</version>
+              <version>${slf4j-api.version}</version>
             </additionnalDependency>
           </additionnalDependencies>
           <groups>
@@ -350,7 +354,6 @@ public class ComponentVersion extends Version
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
-        <version>1.0</version>
         <executions>
           <execution>
             <id>default</id>
@@ -423,7 +426,6 @@ public class ComponentVersion extends Version
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -444,13 +446,11 @@ public class ComponentVersion extends Version
     <dependency>
       <groupId>org.ow2.jotm</groupId>
       <artifactId>jotm-core</artifactId>
-      <version>2.2.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>geronimo-spec</groupId>
       <artifactId>geronimo-spec-j2ee</artifactId>
-      <version>1.4-rc4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -460,7 +460,6 @@ public class ComponentVersion extends Version
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
-        <version>2.4</version>
         <configuration>
           <includes>
             <include>org/neo4j/graphdb/**</include>
@@ -474,17 +473,17 @@ public class ComponentVersion extends Version
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-classic</artifactId>
-              <version>1.0.0</version>
+              <version>${logback-classic.version}</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-core</artifactId>
-              <version>1.0.0</version>
+              <version>${logback-classic.version}</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>org.slf4j</groupId>
               <artifactId>slf4j-api</artifactId>
-              <version>1.6.4</version>
+              <version>${slf4j-api.version}</version>
             </additionnalDependency>
           </additionnalDependencies>
           <detectJavaApiLink>true</detectJavaApiLink>
