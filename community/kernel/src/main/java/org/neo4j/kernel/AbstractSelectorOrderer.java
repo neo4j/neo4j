@@ -21,9 +21,9 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.SideSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 public abstract class AbstractSelectorOrderer<T> implements SideSelector
 {

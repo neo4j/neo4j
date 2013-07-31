@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.junit.{Before, Test}
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node, Transaction}
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.scalatest.Assertions
 import org.mockito.Mockito
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
 
@@ -71,5 +70,40 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
     Mockito.verify(outerTx).failure()
     Mockito.verify(outerTx).finish()
     Mockito.verifyNoMoreInteractions(outerTx)
+  }
+
+  @Test def should_return_stable_iterables() {
+    // GIVEN
+    val relTypeName = "LINK"
+    val node = createMiniGraph(relTypeName)
+
+    val tx = graph.beginTx()
+    val context = new TransactionBoundQueryContext(graph, tx, statementContext, state)
+
+    // WHEN
+    val iterable = context.getRelationshipsFor(node, Direction.BOTH, Seq.empty)
+
+    // THEN
+    assert( iterable.iterator.toList === iterable.iterator.toList )
+    assert( 2 === iterable.size )
+
+    tx.success()
+    tx.finish()
+  }
+
+  private def createMiniGraph(relTypeName: String): Node = {
+    val relType: DynamicRelationshipType = DynamicRelationshipType.withName(relTypeName)
+    val tx = graph.beginTx()
+    try {
+      val node = graph.createNode()
+      val other1 = graph.createNode()
+      val other2 = graph.createNode()
+
+      node.createRelationshipTo( other1, relType )
+      other2.createRelationshipTo( node, relType )
+      tx.success()
+      node
+    }
+    finally { tx.finish() }
   }
 }

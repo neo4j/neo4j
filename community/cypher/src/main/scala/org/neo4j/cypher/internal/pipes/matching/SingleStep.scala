@@ -35,8 +35,10 @@ case class SingleStep(id: Int,
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
   def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = state.query.getRelationshipsFor(node, direction, typ)
-    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters, state)
+    var intermediate: Iterable[Relationship] = state.query.getRelationshipsFor(node, direction, typ)
+    intermediate = state.query.getRelationshipsFor(node, direction, typ)
+    val combinedPredicate: Predicate = And(relPredicate, nodePredicate)
+    val rels = new FilteringIterable(intermediate, node, combinedPredicate, parameters, state)
     (rels, next)
   }
 

@@ -103,7 +103,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     ctx.keyWriteOperations.labelGetOrCreateForName(theState, labelName)
 
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = types match {
+  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = types match {
     case Seq() => node.getRelationships(dir).asScala
     case _     => node.getRelationships(dir, types.map(withName): _*).asScala
   }
