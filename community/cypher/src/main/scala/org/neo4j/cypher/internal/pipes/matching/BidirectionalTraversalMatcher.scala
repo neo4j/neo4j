@@ -103,8 +103,10 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
       }
 
       if (prune) {
-        startPath.prune()
-        endPath.prune()
+        if (e.isDefined)
+          startPath.prune()
+        if (s.isDefined)
+          endPath.prune()
       }
 
       include
