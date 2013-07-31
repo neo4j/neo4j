@@ -318,7 +318,7 @@ public abstract class InternalAbstractGraphDatabase
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
                 GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(
-                        config.get( Configuration.use_memory_mapped_buffers ) ) );
+                        config.get( Configuration.use_memory_mapped_buffers ) ), logging.getConsoleLog( AutoConfigurator.class ) );
         if (config.get( GraphDatabaseSettings.dump_configuration ))
         {
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
