@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.{commands, mutation}
 import org.neo4j.cypher.internal.parser.{AbstractPattern, Action, On, OnAction}
 import org.neo4j.cypher.internal.commands.{CreateUniqueAst, MergeAst}
 import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
+import org.neo4j.cypher.internal.symbols._
 
 sealed trait Clause extends AstNode with SemanticCheckable
 
@@ -78,7 +79,10 @@ case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends Updat
 
 
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
-  def semanticCheck = expressions.semanticCheck(Expression.SemanticContext.Simple)
+  def semanticCheck = {
+    expressions.semanticCheck(Expression.SemanticContext.Simple) then
+      expressions.limitType(NodeType(), RelationshipType(), PathType())
+  }
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
 }

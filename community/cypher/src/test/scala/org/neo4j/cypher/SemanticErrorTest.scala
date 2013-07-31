@@ -121,6 +121,13 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldFailTypeCheckWhenDeleting() {
+    test("start a=node(0) delete 1 + 1",
+      v2_0 -> "Expression `Add(Literal(1),Literal(1))` yielded `2`. Don't know how to delete that.",
+      vExperimental -> "Type mismatch: expected Node, Relationship or Collection<Map> but was Long (line 1, column 26)"
+    )
+  }
+
   private def test(query: String, variants: (CypherVersion, String)*) {
     for ((versions, message) <- variants) {
       test(versions, query, message)
