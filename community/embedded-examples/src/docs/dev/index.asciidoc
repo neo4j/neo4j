@@ -55,4 +55,8 @@ include::management.asciidoc[]
 
 :leveloffset: 2
 
+include::unique-nodes.asciidoc[]
+
+:leveloffset: 2
+
 include::osgi.asciidoc[]

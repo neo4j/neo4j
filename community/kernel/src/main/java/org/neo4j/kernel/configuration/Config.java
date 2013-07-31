@@ -41,6 +41,8 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.kernel.logging.BufferingLogger;
 
+import static java.lang.Character.isDigit;
+
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
  * to convert the internal key-value settings to other types.
@@ -61,8 +63,8 @@ public class Config implements DiagnosticsProvider
     // instantiated.
     private StringLogger log = new BufferingLogger();
     private final ConfigurationValidator validator;
-    private Function<String, String> settingsFunction;
-    private Iterable<Class<?>> settingsClasses;
+    private final Function<String, String> settingsFunction;
+    private final Iterable<Class<?>> settingsClasses;
 
     public Config()
     {
@@ -550,25 +552,51 @@ public class Config implements DiagnosticsProvider
 
     public static long parseLongWithUnit( String numberWithPotentialUnit )
     {
-        numberWithPotentialUnit = numberWithPotentialUnit.toLowerCase();
+        int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
+        String number = numberWithPotentialUnit.substring( 0, firstNonDigitIndex );
+        
         long multiplier = 1;
-        if ( numberWithPotentialUnit.endsWith( "k" ) )
+        if ( firstNonDigitIndex < numberWithPotentialUnit.length() )
         {
-            multiplier = 1024;
-            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
+            String unit = numberWithPotentialUnit.substring( firstNonDigitIndex );
+            if ( unit.equalsIgnoreCase( "k" ) )
+            {
+                multiplier = 1024;
+            }
+            else if ( unit.equalsIgnoreCase( "m" ) )
+            {
+                multiplier = 1024 * 1024;
+            }
+            else if ( unit.equalsIgnoreCase( "g" ) )
+            {
+                multiplier = 1024 * 1024 * 1024;
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
+            }
         }
-        else if ( numberWithPotentialUnit.endsWith( "m" ) )
-        {
-            multiplier = 1024 * 1024;
-            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
-        }
-        else if ( numberWithPotentialUnit.endsWith( "g" ) )
-        {
-            multiplier = 1024 * 1024 * 1024;
-            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
-        }
+        
+        return Long.parseLong( number ) * multiplier;
+    }
 
-        return Long.parseLong( numberWithPotentialUnit ) * multiplier;
+    /**
+     * @return index of first non-digit character in {@code numberWithPotentialUnit}. If all digits then
+     * {@code numberWithPotentialUnit.length()} is returned.
+     */
+    private static int findFirstNonDigit( String numberWithPotentialUnit )
+    {
+        int firstNonDigitIndex = numberWithPotentialUnit.length();
+        for ( int i = 0; i < numberWithPotentialUnit.length(); i++ )
+        {
+            if ( !isDigit( numberWithPotentialUnit.charAt( i ) ) )
+            {
+                firstNonDigitIndex = i;
+                break;
+            }
+        }
+        return firstNonDigitIndex;
     }
 
     @Deprecated

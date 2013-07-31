@@ -591,7 +591,7 @@ public class WriteTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, new DefaultLogBufferFactory(),
-                    fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null );
+                    fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null, 25*1024*1024 );
             this.verifier = verifier;
         }
         

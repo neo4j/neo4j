@@ -28,27 +28,14 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
+import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 @Path( "/relationship/types" )
 public class DatabaseMetadataService
 {
     private final Database database;
-    private RepresentationWrittenHandler representationWrittenHandler = new RepresentationWrittenHandler()
-    {
-        @Override
-        public void onRepresentationWritten()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void onRepresentationFinal()
-        {
-            // do nothing
-        }
-    };
+    private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
 
     public DatabaseMetadataService( @Context Database database )
     {
@@ -69,7 +56,7 @@ public class DatabaseMetadataService
         }
         finally
         {
-            representationWrittenHandler.onRepresentationFinal();
+            representationWriteHandler.onRepresentationFinal();
         }
     }
 
@@ -88,8 +75,8 @@ public class DatabaseMetadataService
                 .replaceAll( ",]", "]" );
     }
 
-    public void setRepresentationWrittenHandler( RepresentationWrittenHandler representationWrittenHandler )
+    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler )
     {
-        this.representationWrittenHandler = representationWrittenHandler;
+        this.representationWriteHandler = representationWriteHandler;
     }
 }

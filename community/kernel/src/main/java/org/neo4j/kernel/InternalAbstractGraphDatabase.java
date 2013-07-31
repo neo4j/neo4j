@@ -30,8 +30,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -147,17 +145,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -375,7 +371,7 @@ public abstract class InternalAbstractGraphDatabase
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
                 GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(
-                        config.get( Configuration.use_memory_mapped_buffers ) ) );
+                        config.get( Configuration.use_memory_mapped_buffers ) ), logging.getConsoleLog( AutoConfigurator.class ) );
         if (config.get( GraphDatabaseSettings.dump_configuration ))
         {
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
@@ -410,7 +406,11 @@ public abstract class InternalAbstractGraphDatabase
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
-            throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
+            throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
+                    "Cache providers are loaded using java service loading where they " +
+                    "register themselves in resource (plain-text) files found on the class path under " +
+                    "META-INF/services/" + CacheProvider.class.getName() + ". This missing provider may have " +
+                    "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
         jobScheduler =
@@ -539,7 +539,7 @@ public abstract class InternalAbstractGraphDatabase
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
-        xaFactory = new XaFactory( txIdGenerator, txManager, logBufferFactory, fileSystem,
+        xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
@@ -853,17 +853,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        Logging logging;
-        try
-        {
-            getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            logging = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
-        }
-        catch ( Exception e )
-        {
-            logging = new ClassicLoggingService( config );
-        }
-        return life.add( logging );
+        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC ) );
     }
 
     protected void createNeoDataSource()

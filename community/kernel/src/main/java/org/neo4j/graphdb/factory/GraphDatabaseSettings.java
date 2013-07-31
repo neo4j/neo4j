@@ -179,6 +179,12 @@ public abstract class GraphDatabaseSettings
     public static final StringSetting keep_logical_logs = new StringSetting( setting("keep_logical_logs", STRING, TRUE, illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
                         "limiting logical log space on disk to 100Mb," +
                         " or '200k txs' for limiting the number of transactions to keep to 200 000.", matches(ANY))));
+    
+    @Description( "Specifies at which file size the logical log will auto-rotate. " +
+                  "0 means that no rotation will automatically occur based on file size. " +
+                  "Default is 25M" )
+    public static final Setting<Long> logical_log_rotation_threshold = setting( "logical_log_rotation_threshold",
+            Settings.LONG_WITH_OPTIONAL_UNIT, "25M" );
 
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities.")

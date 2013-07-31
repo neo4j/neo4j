@@ -22,6 +22,7 @@ package org.neo4j.server.plugins;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
@@ -48,9 +49,17 @@ class PluginMethod extends PluginPoint
             throws BadPluginInvocationException, PluginInvocationFailureException, BadInputException
     {
         Object[] arguments = new Object[extractors.length];
-        for ( int i = 0; i < arguments.length; i++ )
+        Transaction tx = graphDb.beginTx();
+        try
         {
-            arguments[i] = extractors[i].extract( graphDb, source, params );
+            for ( int i = 0; i < arguments.length; i++ )
+            {
+                arguments[i] = extractors[i].extract( graphDb, source, params );
+            }
+        }
+        finally
+        {
+            tx.finish();
         }
         try
         {
@@ -74,11 +83,7 @@ class PluginMethod extends PluginPoint
             }
             throw new PluginInvocationFailureException( targetExc );
         }
-        catch ( IllegalArgumentException e )
-        {
-            throw new PluginInvocationFailureException( e );
-        }
-        catch ( IllegalAccessException e )
+        catch ( IllegalArgumentException | IllegalAccessException e )
         {
             throw new PluginInvocationFailureException( e );
         }

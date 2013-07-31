@@ -21,12 +21,14 @@ package org.neo4j.server.rest.transactional;
 
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
+import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
+import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
 public class TransactionalRequestDispatcher implements RequestDispatcher
@@ -49,8 +51,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            restfulGraphDatabase.getOutputFormat().setRepresentationWrittenHandler( new
-                    DefaultRepresentationWrittenHandler( httpContext, transaction ) );
+            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler(
+                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
         }
         else if ( o instanceof BatchOperationService )
         {
@@ -58,8 +60,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            batchOperationService.setRepresentationWrittenHandler( new DefaultRepresentationWrittenHandler(
-                    httpContext, transaction ) );
+            batchOperationService.setRepresentationWriteHandler(
+                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
         }
         else if ( o instanceof CypherService )
         {
@@ -67,8 +69,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            cypherService.getOutputFormat().setRepresentationWrittenHandler( new DefaultRepresentationWrittenHandler(
-                    httpContext, transaction ) );
+            cypherService.getOutputFormat().setRepresentationWriteHandler(
+                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
         }
         else if ( o instanceof DatabaseMetadataService )
         {
@@ -76,18 +78,53 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            databaseMetadataService.setRepresentationWrittenHandler( new RepresentationWrittenHandler()
+            databaseMetadataService.setRepresentationWriteHandler( new RepresentationWriteHandler()
             {
+                @Override
+                public void onRepresentationStartWriting()
+                {
+                    // do nothing
+                }
+
                 @Override
                 public void onRepresentationWritten()
                 {
-                    // doesn't need to write
+                    // doesn't need to commit
                 }
 
                 @Override
                 public void onRepresentationFinal()
                 {
                     transaction.finish();
+                }
+            } );
+        }
+        else if ( o instanceof ExtensionService )
+        {
+            ExtensionService extensionService = (ExtensionService) o;
+            extensionService.getOutputFormat().setRepresentationWriteHandler( new RepresentationWriteHandler()
+            {
+                Transaction transaction;
+
+                @Override
+                public void onRepresentationStartWriting()
+                {
+                    transaction = database.getGraph().beginTx();
+                }
+
+                @Override
+                public void onRepresentationWritten()
+                {
+                    // doesn't need to commit
+                }
+
+                @Override
+                public void onRepresentationFinal()
+                {
+                    if ( transaction != null )
+                    {
+                        transaction.finish();
+                    }
                 }
             } );
         }

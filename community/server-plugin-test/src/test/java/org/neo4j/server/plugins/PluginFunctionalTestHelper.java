@@ -19,25 +19,25 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Assert;
+
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class PluginFunctionalTestHelper
 {
@@ -53,14 +53,14 @@ public class PluginFunctionalTestHelper
     protected static Map<String, Object> deserializeMap( final String body ) throws JsonParseException
     {
         Map<String, Object> result = JsonHelper.jsonToMap( body );
-        assertThat( result, is( not( nullValue() ) ) );
+        assertThat( result, CoreMatchers.is( not( nullValue() ) ) );
         return result;
     }
 
     private static List<Map<String, Object>> deserializeList( final String body ) throws JsonParseException
     {
         List<Map<String, Object>> result = JsonHelper.jsonToList( body );
-        assertThat( result, is( not( nullValue() ) ) );
+        assertThat( result, CoreMatchers.is( not( nullValue() ) ) );
         return result;
     }
 
@@ -68,7 +68,7 @@ public class PluginFunctionalTestHelper
     {
         String body = response.getEntity();
 
-        assertEquals( body, 200, response.getStatus() );
+        Assert.assertEquals( body, 200, response.getStatus() );
         return body;
     }
 

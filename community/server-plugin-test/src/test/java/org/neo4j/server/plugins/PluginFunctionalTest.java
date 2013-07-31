@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,12 +26,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
@@ -50,6 +43,13 @@ import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.server.SharedServerTestBase;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 @SuppressWarnings( "unchecked" )
 public class PluginFunctionalTest extends SharedServerTestBase
 {
@@ -58,13 +58,13 @@ public class PluginFunctionalTest extends SharedServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        functionalTestHelper = new FunctionalTestHelper( server() );
+        functionalTestHelper = new FunctionalTestHelper( SharedServerTestBase.server() );
     }
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server() );
+        ServerHelper.cleanTheDatabase( SharedServerTestBase.server() );
     }
 
     @Test
@@ -305,7 +305,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
 
         PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
-        Set<String> stringsSet = new HashSet<String>( strings );
+        Set<String> stringsSet = new HashSet<>( strings );
 
         assertThat( FunctionalTestPlugin.stringSet, is( stringsSet ) );
     }
@@ -319,7 +319,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
 
         PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
-        List<String> stringsList = new ArrayList<String>( strings );
+        List<String> stringsList = new ArrayList<>( strings );
 
         assertThat( FunctionalTestPlugin.stringList, is( stringsList ) );
     }
@@ -335,7 +335,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
-        List<String> stringsList = new ArrayList<String>( strings );
+        List<String> stringsList = new ArrayList<>( strings );
 
         assertThat( FunctionalTestPlugin.stringList, is( stringsList ) );
     }
@@ -351,7 +351,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
-        List<String> stringsList = new ArrayList<String>( strings );
+        List<String> stringsList = new ArrayList<>( strings );
 
         assertThat( FunctionalTestPlugin.stringList, is( stringsList ) );
         assertThat( FunctionalTestPlugin._integer, is( 3 ) );
@@ -420,7 +420,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
 
         JaxRsResponse response = new RestRequest().post(url, null);
 
-        assertThat(response.getStatus(), is(204));
+        assertThat( response.getEntity(), response.getStatus(), is(204) );
         response.close();
     }
 

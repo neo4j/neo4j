@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -68,6 +67,7 @@ public class GraphDbHelper
         return numberOfEntitiesFor( Relationship.class );
     }
 
+    @SuppressWarnings("deprecation")
     private int numberOfEntitiesFor( Class<? extends PropertyContainer> type )
     {
         return (int) database.getGraph().getNodeManager().getNumberOfIdsInUse( type );
@@ -79,7 +79,7 @@ public class GraphDbHelper
         try
         {
             Node node = database.getGraph().getNodeById( nodeId );
-            Map<String, Object> allProperties = new HashMap<String, Object>();
+            Map<String, Object> allProperties = new HashMap<>();
             for ( String propertyKey : node.getPropertyKeys() )
             {
                 allProperties.put( propertyKey, node.getProperty( propertyKey ) );
@@ -221,7 +221,7 @@ public class GraphDbHelper
         try
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
-            Map<String, Object> allProperties = new HashMap<String, Object>();
+            Map<String, Object> allProperties = new HashMap<>();
             for ( String propertyKey : relationship.getPropertyKeys() )
             {
                 allProperties.put( propertyKey, relationship.getProperty( propertyKey ) );
@@ -263,25 +263,13 @@ public class GraphDbHelper
             tx.finish();
         }
     }
-    
-    public void enableNodeAutoIndexingFor(String key) {
-    	AutoIndexer<Node> nodeAutoIndexer = database.getGraph().index().getNodeAutoIndexer();
-    	nodeAutoIndexer.startAutoIndexingProperty( key );
-    	nodeAutoIndexer.setEnabled( true );
-    }
-    
-    public void enableRelationshipAutoIndexingFor(String key) {
-    	AutoIndexer<Relationship> relAutoIndexer = database.getGraph().index().getRelationshipAutoIndexer();
-    	relAutoIndexer.startAutoIndexingProperty( key );
-    	relAutoIndexer.setEnabled( true );
-    }
 
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Collection<Long> result = new ArrayList<Long>();
+            Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getNodeIndex( indexName ).query( key, value ) )
             {
                 result.add( node.getId() );
@@ -300,7 +288,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Collection<Long> result = new ArrayList<Long>();
+            Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getNodeIndex( indexName ).get( key, value ) )
             {
                 result.add( node.getId() );
@@ -319,7 +307,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Collection<Long> result = new ArrayList<Long>();
+            Collection<Long> result = new ArrayList<>();
             for ( Relationship relationship : database.getRelationshipIndex( indexName ).get( key, value ) )
             {
                 result.add( relationship.getId() );
@@ -360,12 +348,6 @@ public class GraphDbHelper
         {
             transaction.finish();
         }
-    }
-
-    public Index<Node> getNodeIndex( String indexName )
-    {
-        return database.getIndexManager()
-                .forNodes( indexName );
     }
 
     public Index<Node> createNodeFullTextIndex( String named )
@@ -416,14 +398,19 @@ public class GraphDbHelper
 
     public long getReferenceNode()
     {
-        return database.getGraph().getReferenceNode()
-                .getId();
-    }
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            @SuppressWarnings("deprecation")
+            Node referenceNode = database.getGraph().getReferenceNode();
 
-    public Index<Relationship> createRelationshipFullTextIndex( String named )
-    {
-        return database.getIndexManager()
-                .forRelationships( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+            tx.success();
+            return referenceNode.getId();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     public Index<Relationship> createRelationshipIndex( String named )

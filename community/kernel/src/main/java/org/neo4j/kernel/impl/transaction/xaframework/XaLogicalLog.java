@@ -93,8 +93,8 @@ public class XaLogicalLog implements LogLoader
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
     private char currentLog = CLEAN;
-    private boolean autoRotate = true;
-    private long rotateAtSize = 25 * 1024 * 1024; // 25MB
+    private boolean autoRotate;
+    private long rotateAtSize;
 
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
@@ -113,7 +113,8 @@ public class XaLogicalLog implements LogLoader
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
-                         Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
+                         Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
+                         long rotateAtSize )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -123,6 +124,8 @@ public class XaLogicalLog implements LogLoader
         this.fileSystem = fileSystem;
         this.pruneStrategy = pruneStrategy;
         this.stateFactory = stateFactory;
+        this.rotateAtSize = rotateAtSize;
+        this.autoRotate = rotateAtSize > 0;
         this.logFiles = new XaLogicalLogFiles( fileName, fileSystem );
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
@@ -1408,7 +1411,8 @@ public class XaLogicalLog implements LogLoader
         this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != (currentVersion + 1) )
         {
-            throw new IOException( "version change failed" );
+            throw new IOException( "Version change failed, expected " + (currentVersion + 1) + ", but was " +
+                    xaTf.getCurrentVersion() );
         }
         pruneStrategy.prune( this );
         fileChannel = newLog;
@@ -1476,21 +1480,25 @@ public class XaLogicalLog implements LogLoader
         currentLog = c;
     }
 
+    @Deprecated
     public void setAutoRotateLogs( boolean autoRotate )
     {
         this.autoRotate = autoRotate;
     }
 
+    @Deprecated
     public boolean isLogsAutoRotated()
     {
         return this.autoRotate;
     }
 
+    @Deprecated
     public void setLogicalLogTargetSize( long size )
     {
         this.rotateAtSize = size;
     }
 
+    @Deprecated
     public long getLogicalLogTargetSize()
     {
         return this.rotateAtSize;

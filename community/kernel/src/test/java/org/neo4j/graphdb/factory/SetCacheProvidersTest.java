@@ -46,7 +46,10 @@ public class SetCacheProvidersTest
         }
         catch ( IllegalArgumentException iae )
         {
-            assertTrue( iae.getMessage().contains( "No cache type" ) );
+            iae.printStackTrace();
+            assertTrue( iae.getMessage().contains( "No provider for cache type" ) );
+            assertTrue( iae.getMessage().contains( "register" ) );
+            assertTrue( iae.getMessage().contains( "missing" ) );
         }
     }
 

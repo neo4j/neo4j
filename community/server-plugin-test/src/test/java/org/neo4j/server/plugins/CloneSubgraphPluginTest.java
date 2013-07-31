@@ -19,22 +19,19 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,9 +45,12 @@ import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 {
@@ -161,8 +161,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
     public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException
     {
-        int originalCount = eagerlyCount( server.getDatabase().getGraph().getAllNodes() );
-        originalCount--; // Don't count the reference node
+        int originalCount = nodeCount() - 1; // Don't count the reference node
 
         // Find the start node URI from the server
         JaxRsResponse response = new RestRequest().get(functionalTestHelper.dataUri() + "node/1");
@@ -188,25 +187,28 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         response.close();
         response = new RestRequest().post( clonedSubgraphUri, "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
-        assertEquals( 200, response.getStatus() );
+        Assert.assertEquals( response.getEntity(), 200, response.getStatus() );
 
         int doubleTheNumberOfNodes = ( originalCount * 2 ) + 1;
-        assertEquals( doubleTheNumberOfNodes, eagerlyCount( server.getDatabase().getGraph().getAllNodes() ) );
-        response.close();
+        assertEquals( doubleTheNumberOfNodes, nodeCount() );
     }
 
-    private int eagerlyCount( Iterable<?> items )
+    private int nodeCount()
     {
-        if ( items == null ) return 0;
-
-        int count = 0;
-        Iterator<?> iterator = items.iterator();
-        while ( iterator.hasNext() )
+        Transaction tx = server.getDatabase().getGraph().beginTx();
+        try
         {
-            count++;
-            iterator.next();
+            int count = 0;
+            for ( @SuppressWarnings("unused") Node node : GlobalGraphOperations.at( server.getDatabase().getGraph() )
+                                                                               .getAllNodes() )
+            {
+                count++;
+            }
+            return count;
         }
-
-        return count;
+        finally
+        {
+            tx.finish();
+        }
     }
 }

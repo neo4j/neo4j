@@ -46,19 +46,19 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        functionalTestHelper = new FunctionalTestHelper( server() );
+        functionalTestHelper = new FunctionalTestHelper( SharedServerTestBase.server() );
     }
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server() );
+        ServerHelper.cleanTheDatabase( SharedServerTestBase.server() );
     }
 
     @Test
     public void datarootContainsReferenceToExtensions() throws Exception {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo( 200 ));
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
         String extInfo = (String) json.get("extensions_info");
         assertNotNull(new URI(extInfo));
@@ -68,7 +68,7 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     @Test
     public void canListAllAvailableServerExtensions() throws Exception {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo( 200 ));
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
         assertFalse(json.isEmpty());
         response.close();
@@ -78,7 +78,7 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     @Test
     public void canListExtensionMethodsForServerExtension() throws Exception {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo( 200 ));
 
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
         String refNodeService = (String) json.get(FunctionalTestPlugin.class.getSimpleName());
@@ -87,11 +87,11 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
         response = RestRequest.req().get(refNodeService);
         String result = response.getEntity();
 
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo( 200 ));
 
         json = JsonHelper.jsonToMap(result);
         json = (Map<String, Object>) json.get("graphdb");
-        assertThat(json, hasKey(FunctionalTestPlugin.GET_REFERENCE_NODE));
+        assertThat(json, hasKey( FunctionalTestPlugin.GET_REFERENCE_NODE ));
         response.close();
     }
 }

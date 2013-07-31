@@ -21,18 +21,25 @@ package org.neo4j.server.rest.transactional;
 
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.api.core.HttpResponseContext;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.rest.repr.RepresentationWrittenHandler;
 
-public class DefaultRepresentationWrittenHandler implements RepresentationWrittenHandler
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.server.rest.repr.RepresentationWriteHandler;
+
+public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements RepresentationWriteHandler
 {
     private final HttpContext httpContext;
     private final Transaction transaction;
 
-    public DefaultRepresentationWrittenHandler( HttpContext httpContext, Transaction transaction )
+    public CommitOnSuccessfulStatusCodeRepresentationWriteHandler( HttpContext httpContext, Transaction transaction )
     {
         this.httpContext = httpContext;
         this.transaction = transaction;
+    }
+
+    @Override
+    public void onRepresentationStartWriting()
+    {
+        // do nothing
     }
 
     @Override
