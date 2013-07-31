@@ -26,7 +26,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
