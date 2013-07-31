@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.channel.ChannelException;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -35,16 +34,15 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Exceptions.exceptionsOfType;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
 import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
 
@@ -166,18 +164,7 @@ public class StandaloneClusterClient
                 new File( new File( new File ( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
 
-        // Copied from InternalAbstractGraphDatabase#createStringLogger
-        Logging logging;
-        try
-        {
-            StandaloneClusterClient.class.getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            logging = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            logging = new ClassicLoggingService( config );
-        }
-        return logging;
+        return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
     }
     
     private static File extractDbTuningProperties( String propertiesFile )

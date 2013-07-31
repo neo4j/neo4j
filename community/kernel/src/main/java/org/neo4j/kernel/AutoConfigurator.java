@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.logging.ConsoleLogger;
 
 public class AutoConfigurator
 {
@@ -34,21 +35,30 @@ public class AutoConfigurator
     private final int maxVmUsageMb;
     private final File dbPath;
     private final boolean useMemoryMapped;
+    private final ConsoleLogger logger;
     private final FileSystemAbstraction fs;
 
-    public AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped )
+    public AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, ConsoleLogger logger )
     {
-        this( fs, dbPath, useMemoryMapped, physicalMemory(), Runtime.getRuntime().maxMemory() );
+        this( fs, dbPath, useMemoryMapped, physicalMemory(), Runtime.getRuntime().maxMemory(), logger );
     }
 
-    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physMemory, long vmMemory )
+    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physicalMemory, long vmMemory,
+                      ConsoleLogger logger )
     {
+        if (physicalMemory < vmMemory)
+        {
+            logger.log( "WARNING! Physical memory("+(physicalMemory/(1024*1000))+"MB) is less than assigned JVM memory("+(vmMemory/(1024*1000))+"MB). Continuing but with available JVM memory set to available physical memory" );
+            vmMemory = physicalMemory;
+        }
+
         this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
-        if ( physMemory != -1 )
+        this.logger = logger;
+        if ( physicalMemory != -1 )
         {
-            totalPhysicalMemMb = (int) (physMemory / 1024 / 1024);
+            totalPhysicalMemMb = (int) (physicalMemory / 1024 / 1024);
         }
         else
         {
