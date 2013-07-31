@@ -23,6 +23,7 @@ import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.helpers.DynamicIterable
 
 /*
 Variable length paths are expanded by decreasing min and max, if it's a bounded path. Once
@@ -80,7 +81,7 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = state.query.getRelationshipsFor(node, direction, typ)
+    val matchingRelationships = DynamicIterable( state.query.getRelationshipsFor(node, direction, typ) )
 
 
     val result = if (matchingRelationships.isEmpty && min == 0) {

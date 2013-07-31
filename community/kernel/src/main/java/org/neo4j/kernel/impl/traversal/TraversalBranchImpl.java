@@ -111,7 +111,8 @@ class TraversalBranchImpl implements TraversalBranch
     
     protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
     {
-        return expander.expand( this, BranchState.NO_STATE ).iterator();
+        Iterable<Relationship> iterable = expander.expand( this, BranchState.NO_STATE );
+        return iterable.iterator();
     }
 
     protected boolean hasExpandedRelationships()

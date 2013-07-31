@@ -49,8 +49,8 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
     val labelIds  = labels.map(_.getOrCreateId(state.query))
 
     labelOp match {
-      case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds)
-      case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds)
+      case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
+      case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds.iterator)
     }
 
     Iterator(context)

@@ -151,9 +151,7 @@ case class RelationshipIdentifier() extends MiniMapIdentifier() {
   protected def extract(m: MiniMap) = m.relationship
 }
 
-class MiniMap(var relationship: Relationship,
-                   var node: Node,
-                   myMap: MutableMap[String, Any] = MutableMaps.empty)
+class MiniMap(var relationship: Relationship, var node: Node, myMap: MutableMap[String, Any] = MutableMaps.empty)
   extends ExecutionContext(m = myMap) {
 
   override def iterator = throw new RuntimeException

@@ -45,7 +45,7 @@ trait QueryContext extends TokenContext {
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship]
+  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship]
 
   def getOrCreateLabelId(labelName: String): Long
 
@@ -53,9 +53,9 @@ trait QueryContext extends TokenContext {
 
   def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
 
-  def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int
 
   def getOrCreatePropertyKeyId(propertyKey: String): Long
 
@@ -104,7 +104,7 @@ trait Operations[T <: PropertyContainer] {
 
   def propertyKeyIds(obj: T): Iterator[Long]
 
-  def propertyKeys(obj: T): Iterable[String]
+  def propertyKeys(obj: T): Iterator[String]
 
   def getById(id: Long): T
 

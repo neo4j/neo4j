@@ -106,9 +106,9 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
       inner.hasProperty(obj, propertyKeyId)
     }
 
-    override def propertyKeys(obj: T): Iterable[String] = {
+    override def propertyKeys(obj: T): Iterator[String] = {
       increment()
-      inner.propertyKeys(obj)
+      inner.propertyKeys(obj).toIterator
     }
 
     override def setProperty(obj: T, propertyKeyId: Long, value: Any) {
@@ -139,15 +139,11 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
     inner.createRelationship(start, end, relType)
   }
 
-  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = {
-    val result: Iterable[Relationship] = inner.getRelationshipsFor(node, dir, types)
-
-    result.view.map {
-      rel =>
-        increment()
-        rel
+  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] =
+    inner.getRelationshipsFor(node, dir, types).map { (rel: Relationship) =>
+      increment()
+      rel
     }
-  }
 
   override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)
 

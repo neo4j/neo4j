@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Relationship, Path, PathExpander}
 import org.neo4j.graphdb.traversal.BranchState
 import java.lang.{Iterable => JIterable}
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.helpers.DynamicJavaIterable
 
 class TraversalPathExpander(params: ExecutionContext, queryState: QueryState) extends PathExpander[Option[ExpanderStep]] {
   def expand(path: Path, state: BranchState[Option[ExpanderStep]]): JIterable[Relationship] = {
@@ -39,7 +39,8 @@ class TraversalPathExpander(params: ExecutionContext, queryState: QueryState) ex
         rels
     }
 
-    result.asJava
+    val javaResult = DynamicJavaIterable(result)
+    javaResult
   }
 
   def reverse(): PathExpander[Option[ExpanderStep]] = this

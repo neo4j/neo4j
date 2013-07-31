@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.junit.{Before, Test}
-import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node, Transaction}
+import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.scalatest.Assertions
 import org.mockito.Mockito
@@ -28,6 +28,7 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
+import org.neo4j.cypher.internal.helpers.DynamicIterable
 
 class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with MockitoSugar {
 
@@ -72,7 +73,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
     Mockito.verifyNoMoreInteractions(outerTx)
   }
 
-  @Test def should_return_stable_iterables() {
+  @Test def should_return_fresh_but_equal_iterators() {
     // GIVEN
     val relTypeName = "LINK"
     val node = createMiniGraph(relTypeName)
@@ -81,10 +82,13 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
     val context = new TransactionBoundQueryContext(graph, tx, statementContext, state)
 
     // WHEN
-    val iterable = context.getRelationshipsFor(node, Direction.BOTH, Seq.empty)
+    val iterable = DynamicIterable( context.getRelationshipsFor(node, Direction.BOTH, Seq.empty) )
 
     // THEN
-    assert( iterable.iterator.toList === iterable.iterator.toList )
+    val iteratorA: Iterator[Relationship] = iterable.iterator
+    val iteratorB: Iterator[Relationship] = iterable.iterator
+    assert( iteratorA != iteratorB )
+    assert( iteratorA.toList === iteratorB.toList )
     assert( 2 === iterable.size )
 
     tx.success()

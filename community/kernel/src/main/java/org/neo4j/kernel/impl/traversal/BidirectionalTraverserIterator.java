@@ -43,7 +43,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private final BranchCollisionDetector collisionDetector;
     private Iterator<Path> foundPaths;
     private SideSelector selector;
-    private Map<Direction, Side> sides = new EnumMap<Direction, Side>( Direction.class );
+    private Map<Direction, Side> sides = new EnumMap<>( Direction.class );
     private final BidirectionalUniquenessFilter uniqueness;
     private final Predicate<Path> uniquenessPredicate = new Predicate<Path>()
     {
@@ -141,7 +141,8 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
             if ( foundPaths.hasNext() )
             {
                 numberOfPathsReturned++;
-                return foundPaths.next();
+                Path next = foundPaths.next();
+                return next;
             }
             foundPaths = null;
         }
@@ -161,7 +162,8 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                 if ( foundPaths.hasNext() )
                 {
                     numberOfPathsReturned++;
-                    return foundPaths.next();
+                    Path next = foundPaths.next();
+                    return next;
                 }
             }
         }
@@ -169,7 +171,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
 
     private Iterator<Path> uniquenessFiltered( Iterator<Path> paths )
     {
-        return new FilteringIterator<Path>( paths, uniquenessPredicate );
+        return new FilteringIterator<>( paths, uniquenessPredicate );
     }
 
     private Side currentSideDescription()

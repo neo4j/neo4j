@@ -35,8 +35,8 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
   val A = "A"
   val B = "B"
 
-  val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
   val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
+  val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
 
   @Test def basic() {
     //Data nodes and rels
@@ -100,6 +100,33 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     assert(result.head.startNode() === a)
     assert(result.head.endNode() === c)
+  }
+
+  @Test def fullUndirected2NodeGraph()
+  {
+    val nodeA = createNode("a")
+    val nodeB = createNode("b")
+
+    relate(nodeA, nodeB, "LINK")
+
+    val start = produce(nodeA, nodeB)
+    val end = produce(nodeA, nodeB)
+
+    val pr = SingleStep(0, Seq("LINK"), BOTH, None, True(), True())
+    val matcher = new BidirectionalTraversalMatcher(pr, start, end)
+
+    val queryState = QueryStateHelper.queryStateFrom(graph)
+
+    val result: Set[(Long, Long)] =
+      matcher
+        .findMatchingPaths(queryState, ExecutionContext()).map( (p: Path) => (p.startNode().getId, p.endNode().getId ) )
+        .toSet
+
+
+    val a = nodeA.getId
+    val b = nodeB.getId
+
+    assert( Set((a, b), (b, a)) === result )
   }
 
   @Test def fullUndirected3NodeGraph()

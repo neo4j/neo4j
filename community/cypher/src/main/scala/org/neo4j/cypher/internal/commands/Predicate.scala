@@ -194,7 +194,7 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 
     val matchingRelationships = state.query.getRelationshipsFor(fromNode, dir, relType)
 
-    matchingRelationships.iterator.hasNext
+    matchingRelationships.hasNext
   }
 
   def containsIsNull = false

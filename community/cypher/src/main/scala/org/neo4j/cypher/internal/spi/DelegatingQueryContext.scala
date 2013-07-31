@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
-  def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = {
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int = {
     inner.setLabelsOnNode(node, labelIds)
   }
 
@@ -52,7 +52,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def relationshipOps = inner.relationshipOps
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = {
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = {
     inner.removeLabelsFromNode(node, labelIds)
   }
 

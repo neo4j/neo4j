@@ -41,7 +41,7 @@ class PatternRelationship(key: String,
 
   def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 
-    val result: Iterable[GraphRelationship] =
+    val result: Iterator[GraphRelationship] =
       ctx.getRelationshipsFor(realNode, getDirection(node), relTypes).map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)

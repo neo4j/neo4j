@@ -31,13 +31,9 @@ trait Locker {
 
 class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) with LockingQueryContext {
 
-  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = {
+  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = {
     locker.acquireLock(node)
-    val rels = inner.getRelationshipsFor(node, dir, types)
-
-    new Iterable[Relationship] {
-      def iterator: Iterator[Relationship] = lockAll(rels.iterator)
-    }
+    lockAll(inner.getRelationshipsFor(node, dir, types))
   }
 
   override def getLabelsForNode(node: Long): Iterator[Long] = {

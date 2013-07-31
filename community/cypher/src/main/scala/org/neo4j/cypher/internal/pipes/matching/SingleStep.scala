@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Node, Relationship, Direction}
-import org.neo4j.cypher.internal.commands.{And, Predicate}
+import org.neo4j.cypher.internal.commands.{True, And, Predicate}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.helpers.DynamicIterable
+import org.neo4j.cypher.internal.pipes.matching.SingleStep.FilteringIterator
 
 case class SingleStep(id: Int,
                       typ: Seq[String],
@@ -34,17 +36,15 @@ case class SingleStep(id: Int,
   def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
-  def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
-    var intermediate: Iterable[Relationship] = state.query.getRelationshipsFor(node, direction, typ)
-    intermediate = state.query.getRelationshipsFor(node, direction, typ)
-    val combinedPredicate: Predicate = And(relPredicate, nodePredicate)
-    val rels = new FilteringIterable(intermediate, node, combinedPredicate, parameters, state)
-    (rels, next)
-  }
+  private val combinedPredicate: Predicate = And(relPredicate, nodePredicate)
+  private val needToFilter = combinedPredicate != True()
 
-  private def filter(r: Relationship, n: Node, parameters: ExecutionContext, state:QueryState): Boolean = {
-    val m = new MiniMap(r, n)
-    relPredicate.isMatch(m)(state) && nodePredicate.isMatch(m)(state)
+  def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
+    val rels = DynamicIterable {
+      val allRelationships = state.query.getRelationshipsFor(node, direction, typ)
+      if (needToFilter) FilteringIterator( node, combinedPredicate, state, allRelationships ) else allRelationships
+    }
+    (rels, next)
   }
 
   override def toString = {
@@ -92,4 +92,47 @@ case class SingleStep(id: Int,
   }
 
   def shouldInclude() = false
+}
+
+object SingleStep {
+  final case class FilteringIterator(startNode: Node, predicate: Predicate, state: QueryState,
+                                     inner: Iterator[Relationship]) extends Iterator[Relationship] {
+    val miniMap: MiniMap = new MiniMap(null, startNode)
+    var _next: Relationship = computeNext()
+
+    def hasNext: Boolean = _next != null
+
+    def next(): Relationship = {
+      if (hasNext) {
+        val result = _next
+        _next = computeNext()
+        result
+      } else {
+        throw new NoSuchElementException
+      }
+    }
+
+    private def computeNext(): Relationship = {
+      while (inner.hasNext) {
+        val nextCandidate = asValidNextCandidate(inner.next())
+        if (isValidNext(nextCandidate)) {
+          return nextCandidate
+        }
+      }
+      null
+    }
+
+    private def asValidNextCandidate(r: Relationship): Relationship = {
+      if (null == r)
+        throw new IllegalStateException("Inner iterator delivered null as Relationship")
+      r
+    }
+
+    private def isValidNext(r: Relationship): Boolean = {
+      miniMap.relationship = r
+      miniMap.node = r.getOtherNode(startNode)
+
+      predicate.isMatch(miniMap)(state)
+    }
+  }
 }

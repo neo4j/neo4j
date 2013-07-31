@@ -106,9 +106,5 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
     {
         return selectorIndex == 0 ? Direction.OUTGOING : Direction.INCOMING;
     }
-    
-    protected void endCurrentSelector()
-    {
-        selectors[selectorIndex] = EMPTY_SELECTOR;
-    }
+
 }
