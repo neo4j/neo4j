@@ -334,7 +334,8 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( ((String) responseMap.get( "message" )), containsString( "frien" ) );
     }
 
-    private String cypherRestCall( String script, Status status, Pair<String, String> ...params )
+    @SafeVarargs
+    private final String cypherRestCall( String script, Status status, Pair<String, String>... params )
     {
         return doCypherRestCall( cypherUri(), script, status, params );
     }
