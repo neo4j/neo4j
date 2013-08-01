@@ -31,7 +31,7 @@ To only rollback changes made in a nested transaction is not possible.
 The interaction cycle of working with transactions looks like this:
 
 . Begin a transaction.	
-. Operate on the graph performing write operations.
+. Perform database operations.
 . Mark the transaction as successful or not.
 . Finish the transaction.
 

@@ -114,11 +114,6 @@ public class EmbeddedNeo4jWithNewIndexing
                     userNodes.add( users.next() );
                 }
 
-                // The resource iterator for users has already been closed here as part of iteration.
-                // This has released associated resources even before the transaction has committed and would help
-                // to increase performance if we needed to do more work below, i.e. if this would be a long running
-                // transaction.
-
                 for ( Node node : userNodes )
                 {
                     System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
@@ -129,6 +124,31 @@ public class EmbeddedNeo4jWithNewIndexing
                 transaction.finish();
             }
             // END SNIPPET: findUsers
+        }
+
+        {
+            // START SNIPPET: resourceIterator
+            Label label = DynamicLabel.label( "User" );
+            int idToFind = 45;
+            String nameToFind = "user" + idToFind + "@neo4j.org";
+            Transaction transaction = graphDb.beginTx();
+            try
+            {
+                ResourceIterator<Node> users = graphDb
+                        .findNodesByLabelAndProperty( label, "username", nameToFind )
+                        .iterator();
+                Node firstUserNode;
+                if ( users.hasNext() )
+                {
+                    firstUserNode = users.next();
+                }
+                users.close();
+            }
+            finally
+            {
+                transaction.finish();
+            }
+            // END SNIPPET: resourceIterator
         }
 
         {

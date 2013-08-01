@@ -22,14 +22,10 @@ package org.neo4j.graphdb;
 /**
  * A programmatically handled transaction.
  * <p>
- * <em>All database operations that modify the graph must be wrapped in a transaction.</em> 
+ * <em>All database operations that access the graph, indexes, or the schema must be performed in a transaction.</em> 
  * <p>
- * If you attempt to modify the graph outside of a transaction, those operations will throw 
+ * If you attempt to access the graph outside of a transaction, those operations will throw 
  * {@link NotInTransactionException}.
- * <p>
- * Transactions are not required for read-only operations, however it is recommended to 
- * enclose read only operations in a transaction, because the database can be more intelligent about managing 
- * resources (see {@link ResourceIterable}).
  * <p>
  * Transactions are bound to the thread in which they were created. Transactions can either be handled 
  * programmatically, through this interface, or by a container through the Java Transaction API (JTA). The
@@ -72,9 +68,11 @@ package org.neo4j.graphdb;
  * <p>
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
- * 
+ * <p>
  * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside a transaction 
  * will be automatically closed when the transaction is committed or rolled back.
+ * Note however, that the {@link ResourceIterator} should be {@link ResourceIterator#close() closed} as soon as
+ * possible if you don't intend to exhaust the iterator.
  */
 public interface Transaction
 {
