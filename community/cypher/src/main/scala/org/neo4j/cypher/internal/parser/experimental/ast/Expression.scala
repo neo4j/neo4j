@@ -131,7 +131,11 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
-  override def semanticCheck(ctx: SemanticContext) = map.semanticCheck(ctx) then super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = {
+    map.semanticCheck(ctx) then
+      map.limitType(MapType()) then
+      super.semanticCheck(ctx)
+  }
 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }

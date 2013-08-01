@@ -935,12 +935,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def variableLengthPathWithRelsIterable() {
-    val string = "start a=node(0) match a -[r:knows*1..3]-> x return x"
+    val string = "start a=node(0) match a -[r:knows*1..3]-> x return length(r)"
     def query(pathName: String): Query = {
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo(pathName, "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false)).
-        returns(ReturnItem(Identifier("x"), "x"))
+        returns(ReturnItem(LengthFunction(Identifier("r")), "length(r)"))
     }
 
     testVariants(string, query,
