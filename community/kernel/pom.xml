@@ -46,6 +46,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <git.directory>${project.build.directory}../../.git</git.directory>
   </properties>
 
   <packaging>jar</packaging>
@@ -75,6 +76,15 @@ the relevant Commercial Agreement.
   </licenses>
 
   <profiles>
+    <profile>
+      <id>neo4j-root</id>
+      <activation>
+        <property><name>neo4j-root</name></property>
+      </activation>
+      <properties>
+        <git.directory>${project.basedir}/../../../.git/modules/neo4j-public</git.directory>
+      </properties>
+    </profile>
     <profile>
       <id>git-windows</id>
       <activation>
@@ -159,7 +169,7 @@ the relevant Commercial Agreement.
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
         <configuration>
-          <dotGitDirectory>${project.build.directory}../../.git</dotGitDirectory>
+          <dotGitDirectory>${git.directory}</dotGitDirectory>
         </configuration>
       </plugin>
       <plugin>
