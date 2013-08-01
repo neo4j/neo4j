@@ -95,7 +95,12 @@ trait Expressions extends Parser
   }
 
   private def Expression2 : Rule1[ast.Expression] = rule (
-      "(" ~~ Expression ~~ ")"
+      Parameter
+    | "(" ~~ Expression ~~ ")"
+    | ListComprehension
+    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
+    | StringLiteral
+    | NumberLiteral
     | group(keyword("NOT") ~> identifier ~~ ("(" ~~ Expression ~~ ")" | Expression)) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
     | keyword("NULL") ~>> token ~~> ast.Null
     | keyword("TRUE") ~>> token ~~> ast.True
@@ -110,13 +115,8 @@ trait Expressions extends Parser
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
     | FunctionInvocation
     | RelationshipsPattern ~>> token ~~> ast.PatternExpression
-    | Parameter
-    | StringLiteral
-    | NumberLiteral
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
-    | ListComprehension
-    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
   )
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
