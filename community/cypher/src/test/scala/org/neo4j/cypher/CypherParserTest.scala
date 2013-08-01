@@ -2656,7 +2656,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter_by_label_in_where() {
-    test(vFrom2_0, "START n=node(0) WHERE n:Foo RETURN n",
+    test(vExperimental, "START n=node(0) WHERE (n):Foo RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_label_in_where_with_expression() {
+    test(vExperimental, "START n=node(0) WHERE (n):Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
         where(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label))).

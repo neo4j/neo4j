@@ -77,7 +77,7 @@ trait Literals extends Parser
   }
 
   def NodeLabel : Rule1[ast.Identifier] = rule {
-    ":" ~~ Identifier
+    operator(":") ~~ Identifier
   }
 
   def StringLiteral : Rule1[ast.StringLiteral] = rule("\"...string...\"") {

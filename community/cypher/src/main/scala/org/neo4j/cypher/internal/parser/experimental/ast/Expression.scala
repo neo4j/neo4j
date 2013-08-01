@@ -77,7 +77,7 @@ trait SimpleTypedExpression { self: Expression =>
 }
 
 case class Identifier(name: String, token: InputToken) extends Expression {
-  // check the identifier is defined and, if not, define it
+  // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => ensureDefined(AnyType())(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
     case Left(error) => SemanticCheckResult.error(declare(AnyType())(s).right.get, error)
@@ -149,13 +149,13 @@ case class PatternExpression(pattern: Pattern, token: InputToken) extends Expres
   def toCommand = commands.PatternPredicate(pattern.toLegacyPatterns)
 }
 
-case class HasLabels(identifier: Identifier, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
+case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
 
-  override def semanticCheck(ctx: SemanticContext) = identifier.ensureDefined(NodeType()) then super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) = expression.limitType(NodeType()) then super.semanticCheck(ctx)
 
   private def toPredicate(l: Identifier): Predicate =
-    commands.HasLabel(identifier.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
+    commands.HasLabel(expression.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
 
   def toCommand = labels.map(toPredicate).reduceLeft(commands.And(_, _))
 }
