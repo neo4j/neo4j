@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 
 public class ReferenceCountingKernelTransaction extends DelegatingKernelTransaction
 {
     private StatementStateOwner statementContextOwner;
 
-    public ReferenceCountingKernelTransaction( KernelTransaction delegate,
-            LifecycleOperations refCountingOperations )
+    public ReferenceCountingKernelTransaction( KernelTransaction delegate )
     {
         super( delegate );
-        statementContextOwner = new StatementStateOwner( refCountingOperations )
+        statementContextOwner = new StatementStateOwner( )
         {
             @Override
             protected StatementState createStatementState()
@@ -42,15 +41,7 @@ public class ReferenceCountingKernelTransaction extends DelegatingKernelTransact
             }
         };
     }
-    
-    @Override
-    public StatementOperationParts newStatementOperations()
-    {
-        StatementOperationParts parts = delegate.newStatementOperations();
-        ReferenceCountingStatementOperations ops = new ReferenceCountingStatementOperations();
-        return parts.override( null, null, null, null, null, null, null, ops );
-    }
-    
+
     @Override
     public StatementState newStatementState()
     {
@@ -65,14 +56,28 @@ public class ReferenceCountingKernelTransaction extends DelegatingKernelTransact
     @Override
     public void commit() throws TransactionFailureException
     {
-        statementContextOwner.closeAllStatements();
+        try
+        {
+            statementContextOwner.closeAllStatements();
+        }
+        catch ( IOException e )
+        {
+            throw new TransactionFailureException( new RuntimeException("Unable to close open statements.", e) );
+        }
         delegate.commit();
     }
 
     @Override
     public void rollback() throws TransactionFailureException
     {
-        statementContextOwner.closeAllStatements();
+        try
+        {
+            statementContextOwner.closeAllStatements();
+        }
+        catch ( IOException e )
+        {
+            throw new TransactionFailureException( new RuntimeException("Unable to close open statements.", e) );
+        }
         delegate.rollback();
     }
 }

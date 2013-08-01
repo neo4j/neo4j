@@ -33,18 +33,10 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 
 @SuppressWarnings("deprecation")
@@ -69,6 +61,9 @@ public class TransactorTest
         Object expectedResult = new Object();
         when( statement.perform( eq( stmtContext ), any( StatementState.class ) ) ).thenReturn( expectedResult );
 
+        StatementState state = mock( StatementState.class );
+        when( txContext.newStatementState() ).thenReturn( state );
+
         Transactor transactor = new Transactor( txManager );
 
         // when
@@ -76,13 +71,13 @@ public class TransactorTest
 
         // then
         assertEquals( expectedResult, result );
-        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
+        InOrder order = inOrder( txManager, txContext, state, statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getKernelTransaction();
         order.verify( txContext ).newStatementOperations();
-        order.verify( statement ).perform( eq( stmtContext ), any( StatementState.class ) );
-        order.verify( stmtContext.lifecycleOperations() ).close( any( StatementState.class ) );
+        order.verify( statement ).perform( stmtContext, state );
+        order.verify( state ).close();
         order.verify( txContext ).commit();
         order.verify( txManager ).resume( existingTransaction );
         order.verifyNoMoreInteractions();
@@ -108,6 +103,9 @@ public class TransactorTest
         SpecificKernelException exception = new SpecificKernelException();
         when( statement.perform( any( StatementOperationParts.class ), any( StatementState.class ) ) ).thenThrow( exception );
 
+        StatementState state = mock( StatementState.class );
+        when( txContext.newStatementState() ).thenReturn( state );
+
         Transactor transactor = new Transactor( txManager );
 
         // when
@@ -122,13 +120,13 @@ public class TransactorTest
         {
             assertSame( exception, e );
         }
-        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
+        InOrder order = inOrder( txManager, txContext, state, statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getKernelTransaction();
         order.verify( txContext ).newStatementOperations();
-        order.verify( statement ).perform( eq( stmtContext ), any( StatementState.class ) );
-        order.verify( stmtContext.lifecycleOperations() ).close( any( StatementState.class ) );
+        order.verify( statement ).perform( stmtContext, state );
+        order.verify( state ).close();
         order.verify( txContext ).rollback();
         order.verify( txManager ).resume( existingTransaction );
         order.verifyNoMoreInteractions();
@@ -151,6 +149,9 @@ public class TransactorTest
         Object expectedResult = new Object();
         when( statement.perform( eq( stmtContext ), any( StatementState.class ) ) ).thenReturn( expectedResult );
 
+        StatementState state = mock( StatementState.class );
+        when( txContext.newStatementState() ).thenReturn( state );
+
         Transactor transactor = new Transactor( txManager );
 
         // when
@@ -158,13 +159,13 @@ public class TransactorTest
 
         // then
         assertEquals( expectedResult, result );
-        InOrder order = inOrder( txManager, txContext, stmtContext.lifecycleOperations(), statement );
+        InOrder order = inOrder( txManager, txContext, state, statement );
         order.verify( txManager ).suspend();
         order.verify( txManager ).begin();
         order.verify( txManager ).getKernelTransaction();
         order.verify( txContext ).newStatementOperations();
-        order.verify( statement ).perform( eq( stmtContext ), any( StatementState.class ) );
-        order.verify( stmtContext.lifecycleOperations() ).close( any( StatementState.class ) );
+        order.verify( statement ).perform( stmtContext, state );
+        order.verify( state ).close();
         order.verify( txContext ).commit();
         order.verifyNoMoreInteractions();
     }

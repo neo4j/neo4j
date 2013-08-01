@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.junit.Test;
-
 import org.neo4j.helpers.Predicate;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -201,7 +200,9 @@ public class DiffSetsTest
         Iterator<Long> result = diffSets.apply( asList( 42l, 43l ).iterator() );
 
         // THEN
-        assertEquals( asList( 43l, 42l, 44l ), asCollection( result ) );
+        Collection<Long> collectedResult = asCollection( result );
+        assertEquals( 3, collectedResult.size() );
+        assertThat( collectedResult, hasItems( 43l, 42l, 44l ) );
 
     }
 

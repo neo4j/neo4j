@@ -130,7 +130,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -155,7 +155,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -184,7 +184,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -211,7 +211,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            ctxForWriting.close( state );
+            state.close();
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -240,7 +240,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            ctxForWriting.close( state );
+            state.close();
         }
     }
 
@@ -266,7 +266,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -295,7 +295,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
     

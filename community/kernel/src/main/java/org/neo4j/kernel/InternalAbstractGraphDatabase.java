@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -150,7 +151,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -346,7 +346,6 @@ public abstract class InternalAbstractGraphDatabase
         }
         
         kernelAPI.bootstrapAfterRecovery();
-        statementContextProvider.bootstrapAfterRecovery();
         if ( txManager instanceof TxManager )
         {
             @SuppressWarnings("deprecation")
@@ -492,8 +491,8 @@ public abstract class InternalAbstractGraphDatabase
         txManager.setKernel(kernelAPI);
 
         ThreadToStatementContextBridge statementBridge = readOnly ?
-                new ThreadToStatementContextBridge.ReadOnly( kernelAPI, txManager, xaDataSourceManager ) :
-                new ThreadToStatementContextBridge( kernelAPI, txManager, xaDataSourceManager );
+                new ThreadToStatementContextBridge.ReadOnly( kernelAPI, txManager ) :
+                new ThreadToStatementContextBridge( kernelAPI, txManager );
         statementContextProvider = life.add( statementBridge );
 
         nodeManager = guard != null ?
@@ -1483,7 +1482,7 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( KernelException e )
         {
-            ctx.close( state );
+            state.close();
             return IteratorUtil.emptyIterator();
         }
 
@@ -1522,7 +1521,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return getNodeById( id );
             }
-        }, input ), state.closeable( kernelAPI.statementOperations().lifecycleOperations() ) );
+        }, input ), state );
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator

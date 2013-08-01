@@ -88,7 +88,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForWriting.close( state );
+            state.close();
         }
     }
 
@@ -173,7 +173,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -206,15 +206,13 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
     @Override
     public Object getProperty( String key )
     {
-        // TODO: Push this check to getPropertyKeyId
-        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
@@ -243,7 +241,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -276,7 +274,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -307,7 +305,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForReading.close( state );
+            state.close();
         }
     }
 
@@ -338,7 +336,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForWriting.close( state );
+            state.close();
             if ( !success )
             {
                 relationshipLookups.getNodeManager().setRollbackOnly();
@@ -371,7 +369,7 @@ public class RelationshipProxy implements Relationship
         }
         finally
         {
-            ctxForWriting.close( state );
+            state.close();
         }
     }
 

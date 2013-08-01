@@ -99,20 +99,7 @@ import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreList
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
-    private static final TxState.IdGeneration NO_ID_GENERATION = new TxState.IdGeneration()
-    {
-        @Override
-        public long newNodeId()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
 
-        @Override
-        public long newRelationshipId()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-    };
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -120,10 +107,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
     private final DependencyResolver dependencyResolver;
-    private SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
     private final boolean highlyAvailableInstance;
-    private SchemaIndexProviderMap providerMap = null;
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -134,6 +119,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private boolean isShutdown = false;
     private StatementOperationParts statementOperations;
     private StatementOperationParts readOnlyStatementOperations;
+    private SchemaCache schemaCache;
+    private SchemaIndexProviderMap providerMap = null;
 
     public Kernel( AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -200,8 +187,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     readOnlyParts,
                     parts.schemaReadOperations(),
                     readOnlyParts,
-                    readOnlyParts,
-                    parts.lifecycleOperations() );
+                    readOnlyParts);
     }
 
     @Override
@@ -251,17 +237,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // + Locking
         result = new LockingKernelTransaction( result, lockManager, transactionManager, nodeManager );
 
+        // TODO: This is a smell. If there are multiple ways to build the cake, lets do that with multiple implementations or something, boolean flags are confusing
         if ( highlyAvailableInstance )
         {
             // + Stop HA from creating constraints
             result = new UniquenessConstraintStoppingKernelTransaction( result );
         }
 
-        // + Single statement at a time
-        // TODO statementLogic is null the first call (since we're building the cake), but that's OK.
-        // This is an artifact of KernelTransaction having too many responsibilities (i.e. being a transaction,
-        // as well as being able to construct the layered StatementOperations cake).
-        result = new ReferenceCountingKernelTransaction( result, statementOperations != null ? statementOperations.lifecycleOperations() : null );
+        // + Statement reference counting
+        result = new ReferenceCountingKernelTransaction( result );
         
         // done
         return result;

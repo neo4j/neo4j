@@ -69,7 +69,7 @@ public class Transactor
                 }
                 finally
                 {
-                    context.lifecycleOperations().close( state );
+                    state.close();
                 }
                 success = true;
                 return result;

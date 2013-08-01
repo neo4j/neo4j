@@ -31,7 +31,6 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, Inter
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.cypher.internal.parser.prettifier.Prettifier
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
@@ -125,14 +124,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       }
       catch {
         case (t: Throwable) =>
-          statementContext.close( state )
+          state.close()
           tx.failure()
           tx.finish()
           throw t
       }
 
       if (touched) {
-        statementContext.close( state )
+        state.close()
         tx.success()
         tx.finish()
       }

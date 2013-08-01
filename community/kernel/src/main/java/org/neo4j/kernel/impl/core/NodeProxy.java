@@ -107,7 +107,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -222,7 +222,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
             if ( !success )
             {
                 nodeLookup.getNodeManager().setRollbackOnly();
@@ -255,7 +255,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -288,7 +288,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -321,7 +321,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -351,7 +351,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -388,7 +388,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -419,7 +419,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -524,7 +524,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -548,7 +548,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -571,7 +571,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -593,7 +593,7 @@ public class NodeProxy implements Node
                 }
                 catch ( EntityNotFoundException e )
                 {
-                    context.close( state );
+                    state.close();
                     throw new NotFoundException( "No node with id " + getId() + " found.", e );
                 }
 
@@ -612,7 +612,7 @@ public class NodeProxy implements Node
                                     ", but the returned label " + labelId + " doesn't exist anymore" );
                         }
                     }
-                }, labels ), state.closeable( context.lifecycleOperations() ) );
+                }, labels ), state );
             }
         };
     }
