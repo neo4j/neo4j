@@ -1982,7 +1982,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(AllIdentifiers())
 
-    test(vFrom2_0 diff List(vExperimental), "start a=node(0) remove a.salary", q)
+    test(vFrom2_0, "start a=node(0) remove a.salary", q)
   }
 
   @Test def foreach_on_pathOld() {

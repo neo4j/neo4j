@@ -100,9 +100,10 @@ trait Query extends Parser
     group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
   }
 
-  private def RemoveItem : Rule1[ast.RemoveItem] = rule {
-    group(Identifier ~~ NodeLabels) ~>> token ~~> ast.RemoveLabelItem
-  }
+  private def RemoveItem : Rule1[ast.RemoveItem] = rule (
+      group(Identifier ~~ NodeLabels) ~>> token ~~> ast.RemoveLabelItem
+    | Property ~~> ast.RemovePropertyItem
+  )
 
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
     group(
