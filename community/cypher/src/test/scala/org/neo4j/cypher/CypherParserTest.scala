@@ -435,6 +435,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Property(Identifier("a"), PropertyKey("name")), "a.name")))
   }
 
+  @Test def shouldReadPropertiesOnExpressions() {
+    test(vExperimental,
+      "start a = NODE(1) return (a).name",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ReturnItem(Property(Identifier("a"), PropertyKey("name")), "(a).name")))
+  }
+
   @Test def shouldHandleAndPredicates() {
     test(
       "start a = NODE(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",

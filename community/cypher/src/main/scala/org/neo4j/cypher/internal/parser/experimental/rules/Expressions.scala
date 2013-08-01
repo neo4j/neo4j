@@ -86,7 +86,8 @@ trait Expressions extends Parser
 
   private def Expression3 : Rule1[ast.Expression] = rule {
     Expression2 ~ zeroOrMore(WS ~ (
-        operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        ((operator(".") ~~ Identifier) memoMismatches) ~>> token ~~> ast.Property
+      | operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IN") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IS", "NULL") ~> identifier ~~> (ast.FunctionInvocation(_: ast.Expression, _))
       | keyword("IS", "NOT", "NULL") ~> identifier ~~> (ast.FunctionInvocation(_: ast.Expression, _))
@@ -112,7 +113,6 @@ trait Expressions extends Parser
     | Parameter
     | StringLiteral
     | NumberLiteral
-    | Property
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
     | ListComprehension
