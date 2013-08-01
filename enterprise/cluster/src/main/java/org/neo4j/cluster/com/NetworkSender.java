@@ -20,12 +20,10 @@
 package org.neo4j.cluster.com;
 
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,9 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -50,7 +46,6 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.handler.logging.LoggingHandler;
@@ -58,64 +53,72 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
-import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.cluster.com.NetworkReceiver.URI_PROTOCOL;
+
 /**
- * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
- * sending outgoing messages
+ * TCP version of sending messages. This handles sending messages from state machines to other instances
+ * in the cluster.
  */
-public class NetworkInstance
-        implements MessageSource, MessageSender, Lifecycle
+public class NetworkSender
+        implements MessageSender, Lifecycle
 {
     public interface Configuration
     {
-        HostnamePort clusterServer();
-
         int defaultPort();
     }
 
     public interface NetworkChannelsListener
     {
-        void listeningAt( URI me );
-
         void channelOpened( URI to );
 
         void channelClosed( URI to );
     }
 
-    public static final String URI_PROTOCOL = "cluster";
-
     private ChannelGroup channels;
 
-    // Receiving
-    private ExecutorService sendExecutor;
-    private NioServerSocketChannelFactory nioChannelFactory;
-    private ServerBootstrap serverBootstrap;
-    private Iterable<MessageProcessor> processors = Listeners.newListeners();
-
     // Sending
+    private ExecutorService sendExecutor;
     private ClientBootstrap clientBootstrap;
 
     private Configuration config;
+    private final NetworkReceiver receiver;
     private StringLogger msgLog;
     private URI me;
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkInstance( Configuration config, Logging logging )
+    public NetworkSender( Configuration config, NetworkReceiver receiver, Logging logging )
     {
         this.config = config;
+        this.receiver = receiver;
         this.msgLog = logging.getMessagesLog( getClass() );
+        receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
+        {
+            @Override
+            public void listeningAt( URI me)
+            {
+                NetworkSender.this.me = me;
+            }
+
+            @Override
+            public void channelOpened( URI to )
+            {
+            }
+
+            @Override
+            public void channelClosed( URI to )
+            {
+            }
+        });
     }
 
     @Override
@@ -132,19 +135,6 @@ public class NetworkInstance
         sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
-        // Listen for incoming connections
-        nioChannelFactory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
-        serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption("child.tcpNoDelay", true);
-        serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
-
-        int[] ports = config.clusterServer().getPorts();
-
-        int minPort = ports[0];
-        int maxPort = ports.length == 2 ? ports[1] : minPort;
-
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
@@ -152,16 +142,13 @@ public class NetworkInstance
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
         clientBootstrap.setOption("tcpNoDelay", true);
-
-        // Try all ports in the given range
-        listen( minPort, maxPort );
     }
 
     @Override
     public void stop()
             throws Throwable
     {
-        msgLog.debug( "Shutting down NetworkInstance" );
+        msgLog.debug( "Shutting down NetworkSender" );
         sendExecutor.shutdown();
         if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
@@ -170,75 +157,13 @@ public class NetworkInstance
 
         channels.close().awaitUninterruptibly();
         clientBootstrap.releaseExternalResources();
-        serverBootstrap.releaseExternalResources();
-        msgLog.debug( "Shutting down NetworkInstance complete" );
+        msgLog.debug( "Shutting down NetworkSender complete" );
     }
 
     @Override
     public void shutdown()
             throws Throwable
     {
-    }
-
-    private void listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException, UnknownHostException
-    {
-        ChannelException ex = null;
-        for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
-        {
-            try
-            {
-                InetAddress host;
-                String address = config.clusterServer().getHost();
-                if ( address == null )
-                {
-                    host = InetAddress.getLocalHost();
-                }
-                else
-                {
-                    host = InetAddress.getByName( address );
-                }
-
-                InetSocketAddress localAddress = new InetSocketAddress( host, checkPort );
-
-                Channel listenChannel = serverBootstrap.bind( localAddress );
-                listeningAt( (getURI( (InetSocketAddress) listenChannel.getLocalAddress() )) );
-
-                channels.add( listenChannel );
-                return;
-            }
-            catch ( ChannelException e )
-            {
-                ex = e;
-            }
-        }
-
-        nioChannelFactory.releaseExternalResources();
-        throw ex;
-    }
-
-    // MessageSource implementation
-    public void addMessageProcessor( MessageProcessor processor )
-    {
-        processors = Listeners.addListener( processor, processors );
-    }
-
-    public void receive( Message message )
-    {
-        for ( MessageProcessor processor : processors )
-        {
-            try
-            {
-                if ( !processor.process( message ) )
-                {
-                    break;
-                }
-            }
-            catch ( Exception e )
-            {
-                // Ignore
-            }
-        }
     }
 
     // MessageSender implementation
@@ -278,7 +203,7 @@ public class NetworkInstance
             }
             else if ( to.equals( me.toString() ) )
             {
-                receive( message );
+                receiver.receive( message );
             }
             else
             {
@@ -288,7 +213,7 @@ public class NetworkInstance
         else
         {
             // Internal message
-            receive( message );
+            receiver.receive( message );
         }
         return true;
     }
@@ -297,20 +222,6 @@ public class NetworkInstance
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
         return new URI( URI_PROTOCOL + ":/" + address ); // Socket.toString() already prepends a /
-    }
-
-    public void listeningAt( final URI me )
-    {
-        this.me = me;
-
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.listeningAt( me );
-            }
-        } );
     }
 
     private void broadcast( Message message )
@@ -458,20 +369,13 @@ public class NetworkInstance
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addFirst( "log", new LoggingHandler() );
-            addSerialization( pipeline );
-            pipeline.addLast( "serverHandler", new MessageReceiver() );
-            return pipeline;
-        }
-
-        private void addSerialization( ChannelPipeline pipeline )
-        {
-            pipeline.addLast( "frameDecoder",
-                    new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
+            pipeline.addLast( "sender", new NetworkSender.MessageSender() );
+            return pipeline;
         }
     }
 
-    private class MessageReceiver
+    private class MessageSender
             extends SimpleChannelHandler
     {
         @Override
@@ -487,7 +391,7 @@ public class NetworkInstance
         {
             final Message message = (Message) event.getMessage();
             msgLog.debug( "Received:" + message );
-            receive( message );
+            receiver.receive( message );
         }
 
         @Override

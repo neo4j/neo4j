@@ -20,7 +20,7 @@
 package org.neo4j.cluster.com;
 
 /**
- * This is thrown when {@link NetworkInstance} is unable to open a channel to another instance
+ * This is thrown when {@link NetworkSender} is unable to open a channel to another instance
  * in the cluster.
  */
 public class ChannelOpenFailedException extends RuntimeException
