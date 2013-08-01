@@ -119,6 +119,12 @@ trait Expressions extends Parser
     | Identifier
   )
 
+  def PropertyExpression : Rule1[ast.Property] = rule {
+    Expression2 ~ oneOrMore(WS ~ (
+      group(operator(".") ~~ Identifier) ~>> token ~~> ast.Property
+    ) : ReductionRule1[ast.Expression, ast.Property])
+  }
+
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
     IdInColl ~~ (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))
 

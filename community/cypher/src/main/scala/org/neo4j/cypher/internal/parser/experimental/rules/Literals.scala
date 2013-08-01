@@ -43,10 +43,6 @@ trait Literals extends Parser
     oneOrMore(OperatorCharacter) ~> t(ast.Identifier(_, _)) ~ !(OperatorCharacter)
   }
 
-  def Property : Rule1[ast.Property] = rule {
-    ((Identifier ~~ "." ~~ Identifier) memoMismatches) ~>> token ~~> ast.Property
-  }
-
   def MapLiteral : Rule1[ast.MapExpression] = rule {
     group(ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')) ~>> token ~~> ast.MapExpression
   }

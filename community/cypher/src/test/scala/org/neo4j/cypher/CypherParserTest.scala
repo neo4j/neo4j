@@ -1939,6 +1939,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test("start a=node(0) with a set a.hello = 'world'", q)
   }
 
+  @Test def set_property_on_node_from_expression() {
+    val secondQ = Query.
+      updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("a"), "a"))
+
+    test(vExperimental, "start a=node(0) with a set (a).hello = 'world'", q)
+  }
+
   @Test def set_multiple_properties_on_node() {
     val secondQ = Query.
       updates(
