@@ -1043,34 +1043,6 @@ return x""", "A" -> 1, "B" -> 2, "C" -> 3)
     assert(List(d, e) === result.columnAs[Node]("x").toList)
   }
 
-  @Test def shouldHandleCollaborativeFiltering1_9() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-    val d = createNode("D")
-    val e = createNode("E")
-    val f = createNode("F")
-
-    relate(a, b, "knows", "rAB")
-    relate(a, c, "knows", "rAC")
-    relate(a, f, "knows", "rAF")
-
-    relate(b, c, "knows", "rBC")
-    relate(b, d, "knows", "rBD")
-    relate(b, e, "knows", "rBE")
-
-    relate(c, e, "knows", "rCE")
-
-    val result = parseAndExecute( """cypher 1.9
-start a  = node(1)
-match a-[r1:knows]->friend-[r2:knows]->foaf, a-[foafR?:knows]->foaf
-where foafR IS NULL
-return foaf, count(*)
-order by count(*)""")
-
-    assert(Set(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toSet)
-  }
-
   @Test def shouldHandleCollaborativeFiltering() {
     val a = createNode("A")
     val b = createNode("B")
@@ -1092,8 +1064,7 @@ order by count(*)""")
     val result = parseAndExecute( """
 start a  = node(1)
 match a-[r1:knows]->friend-[r2:knows]->foaf, a-[foafR?:knows]->foaf
-with foafR, foaf
-where foafR IS NULL
+where foafR is null
 return foaf, count(*)
 order by count(*)""")
 
@@ -2625,7 +2596,7 @@ RETURN x0.name
   }
 
   @Test
-  def should_create_when_match_exists() {
+  def should_not_create_when_match_exists() {
     //GIVEN
     val a = createNode()
     val b = createNode()
@@ -2635,12 +2606,13 @@ RETURN x0.name
     val result = parseAndExecute(
       """START a=node(1), b=node(2)
          MATCH a-[old?:FOO]->b
+         WHERE old = null
          CREATE a-[new:FOO]->b
          RETURN new""")
 
     //THEN
-    assert(result.size === 1)
-    assert(result.queryStatistics().relationshipsCreated === 1)
+    assert(result.size === 0)
+    assert(result.queryStatistics().relationshipsCreated === 0)
   }
 
   @Test

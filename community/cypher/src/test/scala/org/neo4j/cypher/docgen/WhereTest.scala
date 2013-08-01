@@ -135,7 +135,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Filter on null values",
       text = "Sometimes you might want to test if a value or an identifier is +null+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
-      queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b with r, b where r is null return b""",
+      queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
       returns = "Nodes that Tobias is not connected to are returned.",
       assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
   }

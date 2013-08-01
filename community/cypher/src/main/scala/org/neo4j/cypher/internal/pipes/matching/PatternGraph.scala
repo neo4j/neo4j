@@ -24,8 +24,7 @@ import org.neo4j.cypher.PatternException
 
 class PatternGraph(val patternNodes: Map[String, PatternNode],
                    val patternRels: Map[String, PatternRelationship],
-                   val boundElements: Seq[String],
-                   val legacyNullPredicateCheck: Boolean = false) {
+                   val boundElements: Seq[String]) {
   def nonEmpty: Boolean = !isEmpty
 
 
@@ -69,7 +68,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
         pr.key -> s.relateTo(pr.key, e, pr.relTypes, pr.dir, pr.optional)
     }.toMap
 
-    new PatternGraph(newNodes, newRelationships, boundPoints, legacyNullPredicateCheck)
+    new PatternGraph(newNodes, newRelationships, boundPoints)
   }
 
   def apply(key: String) = patternGraph(key)
