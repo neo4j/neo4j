@@ -229,8 +229,8 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   def test(version: CypherVersion, query: String, message: String) {
     val (qWithVer, versionString) = version match {
-      case `v2_0` => (query, "the default parser")
-      case _      => (s"cypher ${version.name} " + query, "parser version " + version.name)
+      case `vDefault` => (query, "the default parser")
+      case _          => (s"cypher ${version.name} " + query, "parser version " + version.name)
     }
     val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
 

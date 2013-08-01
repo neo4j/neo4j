@@ -357,8 +357,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   
   def executeQuery(version: CypherVersion, query: String) {
     val qWithVer = version match {
-      case `v2_0` => query
-      case _      => s"cypher ${version.name} " + query
+      case `vDefault` => query
+      case  _         => s"cypher ${version.name} " + query
     }
     engine.execute(qWithVer).toList
   }

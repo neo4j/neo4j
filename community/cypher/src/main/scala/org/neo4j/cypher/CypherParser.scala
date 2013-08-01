@@ -40,6 +40,7 @@ object CypherVersion {
     val name = "experimental"
     val parser = new internal.parser.experimental.CypherParserImpl
   }
+  val vDefault = v2_0
 }
 import CypherVersion._
 
