@@ -121,6 +121,13 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldFailTypeCheckWhenDeleting() {
+    test("start a=node(0) delete 1 + 1",
+      v2_0 -> "Expression `Add(Literal(1),Literal(1))` yielded `2`. Don't know how to delete that.",
+      vExperimental -> "Type mismatch: expected Node, Relationship or Collection<Map> but was Long (line 1, column 26)"
+    )
+  }
+
   private def test(query: String, variants: (CypherVersion, String)*) {
     for ((versions, message) <- variants) {
       test(versions, query, message)
@@ -129,8 +136,8 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
 
   def test(version: CypherVersion, query: String, message: String) {
     val (qWithVer, versionString) = version match {
-      case `v2_0` => (query, "the default parser")
-      case _      => (s"cypher ${version.name} " + query, "parser version " + version.name)
+      case `vDefault` => (query, "the default parser")
+      case _          => (s"cypher ${version.name} " + query, "parser version " + version.name)
     }
     val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
 

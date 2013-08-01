@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.experimental.ast
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.commands.{values => commandvalues}
 import org.neo4j.cypher.internal.mutation
 
 sealed trait RemoveItem extends AstNode with SemanticCheckable {
@@ -34,5 +34,15 @@ case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier], toke
 
   def toLegacyUpdateAction = {
     commands.LabelAction(expression.toCommand, commands.LabelRemoveOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+  }
+}
+
+case class RemovePropertyItem(property: Property) extends RemoveItem {
+  def token = property.token
+
+  def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
+
+  def toLegacyUpdateAction = {
+    mutation.DeletePropertyAction(property.map.toCommand, commandvalues.KeyToken.Unresolved(property.identifier.name, commandvalues.TokenType.PropertyKey))
   }
 }
