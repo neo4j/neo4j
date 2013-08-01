@@ -90,6 +90,12 @@ trait ParserPattern extends Base with Labels {
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
 
+  private def labels: Parser[(Seq[KeyToken], Map[String, Expression], Boolean)] = optLabelShortForm ^^ {
+    case labels =>
+      val bare = labels.isEmpty
+      (labels, Map.empty, bare)
+  }
+
   private def labelsAndValues: Parser[(Seq[KeyToken], Map[String, Expression], Boolean)] = optLabelShortForm ~ opt(curlyMap) ^^ {
     case labels ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
@@ -97,9 +103,9 @@ trait ParserPattern extends Base with Labels {
       (labels, mapVal, bare)
   }
 
-  private def singleNodeDefinition = identity ~ labelsAndValues ^^ {
-    case name ~ labelsAndValues =>
-      val (labelsVal, mapVal, bare) = labelsAndValues
+  private def singleNodeDefinition = identity ~ labels ^^ {
+    case name ~ labels =>
+      val (labelsVal, mapVal, bare) = labels
       ParsedEntity(name, Identifier(name), mapVal, labelsVal, bare)
   }
 

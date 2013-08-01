@@ -2824,8 +2824,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ReturnItem(Identifier("a"), "Escaped alias", renamed = true)))
   }
 
-  @Test def create_with_labels_and_props_without_parens() {
-    test(vFrom2_0, "CREATE node :FOO:BAR {name: 'Stefan'}",
+  @Test def create_with_labels_and_props_with_parens() {
+    test(vFrom2_0, "CREATE (node :FOO:BAR {name: 'Stefan'})",
       Query.
         start(CreateNodeStartItem(CreateNode("node", Map("name"->Literal("Stefan")),
                                              LabelSupport.labelCollection("FOO", "BAR"), bare = false))).
