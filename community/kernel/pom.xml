@@ -82,7 +82,7 @@ the relevant Commercial Agreement.
         <property><name>neo4j-root</name></property>
       </activation>
       <properties>
-        <git.directory>${project.basedir}/../../../.git/modules/neo4j-public</git.directory>
+        <git.directory>${project.basedir}/../../../.git</git.directory>
       </properties>
     </profile>
     <profile>
