@@ -19,6 +19,9 @@ Cypher CREATE syntax::
 The `CREATE a={foo:’bar’}` syntax has been deprecated.
 Instead, use `CREATE (a {foo:’bar’})`.
 
+Using DELETE to remove properties in Cypher::
+The `DELETE a.prop` syntax has been deprecated. Instead, use `REMOVE a.prop`.
+
 Graph Matching::
 The graph-matching component will be removed in future versions.
 
