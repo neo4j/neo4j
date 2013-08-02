@@ -41,7 +41,7 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestMultiPruneEvaluators extends AbstractTestBase
+public class TestMultiPruneEvaluators extends TraversalTestBase
 {
     @Before
     public void setupGraph()

@@ -29,7 +29,7 @@ import static org.neo4j.kernel.Traversal.path;
 import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 
-public class TestPathDescription extends AbstractTestBase
+public class TestPathDescription extends TraversalTestBase
 {
     private static final RelationshipType A = DynamicRelationshipType.withName( "A" );
     private static final RelationshipType B = DynamicRelationshipType.withName( "B" );

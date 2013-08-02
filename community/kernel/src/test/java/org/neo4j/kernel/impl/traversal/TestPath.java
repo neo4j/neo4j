@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestPath extends AbstractTestBase
+public class TestPath extends TraversalTestBase
 {
     private static Node a,b,c,d,e;
     private Transaction tx;

@@ -32,7 +32,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
-public class SmallestGraphEverTest extends AbstractTestBase
+public class SmallestGraphEverTest extends TraversalTestBase
 {
     @Before
     public void setup()

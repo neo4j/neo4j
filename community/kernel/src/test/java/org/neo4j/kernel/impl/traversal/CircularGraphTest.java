@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class CircularGraphTest extends AbstractTestBase
+public class CircularGraphTest extends TraversalTestBase
 {
     @Before
     public void createTheGraph()

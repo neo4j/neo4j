@@ -44,7 +44,7 @@ import static org.neo4j.kernel.Traversal.postorderBreadthFirst;
 import static org.neo4j.kernel.Traversal.postorderDepthFirst;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TreeGraphTest extends AbstractTestBase
+public class TreeGraphTest extends TraversalTestBase
 {
     /*
      *                     (1)

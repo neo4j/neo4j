@@ -44,7 +44,7 @@ import static org.neo4j.kernel.Uniqueness.NODE_LEVEL;
 import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_GLOBAL;
 import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_LEVEL;
 
-public class TestUniqueness extends AbstractTestBase
+public class TestUniqueness extends TraversalTestBase
 {
     @Test
     public void nodeLevelUniqueness() throws Exception

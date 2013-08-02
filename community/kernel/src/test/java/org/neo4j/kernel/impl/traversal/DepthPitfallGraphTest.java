@@ -37,7 +37,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
-public class DepthPitfallGraphTest extends AbstractTestBase
+public class DepthPitfallGraphTest extends TraversalTestBase
 {
     /* Layout:
      *    _(2)--__

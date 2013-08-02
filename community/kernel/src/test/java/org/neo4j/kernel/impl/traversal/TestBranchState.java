@@ -38,7 +38,7 @@ import static org.neo4j.kernel.Traversal.initialState;
 import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 
-public class TestBranchState extends AbstractTestBase
+public class TestBranchState extends TraversalTestBase
 {
     @Test
     public void depthAsState() throws Exception

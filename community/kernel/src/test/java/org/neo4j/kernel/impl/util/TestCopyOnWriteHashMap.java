@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.kernel.impl.traversal.AbstractTestBase.assertContains;
+import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
 
 import java.util.Iterator;
 import java.util.Map;

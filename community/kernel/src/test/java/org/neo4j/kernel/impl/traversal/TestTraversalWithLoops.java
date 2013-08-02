@@ -30,7 +30,7 @@ import org.neo4j.kernel.Uniqueness;
 
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestTraversalWithLoops extends AbstractTestBase
+public class TestTraversalWithLoops extends TraversalTestBase
 {
     @Test
     public void traverseThroughNodeWithLoop() throws Exception

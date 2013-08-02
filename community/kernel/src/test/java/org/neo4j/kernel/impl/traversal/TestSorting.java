@@ -34,7 +34,7 @@ import static org.neo4j.graphdb.traversal.Sorting.endNodeProperty;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestSorting extends AbstractTestBase
+public class TestSorting extends TraversalTestBase
 {
     @Test
     public void sortFriendsByName() throws Exception

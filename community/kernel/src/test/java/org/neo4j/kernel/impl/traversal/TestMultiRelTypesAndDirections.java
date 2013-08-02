@@ -32,7 +32,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-public class TestMultiRelTypesAndDirections extends AbstractTestBase
+public class TestMultiRelTypesAndDirections extends TraversalTestBase
 {
     private static final RelationshipType ONE = withName( "ONE" );
 

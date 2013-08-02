@@ -27,7 +27,7 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 
-public class SpecificDepthTraversalTest extends AbstractTestBase
+public class SpecificDepthTraversalTest extends TraversalTestBase
 {
     private Transaction tx;
 

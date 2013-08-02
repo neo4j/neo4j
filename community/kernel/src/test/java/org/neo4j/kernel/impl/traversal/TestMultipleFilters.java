@@ -36,7 +36,7 @@ import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestMultipleFilters extends AbstractTestBase
+public class TestMultipleFilters extends TraversalTestBase
 {
 
     private Transaction tx;

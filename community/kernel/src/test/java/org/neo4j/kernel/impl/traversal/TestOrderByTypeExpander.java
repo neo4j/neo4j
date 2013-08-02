@@ -38,7 +38,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.Traversal.traversal;
 
-public class TestOrderByTypeExpander extends AbstractTestBase
+public class TestOrderByTypeExpander extends TraversalTestBase
 {
     private final RelationshipType next = withName( "NEXT" );
     private final RelationshipType firstComment = withName( "FIRST_COMMENT" );

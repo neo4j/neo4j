@@ -53,7 +53,7 @@ import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
 
-public class TestBidirectionalTraversal extends AbstractTestBase
+public class TestBidirectionalTraversal extends TraversalTestBase
 {
     RelationshipType to = withName( "TO" );
     private Transaction tx;

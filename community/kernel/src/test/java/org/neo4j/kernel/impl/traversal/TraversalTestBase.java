@@ -28,10 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import org.junit.After;
-import org.junit.Before;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -39,58 +35,49 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
-public abstract class AbstractTestBase
+public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 {
-    private static GraphDatabaseService graphdb;
-    private static Map<String, Node> nodes;
+    private Map<String, Node> nodes;
 
-    @Before
-    public final void createDb()
+    @Override
+    protected boolean restartGraphDbBetweenTests()
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        return true;
     }
 
-    @After
-    public final void afterSuite()
-    {
-        graphdb.shutdown();
-    }
-
-    protected static Node node( String name )
+    protected Node node( String name )
     {
         return nodes.get( name );
     }
 
-    protected static Node getNode( long id )
+    protected Node getNode( long id )
     {
-        return graphdb.getNodeById( id );
+        return getGraphDb().getNodeById( id );
     }
 
-    protected static Transaction beginTx()
+    protected Transaction beginTx()
     {
-        return graphdb.beginTx();
+        return getGraphDb().beginTx();
     }
 
-    protected static void createGraph( String... description )
+    protected void createGraph( String... description )
     {
         nodes = createGraph( GraphDescription.create( description ) );
     }
 
-    private static Map<String, Node> createGraph( GraphDefinition graph )
+    private Map<String, Node> createGraph( GraphDefinition graph )
     {
-        Transaction tx = graphdb.beginTx();
+        Transaction tx = beginTx();
         try
         {
-            Map<String, Node> result = graph.create( graphdb );
+            Map<String, Node> result = graph.create( getGraphDb() );
             tx.success();
             return result;
         }
@@ -100,9 +87,9 @@ public abstract class AbstractTestBase
         }
     }
 
-    protected static Node getNodeWithName( String name )
+    protected Node getNodeWithName( String name )
     {
-        for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
         {
             String nodeName = (String) node.getProperty( "name", null );
             if ( nodeName != null && nodeName.equals( name ) )
@@ -214,14 +201,14 @@ public abstract class AbstractTestBase
         }
     }
 
-    protected static <T> void expect( Iterable<? extends T> items,
+    protected <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, String... expected )
     {
         expect( items, representation, new HashSet<String>(
                 Arrays.asList( expected ) ) );
     }
 
-    protected static <T> void expect( Iterable<? extends T> items,
+    protected <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
         Transaction tx = beginTx();
@@ -247,24 +234,24 @@ public abstract class AbstractTestBase
         }
     }
 
-    protected static void expectNodes( Traverser traverser, String... nodes )
+    protected void expectNodes( Traverser traverser, String... nodes )
     {
         expect( traverser.nodes(), NAME_PROPERTY_REPRESENTATION, nodes );
     }
 
-    protected static void expectRelationships( Traverser traverser,
+    protected void expectRelationships( Traverser traverser,
             String... relationships )
     {
         expect( traverser.relationships(), new RelationshipRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), relationships );
     }
 
-    protected static void expectPaths( Traverser traverser, String... paths )
+    protected void expectPaths( Traverser traverser, String... paths )
     {
         expectPaths( traverser, new HashSet<String>( Arrays.asList( paths ) ) );
     }
 
-    protected static void expectPaths( Traverser traverser, Set<String> expected )
+    protected void expectPaths( Traverser traverser, Set<String> expected )
     {
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );

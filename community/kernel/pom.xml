@@ -137,7 +137,8 @@ the relevant Commercial Agreement.
         <configuration>
           <skip>false</skip>
           <argLine>-Xmx300m</argLine>
-
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
         </configuration>
       </plugin>
       <plugin>
