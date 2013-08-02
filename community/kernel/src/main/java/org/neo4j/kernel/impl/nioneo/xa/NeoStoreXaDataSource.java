@@ -49,6 +49,7 @@ import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
@@ -152,6 +153,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final Logging logging;
     private final NodeManager nodeManager;
+    private final TokenNameLookupProvider tokenNameLookupProvider;
+
     private final DependencyResolver dependencyResolver;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
@@ -238,6 +241,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                                  TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
                                  UpdateableSchemaState updateableSchemaState, NodeManager nodeManager,
+                                 TokenNameLookupProvider tokenNameLookupProvider,
                                  DependencyResolver dependencyResolver )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
@@ -254,6 +258,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
         this.updateableSchemaState = updateableSchemaState;
+        this.tokenNameLookupProvider = tokenNameLookupProvider;
     }
 
     @Override
@@ -304,8 +309,12 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         // TODO: Build a real provider map
         providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
 
-        indexingService = life.add( new IndexingService( scheduler, providerMap,
-                new NeoStoreIndexStoreView( neoStore ), updateableSchemaState, logging ) );
+        indexingService = life.add(
+                new IndexingService(
+                        scheduler,
+                        providerMap,
+                        new NeoStoreIndexStoreView( neoStore ), tokenNameLookupProvider, updateableSchemaState,
+                        logging ) );
         
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
@@ -334,7 +343,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 msgLog.debug( "Waiting for TM to take care of recovered " +
                         "transactions." );
             }
-            idGenerators = new ArrayMap<Class<?>,Store>( (byte)5, false, false );
+            idGenerators = new ArrayMap<>( (byte)5, false, false );
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
             this.idGenerators.put( Relationship.class, neoStore.getRelationshipStore() );
             this.idGenerators.put( RelationshipType.class, neoStore.getRelationshipTypeStore() );
@@ -363,6 +372,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public NeoStore getNeoStore()
     {
         return neoStore;
+    }
+
+    public TokenNameLookupProvider getTokenNameLookupProvider()
+    {
+        return tokenNameLookupProvider;
     }
 
     public IndexingService getIndexService()

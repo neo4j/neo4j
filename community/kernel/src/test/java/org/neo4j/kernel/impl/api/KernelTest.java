@@ -21,18 +21,28 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class KernelTest
@@ -44,7 +54,7 @@ public class KernelTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         DoubleLatch latch = new DoubleLatch( 10 );
-        List<Worker> workers = new ArrayList<Worker>();
+        List<Worker> workers = new ArrayList<>();
         for ( int i = 0; i < latch.getNumberOfContestants(); i++ )
         {
             workers.add( new Worker( kernel, latch ) );
@@ -83,6 +93,54 @@ public class KernelTest
         { //Good
         }
         db.shutdown();
+    }
+
+    @Test
+    public void shouldLookupNamesUsingKeyNameLookupProvider() throws SchemaKernelException, TransactionalException
+    {
+        // GIVEN
+        final String labelName = "Label";
+        final String propertyKeyName = "propertyKey";
+
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
+        StatementOperationParts parts = ctxProvider.getCtxForWriting();
+
+        Transaction tx = db.beginTx();
+        StatementState state = ctxProvider.statementForWriting();
+
+        final AtomicLong labelId = new AtomicLong( -1 );
+        final AtomicLong propertyKeyId = new AtomicLong( -1 );
+
+        try
+        {
+            labelId.set( parts.keyWriteOperations().labelGetOrCreateForName( state, labelName ) );
+            propertyKeyId.set( parts.keyWriteOperations().propertyKeyGetOrCreateForName( state, propertyKeyName ) );
+            tx.success();
+        }
+        finally
+        {
+            parts.close( state );
+            tx.finish();
+        }
+
+        // WHEN
+        kernel.keyNameLookupProvider().withTokenNameLookup( new Function<TokenNameLookup, Void>()
+        {
+
+            @Override
+            public Void apply( TokenNameLookup tokenNameLookup )
+            {
+                // THEN
+                assertNotNull( tokenNameLookup );
+                assertEquals( labelName, tokenNameLookup.labelGetName( labelId.get() ) );
+                assertEquals( propertyKeyName, tokenNameLookup.propertyKeyGetName( propertyKeyId.get() ) );
+                return null;
+            }
+        } );
+
     }
 
     @SuppressWarnings("deprecation")

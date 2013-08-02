@@ -39,6 +39,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -465,6 +466,7 @@ public class
                     logging,
                     updateableSchemaState,
                     resolver.resolveDependency( NodeManager.class ),
+                    resolver.resolveDependency( TokenNameLookupProvider.class ),
                     resolver );
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*

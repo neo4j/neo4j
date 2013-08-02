@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 import static java.lang.String.format;
 
@@ -36,8 +36,8 @@ public class AlreadyConstrainedException extends SchemaKernelException
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup keyNameLookup )
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, constraint.userDescription( keyNameLookup ) );
+        return format( message, constraint.userDescription( tokenNameLookup ) );
     }
 }

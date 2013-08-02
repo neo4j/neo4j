@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -39,6 +38,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.TokenNameLookupProviderImpl;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -86,6 +87,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
@@ -116,8 +118,8 @@ public class TestNeoStore
 
     private static class MyPropertyKeyToken extends Token
     {
-        private static Map<String, Token> stringToIndex = new HashMap<String, Token>();
-        private static Map<Integer, Token> intToIndex = new HashMap<Integer, Token>();
+        private static Map<String, Token> stringToIndex = new HashMap<>();
+        private static Map<Integer, Token> intToIndex = new HashMap<>();
 
         protected MyPropertyKeyToken( String key, int keyId )
         {
@@ -180,6 +182,7 @@ public class TestNeoStore
                                 dependencyResolverForConfig( config ) ), null, new SingleLoggingService( DEV_NULL ),
                                 new KernelSchemaStateStore(),
                                 nodeManager,
+                                TokenNameLookupProviderImpl.newForTransactionManager( null ),
                                 dependencyResolverForNoIndexProvider( nodeManager ) );
         ds.init();
         ds.start();
@@ -404,12 +407,12 @@ public class TestNeoStore
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
                 xaCon.getWriteTransaction().getMoreRelationships( node, pos.get() );
         pos.set( rels.other() );
-        List<Iterable<RelationshipRecord>> list = new ArrayList<Iterable<RelationshipRecord>>();
+        List<Iterable<RelationshipRecord>> list = new ArrayList<>();
         for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
         {
             list.add( entry.getValue() );
         }
-        return new CombiningIterable<RelationshipRecord>( list );
+        return new CombiningIterable<>( list );
     }
 
     private void validateNodeRel1( long node, PropertyData prop1,

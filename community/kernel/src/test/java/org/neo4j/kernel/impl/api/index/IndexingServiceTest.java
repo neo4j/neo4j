@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.TokenNameLookupProviderImpl;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
@@ -64,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -228,6 +231,7 @@ public class IndexingServiceTest
                 mock( JobScheduler.class ),
                 providerMap,
                 mock( IndexStoreView.class ),
+                mock( TokenNameLookupProviderImpl.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
@@ -262,6 +266,7 @@ public class IndexingServiceTest
                 mock( JobScheduler.class ),
                 providerMap,
                 mock( IndexStoreView.class ),
+                mock( TokenNameLookupProviderImpl.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
@@ -317,7 +322,7 @@ public class IndexingServiceTest
 
         return life.add( new IndexingService(
                 life.add( new Neo4jJobScheduler( logger ) ), new DefaultSchemaIndexProviderMap( indexProvider ),
-                storeView, schemaState, mockLogging( logger ) ) );
+                storeView, mock( TokenNameLookupProviderImpl.class ), schemaState, mockLogging( logger ) ) );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )
@@ -372,7 +377,7 @@ public class IndexingServiceTest
         @Override
         public Iterator<NodePropertyUpdate> iterator()
         {
-            return new ArrayIterator<NodePropertyUpdate>( updates );
+            return new ArrayIterator<>( updates );
         }
 
         @Override

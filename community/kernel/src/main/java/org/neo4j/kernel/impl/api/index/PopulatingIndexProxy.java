@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.operations.TokenNameLookupProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
@@ -43,7 +44,8 @@ public class PopulatingIndexProxy implements IndexProxy
     public PopulatingIndexProxy( JobScheduler scheduler,
                                  IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                                  IndexPopulator writer,
-                                 FlippableIndexProxy flipper, IndexStoreView storeView,
+                                 FlippableIndexProxy flipper,
+                                 IndexStoreView storeView, TokenNameLookupProvider tokenNameLookupProvider,
                                  UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.scheduler  = scheduler;
@@ -51,7 +53,8 @@ public class PopulatingIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
 
         this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                                            writer, flipper, storeView, updateableSchemaState, logging );
+                                            writer, flipper, storeView, tokenNameLookupProvider,
+                                            updateableSchemaState, logging );
     }
 
     @Override

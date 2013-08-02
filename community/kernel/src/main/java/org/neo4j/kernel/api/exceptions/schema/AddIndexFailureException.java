@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.operations.KeyNameLookup;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 import static java.lang.String.format;
 
@@ -39,9 +39,9 @@ public class AddIndexFailureException extends SchemaKernelException
     }
 
     @Override
-    public String getUserMessage( KeyNameLookup nameLookup )
+    public String getUserMessage( TokenNameLookup nameLookup )
     {
-        return format( message, nameLookup.getLabelName( labelId ), nameLookup.getPropertyKeyName( propertyKey ),
+        return format( message, nameLookup.labelGetName( labelId ), nameLookup.propertyKeyGetName( propertyKey ),
                 ((KernelException) getCause()).getUserMessage( nameLookup ) );
     }
 }
