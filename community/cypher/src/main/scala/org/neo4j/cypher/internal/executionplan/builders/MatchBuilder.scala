@@ -35,7 +35,7 @@ class MatchBuilder extends LegacyPlanBuilder with PatternGraphBuilder {
     val items = q.patterns.filter(yesOrNo(_, p, q.start))
     val patterns = items.map(_.token)
     val predicates = q.where.filter(!_.solved).map(_.token)
-    val graph = buildPatternGraph(p.symbols, patterns)
+    val graph = buildPatternGraph(p.symbols, patterns, q.legacyNullPredicateCheck)
 
     val mandatoryGraph = graph.mandatoryGraph
 
@@ -78,7 +78,7 @@ class MatchBuilder extends LegacyPlanBuilder with PatternGraphBuilder {
 }
 
 trait PatternGraphBuilder {
-  def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
+  def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern], legacyNullPredicateCheck: Boolean): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
@@ -105,6 +105,6 @@ trait PatternGraphBuilder {
       case _ =>
     })
 
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys)
+    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys, legacyNullPredicateCheck)
   }
 }

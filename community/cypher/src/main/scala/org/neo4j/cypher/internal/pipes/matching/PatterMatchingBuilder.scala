@@ -83,9 +83,9 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
 
   private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
     val patternMatcher = if (patternGraph.hasDoubleOptionals)
-      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, state, patternGraph.doubleOptionalPaths)
+      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, state, patternGraph.doubleOptionalPaths, patternGraph.legacyNullPredicateCheck)
     else
-      new PatternMatcher(boundPairs, predicates, includeOptionals, source, state)
+      new PatternMatcher(boundPairs, predicates, includeOptionals, source, state, patternGraph.legacyNullPredicateCheck)
 
     if (includeOptionals)
       patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
