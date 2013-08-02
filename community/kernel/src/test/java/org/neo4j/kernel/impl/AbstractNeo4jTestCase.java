@@ -27,6 +27,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,6 +48,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
 {
+
     @Retention( RetentionPolicy.RUNTIME )
     @Target( ElementType.TYPE )
     @Inherited
@@ -63,24 +65,34 @@ public abstract class AbstractNeo4jTestCase
         public Statement apply( Statement base, Description description )
         {
             tearDownDb();
-            setupGraphDatabase(description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
+            setupGraphDatabase(description.getTestClass().getName(),
+                             description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
             return base;
         }
     };
 
-    private static GraphDatabaseAPI graphDb;
+    private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();
+    private static ThreadLocal<String> currentTestClassName = new ThreadLocal<>();
+    private static ThreadLocal<Boolean> requiresPersistentGraphDatabase = new ThreadLocal<>();
+
+    private GraphDatabaseAPI graphDb;
+
     private Transaction tx;
 
-    private static boolean requiresPersistentGraphDatabase = false;
+    protected AbstractNeo4jTestCase()
+    {
+        graphDb = threadLocalGraphDb.get();
+    }
 
     public GraphDatabaseService getGraphDb()
     {
         return graphDb;
     }
 
-    private static void setupGraphDatabase( boolean requiresPersistentGraphDatabase )
+    private static void setupGraphDatabase( String testClassName, boolean requiresPersistentGraphDatabase )
     {
-        AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
+        AbstractNeo4jTestCase.requiresPersistentGraphDatabase.set( requiresPersistentGraphDatabase );
+        AbstractNeo4jTestCase.currentTestClassName.set( testClassName );
         if ( requiresPersistentGraphDatabase )
         {
             try
@@ -93,9 +105,9 @@ public abstract class AbstractNeo4jTestCase
             }
         }
         
-        graphDb = (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                                      new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
-                                      new TestGraphDatabaseFactory().newImpermanentDatabase());
+        threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
+                new TestGraphDatabaseFactory().newImpermanentDatabase()) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()
@@ -115,7 +127,7 @@ public abstract class AbstractNeo4jTestCase
 
     public static String getStorePath( String endPath )
     {
-        return new File( NEO4J_BASE_DIR, endPath ).getAbsolutePath();
+        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsolutePath();
     }
 
     @Before
@@ -123,7 +135,8 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( restartGraphDbBetweenTests() && graphDb == null )
         {
-            setupGraphDatabase(requiresPersistentGraphDatabase);
+            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get());
+            graphDb = threadLocalGraphDb.get();
         }
         tx = graphDb.beginTx();
     }
@@ -147,11 +160,11 @@ public abstract class AbstractNeo4jTestCase
     {
         try
         {
-            if ( graphDb != null ) graphDb.shutdown();
+            if ( threadLocalGraphDb.get() != null ) threadLocalGraphDb.get().shutdown();
         }
         finally
         {
-            graphDb = null;
+            threadLocalGraphDb.remove();
         }
     }
 
