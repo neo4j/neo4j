@@ -21,6 +21,7 @@ package org.neo4j.server.webadmin.rest;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -29,9 +30,11 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.ServerBuilder.server;
 
-public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTestBase {
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+
+public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTestBase
+{
 
     private NeoServer server;
 
@@ -40,32 +43,33 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     {
         server.stop();
     }
-    
+
     @Test
-    public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
+    public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
     {
-        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "")
+        server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        
-        assertThat(exec("ls","shell").getStatus(),  is(400));
+
+        assertThat( exec( "ls", "shell" ).getStatus(), is( 400 ) );
     }
-    
+
     @Test
-    public void shellConsoleShouldBeEnabledByDefault() throws Exception {
+    public void shellConsoleShouldBeEnabledByDefault() throws Exception
+    {
         server = server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        
-        assertThat(exec("ls","shell").getStatus(),  is(200));
+
+        assertThat( exec( "ls", "shell" ).getStatus(), is( 200 ) );
     }
 
-    private JaxRsResponse exec(String command, String engine)
+    private JaxRsResponse exec( String command, String engine )
     {
-        return RestRequest.req().post(server.baseUri() + "db/manage/server/console", "{" +
-                "\"engine\":\""+engine+"\"," +
-                "\"command\":\""+command+"\\n\"}");
+        return RestRequest.req().post( server.baseUri() + "db/manage/server/console", "{" +
+                "\"engine\":\"" + engine + "\"," +
+                "\"command\":\"" + command + "\\n\"}" );
     }
 }

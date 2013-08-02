@@ -137,6 +137,7 @@ the relevant Commercial Agreement.
         <configuration>
           <skip>false</skip>
           <argLine>-Xmx300m</argLine>
+
         </configuration>
       </plugin>
       <plugin>

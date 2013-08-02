@@ -19,75 +19,89 @@
  */
 package org.neo4j.server.webadmin;
 
-import static org.neo4j.server.helpers.ServerBuilder.server;
-
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
 import org.openqa.selenium.By;
 
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.Configurator;
+
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+
 @Ignore("On avengers wall to be resolved")
-public class DiscoverAvailableConsolesWebIT extends AbstractExclusiveServerWebadminTest {
+public class DiscoverAvailableConsolesWebIT extends AbstractExclusiveServerWebadminTest
+{
 
     @Test
-    public void shouldShowOnlyShellIfAvailable() throws Exception {
+    public void shouldShowOnlyShellIfAvailable() throws Exception
+    {
         NeoServer server = server().build();
-        try {
+        try
+        {
             server.start();
-            setupWebdriver(server);
-            
+            setupWebdriver( server );
+
             wl.goToWebadminStartPage();
-            wl.clickOnTab("Console");
-            wl.waitForElementToDisappear(By
-                .xpath("//div[@id='console-tabs']//a[contains(.,'Gremlin')]"));
-            wl.waitForElementToAppear(By
-                    .xpath("//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]"));
-            
-        } finally {
+            wl.clickOnTab( "Console" );
+            wl.waitForElementToDisappear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Gremlin')]" ) );
+            wl.waitForElementToAppear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]" ) );
+
+        }
+        finally
+        {
             shutdownWebdriver();
             server.stop();
         }
     }
-    
+
     @Test
-    public void shouldNotShowGremlinIfNotAvailable() throws Exception {
-        NeoServer server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell").build();
-        try {
+    public void shouldNotShowGremlinIfNotAvailable() throws Exception
+    {
+        NeoServer server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell" ).build();
+        try
+        {
             server.start();
-            setupWebdriver(server);
-            
+            setupWebdriver( server );
+
             wl.goToWebadminStartPage();
-            wl.clickOnTab("Console");
-            wl.waitForElementToDisappear(By
-                .xpath("//div[@id='console-tabs']//a[contains(.,'Gremlin')]"));
-            wl.waitForElementToAppear(By
-                    .xpath("//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]"));
-            
-        } finally {
+            wl.clickOnTab( "Console" );
+            wl.waitForElementToDisappear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Gremlin')]" ) );
+            wl.waitForElementToAppear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]" ) );
+
+        }
+        finally
+        {
             shutdownWebdriver();
             server.stop();
         }
     }
-    
+
     @Test
-    public void shouldNotShowEitherShellIfBothAreDisabled() throws Exception {
-        NeoServer server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
-        try {
+    public void shouldNotShowEitherShellIfBothAreDisabled() throws Exception
+    {
+        NeoServer server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "" ).build();
+        try
+        {
             server.start();
-            setupWebdriver(server);
-            
+            setupWebdriver( server );
+
             wl.goToWebadminStartPage();
-            wl.clickOnTab("Console");
-            wl.waitForElementToDisappear(By
-                .xpath("//div[@id='console-tabs']//a[contains(.,'Gremlin')]"));
-            wl.waitForElementToDisappear(By
-                    .xpath("//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]"));
-            
-        } finally {
+            wl.clickOnTab( "Console" );
+            wl.waitForElementToDisappear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Gremlin')]" ) );
+            wl.waitForElementToDisappear( By
+                    .xpath( "//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]" ) );
+
+        }
+        finally
+        {
             shutdownWebdriver();
             server.stop();
         }
     }
-    
+
 }

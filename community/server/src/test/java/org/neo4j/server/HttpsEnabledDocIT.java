@@ -19,27 +19,28 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.ServerBuilder.server;
-
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.test.server.ExclusiveServerTestBase;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.junit.After;
+import org.junit.Test;
 
-public class HttpsEnabledDocIT extends ExclusiveServerTestBase {
+import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+
+public class HttpsEnabledDocIT extends ExclusiveServerTestBase
+{
 
     private CommunityNeoServer server;
 
@@ -48,60 +49,76 @@ public class HttpsEnabledDocIT extends ExclusiveServerTestBase {
     {
         server.stop();
     }
-    
+
     @Test
-    public void serverShouldSupportSsl() throws Exception {
+    public void serverShouldSupportSsl() throws Exception
+    {
         server = server().withHttpsEnabled()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        
-        assertThat(server.getHttpsEnabled(), is(true));
+
+        assertThat( server.getHttpsEnabled(), is( true ) );
 
         trustAllSslCerts();
-        
+
         Client client = Client.create();
-        ClientResponse r = client.resource(server.httpsUri()).get(ClientResponse.class);
-        
-        assertThat(r.getStatus(), is(200));
+        ClientResponse r = client.resource( server.httpsUri() ).get( ClientResponse.class );
+
+        assertThat( r.getStatus(), is( 200 ) );
     }
-    
+
     @Test
-    public void webadminShouldBeRetrievableViaSsl() throws Exception {
+    public void webadminShouldBeRetrievableViaSsl() throws Exception
+    {
         server = server().withHttpsEnabled()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        
-        assertThat(server.getHttpsEnabled(), is(true));
+
+        assertThat( server.getHttpsEnabled(), is( true ) );
 
         trustAllSslCerts();
-        
+
         Client client = Client.create();
-        ClientResponse r = client.resource(server.httpsUri().toASCIIString() +"webadmin/").get(ClientResponse.class);
-        
-        assertThat(r.getStatus(), is(200));
+        ClientResponse r = client.resource( server.httpsUri().toASCIIString() + "webadmin/" ).get( ClientResponse
+                .class );
+
+        assertThat( r.getStatus(), is( 200 ) );
     }
 
     private void trustAllSslCerts()
     {
 
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager(){
-            public void checkClientTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {}
-            public void checkServerTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {}
-            public X509Certificate[] getAcceptedIssuers() { return null; }
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
+        {
+            public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
+                    throws CertificateException
+            {
+            }
+
+            public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
+                    throws CertificateException
+            {
+            }
+
+            public X509Certificate[] getAcceptedIssuers()
+            {
+                return null;
+            }
         }};
 
         // Install the all-trusting trust manager
-        try {
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        } catch (Exception e) {
+        try
+        {
+            SSLContext sc = SSLContext.getInstance( "TLS" );
+            sc.init( null, trustAllCerts, new SecureRandom() );
+            HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
+        }
+        catch ( Exception e )
+        {
             ;
         }
     }
-    
+
 }

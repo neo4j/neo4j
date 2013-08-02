@@ -19,18 +19,19 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.junit.Test;
-import org.neo4j.server.helpers.ServerBuilder;
+
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
@@ -39,9 +40,10 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty6WebServer.DEFAULT_ADDRESS) );
+        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName( Jetty6WebServer
+                .DEFAULT_ADDRESS ) );
         InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
-        CommunityNeoServer server = ServerBuilder.server()
+        CommunityNeoServer server = CommunityServerBuilder.server()
                 .onPort( contestedPort )
                 .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )

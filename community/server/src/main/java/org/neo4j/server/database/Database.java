@@ -237,6 +237,8 @@ public abstract class Database implements Lifecycle
 
     }
 
+    public abstract boolean isRunning();
+
     /**
      * Will be removed in 1.10
      */

@@ -174,6 +174,12 @@ public abstract class AbstractNeoServer implements NeoServer
 
             if ( interruptStartupTimer.wasTriggered() )
             {
+                // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
+                if(database.isRunning())
+                {
+                    stopDatabase();
+                }
+
                 throw new ServerStartupException(
                         "Startup took longer than " + interruptStartupTimer.getTimeoutMillis() + "ms, " +
                                 "and was stopped. You can disable this behavior by setting '" + Configurator

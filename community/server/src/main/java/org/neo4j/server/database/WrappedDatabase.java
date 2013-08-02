@@ -50,6 +50,12 @@ public class WrappedDatabase extends Database
     }
 
     @Override
+    public boolean isRunning()
+    {
+        return true;
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public String getLocation()
     {

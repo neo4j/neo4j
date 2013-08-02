@@ -19,23 +19,24 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.ServerBuilder.server;
-
 import java.io.IOException;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class ServerConfigDocIT extends ExclusiveServerTestBase
 {
@@ -48,17 +49,18 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldPickUpPortFromConfig() throws Exception {
+    public void shouldPickUpPortFromConfig() throws Exception
+    {
         final int NON_DEFAULT_PORT = 4321;
 
-        server = server().onPort(NON_DEFAULT_PORT)
+        server = server().onPort( NON_DEFAULT_PORT )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 
         assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
 
-        JaxRsResponse response = new RestRequest(server.baseUri()).get();
+        JaxRsResponse response = new RestRequest( server.baseUri() ).get();
 
         assertThat( response.getStatus(), is( 200 ) );
         response.close();
@@ -76,10 +78,11 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        JaxRsResponse response = new RestRequest().get("http://localhost:7474" + webAdminDataUri, MediaType.TEXT_HTML_TYPE);
+        JaxRsResponse response = new RestRequest().get( "http://localhost:7474" + webAdminDataUri,
+                MediaType.TEXT_HTML_TYPE );
         assertEquals( 200, response.getStatus() );
 
-        response = new RestRequest().get("http://localhost:7474" + webAdminManagementUri);
+        response = new RestRequest().get( "http://localhost:7474" + webAdminManagementUri );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
@@ -91,10 +94,11 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+                MediaType.WILDCARD_TYPE );
 
-        assertEquals(200, response.getStatus());
-        assertEquals("application/vnd.sun.wadl+xml", response.getHeaders().get("Content-Type").iterator().next());
+        assertEquals( 200, response.getStatus() );
+        assertEquals( "application/vnd.sun.wadl+xml", response.getHeaders().get( "Content-Type" ).iterator().next() );
         assertThat( response.getEntity(), containsString( "<application xmlns=\"http://wadl.dev.java" +
                 ".net/2009/02\">" ) );
     }
@@ -106,21 +110,23 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+                MediaType.WILDCARD_TYPE );
 
-        assertEquals(404, response.getStatus());
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
-        server = server().withProperty( Configurator.WADL_ENABLED, "false")
+        server = server().withProperty( Configurator.WADL_ENABLED, "false" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+                MediaType.WILDCARD_TYPE );
 
-        assertEquals(404, response.getStatus());
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
@@ -155,7 +161,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 "}", MediaType.APPLICATION_JSON_TYPE );
 
         // Then
-        assertEquals(400, response.getStatus());
+        assertEquals( 400, response.getStatus() );
     }
 
     /*
@@ -172,7 +178,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         // and all other tests depend on it being sandboxed.
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
-        server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false")
+        server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
 

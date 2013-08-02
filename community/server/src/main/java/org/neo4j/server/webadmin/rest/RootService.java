@@ -29,7 +29,7 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
-@Path( "/" )
+@Path("/")
 public class RootService
 {
     private final NeoServer neoServer;
@@ -40,7 +40,7 @@ public class RootService
     }
 
     @GET
-    public Response getServiceDefinition(  @Context UriInfo uriInfo, @Context OutputFormat output )
+    public Response getServiceDefinition( @Context UriInfo uriInfo, @Context OutputFormat output )
     {
         ServerRootRepresentation representation =
                 new ServerRootRepresentation( uriInfo.getBaseUri(), neoServer.getServices() );

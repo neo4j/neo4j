@@ -19,20 +19,21 @@
  */
 package org.neo4j.server;
 
+import javax.ws.rs.core.MediaType;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
 
 public class NeoServerDocIT extends AbstractRestFunctionalTestBase
 {
@@ -42,7 +43,7 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     public void cleanTheDatabase()
     {
         cleanDatabase();
-        functionalTestHelper = new FunctionalTestHelper(server());
+        functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
     @Test
@@ -52,21 +53,23 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectRootToWebadmin() throws Exception {
-        assertFalse(server().baseUri()
+    public void shouldRedirectRootToWebadmin() throws Exception
+    {
+        assertFalse( server().baseUri()
                 .toString()
-                .contains("webadmin"));
-        JaxRsResponse response = RestRequest.req().get(server().baseUri().toString(), MediaType.TEXT_HTML_TYPE);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), containsString("webadmin"));
+                .contains( "webadmin" ) );
+        JaxRsResponse response = RestRequest.req().get( server().baseUri().toString(), MediaType.TEXT_HTML_TYPE );
+        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( response.getEntity(), containsString( "webadmin" ) );
     }
 
     @Test
-    public void serverShouldProvideAWelcomePage() throws Exception {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.webAdminUri());
+    public void serverShouldProvideAWelcomePage() throws Exception
+    {
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.webAdminUri() );
 
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
+        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( response.getHeaders().getFirst( "Content-Type" ), containsString( "html" ) );
     }
 
 }

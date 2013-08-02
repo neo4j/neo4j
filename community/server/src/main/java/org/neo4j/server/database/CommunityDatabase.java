@@ -37,6 +37,7 @@ public class CommunityDatabase extends/* implements */ Database
 {
     protected final Configurator configurator;
     protected final Configuration serverConfiguration;
+    private boolean isRunning = false;
 
     @SuppressWarnings("deprecation")
     public CommunityDatabase( Configurator configurator )
@@ -62,6 +63,7 @@ public class CommunityDatabase extends/* implements */ Database
         try
         {
             this.graph = createDb();
+            isRunning = true;
             log.info( "Successfully started database" );
         }
         catch ( Exception e )
@@ -80,6 +82,7 @@ public class CommunityDatabase extends/* implements */ Database
             if ( this.graph != null )
             {
                 this.graph.shutdown();
+                isRunning = false;
                 this.graph = null;
                 log.info( "Successfully stopped database" );
             }
@@ -89,6 +92,12 @@ public class CommunityDatabase extends/* implements */ Database
             log.error( "Database did not stop cleanly. Reason [%s]", e.getMessage() );
             throw e;
         }
+    }
+
+    @Override
+    public boolean isRunning()
+    {
+        return isRunning;
     }
 
     protected Map<String, String> getDbTuningPropertiesWithServerDefaults()

@@ -19,18 +19,20 @@
  */
 package org.neo4j.server;
 
+import com.sun.jersey.api.client.ClientResponse;
+import org.junit.After;
+import org.junit.Test;
+
+import org.neo4j.server.statistic.StatisticRecord;
+import org.neo4j.test.server.ExclusiveServerTestBase;
+
 import static com.sun.jersey.api.client.Client.create;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
-import static org.neo4j.server.helpers.ServerBuilder.server;
 
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.server.statistic.StatisticRecord;
-import org.neo4j.test.server.ExclusiveServerTestBase;
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class StatisticsCollectionEnabledDocIT extends ExclusiveServerTestBase
 {
@@ -51,23 +53,23 @@ public class StatisticsCollectionEnabledDocIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        create().resource(server.baseUri()).get(ClientResponse.class);
+        create().resource( server.baseUri() ).get( ClientResponse.class );
 
         StatisticRecord snapshot = server.statisticsCollector.createSnapshot();
-        assertThat(snapshot.getRequests(), is(0L));
+        assertThat( snapshot.getRequests(), is( 0L ) );
     }
 
     @Test
     public void statisticsCouldBeEnabled() throws Exception
     {
-        server = server().withProperty(WEBSERVER_ENABLE_STATISTICS_COLLECTION, "true")
+        server = server().withProperty( WEBSERVER_ENABLE_STATISTICS_COLLECTION, "true" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 
-        create().resource(server.baseUri()).get(ClientResponse.class);
+        create().resource( server.baseUri() ).get( ClientResponse.class );
 
         StatisticRecord snapshot = server.statisticsCollector.createSnapshot();
-        assertThat(snapshot.getRequests(), greaterThan(0L));
+        assertThat( snapshot.getRequests(), greaterThan( 0L ) );
     }
 }

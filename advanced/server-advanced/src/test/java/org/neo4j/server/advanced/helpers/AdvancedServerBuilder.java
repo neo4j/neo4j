@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.enterprise.helpers;
+package org.neo4j.server.advanced.helpers;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.paging.LeaseManager;
@@ -39,15 +39,15 @@ import org.neo4j.tooling.RealClock;
 
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
-public class EnterpriseServerBuilder extends CommunityServerBuilder
+public class AdvancedServerBuilder extends CommunityServerBuilder
 {
-    public static EnterpriseServerBuilder server()
+    public static AdvancedServerBuilder server()
     {
-        return new EnterpriseServerBuilder();
+        return new AdvancedServerBuilder();
     }
 
     @Override
-    public EnterpriseNeoServer build() throws IOException
+    public AdvancedNeoServer build() throws IOException
     {
         if ( dbDir == null )
         {
@@ -67,16 +67,16 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
             };
         }
 
-        return new TestEnterpriseNeoServer( new PropertyFileConfigurator( new Validator(
+        return new TestAdvancedNeoServer( new PropertyFileConfigurator( new Validator(
                 new DatabaseLocationMustBeSpecifiedRule() ), configFile ), configFile );
 
     }
 
-    private class TestEnterpriseNeoServer extends EnterpriseNeoServer
+    private class TestAdvancedNeoServer extends AdvancedNeoServer
     {
         private final File configFile;
 
-        public TestEnterpriseNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
+        public TestAdvancedNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
         {
             super( propertyFileConfigurator );
             this.configFile = configFile;

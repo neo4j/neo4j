@@ -47,4 +47,10 @@ public class WrappingDatabase extends Database
     public void shutdown() throws Throwable
     {
     }
+
+    @Override
+    public boolean isRunning()
+    {
+        return true;
+    }
 }
