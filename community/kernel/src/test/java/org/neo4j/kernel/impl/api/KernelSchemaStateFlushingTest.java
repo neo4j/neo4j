@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -140,7 +140,7 @@ public class KernelSchemaStateFlushingTest
         StatementOperationParts ctx = txc.newStatementOperations();
         StatementState state = ctxProvider.statementForWriting();
         UniquenessConstraint descriptor = ctx.schemaWriteOperations().uniquenessConstraintCreate( state, 1, 1 );
-        ctx.lifecycleOperations().close( state );
+        state.close();
         tx.success();
         tx.finish();
         return descriptor;
@@ -153,7 +153,7 @@ public class KernelSchemaStateFlushingTest
         StatementOperationParts ctx = txc.newStatementOperations();
         StatementState state = ctxProvider.statementForWriting();
         ctx.schemaWriteOperations().constraintDrop( state, descriptor );
-        ctx.lifecycleOperations().close( state );
+        state.close();
         tx.success();
         tx.finish();
     }
@@ -165,7 +165,7 @@ public class KernelSchemaStateFlushingTest
         StatementOperationParts ctx = txc.newStatementOperations();
         StatementState state = ctxProvider.statementForWriting();
         IndexDescriptor descriptor = ctx.schemaWriteOperations().indexCreate( state, 1, 1 );
-        ctx.lifecycleOperations().close( state );
+        state.close();
         tx.success();
         tx.finish();
         return descriptor;
@@ -178,7 +178,7 @@ public class KernelSchemaStateFlushingTest
         StatementOperationParts ctx = txc.newStatementOperations();
         StatementState state = ctxProvider.statementForWriting();
         ctx.schemaWriteOperations().indexDrop( state, descriptor );
-        ctx.lifecycleOperations().close( state );
+        state.close();
         tx.success();
         tx.finish();
     }
@@ -190,7 +190,7 @@ public class KernelSchemaStateFlushingTest
         StatementOperationParts ctx = txc.newStatementOperations();
         StatementState state = ctxProvider.statementForReading();
         SchemaIndexTestHelper.awaitIndexOnline( ctx.schemaReadOperations(), state, descriptor );
-        ctx.lifecycleOperations().close( state );
+        state.close();
         tx.success();
         tx.finish();
     }
@@ -229,7 +229,7 @@ public class KernelSchemaStateFlushingTest
         }
         finally 
         {
-            ctx.lifecycleOperations().close( state );
+            state.close();
         }
     }
     

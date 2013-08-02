@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -39,14 +38,8 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -108,7 +101,7 @@ public class KernelIT extends KernelIntegrationTest
         context.nodeAddLabel( statement, node.getId(), labelId );
 
         // 4: Close the StatementContext
-        context.close( statement );
+        statement.close();
 
         // 5: Commit through the beans API
         beansAPITx.success();
@@ -137,7 +130,7 @@ public class KernelIT extends KernelIntegrationTest
         Node node = db.createNode();
         long labelId = context.keyWriteOperations().labelGetOrCreateForName( statement, "labello" );
         context.entityWriteOperations().nodeAddLabel( statement, node.getId(), labelId );
-        context.lifecycleOperations().close( statement );
+        statement.close();
         tx.commit();
         outerTx.finish();
     }
@@ -154,7 +147,7 @@ public class KernelIT extends KernelIntegrationTest
         Node node = db.createNode();
         long labelId = context.labelGetOrCreateForName( statement, "labello" );
         context.nodeAddLabel( statement, node.getId(), labelId );
-        context.close( statement );
+        statement.close();
         tx.finish();
 
         // THEN
@@ -184,7 +177,7 @@ public class KernelIT extends KernelIntegrationTest
         Node node = db.createNode();
         long labelId = context.labelGetOrCreateForName( statement, "labello" );
         context.nodeAddLabel( statement, node.getId(), labelId );
-        context.close( statement );
+        statement.close();
         tx.failure();
         tx.success();
         tx.finish();
@@ -219,7 +212,7 @@ public class KernelIT extends KernelIntegrationTest
         context.nodeAddLabel( statement, node.getId(), labelId1 );
         context.nodeAddLabel( statement, node.getId(), labelId2 );
         context.nodeRemoveLabel( statement, node.getId(), labelId2 );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -252,7 +245,7 @@ public class KernelIT extends KernelIntegrationTest
         assertFalse( context.nodeHasLabel( statement, node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), asSet( context.nodeGetLabels( statement, node.getId() ) ) );
 
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -269,7 +262,7 @@ public class KernelIT extends KernelIntegrationTest
         long labelId2 = context.labelGetOrCreateForName( statement, "labello2" );
         context.nodeAddLabel( statement, node.getId(), labelId1 );
         context.nodeAddLabel( statement, node.getId(), labelId2 );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
         tx = db.beginTx();
@@ -284,7 +277,7 @@ public class KernelIT extends KernelIntegrationTest
         Set<Long> labels = asSet( labelsIterator );
         assertFalse( context.nodeHasLabel( statement, node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -299,7 +292,7 @@ public class KernelIT extends KernelIntegrationTest
         Node node = db.createNode();
         long labelId1 = context.labelGetOrCreateForName( statement, "labello1" );
         context.nodeAddLabel( statement, node.getId(), labelId1 );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -308,7 +301,7 @@ public class KernelIT extends KernelIntegrationTest
         context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         context.nodeRemoveLabel( statement, node.getId(), labelId1 );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -317,7 +310,7 @@ public class KernelIT extends KernelIntegrationTest
         context = statementContextProvider.getCtxForWriting().asStatementOperations();
         statement = statementContextProvider.statementForWriting();
         PrimitiveLongIterator labels = context.nodeGetLabels( statement, node.getId() );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -334,7 +327,7 @@ public class KernelIT extends KernelIntegrationTest
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.nodeAddLabel( statement, node.getId(), labelId );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -358,7 +351,7 @@ public class KernelIT extends KernelIntegrationTest
         StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -383,7 +376,7 @@ public class KernelIT extends KernelIntegrationTest
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
         context.nodeAddLabel( statement, node.getId(), labelId );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -407,7 +400,7 @@ public class KernelIT extends KernelIntegrationTest
         StatementOperations context = statementContextProvider.getCtxForWriting().asStatementOperations();
         StatementState statement = statementContextProvider.statementForWriting();
         long labelId = context.labelGetOrCreateForName( statement, "mylabel" );
-        context.close( statement );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -445,7 +438,7 @@ public class KernelIT extends KernelIntegrationTest
         boolean labelIsSet = context.nodeHasLabel( statement, node.getId(), labelId );
         Set<Long> nodes = asSet( context.nodesGetForLabel( statement, labelId ) );
 
-        context.close( statement );
+        statement.close();
 
         tx.success();
         tx.finish();

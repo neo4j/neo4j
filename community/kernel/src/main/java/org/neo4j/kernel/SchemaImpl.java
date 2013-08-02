@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -102,7 +101,7 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -122,7 +121,7 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -243,10 +242,10 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
-    
+
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
@@ -277,7 +276,7 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -303,7 +302,7 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -326,7 +325,7 @@ public class SchemaImpl implements Schema
         }
         finally
         {
-            context.close( state );
+            state.close();
         }
     }
 
@@ -366,8 +365,8 @@ public class SchemaImpl implements Schema
 
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-        private final ThreadToStatementContextBridge ctxProvider;
 
+        private final ThreadToStatementContextBridge ctxProvider;
         public GDBSchemaActions( ThreadToStatementContextBridge ctxProvider )
         {
             this.ctxProvider = ctxProvider;
@@ -402,7 +401,7 @@ public class SchemaImpl implements Schema
             }
             finally
             {
-                context.close( state );
+                state.close();
             }
         }
 
@@ -433,7 +432,7 @@ public class SchemaImpl implements Schema
             }
             finally
             {
-                context.close( state );
+                state.close();
             }
         }
 
@@ -452,7 +451,7 @@ public class SchemaImpl implements Schema
             }
             finally
             {
-                context.close( state );
+                state.close();
             }
         }
 
@@ -474,7 +473,7 @@ public class SchemaImpl implements Schema
             }
             finally
             {
-                context.close( state );
+                state.close();
             }
         }
 
@@ -489,7 +488,7 @@ public class SchemaImpl implements Schema
             }
             finally
             {
-                context.close( state );
+                state.close();
             }
         }
 
@@ -498,8 +497,8 @@ public class SchemaImpl implements Schema
         {
             ctxProvider.assertInTransaction();
         }
-    }
 
+    }
     private void assertInTransaction()
     {
         ctxProvider.assertInTransaction();

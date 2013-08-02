@@ -68,7 +68,7 @@ public abstract class KernelIntegrationTest
 
     protected void commit()
     {
-        statement.close( state );
+        state.close();
         statement = null;
         beansTx.success();
         beansTx.finish();
@@ -76,7 +76,7 @@ public abstract class KernelIntegrationTest
 
     protected void rollback()
     {
-        statement.close( state );
+        state.close();
         statement = null;
         beansTx.failure();
         beansTx.finish();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -88,21 +86,9 @@ public class WritableStatementState implements StatementState
     }
     
     @Override
-    public void markAsClosed()
+    public void close()
     {
-    }
-    
-    @Override
-    public Closeable closeable( final LifecycleOperations logic )
-    {
-        return new Closeable()
-        {
-            @Override
-            public void close() throws IOException
-            {
-                logic.close( WritableStatementState.this );
-            }
-        };
+        indexReaderFactory().close();
     }
     
     private static final LockHolder NO_LOCKS = new LockHolder()

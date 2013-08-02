@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
@@ -95,8 +94,8 @@ public class StoreStatementOperations implements
     EntityReadOperations,
     EntityWriteOperations,
     SchemaReadOperations,
-    AuxiliaryStoreOperations,
-    LifecycleOperations
+    AuxiliaryStoreOperations
+
 {
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
             new Function<UniquenessConstraintRule, UniquenessConstraint>()
@@ -160,12 +159,6 @@ public class StoreStatementOperations implements
         return new UnsupportedOperationException(
                 "This shouldn't be called directly, but instead to an appropriate method in the " + 
                         AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
-    }
-
-    @Override
-    public void close( StatementState state )
-    {
-        state.indexReaderFactory().close();
     }
     
     @Override

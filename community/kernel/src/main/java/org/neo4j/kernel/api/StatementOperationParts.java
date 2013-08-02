@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -57,7 +56,6 @@ public class StatementOperationParts
     private final SchemaReadOperations schemaReadOperations;
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaStateOperations schemaStateOperations;
-    private final LifecycleOperations lifecycleOperations;
     
     @SuppressWarnings( "rawtypes" )
     private Map<Class,Object> additionalParts;
@@ -69,8 +67,7 @@ public class StatementOperationParts
             EntityWriteOperations entityWriteOperations,
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
-            SchemaStateOperations schemaStateOperations,
-            LifecycleOperations lifecycleOperations )
+            SchemaStateOperations schemaStateOperations )
     {
         this.keyReadOperations = keyReadOperations;
         this.keyWriteOperations = keyWriteOperations;
@@ -79,7 +76,6 @@ public class StatementOperationParts
         this.schemaReadOperations = schemaReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaStateOperations = schemaStateOperations;
-        this.lifecycleOperations = lifecycleOperations;
     }
     
     public <T> StatementOperationParts additionalPart( Class<T> cls, T value )
@@ -137,16 +133,6 @@ public class StatementOperationParts
     {
         return checkNotNull( schemaStateOperations, SchemaStateOperations.class );
     }
-    
-    public LifecycleOperations lifecycleOperations()
-    {
-        return checkNotNull( lifecycleOperations, LifecycleOperations.class );
-    }
-    
-    public void close( StatementState state )
-    {
-        lifecycleOperations.close( state );
-    }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     public StatementOperationParts override(
@@ -157,7 +143,6 @@ public class StatementOperationParts
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
-            LifecycleOperations lifecycleOperations,
             Object... alternatingAdditionalClassAndObject )
     {
         StatementOperationParts parts = new StatementOperationParts(
@@ -167,8 +152,7 @@ public class StatementOperationParts
                 eitherOr( entityWriteOperations, this.entityWriteOperations, EntityWriteOperations.class ),
                 eitherOr( schemaReadOperations, this.schemaReadOperations, SchemaReadOperations.class ),
                 eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class ),
-                eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ),
-                eitherOr( lifecycleOperations, this.lifecycleOperations, LifecycleOperations.class ) );
+                eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ));
 
         if ( additionalParts != null )
         {
@@ -486,11 +470,6 @@ public class StatementOperationParts
             public <K> boolean schemaStateContains( StatementState state, K key )
             {
                 return schemaStateOperations.schemaStateContains( state, key );
-            }
-            @Override
-            public void close( StatementState state )
-            {
-                lifecycleOperations.close( state );
             }
         };
     }

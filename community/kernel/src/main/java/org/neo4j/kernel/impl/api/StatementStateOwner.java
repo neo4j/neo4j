@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.Closeable;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
+ * Note: This is in a state of flux, as we are removing support for read operations without having a
+ * transaction around it. This should be refactored away.
+ *
  * Captures functionality for implicit {@link StatementOperations} creation and retention for read-only operations
  * through the core {@link GraphDatabaseService} API, where the concept of statements is missing.
  * The idea is to implicitly create a read-only (as light-weight as possible) {@link StatementOperations}
@@ -59,12 +61,6 @@ import org.neo4j.kernel.impl.api.state.TxState;
 public abstract class StatementStateOwner
 {
     private ReferencedStatementState reference;
-    private final LifecycleOperations operations;
-    
-    public StatementStateOwner( LifecycleOperations operations )
-    {
-        this.operations = operations;
-    }
 
     public StatementState getStatementState()
     {
@@ -77,11 +73,11 @@ public abstract class StatementStateOwner
     
     protected abstract StatementState createStatementState();
 
-    public void closeAllStatements()
+    public void closeAllStatements() throws IOException
     {
         if ( reference != null )
         {
-            reference.close();
+            reference.forceClose();
             reference = null;
         }
     }
@@ -96,12 +92,12 @@ public abstract class StatementStateOwner
             this.actual = actual;
         }
 
-        public void close()
+        public void forceClose() throws IOException
         {
             if ( refCount > 0 )
             {
                 refCount = 0;
-                operations.close( actual );
+                actual.close();
                 reference = null;
             }
         }
@@ -110,6 +106,16 @@ public abstract class StatementStateOwner
         {
             refCount++;
             return this;
+        }
+
+        @Override
+        public void close()
+        {
+            if ( --refCount == 0 )
+            {
+                actual.close();
+                reference = null;
+            }
         }
 
         @Override
@@ -140,22 +146,6 @@ public abstract class StatementStateOwner
         public IndexReaderFactory indexReaderFactory()
         {
             return actual.indexReaderFactory();
-        }
-
-        @Override
-        public void markAsClosed()
-        {
-            if ( --refCount == 0 )
-            {
-                operations.close( actual );
-                reference = null;
-            }
-        }
-
-        @Override
-        public Closeable closeable( LifecycleOperations logic )
-        {
-            return actual.closeable( logic );
         }
     }
 }

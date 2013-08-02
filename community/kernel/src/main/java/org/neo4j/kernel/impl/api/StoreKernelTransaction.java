@@ -65,7 +65,7 @@ public class StoreKernelTransaction implements KernelTransaction
         StoreStatementOperations context = new StoreStatementOperations( propertyKeyTokenHolder, labelTokenHolder,
                 new SchemaStorage( neoStore.getSchemaStore() ), neoStore, persistenceManager,
                 indexingService );
-        return new StatementOperationParts( context, context, context, context, context, null, null, context )
+        return new StatementOperationParts( context, context, context, context, context, null, null )
             .additionalPart( AuxiliaryStoreOperations.class, context );
     }
 

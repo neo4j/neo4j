@@ -100,7 +100,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                 parts.entityReadOperations(),
                 parts.schemaReadOperations(),
                 persistenceCache, schemaCache );
-        parts = parts.override( null, null, cachingContext, null, cachingContext, null, null, null );
+        parts = parts.override( null, null, cachingContext, null, cachingContext, null, null );
 
         // + Transaction-local state awareness
         AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
@@ -114,7 +114,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                 constraintIndexCreator );
         parts = parts.override(
                 null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( schemaState ), null );
+                new SchemaStateConcern( schemaState ) );
                 
         // done
         return parts;

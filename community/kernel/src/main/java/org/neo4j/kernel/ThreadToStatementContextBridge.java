@@ -19,28 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
-import org.neo4j.kernel.impl.api.StatementStateOwner;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
@@ -48,39 +34,14 @@ import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreList
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
-    private final XaDataSourceManager xaDataSourceManager;
-    private StatementStateOwners statementStateOwners;
     protected final KernelAPI kernelAPI;
     private final AbstractTransactionManager txManager;
     private boolean isShutdown = false;
-    private IndexingService indexingService;
 
-    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager,
-            XaDataSourceManager xaDataSourceManager )
+    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager )
     {
         this.kernelAPI = kernelAPI;
         this.txManager = txManager;
-        this.xaDataSourceManager = xaDataSourceManager;
-    }
-    
-    @Override
-    public void start() throws Throwable
-    {
-        xaDataSourceManager.addDataSourceRegistrationListener(
-                neoStoreListener( new DataSourceRegistrationListener.Adapter()
-        {
-            @Override
-            public void registeredDataSource( XaDataSource ds )
-            {
-                indexingService = ((NeoStoreXaDataSource)ds).getIndexService();
-            }
-        } ) );
-    }
-    
-    public void bootstrapAfterRecovery()
-    {
-        statementStateOwners = new StatementStateOwners(
-                kernelAPI.readOnlyStatementOperations(), indexingService );
     }
     
     public StatementOperationParts getCtxForReading()
@@ -117,7 +78,6 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
     @Override
     public void shutdown() throws Throwable
     {
-        statementStateOwners.close();
         isShutdown = true;
     }
 
@@ -136,10 +96,9 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
 
     public static class ReadOnly extends ThreadToStatementContextBridge
     {
-        public ReadOnly( KernelAPI kernelAPI, AbstractTransactionManager txManager,
-                XaDataSourceManager xaDataSourceManager )
+        public ReadOnly( KernelAPI kernelAPI, AbstractTransactionManager txManager )
         {
-            super( kernelAPI, txManager, xaDataSourceManager );
+            super( kernelAPI, txManager );
         }
         
         @Override
@@ -152,43 +111,6 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         public StatementOperationParts getCtxForReading()
         {
             return kernelAPI.readOnlyStatementOperations();
-        }
-    }
-
-    private static class StatementStateOwners extends ThreadLocal<StatementStateOwner>
-    {
-        private final Collection<StatementStateOwner> all =
-                Collections.synchronizedList( new ArrayList<StatementStateOwner>() );
-        private final StatementOperationParts statementOperations;
-        private final IndexingService indexingService;
-
-        public StatementStateOwners( StatementOperationParts statementOperations, IndexingService indexingService )
-        {
-            this.statementOperations = statementOperations;
-            this.indexingService = indexingService;
-        }
-
-        @Override
-        protected StatementStateOwner initialValue()
-        {
-            StatementStateOwner owner = new StatementStateOwner( statementOperations.lifecycleOperations() )
-            {
-                @Override
-                protected StatementState createStatementState()
-                {
-                    return new ReadOnlyStatementState( new IndexReaderFactory.Caching( indexingService ) );
-                }
-            };
-            all.add( owner );
-            return owner;
-        }
-
-        void close()
-        {
-            for ( StatementStateOwner owner : all )
-            {
-                owner.closeAllStatements();
-            }
         }
     }
 }
