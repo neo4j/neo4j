@@ -46,6 +46,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Platforms.platformIsWindows;
 
 public class StartupTimeoutDocIT
 {
@@ -70,6 +71,9 @@ public class StartupTimeoutDocIT
     @Test
     public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
+        if(platformIsWindows())
+            return;
+
         Configurator configurator = buildProperties();
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 1 );
         server = createSlowServer( configurator );
