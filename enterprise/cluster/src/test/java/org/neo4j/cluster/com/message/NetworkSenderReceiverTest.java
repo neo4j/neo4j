@@ -23,11 +23,13 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -41,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * TODO
  */
-public class NetworkInstanceSendAndReceiveTest
+public class NetworkSenderReceiverTest
 {
     public enum TestMessage
             implements MessageType
@@ -79,7 +81,7 @@ public class NetworkInstanceSendAndReceiveTest
 
         // then
 
-        latch.await( 2, TimeUnit.SECONDS );
+        latch.await( 5, TimeUnit.SECONDS );
 
         assertTrue( server1.processedMessage() );
         assertTrue( server2.processedMessage() );
@@ -90,15 +92,16 @@ public class NetworkInstanceSendAndReceiveTest
     private static class Server
             implements Lifecycle, MessageProcessor
     {
-        protected NetworkInstance networkInstance;
+        private final NetworkReceiver networkReceiver;
+        private final NetworkSender networkSender;
 
         private final LifeSupport life = new LifeSupport();
-        private boolean processedMessage = false;
+        private AtomicBoolean processedMessage = new AtomicBoolean(  );
 
         private Server( final CountDownLatch latch, final Map<String, String> config )
         {
             final Config conf = new Config( config, ClusterSettings.class );
-            networkInstance = new NetworkInstance( new NetworkInstance.Configuration()
+            networkReceiver = life.add(new NetworkReceiver(new NetworkReceiver.Configuration()
             {
                 @Override
                 public HostnamePort clusterServer()
@@ -111,22 +114,31 @@ public class NetworkInstanceSendAndReceiveTest
                 {
                     return 5001;
                 }
-            }, new DevNullLoggingService() );
+            }, new DevNullLoggingService()));
 
-            life.add( networkInstance );
+            networkSender = life.add(new NetworkSender(new NetworkSender.Configuration()
+            {
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
+            }, networkReceiver, new DevNullLoggingService()));
+
             life.add( new LifecycleAdapter()
             {
                 @Override
                 public void start() throws Throwable
                 {
-                    networkInstance.addMessageProcessor( new MessageProcessor()
+                    networkReceiver.addMessageProcessor( new MessageProcessor()
                     {
                         @Override
                         public boolean process( Message<? extends MessageType> message )
                         {
                             // server receives a message
+                            System.out.println("#"+message);
+                            processedMessage.set(true);
                             latch.countDown();
-                            processedMessage = true;
                             return true;
                         }
                     } );
@@ -161,13 +173,13 @@ public class NetworkInstanceSendAndReceiveTest
         public boolean process( Message<? extends MessageType> message )
         {
             // server sends a message
-            this.processedMessage = true;
-            return networkInstance.process( message );
+            this.processedMessage.set(true);
+            return networkSender.process( message );
         }
 
         public boolean processedMessage()
         {
-            return this.processedMessage;
+            return this.processedMessage.get();
         }
     }
 }

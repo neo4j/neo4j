@@ -19,18 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -38,7 +32,6 @@ import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -101,6 +94,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private RequestContextFactory requestContextFactory;
@@ -137,7 +135,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
      * compatibilityLifecycle holds stuff that needs to be shutdown when switching. They can be restarted by adding
       * them to paxosLife too.
      */
-    List<Lifecycle> compatibilityLifecycle = new LinkedList<Lifecycle>();
+    List<Lifecycle> compatibilityLifecycle = new LinkedList<>();
     private DelegateInvocationHandler clusterEventsDelegateInvocationHandler;
     private DelegateInvocationHandler memberContextDelegateInvocationHandler;
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
@@ -149,8 +147,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
-                NetworkInstance.Configuration.class, ClusterSettings.class ), indexProviders, kernelExtensions,
+        super( storeDir, params,
+                Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,ClusterSettings.class ),
+                indexProviders, kernelExtensions,
                 cacheProviders, txInterceptorProviders );
         accessGuard = new InstanceAccessGuard();
         run();

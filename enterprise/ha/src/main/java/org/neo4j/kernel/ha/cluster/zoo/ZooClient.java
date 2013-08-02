@@ -68,7 +68,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -158,7 +158,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         this.storeDir = conf.get( GraphDatabaseSettings.store_dir );
         machineId = conf.get( server_id );
         backupPort = conf.get( OnlineBackupSettings.online_backup_server );
-        clusterServer = NetworkInstance.URI_PROTOCOL + "://" +
+        clusterServer = NetworkReceiver.URI_PROTOCOL + "://" +
                 conf.get( ClusterSettings.cluster_server ).getHost( defaultServer() ) + ":" +
                 conf.get( ClusterSettings.cluster_server ).getPort();
         haServer = "ha://" + conf.get( HaSettings.ha_server ).getHost( defaultServer() ) + ":" +

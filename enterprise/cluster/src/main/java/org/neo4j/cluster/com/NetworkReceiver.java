@@ -22,23 +22,16 @@ package org.neo4j.cluster.com;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -49,19 +42,15 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.serialization.ClassResolvers;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
-import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
-import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -73,8 +62,8 @@ import org.neo4j.kernel.logging.Logging;
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
  * sending outgoing messages
  */
-public class NetworkInstance
-        implements MessageSource, MessageSender, Lifecycle
+public class NetworkReceiver
+        implements MessageSource, Lifecycle
 {
     public interface Configuration
     {
@@ -97,13 +86,9 @@ public class NetworkInstance
     private ChannelGroup channels;
 
     // Receiving
-    private ExecutorService sendExecutor;
     private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
-
-    // Sending
-    private ClientBootstrap clientBootstrap;
 
     private Configuration config;
     private StringLogger msgLog;
@@ -112,7 +97,7 @@ public class NetworkInstance
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkInstance( Configuration config, Logging logging )
+    public NetworkReceiver( Configuration config, Logging logging )
     {
         this.config = config;
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -129,7 +114,6 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
@@ -145,14 +129,6 @@ public class NetworkInstance
         int minPort = ports[0];
         int maxPort = ports.length == 2 ? ports[1] : minPort;
 
-        // Start client bootstrap
-        clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
-        clientBootstrap.setOption( "tcpNoDelay", true );
-        clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
-        clientBootstrap.setOption("tcpNoDelay", true);
-
         // Try all ports in the given range
         listen( minPort, maxPort );
     }
@@ -161,17 +137,11 @@ public class NetworkInstance
     public void stop()
             throws Throwable
     {
-        msgLog.debug( "Shutting down NetworkInstance" );
-        sendExecutor.shutdown();
-        if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
-        {
-            msgLog.warn( "Could not shut down send executor" );
-        }
+        msgLog.debug( "Shutting down NetworkReceiver" );
 
         channels.close().awaitUninterruptibly();
-        clientBootstrap.releaseExternalResources();
         serverBootstrap.releaseExternalResources();
-        msgLog.debug( "Shutting down NetworkInstance complete" );
+        msgLog.debug( "Shutting down NetworkReceiver complete" );
     }
 
     @Override
@@ -202,7 +172,7 @@ public class NetworkInstance
                 InetSocketAddress localAddress = new InetSocketAddress( host, checkPort );
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
-                listeningAt( getURI( (InetSocketAddress) listenChannel.getLocalAddress() ) );
+                listeningAt( (getURI( (InetSocketAddress) listenChannel.getLocalAddress() )) );
 
                 channels.add( listenChannel );
                 return;
@@ -223,7 +193,6 @@ public class NetworkInstance
         processors = Listeners.addListener( processor, processors );
     }
 
-    @SuppressWarnings("unchecked")
     public void receive( Message message )
     {
         for ( MessageProcessor processor : processors )
@@ -242,59 +211,6 @@ public class NetworkInstance
         }
     }
 
-    // MessageSender implementation
-    @Override
-    public void process( final List<Message<? extends MessageType>> messages )
-    {
-        sendExecutor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                for ( Message<? extends MessageType> message : messages )
-                {
-                    try
-                    {
-                        process( message );
-                    }
-                    catch ( Exception e )
-                    {
-                        msgLog.warn( "Error sending message " + message + "(" + e.getMessage() + ")" );
-                    }
-                }
-            }
-        } );
-    }
-
-    @Override
-    public boolean process( Message<? extends MessageType> message )
-    {
-        if ( message.hasHeader( Message.TO ) )
-        {
-            String to = message.getHeader( Message.TO );
-
-            if ( to.equals( Message.BROADCAST ) )
-            {
-                broadcast( message );
-            }
-            else if ( to.equals( me.toString() ) )
-            {
-                receive( message );
-            }
-            else
-            {
-                send( message );
-            }
-        }
-        else
-        {
-            // Internal message
-            receive( message );
-        }
-        return true;
-    }
-
-
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
         return new URI( URI_PROTOCOL + ":/" + address ); // Socket.toString() already prepends a /
@@ -312,73 +228,6 @@ public class NetworkInstance
                 listener.listeningAt( me );
             }
         } );
-    }
-
-    private void broadcast( Message message )
-    {
-        for ( int i = 1234; i < 1234 + 2; i++ )
-        {
-            String to = URI_PROTOCOL + "://127.0.0.1:" + i;
-
-            if ( !to.equals( me.toString() ) )
-            {
-                message.setHeader( Message.TO, to );
-                send( message );
-            }
-        }
-    }
-
-    private synchronized void send( final Message message )
-    {
-        URI to;
-        try
-        {
-            to = new URI( message.getHeader( Message.TO ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            msgLog.error( "Not valid URI:" + message.getHeader( Message.TO ) );
-            return;
-        }
-
-        Channel channel = getChannel( to );
-
-        try
-        {
-            if ( channel == null )
-            {
-                channel = openChannel( to );
-                openedChannel( to, channel );
-            }
-        }
-        catch ( Exception e )
-        {
-            msgLog.debug( "Could not connect to:" + to );
-            return;
-        }
-
-        try
-        {
-            msgLog.debug( "Sending to " + to + ": " + message );
-            ChannelFuture future = channel.write( message );
-            future.addListener( new ChannelFutureListener()
-            {
-                @Override
-                public void operationComplete( ChannelFuture future ) throws Exception
-                {
-                    if ( !future.isSuccess() )
-                    {
-                        msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
-                    }
-                }
-            } );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            channel.close();
-            closedChannel( to );
-        }
     }
 
     protected void openedChannel( final URI uri, Channel ctxChannel )
@@ -423,34 +272,6 @@ public class NetworkInstance
         listeners = Listeners.addListener( listener, listeners );
     }
 
-    private Channel openChannel( URI clusterUri )
-    {
-        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config
-                .defaultPort() : clusterUri.getPort() );
-
-        ChannelFuture channelFuture = clientBootstrap.connect( address );
-
-        try
-        {
-            if ( channelFuture.await( 5, TimeUnit.SECONDS ) && channelFuture.getChannel().isConnected() )
-            {
-                msgLog.info( me + " opened a new channel to " + address );
-                return channelFuture.getChannel();
-            }
-
-            String msg = "Client could not connect to " + address;
-            throw new ChannelOpenFailedException( msg );
-        }
-        catch ( InterruptedException e )
-        {
-            msgLog.warn( "Interrupted", e );
-            // Restore the interrupt status since we are not rethrowing InterruptedException
-            // We may be running in an executor and we could fail to be terminated
-            Thread.currentThread().interrupt();
-            throw new ChannelOpenFailedException( e );
-        }
-    }
-
     private class NetworkNodePipelineFactory
             implements ChannelPipelineFactory
     {
@@ -459,17 +280,9 @@ public class NetworkInstance
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addFirst( "log", new LoggingHandler() );
-            addSerialization( pipeline );
+            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
-        }
-
-        private void addSerialization( ChannelPipeline pipeline )
-        {
-            pipeline.addLast( "frameDecoder",
-                              new ObjectDecoder( 1024 * 1000, ClassResolvers.cacheDisabled(
-                                      NetworkNodePipelineFactory.this.getClass().getClassLoader() )) );
-            pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
         }
     }
 
@@ -508,10 +321,9 @@ public class NetworkInstance
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
-            Throwable cause = e.getCause();
-            if ( !(cause instanceof ConnectException) )
+            if ( !(e.getCause() instanceof ConnectException) )
             {
-                msgLog.error( "Receive exception:", cause );
+                msgLog.error( "Receive exception:", e.getCause() );
             }
         }
     }

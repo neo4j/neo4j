@@ -38,7 +38,8 @@ import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.BindingNotifier;
-import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
@@ -266,7 +267,7 @@ public class ClusterClient extends LifecycleAdapter
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
-        NetworkInstance networkNodeTCP = new NetworkInstance( new NetworkInstance.Configuration()
+        NetworkReceiver receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
         {
             @Override
             public HostnamePort clusterServer()
@@ -281,6 +282,15 @@ public class ClusterClient extends LifecycleAdapter
             }
         }, logging );
 
+        NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()
+        {
+            @Override
+            public int defaultPort()
+            {
+                return 5001;
+            }
+        }, receiver, logging);
+
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
             @Override
@@ -291,10 +301,10 @@ public class ClusterClient extends LifecycleAdapter
         } );
 
         server = protocolServerFactory.newProtocolServer( new InstanceId( config.getServerId() ), timeoutStrategy,
-                networkNodeTCP, networkNodeTCP,
+                receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
 
-        networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
+        receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
             @Override
             public void listeningAt( URI me )
@@ -314,9 +324,9 @@ public class ClusterClient extends LifecycleAdapter
             }
         } );
 
-        life.add( networkNodeTCP );
-
+        life.add( sender );
         life.add( stateMachineExecutor );
+        life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
         life.add( new Lifecycle()

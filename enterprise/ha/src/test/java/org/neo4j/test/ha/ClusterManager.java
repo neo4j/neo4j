@@ -35,16 +35,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import ch.qos.logback.classic.LoggerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
-import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -67,12 +73,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
-import ch.qos.logback.classic.LoggerContext;
 
 import static java.util.Arrays.asList;
 
@@ -410,12 +410,14 @@ public class ClusterManager
             ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
             LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField(
                     "life" ) ).get( clusterClient );
-            NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
-            network.stop();
+            NetworkReceiver receiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
+            receiver.stop();
+            NetworkSender sender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
+            sender.stop();
 
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             //db.shutdown();
-            return new StartNetworkAgainKit( db, network );
+            return new StartNetworkAgainKit( db, receiver, sender );
         }
 
         private void startMember( int serverId ) throws URISyntaxException
@@ -899,18 +901,21 @@ public class ClusterManager
     private class StartNetworkAgainKit implements RepairKit
     {
         private final HighlyAvailableGraphDatabase db;
-        private final NetworkInstance network;
+        private final NetworkReceiver receiver;
+        private NetworkSender sender;
 
-        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkInstance network )
+        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkReceiver receiver, NetworkSender sender )
         {
             this.db = db;
-            this.network = network;
+            this.receiver = receiver;
+            this.sender = sender;
         }
 
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            network.start();
+            receiver.start();
+            sender.start();
             return db;
         }
     }
