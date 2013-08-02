@@ -46,7 +46,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <git.directory>${project.build.directory}../../.git</git.directory>
+    <git.directory>${project.basedir}/../../.git</git.directory>
   </properties>
 
   <packaging>jar</packaging>
