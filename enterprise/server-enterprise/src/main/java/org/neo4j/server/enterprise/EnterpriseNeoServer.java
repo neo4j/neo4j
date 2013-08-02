@@ -38,8 +38,7 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.mix;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer
-{
+public class EnterpriseNeoServer extends AdvancedNeoServer {
 
     public EnterpriseNeoServer( Configurator configurator )
     {

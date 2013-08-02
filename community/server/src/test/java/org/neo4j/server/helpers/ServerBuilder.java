@@ -56,7 +56,7 @@ import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
-public class CommunityServerBuilder
+public class ServerBuilder
 {
     private String portNo = "7474";
     private String maxThreads = null;
@@ -83,14 +83,14 @@ public class CommunityServerBuilder
     public boolean persistent;
     private Boolean httpsEnabled = FALSE;
 
-    public static CommunityServerBuilder server()
+    public static ServerBuilder server()
     {
-        return new CommunityServerBuilder();
+        return new ServerBuilder();
     }
 
     public CommunityNeoServer build() throws IOException
     {
-        if ( dbDir == null && persistent )
+        if ( dbDir == null && persistent)
         {
             throw new IllegalStateException( "Must specify path" );
         }
@@ -108,8 +108,43 @@ public class CommunityServerBuilder
             };
         }
 
-        return new TestCommunityNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ), configFile );
+        return new CommunityNeoServer( new PropertyFileConfigurator( new Validator(
+                new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
+        {
+            @Override
+            protected PreFlightTasks createPreflightTasks()
+            {
+                return preflightTasks;
+            }
+
+            @Override
+            protected Database createDatabase()
+            {
+                return persistent ?
+                        new CommunityDatabase( configurator ) :
+                        new EphemeralDatabase( configurator );
+            }
+
+            @Override
+            protected DatabaseActions createDatabaseActions()
+            {
+                Clock clockToUse = (clock != null) ? clock : new RealClock();
+
+                return new DatabaseActions(
+                        new LeaseManager( clockToUse ),
+                        ForceMode.forced,
+                        configurator.configuration().getBoolean(
+                                Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            }
+
+            @Override
+            public void stop()
+            {
+                super.stop();
+                configFile.delete();
+            }
+        };
     }
 
     public File createPropertiesFiles() throws IOException
@@ -122,7 +157,7 @@ public class CommunityServerBuilder
         return temporaryConfigFile;
     }
 
-    public CommunityServerBuilder withClock( Clock clock )
+    public ServerBuilder withClock( Clock clock )
     {
         this.clock = clock;
         return this;
@@ -133,9 +168,9 @@ public class CommunityServerBuilder
         Map<String, String> properties = MapUtil.stringMap(
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
                 Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
-        if ( dbDir != null )
+        if (dbDir != null)
         {
-            properties.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir );
+            properties.put(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir);
         }
 
         if ( portNo != null )
@@ -239,35 +274,35 @@ public class CommunityServerBuilder
         return f;
     }
 
-    protected CommunityServerBuilder()
+    protected ServerBuilder()
     {
     }
 
-    public CommunityServerBuilder persistent()
+    public ServerBuilder persistent()
     {
         this.persistent = true;
         return this;
     }
 
-    public CommunityServerBuilder onPort( int portNo )
+    public ServerBuilder onPort( int portNo )
     {
         this.portNo = String.valueOf( portNo );
         return this;
     }
 
-    public CommunityServerBuilder withMaxJettyThreads( int maxThreads )
+    public ServerBuilder withMaxJettyThreads( int maxThreads )
     {
         this.maxThreads = String.valueOf( maxThreads );
         return this;
     }
 
-    public CommunityServerBuilder usingDatabaseDir( String dbDir )
+    public ServerBuilder usingDatabaseDir( String dbDir )
     {
         this.dbDir = dbDir;
         return this;
     }
 
-    public CommunityServerBuilder withRelativeWebAdminUriPath( String webAdminUri )
+    public ServerBuilder withRelativeWebAdminUriPath( String webAdminUri )
     {
         try
         {
@@ -288,7 +323,7 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withRelativeWebDataAdminUriPath( String webAdminDataUri )
+    public ServerBuilder withRelativeWebDataAdminUriPath( String webAdminDataUri )
     {
         try
         {
@@ -309,13 +344,13 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withoutWebServerPort()
+    public ServerBuilder withoutWebServerPort()
     {
         portNo = null;
         return this;
     }
 
-    public CommunityServerBuilder withFailingPreflightTasks()
+    public ServerBuilder withFailingPreflightTasks()
     {
         preflightTasks = new PreFlightTasks()
         {
@@ -348,122 +383,75 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withDefaultDatabaseTuning()
+    public ServerBuilder withDefaultDatabaseTuning()
     {
         action = WhatToDo.CREATE_GOOD_TUNING_FILE;
         return this;
     }
 
-    public CommunityServerBuilder withNonResolvableTuningFile()
+    public ServerBuilder withNonResolvableTuningFile()
     {
         action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
         return this;
     }
 
-    public CommunityServerBuilder withCorruptTuningFile()
+    public ServerBuilder withCorruptTuningFile()
     {
         action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
     }
 
-    public CommunityServerBuilder withThirdPartyJaxRsPackage( String packageName, String mountPoint )
+    public ServerBuilder withThirdPartyJaxRsPackage( String packageName, String mountPoint )
     {
         thirdPartyPackages.put( packageName, mountPoint );
         return this;
     }
 
-    public CommunityServerBuilder withFakeClock()
+    public ServerBuilder withFakeClock()
     {
         clock = new FakeClock();
         return this;
     }
 
-    public CommunityServerBuilder withAutoIndexingEnabledForNodes( String... keys )
+    public ServerBuilder withAutoIndexingEnabledForNodes( String... keys )
     {
         autoIndexedNodeKeys = keys;
         return this;
     }
 
-    public CommunityServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
+    public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
     {
         autoIndexedRelationshipKeys = keys;
         return this;
     }
 
-    public CommunityServerBuilder onHost( String host )
+    public ServerBuilder onHost( String host )
     {
         this.host = host;
         return this;
     }
 
-    public CommunityServerBuilder withSecurityRules( String... securityRuleClassNames )
+    public ServerBuilder withSecurityRules( String... securityRuleClassNames )
     {
         this.securityRuleClassNames = securityRuleClassNames;
         return this;
     }
 
-    public CommunityServerBuilder withHttpsEnabled()
+    public ServerBuilder withHttpsEnabled()
     {
         httpsEnabled = TRUE;
         return this;
     }
 
-    public CommunityServerBuilder withProperty( String key, String value )
+    public ServerBuilder withProperty( String key, String value )
     {
         arbitraryProperties.put( key, value );
         return this;
     }
 
-    public CommunityServerBuilder withPreflightTasks( PreflightTask... tasks )
+    public ServerBuilder withPreflightTasks( PreflightTask... tasks )
     {
         this.preflightTasks = new PreFlightTasks( tasks );
         return this;
     }
-
-    private class TestCommunityNeoServer extends CommunityNeoServer
-    {
-        private final File configFile;
-
-        public TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
-        {
-            super( propertyFileConfigurator );
-            this.configFile = configFile;
-        }
-
-        @Override
-        protected PreFlightTasks createPreflightTasks()
-        {
-            return preflightTasks;
-        }
-
-        @Override
-        protected Database createDatabase()
-        {
-            return persistent ?
-                    new CommunityDatabase( configurator ) :
-                    new EphemeralDatabase( configurator );
-        }
-
-        @Override
-        protected DatabaseActions createDatabaseActions()
-        {
-            Clock clockToUse = (clock != null) ? clock : new RealClock();
-
-            return new DatabaseActions(
-                    new LeaseManager( clockToUse ),
-                    ForceMode.forced,
-                    configurator.configuration().getBoolean(
-                            Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                            Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
-        }
-
-        @Override
-        public void stop()
-        {
-            super.stop();
-            configFile.delete();
-        }
-    }
-
-    ;
 }
