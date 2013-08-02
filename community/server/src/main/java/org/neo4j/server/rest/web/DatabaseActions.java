@@ -26,6 +26,7 @@ import java.util.Map;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -51,6 +52,7 @@ import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
+import org.neo4j.graphdb.index.UniqueFactory.UniqueEntity;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -970,8 +972,9 @@ public class DatabaseActions
                     }
                 }
                 UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
-                result = factory.getOrCreate( key, value );
-                created = factory.created;
+                UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
+                result = entity.entity();
+                created = entity.wasCreated();
             }
             tx.success();
             return Pair.of( new IndexedEntityRepresentation( result, key, value,
@@ -1012,8 +1015,9 @@ public class DatabaseActions
             else
             {
                 UniqueRelationshipFactory factory = new UniqueRelationshipFactory( indexName, node(startNode), node(endNode), type, properties );
-                result = factory.getOrCreate( key, value );
-                created = factory.created;
+                UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
+                result = entity.entity();
+                created = entity.wasCreated();
             }
             tx.success();
             return Pair.of( new IndexedEntityRepresentation( result, key, value,
@@ -1031,7 +1035,6 @@ public class DatabaseActions
         private final Node start, end;
         private final RelationshipType type;
         private final Map<String, Object> properties;
-        boolean created;
 
         UniqueRelationshipFactory( String index, Node start, Node end, String type, Map<String, Object> properties )
         {
@@ -1054,14 +1057,12 @@ public class DatabaseActions
             {
                 relationship.setProperty( property.getKey(), property.getValue() );
             }
-            this.created = true;
         }
     }
 
     private class UniqueNodeFactory extends UniqueFactory.UniqueNodeFactory
     {
         private final Map<String, Object> properties;
-        boolean created;
 
         UniqueNodeFactory( String index, Map<String, Object> properties )
         {
@@ -1076,7 +1077,6 @@ public class DatabaseActions
             {
                 node.setProperty( property.getKey(), property.getValue() );
             }
-            this.created = true;
         }
     }
 
