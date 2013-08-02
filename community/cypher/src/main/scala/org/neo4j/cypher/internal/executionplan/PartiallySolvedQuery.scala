@@ -53,7 +53,8 @@ object PartiallySolvedQuery {
       namedPaths = q.namedPaths.map(Unsolved(_)),
       aggregateToDo = q.aggregation.isDefined,
       extracted = false,
-      tail = q.tail.map(q => PartiallySolvedQuery(q))
+      tail = q.tail.map(q => PartiallySolvedQuery(q)),
+      legacyNullPredicateCheck = q.legacyNullPredicateCheck
     )
   }
 
@@ -69,7 +70,8 @@ object PartiallySolvedQuery {
     namedPaths = Seq(),
     aggregateToDo = false,
     extracted = false,
-    tail = None
+    tail = None,
+    legacyNullPredicateCheck = false
   )
 }
 
@@ -92,7 +94,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateToDo: Boolean,
                                 extracted: Boolean,
-                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
+                                tail: Option[PartiallySolvedQuery],
+                                legacyNullPredicateCheck: Boolean) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 
   val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))
 
@@ -145,7 +148,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
         case Unsolved(namedPath) => Unsolved(namedPath.rewrite(f))
         case x => x
       },
-      start = start.map { (qt: QueryToken[StartItem]) => qt.map( _.rewrite(f) ) } )
+      start = start.map { (qt: QueryToken[StartItem]) => qt.map( _.rewrite(f) ) },
+      legacyNullPredicateCheck = legacyNullPredicateCheck)
   }
 
   def unsolvedExpressions = {
@@ -190,7 +194,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
 
 trait PatternGraphBuilder {
-  def buildPatternGraph(patterns: Seq[Pattern]): PatternGraph = {
+  def buildPatternGraph(patterns: Seq[Pattern], legacyNullPredicateCheck: Boolean): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
@@ -213,6 +217,6 @@ trait PatternGraphBuilder {
       case _ =>
     })
 
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, patternNodeMap.keys.toSeq)
+    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, patternNodeMap.keys.toSeq, legacyNullPredicateCheck)
   }
 }

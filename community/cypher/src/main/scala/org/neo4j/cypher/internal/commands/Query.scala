@@ -143,6 +143,40 @@ next   : %s
     last.returns.columns
   }
 
+  // Remove below when Cypher 1.9 is removed
+  def legacyNullPredicateCheck: Boolean = false
+  def copy(
+      returns: Return = returns,
+      start: Seq[StartItem] = start,
+      updatedCommands: Seq[UpdateAction] = updatedCommands,
+      matching: Seq[Pattern] = matching,
+      hints: Seq[StartItem with Hint] = hints,
+      where: Predicate = where,
+      aggregation: Option[Seq[AggregationExpression]] = aggregation,
+      sort: Seq[SortItem] = sort,
+      slice: Option[Slice] = slice,
+      namedPaths: Seq[NamedPath] = namedPaths,
+      tail: Option[Query] = tail,
+      queryString: QueryString = queryString
+  ): Query = {
+    val lnpc = legacyNullPredicateCheck
+    new Query(
+        returns,
+        start,
+        updatedCommands,
+        matching,
+        hints,
+        where,
+        aggregation,
+        sort,
+        slice,
+        namedPaths,
+        tail,
+        queryString)
+    {
+      override lazy val legacyNullPredicateCheck = lnpc
+    }
+  }
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)

@@ -64,14 +64,14 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
     val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
     val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
-    validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
+    validatePattern(newSymbolTable, plan.query.patterns.map(_.token), plan.query.legacyNullPredicateCheck)
   }
 
 
-  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern]) = {
+  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern], legacyNullPredicateCheck: Boolean) = {
     //We build the graph here, because the pattern graph builder finds problems with the pattern
     //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
-    buildPatternGraph(symbols, patterns)
+    buildPatternGraph(symbols, patterns, legacyNullPredicateCheck)
   }
 
 
