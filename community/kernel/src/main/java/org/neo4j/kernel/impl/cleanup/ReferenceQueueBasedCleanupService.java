@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import static org.neo4j.helpers.collection.IteratorUtil.EMPTY_CLOSEABLE;
-
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -53,12 +51,12 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     {
         if ( cleanupNecessity.evaluate() )
         {
-            return linked( new AutoCleanupResourceIterator<T>( iterator ), closeable );
+            return linked( new AutoCleanupResourceIterator<>( iterator ), closeable );
         }
         else
         {
             // Just pick the best way of wrapping an Iterator in a ResourceIterator, bypassing cleanup
-            return ResourceClosingIterator.newResourceIterator( EMPTY_CLOSEABLE, iterator );
+            return ResourceClosingIterator.newResourceIterator( closeable, iterator );
         }
     }
 

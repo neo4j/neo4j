@@ -45,10 +45,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class NetworkSenderReceiverTest
 {
-    public enum TestMessage
-            implements MessageType
+    public enum TestMessage implements MessageType
     {
-        helloWorld;
+        helloWorld
     }
 
     @Test
@@ -83,8 +82,8 @@ public class NetworkSenderReceiverTest
 
         latch.await( 5, TimeUnit.SECONDS );
 
-        assertTrue( server1.processedMessage() );
-        assertTrue( server2.processedMessage() );
+        assertTrue( "server1 should have processed the message", server1.processedMessage() );
+        assertTrue( "server2 should have processed the message", server2.processedMessage() );
 
         life.shutdown();
     }
