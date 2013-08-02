@@ -34,11 +34,12 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 
 public class OrderedPath
 {
-    private static final RelationshipType REL1 = withName( "REL1" ),
-            REL2 = withName( "REL2" ), REL3 = withName( "REL3" );
+    private static final RelationshipType REL1 = withName( "REL1" ), REL2 = withName( "REL2" ),
+            REL3 = withName( "REL3" );
     static final String DB_PATH = "target/neo4j-orderedpath-db";
     GraphDatabaseService db;
 
@@ -65,10 +66,11 @@ public class OrderedPath
         Node B = db.createNode();
         Node C = db.createNode();
         Node D = db.createNode();
+
+        A.createRelationshipTo( C, REL2 );
+        C.createRelationshipTo( D, REL3 );
         A.createRelationshipTo( B, REL1 );
         B.createRelationshipTo( C, REL2 );
-        C.createRelationshipTo( D, REL3 );
-        A.createRelationshipTo( C, REL2 );
         // END SNIPPET: createGraph
         A.setProperty( "name", "A" );
         B.setProperty( "name", "B" );
@@ -111,13 +113,12 @@ public class OrderedPath
                         RelationshipType expectedType = orderedPathContext.get( path.length() - 1 );
                         boolean isExpectedType = path.lastRelationship()
                                 .isType( expectedType );
-                        boolean included = path.length() == orderedPathContext.size()
-                                           && isExpectedType;
-                        boolean continued = path.length() < orderedPathContext.size()
-                                            && isExpectedType;
+                        boolean included = path.length() == orderedPathContext.size() && isExpectedType;
+                        boolean continued = path.length() < orderedPathContext.size() && isExpectedType;
                         return Evaluation.of( included, continued );
                     }
-                } );
+                } )
+                .uniqueness( Uniqueness.NODE_PATH );
         // END SNIPPET: walkOrderedPath
         return td;
     }
@@ -154,8 +155,7 @@ public class OrderedPath
         }
 
         @Override
-        public String relationshipRepresentation( Path path, Node from,
-                Relationship relationship )
+        public String relationshipRepresentation( Path path, Node from, Relationship relationship )
         {
             String prefix = "--", suffix = "--";
             if ( from.equals( relationship.getEndNode() ) )
