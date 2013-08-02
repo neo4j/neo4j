@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -37,12 +37,9 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -50,6 +47,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasNoLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasNoNodes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasNodes;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -411,8 +409,13 @@ public class LabelsAcceptanceTest
 
         // Then
         assertEquals( 2, labels.size() );
-        assertEquals( Labels.MY_LABEL.name(), labels.get( 0 ).name() );
-        assertEquals( Labels.MY_OTHER_LABEL.name(), labels.get( 1 ).name() );
+        assertThat( map( new Function<Label,String>(){
+            @Override
+            public String apply( Label label )
+            {
+                return label.name();
+            }
+        }, labels), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
     }
 
     @Test

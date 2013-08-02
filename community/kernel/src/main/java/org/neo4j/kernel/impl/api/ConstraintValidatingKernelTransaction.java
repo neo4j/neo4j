@@ -46,6 +46,6 @@ public class ConstraintValidatingKernelTransaction extends DelegatingKernelTrans
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations() );
 
-        return parts.override( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null, null );
+        return parts.override( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null );
     }
 }

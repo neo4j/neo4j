@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import org.mockito.Matchers;
-
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -33,7 +31,6 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.api.operations.LifecycleOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -41,8 +38,7 @@ import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public abstract class StatementOperationsTestHelper
 {
@@ -55,8 +51,7 @@ public abstract class StatementOperationsTestHelper
             mock( EntityWriteOperations.class ),
             mock( SchemaReadOperations.class ),
             mock( SchemaWriteOperations.class ),
-            mock( SchemaStateOperations.class ),
-            mock( LifecycleOperations.class ) );
+            mock( SchemaStateOperations.class ));
         return stmtContextParts;
     }
     

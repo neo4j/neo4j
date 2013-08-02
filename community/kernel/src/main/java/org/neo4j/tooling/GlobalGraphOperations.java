@@ -154,7 +154,7 @@ public class GlobalGraphOperations
                     {
                         return label( labelToken.name() );
                     }
-                }, ctx.keyReadOperations().labelsGetAllTokens( state ) ), state.closeable( ctx.lifecycleOperations() ) );
+                }, ctx.keyReadOperations().labelsGetAllTokens( state ) ), state );
             }
         };
     }
@@ -196,12 +196,12 @@ public class GlobalGraphOperations
                 {
                     return nodeManager.getNodeById( nodeId );
                 }
-            }, nodeIds ), state.closeable( context.lifecycleOperations() ) );
+            }, nodeIds ), state );
         }
         catch ( LabelNotFoundKernelException e )
         {
             // That label hasn't been created yet, there cannot possibly be any nodes labeled with it
-            context.close( state );
+            state.close();
             return emptyIterator();
         }
     }

@@ -64,7 +64,7 @@ public class LockingKernelTransaction extends DelegatingKernelTransaction
                 parts.schemaStateOperations() );
         
         return parts.override(
-                null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, null );
+                null, null, null, lockingContext, lockingContext, lockingContext, lockingContext );
     }
     
     @Override

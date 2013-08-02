@@ -19,13 +19,19 @@
  */
 package org.neo4j.cypher
 
+import internal.commands.expressions.Literal
 import internal.commands.expressions.{Literal, Identifier}
+import internal.commands.GreaterThan
+import internal.commands.True
 import internal.commands.{GreaterThan, True}
 import internal.pipes._
 import internal.pipes.QueryStateHelper.queryStateFrom
 import internal.pipes.matching._
 import internal.symbols.IntegerType
+import matching.EndPoint
 import matching.SingleStep
+import matching.SingleStep
+import matching.SingleStepTrail
 import org.neo4j.graphdb._
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
@@ -39,7 +45,8 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.kernel.impl.api.{SchemaStateConcern, KernelSchemaStateStore}
-import org.neo4j.kernel.api.operations.{KeyReadOperations, KeyWriteOperations, EntityReadOperations, EntityWriteOperations, SchemaReadOperations, SchemaWriteOperations, LifecycleOperations}
+import org.neo4j.kernel.api.operations._
+import scala.Some
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -185,15 +192,16 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
         mock[EntityWriteOperations],
         mock[SchemaReadOperations],
         mock[SchemaWriteOperations],
-        schemaOps,
-        mock[LifecycleOperations] )
+        schemaOps)
+
+    val fakeState = mock[StatementState]
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.getCtxForWriting).thenReturn(fakeCtx)
+    when(bridge.statementForWriting()).thenReturn(fakeState)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
-    when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(fakeGraph.beginTx()).thenReturn(tx)
 
     val engine = new ExecutionEngine(fakeGraph)

@@ -43,16 +43,16 @@ public class UniquenessConstraintStoppingKernelTransaction extends DelegatingKer
         UniquenessConstraintStoppingStatementOperations stoppingContext =
                 new UniquenessConstraintStoppingStatementOperations( parts.schemaWriteOperations() );
         
-        return parts.override( null, null, null, null, null, stoppingContext, null, null );
+        return parts.override( null, null, null, null, null, stoppingContext, null );
     }
 
     private static class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOperations
     {
-        private final SchemaWriteOperations schemaWriteDeletage;
+        private final SchemaWriteOperations schemaWriteDelegate;
 
-        public UniquenessConstraintStoppingStatementOperations( SchemaWriteOperations schemaWriteDeletage )
+        public UniquenessConstraintStoppingStatementOperations( SchemaWriteOperations schemaWriteDelegate )
         {
-            this.schemaWriteDeletage = schemaWriteDeletage;
+            this.schemaWriteDelegate = schemaWriteDelegate;
         }
         
         @Override
@@ -90,13 +90,13 @@ public class UniquenessConstraintStoppingKernelTransaction extends DelegatingKer
         @Override
         public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
         {
-            return schemaWriteDeletage.indexCreate( state, labelId, propertyKeyId );
+            return schemaWriteDelegate.indexCreate( state, labelId, propertyKeyId );
         }
 
         @Override
         public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
         {
-            schemaWriteDeletage.indexDrop( state, descriptor );
+            schemaWriteDelegate.indexDrop( state, descriptor );
         }
     }
 }

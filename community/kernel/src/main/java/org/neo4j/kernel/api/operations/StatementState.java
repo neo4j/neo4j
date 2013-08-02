@@ -24,7 +24,6 @@ import java.io.Closeable;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.ReferenceCountingStatementOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
@@ -37,17 +36,12 @@ import org.neo4j.kernel.impl.api.state.TxState;
  * 
  * @author Mattias Persson
  */
-public interface StatementState extends TxState.Holder
+public interface StatementState extends TxState.Holder, Closeable
 {
     LockHolder locks();
 
     IndexReaderFactory indexReaderFactory();
-    
-    /**
-     * A hook provided for satisfying reference counting.
-     * @see ReferenceCountingStatementOperations
-     */
-    void markAsClosed();
-    
-    Closeable closeable( LifecycleOperations logic );
+
+    @Override
+    void close();
 }

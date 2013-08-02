@@ -76,7 +76,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
                 }
                 finally
                 {
-                    context.close( state );
+                    state.close();
                 }
                 success = true;
             }

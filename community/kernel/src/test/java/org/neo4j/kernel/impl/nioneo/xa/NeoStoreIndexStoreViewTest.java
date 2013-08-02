@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -163,7 +163,7 @@ public class NeoStoreIndexStoreViewTest
             StatementState state = bridge.statementForWriting();
             labelId = ctx.keyWriteOperations().labelGetOrCreateForName( state, "Person" );
             propertyKeyId = ctx.keyWriteOperations().propertyKeyGetOrCreateForName( state, "name" );
-            ctx.close( state );
+            state.close();
             tx.success();
         }
         finally

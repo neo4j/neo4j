@@ -53,15 +53,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
@@ -276,7 +271,7 @@ public class IndexRecoveryIT
                 updates.add( NodePropertyUpdate.add( node.getId(), context.keyReadOperations().propertyKeyGetForName( state, key ), number,
                         new long[] {context.keyReadOperations().labelGetForName( state, label.name() )} ) );
             }
-            context.close( state );
+            state.close();
             tx.success();
             return updates;
         }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+
+import static org.junit.Assert.*;
 
 public class KernelSchemaStateStoreTest
 {

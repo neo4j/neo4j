@@ -49,7 +49,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
 
   def close(success: Boolean) {
     try {
-      ctx.close( theState )
+      theState.close()
 
       if (success)
         tx.success()
@@ -76,7 +76,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
           work(new TransactionBoundQueryContext(graph, tx, stmCtx, state))
         }
         finally {
-          stmCtx.close( state )
+          state.close()
         }
         tx.success()
         result
