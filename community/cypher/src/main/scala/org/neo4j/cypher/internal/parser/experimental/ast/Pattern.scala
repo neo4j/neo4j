@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, PathType}
+import org.neo4j.cypher.internal.symbols.{CollectionType, NodeType, RelationshipType, PathType}
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy, values => commandvalues}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
@@ -418,9 +418,15 @@ case class NamedRelationshipPattern(
     properties : Option[Expression],
     token: InputToken) extends RelationshipPattern
 {
-  override def semanticCheck(context: SemanticContext) =
+  override def semanticCheck(context: SemanticContext) = {
+    val typ = if (length.nonEmpty)
+      CollectionType(RelationshipType())
+    else
+      RelationshipType()
+
     super.semanticCheck(context) then
-      identifier.implicitDeclaration(RelationshipType())
+      identifier.implicitDeclaration(typ)
+  }
 
   val legacyName = identifier.name
 }

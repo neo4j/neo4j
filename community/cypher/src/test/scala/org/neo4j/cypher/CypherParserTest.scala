@@ -2902,6 +2902,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def variable_length_relationship_with_rel_collection() {
+    test(vFrom2_0, "MATCH (a)-[rels*]->(b) WHERE ALL(r in rels WHERE r.prop = 42) RETURN rels",
+      Query.
+        matches(VarLengthRelatedTo("  UNNAMED9", "a", "b", None, None, Seq.empty, Direction.OUTGOING, Some("rels"), optional = false)).
+        where(AllInCollection(Identifier("rels"), "r", Equals(Property(Identifier("r"), PropertyKey("prop")), Literal(42)))).
+        returns(ReturnItem(Identifier("rels"), "rels"))
+    )
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
