@@ -170,19 +170,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
   @Test
   def should_be_able_to_handle_a_param_as_node() {
-    val a = createNode()
-    val b = createNode()
-
-    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->({p}) return r", "p" -> b)
-    val createdRel = result.columnAs[Relationship]("r").toList.head
-
-    assertStats(result, relationshipsCreated = 1)
-
-    val r = graph.inTx(a.getRelationships.asScala.head)
-
-    assert(createdRel === r)
-    assertInTx(r.getStartNode === a)
-    assertInTx(r.getEndNode === b)
+    val n = createNode()
+    intercept[CypherTypeException](parseAndExecute("start a = node(1) create unique a-[r:X]->({param}) return r", "param" -> n))
   }
 
   @Test

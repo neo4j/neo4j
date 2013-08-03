@@ -286,22 +286,6 @@ sealed abstract class NodePattern extends PatternElement {
     mutation.RelationshipEndpoint(nodeExpression, props, labels, bare)
   }
 
-  protected lazy val legacyProps: Map[String, CommandExpression] = properties match {
-    case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
-    case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
-    case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
-    case None                   => Map[String, CommandExpression]()
-  }
-
-
-  protected def nodeExpression:legacy.Expression = legacy.Identifier(legacyName)
-
-  protected lazy val legacyDetails: (legacy.Expression, Map[String, legacy.Expression], Seq[Unresolved], Boolean) = {
-    val props = legacyProps
-    val bare = labels.isEmpty && (props.isEmpty || !legacy.Identifier.isNamed(legacyName))
-    (nodeExpression, legacyProps, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)), bare)
-  }
-
   def toLegacyPredicates = labels.map(t => {
     val id = legacy.Identifier(legacyName)
     commands.HasLabel(id, commandvalues.KeyToken.Unresolved(t.name, Label))
@@ -309,33 +293,34 @@ sealed abstract class NodePattern extends PatternElement {
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
     val (nodeExpression, props, labels, bare) = legacyDetails
-
-    val propertiesToUse: Map[String, CommandExpression] =
-      if(nodeExpression.isInstanceOf[legacy.Identifier])
-        props
-      else
-        Map.empty
-
-    Seq(ParsedEntity(legacyName, nodeExpression, propertiesToUse, labels, bare))
+    Seq(ParsedEntity(legacyName, nodeExpression, props, labels, bare))
   }
 
+  protected lazy val legacyProps: Map[String, CommandExpression] = properties match {
+    case Some(m: MapExpression) => m.items.map(p => (p._1.name, p._2.toCommand)).toMap
+    case Some(p: Parameter)     => Map[String, CommandExpression]("*" -> p.toCommand)
+    case Some(p)                => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+    case None                   => Map[String, CommandExpression]()
+  }
+
+  protected lazy val legacyDetails: (legacy.Expression, Map[String, legacy.Expression], Seq[Unresolved], Boolean) = {
+    val props = legacyProps
+    val bare = labels.isEmpty && props.isEmpty
+    (legacy.Identifier(legacyName), legacyProps, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)), bare)
+  }
 }
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
-  override def semanticCheck(context: SemanticContext) =
+  override def semanticCheck(context: SemanticContext) = {
     identifier.implicitDeclaration(NodeType()) then
-    super.semanticCheck(context)
+      super.semanticCheck(context)
+  }
 
   val legacyName = identifier.name
 }
 
 case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
   val legacyName = "  UNNAMED" + (token.startPosition.offset + 1)
-
-  override protected def nodeExpression: legacy.Expression = properties match {
-    case Some(p: Parameter) => p.toCommand
-    case _                  => super.nodeExpression
-  }
 }
 
 

@@ -64,7 +64,6 @@ case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClaus
 case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 
-
   private def toCommand = {
     val abstractPatterns: Seq[AbstractPattern] = patterns.flatMap(_.toAbstractPatterns).map(_.makeOutgoing)
     CreateUniqueAst(abstractPatterns)
