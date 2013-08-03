@@ -92,8 +92,8 @@ trait Query extends Parser
   }
 
   private def SetItem : Rule1[ast.SetItem] = rule (
-      PropertyExpression ~~ operator("=") ~>> token ~~ Expression ~~> ast.SetPropertyItem
-    | Identifier ~~ operator("=") ~>> token ~~ Parameter ~~> ast.SetNodeItem
+      PropertyExpression ~~ group(operator("=") ~~ Expression) ~>> token ~~> ast.SetPropertyItem
+    | Identifier ~~ group(operator("=") ~~ Expression) ~>> token ~~> ast.SetNodeItem
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.SetLabelItem
   )
 
