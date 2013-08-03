@@ -435,6 +435,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Property(Identifier("a"), PropertyKey("name")), "a.name")))
   }
 
+  @Test def shouldReadPropertiesOnExpressions() {
+    test(vExperimental,
+      "start a = NODE(1) return (a).name",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ReturnItem(Property(Identifier("a"), PropertyKey("name")), "(a).name")))
+  }
+
   @Test def shouldHandleAndPredicates() {
     test(
       "start a = NODE(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
@@ -927,12 +935,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def variableLengthPathWithRelsIterable() {
-    val string = "start a=node(0) match a -[r:knows*1..3]-> x return x"
+    val string = "start a=node(0) match a -[r:knows*1..3]-> x return length(r)"
     def query(pathName: String): Query = {
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo(pathName, "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false)).
-        returns(ReturnItem(Identifier("x"), "x"))
+        returns(ReturnItem(LengthFunction(Identifier("r")), "length(r)"))
     }
 
     testVariants(string, query,
@@ -1931,6 +1939,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test("start a=node(0) with a set a.hello = 'world'", q)
   }
 
+  @Test def set_property_on_node_from_expression() {
+    val secondQ = Query.
+      updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("a"), "a"))
+
+    test(vExperimental, "start a=node(0) with a set (a).hello = 'world'", q)
+  }
+
   @Test def set_multiple_properties_on_node() {
     val secondQ = Query.
       updates(
@@ -2635,7 +2656,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter_by_label_in_where() {
-    test(vFrom2_0, "START n=node(0) WHERE n:Foo RETURN n",
+    test(vExperimental, "START n=node(0) WHERE (n):Foo RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_label_in_where_with_expression() {
+    test(vExperimental, "START n=node(0) WHERE (n):Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
         where(HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label))).

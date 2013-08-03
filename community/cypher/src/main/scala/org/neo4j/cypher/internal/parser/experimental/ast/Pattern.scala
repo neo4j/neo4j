@@ -419,13 +419,9 @@ case class NamedRelationshipPattern(
     token: InputToken) extends RelationshipPattern
 {
   override def semanticCheck(context: SemanticContext) = {
-    val typ = if (length.nonEmpty)
-      CollectionType(RelationshipType())
-    else
-      RelationshipType()
-
+    val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
     super.semanticCheck(context) then
-      identifier.implicitDeclaration(typ)
+      identifier.implicitDeclaration(possibleType)
   }
 
   val legacyName = identifier.name
