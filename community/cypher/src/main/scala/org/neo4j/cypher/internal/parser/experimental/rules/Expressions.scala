@@ -106,9 +106,10 @@ trait Expressions extends Parser
     | keyword("NULL") ~>> token ~~> ast.Null
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
+    | CaseExpression
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
     | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterFunction
-    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~~ ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~ ")") ~>> token ~~> ast.ExtractFunction
+    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~>> token ~~> ast.ExtractFunction
     | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.Reduce
     | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
@@ -127,7 +128,7 @@ trait Expressions extends Parser
   }
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
-    IdInColl ~~ (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))
+    IdInColl ~ optional(WS ~ keyword("WHERE") ~~ Expression)
 
   private def IdInColl: Rule2[ast.Identifier, ast.Expression] =
     Identifier ~~ keyword("IN") ~~ Expression
@@ -140,10 +141,20 @@ trait Expressions extends Parser
   }
 
   def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
-    group("[" ~~
-      FilterExpression ~~
-      ("|" ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None)) ~~
-    "]") ~>> token ~~> ast.ListComprehension
+    group("[" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ "]") ~>> token ~~> ast.ListComprehension
   }
 
+  def CaseExpression : Rule1[ast.CaseExpression] = rule("CASE") {
+    group((
+        keyword("CASE") ~~ push(None) ~ oneOrMore(WS ~ CaseAlternatives)
+      | keyword("CASE") ~~ Expression ~~> (Some(_)) ~ oneOrMore(WS ~ CaseAlternatives)
+      ) ~ optional(WS ~
+        keyword("ELSE") ~~ Expression
+      ) ~~ keyword("END")
+    ) ~>> token ~~> ast.CaseExpression
+  }
+
+  private def CaseAlternatives : Rule2[ast.Expression, ast.Expression] = rule("WHEN") {
+    keyword("WHEN") ~~ Expression ~~ keyword("THEN") ~~ Expression
+  }
 }
