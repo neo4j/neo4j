@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.experimental.rules
 import org.neo4j.cypher.internal.parser.experimental._
 import org.parboiled.Context
 import org.parboiled.scala._
+import org.parboiled.matchers.OneOrMoreMatcher
 
 trait Base extends Parser {
 
@@ -82,6 +83,10 @@ trait Base extends Parser {
       withContext((v1: V1, start: Int, v2: V2, v3: V3, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, ContextToken(ctx, start, end)))
   def rt[V1, V2, V3, V4, A](inner: ((V1, V2, V3, V4, InputToken) => A)) =
       withContext((v1: V1, start: Int, v2: V2, v3: V3, v4: V4, end: Int, ctx: Context[Any]) => inner(v1, v2, v3, v4, ContextToken(ctx, start, end)))
+
+  // Workaround for https://github.com/sirthias/parboiled/pull/62
+  def oneOrMore[A, B <: A](sub: ReductionRule1[A, B])(implicit d: DummyImplicit): ReductionRule1[A, B] =
+    new ReductionRule1[A, B](new OneOrMoreMatcher(sub.matcher))
 
   implicit class WSRule0(r: Rule0) {
     def ~~(other: Rule0) : Rule0 = r ~ WS ~ other

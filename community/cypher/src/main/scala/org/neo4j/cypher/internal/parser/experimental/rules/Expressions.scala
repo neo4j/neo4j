@@ -86,7 +86,9 @@ trait Expressions extends Parser
 
   private def Expression3 : Rule1[ast.Expression] = rule {
     Expression2 ~ zeroOrMore(WS ~ (
-        operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        ((operator(".") ~~ Identifier) memoMismatches) ~>> token ~~> ast.Property
+      | NodeLabels ~>> token ~~> ast.HasLabels
+      | operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IN") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IS", "NULL") ~> identifier ~~> (ast.FunctionInvocation(_: ast.Expression, _))
       | keyword("IS", "NOT", "NULL") ~> identifier ~~> (ast.FunctionInvocation(_: ast.Expression, _))
@@ -94,7 +96,12 @@ trait Expressions extends Parser
   }
 
   private def Expression2 : Rule1[ast.Expression] = rule (
-      "(" ~~ Expression ~~ ")"
+      Parameter
+    | "(" ~~ Expression ~~ ")"
+    | ListComprehension
+    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
+    | StringLiteral
+    | NumberLiteral
     | group(keyword("NOT") ~> identifier ~~ ("(" ~~ Expression ~~ ")" | Expression)) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
     | keyword("NULL") ~>> token ~~> ast.Null
     | keyword("TRUE") ~>> token ~~> ast.True
@@ -109,15 +116,15 @@ trait Expressions extends Parser
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
     | FunctionInvocation
     | RelationshipsPattern ~>> token ~~> ast.PatternExpression
-    | Parameter
-    | StringLiteral
-    | NumberLiteral
-    | Property
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
-    | ListComprehension
-    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
   )
+
+  def PropertyExpression : Rule1[ast.Property] = rule {
+    Expression2 ~ oneOrMore(WS ~ (
+      group(operator(".") ~~ Identifier) ~>> token ~~> ast.Property
+    ) : ReductionRule1[ast.Expression, ast.Property])
+  }
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
     IdInColl ~~ (keyword("WHERE") ~~ Expression ~~> (Some(_)) | EMPTY ~ push(None))

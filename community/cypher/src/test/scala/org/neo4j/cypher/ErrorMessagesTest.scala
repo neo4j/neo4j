@@ -212,7 +212,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def warn_about_type_error() {
     expectError("START p=node(0) MATCH p-[r*]->() WHERE r.foo = 'apa' RETURN r",
       v2_0    -> "Expected `r` to be a Map but it was a Collection",
-      vExperimental -> "Expected `r` to be a Map but it was a Collection"
+      vExperimental -> "Type mismatch: r already defined with conflicting type Collection<Relationship> (expected Map) (line 1, column 40)"
     )
   }
 

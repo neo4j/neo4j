@@ -25,6 +25,7 @@ import org.parboiled.scala._
 trait Query extends Parser
   with StartPoints
   with Patterns
+  with Expressions
   with Base {
 
   def Query : Rule1[ast.Query] = rule {
@@ -91,7 +92,7 @@ trait Query extends Parser
   }
 
   private def SetItem : Rule1[ast.SetItem] = rule (
-      Property ~~ operator("=") ~>> token ~~ Expression ~~> ast.SetPropertyItem
+      PropertyExpression ~~ operator("=") ~>> token ~~ Expression ~~> ast.SetPropertyItem
     | Identifier ~~ operator("=") ~>> token ~~ Parameter ~~> ast.SetNodeItem
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.SetLabelItem
   )
@@ -102,7 +103,7 @@ trait Query extends Parser
 
   private def RemoveItem : Rule1[ast.RemoveItem] = rule (
       group(Identifier ~~ NodeLabels) ~>> token ~~> ast.RemoveLabelItem
-    | Property ~~> ast.RemovePropertyItem
+    | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
