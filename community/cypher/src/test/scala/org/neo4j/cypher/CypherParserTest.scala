@@ -1660,7 +1660,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def create_node_from_param() {
     test(vFrom2_0, "create ({param})",
       Query.
-        start(CreateNodeStartItem(CreateNode("  UNNAMED8", Map("*" -> ParameterExpression("param")), Seq.empty))).
+        start(CreateNodeStartItem(CreateNode("  UNNAMED8", Map("*" -> ParameterExpression("param")), Seq.empty, false))).
         returns()
     )
   }
@@ -2477,7 +2477,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def create_unique_should_support_parameter_maps() {
     val start = NamedExpectation("n", true)
     val rel = NamedExpectation("  UNNAMED31", true)
-    val end = new NamedExpectation("  UNNAMED41", ParameterExpression("param"), Map.empty, Seq.empty, true)
+    val end = NamedExpectation("  UNNAMED41", Map("*" -> ParameterExpression("param")), Seq.empty, false)
 
     val secondQ = Query.
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).

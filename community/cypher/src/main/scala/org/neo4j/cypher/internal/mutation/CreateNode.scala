@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.cypher.CypherTypeException
 
 case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean = true)
   extends UpdateAction
@@ -75,6 +76,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
           createNodeWithPropertiesAndLabels(m)
         }
+        case _ => throw new CypherTypeException("Parameter provided for node creation is not a Map")
       }
     } else {
       Iterator(createNodeWithPropertiesAndLabels(properties))
