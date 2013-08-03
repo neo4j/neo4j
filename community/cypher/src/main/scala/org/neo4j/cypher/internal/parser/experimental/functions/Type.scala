@@ -28,9 +28,9 @@ case object Type extends Function {
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
     super.semanticCheck(ctx, invocation) then
-    checkArgs(invocation, 1) then
-    invocation.arguments.limitType(RelationshipType()) then
-    invocation.limitType(BooleanType())
+      checkArgs(invocation, 1) then
+      invocation.arguments.limitType(RelationshipType()) then
+      invocation.limitType(StringType())
   }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
