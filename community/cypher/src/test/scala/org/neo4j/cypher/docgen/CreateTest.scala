@@ -99,24 +99,6 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     )
   }
 
-  @Test def using_expressions_as_nodes() {
-    createTwoNodes
-
-    testQuery(
-      title = "Using expressions for nodes end points",
-      text = "You can use any expression as a node, as long as it returns a node. Just make sure to encase your " +
-        "expression in parenthesis.",
-      queryText =
-        "match a:Person where a.name = 'Node A' " +
-        "with collect(a) as nodes " +
-        "match b:Person where b.name = 'Node B' " +
-        "create (head(nodes))-[r:REL]->b " +
-        "return r",
-      returns = "The created relationship is returned.",
-      assertions = (p) => assert(p.size === 1)
-    )
-  }
-
   @Test def set_property_to_a_collection() {
     db.inTx{
       val a = db.createNode()

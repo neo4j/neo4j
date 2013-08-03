@@ -85,8 +85,7 @@ trait ParserPattern extends Base with Labels {
   }
 
   def node: Parser[ParsedEntity] =
-    parens(nodeFromExpression) | // whatever expression, but inside parenthesis
-      singleNodeDefinition | // x optLabelSeq optValues
+    singleNodeDefinition | // x optLabelSeq optValues
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
 
@@ -113,23 +112,6 @@ trait ParserPattern extends Base with Labels {
     case name ~ labelsAndValues =>
       val (labelsVal, mapVal, bare) = labelsAndValues
       ParsedEntity(name, Identifier(name), mapVal, labelsVal, bare)
-  }
-
-  private def nodeFromExpression = Parser {
-    in =>
-      (generatedName ~ expression).apply(in) match {
-        case Success(_ ~ Identifier(name), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq.empty, bare = true), rest)
-
-        case Success(name ~ Literal(n: KeyToken.Unresolved), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), Seq(n), bare = true), rest)
-
-        case Success(name ~ exp, rest) =>
-          Success(ParsedEntity(name, exp, Map[String, Expression](), Seq.empty, bare = true), rest)
-
-        case x: Error           => x
-        case Failure(msg, rest) => failure("expected an expression that is a node", rest)
-      }
   }
 
   def path: Parser[List[AbstractPattern]] =

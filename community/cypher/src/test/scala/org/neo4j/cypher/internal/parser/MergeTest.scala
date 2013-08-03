@@ -54,7 +54,7 @@ class MergeTest extends ParserExperimentalTest[ast.Merge, MergeAst] with Query w
 
     parsing("MERGE ({prop:42})") shouldGive
       MergeAst(Seq(
-        ParsedEntity("  UNNAMED7", expressions.Identifier("  UNNAMED7"), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = true)),
+        ParsedEntity("  UNNAMED7", expressions.Identifier("  UNNAMED7"), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = false)),
         Seq.empty)
 
     parsing("MERGE (nodeName:Label)") shouldGive
