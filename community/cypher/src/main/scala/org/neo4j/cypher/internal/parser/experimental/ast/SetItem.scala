@@ -29,7 +29,7 @@ sealed trait SetItem extends AstNode with SemanticCheckable {
   def toLegacyUpdateAction : mutation.UpdateAction
 }
 
-case class SetPropertyItem(property: Property, token: InputToken, expression: Expression) extends SetItem {
+case class SetPropertyItem(property: Property, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck = Seq(property, expression).semanticCheck(Expression.SemanticContext.Simple)
 
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
@@ -38,7 +38,7 @@ case class SetPropertyItem(property: Property, token: InputToken, expression: Ex
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
   def semanticCheck = {
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.limitType(NodeType())
+      expression.limitType(NodeType())
   }
 
   def toLegacyUpdateAction = {
@@ -46,11 +46,11 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
   }
 }
 
-case class SetNodeItem(identifier: Identifier, token: InputToken, expression: Expression) extends SetItem {
+case class SetNodeItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck = {
     Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.limitType(NodeType()) then
-    expression.limitType(MapType())
+      identifier.limitType(NodeType()) then
+      expression.limitType(MapType())
   }
 
   def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand)

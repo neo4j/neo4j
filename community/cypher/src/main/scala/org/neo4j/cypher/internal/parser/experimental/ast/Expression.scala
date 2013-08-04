@@ -23,7 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, Predicate}
+import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
@@ -34,20 +34,21 @@ object Expression {
     case object Results extends SemanticContext
   }
 
-  implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
+  implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) extends SemanticChecking {
     def semanticCheck(ctx: SemanticContext) = option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
   }
-  implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) {
+  implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
     def semanticCheck(ctx: SemanticContext) = {
       traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck(ctx) }
     }
   }
-  implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
-    def mergeDownTypes = (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
-    def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
-        traversable.foldLeft(SemanticCheckResult.success) {
-          (f, e) => f then e.limitType(possibleType, possibleTypes:_*)
-        }
+  implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
+    def mergeDownTypes : TypeGenerator = (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
+    def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck = {
+      traversable.foldLeft(SemanticCheckResult.success) {
+        (f, e) => f then e.limitType(possibleType, possibleTypes:_*)
+      }
+    }
   }
 }
 
@@ -154,7 +155,7 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
 
   override def semanticCheck(ctx: SemanticContext) = expression.limitType(NodeType()) then super.semanticCheck(ctx)
 
-  private def toPredicate(l: Identifier): Predicate =
+  private def toPredicate(l: Identifier): commands.Predicate =
     commands.HasLabel(expression.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
 
   def toCommand = labels.map(toPredicate).reduceLeft(commands.And(_, _))
@@ -299,37 +300,37 @@ case class ListComprehension(
 sealed trait IterablePredicateExpression extends FilterExpression {
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then limitType(BooleanType())
 
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : Predicate
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : commands.Predicate
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
     toPredicate(command, identifier.name, inner)
 }
 
-case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
   val name = "ALL"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
       commands.AllInCollection(command, identifier.name, inner)
 }
 
-case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
   val name = "ANY"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
       commands.AnyInCollection(command, identifier.name, inner)
 }
 
-case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
   val name = "NONE"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
       commands.NoneInCollection(command, identifier.name, inner)
 }
 
-case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: ContextToken) extends IterablePredicateExpression {
+case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
   val name = "SINGLE"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
       commands.SingleInCollection(command, identifier.name, inner)
 }
 
-case class Reduce(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression, token: ContextToken) extends Expression {
+case class Reduce(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression, token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
     init.semanticCheck(ctx) then
       collection.semanticCheck(ctx) then
@@ -346,3 +347,34 @@ case class Reduce(accumulator: Identifier, init: Expression, id: Identifier, col
   def toCommand: CommandExpression = commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)
 }
 
+
+case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression], token: InputToken) extends Expression {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+    val possibleTypes : TypeGenerator = (alternatives.map(_._2) ++ default) mergeDownTypes
+
+    expression.semanticCheck(ctx) then
+      alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
+      default.semanticCheck(ctx) then
+      when (expression.isEmpty) {
+        alternatives.map(_._1).limitType(BooleanType())
+      } then limitType(possibleTypes)
+  }
+
+  def toCommand: CommandExpression = expression match {
+    case Some(e) => {
+      val legacyAlternatives = alternatives.map {
+        a => (a._1.toCommand, a._2.toCommand)
+      }
+      commandexpressions.SimpleCase(e.toCommand, legacyAlternatives, default.map(_.toCommand))
+    }
+    case None => {
+      val predicateAlternatives = alternatives.map { a =>
+        a._1.toCommand match {
+          case predicate: CommandPredicate => (predicate, a._2.toCommand)
+          case _ => throw new SyntaxException(s"Argument to WHEN is not a predicate (${a._1.token.startPosition})")
+        }
+      }
+      commandexpressions.GenericCase(predicateAlternatives, default.map(_.toCommand))
+    }
+  }
+}

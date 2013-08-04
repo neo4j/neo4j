@@ -2941,6 +2941,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def simple_case_statement() {
+    test(vFrom2_0, "MATCH (a) RETURN CASE a.prop WHEN 1 THEN 'hello' ELSE 'goodbye' END AS result",
+      Query.
+        matches(SingleNode("a")).
+        returns(
+        ReturnItem(SimpleCase(Property(Identifier("a"), PropertyKey("prop")), Seq(
+          (Literal(1), Literal("hello"))
+        ), Some(Literal("goodbye"))), "result", true)))
+  }
+
+  @Test def generic_case_statement() {
+    test(vFrom2_0, "MATCH (a) RETURN CASE WHEN a.prop = 1 THEN 'hello' ELSE 'goodbye' END AS result",
+      Query.
+        matches(SingleNode("a")).
+        returns(
+        ReturnItem(GenericCase(Seq(
+          (Equals(Property(Identifier("a"), PropertyKey("prop")), Literal(1)), Literal("hello"))
+        ), Some(Literal("goodbye"))), "result", true)))
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
