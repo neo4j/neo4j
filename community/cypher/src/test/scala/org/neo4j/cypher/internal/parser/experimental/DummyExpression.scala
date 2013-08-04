@@ -17,23 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.experimental.functions
+package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.cypher.internal.parser.experimental._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.symbols.TypeSet
+import org.neo4j.cypher.internal.parser.experimental.ast.{SimpleTypedExpression, Expression}
 
-case object Type extends Function {
-  def name = "TYPE"
-
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
-      checkArgs(invocation, 1) then
-      invocation.arguments.limitType(RelationshipType()) then
-      invocation.limitType(StringType())
-  }
-
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    commandexpressions.RelationshipTypeFunction(invocation.arguments(0).toCommand)
-  }
+case class DummyExpression(possibleTypes: TypeSet, token: InputToken) extends Expression with SimpleTypedExpression {
+  def toCommand = ???
 }
