@@ -25,14 +25,11 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.parser.experimental._
 
-class ExtractFunctionTest extends Assertions {
+class ExtractExpressionTest extends Assertions {
 
-  val dummyExpression = new Expression with SimpleTypedExpression {
-    def token: InputToken = DummyToken(2,3)
-    protected def possibleTypes: TypeSet = Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType()))
-
-    def toCommand = ???
-  }
+  val dummyExpression = DummyExpression(
+    TypeSet(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())),
+    DummyToken(2,3))
 
   val extractExpression = new Expression with SimpleTypedExpression {
     def token: InputToken = DummyToken(2,3)
@@ -43,7 +40,7 @@ class ExtractFunctionTest extends Assertions {
 
   @Test
   def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
-    val extract = ExtractFunction(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(Set(CollectionType(NodeType()), CollectionType(NumberType())), extract.types(result.state))
@@ -51,14 +48,14 @@ class ExtractFunctionTest extends Assertions {
 
   @Test
   def shouldRaiseSyntaxErrorIfPredicateSpecified() {
-    val extract = ExtractFunction(Identifier("x", DummyToken(5, 6)), dummyExpression, Some(True(DummyToken(5,6))), Some(extractExpression), DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, Some(True(DummyToken(5,6))), Some(extractExpression), DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("EXTRACT should not contain a WHERE predicate", DummyToken(0, 10))), result.errors)
   }
 
   @Test
   def shouldRaiseSyntaxErrorIfMissingExtractExpression() {
-    val extract = ExtractFunction(Identifier("x", DummyToken(5, 6)), dummyExpression, None, None, DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, None, DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("EXTRACT requires an extract expression", DummyToken(0, 10))), result.errors)
   }

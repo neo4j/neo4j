@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.symbols.TypeSet
+
 package object experimental {
   type SemanticCheck = SemanticState => SemanticCheckResult
+  type TypeGenerator = SemanticState => TypeSet
 
   // Allows joining of two (SemanticState => SemanticCheckResult) funcs together (using then)
   implicit def chainableSemanticCheck(check: SemanticCheck) = ChainableSemanticCheck(check)

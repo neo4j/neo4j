@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.parser.experimental
 
-import org.neo4j.cypher.internal.symbols.TypeSet
-
-
 trait SemanticCheckable {
   def semanticCheck: SemanticCheck
 }
@@ -63,8 +60,6 @@ case class ChainableSemanticCheck(check: SemanticCheck) {
 
 
 trait SemanticChecking {
-  type TypeGenerator = SemanticState => TypeSet
-
   protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
     if (pred)
       check(state)

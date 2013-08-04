@@ -24,41 +24,25 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.parser.experimental._
-import org.neo4j.cypher.internal.commands.{expressions, Predicate}
-import org.neo4j.cypher.internal.parser.experimental.ast.Expression.SemanticContext
 
 class FilterExpressionTest extends Assertions {
 
-  case class TestableFilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression]) extends FilterExpression {
-    def name = "Testable Filter Expression"
-    def token = DummyToken(0,10)
+  val dummyExpression = DummyExpression(
+    TypeSet(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())),
+    DummyToken(2,3))
 
-    def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???
+  @Test
+  def shouldHaveCollectionTypesOfInnerExpression() {
+    val filter = FilterExpression(Identifier("x", DummyToken(5,6)), dummyExpression, Some(True(DummyToken(5,6))), DummyToken(0, 10))
+    val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+    assertEquals(Seq(), result.errors)
+    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), filter.types(result.state))
   }
 
   @Test
-  def shouldSemanticCheckPredicateInStateContainingTypedIdentifier() {
-    val expression = new Expression with SimpleTypedExpression {
-      def token = DummyToken(5,6)
-      protected def possibleTypes = Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType()))
-
-      def toCommand = ???
-    }
-
-    val error = SemanticError("dummy error", DummyToken(8,9))
-    val predicate = new Expression {
-      def token = DummyToken(7,9)
-      def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(Some(Set(NodeType(), StringType())), s.symbolTypes("x"))
-        SemanticCheckResult.error(s, error)
-      }
-
-      def toCommand = ???
-    }
-
-    val filter = TestableFilterExpression(Identifier("x", DummyToken(2,3)), expression, Some(predicate))
+  def shouldRaiseSyntaxErrorIfMissingPredicate() {
+    val filter = FilterExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(error), result.errors)
-    assertEquals(None, result.state.symbol("x"))
+    assertEquals(Seq(SemanticError("FILTER requires a WHERE predicate", DummyToken(0, 10))), result.errors)
   }
 }
