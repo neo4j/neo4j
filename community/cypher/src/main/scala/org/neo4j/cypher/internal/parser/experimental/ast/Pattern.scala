@@ -106,7 +106,7 @@ sealed abstract class PathPattern extends AstNode {
 case class EveryPath(element: PatternElement) extends PathPattern {
   def token = element.token
 
-  def semanticCheck(context: SemanticContext) = element.semanticCheck(context)
+  def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
 
   def toLegacyPatterns(pathName: Option[String]) = element.toLegacyPatterns(pathName.isEmpty)
   def toLegacyNamedPath(pathName: String) = Some(commands.NamedPath(pathName, element.toAbstractPatterns:_*))
@@ -125,12 +125,11 @@ abstract class AbstractShortestPath(element: PatternElement, token: InputToken) 
   val name: String
   val single: Boolean
 
-  def semanticCheck(context: SemanticContext) = checkContainsSingle then checkNoMinimalLength
+  def semanticCheck(ctx: SemanticContext) = checkContainsSingle(ctx) then checkNoMinimalLength
 
-  private def checkContainsSingle: SemanticCheck = element match {
+  private def checkContainsSingle(ctx: SemanticContext): SemanticCheck = element match {
     case RelationshipChain(l: NamedNodePattern, _, r: NamedNodePattern, _) => {
-      l.identifier.ensureDefined(NodeType()) then
-        r.identifier.ensureDefined(NodeType())
+      element.semanticCheck(ctx)
     }
     case RelationshipChain(l: NodePattern, _, _, _)                        =>
       SemanticError(s"shortestPath requires named nodes", token, l.token)
@@ -183,7 +182,7 @@ case class AllShortestPaths(element: PatternElement, token: InputToken) extends 
 
 
 sealed abstract class PatternElement extends AstNode {
-  def semanticCheck(context: SemanticContext): SemanticCheck
+  def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern]
   def toLegacyCreates : Seq[mutation.UpdateAction]
@@ -192,10 +191,10 @@ sealed abstract class PatternElement extends AstNode {
 }
 
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern, token: InputToken) extends PatternElement {
-  def semanticCheck(context: SemanticContext) = {
-    element.semanticCheck(context) then
-    relationship.semanticCheck(context) then
-    rightNode.semanticCheck(context)
+  def semanticCheck(ctx: SemanticContext) = {
+    element.semanticCheck(ctx) then
+      relationship.semanticCheck(ctx) then
+      rightNode.semanticCheck(ctx)
   }
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern] = {
@@ -264,8 +263,8 @@ sealed abstract class NodePattern extends PatternElement {
   val labels: Seq[Identifier]
   val properties: Option[Expression]
 
-  def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && context != SemanticContext.Update) {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+    if (properties.isDefined && ctx != SemanticContext.Update) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
       properties.semanticCheck(Expression.SemanticContext.Simple)
@@ -331,10 +330,10 @@ sealed abstract class RelationshipPattern extends AstNode {
   val optional : Boolean
   val properties : Option[Expression]
 
-  def semanticCheck(context: SemanticContext): SemanticCheck = {
-    if (properties.isDefined && context != SemanticContext.Update) {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+    if (properties.isDefined && ctx != SemanticContext.Update) {
       SemanticError("Relationship properties cannot be specified in this context", properties.get.token)
-    } else if (optional && context == SemanticContext.Expression) {
+    } else if (optional && ctx == SemanticContext.Expression) {
       SemanticError("Optional relationships cannot be specified in this context", token)
     } else {
       properties.semanticCheck(Expression.SemanticContext.Simple)
@@ -403,9 +402,9 @@ case class NamedRelationshipPattern(
     properties : Option[Expression],
     token: InputToken) extends RelationshipPattern
 {
-  override def semanticCheck(context: SemanticContext) = {
+  override def semanticCheck(ctx: SemanticContext) = {
     val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
-    super.semanticCheck(context) then
+    super.semanticCheck(ctx) then
       identifier.implicitDeclaration(possibleType)
   }
 

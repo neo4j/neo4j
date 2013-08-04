@@ -105,7 +105,7 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def shortestPathNeedsBothEndNodes() {
     test("start a=node(0) match p=shortestPath(a-->b) return p",
       v2_0    -> "Unknown identifier `b`",
-      vExperimental -> "b not defined (line 1, column 42)"
+      vExperimental -> "Unknown identifier `b`"
     )
   }
 

@@ -1240,6 +1240,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("p"), "p")))
   }
 
+  @Test def testShortestPathWithoutStart() {
+    test(vFrom2_0,
+      """match p = shortestPath( a-[*..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
+      Query.
+        matches(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, Some(3), false, true, None)).
+        where(And(
+          Equals(Property(Identifier("a"), PropertyKey("name")), Literal("John")),
+          Equals(Property(Identifier("b"), PropertyKey("name")), Literal("Sarah"))))
+        returns(ReturnItem(Identifier("p"), "p")))
+  }
+
   @Test def testForNull() {
     test(
       """start a=node(0) where a is null return a""",
