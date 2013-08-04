@@ -192,7 +192,8 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
         id.declare(indexType) then
           accumulator.declare(accType) then
           expression.semanticCheck(SemanticContext.Simple)
-      }
+      } then expression.limitType(init.types) then
+      limitType(s => init.types(s) mergeDown expression.types(s))
   }
 
   def toCommand: CommandExpression = commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)
