@@ -27,37 +27,24 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.internal.commands.{expressions, Predicate}
 import org.neo4j.cypher.internal.parser.experimental.ast.Expression.SemanticContext
 
-class ListComprehensionTest extends Assertions {
+class FilteringExpressionTest extends Assertions {
 
-  val dummyExpression = DummyExpression(
-    TypeSet(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())),
-    DummyToken(2,3))
+  case class TestableFilteringExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
+    def name = "Testable Filter Expression"
+    def token = DummyToken(0,10)
 
-  @Test
-  def withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression() {
-    val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, None, DummyToken(0, 10))
-    val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), filter.types(result.state))
-  }
-
-  @Test
-  def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
-    val extractExpression = new Expression with SimpleTypedExpression {
-      def token: InputToken = DummyToken(2,3)
-      protected def possibleTypes: TypeSet = Set(NodeType(), NumberType())
-
-      def toCommand = ???
-    }
-
-    val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
-    val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(NumberType())), filter.types(result.state))
+    def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???
   }
 
   @Test
   def shouldSemanticCheckPredicateInStateContainingTypedIdentifier() {
+    val expression = new Expression with SimpleTypedExpression {
+      def token = DummyToken(5,6)
+      protected def possibleTypes = Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType()))
+
+      def toCommand = ???
+    }
+
     val error = SemanticError("dummy error", DummyToken(8,9))
     val predicate = new Expression {
       def token = DummyToken(7,9)
@@ -69,7 +56,7 @@ class ListComprehensionTest extends Assertions {
       def toCommand = ???
     }
 
-    val filter = ListComprehension(Identifier("x", DummyToken(2,3)), dummyExpression, Some(predicate), None, DummyToken(0, 10))
+    val filter = TestableFilteringExpression(Identifier("x", DummyToken(2,3)), expression, Some(predicate))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(error), result.errors)
     assertEquals(None, result.state.symbol("x"))

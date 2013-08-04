@@ -108,9 +108,9 @@ trait Expressions extends Parser
     | keyword("FALSE") ~>> token ~~> ast.False
     | CaseExpression
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
-    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterFunction
-    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~>> token ~~> ast.ExtractFunction
-    | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.Reduce
+    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterExpression
+    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~>> token ~~> ast.ExtractExpression
+    | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.ReduceExpression
     | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate

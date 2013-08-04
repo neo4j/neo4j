@@ -26,10 +26,6 @@ import org.neo4j.cypher.internal.parser.experimental._
 
 class CaseExpressionTest extends Assertions {
 
-  case class DummyExpression(possibleTypes: TypeSet, token: InputToken) extends Expression with SimpleTypedExpression {
-    def toCommand = ???
-  }
-
   @Test
   def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
     val caseExpression = CaseExpression(
