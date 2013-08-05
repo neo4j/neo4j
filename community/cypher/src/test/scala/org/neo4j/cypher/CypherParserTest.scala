@@ -1135,6 +1135,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("pA"), "pA")))
   }
 
+  @Test def testParamAsStartRel() {
+    test(
+      """start pA = relationship({a}) return pA""",
+      Query.
+        start(RelationshipById("pA", ParameterExpression("a"))).
+        returns(ReturnItem(Identifier("pA"), "pA")))
+  }
+
   @Test def testNumericParamNameAsStartNode() {
     test(
       """start pA = node({0}) return pA""",
@@ -2980,6 +2988,35 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ReturnItem(GenericCase(Seq(
           (Equals(Property(Identifier("a"), PropertyKey("prop")), Literal(1)), Literal("hello"))
         ), Some(Literal("goodbye"))), "result", true)))
+  }
+
+  @Test def shouldGroupCreateAndCreateUpdate() {
+    val thirdQ = Query.
+      start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink("wife", "friendOfFriend", "  UNNAMED128", "KNOWS", Direction.BOTH)))).
+      namedPaths(NamedPath("p3", ParsedRelation("  UNNAMED128", "wife", "friendOfFriend", Seq("KNOWS"), Direction.BOTH))).
+      returns(ReturnItem(Identifier("p1"), "p1"), ReturnItem(Identifier("p2"), "p2"), ReturnItem(Identifier("p3"), "p3"))
+
+    val secondQ = Query.
+      start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED65",
+        RelationshipEndpoint(Identifier("me"),Map.empty, Seq.empty, true),
+        RelationshipEndpoint(Identifier("wife"), Map("name" -> Literal("Gunhild")), Seq.empty, false),
+        "MARRIED_TO", Map()))).
+      namedPaths(NamedPath("p2", new ParsedRelation("  UNNAMED65", Map(),
+        ParsedEntity("me"),
+        ParsedEntity("wife", Identifier("wife"), Map("name" -> Literal("Gunhild")), Seq.empty, false),
+        Seq("MARRIED_TO"), Direction.OUTGOING, false))).
+      tail(thirdQ).
+      returns(AllIdentifiers())
+
+    val query = Query.start(NodeById("me", 0)).
+      matches(VarLengthRelatedTo("  UNNAMED30", "me", "friendOfFriend", Some(2), Some(2), Seq.empty, Direction.BOTH, None, false)).
+      namedPaths(NamedPath("p1", ParsedVarLengthRelation("  UNNAMED30", Map.empty, ParsedEntity("me"), ParsedEntity("friendOfFriend"), Seq.empty, Direction.BOTH, false, Some(2), Some(2), None))).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    val string = """START me=node(0) MATCH p1 = me-[*2]-friendOfFriend CREATE p2 = me-[:MARRIED_TO]->(wife {name:"Gunhild"}) CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend RETURN p1,p2,p3"""
+
+    test(vFrom2_0, string, query)
   }
 
   private def run(f: () => Unit) =

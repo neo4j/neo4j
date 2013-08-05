@@ -97,7 +97,7 @@ trait Patterns extends Parser
     | EMPTY ~ push(Seq())
   )
 
-  private def MaybeVariableLength : Rule1[Option[Option[ast.Range]]] = rule("length specification") (
+  private def MaybeVariableLength : Rule1[Option[Option[ast.Range]]] = rule("a length specification") (
       "*" ~~ (
           RangeLiteral ~~> (r => Some(Some(r)))
         | EMPTY ~ push(Some(None))
@@ -118,7 +118,7 @@ trait Patterns extends Parser
     (NodeLabels | EMPTY ~ push(Seq()))
   }
 
-  private def MaybeProperties : Rule1[Option[ast.Expression]] = rule("property map") (
+  private def MaybeProperties : Rule1[Option[ast.Expression]] = rule("a property map") (
       MapLiteral ~~> (Some(_))
     | Parameter ~~> (Some(_))
     | EMPTY ~ push(None)

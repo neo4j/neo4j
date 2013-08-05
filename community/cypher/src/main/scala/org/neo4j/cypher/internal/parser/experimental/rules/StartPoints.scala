@@ -61,6 +61,7 @@ trait StartPoints extends Parser
   private def RelationshipIdLookup : ReductionRule2[ast.Identifier, Int, ast.StartItem] = rule {
     "(" ~~ (
         LiteralIds ~>> (_.end) ~~> rt(ast.RelationshipByIds(_: ast.Identifier, _: Seq[ast.UnsignedInteger], _))
+      | Parameter ~>> (_.end) ~~> rt(ast.RelationshipByParameter(_: ast.Identifier, _: ast.Parameter, _))
       | "*" ~>> (_.end) ~~> rt(ast.AllRelationships(_: ast.Identifier, _))
     ) ~~ ")"
   }

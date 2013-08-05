@@ -86,14 +86,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def badMatch3() {
     expectSyntaxError("start p=node(2) match p-[:IS_A->dude return dude.name",
       v2_0    -> ("unclosed bracket", 30),
-      vExperimental -> ("Invalid input '-': expected an identifier character, whitespace, '|', length specification, property map or ']' (line 1, column 31)", 30)
+      vExperimental -> ("Invalid input '-': expected an identifier character, whitespace, '|', a length specification, a property map or ']' (line 1, column 31)", 30)
     )
   }
 
   @Test def badMatch4() {
     expectSyntaxError("start p=node(2) match p-[!]->dude return dude.name",
       v2_0    -> ("expected relationship information", 25),
-      vExperimental -> ("Invalid input '!': expected whitespace, an identifier, '?', relationship types, length specification, property map or ']' (line 1, column 26)", 25)
+      vExperimental -> ("Invalid input '!': expected whitespace, an identifier, '?', relationship types, a length specification, a property map or ']' (line 1, column 26)", 25)
     )
   }
 
@@ -135,7 +135,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def relTypeInsteadOfRelIdInStart() {
     expectSyntaxError("start r = relationship(:WORKED_ON) return r",
       v2_0    -> ("expected relationship id, or *", 23),
-      vExperimental -> ("Invalid input ':': expected whitespace, an unsigned integer or '*' (line 1, column 24)", 23)
+      vExperimental -> ("Invalid input ':': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 24)", 23)
     )
   }
 
