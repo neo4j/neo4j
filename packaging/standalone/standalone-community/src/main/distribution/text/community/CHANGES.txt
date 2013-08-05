@@ -1,5 +1,30 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.0-M04
+---------
+
+Kernel:
+  o BREAKING CHANGE: Require Java 7
+  o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
+    read operations as well as write operations
+  o Define proper equality for indexing of array properties
+  o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type
+
+Cypher:
+  o Fixes #844 - Label predicate do not work on optional nodes that are null
+  o Fixes #897 - Cypher start doesnt allow combining multiple starting points with start node sets
+  o BREAKING CHANGE: Removes "?", "!" syntax for accessing properties. Missing properties are now treated as null
+  o Introduced a new experimental and fast PEG parser
+  o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them
+  o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns
+  o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
+
+Server:
+  o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
+
+Packaging:
+  o Introduce Neo4j Desktop, a launcher for Neo4j Server
+
 2.0.0-M03
 ---------
 Kernel:

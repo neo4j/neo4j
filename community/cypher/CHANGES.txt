@@ -1,10 +1,12 @@
 2.0.0-M04
 ---------
 o Fixes #844 - Label predicate do not work on optional nodes that are null
+o Fixes #897 - Cypher start doesnt allow combining multiple starting points with start node sets
 o BREAKING CHANGE: Removes "?", "!" syntax for accessing properties. Missing properties are now treated as null.
 o Introduced a new experimental PEG parser
 o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them.
 o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns.
+o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
 
 2.0.0-M03
 ---------

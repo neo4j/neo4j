@@ -1,3 +1,12 @@
+2.0.0-M04
+---------
+
+o BREAKING CHANGE: Requires useage of Java 7
+o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
+  read operations as well as write operations.
+o Defines proper equality for indexing of array properties.
+o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type.
+
 2.0.0-M03
 ---------
 o Read-only index results are closed properly
