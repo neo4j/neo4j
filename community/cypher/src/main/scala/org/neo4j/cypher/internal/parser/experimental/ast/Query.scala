@@ -138,7 +138,7 @@ case class SingleQuery(
   private def groupUpdates(updates: Seq[UpdateClause]) : Seq[Seq[UpdateClause]] = updates match {
     case Seq() => List()
     case _ => {
-      val updateBlock = updates.head +: updates.tail.takeWhile(!_.isInstanceOf[Create])
+      val updateBlock = updates.head +: updates.tail.takeWhile(u => !(u.isInstanceOf[Create] || u.isInstanceOf[CreateUnique]))
       val rest = updates.splitAt(updateBlock.length)._2
       updateBlock +: groupUpdates(rest)
     }
