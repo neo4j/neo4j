@@ -66,7 +66,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private String txLog1FileName = "tm_tx_log.1";
     private String txLog2FileName = "tm_tx_log.2";
     private final int maxTxLogRecordCount = 1000;
-    private int eventIdentifierCounter = 0;
+    private final AtomicInteger eventIdentifierCounter = new AtomicInteger( 0 );
 
     private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
     private volatile TxLog txLog = null;
@@ -105,9 +105,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.stateFactory = stateFactory;
     }
 
-    synchronized int getNextEventIdentifier()
+    int getNextEventIdentifier()
     {
-        return eventIdentifierCounter++;
+        return eventIdentifierCounter.incrementAndGet();
     }
 
     private <E extends Exception> E logAndReturn( String msg, E exception )
