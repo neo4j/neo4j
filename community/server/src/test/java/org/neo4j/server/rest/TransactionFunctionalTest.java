@@ -262,7 +262,6 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         assertThat( response.status(), is( 200 ) );
         assertErrorCodes( response, StatusCode.STATEMENT_SYNTAX_ERROR );
-        assertErrorMessages( response, "expected an expression that is a node\n\"CREATE ;;\"\n        ^" );
         assertNoStackTrace( response );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
