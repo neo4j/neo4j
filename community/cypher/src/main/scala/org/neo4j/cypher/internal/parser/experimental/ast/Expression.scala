@@ -140,7 +140,8 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }
 
-case class PatternExpression(pattern: Pattern, token: InputToken) extends Expression with SimpleTypedExpression {
+case class PatternExpression(pattern: Pattern) extends Expression with SimpleTypedExpression {
+  def token = pattern.token
   protected def possibleTypes = Set(CollectionType(PathType()))
 
   override def semanticCheck(ctx: SemanticContext) =

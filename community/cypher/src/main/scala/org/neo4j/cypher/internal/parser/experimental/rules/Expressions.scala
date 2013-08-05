@@ -115,8 +115,9 @@ trait Expressions extends Parser
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
+    | ShortestPathPattern ~~> ast.ShortestPathExpression
     | FunctionInvocation
-    | RelationshipsPattern ~>> token ~~> ast.PatternExpression
+    | RelationshipsPattern ~~> ast.PatternExpression
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
   )

@@ -44,9 +44,13 @@ trait Patterns extends Parser
   )
 
   private def PathPattern : Rule1[ast.PathPattern] = rule (
-      group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") ~>> token ~~> ast.ShortestPath
-    | group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") ~>> token ~~> ast.AllShortestPaths
+      ShortestPathPattern
     | PatternElement ~~> ast.EveryPath
+  )
+
+  def ShortestPathPattern : Rule1[ast.ShortestPath] = rule (
+      group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") ~>> token ~~> ast.SingleShortestPath
+    | group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") ~>> token ~~> ast.AllShortestPaths
   )
 
   def RelationshipsPattern : Rule1[ast.RelationshipsPattern] = rule {

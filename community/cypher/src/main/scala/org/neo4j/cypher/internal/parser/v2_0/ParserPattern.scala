@@ -143,8 +143,8 @@ trait ParserPattern extends Base with Labels {
 
   private def patternForShortestPath: Parser[AbstractPattern] = onlyOne("expected single path segment for shortest path", relationship)
 
-  private def shortestPath: Parser[List[AbstractPattern]] = generatedName ~ (SHORTESTPATH | ALLSHORTESTPATHS) ~ parens(patternForShortestPath) ^^ {
-    case name ~ algo ~ relInfo =>
+  private def shortestPath: Parser[List[AbstractPattern]] = "" ~ generatedName ~ (SHORTESTPATH | ALLSHORTESTPATHS) ~ parens(patternForShortestPath) ^^ {
+    case _ ~ name ~ algo ~ relInfo =>
       val single = algo.startsWith("s")
 
       val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator) = relInfo
