@@ -1,0 +1,88 @@
+[[tutorials-cypher-parameters-java]]
+= Query Parameters =
+
+For more information on parameters see <<cypher-parameters>>.
+
+Below follows example of how to use parameters when executing Cypher queries from Java.
+
+.Parameter for node id
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterForNodeId
+classifier=test-sources
+----
+
+.Parameter for node object
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterForNodeObject
+classifier=test-sources
+----
+
+.Parameter for multiple node ids
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterForMultipleNodeIds
+classifier=test-sources
+----
+
+.Parameter for string literal
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithStringLiteralAsParameter
+classifier=test-sources
+----
+
+.Parameter for index value
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterForIndexValue
+classifier=test-sources
+----
+
+.Parameter for index query
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParametersForQuery
+classifier=test-sources
+----
+
+.Numeric parameters for +SKIP+ and +LIMIT+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterForSkipLimit
+classifier=test-sources
+----
+
+.Parameter for regular expression
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=exampleWithParameterRegularExpression
+classifier=test-sources
+----
+
+.Parameter setting properties on node
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=set_properties_on_a_node_from_a_map
+classifier=test-sources
+----
+

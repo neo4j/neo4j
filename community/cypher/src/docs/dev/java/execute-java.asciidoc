@@ -1,0 +1,88 @@
+[[tutorials-cypher-java]]
+= Execute Cypher Queries from Java =
+
+[TIP]
+The full source code of the example:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
+
+In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
+First, let's add some data.
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=addData
+classifier=test-sources
+----
+
+Execute a query:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=execute
+classifier=test-sources
+----
+
+NOTE: Keep the +ExecutionEngine+ around, don't create a new one for each query!
+
+The result will be:
+
+include::java-cypher-queries-result.asciidoc[]
+
+CAUTION: The classes used here are from the +org.neo4j.cypher.javacompat+ package, _not_ +org.neo4j.cypher+, see link to the Java API below.
+
+You can get a list of the columns in the result:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=columns
+classifier=test-sources
+----
+
+This contains:
+
+include::java-cypher-queries-columns.asciidoc[]
+
+To fetch the result items from a single column, do like this:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=items
+classifier=test-sources
+----
+
+In this case there's only one node in the result:
+
+include::java-cypher-queries-node.asciidoc[]
+
+To get all columns, do like this instead:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=rows
+classifier=test-sources
+----
+
+This outputs:
+
+include::java-cypher-queries-rows.asciidoc[]
+
+CAUTION: +dumpToString()+, +columnAs()+ and +iterator()+ cannot be called more than once on the same ExecutionResult object. You should instead use only one and if you need the facilities of the other methods on the same query result instead create a new ExecutionResult.
+
+CAUTION: When using an ExecutionResult, you'll need to exhaust it by using any of the iterating methods (+columnAs()+ and +iterator()+) on it. Failing to do so will not properly clean up resources used by the ExecutionResult, leading to unwanted behaviour, such as leaking transactions.
+
+For more information on the Java interface to Cypher, see the 
+http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].
+
+For more information and examples for Cypher, see <<cypher-query-lang>> and <<data-modeling-examples>>.
+
+

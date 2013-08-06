@@ -8,6 +8,7 @@ of the field value -- +Node+, +Relationship+, +Path+ or any simple value like +S
 
 [TIP]
 In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans, see <<rest-api-send-queries-with-parameters>> for details.
+Also see <<cypher-parameters>> for where parameters can be used.
 
 include::send-queries-with-parameters.asciidoc[]
 

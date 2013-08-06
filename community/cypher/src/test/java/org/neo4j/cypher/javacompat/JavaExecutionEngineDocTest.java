@@ -19,34 +19,57 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.io.IOException;
-import java.util.*;
-
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.test.AsciiDocGenerator;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
 public class JavaExecutionEngineDocTest
 {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectWriter WRITER = MAPPER.writerWithDefaultPrettyPrinter();
+    private static final File docsTargetDir = new File( "target/docs/dev/general" );
     private GraphDatabaseService db;
     private ExecutionEngine engine;
     private Node andreasNode;
     private Node johanNode;
     private Node michaelaNode;
+
+    @BeforeClass
+    public static void prepare()
+    {
+        docsTargetDir.mkdirs();
+    }
 
     @SuppressWarnings("deprecation")
     @Before
@@ -83,6 +106,17 @@ public class JavaExecutionEngineDocTest
     private void index( Node n )
     {
         db.index().forNodes( "people" ).add( n, "name", n.getProperty( "name" ) );
+    }
+
+    private void dumpToFile( final String id, final String query, final Object params ) throws Exception
+    {
+        StringBuffer sb = new StringBuffer( 2048 );
+        String prettifiedJson = WRITER.writeValueAsString( params );
+        sb.append( "\n.Parameters\n[source,javascript]\n----\n" )
+                .append( prettifiedJson )
+                .append( "\n----\n\n.Query\n" )
+                .append( AsciidocHelper.createAsciiDocSnippet( "cypher", engine.prettify( query ) ) );
+        AsciiDocGenerator.dumpToSeparateFile( docsTargetDir, id, sb.toString() );
     }
 
     @Test
@@ -122,7 +156,6 @@ public class JavaExecutionEngineDocTest
                 "return one, two, three, four, five, six, seven, eight, nine, ten";
         ExecutionResult result = engine.execute( q );
         assertThat( result.dumpToString(), matchesPattern( "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten" ) );
-
     }
 
     private void createTenNodes()
@@ -142,12 +175,14 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", 0 );
-        ExecutionResult result = engine.execute( "start n=node({id}) return n.name", params );
+        String query = "start n=node({id}) return n.name";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeId
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
         assertEquals( "Michaela", n_column.next() );
+        dumpToFile( "exampleWithParameterForNodeId", query, params );
     }
 
     @Test
@@ -156,10 +191,12 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForMultipleNodeIds
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", Arrays.asList( 0, 1, 2 ) );
-        ExecutionResult result = engine.execute( "start n=node({id}) return n.name", params );
+        String query = "start n=node({id}) return n.name";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForMultipleNodeIds
 
         assertEquals( asList( "Michaela", "Andreas", "Johan" ), this.<String>toList( result, "n.name" ) );
+        dumpToFile( "exampleWithParameterForMultipleNodeIds", query, params );
     }
 
     private <T> List<T> toList( ExecutionResult result, String column )
@@ -175,27 +212,28 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
-        ExecutionResult result =
-                engine.execute( "start n=node(0,1,2) where n.name = {name} return n", params );
+        String query = "start n=node(0,1,2) where n.name = {name} return n";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
         assertEquals( asList( johanNode ), this.<Node>toList( result, "n" ) );
+        dumpToFile( "exampleWithStringLiteralAsParameter", query, params );
     }
 
     @Test
     public void exampleWithParameterForIndexValue() throws Exception
     {
-        // START SNIPPET: exampleWithParameterForIndexValue
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put( "value", "Michaela" );
-
-        // END SNIPPET: exampleWithParameterForIndexValue
-
         Transaction transaction = db.beginTx();
         try
         {
-            ExecutionResult result = engine.execute( "start n=node:people(name = {value}) return n", params );
+            // START SNIPPET: exampleWithParameterForIndexValue
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put( "value", "Michaela" );
+            String query = "start n=node:people(name = {value}) return n";
+            ExecutionResult result = engine.execute( query, params );
+            // END SNIPPET: exampleWithParameterForIndexValue
             assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
+            dumpToFile( "exampleWithParameterForIndexValue", query, params );
         }
         finally
         {
@@ -206,17 +244,17 @@ public class JavaExecutionEngineDocTest
     @Test
     public void exampleWithParametersForQuery() throws Exception
     {
-        // START SNIPPET: exampleWithParametersForQuery
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put( "query", "name:Andreas" );
-
-        // END SNIPPET: exampleWithParametersForQuery
-
         Transaction transaction = db.beginTx();
         try
         {
-            ExecutionResult result = engine.execute( "start n=node:people({query}) return n", params );
+            // START SNIPPET: exampleWithParametersForQuery
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put( "query", "name:Andreas" );
+            String query = "start n=node:people({query}) return n";
+            ExecutionResult result = engine.execute( query, params );
+            // END SNIPPET: exampleWithParametersForQuery
             assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
+            dumpToFile( "exampleWithParametersForQuery", query, params );
         }
         finally
         {
@@ -230,7 +268,8 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
-        ExecutionResult result = engine.execute( "start n=node({node}) return n.name", params );
+        String query = "start n=node({node}) return n.name";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeObject
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -245,13 +284,14 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        ExecutionResult result =
-                engine.execute( "start n=node(0,1,2) return n.name skip {s} limit {l}", params );
+        String query = "start n=node(0,1,2) return n.name skip {s} limit {l}";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
         assertEquals( "Andreas", n_column.next() );
+        dumpToFile( "exampleWithParameterForSkipLimit", query, params );
     }
 
     @Test
@@ -260,9 +300,10 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
-        ExecutionResult result =
-                engine.execute( "start n=node(0,1,2) where n.name =~ {regex} return n.name", params );
+        String query = "start n=node(0,1,2) where n.name =~ {regex} return n.name";
+        ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterRegularExpression
+        dumpToFile( "exampleWithParameterRegularExpression", query, params );
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
@@ -280,8 +321,10 @@ public class JavaExecutionEngineDocTest
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
-        engine.execute( "create ({props})", params );
+        String query = "create ({props})";
+        engine.execute( query, params );
         // END SNIPPET: create_node_from_map
+        dumpToFile( "create_node_from_map", query, params );
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 1 ) );
@@ -302,8 +345,10 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
         params.put( "props", maps );
-        engine.execute( "create (n {props}) return n", params );
+        String query = "create (n {props}) return n";
+        engine.execute( query, params );
         // END SNIPPET: create_multiple_nodes_from_map
+        dumpToFile( "create_multiple_nodes_from_map", query, params );
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 2 ) );
@@ -319,8 +364,11 @@ public class JavaExecutionEngineDocTest
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", n1 );
-        engine.execute( "START n=node(0) SET n = {props}", params );
+
+        String query = "START n=node(0) SET n = {props}";
+        engine.execute( query, params );
         // END SNIPPET: set_properties_on_a_node_from_a_map
+        dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
@@ -336,7 +384,8 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
 
-        ExecutionResult result = engine.execute( "start n=node(0) create unique p = n-[:REL]->({props}) return last(p) as X", params );
+        String query = "start n=node(0) create unique p = n-[:REL]->({props}) return last(p) as X";
+        ExecutionResult result = engine.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
 
@@ -355,7 +404,8 @@ public class JavaExecutionEngineDocTest
         params.put( "props1", props1 );
         params.put( "props2", props2 );
 
-        ExecutionResult result = engine.execute( "start n=node(0) create unique p = n-[:REL]->({props1})-[:LER]->({props2}) return p", params );
+        String query = "start n=node(0) create unique p = n-[:REL]->({props1})-[:LER]->({props2}) return p";
+        ExecutionResult result = engine.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
 
