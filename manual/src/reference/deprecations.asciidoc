@@ -1,15 +1,11 @@
 [[deprecations]]
 = Deprecations =
 
-This section outlines deprecations in Neo4j 1.9 in order to help you find a smoother transition path to future versions.
+This section outlines deprecations in Neo4j 1.9 in order to help you find a smoother transition path to future releases.
 
 Read operations outside of transactions::
-In future versions, read operations are only allowed within transactions.
+In future releases, read operations are only allowed within transactions.
 This only affects embedded usage, where you can already start to wrap read operations in transactions to be prepared for the future.
-
-Using parameters for index keys in Cypher::
-Use the keys in verbatim instead.
-This also makes the execution plan caching more efficient.
 
 The `!` and `?` property operators in Cypher::
 In future releases, expressions like `node.property = "value"` will not fail when a node is encountered without the property, and will instead return null. This is the same behaviour as `node.property! = "value"`, and thus the `!` property operator is deprecated and will be removed.
@@ -22,8 +18,15 @@ Instead, use `CREATE (a {foo:’bar’})`.
 Using DELETE to remove properties in Cypher::
 The `DELETE a.prop` syntax has been deprecated. Instead, use `REMOVE a.prop`.
 
+Using parameters for index keys in Cypher::
+In future releases, parameters can not be used as the key in START clauses using indexes (ie. `START n=node:index({key}='value')`). Use the literal key names instead.
+
+Using parameters to identify nodes in patterns::
+In future releases, parameters can not be used to identify nodes in a pattern (ie. `MATCH ({node})-->(other))`).
+Note that this form was only possible when mixing the embedded Java API and cypher, and thus does not affect users Neo4j Server.
+
 Graph Matching::
-The graph-matching component will be removed in future versions.
+The graph-matching component will be removed in future releases.
 
 Plugins::
 Plugins will no longer be distributed with Neo4j.
