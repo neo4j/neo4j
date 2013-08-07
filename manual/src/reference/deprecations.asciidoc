@@ -25,6 +25,9 @@ Using parameters to identify nodes in patterns::
 In future releases, parameters can not be used to identify nodes in a pattern (ie. `MATCH ({node})-->(other))`).
 Note that this form was only possible when mixing the embedded Java API and cypher, and thus does not affect users Neo4j Server.
 
+Iteration syntax in `FOREACH`, `EXTRACT`, etc::
+In future releases, the iterating functions will use a `|` instead of a `:` to separate the components of the statement. For example, `EXTRACT(n in ns : n.prop)` is replaced with `EXTRACT(n in ns | n.prop)`. The iterating functions include `FOREACH`, `EXTRACT`, `REDUCE`, `ANY`, `ALL`, `SINGLE` and `NONE`. Note the alternative form using `|` is also possible in Neo4j 1.9.2 and later.
+
 Graph Matching::
 The graph-matching component will be removed in future releases.
 
