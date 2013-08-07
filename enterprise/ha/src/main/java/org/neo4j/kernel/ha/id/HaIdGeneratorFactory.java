@@ -271,7 +271,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             long nextId = nextLocalId();
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
-                // If we dont have anymore grabbed ids from master, grab a bunch
+                // If we don't have anymore grabbed ids from master, grab a bunch
                 Response<IdAllocation> response = master.allocateIds( idType );
                 try
                 {
@@ -284,9 +284,6 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                     response.close();
                 }
             }
-            // TODO necessary check?
-//            else if ( !master.equals( stuff.getMaster() ) )
-//                throw new ComException( "Master changed" );
             return nextId;
         }
 
@@ -297,7 +294,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         private long storeLocally( IdAllocation allocation )
         {
-            this.highestIdInUse = allocation.getHighestIdInUse();
+            setHighId( allocation.getHighestIdInUse() );
             this.defragCount = allocation.getDefragCount();
             this.idQueue = new IdRangeIterator( allocation.getIdRange() );
             return idQueue.next();
@@ -311,7 +308,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public void setHighId( long id )
         {
             // TODO Check for if it's lower than what I have?
-            this.highestIdInUse = id;
+            this.highestIdInUse = Math.max( this.highestIdInUse, id );
         }
 
         public long getDefragCount()

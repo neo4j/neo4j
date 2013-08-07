@@ -231,11 +231,9 @@ public class IdGeneratorImpl implements IdGenerator
         defragIds = new long[count];
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
 
-        int sizeLeftForRange = size-count;
+        int sizeLeftForRange = size - count;
         long start = highId.get();
-        long newHighId = start + sizeLeftForRange;
-        assertIdWithinCapacity( newHighId );
-        highId.set( newHighId );
+        setHighId( start + sizeLeftForRange );
         return new IdRange( defragIds, start, sizeLeftForRange );
     }
 
