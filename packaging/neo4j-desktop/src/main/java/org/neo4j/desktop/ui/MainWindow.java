@@ -22,7 +22,6 @@ package org.neo4j.desktop.ui;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -44,7 +43,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.border.BevelBorder;
@@ -198,7 +196,7 @@ public class MainWindow
         JPanel advancedPanel = new JPanel();
         advancedPanel.setLayout( new BoxLayout( advancedPanel, Y_AXIS ) );
         advancedPanel.setVisible( false );
-        advancedPanel.add( headLinePanel( "Advanced settings" ) );
+        advancedPanel.add( new HeadlinePanel( "Advanced settings" ) );
         
         // Heap size setting
         int initialHeapValue = heapSizeConfig.get().intValue();
@@ -226,7 +224,7 @@ public class MainWindow
         } );
         JPanel heapSizePanel = new JPanel();
         heapSizePanel.setLayout( new BoxLayout( heapSizePanel, Y_AXIS ) );
-        heapSizePanel.add( headLinePanel( "Heap size (changes requires restart)" ) );
+        heapSizePanel.add( new HeadlinePanel( "Heap size (changes requires restart)" ) );
         heapSizePanel.add( heapSizeSlider );
         advancedPanel.add( heapSizePanel );
         
@@ -262,7 +260,7 @@ public class MainWindow
         } );
         JPanel packagesPanel = new JPanel();
         packagesPanel.setLayout( new BoxLayout( packagesPanel, Y_AXIS ) );
-        packagesPanel.add( headLinePanel( "Extension packages for " +
+        packagesPanel.add( new HeadlinePanel( "Extension packages for " +
                 environment.getExtensionsDirectory().getAbsolutePath() + ")" ) );
         JPanel packagesComponentsPanel = new JPanel();
         packagesComponentsPanel.setLayout( new BoxLayout( packagesComponentsPanel, X_AXIS ) );
@@ -273,18 +271,6 @@ public class MainWindow
         advancedPanel.add( packagesPanel );
         
         return advancedPanel;
-    }
-
-    private JPanel headLinePanel( String headline )
-    {
-        JPanel panel = new JPanel();
-        panel.setLayout( new BoxLayout( panel, Y_AXIS ) );
-        panel.add( new JSeparator() );
-        JPanel labelPanel = new JPanel();
-        labelPanel.setLayout( new FlowLayout() );
-        labelPanel.add( new JLabel( headline ) );
-        panel.add( labelPanel );
-        return panel;
     }
 
     private List<String> itemsAsList( DefaultComboBoxModel<String> model )
