@@ -49,19 +49,20 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 {
     /**
-     * Create property uniqueness constraint.
+     * Create uniqueness constraint.
+     * Create a uniqueness constraint on a property.
      */
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void create_property_uniqueness_constraint() throws PropertyValueException
+    public void createPropertyUniquenessConstraint() throws PropertyValueException
     {
         data.get();
 
         String labelName = "person", propertyKey = "name";
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
-        String result = gen.get().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
+        String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
                 getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
 
         Map<String, Object> serialized = jsonToMap( result );
@@ -71,19 +72,20 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get a specific uniqueness constraints for a label and a property
+     * Get a specific uniqueness constraint.
+     * Get a specific uniqueness constraint for a label and a property.
      */
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_label_uniqueness_property_constraint() throws PropertyValueException
+    public void getLabelUniquenessPropertyConstraint() throws PropertyValueException
     {
         data.get();
 
         String labelName = "user", propertyKey = "name";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
-        String result = gen.get().expectedStatus( 200 ).get(
+        String result = gen.get().noGraph().expectedStatus( 200 ).get(
                 getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
@@ -95,13 +97,13 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all uniqueness constraints for a label
+     * Get all uniqueness constraints for a label.
      */
     @SuppressWarnings( "unchecked" )
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_label_uniqueness_property_constraints() throws PropertyValueException
+    public void getLabelUniquenessPropertyConstraints() throws PropertyValueException
     {
         data.get();
 
@@ -109,7 +111,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
-        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
+        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
@@ -129,13 +131,13 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all constraints for a label
+     * Get all constraints for a label.
      */
     @SuppressWarnings( "unchecked" )
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_label_property_constraints() throws PropertyValueException
+    public void getLabelPropertyConstraints() throws PropertyValueException
     {
         data.get();
 
@@ -143,7 +145,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
-        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
+        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
@@ -163,7 +165,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all constraints
+     * Get all constraints.
      */
     @SuppressWarnings( "unchecked" )
     @Documented
@@ -178,7 +180,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName2, propertyKey2 );
 
-        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
+        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
@@ -198,7 +200,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Drop uniqueness constraint for a label and a property
+     * Drop constraint.
+     * Drop uniqueness constraint for a label and a property.
      */
     @Documented
     @Test
@@ -212,7 +215,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
                 propertyKey );
         assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
-        gen.get().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
+        gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
     }
@@ -234,18 +237,18 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         String labelName = "ALabel", propertyKey = "name";
 
         // WHEN
-        gen.get().expectedStatus( 404 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
+        gen.get().noGraph().expectedStatus( 404 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
     }
 
     /**
-     * Create a compound schema index should not yet be supported
+     * Create a compound schema index should not yet be supported.
      */
     @Test
     public void create_compound_schema_index() throws PropertyValueException
     {
         Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
 
-        gen.get().expectedStatus( 400 ).payload( createJsonFrom( definition ) ).post(
+        gen.get().noGraph().expectedStatus( 400 ).payload( createJsonFrom( definition ) ).post(
                 getSchemaIndexLabelUri( "a_label" ) );
     }
 

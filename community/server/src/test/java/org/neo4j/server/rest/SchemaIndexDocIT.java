@@ -55,7 +55,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      *
      * This will start a background job in the database that will create and populate the new index.
      * You can check the status of your index by listing all the indexes for the relevant label.
-     * The new index will show up, but have a state of "POPULATING" until the index is ready.
+     * The new index will show up, but have a state of +POPULATING+ until the index is ready.
      */
     @Documented
     @Test
@@ -68,6 +68,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         String result = gen.get()
+            .noGraph()
             .expectedStatus( 200 )
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) )
@@ -93,6 +94,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         String result = gen.get()
+            .noGraph()
             .expectedStatus( 200 )
             .payload( createJsonFrom( definition ) )
             .get( getSchemaIndexLabelUri( labelName ) )
@@ -120,6 +122,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
         gen.get()
+            .noGraph()
             .expectedStatus( 204 )
             .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
             .entity();
@@ -138,6 +141,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         gen.get()
+            .noGraph()
             .expectedStatus( 409 )
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) );
@@ -164,6 +168,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
 
         gen.get()
+                .noGraph()
                 .expectedStatus( 400 )
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( "a_label" ) );

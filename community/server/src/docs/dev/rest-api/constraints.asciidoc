@@ -1,15 +1,15 @@
 [[rest-api-schema-constraints]]
 == Constraints ==
 
-include::create-property-uniqueness-constraint.asciidoc[]
+include::create-uniqueness-constraint.asciidoc[]
 
-include::get-label-uniqueness-property-constraint.asciidoc[]
+include::get-a-specific-uniqueness-constraint.asciidoc[]
 
-include::get-label-uniqueness-property-constraints.asciidoc[]
+include::get-all-uniqueness-constraints-for-a-label.asciidoc[]
 
-include::get-label-property-constraints.asciidoc[]
+include::get-all-constraints-for-a-label.asciidoc[]
 
-include::get-constraints.asciidoc[]
+include::get-all-constraints.asciidoc[]
 
 include::drop-constraint.asciidoc[]
 

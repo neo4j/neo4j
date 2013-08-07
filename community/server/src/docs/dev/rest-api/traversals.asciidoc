@@ -2,7 +2,7 @@
 == Traversals ==
 
 [WARNING]
-The Traversal REST Endpoint executes arbitrary Groovy code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
+The Traversal REST Endpoint executes arbitrary Javascript code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
 In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
 interesting traversals with the Java API ( see <<server-plugins>> ) or secure your server, see <<security-server>>.
 

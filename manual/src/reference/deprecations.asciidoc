@@ -1,7 +1,7 @@
 [[deprecations]]
 = Deprecations =
 
-This section outlines deprecations in Neo4j 1.9 in order to help you find a smoother transition path to future versions.
+This section outlines deprecations in _Neo4j 1.9_ in order to help you find a smoother transition path to future versions.
 
 Read operations outside of transactions::
 In future versions, read operations are only allowed within transactions.
