@@ -23,11 +23,11 @@ package org.neo4j.cypher.internal.parser
 import org.junit.Test
 import org.parboiled.scala.rules.Rule1
 import org.neo4j.cypher.internal.parser.v2_0.ast
-import org.neo4j.cypher.internal.{commands => legacy}
+import org.neo4j.cypher.internal.{commands => legacyCommands}
 import org.neo4j.cypher.internal.parser.v2_0.rules.Command
 import org.neo4j.cypher.internal.parser.v2_0.ast.Expression
 
-class ConstraintTest extends ParserExperimentalTest[ast.Command, legacy.AbstractQuery] with Command {
+class ConstraintTest extends ParserExperimentalTest[ast.Command, legacyCommands.AbstractQuery] with Command {
 
   @Test
   def create_uniqueness_constraint() {
@@ -36,10 +36,10 @@ class ConstraintTest extends ParserExperimentalTest[ast.Command, legacy.Abstract
     parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("create constraint on (foo:Foo) assert foo.name is unique") shouldGive
-      legacy.CreateUniqueConstraint("foo", "Foo", "foo", "name")
+      legacyCommands.CreateUniqueConstraint("foo", "Foo", "foo", "name")
 
     parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE") shouldGive
-      legacy.CreateUniqueConstraint("foo", "Foo", "bar", "name")
+      legacyCommands.CreateUniqueConstraint("foo", "Foo", "bar", "name")
   }
 
   @Test
@@ -49,13 +49,13 @@ class ConstraintTest extends ParserExperimentalTest[ast.Command, legacy.Abstract
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("drop constraint on (foo:Foo) assert foo.name is unique") shouldGive
-      legacy.DropUniqueConstraint("foo", "Foo", "foo", "name")
+      legacyCommands.DropUniqueConstraint("foo", "Foo", "foo", "name")
 
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE") shouldGive
-      legacy.DropUniqueConstraint("foo", "Foo", "bar", "name")
+      legacyCommands.DropUniqueConstraint("foo", "Foo", "bar", "name")
   }
 
-  def convert(astNode: ast.Command): legacy.AbstractQuery = astNode.toLegacyQuery
+  def convert(astNode: ast.Command): legacyCommands.AbstractQuery = astNode.toLegacyQuery
 
   def Expression: Rule1[Expression] = ???
 }
