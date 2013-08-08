@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="5.1.6" transformSequenceNumber="4">
   <directoryPresets config="./src/main/resources" />
-  <application name="Neo4j Desktop" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="true" shrinkRuntime="true" shortName="neo4j-desktop" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="2.0-SNAPSHOT" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.7" javaMaxVersion="" allowBetaVM="false" jdkMode="runtimeJre" jdkName="">
+  <application name="Neo4j Desktop" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="true" shrinkRuntime="true" shortName="neo4j-desktop" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.7" javaMaxVersion="" allowBetaVM="false" jdkMode="runtimeJre" jdkName="">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="" />
       <additionalLanguages />
@@ -22,7 +22,7 @@
       <mountPoint id="23" root="" location="" mode="755" />
     </mountPoints>
     <entries>
-      <fileEntry mountPoint="23" file="./target/neo4j-desktop-2.0-SNAPSHOT.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
+      <fileEntry mountPoint="23" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
     </entries>
     <components />
   </files>
@@ -39,7 +39,7 @@
       </splashScreen>
       <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="-Xmx1g" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
         <classPath>
-          <archive location="./neo4j-desktop-2.0-SNAPSHOT.jar" failOnError="false" />
+          <archive location="./neo4j-desktop-@NEO4J_VERSION@.jar" failOnError="false" />
         </classPath>
         <nativeLibraryDirectories />
       </java>
