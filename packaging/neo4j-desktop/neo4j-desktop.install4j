@@ -27,7 +27,7 @@
     <components />
   </files>
   <launchers>
-    <launcher name="neo4j-desktop" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
+    <launcher name="neo4j-desktop" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="Neo4j Desktop" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
       <executable name="neo4j-desktop" type="1" iconSet="true" iconFile="./src/main/resources/neo4j-cherries.ico" executableDir="." redirectStderr="true" stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
         <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
       </executable>
@@ -102,6 +102,9 @@
               </void>
               <void property="versionInfoProductName">
                 <string>${compiler:sys.fullName}</string>
+              </void>
+              <void property="watermark">
+                <boolean>false</boolean>
               </void>
             </object>
           </java>
@@ -348,6 +351,9 @@
               </void>
               <void property="useCustomIcon">
                 <boolean>true</boolean>
+              </void>
+              <void property="watermark">
+                <boolean>false</boolean>
               </void>
             </object>
           </java>
