@@ -17,22 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.commands.{StartItem, Hint, NodeByLabel, SchemaIndex}
 
-trait SkipLimitClause extends Base {
-  def skip: Parser[Expression] = SKIP ~> numberOrParam ^^ (x => x)
 
-  def limit: Parser[Expression] = LIMIT ~> numberOrParam ^^ (x => x)
+trait Using extends Expressions {
+  def hints: Parser[Seq[StartItem with Hint]] = rep(indexHint|scanHint)
 
-  private def numberOrParam: Parser[Expression] =
-    (positiveNumber ^^ (x => Literal(x.toInt))
-      | parameter ^^ (x => x)
-      | failure("expected positive integer or parameter"))
+  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
+    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
+  }
+
+  def scanHint: Parser[NodeByLabel] = USING ~> SCAN ~> identity ~ ":" ~ escapableString ^^ {
+    case id ~ ":" ~ label => NodeByLabel(id, label)
+  }
 }
-
-
-
-
-

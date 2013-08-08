@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.{No, Maybe, Yes, AbstractPattern}
 import org.neo4j.cypher.internal.HasOptionalDefault
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey

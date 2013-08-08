@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.parser.ParsedEntity
-import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.parser.ParsedShortestPath
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
 

@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.parser.{On, OnAction}
+import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 
+trait Labels extends Base {
+  def labelName: Parser[KeyToken] = ":" ~> escapableString ^^ { x => KeyToken.Unresolved(x, TokenType.Label) }
 
-trait Merge extends Base with Labels with ParserPattern {
+  def labelShortForm: Parser[Seq[KeyToken]] = rep1(labelName)
 
-  def merge: Parser[StartAst] = rep1(MERGE ~> patterns) ~ rep(onCreate | onMatch) ^^ {
-    case nodes ~ actions => StartAst(merge = Seq(MergeAst(nodes.flatten.toSeq, actions)))
+  def optLabelShortForm: Parser[Seq[KeyToken]] = opt(labelShortForm) ^^ {
+    case optSpec => optSpec.getOrElse(Seq.empty)
   }
-
-  private def onCreate: Parser[OnAction] = ON ~> CREATE ~> identity ~ set ^^ {
-    case id ~ setActions => OnAction(On.Create, id, setActions)
-  }
-
-  private def onMatch: Parser[OnAction] = ON ~> MATCH ~> identity ~ set ^^ {
-    case id ~ setActions => OnAction(On.Match, id, setActions)
-  }
-
-  def set: Parser[Seq[UpdateAction]]
 }

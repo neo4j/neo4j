@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.neo4j.cypher.internal.commands._
 import expressions._
-import expressions.Nullable
 import expressions.Property
 import org.neo4j.cypher.internal.commands.RegularExpression
-import org.neo4j.cypher.internal.commands.NullablePredicate
 import org.neo4j.cypher.internal.commands.GreaterThan
 import org.neo4j.cypher.internal.commands.GreaterThanOrEqual
 import org.neo4j.cypher.internal.commands.SingleInCollection

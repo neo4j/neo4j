@@ -34,7 +34,7 @@ object CypherVersion {
   }
   case object v2_0 extends CypherVersion {
     val name = "2.0"
-    val parser = new internal.parser.v2_0.CypherParserImpl
+    val parser = new internal.parser.legacy.CypherParserImpl
   }
   case object vExperimental extends CypherVersion {
     val name = "experimental"
