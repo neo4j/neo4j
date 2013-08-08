@@ -147,8 +147,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         {
             try
             {
-                node = new NodeBatchImpl( id, this,
-                    batchInserter.getNodeProperties( id ) );
+                node = new NodeBatchImpl( id, this, mutableCopyOf( batchInserter.getNodeProperties( id ) ) );
                 nodes.put( id, node );
             }
             catch ( InvalidRecordException e )
@@ -157,6 +156,11 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             }
         }
         return node;
+    }
+
+    private Map<String, Object> mutableCopyOf( Map<String, Object> source )
+    {
+        return new HashMap<String, Object>( source );
     }
 
     @Override
@@ -177,7 +181,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
                     batchInserter.getRelationshipById( id );
                 Map<String,Object> props =
                     batchInserter.getRelationshipProperties( id );
-                rel = new RelationshipBatchImpl( simpleRel, this, props );
+                rel = new RelationshipBatchImpl( simpleRel, this, mutableCopyOf( props ) );
                 rels.put( id, rel );
             }
             catch ( InvalidRecordException e )
