@@ -17,18 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.mutation.UniqueLink
-import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 
-trait CreateUnique extends Base with ParserPattern {
-  case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])
+trait SkipLimitClause extends Base {
+  def skip: Parser[Expression] = SKIP ~> numberOrParam ^^ (x => x)
 
-  def createUnique: Parser[StartAst] = CREATE ~> UNIQUE ~> patterns ^^ {
-    case patterns =>
-      val (startItems, namedPaths) = CreateUniqueAst(patterns).nextStep()
-      StartAst(startItems = startItems, namedPaths = namedPaths)
-  }
+  def limit: Parser[Expression] = LIMIT ~> numberOrParam ^^ (x => x)
+
+  private def numberOrParam: Parser[Expression] =
+    (positiveNumber ^^ (x => Literal(x.toInt))
+      | parameter ^^ (x => x)
+      | failure("expected positive integer or parameter"))
 }
+
+
+
+
+

@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.{AbstractQuery, DropIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.Predicate
 
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexTail ^^ {
-    case (label, properties) => CreateIndex(label, properties)
-  }
-
-  def dropIndex = DROP ~> indexTail ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
-  
-  def indexOps:Parser[AbstractQuery] = createIndex | dropIndex
-
-  private def indexTail: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case KeyToken.Unresolved(labelName, TokenType.Label) ~ property => (labelName, List(property))
-  }
+trait WhereClause extends Base with Expressions {
+  def where: Parser[Predicate] = WHERE ~> predicate
 }
+
+
+
+
+
+
+
+
+
+
+

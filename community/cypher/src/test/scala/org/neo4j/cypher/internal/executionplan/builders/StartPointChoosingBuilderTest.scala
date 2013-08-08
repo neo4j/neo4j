@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.parser.v2_0.DefaultFalse
+import org.neo4j.cypher.internal.parser.legacy.DefaultFalse
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.symbols.NodeType

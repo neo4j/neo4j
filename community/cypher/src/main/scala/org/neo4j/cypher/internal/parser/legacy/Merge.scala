@@ -17,19 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.commands.{StartItem, Hint, NodeByLabel, SchemaIndex}
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.parser.{On, OnAction}
 
 
-trait Using extends Expressions {
-  def hints: Parser[Seq[StartItem with Hint]] = rep(indexHint|scanHint)
+trait Merge extends Base with Labels with ParserPattern {
 
-  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
-    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
+  def merge: Parser[StartAst] = rep1(MERGE ~> patterns) ~ rep(onCreate | onMatch) ^^ {
+    case nodes ~ actions => StartAst(merge = Seq(MergeAst(nodes.flatten.toSeq, actions)))
   }
 
-  def scanHint: Parser[NodeByLabel] = USING ~> SCAN ~> identity ~ ":" ~ escapableString ^^ {
-    case id ~ ":" ~ label => NodeByLabel(id, label)
+  private def onCreate: Parser[OnAction] = ON ~> CREATE ~> identity ~ set ^^ {
+    case id ~ setActions => OnAction(On.Create, id, setActions)
   }
+
+  private def onMatch: Parser[OnAction] = ON ~> MATCH ~> identity ~ set ^^ {
+    case id ~ setActions => OnAction(On.Match, id, setActions)
+  }
+
+  def set: Parser[Seq[UpdateAction]]
 }

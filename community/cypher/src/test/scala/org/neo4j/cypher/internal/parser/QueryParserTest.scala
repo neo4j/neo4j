@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.parser.v2_0.{StartAst, QueryParser}
+import org.neo4j.cypher.internal.parser.legacy.{StartAst, QueryParser}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.TokenType._

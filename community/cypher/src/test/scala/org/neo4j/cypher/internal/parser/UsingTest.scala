@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.Using
+import legacy.Using
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.prettifier
 
-import org.neo4j.cypher.internal.parser.v2_0.Base
+import org.neo4j.cypher.internal.parser.legacy.Base
 import org.neo4j.cypher.SyntaxException
 
 trait SyntaxToken {
