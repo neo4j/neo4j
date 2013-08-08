@@ -55,7 +55,7 @@
         <content />
       </infoPlist>
       <iconImageFiles>
-        <file path="./src/main/resources/neo4j-cherries.png" />
+        <file path="./src/main/resources/neo4j-cherries-256.png" />
       </iconImageFiles>
     </launcher>
   </launchers>
@@ -72,13 +72,13 @@
             <object class="com.install4j.runtime.beans.applications.InstallerApplication">
               <void property="customHeaderImage">
                 <object class="com.install4j.api.beans.ExternalFile">
-                  <string>./src/main/resources/neo4j-cherries.png</string>
+                  <string>./src/main/resources/neo4j-cherries-128.png</string>
                 </object>
               </void>
               <void property="customIconImageFiles">
                 <void method="add">
                   <object class="com.install4j.api.beans.ExternalFile">
-                    <string>./src/main/resources/neo4j-cherries.png</string>
+                    <string>./src/main/resources/neo4j-cherries-128.png</string>
                   </object>
                 </void>
               </void>
@@ -145,7 +145,7 @@
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries.png</string>
+                      <string>./src/main/resources/neo4j-cherries-256.png</string>
                     </object>
                   </void>
                 </object>
@@ -290,7 +290,7 @@
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries.png</string>
+                      <string>./src/main/resources/neo4j-cherries-256.png</string>
                     </object>
                   </void>
                 </object>
@@ -345,7 +345,7 @@
               <void property="customIconImageFiles">
                 <void method="add">
                   <object class="com.install4j.api.beans.ExternalFile">
-                    <string>./src/main/resources/neo4j-cherries.png</string>
+                    <string>./src/main/resources/neo4j-cherries-256.png</string>
                   </object>
                 </void>
               </void>
@@ -402,7 +402,7 @@
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries.png</string>
+                      <string>./src/main/resources/neo4j-cherries-256.png</string>
                     </object>
                   </void>
                 </object>
@@ -459,7 +459,7 @@
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries.png</string>
+                      <string>./src/main/resources/neo4j-cherries-256.png</string>
                     </object>
                   </void>
                 </object>
