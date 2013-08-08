@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.parser
 
 import org.junit.Test
-import v2_0.Index
+import legacy.Index
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 

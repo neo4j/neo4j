@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.{MatchClause, Expressions}
+import legacy.{MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.junit.Test

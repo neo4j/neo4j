@@ -1,3 +1,7 @@
+2.0.0-M05
+---------
+o Changes the default parser to be the new parboiled parser
+
 2.0.0-M04
 ---------
 o Fixes #844 - Label predicate do not work on optional nodes that are null

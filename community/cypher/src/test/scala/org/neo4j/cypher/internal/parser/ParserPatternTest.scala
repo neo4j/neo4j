@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.graphdb.Direction
-import v2_0._
+import legacy._
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 

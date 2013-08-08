@@ -23,7 +23,7 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 import expressions.{Property, Identifier}
-import v2_0.{Predicates, MatchClause, Expressions}
+import legacy.{Predicates, MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.HasLabel

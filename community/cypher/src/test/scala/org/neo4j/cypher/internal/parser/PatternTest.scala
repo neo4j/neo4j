@@ -23,8 +23,8 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.parser.experimental.rules.{Expressions, Patterns}
-import org.neo4j.cypher.internal.parser.experimental.ast
+import org.neo4j.cypher.internal.parser.v2_0.rules.{Expressions, Patterns}
+import org.neo4j.cypher.internal.parser.v2_0.ast
 
 class PatternTest extends ParserExperimentalTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
 
