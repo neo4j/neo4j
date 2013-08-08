@@ -345,6 +345,13 @@ selectinittool() {
 
 # check if running JDK 6, warn if not
 checkjvmcompatibility() {
+  # Shut down if java version < 1.7
+  JAVAVERSION=$("$JAVACMD" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+  if [[ "$JAVAVERSION" < "1.7" ]]; then
+    echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. Please use Oracle(R) Java(TM) Runtime Environment 7."
+    exit 1
+  fi
+
   $JAVACMD -version 2>&1 | egrep -q "Java HotSpot\\(TM\\) (64-Bit Server|Client) VM"
   if [ $? -eq 1 ]
   then
