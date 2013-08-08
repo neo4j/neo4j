@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.parser
 
 import org.junit.Test
 import org.parboiled.scala.rules.Rule1
-import org.neo4j.cypher.internal.parser.experimental.ast
+import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.neo4j.cypher.internal.{commands => legacy}
-import org.neo4j.cypher.internal.parser.experimental.rules.Command
-import org.neo4j.cypher.internal.parser.experimental.ast.Expression
+import org.neo4j.cypher.internal.parser.v2_0.rules.Command
+import org.neo4j.cypher.internal.parser.v2_0.ast.Expression
 
 class ConstraintTest extends ParserExperimentalTest[ast.Command, legacy.AbstractQuery] with Command {
 

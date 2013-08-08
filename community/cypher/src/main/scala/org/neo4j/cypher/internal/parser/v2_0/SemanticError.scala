@@ -17,24 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0
 
-import org.junit.Test
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.parser.v2_0.rules.{Expressions, Patterns}
-import org.neo4j.cypher.internal.parser.v2_0.ast
+import scala.collection.immutable.SortedSet
 
-class PatternTest extends ParserExperimentalTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
-
-  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
-
-  @Test def label_literal_list_parsing() {
-    implicit val parserToTest = Pattern
-
-    parsing("(a)-[r:FOO|BAR]->(b)") or
-    parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
-  }
+object SemanticError {
+  def apply(msg: String, token: InputToken, references: InputToken*) : SemanticError = apply(msg, token, SortedSet(references:_*))
 }
+
+case class SemanticError(msg: String, token: InputToken, references: SortedSet[InputToken])
