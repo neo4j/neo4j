@@ -19,13 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Collection;
-import java.util.Map;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -39,15 +33,16 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
+import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+import java.util.Collection;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.GraphDescription.LABEL;
 
@@ -330,8 +325,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Map responseMap = ( jsonToMap( response ) );
         assertEquals( 4, responseMap.size() );
         assertThat( response, containsString( "message" ) );
-        assertThat( ((String) responseMap.get( "message" )), containsString( "Unknown identifier" ) );
-        assertThat( ((String) responseMap.get( "message" )), containsString( "frien" ) );
+        assertThat( ((String) responseMap.get( "message" )), containsString( "frien not defined" ) );
     }
 
     @SafeVarargs
