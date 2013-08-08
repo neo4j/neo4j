@@ -589,7 +589,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public boolean isType( RelationshipType type )
         {
-            return rel.getType().equals( type );
+            return rel.getType().name().equals( type.name() );
         }
 
         @Override
