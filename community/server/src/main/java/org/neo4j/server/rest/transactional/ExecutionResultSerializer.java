@@ -50,8 +50,9 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, StringLogger log )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, StringLogger log )
     {
+        this.baseUri = baseUri;
         this.log = log;
         JsonGenerator generator = null;
         try
@@ -197,16 +198,16 @@ public class ExecutionResultSerializer
     {
         if ( specifiers == null || specifiers.length == 0 )
         {
-            return ResultDataContent.row.writer(); // default
+            return ResultDataContent.row.writer( baseUri ); // default
         }
         if ( specifiers.length == 1 )
         {
-            return specifiers[0].writer();
+            return specifiers[0].writer( baseUri );
         }
         ResultDataContentWriter[] writers = new ResultDataContentWriter[specifiers.length];
         for ( int i = 0; i < specifiers.length; i++ )
         {
-            writers[i] = specifiers[i].writer();
+            writers[i] = specifiers[i].writer( baseUri );
         }
         return new AggregatingWriter( writers );
     }
@@ -220,6 +221,7 @@ public class ExecutionResultSerializer
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() );
     private final JsonGenerator out;
+    private final URI baseUri;
     private final StringLogger log;
 
     private void ensureDocumentOpen() throws IOException

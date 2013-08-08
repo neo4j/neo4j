@@ -78,8 +78,7 @@ public abstract class Representation
 		return this.type;
 	}
 	
-    abstract String serialize( RepresentationFormat format, URI baseUri,
-            ExtensionInjector extensions ) ;
+    abstract String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions );
 
     abstract void addTo( ListSerializer serializer );
 
