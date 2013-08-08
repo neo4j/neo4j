@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -37,6 +38,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -354,7 +356,42 @@ public class TestBatchInsert
         }
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldBeAbleToRemoveDynamicProperty()
+    {
+        // Only triggered if assertions are enabled
+        
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        String key = "tags";
+        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        
+        // WHEN
+        batchInserter.removeNodeProperty( nodeId, key );
+        
+        // THEN
+        assertFalse( batchInserter.getNodeProperties( nodeId ).containsKey( key ) );
+    }
 
+    @Test
+    public void shouldBeAbleToOverwriteDynamicProperty()
+    {
+        // Only triggered if assertions are enabled
+        
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        String key = "tags";
+        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        
+        // WHEN
+        String[] secondValue = new String[] { "four", "five", "six" };
+        batchInserter.setNodeProperty( nodeId, key, secondValue );
+        
+        // THEN
+        assertTrue( Arrays.equals( secondValue, (String[]) batchInserter.getNodeProperties( nodeId ).get( key ) ) );
+    }
+    
     @Test
     public void testMore()
     {
