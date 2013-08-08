@@ -101,7 +101,7 @@ public class RelIdArray implements SizeOfObject
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( outBlock ) + sizeOfBlockWithReference( inBlock ) ); 
+        return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( outBlock ) + sizeOfBlockWithReference( inBlock ) );
     }
     
     static int sizeOfBlockWithReference( IdBlock block )
@@ -689,12 +689,6 @@ public class RelIdArray implements SizeOfObject
         public int getType()
         {
             return ids.getType();
-        }
-        
-        @Override
-        public RelIdArray getIds()
-        {
-            return ids;
         }
         
         @Override
