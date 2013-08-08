@@ -1,0 +1,16 @@
+SetupWindowTitle=Setup {0}
+UninstallAppFullTitle=Uninstall {0}
+PrepareInstaller=Preparing to install {0}.
+WizardCaption=Neo4j Desktop Setup
+LocateOrDownloadJre2=Setup could not find a Java(TM) Runtime Environment on your system. You can locate or download a suitable JRE. (minimum version: {0}, maximum version: {1})
+LocateJre2=Setup could not find a Java(TM) Runtime Environment on your system. Please locate a suitable JRE. (minimum version: {0}, maximum version: {1})
+LocateOrDownloadJre3=Setup could not find a Java(TM) Runtime Environment on your system. You can locate or download a suitable {0}-bit JRE.
+LocateJre3=Setup could not find a Java(TM) Runtime Environment on your system. Please locate a suitable {0}-bit JRE.
+WelcomeLabel1=Welcome to {0} Setup
+FinishedHeadingLabel=Completing Setup
+WizardUninstalling=Uninstall Status
+WelcomeLabel3=This will install {0}.
+FinishedLabel=Setup has finished installing {0}.
+SetupAppRunningErrorAddOn=Setup has detected that Neo4j Desktop is currently running.\n\nPlease close all instances of it now, then click OK to continue, or Cancel to exit.
+ClickFinish=
+InstallingLabel=Please wait while {0} is installing.
