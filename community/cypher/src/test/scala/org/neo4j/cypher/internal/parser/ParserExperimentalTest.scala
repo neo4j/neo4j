@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.parser
 
 import org.scalatest.Assertions
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.parser.experimental.ast.AstNode
+import org.neo4j.cypher.internal.parser.v2_0.ast.AstNode
 import org.parboiled.errors.InvalidInputError
-import org.neo4j.cypher.internal.parser.experimental.InvalidInputErrorFormatter
+import org.neo4j.cypher.internal.parser.v2_0.InvalidInputErrorFormatter
 
 
 trait ParserExperimentalTest[T <: AstNode, J] extends Assertions {

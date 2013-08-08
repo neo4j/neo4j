@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0.ast
 
-import org.junit.Test
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.parser.v2_0.rules.{Expressions, Patterns}
-import org.neo4j.cypher.internal.parser.v2_0.ast
+import org.neo4j.cypher.internal.parser.v2_0._
+import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
 
-class PatternTest extends ParserExperimentalTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
+sealed trait Hint extends AstNode {
+  def toLegacySchemaIndex : commands.StartItem with commands.Hint
+}
 
-  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
+case class UsingIndexHint(node: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
+  def toLegacySchemaIndex = commands.SchemaIndex(node.name, label.name, property.name, None)
+}
 
-  @Test def label_literal_list_parsing() {
-    implicit val parserToTest = Pattern
-
-    parsing("(a)-[r:FOO|BAR]->(b)") or
-    parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
-  }
+case class UsingScanHint(node: Identifier, label: Identifier, token: InputToken) extends Hint {
+  def toLegacySchemaIndex = commands.NodeByLabel(node.name, label.name)
 }
