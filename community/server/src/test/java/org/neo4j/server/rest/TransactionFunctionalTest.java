@@ -340,6 +340,28 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( "labels", asSet( "Foo", "Bar" ), labels );
     }
 
+    @Test
+    public void should_serialize_collect_correctly() throws Exception
+    {
+        // given
+        http.POST( "/db/data/transaction/commit", singleStatement( "CREATE (n:Foo)" ) );
+
+        // when
+        Response response = http.POST( "/db/data/transaction/commit", quotedJson(
+                "{ 'statements': [ { 'statement': 'MATCH n:Foo RETURN COLLECT(n)' } ] }" ) );
+
+        // then
+        assertThat( response.status(), equalTo( 200 ) );
+
+        JsonNode jsonResponse = response.jsonContent();
+        JsonNode data = jsonResponse.get( "results" ).get(0);
+        assertThat( data.get( "columns" ).get(0).asText(), equalTo("COLLECT(n)"));
+        assertThat( data.get( "data" ).get(0).get( "row" ).size(), equalTo(1));
+        assertThat( data.get( "data" ).get(0).get( "row" ).get(0).get(0).size(), equalTo(0));
+
+        assertThat(  jsonResponse.get( "errors" ).size(), equalTo(0));
+    }
+
     private HTTP.RawPayload singleStatement( String statement )
     {
         return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
