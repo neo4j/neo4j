@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser.prettifier
 
-import org.neo4j.cypher.internal.parser.ParserTest
 import org.junit.Test
+import org.neo4j.cypher.internal.parser.legacy.ParserTest
 
 class PrettifierParserTest extends PrettifierParser with ParserTest {
 
