@@ -472,7 +472,7 @@ public class LockHolderImpl implements LockHolder
         @Override
         public boolean equals( Object obj )
         {
-            return actual.equals( obj );
+            return obj instanceof SchemaLock;
         }
     }
 }
