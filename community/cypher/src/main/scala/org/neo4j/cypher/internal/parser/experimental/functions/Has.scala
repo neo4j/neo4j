@@ -28,15 +28,13 @@ import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 case object Has extends Function {
   def name = "HAS"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
       invocation.arguments(0) match {
         case _: ast.Property => None
         case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.token, invocation.token))
       }
-    } then invocation.limitType(BooleanType())
-  }
+    } then invocation.specifyType(BooleanType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]

@@ -51,7 +51,7 @@ case class ChainableSemanticCheck(check: SemanticCheck) {
 
   def ifOkThen(next: SemanticCheck) : SemanticCheck = state => {
     val r1 = check(state)
-    if (!r1.errors.isEmpty)
+    if (r1.errors.nonEmpty)
       r1
     else
       next(r1.state)

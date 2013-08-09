@@ -62,7 +62,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Some(Set(NodeType())), types)
+        assertEquals(Set(NodeType()), types)
       }
     }
     SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), RelationshipType()) then
@@ -70,7 +70,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Some(Set(RelationshipType())), types)
+        assertEquals(Set(RelationshipType()), types)
       }
     }
     SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType(), RelationshipType()) then
@@ -78,7 +78,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Some(Set(NodeType(), RelationshipType())), types)
+        assertEquals(Set(NodeType(), RelationshipType()), types)
       }
     }
   }
@@ -101,21 +101,21 @@ class SemanticStateTest extends Assertions {
   def shouldFindSymbolInParent() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
     val s2 = s1.newScope
-    assertEquals(Some(Set(NodeType())), s2.symbolTypes("foo"))
+    assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
   }
 
   @Test
   def shouldOverrideSymbolInParent() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
     val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), StringType()).right.get
-    assertEquals(Some(Set(StringType())), s2.symbolTypes("foo"))
+    assertEquals(Set(StringType()), s2.symbolTypes("foo"))
   }
 
   @Test
   def shouldExtendSymbolInParent() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
     val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), ScalarType()).right.get
-    assertEquals(Some(Set(NodeType())), s2.symbolTypes("foo"))
+    assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {

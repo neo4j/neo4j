@@ -26,12 +26,10 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Replace extends Function with LegacyPredicate {
   def name = "REPLACE"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 3) then
-    invocation.arguments.limitType(StringType()) then
-    invocation.limitType(StringType())
-  }
+    invocation.arguments.constrainType(StringType()) then
+    invocation.specifyType(StringType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)

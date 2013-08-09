@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case class Limit(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.limitType(LongType())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())
 
   def toCommand = expression match {
     case integer: UnsignedInteger => commandexpressions.Literal(integer.value.toInt)

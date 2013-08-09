@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.parser.experimental._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.symbols.{CollectionType, NodeType, RelationshipType, PathType}
+import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy, values => commandvalues}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
@@ -42,9 +42,8 @@ object Pattern {
   }
 
   implicit class SemanticCheckablePatternTraversable(patterns: TraversableOnce[Pattern]) {
-    def semanticCheck(context: SemanticContext): SemanticCheck = {
+    def semanticCheck(context: SemanticContext): SemanticCheck =
       patterns.foldLeft(SemanticCheckResult.success) { (f, p) => f then p.semanticCheck(context) }
-    }
   }
 }
 import Pattern._
@@ -191,11 +190,10 @@ sealed abstract class PatternElement extends AstNode {
 }
 
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern, token: InputToken) extends PatternElement {
-  def semanticCheck(ctx: SemanticContext) = {
+  def semanticCheck(ctx: SemanticContext) =
     element.semanticCheck(ctx) then
-      relationship.semanticCheck(ctx) then
-      rightNode.semanticCheck(ctx)
-  }
+    relationship.semanticCheck(ctx) then
+    rightNode.semanticCheck(ctx)
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern] = {
     val (patterns, leftName) = element match {
@@ -263,13 +261,13 @@ sealed abstract class NodePattern extends PatternElement {
   val labels: Seq[Identifier]
   val properties: Option[Expression]
 
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck =
     if (properties.isDefined && ctx != SemanticContext.Update) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Simple)
+      properties.semanticCheck(Expression.SemanticContext.Simple) then
+      properties.constrainType(MapType())
     }
-  }
 
   def legacyName: String
 
@@ -310,10 +308,9 @@ sealed abstract class NodePattern extends PatternElement {
 }
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
-  override def semanticCheck(context: SemanticContext) = {
+  override def semanticCheck(context: SemanticContext) =
     identifier.implicitDeclaration(NodeType()) then
-      super.semanticCheck(context)
-  }
+    super.semanticCheck(context)
 
   val legacyName = identifier.name
 }
@@ -330,15 +327,15 @@ sealed abstract class RelationshipPattern extends AstNode {
   val optional : Boolean
   val properties : Option[Expression]
 
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck =
     if (properties.isDefined && ctx != SemanticContext.Update) {
       SemanticError("Relationship properties cannot be specified in this context", properties.get.token)
     } else if (optional && ctx == SemanticContext.Expression) {
       SemanticError("Optional relationships cannot be specified in this context", token)
     } else {
-      properties.semanticCheck(Expression.SemanticContext.Simple)
+      properties.semanticCheck(Expression.SemanticContext.Simple) then
+      properties.constrainType(MapType())
     }
-  }
 
   def legacyName : String
 
@@ -404,8 +401,7 @@ case class NamedRelationshipPattern(
 {
   override def semanticCheck(ctx: SemanticContext) = {
     val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
-    super.semanticCheck(ctx) then
-      identifier.implicitDeclaration(possibleType)
+    super.semanticCheck(ctx) then identifier.implicitDeclaration(possibleType)
   }
 
   val legacyName = identifier.name

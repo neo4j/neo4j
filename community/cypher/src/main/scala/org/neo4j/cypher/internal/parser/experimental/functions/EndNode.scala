@@ -26,15 +26,11 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object EndNode extends Function {
   def name = "ENDNODE"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
-      checkArgs(invocation, 1) ifOkThen {
-        invocation.arguments(0).limitType(RelationshipType()) then
-          invocation.limitType(NodeType())
-      }
-  }
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    checkArgs(invocation, 1) then
+    invocation.arguments.constrainType(RelationshipType()) then
+    invocation.specifyType(NodeType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.RelationshipEndPoints(invocation.arguments(0).toCommand, start = false)
-  }
 }

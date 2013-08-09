@@ -20,32 +20,35 @@
 package org.neo4j.cypher.internal.parser.experimental.ast
 
 import org.neo4j.cypher.internal.symbols._
-import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.parser.experimental._
 
 class ExpressionTest extends Assertions {
 
-  @Test(expected = classOf[IllegalStateException])
-  def shouldThrowIfTypesRequestedButNotEvaluated() {
+  @Test
+  def shouldReturnEmptyTypeSetIfTypesRequestedButNotEvaluated() {
     val expression = new Expression() {
       val token = DummyToken(0, 1)
       def semanticCheck(ctx: Expression.SemanticContext) = ???
       def toCommand = ???
     }
 
-    expression.types(SemanticState.clean)
+    assert(expression.types(SemanticState.clean) === TypeSet.empty)
   }
 
   @Test
-  def shouldNotThrowIfTypesRequestedAfterEvaluated() {
+  def shouldReturnSpecifiedAndConstrainedTypes() {
     val expression = new Expression() {
       val token = DummyToken(0, 1)
       def semanticCheck(ctx: Expression.SemanticContext) = ???
       def toCommand = ???
     }
-    val state = expression.limitType(NodeType())(SemanticState.clean).right.get
-    assertEquals(Set(NodeType()), expression.types(state))
+    val state = (
+      expression.specifyType(NodeType(), IntegerType()) then
+      expression.constrainType(NumberType())
+      )(SemanticState.clean).state
+
+    assert(expression.types(state) === TypeSet(IntegerType()))
   }
 }

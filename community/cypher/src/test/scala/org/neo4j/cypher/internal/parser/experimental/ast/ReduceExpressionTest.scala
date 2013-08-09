@@ -37,9 +37,9 @@ class ReduceExpressionTest extends Assertions {
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === Some(accumulatorType))
-        assert(s.symbolTypes("y") === Some(TypeSet(collectionType.iteratedType)))
-        (limitType(StringType()) then error)(s)
+        assert(s.symbolTypes("x") === accumulatorType)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        (this.specifyType(StringType()) then error)(s)
       }
 
       def toCommand = ???
@@ -67,9 +67,9 @@ class ReduceExpressionTest extends Assertions {
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === Some(accumulatorType))
-        assert(s.symbolTypes("y") === Some(TypeSet(collectionType.iteratedType)))
-        (limitType(DoubleType()) then SemanticCheckResult.success)(s)
+        assert(s.symbolTypes("x") === accumulatorType)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        (this.specifyType(DoubleType()) then SemanticCheckResult.success)(s)
       }
 
       def toCommand = ???
@@ -96,9 +96,9 @@ class ReduceExpressionTest extends Assertions {
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === Some(accumulatorType))
-        assert(s.symbolTypes("y") === Some(TypeSet(collectionType.iteratedType)))
-        (limitType(NodeType()) then SemanticCheckResult.success)(s)
+        assert(s.symbolTypes("x") === accumulatorType)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        (this.specifyType(NodeType()) then SemanticCheckResult.success)(s)
       }
 
       def toCommand = ???

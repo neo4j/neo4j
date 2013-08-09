@@ -26,12 +26,10 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Divide extends Function {
   def name = "/"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.arguments.limitType(NumberType()) then
-    invocation.limitType(NumberType())
-  }
+    invocation.arguments.constrainType(NumberType()) then
+    invocation.specifyType(NumberType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)

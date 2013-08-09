@@ -26,14 +26,11 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Labels extends Function {
   def name = "LABELS"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.limitType(NodeType()) then
-    invocation.limitType(BooleanType())
-  }
+    invocation.arguments.constrainType(NodeType()) then
+    invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.LabelsFunction(invocation.arguments(0).toCommand);
-  }
 }

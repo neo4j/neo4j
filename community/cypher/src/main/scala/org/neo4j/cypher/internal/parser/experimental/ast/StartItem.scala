@@ -66,7 +66,7 @@ case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedInteger], 
   def toCommand = commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
 }
 
-case class RelationshipByParameter(identifier: Identifier, parameter: Parameter, token: InputToken) extends NodeStartItem {
+case class RelationshipByParameter(identifier: Identifier, parameter: Parameter, token: InputToken) extends RelationshipStartItem {
   def toCommand = commands.RelationshipById(identifier.name, parameter.toCommand)
 }
 

@@ -26,11 +26,10 @@ import org.neo4j.cypher.internal.commands
 case object IsNull extends Function with LegacyPredicate {
   def name = "IS NULL"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.limitType(BooleanType())
-  }
+    invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = commands.IsNull(invocation.arguments(0).toCommand)
+  def toCommand(invocation: ast.FunctionInvocation) =
+    commands.IsNull(invocation.arguments(0).toCommand)
 }

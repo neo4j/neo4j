@@ -49,7 +49,7 @@ class FilteringExpressionTest extends Assertions {
     val predicate = new Expression {
       def token = DummyToken(7,9)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(Some(Set(NodeType(), StringType())), s.symbolTypes("x"))
+        assertEquals(Set(NodeType(), StringType()), s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
 

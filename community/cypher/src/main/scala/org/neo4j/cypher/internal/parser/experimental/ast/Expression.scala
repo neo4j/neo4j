@@ -34,20 +34,28 @@ object Expression {
   }
 
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
-    def semanticCheck(ctx: SemanticContext) = option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
+    def semanticCheck(ctx: SemanticContext) : SemanticCheck =
+      option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
+
+    def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
+      constrainType((possibleType +: possibleTypes).toSet)
+    def constrainType(possibleTypes: => TypeSet) : SemanticCheck =
+      option.fold(SemanticCheckResult.success) { _.constrainType(possibleTypes) }
   }
+
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
-    def semanticCheck(ctx: SemanticContext) = {
+    def semanticCheck(ctx: SemanticContext) : SemanticCheck =
       traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck(ctx) }
-    }
   }
+
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
-    def mergeDownTypes : TypeGenerator = (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
-    def limitType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck = {
+    def mergeDownTypes : TypeGenerator =
+      (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
+
+    def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
       traversable.foldLeft(SemanticCheckResult.success) {
-        (f, e) => f then e.limitType(possibleType, possibleTypes:_*)
+        (f, e) => f then e.constrainType(possibleType, possibleTypes:_*)
       }
-    }
   }
 }
 
@@ -57,23 +65,26 @@ abstract class Expression extends AstNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   // double-dispatch helpers
-  final def types : TypeGenerator = s => s.expressionTypes(this) match {
-    case None => throw new IllegalStateException(s"Types of $this have not been evaluated (${token.startPosition})")
-    case Some(types) => types
-  }
-  final def limitType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
-      limitType((possibleType +: possibleTypes).toSet)
-  final def limitType(typeGen: TypeGenerator) : SemanticState => Either[SemanticError, SemanticState] =
-      s => s.limitExpressionType(this, token, typeGen(s))
-  final def limitType(possibleTypes: => TypeSet) : SemanticState => Either[SemanticError, SemanticState] =
-      _.limitExpressionType(this, token, possibleTypes)
+  final def types: TypeGenerator = s => s.expressionTypes(this)
+  final def specifyType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
+    specifyType((possibleType +: possibleTypes).toSet)
+  final def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
+    s => s.specifyType(this, typeGen(s))
+  final def specifyType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
+    _.specifyType(this, possibleTypes)
+  final def constrainType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
+    constrainType((possibleType +: possibleTypes).toSet)
+  final def constrainType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
+    s => s.constrainType(this, token, typeGen(s))
+  final def constrainType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
+    _.constrainType(this, token, possibleTypes)
 
   def toCommand: CommandExpression
 }
 
 trait SimpleTypedExpression { self: Expression =>
   protected def possibleTypes : TypeSet
-  def semanticCheck(ctx: SemanticContext) : SemanticCheck = limitType(possibleTypes)
+  def semanticCheck(ctx: SemanticContext) : SemanticCheck = specifyType(possibleTypes)
 }
 
 case class Identifier(name: String, token: InputToken) extends Expression {
@@ -131,11 +142,10 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
-  override def semanticCheck(ctx: SemanticContext) = {
+  override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) then
-      map.limitType(MapType()) then
-      super.semanticCheck(ctx)
-  }
+    map.constrainType(MapType()) then
+    super.semanticCheck(ctx)
 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }
@@ -153,7 +163,10 @@ case class PatternExpression(pattern: Pattern) extends Expression with SimpleTyp
 case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = Set(BooleanType())
 
-  override def semanticCheck(ctx: SemanticContext) = expression.limitType(NodeType()) then super.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext) =
+    expression.semanticCheck(ctx) then
+      expression.constrainType(NodeType()) then
+      super.semanticCheck(ctx)
 
   private def toPredicate(l: Identifier): commands.Predicate =
     commands.HasLabel(expression.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
@@ -162,7 +175,7 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
 }
 
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
-  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then limitType(possibleTypes)
+  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
   private def possibleTypes: SemanticState => TypeSet = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))

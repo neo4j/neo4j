@@ -37,7 +37,9 @@ case class Match(patterns: Seq[Pattern], token: InputToken) extends Clause {
 }
 
 case class Where(expression: Expression, token: InputToken) extends Clause {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple)
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.constrainType(AnyType()) // TODO: should constrain to boolean, when coercion is possible
 }
 
 
@@ -78,10 +80,9 @@ case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends Updat
 
 
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
-  def semanticCheck = {
+  def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) then
-      expressions.limitType(NodeType(), RelationshipType(), PathType())
-  }
+    expressions.constrainType(NodeType(), RelationshipType(), PathType())
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
 }
@@ -127,10 +128,12 @@ case class OnMatch(identifier: Identifier, action: SetClause, token: InputToken)
 
 
 case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[UpdateClause], token: InputToken) extends UpdateClause with SemanticChecking {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then withScopedState {
-    val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-    identifier.declare(innerTypes) then updates.semanticCheck
-  }
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.constrainType(CollectionType(AnyType())) then withScopedState {
+      val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+      identifier.declare(innerTypes) then updates.semanticCheck
+    }
 
   def toLegacyUpdateActions = Seq(ForeachAction(expression.toCommand, identifier.name, updates.flatMap { _.toLegacyUpdateActions }))
 }

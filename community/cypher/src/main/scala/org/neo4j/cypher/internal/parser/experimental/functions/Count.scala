@@ -26,11 +26,9 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Count extends AggregatingFunction {
   def name = "COUNT"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.limitType(LongType())
-  }
+    invocation.specifyType(LongType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val inner = invocation.arguments(0).toCommand

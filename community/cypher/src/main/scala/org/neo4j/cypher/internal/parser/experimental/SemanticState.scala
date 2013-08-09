@@ -46,30 +46,34 @@ case class SemanticState(
   def popScope = SemanticState(parent.get.symbolTable, typeTable, parent.get.parent)(pass)
 
   def symbol(name: String) : Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
-  def symbolTypes(name: String) = this.symbol(name).map(_.types)
-  def expressionTypes(expression: ast.Expression) = expression match {
+  def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSet.empty)
+  def expressionTypes(expression: ast.Expression) : TypeSet = expression match {
     case identifier: ast.Identifier => symbolTypes(identifier.name)
-    case _ => typeTable.get(expression)
+    case _ => typeTable.get(expression).getOrElse(TypeSet.empty)
   }
 
-  def limitExpressionType(expression: ast.Expression, token: InputToken, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
-      limitExpressionType(expression, token, (possibleType +: possibleTypes).toSet)
+  def specifyType(expression: ast.Expression, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
+    specifyType(expression, (possibleType +: possibleTypes).toSet)
 
-  def limitExpressionType(expression: ast.Expression, token: InputToken, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = expression match {
+  def specifyType(expression: ast.Expression, possibleTypes: TypeSet): Either[SemanticError, SemanticState] = expression match {
     case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
-    case _ => typeTable.get(expression) match {
-      case None => {
-        Right(updateType(expression, possibleTypes))
-      }
-      case Some(types) => {
-        val inferredTypes = (types mergeUp possibleTypes)
-        if (!inferredTypes.isEmpty) {
-          Right(updateType(expression, inferredTypes))
-        } else {
-          val existingTypes = types.formattedString
-          val expectedTypes = possibleTypes.formattedString
-          Left(SemanticError(s"Type mismatch: expected ${expectedTypes} but was ${existingTypes}", token, expression.token))
-        }
+    case _ => Right(SemanticState(symbolTable, typeTable + ((expression, possibleTypes)), parent)(pass))
+  }
+
+  def constrainType(expression: ast.Expression, token: InputToken, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
+    constrainType(expression, token, (possibleType +: possibleTypes).toSet)
+
+  def constrainType(expression: ast.Expression, token: InputToken, possibleTypes: TypeSet): Either[SemanticError, SemanticState] = expression match {
+    case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
+    case _ => {
+      val currentTypes = expressionTypes(expression)
+      val inferredTypes = (currentTypes mergeUp possibleTypes)
+      if (inferredTypes.nonEmpty) {
+        Right(updateType(expression, inferredTypes))
+      } else {
+        val existingTypes = currentTypes.formattedString
+        val expectedTypes = possibleTypes.formattedString
+        Left(SemanticError(s"Type mismatch: expected ${expectedTypes} but was ${existingTypes}", token, expression.token))
       }
     }
   }
@@ -101,7 +105,7 @@ case class SemanticState(
       }
       case Some(symbol) => {
         val inferredTypes = (symbol.types mergeUp possibleTypes)
-        if (!inferredTypes.isEmpty) {
+        if (inferredTypes.nonEmpty) {
           Right(updateIdentifier(identifier, inferredTypes, symbol.identifiers + identifier))
         } else {
           val existingTypes = symbol.types.formattedString

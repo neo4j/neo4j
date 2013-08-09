@@ -25,13 +25,10 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Coalesce extends Function {
   def name = "COALESCE"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 1) then
-    invocation.limitType(invocation.arguments.mergeDownTypes)
-  }
+    invocation.specifyType(invocation.arguments.mergeDownTypes)
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CoalesceFunction(invocation.arguments.map(_.toCommand):_*)
-  }
 }

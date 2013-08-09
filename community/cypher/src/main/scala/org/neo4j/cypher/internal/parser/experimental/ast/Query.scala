@@ -160,11 +160,10 @@ sealed trait QueryClose extends AstNode with SemanticCheckable {
   def skip: Option[Skip]
   def limit: Option[Limit]
 
-  def semanticCheck = {
+  def semanticCheck =
     returnItems.semanticCheck then
     checkSortItems then
     checkSkipLimit
-  }
 
   // use a scoped state containing the aliased return items for the sort expressions
   private def checkSortItems : SemanticState => Seq[SemanticError] =
@@ -211,11 +210,10 @@ case class With(
     token: InputToken,
     query: SingleQuery) extends QueryClose
 {
-  override def semanticCheck = {
+  override def semanticCheck =
     super.semanticCheck then
     checkAliasedReturnItems then
     checkSubQuery
-  }
 
   private def checkAliasedReturnItems : SemanticState => Seq[SemanticError] = state => {
     returnItems match {

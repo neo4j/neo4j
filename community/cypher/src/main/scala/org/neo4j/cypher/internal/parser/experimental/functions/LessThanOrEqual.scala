@@ -26,11 +26,9 @@ import org.neo4j.cypher.internal.commands
 case object LessThanOrEqual extends Function with LegacyPredicate {
   def name = "<="
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.limitType(BooleanType())
-  }
+    invocation.specifyType(BooleanType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)

@@ -26,18 +26,14 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Range extends Function with LegacyPredicate {
   def name = "RANGE"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then
     when(invocation.arguments.length >= 2) {
-      invocation.arguments(0).limitType(NumberType()) then
-      invocation.arguments(1).limitType(NumberType())
-    } then
-    when(invocation.arguments.length == 3) {
-      invocation.arguments(2).limitType(LongType())
-    } then
-    invocation.limitType(invocation.arguments.take(2).mergeDownTypes)
-  }
+      invocation.arguments(0).constrainType(LongType()) then
+      invocation.arguments(1).constrainType(LongType())
+    } then when(invocation.arguments.length == 3) {
+      invocation.arguments(2).constrainType(LongType())
+    } then invocation.specifyType(CollectionType(LongType()))
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)

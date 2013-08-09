@@ -26,11 +26,10 @@ import org.neo4j.cypher.internal.symbols.DoubleType
 case object Rand extends Function {
   def name = "RAND"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 0) then
-    invocation.limitType(DoubleType())
-  }
+    invocation.specifyType(DoubleType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = commandexpressions.RandFunction()
+  def toCommand(invocation: ast.FunctionInvocation) =
+    commandexpressions.RandFunction()
 }

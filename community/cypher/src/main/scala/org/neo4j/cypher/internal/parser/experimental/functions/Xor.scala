@@ -26,13 +26,10 @@ import org.neo4j.cypher.internal.commands
 case object Xor extends Function with LegacyPredicate {
   def name = "XOR"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.limitType(BooleanType())
-  }
+    invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     constructCommandPredicate(invocation.arguments) { a => commands.Xor(a(0), a(1)) }
-  }
 }

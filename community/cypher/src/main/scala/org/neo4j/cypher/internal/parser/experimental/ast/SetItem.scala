@@ -30,28 +30,27 @@ sealed trait SetItem extends AstNode with SemanticCheckable {
 }
 
 case class SetPropertyItem(property: Property, expression: Expression, token: InputToken) extends SetItem {
-  def semanticCheck = Seq(property, expression).semanticCheck(Expression.SemanticContext.Simple)
+  def semanticCheck =
+    property.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.constrainType(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
 }
 
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
-  def semanticCheck = {
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-      expression.limitType(NodeType())
-  }
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(NodeType())
 
-  def toLegacyUpdateAction = {
+  def toLegacyUpdateAction =
     commands.LabelAction(expression.toCommand, commands.LabelSetOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
-  }
 }
 
 case class SetNodeItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
-  def semanticCheck = {
-    Seq(identifier, expression).semanticCheck(Expression.SemanticContext.Simple) then
-      identifier.limitType(NodeType()) then
-      expression.limitType(MapType())
-  }
+  def semanticCheck =
+    identifier.semanticCheck(Expression.SemanticContext.Simple) then
+    identifier.constrainType(NodeType()) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.constrainType(MapType())
 
   def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand)
 }

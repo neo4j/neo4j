@@ -26,11 +26,9 @@ import org.neo4j.cypher.internal.symbols.DoubleType
 case object Pi extends Function {
   def name = "PI"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 0) then
-    invocation.limitType(DoubleType())
-  }
+    invocation.specifyType(DoubleType())
 
   def toCommand(invocation: ast.FunctionInvocation) = commandexpressions.PiFunction()
 }

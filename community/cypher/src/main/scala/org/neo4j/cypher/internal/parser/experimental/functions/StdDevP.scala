@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object StdDevP extends AggregatingFunction {
   def name = "STDEVP"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
-      checkArgs(invocation, 1) then
-      invocation.limitType(invocation.arguments(0).types)
-  }
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    checkArgs(invocation, 1) ifOkThen {
+      invocation.specifyType(invocation.arguments(0).types)
+    }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val inner = invocation.arguments(0).toCommand

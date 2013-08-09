@@ -26,14 +26,10 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 case object Atan2 extends Function {
   def name = "ATAN2"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
-    checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(0).limitType(NumberType()) then
-      invocation.arguments(1).limitType(NumberType()) then
-      invocation.limitType(DoubleType())
-    }
-  }
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+    checkArgs(invocation, 2) then
+    invocation.arguments.constrainType(NumberType()) then
+    invocation.specifyType(DoubleType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)

@@ -25,13 +25,10 @@ import org.neo4j.cypher.internal.commands
 case object Or extends Function with LegacyPredicate {
   def name = "OR"
 
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck = {
-    super.semanticCheck(ctx, invocation) then
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.limitType(invocation.arguments.mergeDownTypes)
-  }
+    invocation.specifyType(invocation.arguments.mergeDownTypes)
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     constructCommandPredicate(invocation.arguments) { a => commands.Or(a(0), a(1)) }
-  }
 }

@@ -39,7 +39,7 @@ case class FunctionInvocation(identifier: Identifier, distinct: Boolean, argumen
 
   def semanticCheck(ctx: SemanticContext) = function match {
     case None    => SemanticError(s"Unknown function '${name}'", token)
-    case Some(f) => arguments.semanticCheck(ctx) then f.semanticCheck(ctx, this)
+    case Some(f) => arguments.semanticCheck(ctx) then f.semanticCheckHook(ctx, this)
   }
 
   def toCommand = function match {
