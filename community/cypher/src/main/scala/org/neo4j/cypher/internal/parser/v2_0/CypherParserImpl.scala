@@ -19,36 +19,49 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
+import org.parboiled.scala._
+import org.parboiled.errors.InvalidInputError
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.parser.v2_0.rules._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
-import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.AbstractQuery
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
-class CypherParserImpl extends Base
-with Index
-with Constraint
-with Unions
-with QueryParser
-with Expressions
-with MatchClause
-with ActualParser {
-  @throws(classOf[SyntaxException])
-  def parse(text: String): AbstractQuery = {
-    parseAll(cypherQuery, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.setQueryText(text))
-      case NoSuccess(message, input) => {
-        if (message.startsWith("INNER"))
-          throw new SyntaxException(message.substring(5), text, input.offset)
-        else
-          throw new SyntaxException(message + """
+class CypherParserImpl extends Parser
+  with Statement
+  with Expressions
+  with ActualParser {
 
-Think we should have better error message here? Help us by sending this query to cypher@neo4j.org.
-
-Thank you, the Neo4j Team.
-""", text, input.offset)
-      }
-    }
+  def SingleStatement : Rule1[ast.Statement] = rule {
+    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 
-  def cypherQuery: Parser[AbstractQuery] = (indexOps | constraintOps | union | query) <~ opt(";")
+  @throws(classOf[SyntaxException])
+  def parse(text: String): AbstractQuery = {
+    val parsingResult = ReportingParseRunner(SingleStatement).run(text)
+    parsingResult.result match {
+      case Some(statement : ast.Statement) => {
+        statement.semanticCheck.map { error =>
+          throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
+        }
+        ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))
+      }
+      case _ => {
+        parsingResult.parseErrors.map { error =>
+          val message = if (error.getErrorMessage != null) {
+            error.getErrorMessage
+          } else {
+            error match {
+              case invalidInput : InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+              case _                                => error.getClass.getSimpleName
+            }
+          }
+          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+          throw new SyntaxException(s"${message} (${position})", text, error.getStartIndex)
+        }
+      }
+      throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+    }
+  }
 }
