@@ -22,48 +22,56 @@ package org.neo4j.cypher
 import internal.commands.AbstractQuery
 import org.neo4j.cypher.internal.parser.ActualParser
 
-sealed trait CypherVersion {
-  def name: String
+sealed abstract class CypherVersion(versionName: String) {
+  val name = CypherVersionName.asCanonicalName(versionName)
   def parser: ActualParser
 }
 
+object CypherVersionName {
+  def asCanonicalName(versionName: String) = versionName.toLowerCase
+}
+
 object CypherVersion {
-  case object v1_9 extends CypherVersion {
-    val name = "1.9"
+
+  case object v1_9 extends CypherVersion("1.9") {
     val parser = new internal.parser.v1_9.CypherParserImpl
   }
-  case object v2_0 extends CypherVersion {
-    val name = "2.0"
+
+  case object v2_0 extends CypherVersion("2.0") {
     val parser = new internal.parser.v2_0.CypherParserImpl
   }
-  case object vLegacy extends CypherVersion {
-    val name = "legacy"
+
+  case object vLegacy extends CypherVersion("legacy") {
     val parser = new internal.parser.legacy.CypherParserImpl
   }
+
+  def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
+    throw new SyntaxException(s"Supported versions are: $allVersionNames")
+  }
+
+  def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
+
   val vDefault = v2_0
+
+  val allVersions = Seq(v1_9, v2_0, vLegacy)
+  val allVersionNames = CypherVersion.allVersions.map(_.name).mkString(", ")
 }
-import CypherVersion._
 
-class CypherParser(version: String) {
+class CypherParser(val defaultVersion: CypherVersion) {
 
-  def this() = this("2.0")
+  def this() = this(CypherVersion.vDefault)
+  def this(versionName: String) = this(CypherVersion(versionName))
 
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
+  private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): AbstractQuery = {
 
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _                         => (version, queryText)
+    val result = queryText match {
+      case hasVersionDefined(versionName, remainingQuery) => CypherVersion(versionName).parser.parse(remainingQuery)
+      case _                                              => defaultVersion.parser.parse(queryText)
     }
 
-    val result = v match {
-      case v1_9.name    => v1_9.parser.parse(q)
-      case v2_0.name    => v2_0.parser.parse(q)
-      case vLegacy.name => vLegacy.parser.parse(q)
-      case _            => throw new SyntaxException("Versions supported are 1.9 and 2.0")
-    }
     result.verifySemantics()
     result
   }
