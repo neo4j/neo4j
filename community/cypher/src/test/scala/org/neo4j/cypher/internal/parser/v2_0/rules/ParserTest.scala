@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0.rules
 
 import org.scalatest.Assertions
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.parser.v2_0.ast.AstNode
+import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.parboiled.errors.InvalidInputError
 import org.neo4j.cypher.internal.parser.v2_0.InvalidInputErrorFormatter
 
-
-trait ParserExperimentalTest[T <: AstNode, J] extends Assertions {
+trait ParserTest[T <: ast.AstNode, J] extends Assertions {
 
   def convert(astNode: T): J
 

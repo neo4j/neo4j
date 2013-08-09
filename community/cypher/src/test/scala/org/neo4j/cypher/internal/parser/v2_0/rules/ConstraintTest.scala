@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
-
+package org.neo4j.cypher.internal.parser.v2_0.rules
 
 import org.junit.Test
+import org.parboiled.scala._
 import org.parboiled.scala.rules.Rule1
 import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.neo4j.cypher.internal.{commands => legacyCommands}
-import org.neo4j.cypher.internal.parser.v2_0.rules.Command
 import org.neo4j.cypher.internal.parser.v2_0.ast.Expression
 
-class ConstraintTest extends ParserExperimentalTest[ast.Command, legacyCommands.AbstractQuery] with Command {
+class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuery] with Command {
+  implicit val parserToTest = Command ~ EOI
 
   @Test
   def create_uniqueness_constraint() {
-    implicit val parserToTest = Command
-
     parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("create constraint on (foo:Foo) assert foo.name is unique") shouldGive
@@ -44,8 +42,6 @@ class ConstraintTest extends ParserExperimentalTest[ast.Command, legacyCommands.
 
   @Test
   def drop_uniqueness_constraint() {
-    implicit val parserToTest = Command
-
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("drop constraint on (foo:Foo) assert foo.name is unique") shouldGive

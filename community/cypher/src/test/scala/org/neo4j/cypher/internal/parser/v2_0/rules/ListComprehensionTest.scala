@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 
-class ListComprehensionTest extends ParserExperimentalTest[ast.ListComprehension, legacy.Expression] with Expressions {
+class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
   implicit val parserToTest = ListComprehension ~ EOI
 
   @Test def tests() {

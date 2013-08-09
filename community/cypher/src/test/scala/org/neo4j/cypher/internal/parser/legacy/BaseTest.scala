@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.parser.ParserTest
 import org.junit.Test
 
 class BaseTest extends Base with ParserTest {

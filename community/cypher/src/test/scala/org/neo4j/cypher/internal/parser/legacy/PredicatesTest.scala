@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 import expressions.{Property, Identifier}
-import legacy.{Predicates, MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.PatternPredicate
 import org.neo4j.cypher.internal.commands.HasLabel

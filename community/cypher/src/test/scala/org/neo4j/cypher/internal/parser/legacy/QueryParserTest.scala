@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.internal.parser.legacy.{StartAst, QueryParser}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.TokenType._

@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0.rules
 
 import org.junit.Test
+import org.parboiled.scala._
 import org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.commands.MergeAst
 import org.neo4j.cypher.internal.parser.v2_0.ast
-import org.neo4j.cypher.internal.parser.v2_0.rules.{Expressions, Query}
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.parser.{On, OnAction, ParsedEntity}
 
-
-class MergeTest extends ParserExperimentalTest[ast.Merge, MergeAst] with Query with Expressions {
+class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressions {
+  implicit val parserToTest = Merge ~ EOI
 
   @Test def tests() {
-    implicit val parserToTest = Merge
     val node = "nodeName"
     val nodeOther = "fooName"
     val A = "a"

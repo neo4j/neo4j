@@ -17,30 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0.rules
 
-import legacy.Using
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
+import org.parboiled.scala._
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.parser.v2_0.ast
 
+class PatternTest extends ParserTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
+  implicit val parserToTest = Pattern ~ EOI
 
-class UsingTest extends Using with ParserTest {
-  @Test def indexes() {
-    implicit val parserToTest = hints
+  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
 
-    parsing("USING INDEX n:User(name)") shouldGive
-      Seq(SchemaIndex("n", "User", "name", None))
-
-    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(SchemaIndex(" 1", " 2", " 3", None))
-
-    parsing("USING SCAN n:Person") shouldGive
-      Seq(NodeByLabel("n", "Person"))
-
-    assertFails("USING INDEX n.user(name)")
-    assertFails("USING INDEX n.user(name, age)")
-    assertFails("USING SCAN :Person")
+  @Test def label_literal_list_parsing() {
+    parsing("(a)-[r:FOO|BAR]->(b)") or
+    parsing("a-[r:FOO|:BAR]->b") shouldGive
+      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
   }
-
-  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

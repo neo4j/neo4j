@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.graphdb.Direction
-import legacy._
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.parser.{AbstractPattern, ParsedRelation, ParsedEntity}
 
 class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 

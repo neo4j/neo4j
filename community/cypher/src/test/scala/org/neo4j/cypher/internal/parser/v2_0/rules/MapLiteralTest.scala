@@ -23,9 +23,8 @@ import org.junit.Test
 import org.parboiled.scala._
 import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.neo4j.cypher.internal.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 
-class MapLiteralTest extends ParserExperimentalTest[ast.Expression, legacy.Expression] with Expressions {
+class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = MapLiteral ~ EOI
 
   @Test def literal_maps() {

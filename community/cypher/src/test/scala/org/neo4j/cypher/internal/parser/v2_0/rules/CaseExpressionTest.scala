@@ -24,9 +24,8 @@ import org.parboiled.scala._
 import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.parser.ParserExperimentalTest
 
-class CaseExpressionTest extends ParserExperimentalTest[ast.Expression, legacy.Expression] with Expressions {
+class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = CaseExpression ~ EOI
 
   @Test def simple_cases() {

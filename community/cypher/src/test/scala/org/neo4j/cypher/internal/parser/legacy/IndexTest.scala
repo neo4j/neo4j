@@ -17,24 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.junit.Test
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.parser.v2_0.rules.{Expressions, Patterns}
-import org.neo4j.cypher.internal.parser.v2_0.ast
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 
-class PatternTest extends ParserExperimentalTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
+class IndexTest extends Index with ParserTest {
+  @Test def create() {
+    implicit val parser = createIndex
 
-  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
+    parsing("create index on :MyLabel(prop1)") or
+    parsing("CREATE INDEX ON :MyLabel (prop1)") shouldGive
+      CreateIndex("MyLabel", Seq("prop1"))
 
-  @Test def label_literal_list_parsing() {
-    implicit val parserToTest = Pattern
-
-    parsing("(a)-[r:FOO|BAR]->(b)") or
-    parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
+    assertFails("create index on :MyLabel()")
   }
+
+  @Test def drop() {
+    implicit val parser = dropIndex
+
+    parsing("drop index on :MyLabel(prop1)") or
+    parsing("DROP INDEX ON :MyLabel (prop1)") shouldGive
+      DropIndex("MyLabel", Seq("prop1"))
+
+    assertFails("drop index on :MyLabel()")
+  }
+
+  def expression: Parser[Expression] = ???
 }

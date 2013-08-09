@@ -17,34 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.legacy
 
 import org.junit.Test
-import legacy.Index
-import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
+import org.neo4j.cypher.internal.parser.AbstractPattern
 
+class UsingTest extends Using with ParserTest {
+  @Test def indexes() {
+    implicit val parserToTest = hints
 
-class IndexTest extends Index with ParserTest {
-  @Test def create() {
-    implicit val parser = createIndex
+    parsing("USING INDEX n:User(name)") shouldGive
+      Seq(SchemaIndex("n", "User", "name", None))
 
-    parsing("create index on :MyLabel(prop1)") or
-    parsing("CREATE INDEX ON :MyLabel (prop1)") shouldGive
-      CreateIndex("MyLabel", Seq("prop1"))
+    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
+      Seq(SchemaIndex(" 1", " 2", " 3", None))
 
-    assertFails("create index on :MyLabel()")
+    parsing("USING SCAN n:Person") shouldGive
+      Seq(NodeByLabel("n", "Person"))
+
+    assertFails("USING INDEX n.user(name)")
+    assertFails("USING INDEX n.user(name, age)")
+    assertFails("USING SCAN :Person")
   }
 
-  @Test def drop() {
-    implicit val parser = dropIndex
-
-    parsing("drop index on :MyLabel(prop1)") or
-    parsing("DROP INDEX ON :MyLabel (prop1)") shouldGive
-      DropIndex("MyLabel", Seq("prop1"))
-
-    assertFails("drop index on :MyLabel()")
-  }
-
-  def expression: Parser[Expression] = ???
+  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }
