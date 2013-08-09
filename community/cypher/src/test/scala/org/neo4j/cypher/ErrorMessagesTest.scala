@@ -334,6 +334,24 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
+  @Test def report_deprecated_use_of_property_name_with_question_mark() {
+    expectError("start n=node(1) return n.title? = \"foo\"",
+      v2_0 -> String.format("""This syntax is no longer supported. Instead missing properties are now treated as null. Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior.""")
+    )
+  }
+
+  @Test def report_deprecated_use_of_property_name_with_exclamation_mark() {
+    expectError("start n=node(1) return n.title! = \"foo\"",
+      v2_0 -> String.format("""This syntax is no longer supported. Instead missing properties are now treated as null.""")
+    )
+  }
+
+  @Test def recommend_using_remove_when_user_tries_to_delete_a_label() {
+    expectError("start n=node(1) delete n:Person",
+      v2_0 -> String.format("""This syntax is no longer supported. Please use remove to remove a label from a node.""")
+    )
+  }
+
   private def expectError(query: String, variants: (CypherVersion, String)*) {
     for ((version, message) <- variants) {
       expectError(version, query, message)

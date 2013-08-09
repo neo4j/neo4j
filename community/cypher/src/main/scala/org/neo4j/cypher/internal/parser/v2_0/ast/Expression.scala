@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 object Expression {
   sealed trait SemanticContext
@@ -139,7 +140,9 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
   def toCommand = commandexpressions.CountStar()
 }
 
-case class Property(map: Expression, identifier: Identifier, token: InputToken) extends Expression with SimpleTypedExpression {
+case class Property(map: Expression, identifier: Identifier, token: InputToken)
+  extends Expression with SimpleTypedExpression {
+
   protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -148,6 +151,20 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken) 
     super.semanticCheck(ctx)
 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
+}
+
+object LegacyProperty {
+  // use of val instead of def due to inability to refer to methods on objects as partially applied functions
+  val make = (map: Expression, identifier: Identifier, legacyOperator: String, token: InputToken) =>
+    new Property(map, identifier, token) {
+      override def semanticCheck(ctx: SemanticContext) : SemanticCheck = legacyOperator match {
+        case "?" => SemanticError(s"This syntax is no longer supported. Instead missing properties are now treated as null. Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", token)
+        case "!" => SemanticError(s"This syntax is no longer supported. Instead missing properties are now treated as null.", token)
+        case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
+      }
+
+      override def toCommand = throw new UnsupportedOperationException
+    }
 }
 
 case class PatternExpression(pattern: Pattern) extends Expression with SimpleTypedExpression {

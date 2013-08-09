@@ -84,9 +84,17 @@ trait Expressions extends Parser
 
   private def Expression4 = Expression3
 
+  private def propertyLookup =
+    operator(".") ~~ (
+        (Identifier ~~ legacyPropertyOperators ~>> token ~~> ast.LegacyProperty.make)
+      | (Identifier ~>> token ~~> ast.Property)
+    )
+
+  private def legacyPropertyOperators : Rule1[String] = group(anyOf("?!") ~ !OperatorCharacter) ~> ((s: String) => s)
+
   private def Expression3 : Rule1[ast.Expression] = rule {
     Expression2 ~ zeroOrMore(WS ~ (
-        ((operator(".") ~~ Identifier) memoMismatches) ~>> token ~~> ast.Property
+        propertyLookup
       | NodeLabels ~>> token ~~> ast.HasLabels
       | operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IN") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
@@ -124,9 +132,7 @@ trait Expressions extends Parser
   )
 
   def PropertyExpression : Rule1[ast.Property] = rule {
-    Expression2 ~ oneOrMore(WS ~ (
-      group(operator(".") ~~ Identifier) ~>> token ~~> ast.Property
-    ) : ReductionRule1[ast.Expression, ast.Property])
+    Expression2 ~ oneOrMore(WS ~ propertyLookup : ReductionRule1[ast.Expression, ast.Property])
   }
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
