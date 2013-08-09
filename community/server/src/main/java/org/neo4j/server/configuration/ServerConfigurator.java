@@ -47,7 +47,7 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
  * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the static strings in {@link Configurator}.
  */
-public class ServerConfigurator implements Configurator
+public class ServerConfigurator extends Configurator.Adapter
 {
 
     private MapBasedConfiguration config = new MapBasedConfiguration();
