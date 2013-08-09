@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
 import org.neo4j.cypher.PatternException
 

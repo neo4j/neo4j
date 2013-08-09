@@ -23,8 +23,8 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb._
 import org.junit.{Before, Test}
-import org.neo4j.cypher.internal.parser.{ParsedRelation, AbstractPattern, ParsedEntity}
-import org.neo4j.cypher.internal.parser.ParsedVarLengthRelation
+import org.neo4j.cypher.internal.compiler.{ParsedRelation, AbstractPattern, ParsedEntity}
+import org.neo4j.cypher.internal.compiler.ParsedVarLengthRelation
 import org.neo4j.cypher.PathImpl
 
 class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {

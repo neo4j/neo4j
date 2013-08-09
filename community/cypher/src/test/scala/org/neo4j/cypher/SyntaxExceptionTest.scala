@@ -24,7 +24,8 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import CypherVersion._
+import org.neo4j.cypher.CypherVersion._
+import org.neo4j.cypher.internal.CypherCompiler
 
 class SyntaxExceptionTest extends JUnitSuite with Assertions {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
@@ -227,14 +228,14 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   def test(version: CypherVersion, query: String, message: String) {
     val (qWithVer, versionString) = version match {
-      case `vDefault` => (query, "the default parser")
-      case _          => (s"cypher ${version.name} " + query, "parser version " + version.name)
+      case `vDefault` => (query, "the default compiler")
+      case _          => (s"cypher ${version.name} " + query, "compiler version " + version.name)
     }
     val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
 
-    val parser = new CypherParser()
+    val compiler = CypherCompiler()
     try {
-      val result = parser.parse(qWithVer)
+      val result = compiler.parse(qWithVer)
       fail(errorMessage)
     } catch {
       case x: CypherException => {
