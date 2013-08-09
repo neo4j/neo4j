@@ -39,7 +39,7 @@ Use this base class for tests that are more flowing text with queries intersecte
 abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   var db: GraphDatabaseAPI = null
-  val parser: CypherParser = new CypherParser
+  val compiler: CypherCompiler = new CypherCompiler
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null

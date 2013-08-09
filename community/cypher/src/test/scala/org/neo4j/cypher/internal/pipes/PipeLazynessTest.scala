@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.compiler.ParsedEntity
 
 /*
 This test fixture tries to assert that Pipe declaring that they are lazy

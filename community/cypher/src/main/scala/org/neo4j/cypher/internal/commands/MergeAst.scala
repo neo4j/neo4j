@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.commands
 
 import scala.collection.mutable
-import org.neo4j.cypher.internal.parser._
+import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.compiler.ParsedEntity
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.parser.OnAction
+import org.neo4j.cypher.internal.compiler.OnAction
 import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.commands.expressions.Property
 import org.neo4j.cypher.PatternException

@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Direction
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.{NamedPath, NodeById, RelatedTo}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.parser.ParsedRelation
+import org.neo4j.cypher.internal.compiler.ParsedRelation
 import org.neo4j.cypher.internal.pipes.NamedPathPipe
 
 

@@ -24,12 +24,12 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.commands.values.TokenType._
-import org.neo4j.cypher.internal.parser.On
-import org.neo4j.cypher.internal.parser.ParsedEntity
+import org.neo4j.cypher.internal.compiler.On
+import org.neo4j.cypher.internal.compiler.ParsedEntity
 import org.neo4j.cypher.internal.mutation.PropertySetAction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.commands.expressions.TimestampFunction
-import org.neo4j.cypher.internal.parser.OnAction
+import org.neo4j.cypher.internal.compiler.OnAction
 import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.commands.expressions.Property
 

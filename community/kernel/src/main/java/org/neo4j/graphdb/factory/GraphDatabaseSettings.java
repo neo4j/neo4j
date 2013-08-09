@@ -103,10 +103,10 @@ public abstract class GraphDatabaseSettings
 
     // Cypher settings
     // TODO: These should live with cypher
-    @Description("Enable this to specify a parser other than the default one.")
-    public static final OptionsSetting cypher_parser_version = new CypherParserSetting( setting(
-            "cypher_parser_version",
-            options( CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ) );
+    @Description("Enable this to specify a compiler other than the default one.")
+    public static final OptionsSetting cypher_compiler_version = new CypherCompilerSetting( setting(
+            "cypher_compiler_version",
+            options( CypherCompilerSetting.v1_9, CypherCompilerSetting.v2_0 ), NO_DEFAULT ) );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( setting("query_cache_size", INTEGER, "100", min( 0 ) ));
@@ -418,16 +418,16 @@ public abstract class GraphDatabaseSettings
         }
     }
 
-    public static class CypherParserSetting
+    public static class CypherCompilerSetting
             extends OptionsSetting
     {
-        @Description("Cypher v1.9 syntax.")
+        @Description("Cypher v1.9 compiler.")
         public static final String v1_9 = "1.9";
 
-        @Description("Cypher v2.0 syntax.")
+        @Description("Cypher v2.0 compiler.")
         public static final String v2_0 = "2.0";
 
-        public CypherParserSetting( Setting<String> setting )
+        public CypherCompilerSetting( Setting<String> setting )
         {
             super( setting );
         }

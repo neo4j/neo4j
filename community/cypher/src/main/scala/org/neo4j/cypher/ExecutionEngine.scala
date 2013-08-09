@@ -31,7 +31,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, Inter
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.cypher.internal.parser.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.prettifier.Prettifier
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
 
@@ -39,7 +39,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   require(graph != null, "Can't work with a null graph database")
 
-  val parser = createCorrectParser()
+  val compiler = createCorrectCompiler()
   val planBuilder = new ExecutionPlanBuilder(graph)
   val verifiers:Seq[Verifier] = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
 
@@ -93,7 +93,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
     // parse query
     val cachedQuery = queryCache.getOrElseUpdate(query, () => {
-      val parsedQuery = parser.parse(query)
+      val parsedQuery = compiler.parse(query)
       verify(parsedQuery)
       parsedQuery
     })
@@ -169,14 +169,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query:String): String = Prettifier(query)
 
-  private def createCorrectParser() =
+  private def createCorrectCompiler() =
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
+      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_compiler_version))
       .andThen({
-      case v:String => new CypherParser(v)
-      case _        => new CypherParser()
+      case v:String => new CypherCompiler(v)
+      case _        => new CypherCompiler()
     })
-      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherParser() )
+      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherCompiler() )
 
 
   private def getQueryCacheSize : Int =

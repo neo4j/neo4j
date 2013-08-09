@@ -931,7 +931,7 @@ foreach(x in [1,2,3] |
   @Test def shouldBeAbleToTakeParamsFromParsedStuff() {
     createNodes("A")
 
-    val query = new CypherParser().parse("start pA = node({a}) return pA")
+    val query = new CypherCompiler().parse("start pA = node({a}) return pA")
     val result = execute(query, "a" -> Seq[Long](1))
 
     assertEquals(List(Map("pA" -> node("A"))), result.toList)
@@ -1776,7 +1776,7 @@ RETURN x0.name
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.9").asJava)
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_compiler_version" -> "1.9").asJava)
     val engine = new ExecutionEngine(db)
 
     try {
