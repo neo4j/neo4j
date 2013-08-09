@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
-import org.neo4j.cypher.internal.parser.AbstractPattern
+import org.neo4j.cypher.internal.compiler.AbstractPattern
 
 case class NamedPath(pathName: String, pathPattern: AbstractPattern*) extends Traversable[AbstractPattern]  {
   def foreach[U](f: (AbstractPattern) => U) {
