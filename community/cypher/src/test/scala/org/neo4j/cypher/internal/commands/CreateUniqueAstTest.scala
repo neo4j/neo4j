@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.neo4j.cypher.internal.parser.{ParsedNamedPath, ParsedEntity, ParsedRelation, AbstractPattern}
+import org.neo4j.cypher.internal.compiler.{ParsedNamedPath, ParsedEntity, ParsedRelation, AbstractPattern}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.junit.runners.Parameterized.Parameters

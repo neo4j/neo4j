@@ -67,7 +67,7 @@ class DistinctBuilder extends LegacyPlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
 
-      plan.query.aggregateToDo && //The parser marks DISTINCT queries as aggregates. Revisit?
+      plan.query.aggregateToDo && //The compiler marks DISTINCT queries as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&
       plan.query.returns.exists {

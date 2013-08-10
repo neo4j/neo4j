@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.parser.{AbstractPattern, OnAction}
+import org.neo4j.cypher.internal.compiler.{AbstractPattern, OnAction}
 import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.commands.expressions.Property
 import scala.collection.mutable

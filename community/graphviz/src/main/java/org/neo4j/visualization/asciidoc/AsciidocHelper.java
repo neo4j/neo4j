@@ -209,7 +209,7 @@ public class AsciidocHelper
                                                  String[] keywordsToBreakOn,
                                                  String[] unbreakableKeywords )
     {
-        // This is not something I'm proud of. This should be done in Cypher by the parser.
+        // This is not something I'm proud of. This should be done in Cypher by the compiler.
         // For now, learn to live with it.
         String formattedQuery;
         if ( "cypher".equals( language ) && query.contains( "merge" ) )
