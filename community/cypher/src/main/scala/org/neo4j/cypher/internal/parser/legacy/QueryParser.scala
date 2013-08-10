@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.commands.Slice
 import org.neo4j.cypher.internal.commands.Return
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 
 trait QueryParser
@@ -42,11 +43,21 @@ trait QueryParser
 {
   def query: Parser[Query] = Parser {
     in =>
-      val result = (queryStart ~ body).apply(in)
+      val result = (opt(queryStart) ~ body).apply(in)
       result match {
-        case Success(start ~ body, rest) =>
+        case Success(Some(start) ~ body, rest) =>
+
           val q = expandQuery(start, body)
-          if (isNonMutatingQueryWithoutReturn(q)) failure("expected return clause", rest) else Success(q, rest)
+          if (isNonMutatingQueryWithoutReturn(q))
+            failure("expected return clause", rest)
+          else
+            Success(q, rest)
+
+        case Success(None ~ body, rest)
+          if body.isInstanceOf[BodyReturn] =>
+
+          Success(expandQuery(body), rest)
+
         case ns:NoSuccess =>
           ns
       }
@@ -148,7 +159,15 @@ trait QueryParser
         Query( Return(List()), start.starts.startItems, start.updates ++ start.starts.updateActions, Seq(), start.hints, True(), None, Seq(), None, start.starts.namedPaths, None)
     }
 
-  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern], Seq[NamedPath], Predicate) = matching match {
+  private def expandQuery(b: Body): Query = b match {
+    case body:BodyReturn=> Query(body.returns, Seq.empty, Seq.empty, Seq.empty, Seq.empty, True(), body.aggregate,
+      body.order, body.slice, Seq.empty, None)
+    case _ => throw new ThisShouldNotHappenError("Andres","This is just here to stop parser warnings")
+  }
+
+
+  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern],
+    Seq[NamedPath], Predicate) = matching match {
     case Some((a, b, c)) => (a, b, c)
     case None            => (Seq(), Seq(), True())
   }

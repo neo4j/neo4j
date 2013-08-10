@@ -1,6 +1,8 @@
 2.0.0-M05
 ---------
 o Promote the experimental parser to the default
+o Added literal maps
+o Makes RETURN only queries valid
 
 2.0.0-M04
 ---------
