@@ -86,14 +86,8 @@ case class Delete(expressions: Seq[Expression], token: InputToken) extends Updat
     expressions.constrainType(NodeType(), RelationshipType(), PathType())
 
   def warnAboutDeletingLabels =
-    expressions.foldLeft(SemanticCheckResult.success) { (check: SemanticCheck, expr: Expression) =>
-      expr match {
-        case HasLabels(_, _, _) =>
-          check andThen ((r: SemanticCheckResult) =>
-            r.copy(errors = r.errors :+ SemanticError("This syntax is no longer supported. Please use remove to remove a label from a node.", token)))
-        case _  =>
-          check
-      }
+    expressions.filter(_.isInstanceOf[HasLabels]) map {
+      e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.token)
     }
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))

@@ -288,13 +288,13 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     graph.createConstraint("LabelName", "Prop")
 
     expectError("DROP INDEX ON :LabelName(Prop)",
-      vLegacy -> "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
+      v2_0 -> "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
     )
   }
 
   @Test def trying_to_drop_non_existent_index() {
     expectError("DROP INDEX ON :Person(name)",
-      vLegacy -> "Unable to drop index on :Person(name): No such INDEX ON :Person(name)."
+      v2_0 -> "Unable to drop index on :Person(name): No such INDEX ON :Person(name)."
     )
   }
 
@@ -303,7 +303,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     createLabeledNode(Map("name" -> "A"), "Person")
 
     expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      vLegacy -> String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
+      v2_0 -> String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
         "Multiple nodes with label `Person` have property `name` = 'A':%n  node(1)%n  node(2)")
     )
   }
@@ -312,43 +312,43 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     parseAndExecute("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
 
     expectError("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      vLegacy -> String.format("Already constrained CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE.")
+      v2_0 -> "Already constrained CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE."
     )
   }
 
   @Test def drop_a_non_existent_constraint() {
     expectError("DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      vLegacy -> String.format("Constraint not found")
+      v2_0 -> "Constraint not found"
     )
   }
 
   @Test def create_without_specifying_direction_should_fail() {
     expectError("CREATE (a)-[:FOO]-(b) RETURN a,b",
-      vLegacy -> String.format("Relationships need to have a direction.")
+      vLegacy -> "Relationships need to have a direction."
     )
   }
 
   @Test def create_without_specifying_direction_should_fail2() {
     expectError("CREATE (a)<-[:FOO]->(b) RETURN a,b",
-      vLegacy -> String.format("Relationships need to have a direction.")
+      vLegacy -> "Relationships need to have a direction."
     )
   }
 
   @Test def report_deprecated_use_of_property_name_with_question_mark() {
     expectError("start n=node(1) return n.title? = \"foo\"",
-      v2_0 -> String.format("""This syntax is no longer supported. Instead missing properties are now treated as null. Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior.""")
+      v2_0 -> "This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
     )
   }
 
   @Test def report_deprecated_use_of_property_name_with_exclamation_mark() {
     expectError("start n=node(1) return n.title! = \"foo\"",
-      v2_0 -> String.format("""This syntax is no longer supported. Instead missing properties are now treated as null.""")
+      v2_0 -> "This syntax is no longer supported (missing properties are now returned as null)."
     )
   }
 
   @Test def recommend_using_remove_when_user_tries_to_delete_a_label() {
     expectError("start n=node(1) delete n:Person",
-      v2_0 -> String.format("""This syntax is no longer supported. Please use remove to remove a label from a node.""")
+      v2_0 -> "DELETE doesn't support removing labels from a node. Try REMOVE."
     )
   }
 

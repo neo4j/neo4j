@@ -158,8 +158,8 @@ object LegacyProperty {
   val make = (map: Expression, identifier: Identifier, legacyOperator: String, token: InputToken) =>
     new Property(map, identifier, token) {
       override def semanticCheck(ctx: SemanticContext) : SemanticCheck = legacyOperator match {
-        case "?" => SemanticError(s"This syntax is no longer supported. Instead missing properties are now treated as null. Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", token)
-        case "!" => SemanticError(s"This syntax is no longer supported. Instead missing properties are now treated as null.", token)
+        case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", token)
+        case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", token)
         case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
       }
 
